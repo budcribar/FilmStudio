@@ -13,17 +13,33 @@
 
 <PageTitle>Configuration</PageTitle>
 
-<h1>Configuration</h1>
-<p class="text-muted mb-3">
-    @if (!string.IsNullOrWhiteSpace(_projectId))
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="mb-1">Configuration</h1>
+        <p class="text-muted mb-0">
+            @if (!string.IsNullOrWhiteSpace(_projectId))
+            {
+                <span>Settings for active project: <strong class="text-primary">@_projectId</strong></span>
+            }
+            else
+            {
+                <span>Settings and provider options for your film projects.</span>
+            }
+        </p>
+    </div>
+    @if (_projectIds.Count > 0)
     {
-        <span>Settings for active project: <strong class="text-primary">@_projectId</strong></span>
+        <div class="d-flex align-items-center gap-2">
+            <label class="fw-semibold small text-muted text-nowrap mb-0">Active Project:</label>
+            <select class="form-select form-select-sm" value="@_projectId" @onchange="OnProjectChangedAsync" style="min-width: 160px;">
+                @foreach (var pid in _projectIds)
+                {
+                    <option value="@pid">@pid</option>
+                }
+            </select>
+        </div>
     }
-    else
-    {
-        <span>Settings and provider options for your film projects.</span>
-    }
-</p>
+</div>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -33,85 +49,10 @@
 {
     <div class="alert alert-success mb-3">@_message</div>
 }
-
-@if (_projectIds.Count == 0)
-{
-    <p class="text-muted">No projects yet. Create one on <a href="/">Home</a>.</p>
-}
-else if (_cfg is null)
-{
-    <p class="text-muted">No active project loaded. Select a project on <a href="/">Home</a>.</p>
-}
-else
-{
-    <div class="card mb-3 border-secondary">
+    <!-- ACCOUNT & API KEYS (ALWAYS ACCESSIBLE AT TOP) -->
+    <div class="card mb-4 border-secondary shadow-sm">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>📁 Project Storage &amp; Local Media Folder</span>
-            <span class="badge @(MediaFolder.IsConnected ? "bg-success" : "bg-warning text-dark")">
-                @(MediaFolder.IsConnected ? "Local Folder Connected" : "Local Folder Not Connected")
-            </span>
-        </div>
-        <div class="card-body py-3">
-            <div class="row align-items-stretch g-3">
-                <div class="col-md-7">
-                    <div class="fw-semibold mb-1">Local Computer Media Folder</div>
-                    @if (MediaFolder.IsConnected)
-                    {
-                        <div class="d-flex flex-column gap-2 mb-2">
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1 text-break" data-testid="config-media-full-path">
-                                    📁 <strong>Full Path:</strong> @(MediaFolder.FullPath ?? MediaFolder.FolderName ?? "Local Media Directory")
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <button type="button" class="btn btn-sm btn-outline-info" @onclick="OpenFileExplorerForMediaFolderAsync" title="Open this folder in Windows File Explorer" data-testid="config-open-media-explorer">
-                                    📂 Open in File Explorer
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PromptEditMediaFolderPathAsync">
-                                    ✏️ Edit Path
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ConnectMediaFolderAsync">
-                                    Change folder…
-                                </button>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            All video clips for <strong>@_projectId</strong> are saved directly to this folder on your computer.
-                        </div>
-                    }
-                    else if (MediaFolder.NeedsReconnect)
-                    {
-                        <div class="alert alert-warning py-2 small mb-2 d-flex justify-content-between align-items-center gap-2">
-                            <span>Re-grant permission to reconnect <strong>@(MediaFolder.PendingReconnectFolderName ?? "local folder")</strong></span>
-                            <button type="button" class="btn btn-sm btn-warning" @onclick="ReconnectMediaFolderAsync">
-                                1-Click Reconnect
-                            </button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <button type="button" class="btn btn-sm btn-primary" @onclick="ConnectMediaFolderAsync">
-                                📁 Connect Local Media Folder
-                            </button>
-                            <span class="small text-muted">Select a folder on your computer to save MP4 video clips directly to disk.</span>
-                        </div>
-                    }
-                </div>
-                <div class="col-md-5 border-start border-secondary ps-md-4">
-                    <div class="fw-semibold small mb-1">Active Project</div>
-                    <div class="h5 mb-2 text-primary">@_projectId</div>
-                    <div class="small text-muted">
-                        Screenplays, shot plans, and project metadata for <strong>@_projectId</strong> are safely stored on the server.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>🔑 Account &amp; API keys</span>
+            <span>🔑 Account &amp; API keys (Global Services)</span>
             <div class="d-flex flex-wrap gap-1">
                 @foreach (var p in ProviderRows)
                 {
@@ -246,6 +187,86 @@ else
                     <span>@_apiKeyFeedback</span>
                 </div>
             }
+        </div>
+    </div>
+
+    <!-- PROJECT STORAGE & CONFIGURATION -->
+    @if (_projectIds.Count == 0 && string.IsNullOrWhiteSpace(_projectId))
+    {
+        <div class="alert alert-info mb-4">
+            📌 <strong>No projects created yet.</strong> You can set up your global API keys above. To configure project models and options, create your first project on <a href="/" class="fw-bold">Home</a>.
+        </div>
+    }
+    else if (_cfg is null)
+    {
+        <div class="alert alert-warning mb-4">
+            📌 <strong>No project selected.</strong> Select an active project from the top right dropdown or visit <a href="/" class="fw-bold">Home</a> to open a project.
+        </div>
+    }
+    else
+    {
+    <div class="card mb-3 border-secondary">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>📁 Project Storage &amp; Local Media Folder</span>
+            <span class="badge @(MediaFolder.IsConnected ? "bg-success" : "bg-warning text-dark")">
+                @(MediaFolder.IsConnected ? "Local Folder Connected" : "Local Folder Not Connected")
+            </span>
+        </div>
+        <div class="card-body py-3">
+            <div class="row align-items-stretch g-3">
+                <div class="col-md-7">
+                    <div class="fw-semibold mb-1">Local Computer Media Folder</div>
+                    @if (MediaFolder.IsConnected)
+                    {
+                        <div class="d-flex flex-column gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1 text-break" data-testid="config-media-full-path">
+                                    📁 <strong>Full Path:</strong> @(MediaFolder.FullPath ?? MediaFolder.FolderName ?? "Local Media Directory")
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="button" class="btn btn-sm btn-outline-info" @onclick="OpenFileExplorerForMediaFolderAsync" title="Open this folder in Windows File Explorer" data-testid="config-open-media-explorer">
+                                    📂 Open in File Explorer
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PromptEditMediaFolderPathAsync">
+                                    ✏️ Edit Path
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ConnectMediaFolderAsync">
+                                    Change folder…
+                                </button>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            All video clips for <strong>@_projectId</strong> are saved directly to this folder on your computer.
+                        </div>
+                    }
+                    else if (MediaFolder.NeedsReconnect)
+                    {
+                        <div class="alert alert-warning py-2 small mb-2 d-flex justify-content-between align-items-center gap-2">
+                            <span>Re-grant permission to reconnect <strong>@(MediaFolder.PendingReconnectFolderName ?? "local folder")</strong></span>
+                            <button type="button" class="btn btn-sm btn-warning" @onclick="ReconnectMediaFolderAsync">
+                                1-Click Reconnect
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <button type="button" class="btn btn-sm btn-primary" @onclick="ConnectMediaFolderAsync">
+                                📁 Connect Local Media Folder
+                            </button>
+                            <span class="small text-muted">Select a folder on your computer to save MP4 video clips directly to disk.</span>
+                        </div>
+                    }
+                </div>
+                <div class="col-md-5 border-start border-secondary ps-md-4">
+                    <div class="fw-semibold small mb-1">Active Project</div>
+                    <div class="h5 mb-2 text-primary">@_projectId</div>
+                    <div class="small text-muted">
+                        Screenplays, shot plans, and project metadata for <strong>@_projectId</strong> are safely stored on the server.
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -614,21 +635,32 @@ else
                 return;
             }
 
+            try { _userSettings = await Engine.GetUserSettingsAsync(); } catch { }
+            await LoadCatalogAsync();
+
             var projs = await Engine.GetProjectsAsync();
             _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
                           ?? new List<string>();
-            if (!string.IsNullOrWhiteSpace(ActiveProject.ProjectId) &&
-                _projectIds.Exists(id => string.Equals(id, ActiveProject.ProjectId, StringComparison.OrdinalIgnoreCase)))
-                _projectId = ActiveProject.ProjectId;
-            else if (projs?.Active?.Id is { Length: > 0 } aid &&
-                _projectIds.Exists(id => string.Equals(id, aid, StringComparison.OrdinalIgnoreCase)))
-                _projectId = aid;
-            else if (_projectIds.Count > 0)
-                _projectId = _projectIds[0];
-            else
-                _projectId = "";
 
-            await LoadCatalogAsync();
+            var candidateId = ActiveProject.ProjectId;
+            if (string.IsNullOrWhiteSpace(candidateId))
+                candidateId = projs?.Active?.Id;
+
+            if (!string.IsNullOrWhiteSpace(candidateId))
+            {
+                _projectId = candidateId;
+                if (!_projectIds.Contains(_projectId, StringComparer.OrdinalIgnoreCase))
+                    _projectIds.Insert(0, _projectId);
+            }
+            else if (_projectIds.Count > 0)
+            {
+                _projectId = _projectIds[0];
+            }
+            else
+            {
+                _projectId = "";
+            }
+
             if (!string.IsNullOrEmpty(_projectId))
                 await LoadAsync();
         }
@@ -636,6 +668,15 @@ else
         {
             _error = ex.Message;
         }
+    }
+
+    private async Task OnProjectChangedAsync(ChangeEventArgs e)
+    {
+        var id = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(id)) return;
+        _projectId = id;
+        ActiveProject.Set(id);
+        await LoadAsync();
     }
 
     private async Task LoadCatalogAsync()
