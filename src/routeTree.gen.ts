@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StudioIndexRouteImport } from './routes/studio/index'
 import { Route as StudioProjectIdRouteImport } from './routes/studio/$projectId'
 
@@ -30,6 +31,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudioIndexRoute = StudioIndexRouteImport.update({
   id: '/studio/',
   path: '/studio/',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo': typeof DemoRoute
   '/projects': typeof ProjectsRoute
+  '/settings': typeof SettingsRoute
   '/studio/$projectId': typeof StudioProjectIdRoute
   '/studio/': typeof StudioIndexRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demo': typeof DemoRoute
   '/projects': typeof ProjectsRoute
+  '/settings': typeof SettingsRoute
   '/studio/$projectId': typeof StudioProjectIdRoute
   '/studio': typeof StudioIndexRoute
 }
@@ -60,22 +68,37 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/demo': typeof DemoRoute
   '/projects': typeof ProjectsRoute
+  '/settings': typeof SettingsRoute
   '/studio/$projectId': typeof StudioProjectIdRoute
   '/studio/': typeof StudioIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo' | '/projects' | '/studio/$projectId' | '/studio/'
+  fullPaths:
+    | '/'
+    | '/demo'
+    | '/projects'
+    | '/settings'
+    | '/studio/$projectId'
+    | '/studio/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo' | '/projects' | '/studio/$projectId' | '/studio'
+  to:
+    '/' | '/demo' | '/projects' | '/settings' | '/studio/$projectId' | '/studio'
   id:
-    '__root__' | '/' | '/demo' | '/projects' | '/studio/$projectId' | '/studio/'
+    | '__root__'
+    | '/'
+    | '/demo'
+    | '/projects'
+    | '/settings'
+    | '/studio/$projectId'
+    | '/studio/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DemoRoute: typeof DemoRoute
   ProjectsRoute: typeof ProjectsRoute
+  SettingsRoute: typeof SettingsRoute
   StudioProjectIdRoute: typeof StudioProjectIdRoute
   StudioIndexRoute: typeof StudioIndexRoute
 }
@@ -103,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/studio/': {
       id: '/studio/'
       path: '/studio'
@@ -124,6 +154,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DemoRoute: DemoRoute,
   ProjectsRoute: ProjectsRoute,
+  SettingsRoute: SettingsRoute,
   StudioProjectIdRoute: StudioProjectIdRoute,
   StudioIndexRoute: StudioIndexRoute,
 }

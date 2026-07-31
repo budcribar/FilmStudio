@@ -17,7 +17,7 @@ import {
   listMyProjects,
   saveMyProject,
 } from "./server/api";
-import { runMockVoicePipeline } from "./providers/voice-clone";
+import { runVoicePipeline } from "./providers/voice-clone";
 import type { FilmProject, ProjectStage, WizardStep } from "./types";
 import { resumeStage } from "./types";
 import {
@@ -93,7 +93,6 @@ function buildEstimate(project: FilmProject) {
   });
 }
 
-/** Strip transient client-only fields before server save */
 function forServer(p: FilmProject): FilmProject {
   return {
     ...p,
@@ -222,7 +221,7 @@ function castLine(project: FilmProject) {
 function voiceLine(project: FilmProject) {
   const n = voiceRolesCount(project.voice);
   if (n === 0) return "Mixing stock voices…";
-  return `Client VO · cloning ${n} voice${n === 1 ? "" : "s"} + mock MP3…`;
+  return `VO · cloning ${n} voice${n === 1 ? "" : "s"} (Settings provider)…`;
 }
 
 async function prepareVoiceClones(project: FilmProject) {
@@ -244,7 +243,7 @@ async function prepareVoiceClones(project: FilmProject) {
     });
   }
 
-  const result = await runMockVoicePipeline({
+  const result = await runVoicePipeline({
     samples,
     lines,
     projectId: project.id,
@@ -277,7 +276,7 @@ async function prepareVoiceClones(project: FilmProject) {
       ...project.voice,
       samples: nextSamples,
       stitchedVoMediaId: result.stitched?.mediaId,
-      modelId: project.voice.modelId ?? "mock-instant-clone",
+      modelId: project.voice.modelId ?? "from-settings",
     },
   };
   useProjects.setState((s) => ({
@@ -470,7 +469,7 @@ export const useProjects = create<Store>((set, get) => ({
         lineMediaId: undefined,
       })),
       stitchedVoMediaId: undefined,
-      modelId: project.voice.modelId ?? "mock-instant-clone",
+      modelId: project.voice.modelId ?? "from-settings",
     };
     get().updateProject(id, {
       voice,

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Voice model catalog. Live ElevenLabs (and peers) plug in via providerId + apiModelId. Binary samples and TTS outputs live in client media storage (IndexedDB), never in this JSON.",
+  "description": "Voice model catalog. Add providers here; Settings UI and server prefs pick among them. API keys live in ptm_secrets / env — never in this file.",
   "defaults": {
     "cloneProvider": "mock",
     "sampleMinSec": 2,
@@ -14,7 +14,7 @@
       "id": "mock-instant-clone",
       "providerId": "mock",
       "displayName": "Mock Instant Clone",
-      "description": "Returns a tiny synthetic MP3 stored on the client. Use for pipeline testing without API keys or server cost.",
+      "description": "Synthetic MP3 on the client — no API key. Always available for demos.",
       "kind": "instant_clone",
       "apiModelId": null,
       "requiresApiKey": false,
@@ -33,7 +33,7 @@
       "pricing": {
         "creditsBase": 5,
         "creditsPerRole": 4,
-        "notes": "Mirrors VOICE_ADDON_* demo credits until live billing."
+        "notes": "Mirrors VOICE_ADDON_* demo credits."
       },
       "enabled": true
     },
@@ -41,7 +41,7 @@
       "id": "elevenlabs-instant-ivc",
       "providerId": "elevenlabs",
       "displayName": "ElevenLabs Instant Voice Clone",
-      "description": "Placeholder for ElevenLabs IVC. Wire apiModelId / endpoints when keys are available. Still store returned audio on the client for FFmpeg stitch.",
+      "description": "Clone from a short sample, then TTS lines. Store key in Settings (or ELEVENLABS_API_KEY env). Audio returns to client media store for stitch.",
       "kind": "instant_clone",
       "apiModelId": "eleven_multilingual_v2",
       "cloneEndpoint": "https://api.elevenlabs.io/v1/voices/add",
@@ -65,7 +65,7 @@
         "creditsPerRole": 4,
         "notes": "Reconcile with ElevenLabs character pricing later."
       },
-      "enabled": false
+      "enabled": true
     }
   ]
 }

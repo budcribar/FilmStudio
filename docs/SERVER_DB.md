@@ -4,34 +4,35 @@
 
 | Data | Where |
 |------|--------|
-| **Projects, scenes, cast, voice metadata, locks, credits ledger** | **Server Postgres** (Neon / PGLite) |
-| **MP3 / MP4 / capture binaries** | **Client only** (`ptm-client-media` IndexedDB) |
-| Media references | Server columns `*_media_id` (string ids) |
+| **Projects, scenes, cast, voice metadata, locks** | **Server Postgres** |
+| **API keys + voice provider prefs** | **Server** `ptm_secrets`, `ptm_provider_prefs` |
+| **MP3 / MP4 / capture binaries** | **Client IndexedDB only** |
+| Media references | Server `*_media_id` columns |
 
-The client Zustand store is an **in-memory cache** that hydrates from / saves to the server. It does **not** persist projects in `localStorage`.
+## Migrations
 
-## Schema
+| File | Contents |
+|------|----------|
+| `0001_auth.sql` | Better Auth |
+| `0002_ptm_projects.sql` | Projects, scenes, cast, voice samples, locks, wallet tables |
+| `0003_ptm_settings.sql` | Secrets + provider prefs |
 
-- `migrations/0001_auth.sql` — Better Auth  
-- `migrations/0002_ptm_projects.sql` — domain tables  
+## Settings (keys + dynamic provider)
 
-## Locks
+| Piece | Path |
+|-------|------|
+| Repo | `src/lib/ptm/server/settings-repo.ts` |
+| Server fns | `src/lib/ptm/server/settings-api.ts` |
+| Voice proxy | `src/lib/ptm/server/voice-api.ts`, `elevenlabs.ts` |
+| Catalog | `src/data/models/voice-models.json` (add providers here) |
+| UI | `/settings` |
 
-### Content locks (`ptm_projects` booleans)
+**Resolve order for keys:** DB row for user → `process.env[KEY_NAME]` → none.  
+Client never receives raw secrets (masked only).
 
-`screenplay_locked`, `cast_locked`, `voice_locked`, `estimate_locked`, `picture_locked`, `generation_locked`
+**Runtime:** `resolveVoiceRuntime(userId)` → prefs + key → ElevenLabs or mock.
 
-### Edit session locks (`ptm_project_locks`)
+## Projects API
 
-Soft TTL leases per `lock_kind` for concurrent editors.
-
-## API
-
-`src/lib/ptm/server/api.ts` — `listMyProjects`, `getMyProject`, `saveMyProject`, `deleteMyProject`, lock acquire/release.  
-All use `authMiddleware` and scope by `context.userId`.
-
-## Client flow
-
-1. `AppShell` → `hydrateFromServer()`  
-2. Mutations optimistic → debounced `saveMyProject`  
-3. Generate flushes to server after voice mock pipeline updates media ids  
+`src/lib/ptm/server/api.ts` — list/get/save/delete + edit locks.  
+Auth: `ptmAuthMiddleware` (session, or `dev-user` on PGLite preview).

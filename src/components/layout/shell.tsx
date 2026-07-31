@@ -1,5 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Clapperboard, Film, FolderOpen, Home, Menu, X } from "lucide-react";
+import {
+  Clapperboard,
+  Film,
+  FolderOpen,
+  Home,
+  Menu,
+  Settings2,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { CreditsButton } from "@/components/credits-dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +19,7 @@ const nav = [
   { to: "/demo", label: "Demo", icon: Film },
   { to: "/projects", label: "Projects", icon: FolderOpen },
   { to: "/studio", label: "Studio", icon: Clapperboard },
+  { to: "/settings", label: "Settings", icon: Settings2 },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -116,7 +125,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-border/80 py-8 mt-auto">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-sm text-fg-subtle">
           <p className="font-display text-fg-muted">Page to Movie — AI Film Studio</p>
-          <p>Projects on server · media on your device.</p>
+          <p>Projects on server · media on device · keys in Settings.</p>
         </div>
       </footer>
     </div>

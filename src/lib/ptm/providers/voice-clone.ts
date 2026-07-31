@@ -1,27 +1,32 @@
 /**
- * Voice clone + line TTS providers.
+ * Voice clone + line TTS.
  *
- * Contract: binary I/O via client media store (MediaRef ids), not server disks.
- * Mock provider returns a synthetic MP3 into IndexedDB so client FFmpeg stitch
- * can treat it like any other local MP3.
+ * Provider is chosen from server prefs (Settings). Capture stays in client
+ * media store; live providers receive bytes via server fns and return MP3
+ * for client storage + stitch.
  */
 
 import type { VoiceCaptureAsset } from "../capture/audio-capture";
 import { stitchAudioClipsClient } from "../media/client-stitch";
 import {
   createObjectUrlSafe,
+  getMediaBlobSafe,
   putMediaBlobSafe,
   type MediaRef,
 } from "../media/client-media-store";
 import { buildMockMp3Blob } from "../media/mock-mp3";
 import { getDefaultVoiceModel, getVoiceModel } from "../models/voice-models";
+import {
+  cloneVoiceOnServer,
+  getVoiceRuntimeStatus,
+  speakLineOnServer,
+} from "../server/voice-api";
 import type { VoiceSample } from "../voice";
 
 export type VoiceCloneJob = {
   castMemberId: string;
   status: "queued" | "ready" | "failed" | "demo";
   modelId: string;
-  /** Client media id of cloned template or TTS line */
   outputMediaId?: string;
   providerVoiceId?: string;
   message?: string;
@@ -39,16 +44,14 @@ export type VoiceCloneProvider = {
   id: string;
   modelId: string;
   isLive: () => boolean;
-  /** Register/clone from capture asset already on the client */
   createClone: (
     sample: VoiceSample,
     opts?: { projectId?: string },
   ) => Promise<VoiceCloneJob>;
-  /** Synthesize a dialogue line as MP3 on the client store */
   speakLine: (
     sample: VoiceSample,
     text: string,
-    opts?: { projectId?: string; durationSec?: number },
+    opts?: { projectId?: string; durationSec?: number; providerVoiceId?: string },
   ) => Promise<SpeakLineResult>;
 };
 
@@ -60,7 +63,18 @@ function requireCapture(sample: VoiceSample): VoiceCaptureAsset {
   return asset;
 }
 
-/** Mock: “clone” acknowledges capture, then speakLine writes fake MP3. */
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+/** Local mock — always works without keys. */
 export const mockVoiceCloneProvider: VoiceCloneProvider = {
   id: "mock",
   modelId: "mock-instant-clone",
@@ -70,9 +84,7 @@ export const mockVoiceCloneProvider: VoiceCloneProvider = {
     const model = getVoiceModel("mock-instant-clone") ?? getDefaultVoiceModel();
     try {
       const asset = requireCapture(sample);
-      // Touch capture existence by requiring mediaId; mock does not re-upload.
-      await new Promise((r) => setTimeout(r, 180));
-      // Optional: write a short “preview timbre” mp3 next to the capture
+      await new Promise((r) => setTimeout(r, 120));
       const preview = buildMockMp3Blob(0.4);
       const media = await putMediaBlobSafe(preview, {
         fileName: `clone-preview-${sample.castMemberId}.mp3`,
@@ -102,7 +114,8 @@ export const mockVoiceCloneProvider: VoiceCloneProvider = {
 
   async speakLine(sample, text, opts) {
     requireCapture(sample);
-    const durationSec = opts?.durationSec ?? Math.min(4, Math.max(0.8, text.length * 0.045));
+    const durationSec =
+      opts?.durationSec ?? Math.min(4, Math.max(0.8, text.length * 0.045));
     const blob = buildMockMp3Blob(durationSec);
     const media = await putMediaBlobSafe(blob, {
       fileName: `line-${sample.castMemberId}-${Date.now()}.mp3`,
@@ -112,46 +125,133 @@ export const mockVoiceCloneProvider: VoiceCloneProvider = {
       projectId: opts?.projectId,
     });
     const objectUrl = (await createObjectUrlSafe(media.id))!;
-    return {
-      castMemberId: sample.castMemberId,
-      text,
-      media,
-      objectUrl,
-    };
+    return { castMemberId: sample.castMemberId, text, media, objectUrl };
   },
 };
 
 /**
- * ElevenLabs stub — uses model JSON; not live until API key + server proxy.
- * Still would write returned MP3 into client media store for local stitch.
+ * Live path: uses Settings prefs + server proxy (ElevenLabs today).
+ * Falls back to mock if no key or provider is mock.
  */
-export const elevenLabsStubProvider: VoiceCloneProvider = {
-  id: "elevenlabs",
-  modelId: "elevenlabs-instant-ivc",
-  isLive: () => false,
-  async createClone(sample) {
-    return {
-      castMemberId: sample.castMemberId,
-      status: "failed",
-      modelId: "elevenlabs-instant-ivc",
-      message: "ElevenLabs disabled — enable model + API key (see voice-models.json)",
-    };
+export const configuredVoiceCloneProvider: VoiceCloneProvider = {
+  id: "configured",
+  modelId: "from-settings",
+  isLive: () => true,
+
+  async createClone(sample, opts) {
+    const asset = requireCapture(sample);
+    try {
+      const status = await getVoiceRuntimeStatus();
+      if (!status.live) {
+        return mockVoiceCloneProvider.createClone(sample, opts);
+      }
+
+      const blob = await getMediaBlobSafe(asset.mediaId);
+      if (!blob) {
+        return {
+          castMemberId: sample.castMemberId,
+          status: "failed",
+          modelId: status.modelId,
+          message: "Capture missing from client media store",
+        };
+      }
+
+      const sampleBase64 = await blobToBase64(blob);
+      const res = await cloneVoiceOnServer({
+        data: {
+          castMemberId: sample.castMemberId,
+          displayName: sample.displayName,
+          sampleBase64,
+          mimeType: asset.mimeType || blob.type || "audio/webm",
+          fileName: asset.fileName,
+        },
+      });
+
+      if (res.status === "demo") {
+        return mockVoiceCloneProvider.createClone(sample, opts);
+      }
+
+      // Tiny local preview clip so UI still has an output media id
+      const preview = buildMockMp3Blob(0.3);
+      const media = await putMediaBlobSafe(preview, {
+        fileName: `clone-ack-${sample.castMemberId}.mp3`,
+        mimeType: "audio/mpeg",
+        role: "clone-preview",
+        projectId: opts?.projectId,
+      });
+
+      return {
+        castMemberId: sample.castMemberId,
+        status: res.status === "ready" ? "ready" : "failed",
+        modelId: res.modelId,
+        outputMediaId: media.id,
+        providerVoiceId: res.providerVoiceId,
+        message: res.message,
+        mimeType: "audio/mpeg",
+      };
+    } catch (e) {
+      return {
+        castMemberId: sample.castMemberId,
+        status: "failed",
+        modelId: "configured",
+        message: e instanceof Error ? e.message : "Clone failed",
+      };
+    }
   },
-  async speakLine() {
-    throw new Error("ElevenLabs not configured");
+
+  async speakLine(sample, text, opts) {
+    const asset = requireCapture(sample);
+    try {
+      const status = await getVoiceRuntimeStatus();
+      const voiceId = opts?.providerVoiceId;
+      if (!status.live || !voiceId || voiceId.startsWith("mock_")) {
+        return mockVoiceCloneProvider.speakLine(sample, text, opts);
+      }
+
+      const res = await speakLineOnServer({
+        data: {
+          castMemberId: sample.castMemberId,
+          providerVoiceId: voiceId,
+          text,
+        },
+      });
+
+      if (res.status !== "ready" || !res.audioBase64) {
+        return mockVoiceCloneProvider.speakLine(sample, text, opts);
+      }
+
+      const binary = atob(res.audioBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: res.mimeType || "audio/mpeg" });
+      const media = await putMediaBlobSafe(blob, {
+        fileName: `line-${sample.castMemberId}-${Date.now()}.mp3`,
+        mimeType: "audio/mpeg",
+        role: "tts-line",
+        projectId: opts?.projectId,
+      });
+      const objectUrl = (await createObjectUrlSafe(media.id))!;
+      return { castMemberId: sample.castMemberId, text, media, objectUrl };
+    } catch {
+      return mockVoiceCloneProvider.speakLine(sample, text, {
+        ...opts,
+        durationSec: opts?.durationSec,
+      });
+    }
   },
 };
 
-export function getVoiceCloneProvider(modelId?: string): VoiceCloneProvider {
-  const model = modelId ? getVoiceModel(modelId) : getDefaultVoiceModel();
-  if (model?.providerId === "elevenlabs" && model.enabled) {
-    return elevenLabsStubProvider;
-  }
-  return mockVoiceCloneProvider;
+export function getVoiceCloneProvider(_modelId?: string): VoiceCloneProvider {
+  // Runtime always goes through configured provider (reads Settings on server).
+  // Mock is used automatically when prefs say mock or key is missing.
+  return configuredVoiceCloneProvider;
 }
 
-/** Clone all consented samples, then speak first dialogue lines into client MP3s. */
-export async function runMockVoicePipeline(opts: {
+/** @deprecated use runVoicePipeline */
+export const runMockVoicePipeline = runVoicePipeline;
+
+/** Clone consented samples, speak lines, stitch on client. */
+export async function runVoicePipeline(opts: {
   samples: VoiceSample[];
   lines: { castMemberId: string; text: string }[];
   projectId?: string;
@@ -166,12 +266,21 @@ export async function runMockVoicePipeline(opts: {
     jobs.push(await provider.createClone(s, { projectId: opts.projectId }));
   }
 
+  const voiceByCast = new Map(
+    jobs
+      .filter((j) => j.providerVoiceId)
+      .map((j) => [j.castMemberId, j.providerVoiceId!]),
+  );
+
   const lineMedia: SpeakLineResult[] = [];
   for (const line of opts.lines) {
     const sample = opts.samples.find((s) => s.castMemberId === line.castMemberId);
     if (!sample) continue;
     lineMedia.push(
-      await provider.speakLine(sample, line.text, { projectId: opts.projectId }),
+      await provider.speakLine(sample, line.text, {
+        projectId: opts.projectId,
+        providerVoiceId: voiceByCast.get(line.castMemberId),
+      }),
     );
   }
 
