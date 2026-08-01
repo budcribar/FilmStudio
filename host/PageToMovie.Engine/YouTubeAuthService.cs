@@ -22,7 +22,7 @@ public sealed class YouTubeAuthService
     private readonly ProjectStore _projects;
     private readonly YouTubeOptions _opts;
     private readonly Lazy<GoogleAuthorizationCodeFlow?> _flow;
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTimeOffset> _pendingStates = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTimeOffset Expiry, string ReturnPath)> _pendingStates = new();
 
     public YouTubeAuthService(ProjectStore projects, IOptions<PageToMovieOptions> opts)
     {
@@ -61,11 +61,13 @@ public sealed class YouTubeAuthService
     }
 
     /// <summary>Builds the Google consent URL. <paramref name="state"/> round-trips through the callback.</summary>
-    public string BuildAuthorizationUrl(string state)
+    /// <param name="returnPath">Relative path after OAuth (e.g. /admin/demos or /review).</param>
+    public string BuildAuthorizationUrl(string state, string? returnPath = null)
     {
         var flow = _flow.Value ?? throw new InvalidOperationException(
             "YouTube OAuth is not configured — set PageToMovie:YouTube:ClientId/ClientSecret/RedirectUri.");
-        _pendingStates[state] = DateTimeOffset.UtcNow.Add(StateTtl);
+        var ret = NormalizeReturnPath(returnPath);
+        _pendingStates[state] = (DateTimeOffset.UtcNow.Add(StateTtl), ret);
         PruneExpiredStates();
         var request = (Google.Apis.Auth.OAuth2.Requests.GoogleAuthorizationCodeRequestUrl)
             flow.CreateAuthorizationCodeRequest(CleanRedirectUri);
@@ -76,20 +78,50 @@ public sealed class YouTubeAuthService
         return request.Build().ToString();
     }
 
-    public bool ConsumeState(string state)
+    /// <summary>Validates state and returns the post-OAuth path (default /review).</summary>
+    public bool TryConsumeState(string state, out string returnPath)
     {
+        returnPath = "/review";
         if (string.IsNullOrWhiteSpace(state)) return false;
-        if (_pendingStates.TryRemove(state, out var expiry))
-            return expiry >= DateTimeOffset.UtcNow;
+        if (_pendingStates.TryRemove(state, out var entry))
+        {
+            if (entry.Expiry < DateTimeOffset.UtcNow) return false;
+            returnPath = entry.ReturnPath;
+            return true;
+        }
         // Fallback: if in-memory dictionary was cleared (e.g. app restart), accept valid state token
-        return state.Length >= 16;
+        if (state.Length >= 16)
+        {
+            returnPath = "/review";
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Legacy; prefer <see cref="TryConsumeState"/>.</summary>
+    public bool ConsumeState(string state) => TryConsumeState(state, out _);
+
+    private static string NormalizeReturnPath(string? returnPath)
+    {
+        var p = (returnPath ?? "").Trim();
+        if (p.Length == 0) return "/review";
+        if (!p.StartsWith('/')) p = "/" + p;
+        // Only same-site relative paths
+        if (p.StartsWith("//", StringComparison.Ordinal) || p.Contains("://", StringComparison.Ordinal))
+            return "/review";
+        if (p.StartsWith("/admin", StringComparison.OrdinalIgnoreCase)
+            || p.StartsWith("/review", StringComparison.OrdinalIgnoreCase)
+            || p.StartsWith("/demo", StringComparison.OrdinalIgnoreCase)
+            || p == "/")
+            return p.Split('?', 2)[0];
+        return "/review";
     }
 
     private void PruneExpiredStates()
     {
         var now = DateTimeOffset.UtcNow;
         foreach (var kv in _pendingStates)
-            if (kv.Value < now)
+            if (kv.Value.Expiry < now)
                 _pendingStates.TryRemove(kv.Key, out _);
     }
 

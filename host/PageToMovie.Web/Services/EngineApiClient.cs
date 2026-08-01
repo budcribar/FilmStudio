@@ -744,8 +744,29 @@ public sealed class EngineApiClient
         return resp.IsSuccessStatusCode;
     }
 
-    /// <summary>Admin moderation list (any status).</summary>
+    /// <summary>Admin: put an existing YouTube video on the public gallery.</summary>
+    public async Task<(bool Ok, string? Message, string? Error)> RegisterDemoFromYouTubeAsync(
+        string youtubeIdOrUrl,
+        string title,
+        string? description = null,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/demos/from-youtube")
+        {
+            Content = JsonContent.Create(new
+            {
+                youtubeIdOrUrl,
+                title,
+                description,
+                projectId,
+            }, options: JsonOpts),
+        };
+        var dto = await SendJsonAsync<DemoFromYouTubeResult>(req, ct);
+        return (dto?.Ok == true, dto?.Message, dto?.Error);
+    }
 
+    /// <summary>Admin list (any status). YouTube is the public gallery gate.</summary>
     public async Task<DemoAdminListEnvelope?> ListAdminDemosAsync(
         string? status = null,
         int take = 100,
@@ -1710,9 +1731,13 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         await _http.GetFromJsonAsync<YouTubeStatusDto>("/api/youtube/status", JsonOpts, ct);
 
     /// <summary>Admin-only. Returns the Google consent URL to navigate the browser to.</summary>
-    public async Task<string> GetYouTubeConnectUrlAsync(CancellationToken ct = default)
+    /// <param name="returnTo">Where OAuth should land (e.g. /admin/demos).</param>
+    public async Task<string> GetYouTubeConnectUrlAsync(string? returnTo = null, CancellationToken ct = default)
     {
-        using var resp = await _http.GetAsync("/api/youtube/connect-url", ct);
+        var path = "/api/youtube/connect-url";
+        if (!string.IsNullOrWhiteSpace(returnTo))
+            path += "?returnTo=" + Uri.EscapeDataString(returnTo.Trim());
+        using var resp = await _http.GetAsync(path, ct);
         var body = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
@@ -3448,6 +3473,13 @@ public sealed class YouTubeStatusDto
     public bool Ok { get; set; }
     public bool Configured { get; set; }
     public bool Connected { get; set; }
+}
+
+public sealed class DemoFromYouTubeResult
+{
+    public bool Ok { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
 }
 
 public sealed class YouTubeConnectUrlDto

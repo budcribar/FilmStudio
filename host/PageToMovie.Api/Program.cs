@@ -1885,7 +1885,7 @@ app.MapGet("/api/youtube/status", async (YouTubeAuthService youTube, Cancellatio
     return Results.Ok(new { ok = true, configured = youTube.IsConfigured, connected });
 });
 
-app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService youTube) =>
+app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService youTube, string? returnTo) =>
 {
     if (!user.IsAdmin)
         return Results.Json(new { ok = false, error = "admin role required" },
@@ -1897,7 +1897,7 @@ app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService yo
             error = "YouTube OAuth is not configured (PageToMovie:YouTube:ClientId/ClientSecret/RedirectUri).",
         }, statusCode: StatusCodes.Status409Conflict);
     var state = Guid.NewGuid().ToString("N");
-    return Results.Ok(new { ok = true, url = youTube.BuildAuthorizationUrl(state) });
+    return Results.Ok(new { ok = true, url = youTube.BuildAuthorizationUrl(state, returnTo) });
 });
 
 async Task ProcessYouTubeOAuthCallbackAsync(HttpContext http, YouTubeAuthService youTube, CancellationToken ct)
@@ -1927,32 +1927,35 @@ async Task ProcessYouTubeOAuthCallbackAsync(HttpContext http, YouTubeAuthService
             error = Uri.UnescapeDataString(mErr.Groups[1].Value);
     }
 
+    var returnPath = "/review";
+    var stateOk = !string.IsNullOrWhiteSpace(state) && youTube.TryConsumeState(state!, out returnPath);
+
     if (!string.IsNullOrWhiteSpace(error))
     {
-        http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(error)}");
+        http.Response.Redirect($"{returnPath}?youtube=error&message={Uri.EscapeDataString(error)}");
         return;
     }
 
     if (string.IsNullOrWhiteSpace(code))
     {
-        http.Response.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Missing authorization code from Google."));
+        http.Response.Redirect(returnPath + "?youtube=error&message=" + Uri.EscapeDataString("Missing authorization code from Google."));
         return;
     }
 
-    if (string.IsNullOrWhiteSpace(state) || !youTube.ConsumeState(state))
+    if (!stateOk)
     {
-        http.Response.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Invalid or expired request."));
+        http.Response.Redirect(returnPath + "?youtube=error&message=" + Uri.EscapeDataString("Invalid or expired request."));
         return;
     }
 
     try
     {
         await youTube.ExchangeCodeAsync(code, ct);
-        http.Response.Redirect("/review?youtube=connected");
+        http.Response.Redirect($"{returnPath}?youtube=connected");
     }
     catch (Exception ex)
     {
-        http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
+        http.Response.Redirect($"{returnPath}?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
     }
 }
 
@@ -5542,6 +5545,44 @@ app.MapGet("/api/admin/demos", (
         demos = list.Select(DemoAdminDto),
         pendingCount = demos.List(200, DemoCatalogService.DemoStatuses.Pending).Count,
     });
+
+/// <summary>
+/// Admin: register an existing YouTube video on the public gallery (no local MP4 upload).
+/// Body: { youtubeIdOrUrl, title, description?, projectId? }
+/// </summary>
+app.MapPost("/api/admin/demos/from-youtube", (
+    DemoCatalogService demos,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    RegisterYouTubeDemoRequest? body) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "Admin only" }, statusCode: StatusCodes.Status403Forbidden);
+    if (body is null || string.IsNullOrWhiteSpace(body.YoutubeIdOrUrl) || string.IsNullOrWhiteSpace(body.Title))
+        return Results.BadRequest(new { ok = false, error = "youtubeIdOrUrl and title are required" });
+    try
+    {
+        var entry = demos.RegisterFromYouTube(
+            body.YoutubeIdOrUrl,
+            body.Title,
+            body.Description,
+            createdBy: user.UserId,
+            projectId: body.ProjectId);
+        return Results.Ok(new
+        {
+            ok = true,
+            message = $"“{entry.Title}” is on the public gallery (YouTube).",
+            demo = DemoAdminDto(entry),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 });
 
 /// <summary>Public metadata for a public demo; owner/admin can see pending.</summary>
@@ -6555,6 +6596,7 @@ namespace PageToMovie.Api
     public record ProjectVisibilityRequest(string VisibilityMode);
     public record SetBookRefsRequest(List<string>? ImagePaths);
     public record MovieReviewRequest(List<MovieAutoReviewKeyframe>? Keyframes);
+    public record RegisterYouTubeDemoRequest(string? YoutubeIdOrUrl, string? Title, string? Description, string? ProjectId);
 
     public sealed class TestEmailRequest
     {
