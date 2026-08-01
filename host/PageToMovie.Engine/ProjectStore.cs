@@ -3242,48 +3242,106 @@ public sealed class ProjectStore
 
     public void UpdateCharacterSeedPlaceholder(string projectId, string charKey, string refFileName)
     {
-        var bpPath = FindBlueprintPathSync(projectId);
-        if (bpPath is null || !File.Exists(bpPath))
-            return;
+        // Prefer explicit name when provided (e.g. clear on delete); else canonical lock name.
+        var placeholder = string.IsNullOrWhiteSpace(refFileName)
+            ? ""
+            : CharacterRefFileName(charKey);
+
+        // cast_seeds.json is the primary seed source for ListCharacters — update it first.
+        try
+        {
+            var castPath = Path.Combine(GetProjectDir(projectId), "source", ScreenplayService.CastSeedsFileName);
+            if (File.Exists(castPath))
+                PatchCharacterSeedPlaceholderInJsonFile(castPath, charKey, placeholder);
+        }
+        catch { /* non-fatal */ }
 
         try
         {
-            using var doc = JsonDocument.Parse(File.ReadAllText(bpPath));
-            var root = doc.RootElement.Clone();
-            // Rebuild via mutable dictionary tree
-            var tree = root.Deserialize<Dictionary<string, object?>>()
-                       ?? new Dictionary<string, object?>();
-            if (!tree.TryGetValue("global_production_variables", out var gpvObj) || gpvObj is null)
-                return;
+            var scenesPath = Path.Combine(GetProjectDir(projectId), "scenes.json");
+            if (File.Exists(scenesPath))
+                PatchCharacterSeedPlaceholderInJsonFile(scenesPath, charKey, placeholder);
+        }
+        catch { /* non-fatal */ }
 
+        var bpPath = FindBlueprintPathSync(projectId);
+        if (bpPath is not null && File.Exists(bpPath))
+        {
+            try
+            {
+                PatchCharacterSeedPlaceholderInJsonFile(bpPath, charKey, placeholder);
+                InvalidateSceneListCache(projectId);
+            }
+            catch
+            {
+                // Non-fatal: lock file still written
+            }
+        }
+
+        InvalidateReadCaches(projectId);
+    }
+
+    /// <summary>
+    /// Set <c>reference_image_placeholder</c> on a character seed inside cast_seeds / scenes / blueprint JSON.
+    /// </summary>
+    private static void PatchCharacterSeedPlaceholderInJsonFile(
+        string path, string charKey, string placeholder)
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        var tree = doc.RootElement.Deserialize<Dictionary<string, object?>>()
+                   ?? new Dictionary<string, object?>();
+
+        Dictionary<string, object?>? seeds = null;
+        Action? commit = null;
+
+        if (tree.TryGetValue("character_seed_tokens", out var direct) && direct is not null)
+        {
+            var seedsJson = JsonSerializer.Serialize(direct);
+            seeds = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedsJson)
+                    ?? new Dictionary<string, object?>();
+            commit = () => tree["character_seed_tokens"] = seeds;
+        }
+        else if (tree.TryGetValue("global_production_variables", out var gpvObj) && gpvObj is not null)
+        {
             var gpvJson = JsonSerializer.Serialize(gpvObj);
             var gpv = JsonSerializer.Deserialize<Dictionary<string, object?>>(gpvJson)
                       ?? new Dictionary<string, object?>();
             if (!gpv.TryGetValue("character_seed_tokens", out var seedsObj) || seedsObj is null)
                 return;
-
             var seedsJson = JsonSerializer.Serialize(seedsObj);
-            var seeds = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedsJson)
-                        ?? new Dictionary<string, object?>();
-            if (!seeds.TryGetValue(charKey, out var seedObj) || seedObj is null)
-                return;
-
-            var seedJson = JsonSerializer.Serialize(seedObj);
-            var seed = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedJson)
-                       ?? new Dictionary<string, object?>();
-            seed["reference_image_placeholder"] = CharacterRefFileName(charKey);
-            seeds[charKey] = seed;
-            gpv["character_seed_tokens"] = seeds;
-            tree["global_production_variables"] = gpv;
-
-            var outJson = JsonSerializer.Serialize(tree, JsonDefaults.Indented);
-            File.WriteAllText(bpPath, outJson + "\n");
-            InvalidateSceneListCache(projectId);
+            seeds = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedsJson)
+                    ?? new Dictionary<string, object?>();
+            commit = () =>
+            {
+                gpv["character_seed_tokens"] = seeds;
+                tree["global_production_variables"] = gpv;
+            };
         }
-        catch
+        else
+            return;
+
+        // Case-insensitive key match (Character_Narrator vs character_narrator)
+        string? matchKey = null;
+        foreach (var k in seeds!.Keys)
         {
-            // Non-fatal: lock file still written
+            if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase))
+            {
+                matchKey = k;
+                break;
+            }
         }
+        if (matchKey is null)
+            return;
+
+        var seedJson = JsonSerializer.Serialize(seeds[matchKey]);
+        var seed = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedJson)
+                   ?? new Dictionary<string, object?>();
+        seed["reference_image_placeholder"] = placeholder;
+        seeds[matchKey] = seed;
+        commit!();
+
+        var outJson = JsonSerializer.Serialize(tree, JsonDefaults.Indented);
+        File.WriteAllText(path, outJson + "\n");
     }
 
     /// <summary>Resolve pipeline_state.json path (honors project.json state_file).</summary>

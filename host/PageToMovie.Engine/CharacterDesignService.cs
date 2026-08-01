@@ -5,6 +5,8 @@ using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using SkiaSharp;
+
 namespace PageToMovie.Engine;
 
 /// <summary>
@@ -557,8 +559,8 @@ public sealed class CharacterDesignService
         var dest = Path.Combine(projectDir, "assets", "characters", refName);
         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
 
-        // Copy (convert jpg→png name still just copies bytes if formats differ — OK for video ref)
-        File.Copy(sourcePath, dest, overwrite: true);
+        // Always store real PNG bytes under *_ref.png (JPEG/WebP uploaded as .png break browsers).
+        WritePortraitPng(sourcePath, dest);
 
         FinalizeLock(projectId, charKey, dest, $"Locked reference from {Path.GetFileName(sourcePath)}");
         return dest;
@@ -602,7 +604,7 @@ public sealed class CharacterDesignService
 
             var refName = ProjectStore.CharacterRefFileName(charKey);
             var dest = Path.Combine(charDir, refName);
-            File.Copy(staging, dest, overwrite: true);
+            WritePortraitPng(staging, dest);
 
             var label = string.IsNullOrWhiteSpace(originalFileName)
                 ? "operator upload"
@@ -886,7 +888,49 @@ public sealed class CharacterDesignService
         // for the next regenerate (preferred lock is a separate *_ref.png copy).
         _projects.UpdateCharacterSeedPlaceholder(projectId, charKey, ProjectStore.CharacterRefFileName(charKey));
         _projects.MarkCharacterChanged(projectId, charKey, changeNote);
-        _ = destPath;
+        _projects.InvalidateReadCaches(projectId);
+        if (!File.Exists(destPath) || new FileInfo(destPath).Length < 64)
+            throw new InvalidOperationException(
+                $"Locked look was not saved for {charKey}. Try uploading again.");
+    }
+
+    /// <summary>
+    /// Decode any common photo format and write a real PNG to the canonical *_ref.png path.
+    /// Storing JPEG bytes under a .png name makes locks "disappear" in the browser after reload.
+    /// </summary>
+    internal static void WritePortraitPng(string sourcePath, string destPngPath)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+            throw new InvalidOperationException("Portrait image file is missing.");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(destPngPath)!);
+
+        using var bitmap = SKBitmap.Decode(sourcePath);
+        if (bitmap is null)
+        {
+            // Last resort: raw copy (may already be PNG)
+            File.Copy(sourcePath, destPngPath, overwrite: true);
+            if (new FileInfo(destPngPath).Length < 64)
+                throw new InvalidOperationException("Could not decode uploaded portrait image.");
+            return;
+        }
+
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 90);
+        if (data is null || data.Size < 64)
+            throw new InvalidOperationException("Could not encode portrait as PNG.");
+
+        var tmp = destPngPath + ".tmp";
+        try
+        {
+            using (var fs = File.Create(tmp))
+                data.SaveTo(fs);
+            File.Move(tmp, destPngPath, overwrite: true);
+        }
+        finally
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { /* */ }
+        }
     }
 
     /// <summary>
