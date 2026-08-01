@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 namespace PageToMovie.Api.Auth;
 
 /// <summary>
-/// Shared 401/403 checks for project mutation, API-key settings, and OCR/import.
+/// Shared 401/403 checks for project mutation, API-key settings, and import/gen.
 /// </summary>
 public static class AuthGate
 {
@@ -29,50 +29,106 @@ public static class AuthGate
     }
 
     /// <summary>
-    /// Login + personal xAI/Grok key in the user DB (not merely server env).
-    /// OCR / book import must use the signed-in user's key.
+    /// Login + a usable studio AI key for chat/planning (Grok, OpenAI, Anthropic, Gemini).
+    /// Accepts personal DB keys <em>or</em> process env / mapped keys via <see cref="IUserApiKeyProvider"/>.
+    /// Plain .txt import does not need OCR; screenplay still needs a chat key.
     /// </summary>
     public static async Task<IResult?> RequirePersonalGrokKeyAsync(
         IUserContext user,
         UserDatabaseService userDb,
         IOptions<PageToMovieOptions> opts,
-        bool useFakes = false)
+        bool useFakes = false,
+        IUserApiKeyProvider? keys = null,
+        bool requireVisionKey = false)
     {
         var login = RequireLogin(user, opts);
         if (login is not null)
             return login;
 
-        // Fakes mode (tests/loadsim) does not need a real xAI key.
         if (useFakes || opts.Value.UseFakes)
             return null;
 
-        string? personal = null;
-        try
+        // Ambient scope (request middleware already loaded this user).
+        if (!requireVisionKey)
         {
-            personal = await userDb.GetDecryptedXaiApiKeyAsync(user.UserId).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(ApiKeyScope.Current)
+                || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentGemini)
+                || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentAnthropic)
+                || !string.IsNullOrWhiteSpace(ApiKeyScope.Get("openai")))
+                return null;
         }
-        catch
+        else if (!string.IsNullOrWhiteSpace(ApiKeyScope.Current))
         {
-            personal = null;
+            return null;
         }
 
-        if (!string.IsNullOrWhiteSpace(personal))
-            return null;
+        // Personal DB + env fallbacks via key provider.
+        if (keys is not null)
+        {
+            if (requireVisionKey)
+            {
+                if (keys.HasKey(user.UserId, "grok") || keys.HasKey(null, "grok"))
+                    return null;
+            }
+            else
+            {
+                foreach (var p in new[] { "grok", "openai", "anthropic", "gemini" })
+                {
+                    if (keys.HasKey(user.UserId, p) || keys.HasKey(null, p))
+                        return null;
+                }
+            }
+        }
+        else
+        {
+            // Back-compat path when provider not injected: personal grok only, then env.
+            try
+            {
+                var personal = await userDb.GetDecryptedXaiApiKeyAsync(user.UserId).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(personal))
+                    return null;
+            }
+            catch { /* fall through */ }
+
+            if (!requireVisionKey)
+            {
+                foreach (var p in new[] { "openai", "anthropic", "gemini" })
+                {
+                    try
+                    {
+                        var k = await userDb.GetDecryptedProviderApiKeyAsync(user.UserId, p).ConfigureAwait(false);
+                        if (!string.IsNullOrWhiteSpace(k))
+                            return null;
+                    }
+                    catch { /* next */ }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")))
+                return null;
+            if (!requireVisionKey &&
+                (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OPENAI_API_KEY"))
+                 || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"))
+                 || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))))
+                return null;
+        }
+
+        var error = requireVisionKey
+            ? "A Grok (xAI) key is needed for PDF vision OCR. Save one in Settings or set XAI_API_KEY on the server."
+            : "No AI key available for writing the screenplay. Save a personal key in Settings (Grok, OpenAI, …) or set a server env key. Plain .txt upload does not need OCR.";
 
         return Results.Json(
             new
             {
                 ok = false,
-                error =
-                    "Save your personal xAI / Grok API key in Configuration before book OCR or import. " +
-                    "Server env keys alone are not enough for this action.",
+                error,
                 code = "personal_key_required",
             },
             statusCode: StatusCodes.Status403Forbidden);
     }
 
     /// <summary>
-    /// 403 unless the signed-in user has accepted the Terms &amp; IP Licensing Agreement
+    /// 403 unless the signed-in user has accepted the Terms & IP Licensing Agreement
     /// (<c>terms_accepted_at</c>). Composes with <see cref="RequireLogin"/> — a caller only needs
     /// this one check on gated endpoints (project create, gen, publish).
     /// Skips entirely when <see cref="AuthOptions.RequireLogin"/> is false (tests / LoadSim), and

@@ -1,5 +1,7 @@
 @page "/cost"
 @inject EngineApiClient Engine
+@inject ActiveProjectState ActiveProject
+@inject NavigationManager Nav
 @using PageToMovie.Core.Models
 
 <PageTitle>Estimate & cost</PageTitle>
@@ -13,6 +15,19 @@
 </div>
 
 <StudioProcessStrip Active="estimate" />
+
+@if (!ActiveProject.CanEstimate)
+{
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <strong>Estimate locked.</strong>
+            @ActiveProject.EstimateBlockedReason
+        </div>
+        <a class="btn btn-sm btn-warning fw-semibold" href="adaptation">Go to Book →</a>
+    </div>
+}
+else
+{
 <p class="text-muted">
     <strong>Actual</strong> = tracked spend at vendor list rates for the models used.
     <strong>Estimates</strong> = catalog rates for the project’s selected video/image models × plan size.
@@ -393,6 +408,8 @@ else
             @_report.Notes
         </div>
     </div>
+}
+
 }
 
 @code {

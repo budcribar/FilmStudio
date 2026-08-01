@@ -116,7 +116,7 @@ else
                     </div>
                 </div>
 
-                <StudioProcessStrip Active="book" />
+                <StudioProcessStrip Active="@HomeActiveStep" />
             }
             else
             {
@@ -324,6 +324,19 @@ else
 <ProjectCollaboratorsModal IsOpen="_showCollaboratorsModal" ProjectId="_collaboratorsProjectId" OnClose="CloseCollaboratorsModal" />
 
 @code {
+    /// <summary>Only the real current step is highlighted.</summary>
+    private string HomeActiveStep
+    {
+        get
+        {
+            if (!ActiveProject.HasProject) return "book";
+            if (!ActiveProject.CanCharacters) return "book";
+            if (!ActiveProject.CanEstimate) return "cast";
+            if (!ActiveProject.CanScenes) return "estimate";
+            return "film";
+        }
+    }
+
     private bool? _healthOk;
     private bool _busy;
     private string? _error;

@@ -3982,10 +3982,15 @@ app.MapPost("/api/jobs/book-prepare", async (
     FilmJobService jobService,
     IUserContext user,
     UserDatabaseService userDb,
+    IUserApiKeyProvider keys,
     IOptions<PageToMovieOptions> opts) =>
 {
-    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
-        return denied;
+    // PDF extract / plain text needs no AI key. Vision OCR only if requested or auto-selected later.
+    if (AuthGate.RequireLogin(user, opts) is { } deniedLogin)
+        return deniedLogin;
+    if (body.ForceVision &&
+        await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes, keys, requireVisionKey: true) is { } deniedVision)
+        return deniedVision;
     try
     {
         if (string.IsNullOrWhiteSpace(body.ProjectId))
@@ -4010,9 +4015,10 @@ app.MapPost("/api/jobs/book-import", async (
     FilmJobService jobService,
     IUserContext user,
     UserDatabaseService userDb,
+    IUserApiKeyProvider keys,
     IOptions<PageToMovieOptions> opts) =>
 {
-    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
+    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes, keys) is { } denied)
         return denied;
     try
     {
@@ -4292,10 +4298,11 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     PageToMovie.Engine.Abstractions.IChatClient chat,
     IUserContext user,
     UserDatabaseService userDb,
+    IUserApiKeyProvider keys,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
-    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
+    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes, keys) is { } denied)
         return denied;
     try
     {

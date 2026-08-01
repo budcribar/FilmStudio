@@ -15,16 +15,19 @@
     <a class="ptm-step @(Active == "cast" ? "is-active" : "") @(!ActiveProject.CanCharacters && Active != "cast" ? "is-disabled" : "")"
        href="@(ActiveProject.CanCharacters || Active == "cast" ? "characters" : "javascript:void(0)")"
        title="@(ActiveProject.CanCharacters ? "Cast looks and optional voice clone" : ActiveProject.CharactersBlockedReason)"
-       data-testid="studio-step-cast">
+       data-testid="studio-step-cast"
+       @onclick:preventDefault="@(!ActiveProject.CanCharacters && Active != "cast")">
         <span class="ptm-step__num">2</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Cast & voice</span>
             <span class="ptm-step__hint">Photos · clone sample</span>
         </span>
     </a>
-    <a class="ptm-step @(Active == "estimate" ? "is-active" : "")"
-       href="cost"
-       data-testid="studio-step-estimate">
+    <a class="ptm-step @(Active == "estimate" ? "is-active" : "") @(!ActiveProject.CanEstimate && Active != "estimate" ? "is-disabled" : "")"
+       href="@(ActiveProject.CanEstimate || Active == "estimate" ? "cost" : "javascript:void(0)")"
+       title="@(ActiveProject.CanEstimate ? "Quote before generate" : ActiveProject.EstimateBlockedReason)"
+       data-testid="studio-step-estimate"
+       @onclick:preventDefault="@(!ActiveProject.CanEstimate && Active != "estimate")">
         <span class="ptm-step__num">3</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Estimate</span>
@@ -34,7 +37,8 @@
     <a class="ptm-step @(Active == "film" ? "is-active" : "") @(!ActiveProject.CanScenes && Active != "film" ? "is-disabled" : "")"
        href="@(ActiveProject.CanScenes || Active == "film" ? "scenes" : "javascript:void(0)")"
        title="@(ActiveProject.CanScenes ? "Generate clips" : ActiveProject.ScenesBlockedReason)"
-       data-testid="studio-step-film">
+       data-testid="studio-step-film"
+       @onclick:preventDefault="@(!ActiveProject.CanScenes && Active != "film")">
         <span class="ptm-step__num">4</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Film</span>
@@ -44,7 +48,8 @@
     <a class="ptm-step @(Active == "review" ? "is-active" : "") @(!ActiveProject.CanReview && Active != "review" ? "is-disabled" : "")"
        href="@(ActiveProject.CanReview || Active == "review" ? "review" : "javascript:void(0)")"
        title="@(ActiveProject.CanReview ? "Approve and publish" : ActiveProject.ReviewBlockedReason)"
-       data-testid="studio-step-review">
+       data-testid="studio-step-review"
+       @onclick:preventDefault="@(!ActiveProject.CanReview && Active != "review")">
         <span class="ptm-step__num">5</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Review</span>
