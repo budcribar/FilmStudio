@@ -1587,3 +1587,24 @@ h1:focus {
 .ptm-page-head .ptm-adapt-lede {
     margin-bottom: 0.5rem;
 }
+
+/* Studio process strip (5 steps) */
+.ptm-step-strip--studio {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+    .ptm-step-strip--studio {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+@media (max-width: 640px) {
+    .ptm-step-strip--studio {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+.ptm-voice-clone {
+    border: 1px solid var(--fs-border-color);
+    border-radius: 12px;
+    padding: 0.75rem 0.85rem;
+    background: var(--fs-overlay-soft);
+}

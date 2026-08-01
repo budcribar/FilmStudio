@@ -1,102 +1,42 @@
-# Prototype look-feel branch
+# Prototype look-feel + process / voice branch
 
 **Branch:** `feature/prototype-look-feel` (from `master`)  
-**Status:** Integrated look-and-feel pass complete — ready to check out in VS.
+**Status:** Look-feel + studio process strip + voice-clone sample capture.
 
-## What this is
-
-A **UI look-and-feel + product-language** port of the Grok sandbox prototype onto the **real Blazor PageToMovie app**. Engine/Api behavior is unchanged.
-
-## Product path (everywhere in chrome)
+## Product path
 
 ```
 Book → Cast & voice → Estimate → Film → Review
 ```
 
-| Step | Route | Notes |
-|------|-------|--------|
-| Book | `/adaptation` → import / screenplay / shots | Hub uses `SuggestedStepPath` |
-| Cast & voice | `/characters` | Looks required; voice optional add-on |
-| Estimate | `/cost` | Quote / actuals before full spend |
-| Film | `/scenes` | Clips + client stitch |
-| Review | `/review` | Edit / publish afterward |
-| Settings | `/configuration` | Keys, models, media folder |
-| Demo | `/demo` | Public gallery |
+Shared UI: `StudioProcessStrip` on Cast, Estimate, Film, Review.
 
-## What shipped (all passes)
+## Voice cloning (this increment)
 
-### Theme & shell
-- Cinema steel CSS tokens (`app.css`)
-- Sidebar gradient + active accent
-- Nav: **Home · Demo · Settings** + Book / Cast / Film / Review / Estimate
+| Piece | Behavior |
+|-------|----------|
+| **Style text** | Existing `voice_profile` / `voice_label` + film voice preview job |
+| **Clone sample** | Optional mic record or audio upload |
+| **Storage** | `assets/characters/{key}/voice_clone_sample.*` + seed field `voice_clone_sample` |
+| **API** | `POST/GET/DELETE …/characters/{key}/voice/clone-sample` |
+| **UI** | Cast → Voice panel → “Voice clone sample” |
+| **Not yet** | Live ElevenLabs (or other) TTS clone provider — sample is the template on disk |
 
-### Home
-- Cinema hero + north-star lede
-- Path step cards (Book → Cast → Voice → Estimate·film)
-- Active project tiles: Book · Cast & voice · **Estimate** · Film · Review
+Mic: `wwwroot/js/pagetomovie-voice-capture.js` (`PageToMovieVoiceCapture`).
 
-### Adaptation
-- Numbered step strip: Book → Screenplay → Cast & voice → Shot plan
-- Unlock rules **unchanged**
-- Import drop-in copy; hub wait message
-
-### Studio pages
-- Cast & voice header + optional voice badge
-- Film (Scenes) / Review / Estimate page heads
-- Login subtitles aligned to studio story
-
-## Files (primary)
-
-```
-host/PageToMovie.Web/wwwroot/app.css
-host/PageToMovie.Web/Components/Layout/MainLayout.razor.css
-host/PageToMovie.Web/Components/Layout/NavMenu.razor
-host/PageToMovie.Web/Components/Layout/NavMenu.razor.css
-host/PageToMovie.Web/Components/Pages/Home.razor
-host/PageToMovie.Web/Components/Pages/AdaptationShell.razor
-host/PageToMovie.Web/Components/Pages/Adaptation.razor
-host/PageToMovie.Web/Components/Pages/AdaptationImport.razor
-host/PageToMovie.Web/Components/Pages/AdaptationScreenplay.razor
-host/PageToMovie.Web/Components/Pages/AdaptationShots.razor
-host/PageToMovie.Web/Components/Pages/Characters.razor
-host/PageToMovie.Web/Components/Pages/Scenes.razor
-host/PageToMovie.Web/Components/Pages/Review.razor
-host/PageToMovie.Web/Components/Pages/Cost.razor
-host/PageToMovie.Web/Components/Pages/Configuration.razor
-host/PageToMovie.Web/Components/Pages/Demo.razor
-host/PageToMovie.Web/Components/Pages/Login.razor
-docs/PROTOTYPE_LOOK_FEEL.md
-```
-
-## Not in this branch
-
-- Replacing Blazor with TanStack  
-- New Engine/API endpoints  
-- Changing `SuggestedStepPath` / job unlock rules  
-- Force-push to `master`  
-
-## Check out (VS)
+## Checkout
 
 ```bash
 git fetch origin
 git checkout feature/prototype-look-feel
-```
-
-```bash
 cd host
-export PageToMovie__WorkspaceRoot="$(cd .. && pwd)"
-# optional: export PageToMovie__UseFakes=true
 dotnet run --project PageToMovie.Api
 ```
 
-Open the UI (default often `http://127.0.0.1:5088` or set `ASPNETCORE_URLS=http://0.0.0.0:8080`).
+## Smoke
 
-## Smoke checklist
-
-1. Home hero + 5 workflow tiles  
-2. Nav labels (Settings, Book, Cast, Estimate…)  
-3. Adaptation strip numbered cards; locked steps still locked  
-4. Cast page voice “optional add-on”  
-5. Estimate / Film / Review page heads  
-6. Demo gallery hero  
-7. Existing jobs still run (no Engine changes)  
+1. Home 5-step tiles  
+2. Cast page: process strip + Voice → Record mic / Upload audio  
+3. Sample plays back; Remove sample works  
+4. Estimate / Film / Review show process strip  
+5. Existing voice preview (style text) still works  

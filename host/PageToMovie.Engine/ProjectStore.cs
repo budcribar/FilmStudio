@@ -1919,6 +1919,13 @@ public sealed class ProjectStore
                 VisualLock = info.TryGetProperty("visual_lock", out var v) ? v.GetString() ?? "" : "",
                 VoiceProfile = info.TryGetProperty("voice_profile", out var vp) ? vp.GetString() ?? "" : "",
                 VoiceLabel = info.TryGetProperty("voice_label", out var vlab) ? vlab.GetString() ?? "" : "",
+                HasVoiceCloneSample = File.Exists(GetVoiceCloneSamplePath(projectId, key)),
+                VoiceCloneFileName = File.Exists(GetVoiceCloneSamplePath(projectId, key))
+                    ? Path.GetFileName(GetVoiceCloneSamplePath(projectId, key))
+                    : null,
+                VoiceCloneUrl = File.Exists(GetVoiceCloneSamplePath(projectId, key))
+                    ? $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/voice/clone-sample"
+                    : null,
                 VoiceOnly = voiceOnly,
                 Locked = voiceOnly
                     ? !string.IsNullOrWhiteSpace(
@@ -2211,6 +2218,78 @@ public sealed class ProjectStore
         };
     }
 
+    /// <summary>Absolute path for optional voice-clone template audio (mic or upload).</summary>
+    public string GetVoiceCloneSamplePath(string projectId, string charKey)
+    {
+        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        foreach (var name in new[] { "voice_clone_sample.webm", "voice_clone_sample.mp3", "voice_clone_sample.wav", "voice_clone_sample.m4a", "voice_clone_sample.ogg" })
+        {
+            var p = Path.Combine(dir, name);
+            if (File.Exists(p)) return p;
+        }
+        return Path.Combine(dir, "voice_clone_sample.webm");
+    }
+
+    private static string SanitizeCharKey(string charKey)
+    {
+        var k = (charKey ?? "").Trim();
+        foreach (var c in Path.GetInvalidFileNameChars())
+            k = k.Replace(c, '_');
+        return string.IsNullOrEmpty(k) ? "character" : k;
+    }
+
+    /// <summary>
+    /// Save operator mic/upload audio as the voice-clone template for this character.
+    /// Ext from file name; max 15 MB. Updates cast_seeds voice_clone_sample filename.
+    /// </summary>
+    public async Task<string> SaveVoiceCloneSampleAsync(
+        string projectId,
+        string charKey,
+        Stream content,
+        string fileName,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            throw new InvalidOperationException("charKey required");
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        if (ext is not (".webm" or ".mp3" or ".wav" or ".m4a" or ".ogg" or ".aac" or ".mp4"))
+            throw new InvalidOperationException("Use audio: webm, mp3, wav, m4a, or ogg.");
+        if (ext == ".mp4") ext = ".webm"; // browser often labels wrong
+
+        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        Directory.CreateDirectory(dir);
+        // Clear previous sample extensions
+        foreach (var old in Directory.EnumerateFiles(dir, "voice_clone_sample.*"))
+        {
+            try { File.Delete(old); } catch { /* ignore */ }
+        }
+        var dest = Path.Combine(dir, "voice_clone_sample" + ext);
+        await using (var fs = File.Create(dest))
+            await content.CopyToAsync(fs, ct);
+
+        UpdateCharacterSeedText(
+            projectId,
+            charKey,
+            voiceCloneSample: Path.GetFileName(dest));
+        return dest;
+    }
+
+    public bool DeleteVoiceCloneSample(string projectId, string charKey)
+    {
+        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        var removed = false;
+        if (Directory.Exists(dir))
+        {
+            foreach (var f in Directory.EnumerateFiles(dir, "voice_clone_sample.*"))
+            {
+                try { File.Delete(f); removed = true; } catch { /* ignore */ }
+            }
+        }
+        if (removed)
+            UpdateCharacterSeedText(projectId, charKey, voiceCloneSample: "");
+        return removed;
+    }
+
     /// <summary>
     /// Update description / visual_lock / voice fields on character seeds in cast_seeds.json
     /// (and blueprint / scenes.json when present). Null args leave that field unchanged.
@@ -2221,7 +2300,8 @@ public sealed class ProjectStore
         string? description = null,
         string? visualLock = null,
         string? voiceProfile = null,
-        string? voiceLabel = null)
+        string? voiceLabel = null,
+        string? voiceCloneSample = null)
     {
         void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
         {
@@ -2251,6 +2331,13 @@ public sealed class ProjectStore
                 seed["voice_profile"] = voiceProfile.Trim();
             if (voiceLabel is not null)
                 seed["voice_label"] = voiceLabel.Trim();
+            if (voiceCloneSample is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceCloneSample))
+                    seed.Remove("voice_clone_sample");
+                else
+                    seed["voice_clone_sample"] = voiceCloneSample.Trim();
+            }
             seeds[foundKey] = seed;
         }
 

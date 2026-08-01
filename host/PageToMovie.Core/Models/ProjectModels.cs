@@ -228,6 +228,10 @@ public sealed class CharacterSummary
     public string VisualLock { get; set; } = "";
     public string VoiceProfile { get; set; } = "";
     public string VoiceLabel { get; set; } = "";
+    /// <summary>Operator uploaded/recorded audio used as a voice-clone template (future TTS providers).</summary>
+    public bool HasVoiceCloneSample { get; set; }
+    public string? VoiceCloneFileName { get; set; }
+    public string? VoiceCloneUrl { get; set; }
     public bool VoiceOnly { get; set; }
     public bool Locked { get; set; }
     public string? RefFileName { get; set; }

@@ -2753,6 +2753,63 @@ public sealed class EngineApiClient
         return url;
     }
 
+    /// <summary>Upload mic/file audio as voice-clone template for a character.</summary>
+    public async Task UploadVoiceCloneSampleAsync(
+        string projectId,
+        string charKey,
+        Stream content,
+        string fileName,
+        CancellationToken ct = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var streamContent = new StreamContent(content);
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            ext switch
+            {
+                ".mp3" => "audio/mpeg",
+                ".wav" => "audio/wav",
+                ".m4a" or ".aac" => "audio/mp4",
+                ".ogg" => "audio/ogg",
+                _ => "audio/webm",
+            });
+        form.Add(streamContent, "file", fileName);
+
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
+            form,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public string CharacterVoiceCloneSampleUrl(string projectId, string charKey, long cacheBust = 0)
+    {
+        var url = BrowserMediaPath(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample");
+        if (cacheBust > 0)
+            url += (url.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "t=" + cacheBust;
+        return url;
+    }
+
+    public async Task DeleteVoiceCloneSampleAsync(
+        string projectId,
+        string charKey,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.DeleteAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     /// <summary>
     /// Save look text; by default API runs AI scrub (literal + base look). Returns cleaned fields.
     /// </summary>

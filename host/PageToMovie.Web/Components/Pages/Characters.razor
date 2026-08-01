@@ -4,6 +4,7 @@
 @inject JobHubClient Hub
 @inject AdminSessionService Session
 @inject ActiveProjectState ActiveProject
+@inject IJSRuntime Js
 @using PageToMovie.Core.Models
 @using Microsoft.AspNetCore.Components.Forms
 
@@ -17,6 +18,8 @@
         clone / profile is an add-on path when you want a personal sample.
     </p>
 </div>
+
+<StudioProcessStrip Active="cast" />
 
 @if (_gateChecked && !ActiveProject.CanCharacters)
 {
@@ -757,6 +760,12 @@ else
     private string? _voicePreviewHint;
     private bool _voicePreviewStale;
     private long _voiceAudioBust;
+    private bool _voiceCloneBusy;
+    private bool _voiceRecRecording;
+    private string? _voiceCloneHint;
+    private string? _voiceCloneError;
+    private string? _voiceClonePlayUrl;
+    private long _voiceCloneBust;
 
     private int SelectedSeedCount => _seedOrder.Count;
 
@@ -850,6 +859,77 @@ else
             <video class="mt-2 w-100 rounded border" style="max-height: 240px; background: #000;"
                    controls autoplay playsinline src="@_voicePreviewUrl" @key="_voicePreviewUrl"></video>
         }
+
+        <hr class="my-3" />
+        <div class="ptm-voice-clone">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                <div>
+                    <strong class="small">Voice clone sample</strong>
+                    <span class="badge text-bg-secondary ms-1" style="font-size:0.65rem">optional add-on</span>
+                </div>
+                @if (_selected?.HasVoiceCloneSample == true)
+                {
+                    <span class="badge text-bg-success" style="font-size:0.65rem">Sample on file</span>
+                }
+            </div>
+            <p class="form-text mb-2">
+                Record with the mic or upload audio of the person speaking. Stored as a clone template
+                for personal TTS. Style text above still drives film voice previews today.
+            </p>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                @if (!_voiceRecRecording)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                            disabled="@(_busy || _voiceCloneBusy || VoiceJobRunning)"
+                            @onclick="StartVoiceCloneMicAsync"
+                            data-testid="voice-clone-mic-start">
+                        Record mic
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-danger"
+                            disabled="@_voiceCloneBusy"
+                            @onclick="StopVoiceCloneMicAsync"
+                            data-testid="voice-clone-mic-stop">
+                        Stop and save
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            disabled="@_voiceCloneBusy"
+                            @onclick="CancelVoiceCloneMicAsync">
+                        Cancel
+                    </button>
+                    <span class="small text-danger">Recording…</span>
+                }
+                <label class="btn btn-sm btn-outline-secondary mb-0">
+                    Upload audio
+                    <InputFile OnChange="OnVoiceCloneUploadAsync"
+                               accept="audio/*,.mp3,.wav,.webm,.m4a,.ogg"
+                               class="d-none"
+                               data-testid="voice-clone-upload" />
+                </label>
+                @if (_selected?.HasVoiceCloneSample == true)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            disabled="@(_busy || _voiceCloneBusy)"
+                            @onclick="DeleteVoiceCloneSampleAsync">
+                        Remove sample
+                    </button>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(_voiceCloneHint))
+            {
+                <div class="form-text">@_voiceCloneHint</div>
+            }
+            @if (!string.IsNullOrEmpty(_voiceCloneError))
+            {
+                <div class="alert alert-danger py-1 small mb-0">@_voiceCloneError</div>
+            }
+            @if (!string.IsNullOrEmpty(_voiceClonePlayUrl))
+            {
+                <audio class="mt-2 w-100" controls src="@_voiceClonePlayUrl" @key="_voiceClonePlayUrl"></audio>
+            }
+        </div>
     };
 
     private bool _extractingCast;
@@ -1217,6 +1297,9 @@ else
             _savedLookVisualLock = _editVisualLock;
             _editVoiceLabel = _selected.VoiceLabel ?? "";
             _editVoiceProfile = _selected.VoiceProfile ?? "";
+            RefreshVoiceClonePlayUrl();
+            _voiceCloneHint = null;
+            _voiceCloneError = null;
             _voicePreviewUrl = null;
             _voicePreviewError = null;
             _voicePreviewHint = null;
@@ -1836,6 +1919,146 @@ else
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+
+    private void RefreshVoiceClonePlayUrl()
+    {
+        if (_selected?.HasVoiceCloneSample == true && !string.IsNullOrEmpty(_projectId) && !string.IsNullOrEmpty(_selectedKey))
+        {
+            _voiceCloneBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _voiceClonePlayUrl = Engine.CharacterVoiceCloneSampleUrl(_projectId, _selectedKey, _voiceCloneBust);
+        }
+        else
+            _voiceClonePlayUrl = null;
+    }
+
+    private async Task StartVoiceCloneMicAsync()
+    {
+        _voiceCloneError = null;
+        _voiceCloneHint = null;
+        try
+        {
+            var result = await Js.InvokeAsync<VoiceCaptureStartResult>("PageToMovieVoiceCapture.start");
+            if (result is null || !result.Ok)
+            {
+                _voiceCloneError = "Could not access microphone.";
+                return;
+            }
+            _voiceRecRecording = true;
+            _voiceCloneHint = "Recording — speak naturally for 5–15 seconds, then Stop and save.";
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+            _voiceRecRecording = false;
+        }
+    }
+
+    private async Task StopVoiceCloneMicAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId) || string.IsNullOrEmpty(_selectedKey)) return;
+        _voiceCloneBusy = true;
+        _voiceCloneError = null;
+        try
+        {
+            var result = await Js.InvokeAsync<VoiceCaptureStopResult>("PageToMovieVoiceCapture.stop");
+            _voiceRecRecording = false;
+            if (result is null || !result.Ok || string.IsNullOrWhiteSpace(result.Base64))
+            {
+                _voiceCloneError = result?.Error ?? "Empty recording.";
+                return;
+            }
+            var bytes = Convert.FromBase64String(result.Base64);
+            await using var ms = new MemoryStream(bytes);
+            var name = string.IsNullOrWhiteSpace(result.FileName) ? "voice_clone_sample.webm" : result.FileName!;
+            await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, ms, name);
+            _voiceCloneHint = "Clone sample saved.";
+            await ReloadSelectedCharacterAsync();
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+            _voiceRecRecording = false;
+            try { await Js.InvokeVoidAsync("PageToMovieVoiceCapture.cancel"); } catch { }
+        }
+        finally { _voiceCloneBusy = false; }
+    }
+
+    private async Task CancelVoiceCloneMicAsync()
+    {
+        try { await Js.InvokeVoidAsync("PageToMovieVoiceCapture.cancel"); } catch { }
+        _voiceRecRecording = false;
+        _voiceCloneHint = "Recording cancelled.";
+    }
+
+    private async Task OnVoiceCloneUploadAsync(InputFileChangeEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_projectId) || string.IsNullOrEmpty(_selectedKey)) return;
+        var file = e.File;
+        if (file is null) return;
+        _voiceCloneBusy = true;
+        _voiceCloneError = null;
+        try
+        {
+            await using var stream = file.OpenReadStream(15 * 1024 * 1024);
+            await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, stream, file.Name);
+            _voiceCloneHint = $"Uploaded {file.Name} as clone sample.";
+            await ReloadSelectedCharacterAsync();
+        }
+        catch (Exception ex) { _voiceCloneError = ex.Message; }
+        finally { _voiceCloneBusy = false; }
+    }
+
+    private async Task DeleteVoiceCloneSampleAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId) || string.IsNullOrEmpty(_selectedKey)) return;
+        _voiceCloneBusy = true;
+        try
+        {
+            await Engine.DeleteVoiceCloneSampleAsync(_projectId, _selectedKey);
+            _voiceCloneHint = "Clone sample removed.";
+            _voiceClonePlayUrl = null;
+            await ReloadSelectedCharacterAsync();
+        }
+        catch (Exception ex) { _voiceCloneError = ex.Message; }
+        finally { _voiceCloneBusy = false; }
+    }
+
+    private async Task ReloadSelectedCharacterAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId)) return;
+        try
+        {
+            var dto = await Engine.GetCharactersAsync(_projectId);
+            _chars = dto?.Characters ?? new List<CharacterSummary>();
+            _selected = _chars.FirstOrDefault(c =>
+                string.Equals(c.Key, _selectedKey, StringComparison.OrdinalIgnoreCase));
+            if (_selected is not null)
+            {
+                _editVoiceLabel = _selected.VoiceLabel ?? "";
+                _editVoiceProfile = _selected.VoiceProfile ?? "";
+                RefreshVoiceClonePlayUrl();
+            }
+        }
+        catch { }
+    }
+
+    private sealed class VoiceCaptureStartResult
+    {
+        public bool Ok { get; set; }
+        public string? MimeType { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class VoiceCaptureStopResult
+    {
+        public bool Ok { get; set; }
+        public string? MimeType { get; set; }
+        public string? Base64 { get; set; }
+        public string? FileName { get; set; }
+        public string? Error { get; set; }
+        public long ByteLength { get; set; }
     }
 
     private async Task OnUploadRefAsync(InputFileChangeEventArgs e)

@@ -2542,6 +2542,89 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
     }
 });
 
+/// <summary>
+/// Upload or replace voice-clone template audio (mic recording or file).
+/// Multipart field: file. Stored under assets/characters/{key}/voice_clone_sample.*.
+/// Used as a reference for future TTS clone providers; does not replace voice_profile text.
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone-sample", async (
+    string id,
+    string charKey,
+    HttpRequest req,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        if (!req.HasFormContentType)
+            return Results.BadRequest(new { ok = false, error = "multipart form required (field: file)" });
+
+        var form = await req.ReadFormAsync(ct);
+        var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+        if (file is null || file.Length == 0)
+            return Results.BadRequest(new { ok = false, error = "No audio file (field: file)" });
+        if (file.Length > 15 * 1024 * 1024)
+            return Results.BadRequest(new { ok = false, error = "Audio too large (max 15 MB)." });
+
+        await using var stream = file.OpenReadStream();
+        var path = await store.SaveVoiceCloneSampleAsync(id, charKey, stream, file.FileName, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            fileName = Path.GetFileName(path),
+            url = $"/api/projects/{Uri.EscapeDataString(id)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
+            message = "Voice clone sample saved — optional add-on template for personal voice.",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
+    (string id, string charKey, ProjectStore store) =>
+{
+    try
+    {
+        var path = store.GetVoiceCloneSamplePath(id, charKey);
+        if (!File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "No voice clone sample yet." });
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        var contentType = ext switch
+        {
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".m4a" or ".aac" => "audio/mp4",
+            ".ogg" => "audio/ogg",
+            _ => "audio/webm",
+        };
+        return Results.File(path, contentType, Path.GetFileName(path));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapDelete("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
+    (string id, string charKey, ProjectStore store) =>
+{
+    try
+    {
+        var removed = store.DeleteVoiceCloneSample(id, charKey);
+        return Results.Ok(new { ok = true, removed, projectId = id, charKey });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapGet("/api/users/{id}/terms", async (string id, UserDatabaseService userDb) =>
 {
     var hasAccepted = await userDb.HasAcceptedTermsAsync(id);
