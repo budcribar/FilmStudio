@@ -35,15 +35,43 @@
       "displayName": "Audio & Music Generation",
       "description": "Generates beat-aligned background music scores and sound effects.",
       "defaultModelId": "fal-ai/musicgen"
+    },
+    {
+      "id": "voice",
+      "displayName": "Voice Clone / TTS",
+      "description": "Personal voice clone from a short sample, then TTS for dialogue (ElevenLabs).",
+      "defaultModelId": "eleven_multilingual_v2",
+      "order": 70
     }
   ],
   "task_rankings": {
-    "script_import": ["claude-sonnet-5", "grok-4.5", "gemini-2.5-flash"],
-    "beat_pacing": ["grok-4.5", "gemini-2.0-flash", "claude-sonnet-5"],
-    "camera_director": ["grok-4.5", "claude-sonnet-5"],
-    "sound_design": ["grok-4.5", "gemini-2.5-flash"],
-    "cast_analysis": ["grok-4.5", "claude-sonnet-5", "gemini-2.5-flash"],
-    "video_review": ["gemini-2.5-flash", "grok-4.5"]
+    "script_import": [
+      "claude-sonnet-5",
+      "grok-4.5",
+      "gemini-2.5-flash"
+    ],
+    "beat_pacing": [
+      "grok-4.5",
+      "gemini-2.0-flash",
+      "claude-sonnet-5"
+    ],
+    "camera_director": [
+      "grok-4.5",
+      "claude-sonnet-5"
+    ],
+    "sound_design": [
+      "grok-4.5",
+      "gemini-2.5-flash"
+    ],
+    "cast_analysis": [
+      "grok-4.5",
+      "claude-sonnet-5",
+      "gemini-2.5-flash"
+    ],
+    "video_review": [
+      "gemini-2.5-flash",
+      "grok-4.5"
+    ]
   },
   "models": [
     {
@@ -53,11 +81,13 @@
       "provider": "OpenAI",
       "apiBase": "https://api.openai.com/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "requiredEnvKeys": [
+        "OPENAI_API_KEY"
+      ],
       "enabled": false,
       "maxInputTokens": 128000,
-      "inputCostPerMillionTokens": 2.50,
-      "outputCostPerMillionTokens": 10.00,
+      "inputCostPerMillionTokens": 2.5,
+      "outputCostPerMillionTokens": 10.0,
       "notes": "Superseded by gpt-5.6-sol/gpt-5.6-terra. Disabled rather than deleted so past benchmark history referencing this id still resolves. Its 30K TPM cap made it unreliable for large-book adaptation (see issue-27)."
     },
     {
@@ -67,12 +97,14 @@
       "provider": "OpenAI",
       "apiBase": "https://api.openai.com/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "requiredEnvKeys": [
+        "OPENAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 400000,
-      "inputCostPerMillionTokens": 2.50,
-      "outputCostPerMillionTokens": 10.00,
-      "notes": "Replaces gpt-4o. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=400,000 and max output=128,000 per published spec. Pricing is still an unverified placeholder copied from gpt-4o — update when a real source is available. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists."
+      "inputCostPerMillionTokens": 2.5,
+      "outputCostPerMillionTokens": 10.0,
+      "notes": "Replaces gpt-4o. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=400,000 and max output=128,000 per published spec. Pricing is still an unverified placeholder copied from gpt-4o \u2014 update when a real source is available. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists."
     },
     {
       "id": "gpt-5.6-terra",
@@ -81,12 +113,14 @@
       "provider": "OpenAI",
       "apiBase": "https://api.openai.com/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "requiredEnvKeys": [
+        "OPENAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 128000,
-      "inputCostPerMillionTokens": 2.50,
-      "outputCostPerMillionTokens": 10.00,
-      "notes": "Replaces gpt-4o alongside gpt-5.6-sol. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens is officially unpublished by OpenAI (unlike Sol's 400,000 and Luna's 1,050,000) — 128,000 kept here as a deliberately conservative placeholder floor, not a real spec; raise it if a real source turns up. Pricing is also an unverified placeholder copied from gpt-4o. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists."
+      "inputCostPerMillionTokens": 2.5,
+      "outputCostPerMillionTokens": 10.0,
+      "notes": "Replaces gpt-4o alongside gpt-5.6-sol. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens is officially unpublished by OpenAI (unlike Sol's 400,000 and Luna's 1,050,000) \u2014 128,000 kept here as a deliberately conservative placeholder floor, not a real spec; raise it if a real source turns up. Pricing is also an unverified placeholder copied from gpt-4o. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists."
     },
     {
       "id": "gpt-5.6-luna",
@@ -95,12 +129,14 @@
       "provider": "OpenAI",
       "apiBase": "https://api.openai.com/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "requiredEnvKeys": [
+        "OPENAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1050000,
-      "inputCostPerMillionTokens": 2.50,
-      "outputCostPerMillionTokens": 10.00,
-      "notes": "Third gpt-5.6 variant alongside sol/terra, added to try to beat sol's benchmark lead. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=1,050,000 per published spec (largest of the three variants). Pricing is an unverified placeholder copied from gpt-4o — update when a real source is available."
+      "inputCostPerMillionTokens": 2.5,
+      "outputCostPerMillionTokens": 10.0,
+      "notes": "Third gpt-5.6 variant alongside sol/terra, added to try to beat sol's benchmark lead. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=1,050,000 per published spec (largest of the three variants). Pricing is an unverified placeholder copied from gpt-4o \u2014 update when a real source is available."
     },
     {
       "id": "gpt-4o-mini",
@@ -109,11 +145,13 @@
       "provider": "OpenAI",
       "apiBase": "https://api.openai.com/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "requiredEnvKeys": [
+        "OPENAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 128000,
       "inputCostPerMillionTokens": 0.15,
-      "outputCostPerMillionTokens": 0.60,
+      "outputCostPerMillionTokens": 0.6,
       "notes": "Ultra-fast low cost OpenAI classifier model."
     },
     {
@@ -123,11 +161,13 @@
       "provider": "OpenAI",
       "apiBase": "https://api.openai.com/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "requiredEnvKeys": [
+        "OPENAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 200000,
-      "inputCostPerMillionTokens": 1.10,
-      "outputCostPerMillionTokens": 4.40,
+      "inputCostPerMillionTokens": 1.1,
+      "outputCostPerMillionTokens": 4.4,
       "notes": "OpenAI high-reasoning benchmark model."
     },
     {
@@ -137,7 +177,9 @@
       "provider": "Xai",
       "apiBase": "https://api.x.ai/v1",
       "endpointPath": "videos/generations",
-      "requiredEnvKeys": ["XAI_API_KEY"],
+      "requiredEnvKeys": [
+        "XAI_API_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": true,
       "supportsReferenceImages": true,
@@ -156,7 +198,10 @@
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/hunyuan-video",
-      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
       "enabled": false,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
@@ -174,7 +219,10 @@
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/wan-2.1/image-to-video",
-      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
@@ -192,14 +240,16 @@
       "provider": "Google",
       "apiBase": "https://generativelanguage.googleapis.com/v1beta",
       "endpointPath": "models/veo-3.1:predictLongRunning",
-      "requiredEnvKeys": ["GEMINI_API_KEY"],
+      "requiredEnvKeys": [
+        "GEMINI_API_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
       "videoCostPerSecondByResolution": {
-        "720p": 0.40,
-        "1080p": 0.40
+        "720p": 0.4,
+        "1080p": 0.4
       },
       "notes": "Wired via GeminiVideoClient (text/image-to-video only)."
     },
@@ -210,7 +260,9 @@
       "provider": "Xai",
       "apiBase": "https://api.x.ai/v1",
       "endpointPath": "images/generations",
-      "requiredEnvKeys": ["XAI_API_KEY"],
+      "requiredEnvKeys": [
+        "XAI_API_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
@@ -225,7 +277,9 @@
       "provider": "Xai",
       "apiBase": "https://api.x.ai/v1",
       "endpointPath": "images/generations",
-      "requiredEnvKeys": ["XAI_API_KEY"],
+      "requiredEnvKeys": [
+        "XAI_API_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
@@ -239,7 +293,9 @@
       "provider": "Google",
       "apiBase": "https://generativelanguage.googleapis.com/v1beta",
       "endpointPath": "models/gemini-2.5-pro:generateContent",
-      "requiredEnvKeys": ["GEMINI_API_KEY"],
+      "requiredEnvKeys": [
+        "GEMINI_API_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
@@ -254,7 +310,10 @@
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/flux/dev",
-      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
@@ -269,7 +328,10 @@
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/flux/schnell",
-      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
@@ -284,11 +346,13 @@
       "provider": "Xai",
       "apiBase": "https://api.x.ai/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["XAI_API_KEY"],
+      "requiredEnvKeys": [
+        "XAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 500000,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 6.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 6.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
@@ -301,11 +365,13 @@
       "provider": "Xai",
       "apiBase": "https://api.x.ai/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["XAI_API_KEY"],
+      "requiredEnvKeys": [
+        "XAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 256000,
-      "inputCostPerMillionTokens": 3.00,
-      "outputCostPerMillionTokens": 15.00,
+      "inputCostPerMillionTokens": 3.0,
+      "outputCostPerMillionTokens": 15.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false
@@ -317,15 +383,17 @@
       "provider": "Xai",
       "apiBase": "https://api.x.ai/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["XAI_API_KEY"],
+      "requiredEnvKeys": [
+        "XAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1000000,
-      "inputCostPerMillionTokens": 3.00,
-      "outputCostPerMillionTokens": 15.00,
+      "inputCostPerMillionTokens": 3.0,
+      "outputCostPerMillionTokens": 15.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) — discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text — GrokChatClient's self-heal matches both spellings) — it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M)."
+      "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) \u2014 discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text \u2014 GrokChatClient's self-heal matches both spellings) \u2014 it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M)."
     },
     {
       "id": "claude-sonnet-5",
@@ -334,11 +402,13 @@
       "provider": "Anthropic",
       "apiBase": "https://api.anthropic.com/v1",
       "endpointPath": "messages",
-      "requiredEnvKeys": ["ANTHROPIC_API_KEY"],
+      "requiredEnvKeys": [
+        "ANTHROPIC_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1000000,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 10.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 10.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
@@ -351,15 +421,17 @@
       "provider": "Anthropic",
       "apiBase": "https://api.anthropic.com/v1",
       "endpointPath": "messages",
-      "requiredEnvKeys": ["ANTHROPIC_API_KEY"],
+      "requiredEnvKeys": [
+        "ANTHROPIC_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1000000,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 10.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 10.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 — update when a real source is available."
+      "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 \u2014 update when a real source is available."
     },
     {
       "id": "gemini-2.5-flash",
@@ -368,15 +440,17 @@
       "provider": "Google",
       "apiBase": "https://generativelanguage.googleapis.com/v1beta",
       "endpointPath": "models/gemini-2.5-flash:generateContent",
-      "requiredEnvKeys": ["GEMINI_API_KEY"],
+      "requiredEnvKeys": [
+        "GEMINI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1000000,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 12.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 12.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review. Was gemini-2.5-pro, which Google retired for new API keys (404 \"no longer available to new users\") — GeminiChatClient was already silently falling back to gemini-2.5-flash on that 404, so this just makes the catalog match what was actually running."
+      "notes": "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review. Was gemini-2.5-pro, which Google retired for new API keys (404 \"no longer available to new users\") \u2014 GeminiChatClient was already silently falling back to gemini-2.5-flash on that 404, so this just makes the catalog match what was actually running."
     },
     {
       "id": "gemini-3.6-flash",
@@ -385,15 +459,17 @@
       "provider": "Google",
       "apiBase": "https://generativelanguage.googleapis.com/v1beta",
       "endpointPath": "models/gemini-3.6-flash:generateContent",
-      "requiredEnvKeys": ["GEMINI_API_KEY"],
+      "requiredEnvKeys": [
+        "GEMINI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1048576,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 12.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 12.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "Wired via GeminiChatClient. Reasoning/\"thinking\" model per Google's own model metadata (thinking: true) — same class as OpenAI's o-series; watch for similar quirks (temperature/param rejection, thinking tokens counting toward output budget). Pricing copied from gemini-2.5-flash as a placeholder — not verified against a real source, update when known."
+      "notes": "Wired via GeminiChatClient. Reasoning/\"thinking\" model per Google's own model metadata (thinking: true) \u2014 same class as OpenAI's o-series; watch for similar quirks (temperature/param rejection, thinking tokens counting toward output budget). Pricing copied from gemini-2.5-flash as a placeholder \u2014 not verified against a real source, update when known."
     },
     {
       "id": "gemini-3.1-pro-preview",
@@ -402,15 +478,17 @@
       "provider": "Google",
       "apiBase": "https://generativelanguage.googleapis.com/v1beta",
       "endpointPath": "models/gemini-3.1-pro-preview:generateContent",
-      "requiredEnvKeys": ["GEMINI_API_KEY"],
+      "requiredEnvKeys": [
+        "GEMINI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1048576,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 12.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 12.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "First Gemini Pro-tier model in this catalog — every other Gemini entry so far is Flash-tier. Added to try to beat gpt-5.6-sol's benchmark lead. Wired via GeminiChatClient. Confirmed live via direct Google API call: thinking:true, inputTokenLimit 1,048,576, outputTokenLimit 65,536; thinkingConfig.thinkingLevel confirmed up to \"high\" (Gemini's ceiling — no \"max\"/\"xhigh\" tier exists). \"-preview\" tag means Google could change or retire this id without notice; pricing copied from gemini-3.6-flash as a placeholder, not verified against a real source."
+      "notes": "First Gemini Pro-tier model in this catalog \u2014 every other Gemini entry so far is Flash-tier. Added to try to beat gpt-5.6-sol's benchmark lead. Wired via GeminiChatClient. Confirmed live via direct Google API call: thinking:true, inputTokenLimit 1,048,576, outputTokenLimit 65,536; thinkingConfig.thinkingLevel confirmed up to \"high\" (Gemini's ceiling \u2014 no \"max\"/\"xhigh\" tier exists). \"-preview\" tag means Google could change or retire this id without notice; pricing copied from gemini-3.6-flash as a placeholder, not verified against a real source."
     },
     {
       "id": "grok-4.5",
@@ -419,11 +497,13 @@
       "provider": "Xai",
       "apiBase": "https://api.x.ai/v1",
       "endpointPath": "chat/completions",
-      "requiredEnvKeys": ["XAI_API_KEY"],
+      "requiredEnvKeys": [
+        "XAI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 500000,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 6.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 6.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
@@ -436,11 +516,13 @@
       "provider": "Anthropic",
       "apiBase": "https://api.anthropic.com/v1",
       "endpointPath": "messages",
-      "requiredEnvKeys": ["ANTHROPIC_API_KEY"],
+      "requiredEnvKeys": [
+        "ANTHROPIC_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1000000,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 10.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 10.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
@@ -453,15 +535,17 @@
       "provider": "Google",
       "apiBase": "https://generativelanguage.googleapis.com/v1beta",
       "endpointPath": "models/gemini-2.5-flash:generateContent",
-      "requiredEnvKeys": ["GEMINI_API_KEY"],
+      "requiredEnvKeys": [
+        "GEMINI_API_KEY"
+      ],
       "enabled": true,
       "maxInputTokens": 1000000,
-      "inputCostPerMillionTokens": 2.00,
-      "outputCostPerMillionTokens": 12.00,
+      "inputCostPerMillionTokens": 2.0,
+      "outputCostPerMillionTokens": 12.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only). Was gemini-2.5-pro, retired by Google for new API keys — see the Chat entry's note."
+      "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only). Was gemini-2.5-pro, retired by Google for new API keys \u2014 see the Chat entry's note."
     },
     {
       "id": "fal-ai/musicgen",
@@ -470,7 +554,10 @@
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/musicgen",
-      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
@@ -485,7 +572,10 @@
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/udio",
-      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
@@ -500,7 +590,10 @@
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/minimax/music",
-      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
@@ -515,7 +608,10 @@
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/stable-audio-2.0",
-      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
@@ -530,13 +626,15 @@
       "provider": "Suno",
       "apiBase": "https://api.sunoapi.org/api/v1",
       "endpointPath": "generate",
-      "requiredEnvKeys": ["SUNO_API_KEY"],
+      "requiredEnvKeys": [
+        "SUNO_API_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
       "maxAudioDurationSeconds": 360,
-      "notes": "Unofficial third-party Suno reseller (docs.sunoapi.org). Documented duration param is 10-360s on model V5_5 custom mode — the only audio provider here with real duration control."
+      "notes": "Unofficial third-party Suno reseller (docs.sunoapi.org). Documented duration param is 10-360s on model V5_5 custom mode \u2014 the only audio provider here with real duration control."
     },
     {
       "id": "aimusicapi-suno",
@@ -545,12 +643,46 @@
       "provider": "AiMusicApi",
       "apiBase": "https://api.aimusicapi.ai/api/v1",
       "endpointPath": "suno/create",
-      "requiredEnvKeys": ["AIMUSICAPI_API_KEY"],
+      "requiredEnvKeys": [
+        "AIMUSICAPI_API_KEY"
+      ],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "A different unofficial Suno reseller (docs.aimusicapi.ai). No documented duration control — generates a full track at whatever length Suno produces (typically ~2-4 min); the client-side mix step trims to scene length."
+      "notes": "A different unofficial Suno reseller (docs.aimusicapi.ai). No documented duration control \u2014 generates a full track at whatever length Suno produces (typically ~2-4 min); the client-side mix step trims to scene length."
+    },
+    {
+      "id": "eleven_multilingual_v2",
+      "displayName": "ElevenLabs Multilingual v2 (TTS)",
+      "capability": "Voice",
+      "provider": "ElevenLabs",
+      "apiBase": "https://api.elevenlabs.io/v1",
+      "endpointPath": "text-to-speech",
+      "requiredEnvKeys": [
+        "ELEVENLABS_API_KEY"
+      ],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "notes": "Primary TTS model for cloned personal voices. Requires ELEVENLABS_API_KEY. Pair with voice clone sample on Cast."
+    },
+    {
+      "id": "eleven_voice_clone",
+      "displayName": "ElevenLabs Instant Voice Clone",
+      "capability": "Voice",
+      "provider": "ElevenLabs",
+      "apiBase": "https://api.elevenlabs.io/v1",
+      "endpointPath": "voices/add",
+      "requiredEnvKeys": [
+        "ELEVENLABS_API_KEY"
+      ],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "notes": "Creates a voice profile from a short mic/upload sample (Cast \u2192 Voice clone sample). Optional paid add-on path."
     }
   ]
 }

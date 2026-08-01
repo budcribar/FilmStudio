@@ -10,6 +10,8 @@ public enum ModelCapability
     Chat,
     Vision,
     Audio,
+    /// <summary>Voice clone / TTS (e.g. ElevenLabs) — dialogue personalization, not BGM.</summary>
+    Voice,
 }
 
 /// <summary>
@@ -41,6 +43,8 @@ public enum ModelProviderFamily
     Suno = 4,
     /// <summary>Suno via aimusicapi.ai (<c>AIMUSICAPI_API_KEY</c>) — a different unofficial Suno reseller.</summary>
     AiMusicApi = 5,
+    /// <summary>ElevenLabs (<c>ELEVENLABS_API_KEY</c>) — voice clone + TTS for personal dialogue.</summary>
+    ElevenLabs = 6,
 }
 
 /// <summary>
@@ -183,6 +187,7 @@ public sealed class SupportedModelEntry
             ModelProviderFamily.Fal => "fal",
             ModelProviderFamily.Suno => "suno",
             ModelProviderFamily.AiMusicApi => "aimusicapi",
+            ModelProviderFamily.ElevenLabs => "elevenlabs",
             _ => "grok",
         };
 }
@@ -559,6 +564,7 @@ public static class SupportedModelCatalog
             var supportsScriptPlanning = group.Any(m => m.Capability == ModelCapability.Chat);
             var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
             var supportsAudio = group.Any(m => m.Capability == ModelCapability.Audio);
+            var supportsVoice = group.Any(m => m.Capability == ModelCapability.Voice);
 
             var caps = new List<string>();
             if (supportsVideoGen) caps.Add("Video Gen");
@@ -567,6 +573,7 @@ public static class SupportedModelCatalog
             if (supportsScriptPlanning) caps.Add("Script & Planning");
             if (supportsImageVision) caps.Add("Image Vision / OCR");
             if (supportsAudio) caps.Add("Audio / Music");
+            if (supportsVoice) caps.Add("Voice clone / TTS");
 
             rows.Add(new ProviderKeyStatusDto
             {
