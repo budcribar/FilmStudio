@@ -299,6 +299,9 @@ public sealed class CastFromScreenplayService
         sb.AppendLine("Never use stubs like \"as described in the screenplay\".");
         sb.AppendLine("On-camera POV/confessor narrators = ok_anytime (not voice-only).");
         sb.AppendLine("Set species_kind from the story (human/animal/etc.) — do not guess from word lists.");
+        sb.AppendLine("REQUIRED: render_style_lock from the FOUNTAIN medium (title Notes / early Action /");
+        sb.AppendLine("story register). The screenplay must carry the book's visual medium; do not choose");
+        sb.AppendLine("cartoon vs photoreal from file type. One medium for all cast.");
         sb.AppendLine("Return JSON only (schema_version cast_seeds.v1, character_seed_tokens).");
         sb.AppendLine();
         sb.AppendLine("--- BEGIN FOUNTAIN ---");
@@ -717,16 +720,10 @@ public sealed class CastFromScreenplayService
 
         if (parsed.TryGetValue("render_style_lock", out var rsl) && rsl is not null && !string.IsNullOrWhiteSpace(rsl.ToString()))
         {
-            // Keep model medium. Do not invert photoreal → cartoon because book text exists.
+            // Medium comes from cast model reading the screenplay — never from file type.
             outDoc["render_style_lock"] = rsl.ToString()!.Trim();
         }
-        else if (!string.IsNullOrWhiteSpace(bookText))
-        {
-            // Text without explicit medium: live-action film portraits by default.
-            outDoc["render_style_lock"] =
-                "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe. " +
-                "NOT cartoon, NOT illustration, NOT anime, NOT stylized 3D CGI beauty face";
-        }
+        // If omitted, leave unset; CharacterDesignService reads Fountain Notes as fallback.
 
         // Film-level audience/performance conventions inferred from book (not hardcoded gaze recipes)
         if (parsed.TryGetValue("performance_lock", out var pl) && pl is not null &&

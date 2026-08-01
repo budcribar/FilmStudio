@@ -18,13 +18,13 @@ public sealed class PortraitStyleGateTests
     }
 
     [Fact]
-    public void PrefersIllustrated_OnlyBookArtDefaultsToIllustrated()
+    public void PrefersIllustrated_NoFileHeuristicsWithoutStyle()
     {
-        // Image hints (uploads) or animals alone no longer force cartoon — only real book plates.
+        // Medium must come from screenplay/cast style lock — not file type or book plates alone.
         Assert.False(CharacterDesignService.PrefersIllustratedPortraitStyle(null, hasImageHints: true, isAnimal: false));
         Assert.False(CharacterDesignService.PrefersIllustratedPortraitStyle("", hasImageHints: false, isAnimal: true));
         Assert.False(CharacterDesignService.PrefersIllustratedPortraitStyle(null, hasImageHints: false, isAnimal: false));
-        Assert.True(CharacterDesignService.PrefersIllustratedPortraitStyle(
+        Assert.False(CharacterDesignService.PrefersIllustratedPortraitStyle(
             null, hasImageHints: false, isAnimal: false, hasBookSource: true));
     }
 

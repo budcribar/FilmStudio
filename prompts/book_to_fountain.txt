@@ -201,10 +201,15 @@ later shots stay consistent:
 - Filmable identity only: species/age/build/hair/face/wardrobe + stable colors/markings
   that must not drift.
 - Signature props/wardrobe the book establishes must stay on when those characters re-enter.
-- One render medium for the whole film (period live-action / gothic / stylized illustration / …).
-  State medium once early (title-page Notes: or first Action) if helpful.
-  Humans and animals share one medium — never photoreal people beside cartoon animals
-  unless the whole piece is live-action.
+- **RENDER MEDIUM (HARD — write into the screenplay):** Infer the film's visual medium
+  from the BOOK CONTENT (tone, genre, and whether it is an illustrated children's story
+  vs literary prose vs live-action drama). Put ONE clear medium statement early —
+  title-page Notes: and/or the first Action line — e.g.
+  "Notes: Medium = photoreal live-action gothic period drama, naturalistic faces and fabric."
+  or "Notes: Medium = stylized children's picture-book illustration; painted storybook look."
+  Do NOT leave medium implied only by file type. The screenplay is the source of truth for
+  later cast portraits and clips. Humans and animals share that one medium — never mix
+  photoreal people with cartoon animals unless the whole piece is live-action.
 - Nicknames / epithets belong in dialogue or titles, NOT as physical description.
 - Metaphorical wardrobe: if text is figurative, do not invent garments the story never shows.
 - Exclusive OR in the book: pick ONE for that beat.

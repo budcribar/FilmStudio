@@ -980,23 +980,18 @@ public sealed class CharacterDesignService
     /// </summary>
     internal static string? ReadProjectRenderStyleLock(string projectDir)
     {
-        var sourceDir = Path.Combine(projectDir, "source");
-        // Real illustration plates only — book_full.txt alone is a text import (Poe, etc.).
-        var hasIllustrations = ProjectHasBookIllustrations(projectDir);
-
+        // Screenplay / cast extract is the source of truth for medium — not "is there a
+        // book_full.txt" vs "are there book_images files".
         try
         {
-            var castPath = Path.Combine(sourceDir, ScreenplayService.CastSeedsFileName);
+            var castPath = Path.Combine(projectDir, "source", ScreenplayService.CastSeedsFileName);
             if (File.Exists(castPath))
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
                 if (doc.RootElement.TryGetProperty("render_style_lock", out var rsl) &&
                     rsl.ValueKind == JsonValueKind.String &&
                     rsl.GetString() is { Length: > 0 } s)
-                {
-                    // Honor cast extract. Never flip photoreal → cartoon because a text file exists.
                     return s.Trim();
-                }
             }
         }
         catch
@@ -1004,15 +999,64 @@ public sealed class CharacterDesignService
             // ignore
         }
 
-        if (hasIllustrations)
-        {
-            return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
-        }
+        // Fountain title Notes / early action often carries "Medium = …" from adaptation.
+        var fromFountain = TryReadMediumFromFountain(projectDir);
+        if (!string.IsNullOrWhiteSpace(fromFountain))
+            return fromFountain;
 
-        return "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe, period-appropriate when the story implies it. NOT cartoon, NOT illustration, NOT anime, NOT stylized 3D CGI beauty face";
+        return null;
     }
 
-    /// <summary>True when source/book_images contains real image files.</summary>
+    /// <summary>
+    /// Parse medium from screenplay Notes / early body when cast_seeds has no render_style_lock.
+    /// </summary>
+    internal static string? TryReadMediumFromFountain(string projectDir)
+    {
+        foreach (var rel in new[]
+                 {
+                     Path.Combine("source", "screenplay.fountain"),
+                     Path.Combine("source", "screenplay_approved.fountain"),
+                     Path.Combine("source", "adaptation.fountain"),
+                 })
+        {
+            var path = Path.Combine(projectDir, rel);
+            if (!File.Exists(path)) continue;
+            string text;
+            try { text = File.ReadAllText(path); }
+            catch { continue; }
+            if (string.IsNullOrWhiteSpace(text)) continue;
+            var head = text.Length > 6_000 ? text[..6_000] : text;
+
+            if (RegexContains(head,
+                    @"\b(picture[- ]?book|storybook|illustrated children|children'?s book illustration|" +
+                    @"painted cartoon|stylized (?:3d )?animated|not photoreal)\b"))
+            {
+                return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast " +
+                       "(animals and humans share the same medium) -- not photoreal, not live-action";
+            }
+
+            if (RegexContains(head,
+                    @"\b(photoreal|photo-?real|live[- ]?action|period drama|gothic|naturalistic skin|" +
+                    @"film photography|cinematic live)\b"))
+            {
+                return "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe, " +
+                       "period-appropriate when the story implies it. NOT cartoon, NOT illustration, NOT anime";
+            }
+
+            // Explicit "Medium = …" line
+            var m = System.Text.RegularExpressions.Regex.Match(
+                head,
+                @"(?im)^\s*(?:Notes:\s*)?Medium\s*[=:]\s*(.+)$");
+            if (m.Success && m.Groups[1].Value.Trim() is { Length: > 0 } med)
+                return med.StartsWith("STYLE", StringComparison.OrdinalIgnoreCase)
+                    ? med.Trim()
+                    : "STYLE LOCK: " + med.Trim();
+        }
+
+        return null;
+    }
+
+    /// <summary>True when source/book_images contains real image files (reference plates only).</summary>
     internal static bool ProjectHasBookIllustrations(string projectDir)
     {
         var imgDir = Path.Combine(projectDir, "source", "book_images");
@@ -1032,11 +1076,6 @@ public sealed class CharacterDesignService
         catch { return false; }
     }
 
-
-    /// <summary>
-    /// Illustrated / picture-book when project or book art needs that medium;
-    /// photoreal / live-action when cast style says so (e.g. Tell-Tale Heart).
-    /// </summary>
     public static bool PrefersIllustratedPortraitStyle(
         string? projectRenderStyleLock,
         bool hasImageHints,
@@ -1057,8 +1096,8 @@ public sealed class CharacterDesignService
                 return true;
         }
 
-        // Only real book art forces illustration when style is ambiguous.
-        return hasBookSource;
+        // No style in screenplay/cast: do not guess from files. Photoreal until medium is written.
+        return false;
     }
 
 
