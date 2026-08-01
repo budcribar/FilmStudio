@@ -427,30 +427,30 @@ else
                                         <div class="col-md-7">
                                             <label class="form-label small fw-semibold mb-0">Description</label>
                                             <textarea class="form-control form-control-sm" rows="3"
-                                                      @bind="_editDescription" @bind:event="oninput"
+                                                      value="@_editDescription"
+                                                      @oninput="OnLookDescriptionInput"
                                                       disabled="@(_busy || JobRunning)"
                                                       placeholder="How they look"></textarea>
                                         </div>
                                         <div class="col-md-5">
                                             <label class="form-label small fw-semibold mb-0">Visual lock <span class="text-muted fw-normal">(optional)</span></label>
                                             <textarea class="form-control form-control-sm" rows="3"
-                                                      @bind="_editVisualLock" @bind:event="oninput"
+                                                      value="@_editVisualLock"
+                                                      @oninput="OnLookVisualLockInput"
                                                       disabled="@(_busy || JobRunning)"
                                                       placeholder="Coat, markings, proportions that must stay fixed"></textarea>
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap gap-2 align-items-center">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                disabled="@(_busy || JobRunning)"
-                                                @onclick="SaveLookAsync">
-                                            Save text
-                                        </button>
                                         <button type="button" class="btn btn-primary btn-sm"
                                                 disabled="@(_busy || JobRunning || string.IsNullOrWhiteSpace(_editDescription))"
                                                 @onclick="StartRegenerateAsync"
                                                 data-testid="char-generate-looks">
                                             Generate 3 looks
                                         </button>
+                                        <span class="small text-muted" data-testid="look-autosave-hint">
+                                            @(_lookSaveHint ?? "Text saves automatically")
+                                        </span>
                                         @if (_savingLook)
                                         {
                                             <span class="small text-muted">Saving…</span>
@@ -797,6 +797,9 @@ else
     private string _savedLookDescription = "";
     private string _savedLookVisualLock = "";
     private bool _savingLook;
+    private string? _lookSaveHint;
+    private CancellationTokenSource? _lookSaveCts;
+    private const int LookAutosaveDebounceMs = 800;
     private string _editVoiceLabel = "";
     private string _editVoiceProfile = "";
     private bool _panelPictureOpen = true;
@@ -1386,6 +1389,8 @@ else
             _editVisualLock = _selected.VisualLock ?? "";
             _savedLookDescription = _editDescription;
             _savedLookVisualLock = _editVisualLock;
+            _lookSaveHint = null;
+            _lookSaveCts?.Cancel();
             _editVoiceLabel = _selected.VoiceLabel ?? "";
             _editVoiceProfile = _selected.VoiceProfile ?? "";
             RefreshVoiceClonePlayUrl();
@@ -1801,41 +1806,97 @@ else
         finally { _busy = false; }
     }
 
-    private async Task SaveLookAsync()
+    private void OnLookDescriptionInput(ChangeEventArgs e)
+    {
+        _editDescription = e.Value?.ToString() ?? "";
+        ScheduleAutoSaveLook();
+    }
+
+    private void OnLookVisualLockInput(ChangeEventArgs e)
+    {
+        _editVisualLock = e.Value?.ToString() ?? "";
+        ScheduleAutoSaveLook();
+    }
+
+    /// <summary>
+    /// Debounced autosave: wait until typing pauses (~800ms) so we do not hit the API on every keystroke.
+    /// Same pattern as voice profile autosave on this card.
+    /// </summary>
+    private void ScheduleAutoSaveLook()
+    {
+        _lookSaveCts?.Cancel();
+        _lookSaveCts = new CancellationTokenSource();
+        var token = _lookSaveCts.Token;
+        _lookSaveHint = "Pending…";
+        _ = AutoSaveLookDebouncedAsync(token);
+    }
+
+    private async Task AutoSaveLookDebouncedAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(LookAutosaveDebounceMs, token);
+            if (token.IsCancellationRequested || _selected is null) return;
+            _lookSaveHint = "Saving…";
+            await InvokeAsync(StateHasChanged);
+            await SaveLookAsync(silent: true);
+            if (!token.IsCancellationRequested)
+            {
+                _lookSaveHint = "Saved";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException) { /* typing continued — new debounce wins */ }
+        catch (Exception ex)
+        {
+            _lookSaveHint = "Save failed";
+            _error = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    /// <param name="silent">Autosave: no full-page busy, no toast spam; skip AI scrub (cheap disk write).</param>
+    private async Task SaveLookAsync(bool silent = false)
     {
         if (_selected is null) return;
 
-        // Snapshot identity + text at click — never re-read _selected after await for the POST.
+        // Snapshot identity + text — never re-read _selected after await for the POST.
         var charKey = _selected.Key;
         var displayName = _selected.DisplayName;
 
-        // No text change → no API (skip Grok scrub + disk write)
+        // No text change → no API
         var desc = _editDescription ?? "";
         var vis = _editVisualLock ?? "";
         if (string.Equals(desc, _savedLookDescription, StringComparison.Ordinal) &&
             string.Equals(vis, _savedLookVisualLock, StringComparison.Ordinal))
         {
-            _error = null;
-            _message = "No look changes.";
+            if (!silent)
+            {
+                _error = null;
+                _message = "No look changes.";
+            }
             return;
         }
 
-        _busy = true;
+        if (!silent)
+        {
+            _busy = true;
+            _error = null;
+            _message = null;
+        }
         _savingLook = true;
-        _error = null;
-        _message = null;
         try
         {
+            // Autosave: no Grok scrub (cost + latency every pause). Explicit saves / generate can scrub.
             var result = await Engine.UpdateCharacterLookAsync(
                 _projectId,
                 charKey,
                 description: desc,
                 visualLock: vis,
-                scrubWithAi: true);
+                scrubWithAi: !silent);
 
-            // Only rebind editors if the operator is still on this character
             var stillOnChar = string.Equals(_selectedKey, charKey, StringComparison.OrdinalIgnoreCase);
-            if (stillOnChar)
+            if (stillOnChar && !silent)
             {
                 if (!string.IsNullOrWhiteSpace(result.Description))
                     _editDescription = result.Description!;
@@ -1843,29 +1904,45 @@ else
                     _editVisualLock = result.VisualLock;
             }
 
-            _message = $"Saved look for {displayName}";
+            if (!silent)
+                _message = $"Saved look for {displayName}";
 
+            // Soft reload on silent is fine but keep editors stable if scrub didn't rewrite.
             await SoftReloadAsync();
             if (stillOnChar &&
                 string.Equals(_selectedKey, charKey, StringComparison.OrdinalIgnoreCase) &&
                 _selected is not null)
             {
-                if (!string.IsNullOrWhiteSpace(result.Description))
+                if (!silent && !string.IsNullOrWhiteSpace(result.Description))
                     _editDescription = result.Description!;
+                else if (silent)
+                {
+                    // Keep what the operator typed; mark as saved baseline
+                }
                 else
-                    _editDescription = _selected.Description ?? "";
-                if (result.VisualLock is not null)
+                    _editDescription = _selected.Description ?? _editDescription;
+
+                if (!silent && result.VisualLock is not null)
                     _editVisualLock = result.VisualLock;
-                else
-                    _editVisualLock = _selected.VisualLock ?? "";
-                _savedLookDescription = _editDescription;
-                _savedLookVisualLock = _editVisualLock;
+                else if (!silent)
+                    _editVisualLock = _selected.VisualLock ?? _editVisualLock;
+
+                _savedLookDescription = _editDescription ?? "";
+                _savedLookVisualLock = _editVisualLock ?? "";
             }
         }
-        catch (Exception ex) { _error = ex.Message; _message = null; }
+        catch (Exception ex)
+        {
+            if (!silent)
+            {
+                _error = ex.Message;
+                _message = null;
+            }
+            else throw;
+        }
         finally
         {
-            _busy = false;
+            if (!silent) _busy = false;
             _savingLook = false;
         }
     }
@@ -1925,6 +2002,7 @@ else
     private void ScheduleAutoSaveVoice()
     {
         _voiceSaveCts?.Cancel();
+        _lookSaveCts?.Cancel();
         _voiceSaveCts = new CancellationTokenSource();
         var token = _voiceSaveCts.Token;
         _ = AutoSaveVoiceDebouncedAsync(token);
