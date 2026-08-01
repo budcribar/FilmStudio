@@ -109,7 +109,6 @@ else
                                 @onclick="() => _manageExpanded = !_manageExpanded">
                             Manage @(_manageExpanded ? "▴" : "▾")
                         </button>
-                        <a href="configuration" class="btn btn-sm btn-outline-secondary">Settings</a>
                     </div>
                 </div>
 
@@ -134,6 +133,11 @@ else
                         + New project
                     </button>
                 </div>
+
+                @if (ActiveProject.Status is { XaiConfigured: false })
+                {
+                    <StudioProcessStrip Active="setup" />
+                }
 
                 @if (_projects.Projects.Count == 0 && !_showNew)
                 {
@@ -167,8 +171,8 @@ else
                     @if (ActiveProject.Status is not null && !ActiveProject.Status.XaiConfigured)
                     {
                         <div class="alert alert-warning py-1 px-2 small mb-2">
-                            No AI provider connected yet.
-                            <a href="configuration" class="alert-link">Connect in Settings →</a>
+                            No AI provider connected yet — finish <strong>Setup</strong> (step 0) first.
+                            <a href="configuration" class="alert-link">Open Setup →</a>
                         </div>
                     }
                     <div class="d-flex flex-wrap align-items-center gap-2">
@@ -362,11 +366,13 @@ else
 <ProjectCollaboratorsModal IsOpen="_showCollaboratorsModal" ProjectId="_collaboratorsProjectId" OnClose="CloseCollaboratorsModal" />
 
 @code {
-    /// <summary>Only the real current step is highlighted.</summary>
+    /// <summary>Only the real current step is highlighted. Setup (0) until keys exist, then pipeline.</summary>
     private string HomeActiveStep
     {
         get
         {
+            if (ActiveProject.Status is { XaiConfigured: false })
+                return "setup";
             if (!ActiveProject.HasProject) return "book";
             if (!ActiveProject.CanCharacters) return "book";
             if (!ActiveProject.CanEstimate) return "cast";

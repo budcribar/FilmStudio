@@ -1,11 +1,26 @@
 @namespace PageToMovie.Web.Components
-@* Shared product path: Book → Cast & voice → Estimate → Film → Review *@
+@* Shared product path: Setup (0, temporary) → Book → Cast & voice → Estimate → Film → Review *@
 @inject ActiveProjectState ActiveProject
 
 <nav class="ptm-step-strip ptm-step-strip--studio mb-3" aria-label="Studio process steps">
-    <a class="ptm-step @(Active == "book" ? "is-active" : "")"
-       href="adaptation"
-       data-testid="studio-step-book">
+    @if (NeedsSetup)
+    {
+        <a class="ptm-step @(Active == "setup" ? "is-active" : "")"
+           href="configuration"
+           title="Connect your AI API keys (bring your own key) before importing a book"
+           data-testid="studio-step-setup">
+            <span class="ptm-step__num">0</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Setup</span>
+                <span class="ptm-step__hint">API keys</span>
+            </span>
+        </a>
+    }
+    <a class="ptm-step @(Active == "book" ? "is-active" : "") @(BookLocked ? "is-disabled" : "")"
+       href="@(BookLocked ? "javascript:void(0)" : "adaptation")"
+       title="@(BookLocked ? "Connect API keys in Setup first" : "Import book and write screenplay")"
+       data-testid="studio-step-book"
+       @onclick:preventDefault="@BookLocked">
         <span class="ptm-step__num">1</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Book</span>
@@ -59,6 +74,12 @@
 </nav>
 
 @code {
-    /// <summary>book | cast | estimate | film | review</summary>
+    /// <summary>setup | book | cast | estimate | film | review</summary>
     [Parameter] public string Active { get; set; } = "book";
+
+    /// <summary>Step 0 only while personal studio keys are missing (BYOK).</summary>
+    private bool NeedsSetup =>
+        ActiveProject.Status is { XaiConfigured: false };
+
+    private bool BookLocked => NeedsSetup && Active != "book";
 }
