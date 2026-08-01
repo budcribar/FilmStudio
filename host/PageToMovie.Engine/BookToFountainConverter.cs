@@ -116,7 +116,8 @@ public static class BookToFountainConverter
         CancellationToken ct = default,
         PromptBudget? budgetOverride = null,
         Action<string>? onHeuristicFallback = null,
-        string? reasoningEffort = null)
+        string? reasoningEffort = null,
+        Action<ProjectVisionMeta.Document>? onVisionMeta = null)
     {
         if (string.IsNullOrWhiteSpace(bookText))
             throw new InvalidOperationException("Book text is empty");
@@ -187,6 +188,14 @@ public static class BookToFountainConverter
             text = ConvertHeuristic(title, bookText, author);
         }
 
+        // Pull production medium sidecar before repairs (trailer is not Fountain body).
+        ProjectVisionMeta.Document? visionEarly = null;
+        {
+            var split = SplitVisionMetaTrailer(text);
+            text = split.Fountain;
+            visionEarly = split.Vision;
+        }
+
         // Generation repairs — no operator hand-edit path
         text = await RepairVagueLocationHeadingsAsync(
             system, text, chat, model, onProgress, ct, reasoningEffort).ConfigureAwait(false);
@@ -235,7 +244,60 @@ public static class BookToFountainConverter
                 "shot plan / clip count may be high. Consider merging same-location beats next pass.");
         }
 
-        return ScreenplayService.NormalizeText(text);
+        text = ScreenplayService.NormalizeText(text);
+        // In case a repair path re-introduced a trailer (should not), strip again.
+        var (fountainOnly, visionLate) = SplitVisionMetaTrailer(text);
+        var vision = visionLate ?? visionEarly;
+        if (vision is not null)
+        {
+            vision.DecidedBy = "adaptation";
+            onVisionMeta?.Invoke(vision);
+            onProgress?.Invoke($"Visual medium from screenplay: {vision.VisualMedium}");
+        }
+        return fountainOnly;
+    }
+
+    /// <summary>
+    /// Strip trailing ---VISION_META--- JSON ---END_VISION_META--- written by book-to-Fountain LLM.
+    /// Fountain body is the screenplay file; JSON is production medium metadata.
+    /// </summary>
+    public static (string Fountain, ProjectVisionMeta.Document? Vision) SplitVisionMetaTrailer(string? text)
+    {
+        text ??= "";
+        const string startMark = "---VISION_META---";
+        const string endMark = "---END_VISION_META---";
+        var start = text.LastIndexOf(startMark, StringComparison.OrdinalIgnoreCase);
+        if (start < 0)
+            return (text.EndsWith('\n') ? text : text + "\n", null);
+
+        var jsonStart = start + startMark.Length;
+        var end = text.IndexOf(endMark, jsonStart, StringComparison.OrdinalIgnoreCase);
+        string json;
+        string fountain;
+        if (end < 0)
+        {
+            json = text[jsonStart..].Trim();
+            fountain = text[..start].TrimEnd();
+        }
+        else
+        {
+            json = text[jsonStart..end].Trim();
+            fountain = (text[..start] + text[(end + endMark.Length)..]).TrimEnd();
+        }
+
+        if (json.StartsWith("```", StringComparison.Ordinal))
+        {
+            var nl = json.IndexOf('\n');
+            if (nl > 0) json = json[(nl + 1)..];
+            var fence = json.LastIndexOf("```", StringComparison.Ordinal);
+            if (fence >= 0) json = json[..fence];
+            json = json.Trim();
+        }
+
+        var doc = ProjectVisionMeta.ParseModelJson(json);
+        if (doc is not null)
+            doc.DecidedBy = "adaptation";
+        return (fountain.EndsWith('\n') ? fountain : fountain + "\n", doc);
     }
 
     /// <summary>

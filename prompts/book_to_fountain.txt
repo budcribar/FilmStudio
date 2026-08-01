@@ -321,3 +321,27 @@ LEARNINGS (appended from Film Studio edit log)
 ================================================================
 <!-- STAGE1_LEARNINGS_START -->
 <!-- STAGE1_LEARNINGS_END -->
+
+================================================================
+VISION META SIDECAR (HARD — after the full Fountain)
+================================================================
+After you finish the complete Fountain screenplay, append a machine-readable sidecar
+(not part of the screenplay body). Production uses this for character portraits and clips.
+
+Decide visual_medium from STORY CONTENT (genre, illustrated children's book vs literary
+prose vs live-action drama). Do not invent medium from file type alone.
+
+Append exactly this block at the very end of your response:
+
+---VISION_META---
+{"visual_medium":"photoreal_live_action","render_style_lock":"STYLE LOCK: … one medium for all cast …","notes":"short rationale"}
+---END_VISION_META---
+
+visual_medium MUST be one of:
+- photoreal_live_action  (classic short stories, novels, gothic/period drama, most literary prose)
+- illustrated_picture_book  (children's picture books, painted storybook worlds)
+- stylized_3d_animated  (feature-style CG animation look)
+
+render_style_lock: one STYLE LOCK sentence the image model will obey.
+Nothing after ---END_VISION_META---.
+

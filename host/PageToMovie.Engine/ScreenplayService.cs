@@ -467,6 +467,7 @@ public static class ScreenplayService
 
         try
         {
+            ProjectVisionMeta.Document? visionFromScript = null;
             var fountain = await BookToFountainConverter.ConvertAsync(
                 workspaceRoot: store.WorkspaceRoot,
                 title: title,
@@ -476,16 +477,24 @@ public static class ScreenplayService
                 chat: chat,
                 model: model,
                 onProgress: onProgress,
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                onVisionMeta: v => visionFromScript = v).ConfigureAwait(false);
 
             var save = SaveDraft(store, projectId, fountain);
             if (!save.Ok) return save;
 
-            // Structured visual medium at adaptation time (not regex on Fountain later).
-            if (chat is not null && chat.IsConfigured)
+            // Medium sidecar from the same adaptation response (preferred).
+            // Fallback: one structured LLM call if the model omitted the trailer.
+            try
             {
-                try
+                if (visionFromScript is not null)
                 {
+                    ProjectVisionMeta.Write(projectDir, visionFromScript);
+                    onProgress?.Invoke($"Saved visual medium ({visionFromScript.VisualMedium}) to extract_meta");
+                }
+                else if (chat is not null && chat.IsConfigured)
+                {
+                    onProgress?.Invoke("No VISION_META trailer in screenplay response — asking model for medium…");
                     await ProjectVisionMeta.DecideAtAdaptationAsync(
                         projectDir,
                         title,
@@ -496,10 +505,10 @@ public static class ScreenplayService
                         onProgress,
                         ct).ConfigureAwait(false);
                 }
-                catch (Exception metaEx)
-                {
-                    onProgress?.Invoke("Vision medium metadata skipped: " + metaEx.Message);
-                }
+            }
+            catch (Exception metaEx)
+            {
+                onProgress?.Invoke("Vision medium metadata skipped: " + metaEx.Message);
             }
 
             save.Message = "Screenplay draft ready — review and approve";
