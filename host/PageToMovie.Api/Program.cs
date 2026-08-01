@@ -4497,8 +4497,22 @@ app.MapPost("/api/jobs/youtube-upload", async (
     HttpRequest request,
     FilmJobService jobService,
     ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!user.IsAdmin)
+    {
+        return Results.Json(new
+        {
+            ok = false,
+            error = "Only admins can upload to the shared YouTube channel.",
+            code = "admin_youtube_only",
+        }, statusCode: StatusCodes.Status403Forbidden);
+    }
+
     try
     {
         string? projectId = null;
@@ -6025,6 +6039,17 @@ app.MapPost("/api/demos", async (
 {
     if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
         return denied;
+
+    // Shared YouTube channel: only admins may upload / publish to the public wall.
+    if (!user.IsAdmin)
+    {
+        return Results.Json(new
+        {
+            ok = false,
+            error = "Only admins can publish to the public demo gallery (shared YouTube channel).",
+            code = "admin_publish_only",
+        }, statusCode: StatusCodes.Status403Forbidden);
+    }
 
     try
     {

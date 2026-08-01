@@ -886,13 +886,25 @@ else if (_activeTab == "share")
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="SetTabReview">Back to Review</button>
         </div>
         <div class="card-body p-4 text-white">
+@if (!Session.IsAdmin)
+{
+    <div class="alert alert-secondary border-secondary mb-0" data-testid="review-share-non-admin">
+        <div class="fw-semibold mb-1">Public gallery is admin-curated</div>
+        <p class="small mb-0 text-white-50">
+            Only admins upload to the shared YouTube channel. Films on the demo wall come from that channel
+            (admin sync). You can still export / download your cut for private use from Play.
+        </p>
+    </div>
+}
+else
+{
 @if (_youTubeStatus is not null && _youTubeStatus.Configured)
 {
     @if (!_youTubeStatus.Connected)
     {
         <div class="alert alert-warning d-flex align-items-center justify-content-between mb-3 py-2 px-3 shadow-sm" data-testid="review-youtube-connect-alert">
             <div class="small">
-                <strong>⚠️ YouTube Channel Not Connected:</strong> Server credentials are set up, but your YouTube channel needs a one-time connection to upload demos automatically.
+                <strong>⚠️ YouTube Channel Not Connected:</strong> Connect once from here or Admin → Demo gallery. Only admins can upload to this channel.
             </div>
             <button type="button" class="btn btn-sm btn-warning fw-bold text-dark ms-3 text-nowrap" @onclick="ConnectYouTubeAsync">
                 🔗 Connect YouTube Channel
@@ -902,11 +914,8 @@ else if (_activeTab == "share")
     else
     {
         <div class="alert alert-success py-2 px-3 mb-3 small d-flex align-items-center justify-content-between" data-testid="review-youtube-connected-alert">
-            <span>✅ Connected to <strong>PageToMovie YouTube Channel</strong>. Published films upload to YouTube automatically.</span>
-            @if (Session.IsAdmin)
-            {
-                <button type="button" class="btn btn-sm btn-link text-white-50 p-0 ms-2 text-decoration-none" @onclick="DisconnectYouTubeAsync">(disconnect)</button>
-            }
+            <span>✅ Connected — admin publishes land on the shared YouTube channel and public gallery.</span>
+            <button type="button" class="btn btn-sm btn-link text-white-50 p-0 ms-2 text-decoration-none" @onclick="DisconnectYouTubeAsync">(disconnect)</button>
         </div>
     }
 }
@@ -995,10 +1004,11 @@ else
                 <button type="button" class="btn btn-primary px-4" data-testid="review-save-confirm"
                         disabled="@(_busy || !_demoAcceptedGuidelines)"
                         @onclick="ConfirmSaveAsync">
-                    Publish to Demo Gallery
+                    Publish to YouTube & gallery
                 </button>
             </div>
 }
+} @* end Session.IsAdmin *@
         </div>
     </div>
 }
@@ -2379,6 +2389,11 @@ else
     /// </summary>
     private async Task PublishDemoAsync()
     {
+        if (!Session.IsAdmin)
+        {
+            _error = "Only admins can publish to the shared YouTube channel / public gallery.";
+            return;
+        }
         if (!_demoAcceptedGuidelines)
         {
             _error = "Accept the gallery guidelines before submitting.";
