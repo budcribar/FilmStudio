@@ -363,7 +363,7 @@ else
 @code {
     /// <summary>Show Setup keys only while personal BYOK studio keys are missing.</summary>
     private bool NeedsApiSetup =>
-        ActiveProject.Status is null || ActiveProject.Status.XaiConfigured == false;
+        ActiveProject.Status is { XaiConfigured: false };
 
     /// <summary>Only the real current step is highlighted. Setup (0) until keys exist, then pipeline.</summary>
     private string HomeActiveStep
