@@ -56,4 +56,38 @@ public sealed class PortraitStyleGateTests
         Assert.NotNull(g);
         Assert.Equal("photoreal", g.Value.Medium);
     }
+
+    [Fact]
+    public void Materialize_BinStaging_SniffsPng()
+    {
+        var tmp = Path.Combine(Path.GetTempPath(), $"ptm-gate-test-{Guid.NewGuid():N}.bin");
+        try
+        {
+            var png = new byte[]
+            {
+                0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+                0, 0, 0, 0, 0, 0, 0, 0
+            };
+            File.WriteAllBytes(tmp, png);
+            var path = CharacterDesignService.MaterializeImagePathForVision(tmp, out var del);
+            Assert.EndsWith(".png", path, StringComparison.OrdinalIgnoreCase);
+            Assert.NotNull(del);
+            Assert.True(File.Exists(path));
+            if (del is not null) File.Delete(del);
+        }
+        finally
+        {
+            try { File.Delete(tmp); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void ParseGate_OtherMedium()
+    {
+        var g = CharacterDesignService.ParsePortraitStyleGateResponse(
+            """{"pass":false,"medium":"other","reason":"no image attached"}""");
+        Assert.NotNull(g);
+        Assert.False(g.Value.Pass);
+        Assert.Equal("other", g.Value.Medium);
+    }
 }

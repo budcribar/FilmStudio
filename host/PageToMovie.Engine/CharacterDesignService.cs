@@ -642,93 +642,195 @@ public sealed class CharacterDesignService
         var wantIllustrated = PrefersIllustratedPortraitStyle(
             styleLock, hasImageHints: false, isAnimal: false);
         // PrefersIllustrated with empty photoreal cues returns false only when photoreal cues
-        // match; when style is neither, it returns false (not hasImageHints). Re-check:
+        // are present or default-to-photoreal; still detect cues for expected label.
         var hasPhotoCues = RegexContains(styleLock,
             @"\b(photoreal|photo-?real|live[- ]?action|cinematic|film photography|" +
-            @"period drama|gothic drama|naturalistic skin)\b");
+            @"period drama|naturalistic|photographic)\b");
         var hasIllustCues = RegexContains(styleLock,
-            @"\b(picture[- ]?book|illustration|illustrated|cartoon|painted cartoon|" +
-            @"children'?s book|storybook|stylized 3d|cg animated)\b");
-        if (!hasPhotoCues && !hasIllustCues)
+            @"\b(picture[- ]?book|illustrated|illustration|cartoon|painted|anime|comic)\b");
+        if (!hasPhotoCues && !hasIllustCues && !wantIllustrated)
             return; // style present but medium ambiguous — do not block lock
 
-        if (!_vision.IsConfigured)
+        if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
             throw new InvalidOperationException(
-                $"Cannot lock {charKey}: portrait style gate requires vision (XAI_API_KEY) " +
-                "to verify the image matches project medium. " +
-                "Set PageToMovie__RequirePortraitStyleGate=false only as emergency bypass.");
+                $"Cannot lock {charKey}: portrait image file is missing.");
 
-        var expected = hasPhotoCues && !wantIllustrated ? "photoreal" : "illustration";
-        var prompt =
-            "PORTRAIT STYLE GATE — judge ONLY the attached character portrait image.\n" +
-            $"Project style lock: {styleLock.Trim()}\n" +
-            $"Expected medium for this project: {expected}\n\n" +
-            "Classify the image medium:\n" +
-            "- photoreal = live-action photography / cinematic photo of a real person or animal " +
-            "(natural skin/fur, photographic lighting)\n" +
-            "- illustration = painted, drawn, cartoon, picture-book, anime, comic, or 3D-toon\n" +
-            "- sketch = pencil/charcoal/ink line art, unfinished drawing, grayscale sketch look\n" +
-            "- other = diagram, collage, text, unusable\n\n" +
-            "pass=true ONLY if the image medium matches Expected.\n" +
-            "For expected=photoreal: FAIL sketch, illustration, cartoon, pencil drawing.\n" +
-            "For expected=illustration: FAIL pure photoreal stock photography.\n\n" +
-            "JSON ONLY (no markdown):\n" +
-            "{\"pass\":true|false,\"medium\":\"photoreal|illustration|sketch|other\",\"reason\":\"short\"}\n";
-
-        string? visionModel = null;
+        // Vision clients only attach known extensions — upload staging uses ".bin".
+        string? tempForVision = null;
+        var visionPath = imagePath;
         try
         {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("vision_model_name", out var vEl) && vEl.ValueKind == System.Text.Json.JsonValueKind.String)
-                visionModel = vEl.GetString();
-        }
-        catch { }
+            visionPath = MaterializeImagePathForVision(imagePath, out tempForVision);
+            if (new FileInfo(visionPath).Length < 64)
+                throw new InvalidOperationException(
+                    $"Cannot lock {charKey}: portrait image is empty or unreadable.");
 
+            var expected = hasPhotoCues && !wantIllustrated ? "photoreal" : "illustration";
+            var prompt =
+                $"Project style lock: {styleLock.Trim()}\n" +
+                $"Expected medium for this project: {expected}\n\n" +
+                "An image is attached to this message. You MUST inspect that image.\n" +
+                "Classify the image medium:\n" +
+                "- photoreal = live-action photography / cinematic photo of a real person or animal " +
+                "(natural skin/fur texture, photographic lighting)\n" +
+                "- illustration = drawn/painted/cartoon/picture-book art\n" +
+                "- sketch = pencil/line drawing only\n" +
+                "- other = only if truly unreadable (blur, blank, non-portrait)\n" +
+                "pass=true ONLY if the image medium matches Expected.\n" +
+                "For expected=photoreal: FAIL sketch, illustration, cartoon, pencil drawing.\n" +
+                "For expected=illustration: FAIL pure photoreal stock photography.\n" +
+                "Never claim the image is missing if an attachment is present.\n\n" +
+                "Reply with JSON only:\n" +
+                "{\"pass\":true|false,\"medium\":\"photoreal|illustration|sketch|other\",\"reason\":\"short\"}\n";
+
+            string? visionModel = null;
+            try
+            {
+                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfg.TryGetValue("vision_model_name", out var vEl) && vEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                    visionModel = vEl.GetString();
+            }
+            catch { }
+
+            var gate = await RunPortraitStyleGateAsync(
+                prompt, visionPath, visionModel, detail: "low", ct).ConfigureAwait(false);
+
+            // "no image attached" / medium=other is usually a transport/extension bug, not style.
+            if (IsVisionBlindGate(gate))
+            {
+                _log.LogWarning(
+                    "Portrait style gate appeared blind for {CharKey} (medium={Medium} reason={Reason}); retry high detail",
+                    charKey, gate.Medium, gate.Reason);
+                gate = await RunPortraitStyleGateAsync(
+                    prompt, visionPath, visionModel, detail: "high", ct).ConfigureAwait(false);
+            }
+
+            if (IsVisionBlindGate(gate))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot lock {charKey}: style check could not read the portrait image " +
+                    $"({gate.Medium}: {gate.Reason}). Try again, or re-generate the look.");
+            }
+
+            if (!gate.Pass)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot lock {charKey}: this look does not match the project style " +
+                    $"(got {gate.Medium}, expected {expected}). {gate.Reason} " +
+                    "Generate a new look that matches the project style, then choose it again.");
+            }
+
+            // Extra hard reject: never lock sketch on photoreal projects even if model said pass.
+            if (expected == "photoreal" &&
+                gate.Medium is "sketch" or "illustration")
+            {
+                throw new InvalidOperationException(
+                    $"Cannot lock {charKey}: this look is {gate.Medium}, but the project is live-action / photoreal. " +
+                    $"{gate.Reason}");
+            }
+
+            _log.LogInformation(
+                "Portrait style gate OK for {CharKey}: medium={Medium} expected={Expected}",
+                charKey, gate.Medium, expected);
+        }
+        finally
+        {
+            if (tempForVision is not null)
+            {
+                try { File.Delete(tempForVision); } catch { /* ignore */ }
+            }
+        }
+    }
+
+    private async Task<PortraitStyleGateResult> RunPortraitStyleGateAsync(
+        string prompt,
+        string visionPath,
+        string? visionModel,
+        string detail,
+        CancellationToken ct)
+    {
         string raw;
         try
         {
             raw = await _vision.CompleteWithImagesAsync(
                 prompt,
-                new[] { imagePath },
-                model: !string.IsNullOrWhiteSpace(visionModel) ? visionModel : "grok-4.5",
-                detail: "low",
+                new[] { visionPath },
+                model: !string.IsNullOrWhiteSpace(visionModel) ? visionModel! : "grok-4.5",
+                detail: detail,
                 ct: ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException(
-                $"Cannot lock {charKey}: portrait style gate vision failed ({ex.Message}). " +
-                "Refusing to lock without a medium check.",
+                $"Cannot lock character: style check failed ({ex.Message}). Try again.",
                 ex);
         }
 
         var gate = ParsePortraitStyleGateResponse(raw);
         if (gate is null)
             throw new InvalidOperationException(
-                $"Cannot lock {charKey}: portrait style gate returned unparseable response. " +
-                $"Raw: {TrimForError(raw, 240)}");
+                "Cannot lock character: style check returned an unreadable response. Try again.");
+        return gate.Value;
+    }
 
-        var result = gate.Value;
-        if (!result.Pass)
+    private static bool IsVisionBlindGate(PortraitStyleGateResult gate)
+    {
+        if (string.Equals(gate.Medium, "other", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException(
-                $"Cannot lock {charKey}: portrait medium '{result.Medium}' does not match " +
-                $"project expected '{expected}'. {result.Reason} " +
-                "Re-generate with the project style lock (photoreal vs picture-book), then lock again.");
+            var r = gate.Reason ?? "";
+            if (r.Length == 0) return true;
+            if (RegexContains(r,
+                    @"\b(no image|not attached|missing image|cannot see|can't see|no (photo|picture|portrait)|empty|blank|unreadable|not provided)\b"))
+                return true;
         }
+        var reason = gate.Reason ?? "";
+        return RegexContains(reason,
+            @"\b(no image attached|image not (attached|provided|present)|did not receive an image)\b");
+    }
 
-        // Extra hard reject: never lock sketch on photoreal projects even if model said pass.
-        if (expected == "photoreal" &&
-            result.Medium is "sketch" or "illustration")
+    /// <summary>
+    /// Vision clients filter by extension; upload staging uses <c>.bin</c>. Sniff bytes and copy to a temp file with a real image extension when needed.
+    /// </summary>
+    public static string MaterializeImagePathForVision(string imagePath, out string? tempPathToDelete)
+    {
+        tempPathToDelete = null;
+        var ext = Path.GetExtension(imagePath) ?? "";
+        if (ext.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+            ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+            ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+            ext.Equals(".webp", StringComparison.OrdinalIgnoreCase) ||
+            ext.Equals(".gif", StringComparison.OrdinalIgnoreCase) ||
+            ext.Equals(".ico", StringComparison.OrdinalIgnoreCase))
+            return imagePath;
+
+        var sniffExt = SniffImageExtension(imagePath) ?? ".png";
+        var temp = Path.Combine(
+            Path.GetTempPath(),
+            $"ptm-portrait-gate-{Guid.NewGuid():N}{sniffExt}");
+        File.Copy(imagePath, temp, overwrite: true);
+        tempPathToDelete = temp;
+        return temp;
+    }
+
+    private static string? SniffImageExtension(string path)
+    {
+        try
         {
-            throw new InvalidOperationException(
-                $"Cannot lock {charKey}: image is '{result.Medium}' but project is photoreal/live-action. " +
-                $"{result.Reason}");
+            using var fs = File.OpenRead(path);
+            Span<byte> header = stackalloc byte[12];
+            var n = fs.Read(header);
+            if (n >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF)
+                return ".jpg";
+            if (n >= 8 && header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47)
+                return ".png";
+            if (n >= 6 && header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46)
+                return ".gif";
+            if (n >= 12 && header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46 &&
+                header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50)
+                return ".webp";
         }
-
-        _log.LogInformation(
-            "Portrait style gate OK for {CharKey}: medium={Medium} expected={Expected}",
-            charKey, result.Medium, expected);
+        catch { /* fall through */ }
+        return null;
     }
 
     public static PortraitStyleGateResult? ParsePortraitStyleGateResponse(string? raw)
@@ -756,10 +858,14 @@ public sealed class CharacterDesignService
             var medium = root.TryGetProperty("medium", out var m)
                 ? (m.GetString() ?? "other").Trim().ToLowerInvariant()
                 : "other";
-            if (medium is "photo" or "photographic" or "live-action" or "live_action")
+            if (medium is "photo" or "photographic" or "live-action" or "live_action"
+                or "realistic" or "cinematic")
                 medium = "photoreal";
-            if (medium is "drawn" or "drawing" or "cartoon" or "picture-book" or "picture_book")
+            if (medium is "drawn" or "drawing" or "cartoon" or "picture-book" or "picture_book"
+                or "illustrated" or "painting" or "painted")
                 medium = "illustration";
+            if (medium is "pencil" or "charcoal" or "line-art" or "lineart")
+                medium = "sketch";
             var reason = root.TryGetProperty("reason", out var r) ? (r.GetString() ?? "").Trim() : "";
             return new PortraitStyleGateResult(pass, medium, reason);
         }
