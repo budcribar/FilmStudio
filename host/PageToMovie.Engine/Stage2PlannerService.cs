@@ -664,6 +664,14 @@ public sealed class Stage2PlannerService
             // keep blueprint visual_prompt declarative (action/style only).
             var vp = BuildVisualPrompt(beat, sceneWork, locSeeds, charSeeds, wardrobe, i);
 
+            // AI cinematic lighting/mood token (locks lighting style across the scene's shots) —
+            // previously computed by CinematicLightingClassifier and stored on the scene as
+            // lighting_continuity_token, but never appended to any clip's visual_prompt, so it
+            // never reached the actual video-generation call. Appended here the same way camera/
+            // performance/optics/color directives already are below.
+            if (!string.IsNullOrWhiteSpace(aiLighting))
+                vp = $"{vp} {PromptTags.Wrap("Lighting", PromptTags.SanitizeValue(aiLighting))}";
+
             // Story-specific negatives only; provider global negatives applied at gen time.
             var neg = BuildStoryNegativePrompt(beat, wardrobe, clipCast);
             if (!string.IsNullOrWhiteSpace(aiNegative))
@@ -1101,6 +1109,17 @@ public sealed class Stage2PlannerService
         if (ac == "big_action" &&
             !ve.Contains("continuous", StringComparison.OrdinalIgnoreCase))
             ve = $"{ve}. ONE continuous take no cut; unbroken cause-to-effect motion";
+
+        // Establishing shots otherwise describe only a static composition — a known AI-video
+        // failure mode where the "opening wide shot" of a scene looks like a frozen photo. Nudge
+        // in setting-appropriate ambient background life (the model invents specifics; no new
+        // classifier call), mirroring how big_action gets its own action_class-specific guidance.
+        if (ac == "establishing" &&
+            !ve.Contains("subtle", StringComparison.OrdinalIgnoreCase) &&
+            !ve.Contains("ambient motion", StringComparison.OrdinalIgnoreCase))
+            ve = $"{ve}. Include subtle background motion appropriate to this setting (e.g. distant " +
+                 "traffic or passersby, a sign or light flickering, wind moving debris/foliage/fabric) " +
+                 "so the shot feels alive, not a still photo";
 
         var speech = SpeechClause(beat, cast);
         var mustNot = GetList(beat, "must_not").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).Take(3).ToList();

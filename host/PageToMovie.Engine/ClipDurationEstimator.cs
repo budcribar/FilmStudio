@@ -75,6 +75,28 @@ public static class ClipDurationEstimator
     }
 
     /// <summary>
+    /// Resolves the actual generation-time duration for a specific video model, snapping to the
+    /// nearest value in <see cref="SupportedModelEntry.AllowedDurationsSeconds"/> when the model
+    /// only accepts a discrete set (e.g. Veo 3.1's documented 4/6/8 seconds only — clamping a
+    /// planned "7" into a min/max range still isn't an accepted duration). Falls back to a plain
+    /// min/max clamp via <see cref="ResolveBoundsForModel"/> for any model without a declared
+    /// discrete set, so this is a safe drop-in replacement for a bare Math.Clamp call everywhere.
+    /// </summary>
+    public static int ResolveActualDurationForModel(string? modelId, int requestedSeconds)
+    {
+        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
+        if (entry?.AllowedDurationsSeconds is { Count: > 0 } allowed)
+        {
+            return allowed
+                .OrderBy(d => Math.Abs(d - requestedSeconds))
+                .ThenBy(d => d)
+                .First();
+        }
+        var (min, max, _) = ResolveBoundsForModel(modelId);
+        return Math.Clamp(requestedSeconds, min, max);
+    }
+
+    /// <summary>
     /// Estimate duration for a planned beat (Stage 2). Optional bounds (typically from
     /// <see cref="ResolveBoundsForModel"/>) clamp against the actually-selected video model's
     /// own limits instead of the global Grok-shaped defaults; omitted, behavior is unchanged.
@@ -645,18 +667,20 @@ public static class ClipDurationEstimator
         string Join(List<string> ws)
         {
             var sb = new StringBuilder();
+            var suppressNextSpace = false;
             foreach (var w in ws)
             {
-                if (sb.Length == 0)
-                {
-                    sb.Append(w);
-                    continue;
-                }
-                // No space before trailing punctuation-only tokens
-                if (Regex.IsMatch(w, @"^[.!?;,:]+$"))
+                // Em-dash/en-dash/hyphen tokens attach directly to both neighbors (source text has
+                // no surrounding space, e.g. "nights—every") — unlike trailing punctuation (.!?;,:),
+                // which only suppresses its OWN leading space, a dash also suppresses the space
+                // before the word that follows it.
+                var isDash = Regex.IsMatch(w, @"^[—–-]+$");
+                var noLeadingSpace = suppressNextSpace || isDash || Regex.IsMatch(w, @"^[.!?;,:]+$");
+                if (sb.Length == 0 || noLeadingSpace)
                     sb.Append(w);
                 else
                     sb.Append(' ').Append(w);
+                suppressNextSpace = isDash;
             }
             return sb.ToString().Trim();
         }

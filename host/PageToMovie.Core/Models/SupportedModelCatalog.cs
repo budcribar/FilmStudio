@@ -143,6 +143,15 @@ public sealed class SupportedModelEntry
     public int? AbsMaxClipDurationSeconds { get; init; }
 
     /// <summary>
+    /// Discrete set of durations this model accepts (Video only) — e.g. Veo 3.1 documents exactly
+    /// 4, 6, or 8 seconds, not an arbitrary continuous range. When set, generation-time duration
+    /// resolution must snap to the nearest value here rather than a plain min/max clamp (a clamped
+    /// "7" is still not an accepted Veo duration). Null means the model accepts any value in
+    /// [MinClipDurationSeconds, MaxClipDurationSeconds] (or the global defaults).
+    /// </summary>
+    public IReadOnlyList<int>? AllowedDurationsSeconds { get; init; }
+
+    /// <summary>
     /// Longest single-call duration this audio model will accept, in seconds (Audio only) — the
     /// generation-side counterpart to <see cref="MaxClipDurationSeconds"/> for video. Callers
     /// (FilmJobService's music job) generate this many seconds per segment and concatenate
@@ -543,6 +552,7 @@ public static class SupportedModelCatalog
         MinClipDurationSeconds = e.MinClipDurationSeconds,
         MaxClipDurationSeconds = e.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = e.AbsMaxClipDurationSeconds,
+        AllowedDurationsSeconds = e.AllowedDurationsSeconds is { } ad ? new List<int>(ad) : null,
         MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
     };
 
@@ -570,6 +580,7 @@ public static class SupportedModelCatalog
         MinClipDurationSeconds = d.MinClipDurationSeconds,
         MaxClipDurationSeconds = d.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = d.AbsMaxClipDurationSeconds,
+        AllowedDurationsSeconds = d.AllowedDurationsSeconds,
         MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
     };
 }
@@ -598,6 +609,7 @@ public sealed class SupportedModelDto
     public int? MinClipDurationSeconds { get; set; }
     public int? MaxClipDurationSeconds { get; set; }
     public int? AbsMaxClipDurationSeconds { get; set; }
+    public List<int>? AllowedDurationsSeconds { get; set; }
     public int? MaxAudioDurationSeconds { get; set; }
 }
 

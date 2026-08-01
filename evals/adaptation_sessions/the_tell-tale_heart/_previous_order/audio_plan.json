@@ -1,0 +1,103 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "score_intent": "Uneasy intimate confessional underscore; low sustained tension that supports denial of madness without overpowering speech",
+      "timing": "Enter under first candle flutter; hold sparse through monologue; slight swell on \u0027hearken\u0027 then settle",
+      "diegetic_sound": "Single candle flame flutter; distant house creak; Narrator\u0027s quick breath; faint death-watch ticking in the walls",
+      "silence_or_exclusions": "No music stings on cuts; no exterior street noise; keep room dead quiet under his voice so hearing acuity reads",
+      "alternatives": [
+        "Dry room tone only with tick and breath",
+        "Very low bowed-string drone under last line only"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "score_intent": "Quiet dread and obsession; motive reveal stays hushed and predatory",
+      "timing": "Soft pad under doorway presence; thin hold through V.O. eye reveal; no hit on cut",
+      "diegetic_sound": "Soft latch click; careful floorboard weight under Narrator\u0027s step; Old Man\u0027s slow sleep breathing; closed-lantern hush",
+      "silence_or_exclusions": "No heartbeat yet; no loud hinges; exclude any neighbour or street sound",
+      "alternatives": [
+        "Near-silent bed-breath bed only",
+        "Sub-bass room pressure without melody"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "score_intent": "Methodical suspense; cunning patience over seven nights compressed",
+      "timing": "Pulse lightly with each cautious advance; freeze score when he freezes on hinge threat; thin ray moment nearly dry",
+      "diegetic_sound": "Latch turn; hinges threaten a creak then stop; slow head-and-lantern slide; soft scrape of lantern lid; single thin ray (no electrical hum)",
+      "silence_or_exclusions": "Kill all non-essential ambience during freeze; no Old Man snore spikes; no music swell on ray",
+      "alternatives": [
+        "Pure Foley stealth loop",
+        "Sparse clock-like wood ticks matching caution"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "score_intent": "False daylight warmth and ease; ironic normalcy after nights of stalking",
+      "timing": "Brighter open tone on entry; gentle resolve under clasp; short scene keep light",
+      "diegetic_sound": "Shutters rattle lightly; cheerful footsteps on boards; Narrator\u0027s hearty calling voice; Old Man weak murmur and bed shift",
+      "silence_or_exclusions": "No horror drones; no ticking heart; no night insects; keep morning domestic only",
+      "alternatives": [
+        "Soft daylight room tone only",
+        "Brief major-key woodwind color under greeting then out"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "score_intent": "Peak suspense and held breath; triumph into terror standoff for the long hour",
+      "timing": "Creep under slow latch; micro-hit on metallic slip; sustain near-silence through frozen hour; low well on stifled groan",
+      "diegetic_sound": "Almost-inaudible chuckle; bedclothes sudden shift; sharp metallic slip of thumb on tin fastening; death-watch ticks in wall; long held breaths; stifled groan of mortal terror from bed",
+      "silence_or_exclusions": "After slip, strip to ticks and breath only for the stillness stretch; no score melody during hour freeze; no exterior knock yet",
+      "alternatives": [
+        "Absolute hush with only death-watch",
+        "Low irregular pulse under groan only"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "score_intent": "Fury and climax kill; heartbeat as driving diegetic engine then merciful stop",
+      "timing": "Introduce muffled-watch heart under open-eye stare; accelerate through build; hard impact on yell/shriek/bed slam; decay muffled beats many minutes then hard stop into silence",
+      "diegetic_sound": "Soft scrape of lantern lid; low dull quick heart sound like watch in cotton rising louder; Narrator scarcely breathing; loud yell; Old Man single shriek; bed frame slam; muffled frantic beating beneath bed slowing to cease; hand-on-chest silence so complete candle seems loud",
+      "silence_or_exclusions": "After final cease, leave true silence before V.O. confirmation; no triumphant fanfare; officers and street still absent",
+      "alternatives": [
+        "Heart only diegetic with no score under kill",
+        "Low percussion double of heart then cut with cease"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "score_intent": "Grim industrious aftermath then sudden external threat; satisfaction undercut by knock",
+      "timing": "Sparse work rhythm under dismember and planks; brief dark humor color on laugh; bell then knock punctuate end",
+      "diegetic_sound": "Muffled saw and knife work; planks pry up and settle back cunningly; tub liquid catch; low satisfied ha-ha laugh; distant four o\u0027clock bell; firm knocking at street door below",
+      "silence_or_exclusions": "No heart under floor yet; no police voices until S8; keep work sounds contained not splattery",
+      "alternatives": [
+        "Dry carpentry Foley only until bell",
+        "Single low piano hit on knock"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "score_intent": "Polite official calm and false relief; light heart before return to chamber",
+      "timing": "Open with night air on door; neutral underscore under introductions; stay restrained",
+      "diegetic_sound": "Door latch; night air; three pairs of boots on threshold; Officer Reynolds calm speech; Narrator light smile and welcome lines",
+      "silence_or_exclusions": "No heart-beat; no chamber ticks bleeding in; no ominous sting on officers\u0027 faces",
+      "alternatives": [
+        "Door and boot Foley only",
+        "Thin civil string pad under dialogue"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "score_intent": "Catastrophic guilt crescendo; subjective heart overwhelms polite chat into confession scream then hard cut silence",
+      "timing": "Ease under chair settle and chat; high thin ringing enters; morph to watch-in-cotton heart rising under talk; escalate with pace grate and rave; maximum on shrieked confession; abrupt total cut to silence on final beat",
+      "diegetic_sound": "Chairs scrape; pleasant low officer conversation and smiles; floorboard settle under Narrator\u0027s chair; high thin ringing sharpening; low dull quick heart sound rising steadily; Narrator quickened speech then high-key argument; heavy boot strides; chair legs grate on boards; ragged breath foam rave swear; confession shriek ringing off walls; heart thundering; candle gutter; abrupt silence",
+      "silence_or_exclusions": "Officers must seem not to hear the heart until confession; no non-diegetic choir; after shriek cut all sound clean for end button",
+      "alternatives": [
+        "Heart and scrape only after ringing with score stripped",
+        "End on dry shriek echo into black silence without tail music"
+      ]
+    }
+  ]
+}

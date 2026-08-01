@@ -1,0 +1,69 @@
+{
+  "schema_version": "adaptation_package.v1",
+  "pipeline_variant": "dual_attach_full",
+  "book_slug": "nick_and_me",
+  "book_sha256": "413e68e0ce71ec464c2dbb93f3f44aae09b16bd49eedcf7b6de646cf7fbe5bc2",
+  "provider": "xai",
+  "model": "grok-4.5",
+  "judge_models": [
+    "grok-4",
+    "grok-4.20-reasoning"
+  ],
+  "temperature": 0.2,
+  "judge_temperature": 0,
+  "target_runtime_minutes": 90,
+  "generated_at_utc": "2026-08-01T20:51:32.3164505Z",
+  "validation_status": "pass",
+  "scene_count": 53,
+  "clip_count": 295,
+  "artifacts": [
+    {
+      "key": "cast_and_locations",
+      "path": "cast_and_locations_dualattach_full.json",
+      "exists": true,
+      "sha256": "0c5bdff7b234ca6d57496494a4edb22f0c75eb9dad87de78ba879f3842314f09"
+    },
+    {
+      "key": "screenplay",
+      "path": "screenplay_dualattach_full.fountain",
+      "exists": true,
+      "sha256": "82f7ee56a0fa1d6823f23009265f35dc1f299635de3ad5d6309d46486189b208"
+    },
+    {
+      "key": "edit_decision_list",
+      "path": "edit_decision_list_dualattach_full.json",
+      "exists": true,
+      "sha256": "9530a65959963fab58ff00309ef07de28691f4a44da60c2d9b8a8a00c49b3ada"
+    },
+    {
+      "key": "clip_shot_plan",
+      "path": "clip_shot_plan_dualattach_full.json",
+      "exists": true,
+      "sha256": "b839910a0cbed82ee052ed0cd440fe13238342441abf4ec2a858241557491671"
+    },
+    {
+      "key": "audio_plan",
+      "path": "audio_plan_dualattach_full.json",
+      "exists": true,
+      "sha256": "753c003ac975ac02476e80a20d5e5731c4b883b21d8d3824ea3aa21e90141423"
+    },
+    {
+      "key": "validation_report",
+      "path": "validation_report_dualattach_full.json",
+      "exists": true,
+      "sha256": "72e64d2ff3094c9220b1b4b132530a437ba6966b4f662510181d85c6647dd982"
+    },
+    {
+      "key": "judge_review_grok-4",
+      "path": "judge_review_dualattach_full.grok-4.json",
+      "exists": true,
+      "sha256": "ef776d5ae94e71f4afd9be7c5ee3af7226a2f09bc30244ec62845c165e883593"
+    },
+    {
+      "key": "judge_review_grok-4.20-reasoning",
+      "path": "judge_review_dualattach_full.grok-4.20-reasoning.json",
+      "exists": true,
+      "sha256": "b3424dc2650a7ec6cdf4c4cdbde04529552a1dee05ed08d659716fc5eaea5a12"
+    }
+  ]
+}

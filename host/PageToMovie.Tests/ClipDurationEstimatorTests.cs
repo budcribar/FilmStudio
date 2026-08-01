@@ -119,6 +119,28 @@ public class ClipDurationEstimatorTests
         Assert.Equal(12, absMax);
     }
 
+    [Theory]
+    [InlineData(1, 4)]  // below the lowest allowed value clamps up to it
+    [InlineData(5, 4)]  // exactly between 4 and 6 — ties go to the lower value
+    [InlineData(7, 6)]  // exactly between 6 and 8 — ties go to the lower value
+    [InlineData(6, 6)]  // exact match passes through unchanged
+    [InlineData(9, 8)]  // above the highest allowed value clamps down to it
+    public void ResolveActualDurationForModel_SnapsToVeoDiscreteDurations(int requested, int expected)
+    {
+        // veo-3.1 documents exactly 4/6/8 seconds, not a continuous range — a plain min/max clamp
+        // would let e.g. 7 through unchanged, which Veo does not accept.
+        var actual = ClipDurationEstimator.ResolveActualDurationForModel("veo-3.1", requested);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ResolveActualDurationForModel_FallsBackToPlainClampWithoutDiscreteSet()
+    {
+        // grok-imagine-video has no AllowedDurationsSeconds — behaves like a plain min/max clamp.
+        var actual = ClipDurationEstimator.ResolveActualDurationForModel("grok-imagine-video", 25);
+        Assert.Equal(10, actual);
+    }
+
     [Fact]
     public void Action_only_is_not_padded_to_ten()
     {
@@ -324,6 +346,23 @@ public class ClipDurationEstimatorTests
             var planned = ClipDurationEstimator.Estimate(p, "speaks", "dialogue");
             Assert.InRange(planned, ClipDurationEstimator.MinSeconds, ClipDurationEstimator.MaxSeconds);
         }
+    }
+
+    [Fact]
+    public void SplitDialogueToFitModelMax_does_not_insert_spaces_around_em_dashes()
+    {
+        // Real Tell-Tale Heart lines observed to need word-level packing (SegmentDialogueUnits
+        // alone wasn't enough) — the dash sits directly against both words in the source with no
+        // surrounding space, matching this era's typographic convention.
+        var line =
+            "And this I did for seven long nights—every night just at midnight—but I found the eye " +
+            "always closed; and so it was impossible to do the work; for it was not the old man who vexed me, but his Evil Eye.";
+
+        var parts = ClipDurationEstimator.SplitDialogueToFitModelMax(line);
+        var rejoined = string.Join(" ", parts);
+        Assert.Contains("nights—every", rejoined);
+        Assert.Contains("midnight—but", rejoined);
+        Assert.DoesNotContain(" — ", rejoined);
     }
 
     [Fact]

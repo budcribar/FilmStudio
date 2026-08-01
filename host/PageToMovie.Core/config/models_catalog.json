@@ -197,11 +197,15 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
+      "minClipDurationSeconds": 4,
+      "maxClipDurationSeconds": 8,
+      "absMaxClipDurationSeconds": 8,
+      "allowedDurationsSeconds": [4, 6, 8],
       "videoCostPerSecondByResolution": {
         "720p": 0.40,
         "1080p": 0.40
       },
-      "notes": "Wired via GeminiVideoClient (text/image-to-video only)."
+      "notes": "Wired via GeminiVideoClient (text/image-to-video only). Documented duration is exactly 4, 6, or 8 seconds (not an arbitrary range) — 1080p/4K surfaces often restrict to 8s only; no 480p support. Confirmed via Gemini video docs / AI Studio Veo / Cloud Veo 3.1 pages, not yet verified against a live account."
     },
     {
       "id": "grok-imagine-image-quality",

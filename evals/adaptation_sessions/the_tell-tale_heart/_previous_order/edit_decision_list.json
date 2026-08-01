@@ -1,0 +1,224 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "INT. OLD HOUSE - CHAMBER - NIGHT",
+      "purpose": "Narrator addresses camera, denies madness, establishes acute hearing and calm storytelling frame",
+      "location_key": "LOCATION_OLD_HOUSE_CHAMBER",
+      "cast": [
+        "THE NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "candlelight on bare floorboards",
+        "Narrator sits forward on plain wooden chair facing camera",
+        "dark lantern at his feet",
+        "leans closer almost smiling",
+        "quick breath and wall ticking"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. OLD HOUSE - CHAMBER - NIGHT",
+      "purpose": "Introduce sleeping Old Man and motive: the vulture eye that drives the murder resolve",
+      "location_key": "LOCATION_OLD_HOUSE_CHAMBER",
+      "cast": [
+        "THE NARRATOR",
+        "THE OLD MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat lantern in hand",
+        "THE OLD MAN: frail thin white hair pale blue filmed eye closed"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Old Man asleep in high bed",
+        "Narrator in doorway lantern closed face intent",
+        "eases door wider by degrees eyes on bed",
+        "soft latch and careful floorboard weight"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "INT. OLD HOUSE - CHAMBER - NIGHT",
+      "purpose": "Show seven nights of cunning midnight visits with lantern ray on always-closed eye",
+      "location_key": "LOCATION_OLD_HOUSE_CHAMBER",
+      "cast": [
+        "THE NARRATOR",
+        "THE OLD MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat with dark lantern",
+        "THE OLD MAN: frail asleep eye closed"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "midnight caution at latch",
+        "thrusts closed dark lantern then head slowly",
+        "freezes when hinges threaten creak",
+        "undoes lantern single thin ray on closed eye on pillow"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "INT. OLD HOUSE - CHAMBER - DAY",
+      "purpose": "Morning dissimulation: hearty kindness so Old Man never suspects the nightly visits",
+      "location_key": "LOCATION_OLD_HOUSE_CHAMBER",
+      "cast": [
+        "THE NARRATOR",
+        "THE OLD MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat hearty manner",
+        "THE OLD MAN: frail thin white hair filmed eye half-lidded in bed"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "morning light through closed shutters",
+        "Narrator strides boldly in calling out",
+        "Old Man sits up weak smile",
+        "Narrator clasps his shoulder with warmth"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "INT. OLD HOUSE - CHAMBER - NIGHT",
+      "purpose": "Eighth night: slow triumphant entry, thumb slip, Old Man wakes, hour of frozen terror and groan",
+      "location_key": "LOCATION_OLD_HOUSE_CHAMBER",
+      "cast": [
+        "THE NARRATOR",
+        "THE OLD MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat with lantern",
+        "THE OLD MAN: frail thin white hair sitting up in dark"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "pitch black shutters fastened",
+        "hand on latch slower than watch minute hand",
+        "chuckles triumph tightens face",
+        "Old Man stirs bedclothes",
+        "keeps pushing door head inside",
+        "thumb slips on tin fastening",
+        "freezes motionless whole hour",
+        "Old Man sits up listening",
+        "stifled groan of mortal terror",
+        "death-watch ticks in wall"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "INT. OLD HOUSE - CHAMBER - NIGHT",
+      "purpose": "Lantern ray on open vulture eye, rising heart-beat, yell, murder under bed, confirm stone death",
+      "location_key": "LOCATION_OLD_HOUSE_CHAMBER",
+      "cast": [
+        "THE NARRATOR",
+        "THE OLD MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat",
+        "THE OLD MAN: frail pale blue filmed eye wide open then corpse"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "tiny crevice in lantern spider-thread ray on open eye only",
+        "Narrator face twists fury staring at eye",
+        "holds ray steady scarcely breathing",
+        "heart-beat rises like muffled watch",
+        "yells throws open lantern leaps in",
+        "Old Man single shriek",
+        "drags him to floor pulls heavy bed over him",
+        "stands smiling gaily over bed",
+        "muffled beats under bed many minutes then cease",
+        "pulls bed aside hand on heart no pulsation"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "INT. OLD HOUSE - CHAMBER - NIGHT",
+      "purpose": "Dismember corpse, conceal under floorboards with no stain, four o\u0027clock knocking below",
+      "location_key": "LOCATION_OLD_HOUSE_CHAMBER",
+      "cast": [
+        "THE NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat working hastily"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "night wanes silent hasty work",
+        "dismembers head arms legs",
+        "lifts three planks deposits parts between scantlings",
+        "replaces boards cunningly",
+        "tub has caught all stains floor clean",
+        "satisfied low laugh",
+        "bell four o\u0027clock still dark",
+        "firm knocking at street door below"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "INT. OLD HOUSE - ENTRY - NIGHT",
+      "purpose": "Police arrive after neighbour report; Narrator greets lightly claims dream shriek and absent old man",
+      "location_key": "LOCATION_OLD_HOUSE_ENTRY",
+      "cast": [
+        "THE NARRATOR",
+        "OFFICER REYNOLDS",
+        "OFFICER HALE",
+        "OFFICER CLEMM"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat light heart",
+        "OFFICER REYNOLDS: bearded calm dark period coat",
+        "OFFICER HALE: younger watchful dark period coat",
+        "OFFICER CLEMM: tall soft-spoken dark period coat"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Narrator opens street door",
+        "three officers on threshold dark coats",
+        "introduce with suavity",
+        "Narrator smiles bows them in",
+        "claims shriek was own dream old man in country"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "INT. OLD HOUSE - CHAMBER - NIGHT",
+      "purpose": "Officers seated atop corpse spot; ringing becomes heart-beat; Narrator raves then confesses and demands planks torn up",
+      "location_key": "LOCATION_OLD_HOUSE_CHAMBER",
+      "cast": [
+        "THE NARRATOR",
+        "OFFICER REYNOLDS",
+        "OFFICER HALE",
+        "OFFICER CLEMM"
+      ],
+      "wardrobe_or_age_variant": [
+        "THE NARRATOR: lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat growing pale then raving",
+        "OFFICER REYNOLDS: bearded calm dark period coat",
+        "OFFICER HALE: younger watchful dark period coat",
+        "OFFICER CLEMM: tall soft-spoken dark period coat"
+      ],
+      "estimated_duration_seconds": 100,
+      "visual_beats": [
+        "leads officers into chamber shows undisturbed treasures",
+        "brings chairs officers sit",
+        "Narrator seats himself on spot above corpse",
+        "at ease then grows pale head aches",
+        "ringing sharpens becomes distinct heart-beat",
+        "talks freely then vehemently high key",
+        "rises violent gesticulations paces heavy strides",
+        "swings grates chair on boards",
+        "officers chat smile pleasantly",
+        "noise louder foams raves swears",
+        "shrieks confession stabs finger at floorboards",
+        "officers stare candle gutters",
+        "shriek and heart-beat then abrupt silence"
+      ]
+    }
+  ]
+}

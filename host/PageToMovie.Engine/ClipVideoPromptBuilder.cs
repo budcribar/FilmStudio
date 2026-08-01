@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Models;
 
 namespace PageToMovie.Engine;
 
@@ -93,11 +94,15 @@ public static class ClipVideoPromptBuilder
         string? startFrameImagePath = null,
         int maxRefs = 5,
         string? styleHead = null,
-        string? resolution = null,
-        int frameRate = 24)
+        string? videoModel = null)
     {
         characters ??= new Dictionary<string, CharacterProfile>(StringComparer.OrdinalIgnoreCase);
-        var res = NormalizeResolutionLabel(resolution);
+        // Model-aware, not a hardcoded constant: a future model with a larger (or smaller) prompt
+        // budget only needs its models_catalog.json MaxPromptLength updated, never a code change.
+        // Same resolution pattern already proven in FalVideoClient/FilmJobService; VideoPromptHardCapChars
+        // is only the fallback for models with no catalog-specific value set.
+        var promptMaxLen = SupportedModelCatalog.ResolveOrDefault(videoModel, ModelCapability.Video)
+            .MaxPromptLength ?? VideoPromptHardCapChars;
 
         // Mode follows actual media inputs, not blueprint cont alone.
         // Cast-change reseed (PR2) clears previousClipVideoPath while blueprint may still say
@@ -245,6 +250,18 @@ public static class ClipVideoPromptBuilder
         sb.AppendLine(continuityBlock);
         sb.AppendLine();
         sb.AppendLine(PromptTags.Open("Clip"));
+        // Unlike resolution/fps (pure technical spec, no effect on content — see below), duration
+        // genuinely changes how the described action should be PACED: the same camera move/action
+        // described for a 12s shot needs to unfold much more gradually than for a 3s one. The API's
+        // "duration" field controls actual render length; this line just tells the model how to
+        // pace what it's rendering within that length.
+        if (TryGetClipDurationSeconds(clipEl, out var clipDurSec))
+        {
+            sb.AppendLine(
+                $"This is a {clipDurSec}-second shot — pace the described camera movement and action " +
+                $"to unfold naturally across the full {clipDurSec} seconds; do not rush, compress, or " +
+                "pad with a static hold.");
+        }
         // This line used to be unconditional — telling the model to "end when the spoken line
         // finishes" even on silent beats with empty audio_payload.dialogue. With no line ever
         // specified, and CHARACTER VARIABLES listing every on-screen character's Voice profile
@@ -261,8 +278,10 @@ public static class ClipVideoPromptBuilder
               "speaking or mouthing words; keep mouths closed/neutral. " +
               "End cleanly when the primary physical action finishes.");
         sb.Append(actionTagged);
-        // Technical output spec owned here (not Stage2 blueprint) — resolution + frame rate
-        sb.Append($" / {res}, {Math.Clamp(frameRate, 12, 60)}fps");
+        // Resolution/frame rate are NOT re-echoed as prompt text here — they're already real,
+        // separate fields in the video API's request payload (GrokVideoClient.SubmitFreshOnceAsync:
+        // "resolution", "duration"), so appending "/ 480p, 24fps" as prose was pure duplication
+        // with no effect on what the API actually renders at.
 
         var negBlock = BuildNegativeBlock(clipEl);
         if (!string.IsNullOrWhiteSpace(negBlock))
@@ -282,7 +301,7 @@ public static class ClipVideoPromptBuilder
             sb.Append(houseRules.Trim());
         }
 
-        var prompt = FitPromptToVideoBudget(sb.ToString().Trim());
+        var prompt = FitPromptToVideoBudget(sb.ToString().Trim(), promptMaxLen);
         IReadOnlyList<string> attached = useReferenceImages ? refPaths : Array.Empty<string>();
 
         var summary =
@@ -311,6 +330,27 @@ public static class ClipVideoPromptBuilder
             RefsAttachedToApi = useReferenceImages && attached.Count > 0,
             PromptLogSummary = summary,
         };
+    }
+
+    /// <summary>Reads a clip's planned duration_seconds (Stage2-assigned) for the pacing line in
+    /// <see cref="Build"/> — accepts number or numeric-string encodings defensively, same tolerance
+    /// as <see cref="ClipDurationEstimator.EstimateForClip"/>.</summary>
+    private static bool TryGetClipDurationSeconds(JsonElement clipEl, out int seconds)
+    {
+        seconds = 0;
+        if (!clipEl.TryGetProperty("duration_seconds", out var el)) return false;
+        if (el.ValueKind == JsonValueKind.Number)
+        {
+            if (el.TryGetInt32(out var i) && i > 0) { seconds = i; return true; }
+            if (el.TryGetDouble(out var d) && d > 0) { seconds = (int)Math.Round(d, MidpointRounding.AwayFromZero); return seconds > 0; }
+        }
+        else if (el.ValueKind == JsonValueKind.String &&
+                 double.TryParse(el.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var s) && s > 0)
+        {
+            seconds = (int)Math.Round(s, MidpointRounding.AwayFromZero);
+            return seconds > 0;
+        }
+        return false;
     }
 
     /// <summary>
@@ -1045,17 +1085,23 @@ public static class ClipVideoPromptBuilder
             // Multi-character compaction: non-focus on-screen cast get a short identity line.
             // Lead with visual_lock (not the general description) when present — it's the field
             // specifically curated to hold the one identity-critical, must-never-drift trait (e.g.
-            // a distinguishing eye, scar, tattoo). A plain description truncated to 60 chars was
-            // dropping that trait whenever it fell later in the sentence, and visual_lock was
-            // skipped entirely on this path — so a non-focus character's signature feature could
-            // silently disappear from every clip where they're present but not the shot's subject.
+            // a distinguishing eye, scar, tattoo). Previously truncated to a fixed char count (first
+            // 60, then 140) — confirmed as a real bug via a live render: Tell-Tale Heart's Old Man
+            // visual_lock ("...must not drift to clear blue or to the Narrator's face...") was cut
+            // mid-word at "must not drift to clear blu[e]" on every clip where he wasn't the shot's
+            // focus, silently dropping the one instruction preventing his signature filmy eye from
+            // rendering as an ordinary clear one. The real prompt-length constraint is the video
+            // API's hard character cap (~4096 chars), already handled end-to-end by
+            // GrokVideoClient's retry-driven ShortenPromptForRetry when the WHOLE built prompt
+            // exceeds it — and that mechanism deliberately keeps the head (identity/action) intact
+            // rather than blindly guillotining one character's identity clause on every appearance.
+            // So: no fixed per-character cap here; let the full text through.
             var isActive = activeKeys is null || activeKeys.Contains(key);
             if (!isActive && keys.Count > 1)
             {
                 var compactSource = vlock.Length > 0 ? vlock : desc;
-                var shortDesc = compactSource.Length > 140 ? compactSource.Substring(0, 137) + "..." : compactSource;
                 var compact =
-                    $"- {key}{tag} [{display}]: Also present (not shot focus); keep identity consistent: {shortDesc}.";
+                    $"- {key}{tag} [{display}]: Also present (not shot focus); keep identity consistent: {compactSource}.";
                 if (useImageTags && tag.Length > 0) compact += $" Match reference {tag.Trim()}.";
                 sb.AppendLine(compact);
                 any = true;

@@ -1,0 +1,215 @@
+{
+  "characters": [
+    {
+      "name": "The Narrator",
+      "aka": [
+        "I",
+        "the speaker"
+      ],
+      "withheld_until": null,
+      "notes": "Unreliable first-person killer who insists he is sane; acute hearing drives the plot"
+    },
+    {
+      "name": "The Old Man",
+      "aka": [
+        "the victim"
+      ],
+      "withheld_until": null,
+      "notes": "Harmless housemate whose pale blue filmy vulture eye obsesses the narrator"
+    },
+    {
+      "name": "Three Police Officers",
+      "aka": [
+        "the officers",
+        "the gentlemen"
+      ],
+      "withheld_until": "B14",
+      "notes": "Suave investigators sent after a neighbour reports a shriek"
+    },
+    {
+      "name": "Neighbour",
+      "aka": [],
+      "withheld_until": "B14",
+      "notes": "Off-screen; hears the shriek and lodges the report"
+    }
+  ],
+  "locations_mentioned": [
+    "the old house",
+    "the old man\u0027s chamber / bedroom",
+    "the chamber door and latch",
+    "the bed",
+    "the floorboards / scantlings under the chamber",
+    "the street door",
+    "the dark lantern"
+  ],
+  "timeline": [
+    "indeterminate past: idea of murder conceived",
+    "one full week of nightly midnight visits (eye always closed)",
+    "eighth night, just at midnight: entry and murder",
+    "post-murder labors until four o\u0027clock still dark",
+    "bell sounds four; police knock and search",
+    "officers sit and chat; heartbeat returns; confession"
+  ],
+  "withheld_name_or_twist_rules": [
+    "Do not confirm the old man is dead or the body hidden before beat B12",
+    "Do not let police or audience hear the heartbeat as an objective sound before the narrator\u0027s final breakdown; treat it as possibly subjective until B17",
+    "Do not reveal the confession or the planks being torn up before beat B18",
+    "Keep the narrator\u0027s name and exact relationship to the old man unspecified throughout; he remains only \u0027I\u0027",
+    "Do not show blood or gore beyond the clinical dismemberment and tub mention; the horror is auditory and psychological"
+  ],
+  "essential_beats": [
+    {
+      "id": "B1",
+      "summary": "Narrator opens by insisting he is nervous but not mad; disease sharpened his senses, especially hearing of heaven, earth and hell.",
+      "source_evidence": "He demands the listener observe how calmly he can tell the whole story.",
+      "source_paragraphs": [
+        "P3"
+      ]
+    },
+    {
+      "id": "B2",
+      "summary": "The murder idea haunts him without object or passion; he loved the old man and wanted no gold; the pale blue vulture eye with film makes his blood run cold.",
+      "source_evidence": "He decides gradually to kill the old man to rid himself of the eye forever.",
+      "source_paragraphs": [
+        "P4"
+      ]
+    },
+    {
+      "id": "B3",
+      "summary": "He boasts of wise caution and foresight; for the whole week before the killing he is never kinder by day.",
+      "source_evidence": "Madmen know nothing, yet he proceeded with dissimulation.",
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "id": "B4",
+      "summary": "Every night at midnight he gently opens the door, thrusts in a closed dark lantern, then his head, taking an hour so as not to wake the sleeper.",
+      "source_evidence": "He undoes the lantern so a single thin ray falls on the eye; for seven nights the eye is closed so he cannot do the work.",
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "id": "B5",
+      "summary": "Each morning he boldly enters, speaks heartily, and inquires how the old man passed the night, so the old man never suspects the midnight visits.",
+      "source_evidence": "Only a profound old man would have guessed.",
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "id": "B6",
+      "summary": "On the eighth night he is more than usually cautious; a watch\u0027s minute hand moves faster than his hand on the door; he feels triumph and chuckles.",
+      "source_evidence": "The old man stirs as if startled; the room is pitch black with shutters fastened.",
+      "source_paragraphs": [
+        "P6"
+      ]
+    },
+    {
+      "id": "B7",
+      "summary": "His thumb slips on the tin fastening; the old man springs up crying \u0027Who\u0027s there?\u0027",
+      "source_evidence": "Narrator keeps perfectly still and silent.",
+      "source_paragraphs": [
+        "P7"
+      ]
+    },
+    {
+      "id": "B8",
+      "summary": "For a whole hour he does not move a muscle; the old man remains sitting up in bed listening, just as the narrator has listened to death-watches in the wall.",
+      "source_evidence": "He never hears the old man lie down again.",
+      "source_paragraphs": [
+        "P8"
+      ]
+    },
+    {
+      "id": "B9",
+      "summary": "A slight groan of mortal terror rises; narrator recognizes it as the sound from a soul overcharged with awe, a sound he himself has made at midnight.",
+      "source_evidence": "He pities the old man yet chuckles at heart; Death\u0027s black shadow has enveloped the victim.",
+      "source_paragraphs": [
+        "P9"
+      ]
+    },
+    {
+      "id": "B10",
+      "summary": "After long patient waiting he opens a tiny crevice in the lantern; a single dim ray like a spider thread falls full upon the open vulture eye.",
+      "source_evidence": "The eye is wide open; he sees only the dull blue veiled eye and nothing else of the face.",
+      "source_paragraphs": [
+        "P10",
+        "P11"
+      ]
+    },
+    {
+      "id": "B11",
+      "summary": "A low dull quick sound like a watch enveloped in cotton reaches his ears; he knows it is the old man\u0027s heart; it increases his fury.",
+      "source_evidence": "He still refrains, scarcely breathes, holds the ray steady while the hellish tattoo grows quicker and louder.",
+      "source_paragraphs": [
+        "P12",
+        "P13"
+      ]
+    },
+    {
+      "id": "B12",
+      "summary": "Terror that a neighbour will hear the sound seizes him; with a loud yell he throws open the lantern, leaps into the room, drags the old man down and pulls the heavy bed over him.",
+      "source_evidence": "The old man shrieks once only; the muffled heart beats many minutes then ceases; narrator confirms stone death and that the eye will trouble him no more.",
+      "source_paragraphs": [
+        "P13"
+      ]
+    },
+    {
+      "id": "B13",
+      "summary": "He works hastily but silently through the waning night: dismembers the corpse, cutting off head, arms and legs.",
+      "source_evidence": "Wise precautions for concealment of the body.",
+      "source_paragraphs": [
+        "P14"
+      ]
+    },
+    {
+      "id": "B14",
+      "summary": "He lifts three planks, deposits the parts between the scantlings, replaces the boards so cunningly no eye could detect wrong; a tub caught all blood, no stain left.",
+      "source_evidence": "It is four o\u0027clock, still dark as midnight, when the bell sounds and a knocking comes at the street door.",
+      "source_paragraphs": [
+        "P15",
+        "P16"
+      ]
+    },
+    {
+      "id": "B15",
+      "summary": "Three police officers enter with perfect suavity; a neighbour heard a shriek, suspicion of foul play, they are to search the premises.",
+      "source_evidence": "Narrator smiles, light heart, nothing to fear; claims the shriek was his own in a dream and the old man is absent in the country.",
+      "source_paragraphs": [
+        "P16",
+        "P17"
+      ]
+    },
+    {
+      "id": "B16",
+      "summary": "He welcomes them, leads them all over the house, shows the old man\u0027s treasures undisturbed, brings chairs into the chamber and sits his own seat directly above the corpse.",
+      "source_evidence": "In wild audacity of perfect triumph; officers are satisfied by his manner and sit chatting of familiar things.",
+      "source_paragraphs": [
+        "P17",
+        "P18"
+      ]
+    },
+    {
+      "id": "B17",
+      "summary": "He grows pale, head aches, a ringing in his ears becomes distinct and is not within his ears; it is the low dull quick sound of the heart again; officers chat on and smile.",
+      "source_evidence": "He talks more freely then more vehemently, paces, foams, raves, swears, grates the chair on the boards, yet the noise grows louder over all; he believes they hear and mock him.",
+      "source_paragraphs": [
+        "P18",
+        "P19"
+      ]
+    },
+    {
+      "id": "B18",
+      "summary": "Unable to bear the hypocritical smiles and the agony, he shrieks that they must dissemble no more, admits the deed, and tells them to tear up the planks: it is the beating of the hideous heart.",
+      "source_evidence": "Final collapse and confession.",
+      "source_paragraphs": [
+        "P20"
+      ]
+    }
+  ],
+  "target_runtime_minutes": 16,
+  "target_scene_count_min": 8,
+  "target_scene_count_max": 12
+}

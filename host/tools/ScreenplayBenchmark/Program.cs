@@ -38,6 +38,19 @@ public static class Program
         bool showJudgeLeaderboardOnly = false;
         bool retryFailed = false;
         bool syntaxOnly = false;
+        bool adaptationSessionPilot = false;
+        string adaptationModel = "grok-4.5";
+        int targetRuntimeMinutes = 10;
+        string? judgeModel = null;
+        string? judgeModel2 = null;
+        string? videoModel = null;
+        double adaptationTemperature = 0.2;
+        double adaptationJudgeTemperature = 0.0;
+        bool adaptationClipShotPlan = false;
+        bool adaptationDualAttachClipPlan = false;
+        // Default true: dual-attach (no chaining) is the committed pipeline, not an opt-in experiment
+        // anymore — pass --chained-only to skip it and run only the older chained reference path.
+        bool adaptationDualAttachAll = true;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -45,6 +58,54 @@ public static class Program
             if (arg.Equals("--book", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 bookPath = args[++i];
+            }
+            else if (arg.Equals("--adaptation-session-pilot", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationSessionPilot = true;
+            }
+            else if (arg.Equals("--model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                adaptationModel = args[++i].Trim();
+            }
+            else if (arg.Equals("--target-runtime-minutes", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                if (int.TryParse(args[++i], out var trm) && trm > 0) targetRuntimeMinutes = trm;
+            }
+            else if (arg.Equals("--judge-model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                judgeModel = args[++i].Trim();
+            }
+            else if (arg.Equals("--judge-model-2", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                judgeModel2 = args[++i].Trim();
+            }
+            else if (arg.Equals("--video-model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                videoModel = args[++i].Trim();
+            }
+            else if (arg.Equals("--temperature", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                if (double.TryParse(args[++i], out var t)) adaptationTemperature = t;
+            }
+            else if (arg.Equals("--judge-temperature", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                if (double.TryParse(args[++i], out var jt)) adaptationJudgeTemperature = jt;
+            }
+            else if (arg.Equals("--clip-shot-plan", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationClipShotPlan = true;
+            }
+            else if (arg.Equals("--dual-attach-clip-plan", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationDualAttachClipPlan = true;
+            }
+            else if (arg.Equals("--dual-attach-all", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationDualAttachAll = true;
+            }
+            else if (arg.Equals("--chained-only", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationDualAttachAll = false;
             }
             else if (arg.Equals("--suite", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
@@ -94,6 +155,19 @@ public static class Program
 
         var (chat, workspaceRoot) = BuildServices();
         Console.WriteLine($"📂 Workspace root: {workspaceRoot}");
+
+        if (adaptationSessionPilot)
+        {
+            if (string.IsNullOrWhiteSpace(bookPath) || !File.Exists(bookPath))
+            {
+                Console.WriteLine("❌ Error: --adaptation-session-pilot requires --book <path/to/book.txt>.");
+                return 1;
+            }
+            return await AdaptationSessionPilot.RunAsync(
+                bookPath, bookSlug, adaptationModel, targetRuntimeMinutes, workspaceRoot, CancellationToken.None,
+                judgeModel, adaptationTemperature, adaptationJudgeTemperature, adaptationClipShotPlan,
+                adaptationDualAttachClipPlan, adaptationDualAttachAll, judgeModel2, videoModel);
+        }
 
         var historyFilePath = Path.Combine(workspaceRoot, "evals", "benchmark_history.json");
         var historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -75,9 +76,12 @@ public sealed class GrokVideoClient : IVideoClient
             refs.Clear();
         }
 
-        // Image / reference-to-video / extension max duration is typically 10s for the new portion
+        // Image / reference-to-video / extension max duration is bounded by the model's own limits
+        // — resolved from the catalog (snapping to a discrete allowed-durations set if the model
+        // declares one, e.g. Veo's 4/6/8s, else a plain min/max clamp), not a bare hardcoded 1-10,
+        // so this stays correct if a future model's real bounds differ.
         if (hasStart || refs.Count > 0 || hasContinue)
-            durationSeconds = Math.Min(Math.Max(1, durationSeconds), 10);
+            durationSeconds = ClipDurationEstimator.ResolveActualDurationForModel(model, durationSeconds);
 
         // Encode media once — retries only change prompt text
         string? videoUri = null;
@@ -102,12 +106,16 @@ public sealed class GrokVideoClient : IVideoClient
             : "text-to-video";
         var kind = hasContinue ? "video_extend" : "video";
         var refNames = refs.Select(Path.GetFileName).Where(n => n is not null).Cast<string>().ToList();
+        // Model-aware retry cap — a future model with a different prompt budget only needs its
+        // models_catalog.json MaxPromptLength updated, never a code change here.
+        var promptHardCap = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video)
+            .MaxPromptLength ?? ClipVideoPromptBuilder.VideoPromptHardCapChars;
 
         for (var attempt = 0; attempt <= MaxPromptLengthRetries; attempt++)
         {
             var current = attempt == 0
                 ? original
-                : ClipVideoPromptBuilder.ShortenPromptForRetry(original, attempt);
+                : ClipVideoPromptBuilder.ShortenPromptForRetry(original, attempt, promptHardCap);
 
             if (attempt > 0)
             {

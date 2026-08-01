@@ -1,0 +1,1607 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "EXT. KIRK STREET - MILWAUKEE - DAY",
+      "purpose": "Establish Milwaukee working-class world and introduce Big Brother mythos via exterior of the family walk-up and Moxie\u0027s sign.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "NICK_ADULT",
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_FACTORY_CASUAL",
+        "PETER_PIZZA_WORK"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Big brick fifth-floor walk-up in cold Midwest light",
+        "Moxie\u0027s gym sign down the block",
+        "Distant traffic and lake wind"
+      ],
+      "source_paragraphs": [
+        "P1",
+        "P2"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. MOXIE\u0027S GYM - DAY",
+      "purpose": "Show Nick\u0027s physical dominance and reputation as men yield equipment; Peter watches as little brother.",
+      "location_key": "LOC_MOXIES_GYM",
+      "cast": [
+        "NICK_ADULT",
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_FACTORY_CASUAL",
+        "PETER_PIZZA_WORK"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "Nick enters; men clear path",
+        "Guy drops 40-lb preacher curl bar",
+        "Nick loads 50-lb warm-up bar",
+        "Younger brother watches holding bags"
+      ],
+      "source_paragraphs": [
+        "P2",
+        "P3"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "EXT. ALLEY BEHIND KIRK STREET BUILDING - DAY (FLASHBACK, CHILDHOOD)",
+      "purpose": "Childhood kickball memory establishing Nick as protector who takes blame and pays for broken window.",
+      "location_key": "LOC_ALLEY_KIRK",
+      "cast": [
+        "PETER_CHILD",
+        "NICK_CHILD"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_GRADE_SCHOOL",
+        "NICK_SIXTH_GRADE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Dented garbage-can lid bases",
+        "Kickball smashes kitchen window",
+        "Little Peter freezes; Nick child claims blame",
+        "Glass rain"
+      ],
+      "source_paragraphs": [
+        "P4"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "INT. KIRK STREET FIFTH-FLOOR APARTMENT MILWAUKEE - DAY",
+      "purpose": "Establish Ma\u0027s decline, pill routine, Nick\u0027s caretaker lectures, and family power dynamic.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "MA_OLIVIA",
+        "NICK_ADULT",
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "MA_HOME_HOUSECOAT",
+        "NICK_FACTORY_CASUAL",
+        "PETER_PIZZA_WORK"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Ma in afghan chair watching game show",
+        "Pill bottles lined on counter",
+        "Nick tosses keys in basket",
+        "Nick scolds Peter about Ma sleeping midday"
+      ],
+      "source_paragraphs": [
+        "P8",
+        "P10",
+        "P11",
+        "P12",
+        "P13"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "EXT. STREET OUTSIDE PIZZA PARLOR - DAY",
+      "purpose": "Showcase Nick\u0027s Trans Am status symbol and Peter\u0027s bike-commute pizza-work life.",
+      "location_key": "LOC_PIZZA_PARLOR",
+      "cast": [
+        "NICK_ADULT",
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_FACTORY_CASUAL",
+        "PETER_PIZZA_WORK"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "Burnt-orange Trans Am with flames and hood eagle at light",
+        "People stare",
+        "Peter locks bike and heads to parlor"
+      ],
+      "source_paragraphs": [
+        "P9",
+        "P18"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "INT. PIZZA PARLOR - DAY",
+      "purpose": "Introduce Tony and Peter\u0027s dead-end job; VO on blocked schooling and Nick\u0027s anti-degree stance.",
+      "location_key": "LOC_PIZZA_PARLOR",
+      "cast": [
+        "PETER_ADULT",
+        "TONY"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_PIZZA_WORK",
+        "TONY_PARLOR"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Warm oven glow, peels, boxes, phone",
+        "Tony at counter",
+        "Work rhythm of dough and ovens"
+      ],
+      "source_paragraphs": [
+        "P13",
+        "P14",
+        "P15",
+        "P16"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "EXT. PIZZA PARLOR SIDEWALK - DAY",
+      "purpose": "Inciting meet-cute: Sionna trips into Peter; exchange numbers; first spark of recognition.",
+      "location_key": "LOC_PIZZA_PARLOR",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_PIZZA_WORK",
+        "SIONNA_FIRST_MEET"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Sionna trips on cement into Peter\u0027s shoulder",
+        "Black V-neck, fish necklace, blue tennis, backpack",
+        "Eye contact on watery blue eyes",
+        "She looks back over shoulder walking away"
+      ],
+      "source_paragraphs": [
+        "P18",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "INT. KIRK STREET FIFTH-FLOOR APARTMENT MILWAUKEE - LATE AFTERNOON",
+      "purpose": "Ma\u0027s confusion episode (church/Mrs Canasta) signals dementia; Peter flees apartment.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "MA_OLIVIA",
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "MA_HOME_HOUSECOAT",
+        "PETER_PIZZA_WORK"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "Ma glassy empty eyes searching pill line",
+        "Mumbles about church and Mrs Canasta",
+        "Peter corrects her; she snaps back with apology",
+        "Peter grabs jacket to leave"
+      ],
+      "source_paragraphs": [
+        "P24",
+        "P25",
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P30"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "EXT. MILWAUKEE STREETS AND CITY BUS - NIGHT",
+      "purpose": "Peter walks cold streets past Joe\u0027s toward the library\u2014secret escape from family pressure.",
+      "location_key": "LOC_MILWAUKEE_STREETS_BUS",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_PIZZA_WORK"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "Fast cold walk",
+        "Joe\u0027s Bar glow",
+        "Cross toward library open till nine"
+      ],
+      "source_paragraphs": [
+        "P30",
+        "P35"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "heading": "INT. PUBLIC LIBRARY - NIGHT",
+      "purpose": "Peter gets library card and checks out Wuthering Heights; education door opens free.",
+      "location_key": "LOC_PUBLIC_LIBRARY",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CASUAL_DATE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Big windows wood floors chain lamps",
+        "Classic lit stacks",
+        "Temporary paper card",
+        "Pulls Wuthering Heights"
+      ],
+      "source_paragraphs": [
+        "P36",
+        "P37",
+        "P38",
+        "P39",
+        "P40",
+        "P41"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "heading": "INT. JAVA HUT COFFEE SHOP - DAY",
+      "purpose": "First real date; Sionna discusses Wuthering Heights symbols; Peter\u0027s mind awakens; Friday dinner set.",
+      "location_key": "LOC_JAVA_HUT",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CASUAL_DATE",
+        "SIONNA_JAVA_DATES"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "College backpack crowd",
+        "Sionna at back-wall table green hooded top",
+        "Peter self-conscious",
+        "Talk of ghosts moors destructive love",
+        "Another date planned"
+      ],
+      "source_paragraphs": [
+        "P49",
+        "P50",
+        "P51",
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "heading": "INT. DREAM - MEDIEVAL FOREST AND FIELD - DAY",
+      "purpose": "Past-life/literary dream: Peter and Sionna on mare; first kiss in field; romantic sublime.",
+      "location_key": "LOC_DREAM_MEDIEVAL_FOREST",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA_DREAM_MEDIEVAL"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Lush forest moss trillium bleeding hearts",
+        "Ride behind long-haired Sionna on dappled mare",
+        "Red tunic white balloon sleeves",
+        "Dismount field first kiss light blue eyes"
+      ],
+      "source_paragraphs": [
+        "P57",
+        "P58"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "heading": "INT. KIRK STREET FIFTH-FLOOR APARTMENT MILWAUKEE - NIGHT",
+      "purpose": "Peter jolts awake from medieval dream; confuses dream with Sionna/Wuthering Heights bleed.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CASUAL_DATE"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "Bolts upright sweating chest pounding",
+        "Night bedroom quiet",
+        "Realization it was Sionna in old clothes"
+      ],
+      "source_paragraphs": [
+        "P59"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "heading": "INT. YOGA STUDIO (MILWAUKEE) - DAY",
+      "purpose": "First yoga class; physical struggle then unexpected calm; Sionna\u0027s practice philosophy.",
+      "location_key": "LOC_YOGA_STUDIO_SEATTLE",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_YOGA",
+        "SIONNA_JAVA_DATES"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Purple mats ~20 people",
+        "Shirt falls over face; tucks into pants",
+        "Struggle breath dizzy stretch",
+        "Savasana deep calm",
+        "Your practice is your practice"
+      ],
+      "source_paragraphs": [
+        "P65",
+        "P66",
+        "P67",
+        "P68",
+        "P69",
+        "P70",
+        "P71",
+        "P72",
+        "P73",
+        "P74"
+      ]
+    },
+    {
+      "scene_id": "S15",
+      "heading": "INT. KIRK STREET FIFTH-FLOOR APARTMENT MILWAUKEE - NIGHT",
+      "purpose": "Nick rages over missed doctor appointment; blames Peter\u0027s girl; slams out.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "NICK_ADULT",
+        "PETER_ADULT",
+        "MA_OLIVIA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_FACTORY_CASUAL",
+        "PETER_CASUAL_DATE",
+        "MA_HOME_HOUSECOAT"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Nick beet-red fists clenching",
+        "Ma small in chair",
+        "Confession of dates",
+        "Priorities lecture",
+        "Door slam"
+      ],
+      "source_paragraphs": [
+        "P75",
+        "P76",
+        "P77",
+        "P78",
+        "P79",
+        "P80",
+        "P81",
+        "P82"
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "heading": "INT. DOCTOR\u0027S OFFICE / THEN HOSPITAL ER - DAY",
+      "purpose": "Dr Carson diagnoses dangerous hypertension/stroke risk; admit Ma; Nick arrives furious.",
+      "location_key": "LOC_HOSPITAL",
+      "cast": [
+        "DR_CARSON",
+        "PETER_ADULT",
+        "MA_OLIVIA",
+        "NICK_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "DR_CARSON_CLINIC",
+        "PETER_CASUAL_DATE",
+        "MA_HOSPITAL",
+        "NICK_FACTORY_CASUAL"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Serious eye-contact diagnosis",
+        "Pay phone call Nick",
+        "Ma holds chest ringing ears",
+        "Someone must be talking about me"
+      ],
+      "source_paragraphs": [
+        "P104",
+        "P105",
+        "P106",
+        "P107",
+        "P108",
+        "P109"
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "heading": "INT. HOSPITAL / ER / ICU - NIGHT",
+      "purpose": "Peter sleeps in chair by Ma; gateway into betrayal battlefield dream.",
+      "location_key": "LOC_HOSPITAL",
+      "cast": [
+        "PETER_ADULT",
+        "MA_OLIVIA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CASUAL_DATE",
+        "MA_HOSPITAL"
+      ],
+      "estimated_duration_seconds": 15,
+      "visual_beats": [
+        "Peter asleep in chair",
+        "Ma in bed monitors",
+        "Dream bleed begins"
+      ],
+      "source_paragraphs": [
+        "P110",
+        "P111"
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "heading": "INT. DREAM - BATTLEFIELD - NIGHT",
+      "purpose": "Nightmare foreshadow: dying man says Save her; Nick stabs Peter in the chest.",
+      "location_key": "LOC_DREAM_BATTLEFIELD",
+      "cast": [
+        "PETER_ADULT",
+        "NICK_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_FACTORY_CASUAL",
+        "PETER_CASUAL_DATE"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "Chaos blood shining steel",
+        "Dying man bubbles Save her",
+        "Nick runs and stabs longest knife into chest",
+        "Betrayal shock"
+      ],
+      "source_paragraphs": [
+        "P111",
+        "P112"
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "heading": "INT. HOSPITAL / ER / ICU - NIGHT",
+      "purpose": "Peter wakes gasping from brother-kill dream; residual betrayal feeling.",
+      "location_key": "LOC_HOSPITAL",
+      "cast": [
+        "PETER_ADULT",
+        "MA_OLIVIA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CASUAL_DATE",
+        "MA_HOSPITAL"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "Gasps awake",
+        "Ma dozes",
+        "Betrayal on face",
+        "Fifteen minutes to dismiss as dream"
+      ],
+      "source_paragraphs": [
+        "P112",
+        "P113"
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "heading": "INT. KIRK STREET FIFTH-FLOOR APARTMENT MILWAUKEE - NIGHT",
+      "purpose": "Home with pill organizer; Nick mocks nurse Nancy and Sionna; slap fight; Peter vows she never meets him.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "NICK_ADULT",
+        "PETER_ADULT",
+        "MA_OLIVIA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_FACTORY_CASUAL",
+        "PETER_CASUAL_DATE",
+        "MA_HOME_HOUSECOAT"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Blue weekly pill organizer",
+        "Nick helter-skelter prison-break look",
+        "Mocking wrapped around finger",
+        "Bastard/pussy exchange",
+        "WHACK slap ear rings",
+        "Door slam"
+      ],
+      "source_paragraphs": [
+        "P114",
+        "P115",
+        "P116",
+        "P117",
+        "P118",
+        "P119",
+        "P120",
+        "P121",
+        "P122",
+        "P123",
+        "P124",
+        "P125",
+        "P126",
+        "P127",
+        "P128",
+        "P129",
+        "P130",
+        "P131"
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "heading": "EXT. GRADE SCHOOL YARD / MRS STARK ERA - DAY (FLASHBACK)",
+      "purpose": "Fourth-grade flashback: Nick saves Peter from Mrs Stark; I\u0027ll always take care of you bond.",
+      "location_key": "LOC_SCHOOLYARD_MRS_STARK",
+      "cast": [
+        "PETER_CHILD",
+        "NICK_CHILD"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_GRADE_SCHOOL",
+        "NICK_SIXTH_GRADE"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Lilacs late spring",
+        "Peter and Bobby laughing responsibility chant",
+        "Mrs Stark glasses on beads",
+        "Nick intervenes guarantee",
+        "Hair muss I\u0027ll always take care of you"
+      ],
+      "source_paragraphs": [
+        "P133",
+        "P134",
+        "P135",
+        "P136",
+        "P137",
+        "P138",
+        "P139",
+        "P140",
+        "P141",
+        "P142",
+        "P143",
+        "P144",
+        "P145",
+        "P146",
+        "P147",
+        "P148",
+        "P149",
+        "P150"
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "heading": "INT. KIRK STREET FIFTH-FLOOR APARTMENT MILWAUKEE - NIGHT",
+      "purpose": "Peter announces community college plans; Nick bros-before-hos control speech; forced smile.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "PETER_ADULT",
+        "NICK_ADULT",
+        "MA_OLIVIA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_COLLEGE",
+        "NICK_FACTORY_CASUAL",
+        "MA_HOME_HOUSECOAT"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Peter backpack college layers",
+        "Nick pursed lips",
+        "Loan and business degree pitch",
+        "Chick telling you what to do",
+        "Bros before ho\u0027s sneer",
+        "Sure Nick forced smile"
+      ],
+      "source_paragraphs": [
+        "P155",
+        "P156",
+        "P157",
+        "P158",
+        "P159",
+        "P160",
+        "P161",
+        "P162",
+        "P163",
+        "P164",
+        "P165",
+        "P166",
+        "P167"
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "heading": "INT. JOE\u0027S BAR AND GRILL - NIGHT",
+      "purpose": "Saturday brawl night: Nick confronts Lindsey\u0027s boyfriend; almost punches Peter; chaos and flight.",
+      "location_key": "LOC_JOES_BAR",
+      "cast": [
+        "NICK_ADULT",
+        "PETER_ADULT",
+        "BOB",
+        "SAMMY"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_BAR_NIGHT",
+        "PETER_CASUAL_DATE",
+        "BOB_BAR_ERA",
+        "SAMMY_BAR"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "Packed pool room and bar smoke AC/DC",
+        "Lindsey with dark-haired boyfriend",
+        "Little bitch trigger",
+        "Peter steps in front of fist",
+        "Slow-mo fist draw",
+        "Joe bouncer scramble head-butt",
+        "Peter runs"
+      ],
+      "source_paragraphs": [
+        "P182",
+        "P183",
+        "P184",
+        "P185",
+        "P186",
+        "P187",
+        "P188",
+        "P189",
+        "P190",
+        "P191",
+        "P192",
+        "P193",
+        "P194",
+        "P195",
+        "P196",
+        "P197",
+        "P198",
+        "P199",
+        "P200",
+        "P201",
+        "P202",
+        "P203",
+        "P204",
+        "P205",
+        "P206",
+        "P207",
+        "P208"
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "heading": "EXT. MILWAUKEE STREETS AND CITY BUS - NIGHT",
+      "purpose": "Panic run through cold streets to Sionna\u0027s duplex after almost-punch.",
+      "location_key": "LOC_MILWAUKEE_STREETS_BUS",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CASUAL_DATE"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Sprint like bear chasing",
+        "Chest exploding cold air",
+        "Heartbeat in ears",
+        "Arrive Sionna duplex"
+      ],
+      "source_paragraphs": [
+        "P209"
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "heading": "INT. SIONNA DUPLEX - NIGHT",
+      "purpose": "Refuge with Sionna; purpose talk; first night together in her bed.",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CASUAL_DATE",
+        "SIONNA_HOME_INTIMATE"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Green suede sofa collapse",
+        "Gray cat watches",
+        "Controlling ass diagnosis",
+        "True self purpose",
+        "Peel clothes crisp fragrant sheets"
+      ],
+      "source_paragraphs": [
+        "P209",
+        "P210",
+        "P211",
+        "P212",
+        "P213",
+        "P214",
+        "P215",
+        "P216",
+        "P217",
+        "P218",
+        "P219",
+        "P220",
+        "P221",
+        "P222"
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "heading": "INT. DREAM - LAKE ANGEL - NIGHT",
+      "purpose": "Mythic dream: Sionna rises as lake angel; force-pushes giant mace Nick away.",
+      "location_key": "LOC_DREAM_LAKE_ANGEL",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA",
+        "NICK_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA_DREAM_MEDIEVAL",
+        "NICK_FACTORY_CASUAL"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Black-white muddy tunic reeds",
+        "Sionna rises white gown conductor arms",
+        "Color surge greens blues yellows",
+        "Giant Nick mace fire eyes from woods",
+        "Invisible force shrinks him away"
+      ],
+      "source_paragraphs": [
+        "P223",
+        "P224"
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "heading": "INT. SIONNA DUPLEX - NIGHT",
+      "purpose": "3 a.m. wake from angel dream; shuffle to bed; sounds about right.",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA_HOME_INTIMATE",
+        "PETER_CASUAL_DATE"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "Kitchen clock 3 a.m.",
+        "Jolt awake on couch",
+        "Shuffle to queen bed",
+        "Well that sounds about right"
+      ],
+      "source_paragraphs": [
+        "P225",
+        "P226",
+        "P227",
+        "P228"
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "heading": "INT. KIRK STREET FIFTH-FLOOR APARTMENT MILWAUKEE - DAY",
+      "purpose": "Care montage: Sionna cooks casserole, reads to Ma, fills pills; Peter as family leader; Nick absent.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "SIONNA",
+        "MA_OLIVIA",
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA_COOKING_CARE",
+        "MA_HOME_HOUSECOAT",
+        "PETER_COLLEGE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Butternut squash casserole",
+        "Reading under afghan",
+        "Blue pill box fill",
+        "Ma lights up for Sionna",
+        "Exhausted multi-role Peter"
+      ],
+      "source_paragraphs": [
+        "P230",
+        "P231"
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "heading": "EXT. STREET / INT. CAR (NICK\u0027S) - DAY",
+      "purpose": "Fatal crash setup: drunk Nick loads Ma for church; impact cut before gore.",
+      "location_key": "LOC_MILWAUKEE_STREETS_BUS",
+      "cast": [
+        "NICK_ADULT",
+        "MA_OLIVIA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_FACTORY_CASUAL",
+        "MA_CHURCH_CRASH"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Three Jack and Cokes residue",
+        "Ma in modest church coat into car",
+        "Drive",
+        "Metal scream impact",
+        "Silence then distant sirens"
+      ],
+      "source_paragraphs": [
+        "P392",
+        "P393",
+        "P408"
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "heading": "INT. KIRK STREET FIFTH-FLOOR APARTMENT MILWAUKEE - DAY",
+      "purpose": "Grief explosion: empty Ma chair; Peter bawls Die jackass; Sionna holds him.",
+      "location_key": "LOC_KIRK_STREET_APT",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_GRIEF_FUNERAL",
+        "SIONNA_COOKING_CARE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Empty Ma chair afghan",
+        "Stare hollow",
+        "Bawling three-year-old hair pull",
+        "Die you fucking jackass",
+        "Sionna holds let it out"
+      ],
+      "source_paragraphs": [
+        "P394",
+        "P395",
+        "P396",
+        "P397",
+        "P398"
+      ]
+    },
+    {
+      "scene_id": "S31",
+      "heading": "INT. FUNERAL HOME AND CHURCH MASS - DAY",
+      "purpose": "Funeral arrangements, sparse mass, graveside dirt handful; only son present.",
+      "location_key": "LOC_FUNERAL_HOME_CHURCH",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA",
+        "FATHER_JOSEPH",
+        "BOB"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_GRIEF_FUNERAL",
+        "SIONNA_COOKING_CARE",
+        "FATHER_JOSEPH_MASS",
+        "BOB_BAR_ERA"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Old guy bad suit casket options",
+        "Modest maple casket",
+        "Sparse attendees Bob solemn",
+        "Rosary luncheon",
+        "Dirt handful muted thunk on lid"
+      ],
+      "source_paragraphs": [
+        "P399",
+        "P400",
+        "P401",
+        "P402",
+        "P403"
+      ]
+    },
+    {
+      "scene_id": "S32",
+      "heading": "INT. HOSPITAL / ER / ICU - DAY",
+      "purpose": "Confront injured Nick five days post-crash; assign blame; walk out.",
+      "location_key": "LOC_HOSPITAL",
+      "cast": [
+        "NICK_ADULT",
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_HOSPITAL",
+        "PETER_GRIEF_FUNERAL"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Sallow bruises oxygen chest tube huge leg",
+        "Fire hair sticking up",
+        "Weak tears Ma\u0027s gone",
+        "Jack and Cokes manslaughter fear",
+        "Whose fault stare",
+        "Peter walks out"
+      ],
+      "source_paragraphs": [
+        "P404",
+        "P405",
+        "P406",
+        "P407",
+        "P408",
+        "P409",
+        "P410",
+        "P411",
+        "P412"
+      ]
+    },
+    {
+      "scene_id": "S33",
+      "heading": "EXT. CATHOLIC CEMETERY ST. MARY\u0027S - DAY",
+      "purpose": "Solo grave visit; marker scripture; mums in vase; keep the faith.",
+      "location_key": "LOC_ST_MARYS_CEMETERY",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_GRIEF_FUNERAL"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "Hilltop flat stone near trees",
+        "Olivia Anne Olsen dates 2 Timothy 4:7",
+        "Late fall sun",
+        "Golden mums water bottle vase",
+        "Head hung droplets"
+      ],
+      "source_paragraphs": [
+        "P414",
+        "P415"
+      ]
+    },
+    {
+      "scene_id": "S34",
+      "heading": "INT. PIZZA PARLOR - NIGHT",
+      "purpose": "Tony promotes deliveries; surrogate father; pizza-face baby dream seed of new idea.",
+      "location_key": "LOC_PIZZA_PARLOR",
+      "cast": [
+        "PETER_ADULT",
+        "TONY",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_PIZZA_WORK",
+        "TONY_PARLOR",
+        "SIONNA_HOME_INTIMATE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Tony throws Chevy keys",
+        "Fast delivery vs Tommy",
+        "Substitute-son warmth",
+        "Bedside dream farm pregnant pizza-face baby",
+        "Birth of new idea laugh"
+      ],
+      "source_paragraphs": [
+        "P416",
+        "P417",
+        "P418",
+        "P419",
+        "P420",
+        "P421",
+        "P422",
+        "P423",
+        "P424",
+        "P425"
+      ]
+    },
+    {
+      "scene_id": "S35",
+      "heading": "INT. PIZZA PARLOR - DAY",
+      "purpose": "Bob brings Nick legal news; Peter erupts not okay; Sionna neck massage counsel.",
+      "location_key": "LOC_PIZZA_PARLOR",
+      "cast": [
+        "PETER_ADULT",
+        "BOB",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_PIZZA_WORK",
+        "BOB_BAR_ERA",
+        "SIONNA_COOKING_CARE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Bob huge pupils animated",
+        "Might lock him up",
+        "I\u0027m not okay with anything red face",
+        "Bob hands up retreat",
+        "Neck massage don\u0027t trip behind you"
+      ],
+      "source_paragraphs": [
+        "P427",
+        "P428",
+        "P429",
+        "P430",
+        "P431",
+        "P432",
+        "P433",
+        "P434"
+      ]
+    },
+    {
+      "scene_id": "S36",
+      "heading": "INT. WERNER STREET NICK APARTMENT / LAWYER OFFICES / COURTROOM - DAY (NICK POV STRETCH)",
+      "purpose": "Nick POV legal grind: Jowlish pass-off, Dawson, involuntary manslaughter charge; blame the bitch VO.",
+      "location_key": "LOC_LAWYER_OFFICES",
+      "cast": [
+        "NICK_ADULT",
+        "MARK_JOWLISH",
+        "DANIEL_DAWSON"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_COURT_LAWYER",
+        "JOWLISH_OFFICE",
+        "DAWSON_COURT"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Bitter apartment rant",
+        "Greasy Jowlish cluttered desk",
+        "Dawson shined shoes",
+        "Fat lady judge courtroom",
+        "Black pinstripe",
+        "That little bitch VO"
+      ],
+      "source_paragraphs": [
+        "P436",
+        "P437",
+        "P438",
+        "P439",
+        "P440",
+        "P441",
+        "P458",
+        "P459",
+        "P460",
+        "P461",
+        "P462",
+        "P463",
+        "P464",
+        "P465",
+        "P466",
+        "P467",
+        "P468",
+        "P469",
+        "P470",
+        "P471"
+      ]
+    },
+    {
+      "scene_id": "S37",
+      "heading": "INT. JUNIOR HIGH CAFETERIA / GOALPOST - DAY (NICK FLASHBACK)",
+      "purpose": "Nick origin violence: goalpost threat to Johansson; dad belt beating cycle.",
+      "location_key": "LOC_JUNIOR_HIGH_CAFETERIA",
+      "cast": [
+        "NICK_CHILD",
+        "PETER_CHILD"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_JUNIOR_HIGH",
+        "NICK_CHILD_HOME_BEATING",
+        "PETER_GRADE_SCHOOL"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Cafeteria corner almost-crying brother",
+        "Curly-blonde John threat hang from goalpost",
+        "Dad blue puffy coat sidewalk drag",
+        "Bedroom belt snaps welts",
+        "What comes around VO"
+      ],
+      "source_paragraphs": [
+        "P442",
+        "P443",
+        "P444",
+        "P445",
+        "P446",
+        "P447",
+        "P448",
+        "P475",
+        "P476",
+        "P477",
+        "P478",
+        "P479",
+        "P480",
+        "P481"
+      ]
+    },
+    {
+      "scene_id": "S38",
+      "heading": "EXT. MILWAUKEE STREETS AND CITY BUS - DAY",
+      "purpose": "Nick bus ride reduced status; freezing walk to Sionna duplex intent on confrontation.",
+      "location_key": "LOC_MILWAUKEE_STREETS_BUS",
+      "cast": [
+        "NICK_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_ATTACK_WINTER"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Freezing bus bag ladies green hair",
+        "Gray dead leaves",
+        "Heavy coat boots",
+        "Dead summer pots on porch"
+      ],
+      "source_paragraphs": [
+        "P472",
+        "P473",
+        "P474",
+        "P481",
+        "P482"
+      ]
+    },
+    {
+      "scene_id": "S39",
+      "heading": "INT. SIONNA DUPLEX - DAY",
+      "purpose": "Attack climax: Nick chokes Sionna, knife threat, Peter bursts in, stab, flee.",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "cast": [
+        "NICK_ADULT",
+        "SIONNA",
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_ATTACK_WINTER",
+        "SIONNA_ATTACK",
+        "PETER_CASUAL_DATE"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "Door crack dish rag sandals bracelets",
+        "Gray cat candle greens-beans smell",
+        "Back to hallway wall choke",
+        "Switchblade snick collarbone",
+        "Front door thunk Peter",
+        "Struggle knife sinks red flies",
+        "Wipe blade on shirt flee"
+      ],
+      "source_paragraphs": [
+        "P482",
+        "P483",
+        "P484",
+        "P485",
+        "P486",
+        "P487",
+        "P488",
+        "P489",
+        "P490",
+        "P491"
+      ]
+    },
+    {
+      "scene_id": "S40",
+      "heading": "EXT. MILWAUKEE STREETS AND CITY BUS - NIGHT",
+      "purpose": "Nick escapes on bus with bloody hand in pocket.",
+      "location_key": "LOC_MILWAUKEE_STREETS_BUS",
+      "cast": [
+        "NICK_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK_ATTACK_WINTER"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "Dark bus",
+        "Right hand bloody in pocket",
+        "Left pays fare",
+        "Hard breath"
+      ],
+      "source_paragraphs": [
+        "P491"
+      ]
+    },
+    {
+      "scene_id": "S41",
+      "heading": "INT. SIONNA DUPLEX - NIGHT",
+      "purpose": "Peter applies pressure to wound; 911; paramedics cops; names Sionna McAllister and Nick Olson.",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CRISIS_BLOODY",
+        "SIONNA_ATTACK"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Rip flannel stack hands left shoulder",
+        "Blood shirt hands pants",
+        "911 shaking voice",
+        "Sirens defibrillator box",
+        "Monitor beep heartbeat",
+        "Brother stabbed her"
+      ],
+      "source_paragraphs": [
+        "P511",
+        "P512"
+      ]
+    },
+    {
+      "scene_id": "S42",
+      "heading": "INT. HOSPITAL / ER / ICU - NIGHT",
+      "purpose": "Hospital wait; parents credit pressure save; shoulder and lung injuries; Nick later sentenced montage beat.",
+      "location_key": "LOC_HOSPITAL",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_CRISIS_BLOODY",
+        "SIONNA_RECOVERY"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Waiting fluorescent",
+        "Parents credit savior pressure",
+        "Shoulder punctured lung",
+        "Years: attempted murder plus DUI death sentence"
+      ],
+      "source_paragraphs": [
+        "P512",
+        "P513",
+        "P514",
+        "P515"
+      ]
+    },
+    {
+      "scene_id": "S43",
+      "heading": "INT. SIONNA DUPLEX - DAY",
+      "purpose": "Breakup: blank zombie Sionna can\u0027t feel herself; needs break to parents; Peter free-falls.",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "cast": [
+        "PETER_ADULT",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_GRIEF_FUNERAL",
+        "SIONNA_RECOVERY"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "February Sunday blank stare",
+        "Foam pillow recovery top",
+        "Eyes without shine",
+        "Can\u0027t feel me",
+        "Stay please",
+        "Walks to bedroom",
+        "He leaves early free fall"
+      ],
+      "source_paragraphs": [
+        "P516",
+        "P517",
+        "P518",
+        "P519",
+        "P520",
+        "P521",
+        "P522",
+        "P523"
+      ]
+    },
+    {
+      "scene_id": "S44",
+      "heading": "EXT. SEATTLE BELLTOWN / PIKE PLACE MARKET / LOWELL\u0027S - DAY",
+      "purpose": "Seven years later: successful Seattle Peter; market solitude; Sionna hair flash; Tony\u0027s Boy\u0027s chain VO.",
+      "location_key": "LOC_PIKE_PLACE_LOWELLS",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Gray blanket sky broader shoulders",
+        "Keyboard player felt hat",
+        "Lowell\u0027s ferry Sound view",
+        "Cinnamon roll halo",
+        "Dark brown hair flash not her",
+        "Tony\u0027s Boy\u0027s Pizza VO"
+      ],
+      "source_paragraphs": [
+        "P495",
+        "P496",
+        "P497",
+        "P498",
+        "P499",
+        "P500",
+        "P501",
+        "P502",
+        "P503",
+        "P504",
+        "P505",
+        "P506",
+        "P507",
+        "P508"
+      ]
+    },
+    {
+      "scene_id": "S45",
+      "heading": "INT. SEATTLE YOGA / MEDITATION GYM - NIGHT",
+      "purpose": "Gratefulness class; void of Sionna and brother resentment vs DNA sorrow.",
+      "location_key": "LOC_YOGA_STUDIO_SEATTLE",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Candles citrus lavender",
+        "10-12 people",
+        "Gratefulness theme mat",
+        "Communal chant bow",
+        "Void and resentfulness VO"
+      ],
+      "source_paragraphs": [
+        "P526",
+        "P527",
+        "P528",
+        "P529"
+      ]
+    },
+    {
+      "scene_id": "S46",
+      "heading": "INT. SEATTLE BELLTOWN APARTMENT - NIGHT",
+      "purpose": "Home with Bozo; gateway to sage dream.",
+      "location_key": "LOC_SEATTLE_BELLTOWN_APT",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS"
+      ],
+      "estimated_duration_seconds": 15,
+      "visual_beats": [
+        "Warm apt",
+        "Orange-white Bozo on couch",
+        "Read then sleep"
+      ],
+      "source_paragraphs": [
+        "P529",
+        "P530"
+      ]
+    },
+    {
+      "scene_id": "S47",
+      "heading": "INT. DREAM - SAGE ROLLING-HILLS ROAD - DAY",
+      "purpose": "Spiritual thesis dream: stop judging; pizza box illusion; create reality; joy flood.",
+      "location_key": "LOC_DREAM_SAGE_ROAD",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Winding dirt bright green hills",
+        "Indian sage white wrap",
+        "Dirty pizza box eyesore",
+        "Stop judging illusion create reality",
+        "Sage and box vanish joy"
+      ],
+      "source_paragraphs": [
+        "P530",
+        "P531",
+        "P532"
+      ]
+    },
+    {
+      "scene_id": "S48",
+      "heading": "INT. SEATTLE BELLTOWN APARTMENT - NIGHT",
+      "purpose": "Wake smiling; notebook the dream; decision to see Nick and forgive.",
+      "location_key": "LOC_SEATTLE_BELLTOWN_APT",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Wake smile Bozo on stomach",
+        "Pen notebook",
+        "I have to see Nick I have to forgive"
+      ],
+      "source_paragraphs": [
+        "P533",
+        "P534",
+        "P537",
+        "P538"
+      ]
+    },
+    {
+      "scene_id": "S49",
+      "heading": "EXT. OLD COSMETOLOGY SCHOOL (FORMER PIZZA PARLOR) / ALLEY BEHIND KIRK STREET - DAY",
+      "purpose": "Milwaukee return pilgrimage: old parlor now cosmetology; alley dumpsters; past serf role released.",
+      "location_key": "LOC_OLD_PARLOR_COSMETOLOGY",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "Weeds neighborhood",
+        "Central Cosmetology pink scissors powder puff",
+        "Dark same lookout window",
+        "Alley green brown dumpsters",
+        "Hispanic couple stroller dark brown door",
+        "Dupe no more VO"
+      ],
+      "source_paragraphs": [
+        "P541",
+        "P542",
+        "P543"
+      ]
+    },
+    {
+      "scene_id": "S50",
+      "heading": "INT. MILWAUKEE DELI - DAY",
+      "purpose": "Chance Bob reunion; aged pride bear hug; confirms prison visit purpose.",
+      "location_key": "LOC_DELI_MILWAUKEE",
+      "cast": [
+        "PETER_ADULT",
+        "BOB"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS",
+        "BOB_AGED_DELI"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Reuben fries iced tea",
+        "Bob graying thicker grease burger",
+        "Holy shit cackle patrons stare",
+        "Big shoulders proud",
+        "Let the shit go",
+        "Took over apartment factory"
+      ],
+      "source_paragraphs": [
+        "P544",
+        "P545",
+        "P546",
+        "P547",
+        "P548"
+      ]
+    },
+    {
+      "scene_id": "S51",
+      "heading": "EXT. SIONNA DUPLEX - DAY",
+      "purpose": "Drive-by empty porch; memory overlay rockers and Smiley; choose leave her alone move on.",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Smaller grayer duplex",
+        "Naked porch no chairs plants",
+        "Memory bamboo rockers Smiley air kiss",
+        "Want her happy leave alone"
+      ],
+      "source_paragraphs": [
+        "P549",
+        "P550",
+        "P551"
+      ]
+    },
+    {
+      "scene_id": "S52",
+      "heading": "INT. GREEN BAY CORRECTIONAL INSTITUTE - DAY",
+      "purpose": "Climactic plexiglass visit: name the asshole harms; forgive to be free; still love; President Olson pride.",
+      "location_key": "LOC_GREEN_BAY_PRISON",
+      "cast": [
+        "PETER_ADULT",
+        "NICK_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_PRISON_VISIT",
+        "NICK_PRISON"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "Metal detectors double locks wait hour",
+        "Plexiglass yellow receiver",
+        "Scrawny graying watery-eyed Nick orange jumpsuit",
+        "Asshole catalogue Ma Sionna control",
+        "I forgive you sets me free",
+        "Nick weeps Formica tears",
+        "Pizza chain Seattle",
+        "President Olson proud I love you",
+        "Guard ends shuffle away"
+      ],
+      "source_paragraphs": [
+        "P553",
+        "P554",
+        "P555",
+        "P556",
+        "P557",
+        "P558",
+        "P559",
+        "P560",
+        "P561",
+        "P562",
+        "P563",
+        "P564",
+        "P565",
+        "P566",
+        "P567",
+        "P568",
+        "P569",
+        "P570"
+      ]
+    },
+    {
+      "scene_id": "S53",
+      "heading": "EXT. AIRPORT DEPARTURE (MILWAUKEE/CHICAGO PATH) - DAY",
+      "purpose": "Release coda: boarding; send Nick love; name reveal President Peter Olson; This has been Nick and me.",
+      "location_key": "LOC_AIRPORT_DEPARTURE",
+      "cast": [
+        "PETER_ADULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "PETER_SEATTLE_SUCCESS"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Bright terminal floating above throng",
+        "Tea mixed nuts",
+        "Boarding pass scan",
+        "Whisper That\u0027s me President Peter Olson",
+        "Jet bridge walk",
+        "This has been Nick and me"
+      ],
+      "source_paragraphs": [
+        "P571",
+        "P572",
+        "P573",
+        "P574",
+        "P575"
+      ]
+    }
+  ]
+}

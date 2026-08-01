@@ -13,6 +13,21 @@ namespace PageToMovie.Engine;
 /// </summary>
 public sealed class CostReportService
 {
+    // Unverified last-resort guesses, used only when a model's catalog entry has no real published
+    // price for that field — consolidated here (was scattered as inline magic numbers at each call
+    // site) so every "we're guessing" number lives in exactly one place. Every event recorded using
+    // one of these also gets a "*_pricing_source": "estimated_fallback" flag (see RatesFromModels /
+    // the event dicts below) so the cost ledger itself — not just this file — visibly distinguishes
+    // verified vendor pricing from a guess. Real $ tracking should never silently look equally
+    // confident either way.
+    private const double FallbackVideoCostPerSec480p = 0.05;
+    private const double FallbackVideoCostPerSec720p = 0.07;
+    private const double FallbackVideoCostPerSec1080p = 0.25;
+    private const double FallbackVideoRefImageCost = 0.002;
+    private const double FallbackVideoExtendCostPerSec = 0.01;
+    private const double FallbackImageQualityCostPerImage = 0.05;
+    private const double FallbackImageStandardCostPerImage = 0.02;
+
     private static readonly Regex TimestampDur = new(
         @"^\s*(\d+):(\d{2})\s*-\s*(\d+):(\d{2})\s*$",
         RegexOptions.Compiled);
@@ -260,6 +275,7 @@ public sealed class CostReportService
                     ["clip"] = clip.ClipNumber,
                     ["model"] = model,
                     ["provider"] = rates.TryGetValue("video_provider", out var vp) ? vp : null,
+                    ["pricing_source"] = rates.TryGetValue("video_pricing_source", out var vps) ? vps : null,
                     ["request_id"] = job is not null && job.TryGetValue("request_id", out var rid)
                         ? rid.GetString() ?? ""
                         : "",
@@ -327,6 +343,7 @@ public sealed class CostReportService
             ["clip"] = clip,
             ["model"] = model,
             ["provider"] = rates.TryGetValue("video_provider", out var vp) ? vp : null,
+            ["pricing_source"] = rates.TryGetValue("video_pricing_source", out var vps) ? vps : null,
             ["request_id"] = requestId ?? "",
             ["has_ref_image"] = hasRefImage,
             ["is_extend"] = isExtend,
@@ -391,8 +408,9 @@ public sealed class CostReportService
         var n = Math.Max(0, nImages);
         var entry = SupportedModelCatalog.Find(model, ModelCapability.Image)
                     ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Image);
+        var isEstimated = entry.ImageCostPerImage is null;
         var unit = entry.ImageCostPerImage
-                   ?? (quality ? 0.05 : 0.02);
+                   ?? (quality ? FallbackImageQualityCostPerImage : FallbackImageStandardCostPerImage);
         var usd = Math.Round(unit * n, 4);
         await AppendCostEventAsync(projectId, new Dictionary<string, object?>
         {
@@ -404,6 +422,7 @@ public sealed class CostReportService
             ["usd"] = usd,
             ["currency"] = "USD",
             ["source"] = "list_rate",
+            ["pricing_source"] = isEstimated ? "estimated_fallback" : "model_catalog",
             ["provider"] = entry.ProviderId,
             ["user_id"] = userId ?? "",
         }, save: true, ct).ConfigureAwait(false);
@@ -484,10 +503,10 @@ public sealed class CostReportService
         var videoOut = duration * outRate * attempts;
         var refImg = 0.0;
         if (GetBool(rates, "assume_ref_image_per_clip", true))
-            refImg = GetDouble(rates, "video_input_image", 0.002) * attempts;
+            refImg = GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts;
         var extend = 0.0;
         if (string.Equals(clip.Continuation, "extend_previous", StringComparison.OrdinalIgnoreCase))
-            extend = duration * GetDouble(rates, "video_input_per_sec", 0.01) * attempts;
+            extend = duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts;
         return (videoOut + refImg + extend, duration);
     }
 
@@ -504,9 +523,9 @@ public sealed class CostReportService
         attempts = Math.Max(1, attempts);
         var outRate = OutputRate(resolution, rates);
         var videoOut = duration * outRate * attempts;
-        var refImg = hasRef ? GetDouble(rates, "video_input_image", 0.002) * attempts : 0;
+        var refImg = hasRef ? GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts : 0;
         var extend = isExtend
-            ? duration * GetDouble(rates, "video_input_per_sec", 0.01) * attempts
+            ? duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts
             : 0;
         var usd = Math.Round(videoOut + refImg + extend, 4);
         return (usd, duration, outRate, Math.Round(videoOut, 4), Math.Round(refImg, 4), Math.Round(extend, 4));
@@ -964,8 +983,13 @@ public sealed class CostReportService
             ?? imagePrimary;
 
         var videoTable = BuildVideoRateTable(video);
-        var qualityUnit = imagePrimary.ImageCostPerImage ?? 0.05;
-        var standardUnit = imageStandard.ImageCostPerImage ?? imagePrimary.ImageCostPerImage ?? 0.02;
+        // True whenever any part of the price had to fall back to a guess rather than this
+        // model's actual catalog data — flows into the recorded cost event below so the ledger
+        // itself shows which numbers are verified vendor pricing vs an unverified placeholder.
+        var videoPricingIsEstimated = video.VideoCostPerSecondByResolution is not { Count: > 0 };
+        var qualityUnit = imagePrimary.ImageCostPerImage ?? FallbackImageQualityCostPerImage;
+        var standardUnit = imageStandard.ImageCostPerImage ?? imagePrimary.ImageCostPerImage ?? FallbackImageStandardCostPerImage;
+        var imagePricingIsEstimated = imagePrimary.ImageCostPerImage is null;
 
         var rates = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -976,14 +1000,17 @@ public sealed class CostReportService
             ["image_model"] = imagePrimary.Id,
             ["image_provider"] = imagePrimary.ProviderId,
             ["video_output_per_sec"] = videoTable,
-            // Reference / extend add-ons — not published per-vendor in the catalog yet; keep small Grok-era defaults.
-            ["video_input_image"] = 0.002,
-            ["video_input_per_sec"] = 0.01,
+            // Reference / extend add-ons — not published per-vendor in the catalog yet for ANY
+            // model, so these two are always an estimate regardless of video_pricing_source.
+            ["video_input_image"] = FallbackVideoRefImageCost,
+            ["video_input_per_sec"] = FallbackVideoExtendCostPerSec,
             ["image_output_quality"] = qualityUnit,
             ["image_output_standard"] = standardUnit,
             ["assume_ref_image_per_clip"] = true,
             ["assume_extend_fraction"] = 0.0,
             ["assume_avg_retries"] = 0.0,
+            ["video_pricing_source"] = videoPricingIsEstimated ? "estimated_fallback" : "model_catalog",
+            ["image_pricing_source"] = imagePricingIsEstimated ? "estimated_fallback" : "model_catalog",
         };
 
         // Planning knobs only — do not let old manual $/sec tables override vendor rates.
@@ -1036,12 +1063,14 @@ public sealed class CostReportService
         FillMissingRes(table, "480p", "720p", "1080p");
         FillMissingRes(table, "1080p", "720p", "480p");
 
-        // Absolute last resort (Grok-era defaults) if catalog has no video pricing at all.
+        // Absolute last resort if catalog has no video pricing at all for this model — see the
+        // Fallback* constants' doc comment; callers should check video_pricing_source before
+        // treating this as verified.
         if (table.Count == 0)
         {
-            table["480p"] = 0.05;
-            table["720p"] = 0.07;
-            table["1080p"] = 0.25;
+            table["480p"] = FallbackVideoCostPerSec480p;
+            table["720p"] = FallbackVideoCostPerSec720p;
+            table["1080p"] = FallbackVideoCostPerSec1080p;
         }
 
         return table;
@@ -1075,7 +1104,7 @@ public sealed class CostReportService
             if (table.TryGetValue("720p", out var d)) return d;
             if (table.Count > 0) return table.Values.First();
         }
-        return 0.07;
+        return FallbackVideoCostPerSec720p;
     }
 
     private static string GetStr(Dictionary<string, JsonElement> cfg, string key, string fallback) =>

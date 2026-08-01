@@ -74,7 +74,13 @@ public sealed class GeminiVideoClient : IVideoClient
                 "use a single startFrameImagePath, or route this clip to Grok.");
 
         var hasStart = !string.IsNullOrWhiteSpace(startFrameImagePath) && File.Exists(startFrameImagePath);
-        durationSeconds = Math.Clamp(durationSeconds, 1, 10);
+        // Model-aware, not a bare hardcoded 1-10 — a duration Stage 2 correctly planned using this
+        // model's real bounds must not get silently re-clamped back down to a generic range at the
+        // actual API call, cutting off dialogue/action that was paced to fit. Veo specifically
+        // documents only 4/6/8 second durations (a discrete set, not a continuous range) —
+        // ResolveActualDurationForModel snaps to the nearest allowed value for models that declare
+        // one, and falls back to a plain min/max clamp (matching the prior hardcoded 1/10) otherwise.
+        durationSeconds = ClipDurationEstimator.ResolveActualDurationForModel(model, durationSeconds);
 
         var instance = new Dictionary<string, object?> { ["prompt"] = prompt };
         if (hasStart)

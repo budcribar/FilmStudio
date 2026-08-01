@@ -1,0 +1,693 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "score_intent": "Sparse melancholic Americana underscore for a cold Milwaukee street establish, muted fingerpicked acoustic guitar and low sustained cello in a minor key at a slow 70-75 BPM, hushed and observational with a faint working-class grit, opens on a single guitar figure under the Big Brother line then thins to near-drone as the second line lands, no drums, no brass, mood of myth remembered from a distance rather than triumph",
+      "dynamics_arc": "Gentle presence on clip 1 that softens further through clip 2 with no true climax, only a quiet settle.",
+      "peak_clip_number": 1,
+      "timing": "Enter under first VO line; hold low bed through full ~25s; taper on last visual of street/gym sign",
+      "diegetic_sound": "Distant Midwest traffic wash, lake wind against brick, faint city hum; optional far gym-door clank if Moxie\u0027s sign is held",
+      "silence_or_exclusions": "No percussion, no heroic theme, no lyrical melody that competes with VO; leave space under both dialogue cues",
+      "alternatives": [
+        "cold ambient synth pad with industrial room tone only",
+        "solo Rhodes electric piano, extremely sparse"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "score_intent": "Gritty mid-tempo gym pulse at 95-105 BPM built from dry kick, muted bass guitar, and tense low strings, opens already assertive as Nick enters so the room yields, holds muscular confidence through the dropped preacher-curl bar and loaded warm-up plates, then strips drums and bass away in the final quarter leaving only a thin guitar or string sustain as younger brother Peter watches holding bags, industrial clank colors but never becomes comedy",
+      "dynamics_arc": "Peaks immediately on clip 1, stays strong through clips 2-3, then releases hard down to quiet observation on clip 4.",
+      "peak_clip_number": 1,
+      "timing": "Hit hard on Nick\u0027s entrance; sustain drive ~25-28s; pull out instruments over final 7-10s on Peter watch",
+      "diegetic_sound": "Iron plates, bar drops, bench creak, gym chatter, chain clinks, rubber flooring thuds",
+      "silence_or_exclusions": "Mute score bed under any clear spoken punchline if ADR is hot; no triumphant sports-anthem brass; no comic wah-guitar on the dropped bar",
+      "alternatives": [
+        "slow heavy rock riff bed without vocals",
+        "percussion-only industrial loop that dies to silence on Peter"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "score_intent": "Nostalgic childhood flashback score in warm but fragile acoustic palette, starts sunlit and playful at ~80 BPM with light guitar and soft hand percussion over the alley kickball setup, then sharply surges in the middle third with a sudden string swell and percussive hit as the kickball smashes Mrs. Engel\u0027s window, holds tense high strings and held breath through the blame exchange and \u0027I did it,\u0027 then eases into bittersweet resolved piano and low cello for the secret and the sixty-bucks aftermath, tempo never races past a hurried heartbeat",
+      "dynamics_arc": "Moderate open on clip 1, hard peak on clip 2 window smash, elevated tension through clips 3-4 confession, gentle release across clips 5-6.",
+      "peak_clip_number": 2,
+      "timing": "Soft enter on alley establish; accent smash in sync with glass; sustain tension through confession; lullaby-like resolve last ~12s",
+      "diegetic_sound": "Kickball thud, garbage-can lid bases, explosive glass break and rain, distant street, kids\u0027 scuff, quiet footsteps after",
+      "silence_or_exclusions": "Carve a brief near-silence or score dip right under the glass smash so diegetic glass leads; no modern synths that break period childhood feel",
+      "alternatives": [
+        "solo music-box motif that fractures on the smash",
+        "handheld percussion and breathy choir pad only"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "score_intent": "Domestic drama underscore, slow 65-75 BPM, upright piano with dusty felted tone and low sustained strings, opens almost still under Ma in the afghan chair, gains a cautious walking bass figure when Nick enters and tosses keys, builds restrained urgency and tighter harmony through his caretaker lecture about watching Ma and old people going downhill without ever becoming melodrama, then bleeds down to thin single-note piano and room tone for the factory-job and still-lives-here VO coda, overall mood of worn love and quiet dread in a fifth-floor walk-up",
+      "dynamics_arc": "Low on clip 1, rises through clips 2-4, plateaus at peak intensity across clips 5-7 lecture, then releases to sparse quiet on clips 8-10.",
+      "peak_clip_number": 7,
+      "timing": "Barely-there enter under Ma; swell with Nick\u0027s entrance; crest through lecture lines; strip back for final three VO/image beats over ~45s",
+      "diegetic_sound": "TV game-show murmur, pill bottles soft rattle, keys in basket, floorboards, apartment street bleed, fridge hum",
+      "silence_or_exclusions": "Keep score under dialogue, never on top of Nick\u0027s scolding lines; no horror stingers; no sentimental violin solos that romanticize decline",
+      "alternatives": [
+        "muted trumpet long tones over soft organ",
+        "only low string quartet, no piano"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "score_intent": "Confident late-70s/early-80s flavored cruising cue at moderate 90 BPM, warm electric guitar with mild chorus and a lean bass groove under the burnt-orange Trans Am and flame job, swagger without parody as Nick sits profile in the T-top, then the groove sheds layers and tempo feel softens as camera finds Peter locking a plain bike in pizza clothes across the street, ending on a smaller unresolved chord that underlines the status gap",
+      "dynamics_arc": "Strongest on clip 1 Trans Am hero shot, eases on clip 2 driving profile, drops to modest underscore on clip 3 Peter and bike.",
+      "peak_clip_number": 1,
+      "timing": "Full groove on car reveal first 8-10s; thin across middle; minimal bed last 5-7s; total ~20s",
+      "diegetic_sound": "Trans Am engine idle and exhaust burble, light street traffic, bike chain and lock click, distant parlor door",
+      "silence_or_exclusions": "No parody hair-metal excess; do not drown bike lock detail; leave headroom if engine is hero SFX",
+      "alternatives": [
+        "synthwave-lite pad with analog bass, still period-adjacent",
+        "dry classic-rock drum pocket only under car, silence under Peter"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "score_intent": "Low, resigned pizza-parlor interior underscore at slow 70 BPM, soft electric piano and muted guitar in a gray major-minor blend, oven-warm but emotionally stuck, holds steady under VO about not affording school and having to take care of Ma, slight further hollowing when Nick\u0027s anti-degree advice is recalled, no lift or chorus, mood of dead-end duty and deferred life inside dough-and-box work rhythm",
+      "dynamics_arc": "Even modest weight on clips 1-2, slight further drop on clip 3, no sharp peak only a flat resigned line.",
+      "peak_clip_number": 1,
+      "timing": "Enter after parlor ambience establishes; bed full ~25s under VO; fade with scene out",
+      "diegetic_sound": "Oven hum, peel scrapes, box folds, phone ring possibility, counter chatter, Tony movement, street door bell if used",
+      "silence_or_exclusions": "Score must sit under VO clarity; no upbeat Italian clich\u00E9 accordion; no hopeful key change",
+      "alternatives": [
+        "only ambient tonal room wash derived from oven noise",
+        "sparse nylon-string guitar single notes"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "score_intent": "Meet-cute turning into genuine spark, begins light and slightly clumsy at ~85 BPM with clean guitar and soft brushed snare as Sionna trips into Peter, stays conversational and airy through name exchange and Irish-goddess meaning, warms with added cello and gentle harmonic lift when coffee is offered and she declines pizza but invites coffee, then in the final third tempo feels slower and score deepens into intimate glowing strings and held piano as internal VO hits \u0027It was like I knew her\u0027 and the washing-up-on-me intensity, blooming without becoming syrupy pop, ends on a sustained unresolved warm chord as she looks back",
+      "dynamics_arc": "Medium open clip 1, dips conversational through clips 2-6, rebuilds clips 7-10, peaks on clips 11-12 internal recognition.",
+      "peak_clip_number": 12,
+      "timing": "Light enter on trip/collision; thin for dialogue exchanges; swell last 12-15s under intense VO and look-back; ~50s total",
+      "diegetic_sound": "Sidewalk scuff, body bump, street traffic bed, parlor door, distant kitchen, footsteps walking away",
+      "silence_or_exclusions": "Duck score hard under short dialogue lines (name, okay, coffee ask); no generic rom-com piano gliss; no lyrics",
+      "alternatives": [
+        "indie-folk acoustic duo that blooms to small string section",
+        "hazy dream-pop pad that only clarifies at the final VO"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "score_intent": "Late-afternoon dementia unease, very slow 60-65 BPM, fragile high piano notes and dissonant soft string clusters over a low uneasy drone, opens unsettled as Ma searches the pill line, tightens into anxious thin textures on her confused church and pain-pill questions, eases only slightly when Peter corrects her and points to the pills, then on her soft apology snap-back the harmony briefly clarifies into a sad simple major fragment before dissolving again as Peter prepares to flee, overall intimate, frightening in its quiet, never horror-jump",
+      "dynamics_arc": "Elevated unease on clip 1, peaks on clip 2 confused outburst, recedes through clips 3-4 correction, softest unresolved release on clip 5 apology look.",
+      "peak_clip_number": 2,
+      "timing": "Enter with glassy-eyed search; crest under confused questions; thin for Peter\u0027s replies; bittersweet fragment on apology then trail out ~35s as he grabs jacket",
+      "diegetic_sound": "Pill bottle rattle, kitchen clock, fridge, faint street through window, jacket fabric, keys, footsteps to door",
+      "silence_or_exclusions": "Leave clear pockets under Ma\u0027s confused lines and Peter\u0027s corrections; no jump-scare hits; no sentimental full-orchestra swell on apology",
+      "alternatives": [
+        "solo prepared piano with stop-mute knocks",
+        "low clarinet long tones over barely audible sine drone"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "score_intent": "Sparse nocturnal urban underscore, cold minor-key electric piano and distant muted strings over a slow 70 BPM pulse, thin wind-like pads and occasional low bass thrum suggesting winter streets; opens hushed and lonely, gradually thickens with a faint hopeful cello line as he nears the library, never loud, mood of secret escape and quiet resolve",
+      "dynamics_arc": "Intensity rises gently from clip 1\u0027s cold solitude into a modest lift at clip 2 as he crosses toward the library, then holds without hard release.",
+      "peak_clip_number": 2,
+      "timing": "20s total; keep sparse bed under walk, slight warm lift in final third on library approach",
+      "diegetic_sound": "cold wind, distant traffic hum, faint bar neon buzz, footsteps on pavement, light clothing rustle",
+      "silence_or_exclusions": "no drums, no melodic hooks, no warm major resolutions",
+      "alternatives": [
+        "solo muted trumpet over soft traffic bed",
+        "ambient drone with sparse piano notes only"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "score_intent": "Quiet intimate library underscore, warm soft acoustic guitar harmonics and gentle upright bass at ~75 BPM, airy room-tone pads; starts almost silent and reverent, slowly blooms with a curious major-tinged piano motif as he finds the aisle and pulls Wuthering Heights, peaks on the free-education realization with a tender swelling string pad, then softens into dreamy half-lullaby as narration drifts into Heathcliff and Catherine, ending hushed and slightly unresolved",
+      "dynamics_arc": "Rises from near-still clips 1\u20133 through discovery at clip 4, peaks at clip 5\u0027s awakening line, eases through clips 6\u20137 into soft afterglow.",
+      "peak_clip_number": 5,
+      "timing": "40s; minimal under dialogue clips 2\u20133, swell on aisle and book pull, gentle sustain into closing VO",
+      "diegetic_sound": "soft shoe scuffs on wood, distant page turns, HVAC hush, quiet librarian murmur, book spine slide",
+      "silence_or_exclusions": "no percussion, no suspense stingers, duck fully under spoken lines",
+      "alternatives": [
+        "solo celesta and soft strings",
+        "pure ambient library room tone with faint harmonic drones"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "score_intent": "Warm indie-folk coffee-shop score, fingerpicked acoustic guitar and soft brushed snare at ~90 BPM with light Rhodes and intimate cello; opens casual and slightly awkward under the college-crowd chatter, stays conversational through the book talk, then steadily brightens and opens as Sionna grows animated, cresting into a luminous mid-tempo swell with rising strings and heart-lift harmony on the internal line that something inside was coming awake, then settles into tender hopeful afterglow as they plan another date",
+      "dynamics_arc": "Builds from easy clips 1\u20134, lifts with Sionna\u0027s animation at clip 5, peaks at clip 6\u0027s awakening, softens warmly through clip 7.",
+      "peak_clip_number": 6,
+      "timing": "55s; light bed under dialogue, clear emotional crest mid-late on awakening VO, gentle release into date plan",
+      "diegetic_sound": "espresso machine hiss, cup clinks, low college chatter, chair scrapes, backpack rustle",
+      "silence_or_exclusions": "avoid big drums or pop drop; keep score under dialogue intelligibility",
+      "alternatives": [
+        "soft chamber pop with muted trumpet",
+        "lo-fi Rhodes loop with subtle vinyl crackle"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "score_intent": "Romantic medieval-fantasy orchestral cue, lush strings, soft choir pads, wooden flutes and gentle harp at a flowing 80 BPM opening in misty forest wonder; begins sparse and enchanted among moss and trees, gains noble warmth and riding rhythm as they appear on the mare, opens wide into sunlit major-key full strings and light brass bloom as they emerge into the grassy field, then surges into a soaring lyrical climax with high strings and suspended choir on the gentle lift, embrace, and first kiss before a soft luminous hold",
+      "dynamics_arc": "Starts low and wondrous at clip 1, rises through the ride at clip 2, expands at the field reveal clip 3, peaks at the kiss on clip 4.",
+      "peak_clip_number": 4,
+      "timing": "45s; gradual orchestral build across forest-to-field, full romantic crest on dismount and kiss in final third",
+      "diegetic_sound": "soft horse hooves on earth, leather creak, wind in leaves, insects and birds in the open field, fabric rustle on embrace",
+      "silence_or_exclusions": "no modern instruments, no dissonant horror tones, no abrupt cuts before the kiss lands",
+      "alternatives": [
+        "Celtic harp and low whistle led version",
+        "solo piano with distant wordless soprano"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "score_intent": "Abrupt night-terror rupture into uneasy aftermath: opens with a sharp breathy stinger and racing low heartbeat pulse under sweating bolt-upright panic, dissonant high strings and tight chest-thump percussion at elevated tempo that quickly fractures; then tempo and density fall hard into sparse unsettled piano and thin night-room drone as he questions the clothes and old kings, settling into a haunted quiet realization motif\u2014minor, intimate, slightly mystical\u2014as he knows the girl was Sionna, ending near silence",
+      "dynamics_arc": "Peaks immediately at clip 1\u0027s jolt awake, then steadily releases through confused questioning at clip 2 into quieter recognition at clip 3.",
+      "peak_clip_number": 1,
+      "timing": "20s; hard hit in first seconds, rapid decay across middle, near-hush on final realization",
+      "diegetic_sound": "bedsheet thrash, sharp inhale, heartbeat in ears, apartment night hum, distant street noise",
+      "silence_or_exclusions": "no romantic leftover theme from the dream after the stinger; strip score almost bare by end",
+      "alternatives": [
+        "pure diegetic panic then silence with one unresolved piano note",
+        "low drone and processed breath only"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "score_intent": "Calm contemporary yoga-studio underscore, soft tanpura-like drone, gentle hand percussion and airy piano at a slow 60\u201370 BPM; begins neutral and spacious over the class setup, briefly tightens with awkward comic tension and slightly off-kilter rhythm as Peter struggles and his shirt falls, then dissolves into deep spacious calm\u2014long reverb pads, soft flute, and still silence-friendly tones\u2014for savasana, remaining warm, nonjudgmental, and lightly supportive under Sionna\u0027s encouraging philosophy lines without ever turning sentimental or loud",
+      "dynamics_arc": "Moderate open at clip 1, peaks on the physical struggle at clip 2, drops to deepest calm at savasana clip 3, then holds gentle even support through dialogue clips 4\u20137.",
+      "peak_clip_number": 2,
+      "timing": "45s; light bed early, brief tension bump mid-struggle, long exhale into savasana and soft sustain under talk",
+      "diegetic_sound": "instructor voice room tone, mat shifts, collective breath, fabric rustle, quiet HVAC, bare feet on floor",
+      "silence_or_exclusions": "no driving beat, no comedy wah-wah; leave generous space under spoken encouragement",
+      "alternatives": [
+        "solo singing bowl and soft ambient pad",
+        "minimal acoustic guitar harmonics only"
+      ]
+    },
+    {
+      "scene_id": "S15",
+      "score_intent": "Tense domestic confrontation score, low distorted cello ostinato and tight agitated strings at a pressing 100 BPM with intermittent percussion hits like slammed doors; opens already hot and confrontational under Nick\u0027s beet-red entrance, spikes harder on the missed-appointment accusation, stays grinding and accusatory through the where-were-you barrage, dips only slightly on Peter\u0027s apologetic confession, then surges again on the girl reveal and priorities attack into a raw final peak of anger and guilt before cutting toward silence on the slam-out energy\u2014bitter, working-class, no melodrama sweetness",
+      "dynamics_arc": "High from clip 1, peaks at clip 2\u0027s accusation and again at clip 8\u0027s priorities blow, with a brief dip at clip 6\u0027s soft confession before the final surge.",
+      "peak_clip_number": 8,
+      "timing": "40s; aggressive bed under Nick\u0027s lines, slight thin-out on Peter\u0027s apology, hard crest on final rebuke then abrupt drop",
+      "diegetic_sound": "heavy footsteps, fist clench fabric, chair creak, raised voices room slap, door slam, Ma\u0027s small presence quiet",
+      "silence_or_exclusions": "no romantic theme for the girl mention; no comic cues; mute music spikes under the loudest shouts if needed for clarity",
+      "alternatives": [
+        "desolate low piano clusters and sub bass only",
+        "raw near-diegetic with only tense room tone and heartbeat"
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "score_intent": "Somber clinical drama underscore, sustained low strings and sparse piano in a minor mode at slow 65 BPM, cool sterile pads suggesting fluorescent light; opens measured and grave under Dr. Carson\u0027s eye-contact diagnosis, tightens with quiet dread as blood pressure and stroke risk land, holds tense through admit-for-observation, then deepens into heavier anxious strings and a muffled pulse as we cut to ER with Ma holding her chest and ringing ears, finally thinning to a fragile almost-tender unresolved piano figure on her soft joke that someone must be talking about her\u2014serious, compassionate, never sensational",
+      "dynamics_arc": "Steady grave rise through clips 1\u20134 diagnosis, peaks around the ER distress of clip 5, then releases into fragile quiet at clip 6.",
+      "peak_clip_number": 5,
+      "timing": "45s; restrained under doctor dialogue, weight increase on ER cut, soft unresolved close on Ma\u0027s line",
+      "diegetic_sound": "clinic room tone, paper chart rustle, distant hospital pager, ER soft alarms, Ma\u0027s shaky breath, muffled ear-ring whoosh",
+      "silence_or_exclusions": "no horror stingers, no heroic rescue music; keep under dialogue and allow space around Ma\u0027s final line",
+      "alternatives": [
+        "solo piano in cold upper register with long decays",
+        "ambient hospital drone with faint heartbeat undertone"
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "score_intent": "Sparse nocturnal hospital underscore: low sustained strings and distant soft synth pad, barely-there heartbeat pulse under 60 BPM, hushed and hollow, gradual faint dissonant shimmer creeps in toward the end as dream bleed begins, never rising above a whisper, cold clinical melancholy with almost no percussion",
+      "dynamics_arc": "Intensity stays minimal and only gently lifts from clip 1 through clip 3 as the dream edge arrives.",
+      "peak_clip_number": 3,
+      "timing": "Full 15s bed of near-static sparse texture with a subtle late swell in the final third",
+      "diegetic_sound": "Soft ICU monitor beeps, distant corridor hum, thin blanket rustle, Peter\u0027s slow breathing",
+      "silence_or_exclusions": "No melodic theme, no brass, no rhythmic drive; keep score subordinate to room tone",
+      "alternatives": [
+        "ultra-minimal piano single notes with long decay",
+        "only filtered room tone and sub-bass drone"
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "score_intent": "Violent nightmare war score: opens already chaotic with distorted low brass, metallic percussion and grinding strings at aggressive mid-tempo, mud-and-blood industrial war drums, a brief choked vocal-like swell on the dying plea, then tempo and density surge harder as Nick charges, exploding into a brutal full-orchestral and distorted-guitar stab hit when the knife sinks in, holding screaming dissonance on Peter\u0027s shocked face before an abrupt cut-to-black silence",
+      "dynamics_arc": "Starts high at clip 1, dips slightly on clip 2 plea, peaks at clip 3 knife charge, stays crushing through clip 4 betrayal close-up then cuts.",
+      "peak_clip_number": 3,
+      "timing": "35s continuous nightmare cue; climax hit locked to knife impact in final third, hard stop at end",
+      "diegetic_sound": "Mud squelch, distant shouts, steel clangs, wet knife thrust, Peter\u0027s choked gasp",
+      "silence_or_exclusions": "No hospital sounds bleed in; no lyrical melody; exclude any romantic or warm tones",
+      "alternatives": [
+        "pure industrial noise and processed war drums without orchestra",
+        "atonal string cluster horror bed with single brass stab"
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "score_intent": "Post-nightmare jolt then draining residual dread: opens with a sharp inhale-synced dissonant string scrape and racing low pulse that immediately collapses into thin shaky strings and sparse piano, tempo falling from panicked 110 toward 70 BPM across the scene, settling into hollow unresolved minor hold while he stares at sleeping Ma and forces the dream away, ending nearly bare",
+      "dynamics_arc": "Peaks immediately on clip 1 gasp awake, then steadily releases through clips 2\u20134 as he calms and rationalizes.",
+      "peak_clip_number": 1,
+      "timing": "20s; hard accent on first second then continuous decrescendo across remaining duration",
+      "diegetic_sound": "Peter\u0027s ragged gasps and heartbeat in ears, chair creak, soft ICU beeps returning, Ma\u0027s quiet breathing",
+      "silence_or_exclusions": "Drop all battlefield elements instantly; no big melody; leave space for internal VO",
+      "alternatives": [
+        "heartbeat-only design with fading tinnitus ring",
+        "single sustained cello note decaying to silence"
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "score_intent": "Tense domestic confrontation score in a dim apartment: starts with uneasy low guitar and muted pulse under the pill-organizer quiet, gains sarcastic snare ticks and tightening bass as Nick\u0027s mockery builds, pressure climbing through the bastard/pussy exchange with rising distorted low strings, then detonates on the crack-pregnancy insult and open-hand slap with a sharp percussive hit and ringing ear-tone, door-slam boom, finally collapsing into stunned sparse notes and hollow drone under Peter\u0027s vow that Sionna never meets him",
+      "dynamics_arc": "Builds from moderate clip 1 through rising verbal aggression clips 5\u201310, double-peaks at clips 11\u201312 insult and slap, then releases through clips 13\u201314 aftermath.",
+      "peak_clip_number": 12,
+      "timing": "55s long-form arc; slow boil first half, violent crest near end of second half, cold comedown final 10s",
+      "diegetic_sound": "Pill organizer rattle, floor creaks, raised voices, sharp slap impact, ear ring, door slam, footsteps stomping out",
+      "silence_or_exclusions": "No upbeat or comic stings; mute score under clearest dialogue lines; exclude any warm family theme",
+      "alternatives": [
+        "desolate Midwest indie-rock tension bed with sudden silence on slap",
+        "only sub-bass and room tone until slap hit"
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "score_intent": "Bittersweet childhood flashback score: gentle late-spring acoustic guitar and soft warm strings, light and pastoral around 80 BPM, a touch of playful woodwind under the yard laughter, brief sterner low piano when Mrs Stark confronts, then tender resolved major-key swell as Nick steps in and promises he will always take care of Peter, ending on a simple sincere guitar cadence that feels protective yet faintly fragile",
+      "dynamics_arc": "Opens soft clip 1, rises through clips 2\u20133 confrontation, eases clips 4\u20136, gentle emotional crest on clip 7 promise then soft settle on clip 8.",
+      "peak_clip_number": 3,
+      "timing": "50s; even lyrical pacing with modest lift mid-scene and warm resolution in final third",
+      "diegetic_sound": "Distant kids on playground, breeze in lilacs, Mrs Stark footsteps, soft hair-muss, boys\u0027 quiet voices",
+      "silence_or_exclusions": "No dark adult motifs, no distortion; keep score light enough for child dialogue",
+      "alternatives": [
+        "solo piano memory theme with high register sparkle",
+        "hazy sun-soaked ambient pads with faint guitar"
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "score_intent": "Controlled uneasy night apartment underscore: restrained electric piano and low restless bass, mid-tempo simmer, hopeful faint major color when Peter mentions community college that quickly curdles under Nick\u0027s skepticism into tighter minor harmony and dry snare ghost notes, pressure peaking on the bros-before-hos control line with a cold held dissonance, then deflating into thin unresolved chord under Peter\u0027s forced smile and quiet surrender",
+      "dynamics_arc": "Low open on clips 1\u20133, rises through clips 4\u20135 challenge, holds tension 6\u20137, peaks again on clip 8 bros line, slight release through 9\u201310 forced agreement.",
+      "peak_clip_number": 8,
+      "timing": "45s simmer; modest early lift, sustained mid tension, emotional crest late-middle, flat unresolved end",
+      "diegetic_sound": "Apartment night hum, fabric shift, subtle fridge buzz, clear dialogue presence, no TV or radio",
+      "silence_or_exclusions": "Avoid triumphant academic fanfare; no slap or violence hits; leave air for dialogue",
+      "alternatives": [
+        "muted trumpet noir tension",
+        "sparse detuned guitar intervals only"
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "score_intent": "Bar-brawl escalation score over packed Saturday night energy: opens with diegetic-leaning rock grit and smoky bass pulse, tension coils as Nick confronts in the pool room with tightening toms and distorted guitar stabs, dialogue-driven pressure climbing, then launches into slow-motion stretched time on the fist draw-back with massive slowed drums and screaming sustained strings, explodes into chaotic full-band and percussion scramble on the bouncer collision, and drives hard out the door with racing chase rhythm as Peter flees into night",
+      "dynamics_arc": "Builds from clip 1 atmosphere through clips 2\u20136 confrontation, double-peaks on clips 7\u20138 slow-mo fist and chaos scramble, remains high as clip 9 flight begins.",
+      "peak_clip_number": 7,
+      "timing": "70s; groove bed first half, slow-mo stretch and max hit in final third, continuous drive off end",
+      "diegetic_sound": "Bar crowd walla, pool balls, AC/DC-style source music ducked under score, fist whoosh, body impacts, door burst, night air rush",
+      "silence_or_exclusions": "Duck source music hard under key dialogue; no romantic theme; keep punch moment score-forward",
+      "alternatives": [
+        "pure source-music swell into sudden score hit on fist",
+        "heartbeat and tinnitus design under slow-mo then noise burst"
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "score_intent": "Panic flight through cold Milwaukee streets: driving urgent percussion and breathless string ostinato at high tempo from the first frame, chest-pounding low drums and wind-cut synths matching sprint stride, intensity locked high and raw with wide-eyed gasping energy, slight rhythmic tightening on the close face-and-chest running shots, then a short decelerating breath of held chords as he hits Sionna\u0027s porch and reaches for the door, still unresolved and shaking",
+      "dynamics_arc": "Opens at peak intensity clips 1\u20132 sprint, remains elevated, slight release only on clip 3 porch arrival.",
+      "peak_clip_number": 2,
+      "timing": "25s continuous high-energy run cue; no intro ramp, brief ease only in last seconds",
+      "diegetic_sound": "Hard footsteps on cold pavement, ragged breathing, heartbeat thump, distant traffic, porch wood under feet, doorbell or knock",
+      "silence_or_exclusions": "No dialogue bed needed; exclude any calm or resolved cadence; no bar leftover music",
+      "alternatives": [
+        "drums-and-breath only primal chase",
+        "pulsing techno-thriller ostinato with cold wind design"
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "score_intent": "Intimate contemporary chamber score, warm low strings and soft fingerpicked acoustic guitar with sparse piano, mid-tempo around 72-85 BPM, opens weary and tender as bodies sink into refuge, stays hushed through confessional dialogue with gentle harmonic suspensions, gradually warms and opens as purpose talk deepens, then swells into a restrained romantic bloom of strings and soft breathy pads for the hallway-to-bedroom undressing and first night together without ever turning bombastic",
+      "dynamics_arc": "Intensity holds medium through sofa collapse and talk (clips 1-3), lifts at the purpose question (clip 4), eases briefly (clips 5-6), then peaks on the intimate bedroom arrival (clip 7).",
+      "peak_clip_number": 7,
+      "timing": "Sparse underscore under sofa dialogue for first ~35s; romantic swell only in final third as they move to bedroom; total ~50s",
+      "diegetic_sound": "Soft sofa creak, cat subtle movement, fabric rustle of peeling clothes, distant duplex night hush, crisp sheet sounds",
+      "silence_or_exclusions": "No percussion, no melodrama stings; leave space under quiet dialogue lines; avoid lush orchestra until final bedroom beat",
+      "alternatives": [
+        "minimal piano-only nocturne",
+        "warm analog synth pad bed with no melody"
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "score_intent": "Mythic cinematic dream score beginning in stark black-and-white monochrome with dry distant percussion and hollow low drones at slow tempo ~60 BPM, then ethereal female vocalise and rising harp-like figures as the lake angel appears, color-surge moment blooms into full vibrant orchestral color with bright woodwinds and shimmering strings accelerating toward 110 BPM, climaxes in a massive brass-and-choir hit with whirling mace percussion when giant Nick erupts from the woods, then resolves into a powerful but clean force-push motif of ascending clustered strings and wind that shrinks the threat and leaves ringing harmonic afterglow",
+      "dynamics_arc": "Starts subdued monochrome (clip 1), rises with Sionna\u0027s lake emergence (clip 2), surges on color flood (clip 3), peaks violently at giant Nick\u0027s mace entrance (clip 4), then releases through the force-push (clip 5).",
+      "peak_clip_number": 4,
+      "timing": "Build across ~45s: sparse first third, color bloom mid, full climax final third on Nick then push",
+      "diegetic_sound": "Water lap and reed rustle early, gown fabric in wind, heavy giant footsteps and mace whoosh, force-push air rush",
+      "silence_or_exclusions": "No modern electronic drums; keep dream logic\u2014avoid realistic fight foley overpowering score at climax",
+      "alternatives": [
+        "choral plainchant morphing into dissonant cluster",
+        "pure sound-design drone with no melody until color surge"
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "score_intent": "Bare nocturnal interstitial, almost silent score with only a faint high sine or distant soft piano note cluster, extremely slow and still ~50 BPM, tiny jolt accent on the shared wake then immediately settles back into sleepy minimalism as they shuffle down the hall, ending on a wry gentle cadence that matches the dry line without comedy sting",
+      "dynamics_arc": "Near-floor under clock (clip 1), brief lift on jolt awake (clip 2), then soft decline through shuffle and final line (clips 3-4).",
+      "peak_clip_number": 2,
+      "timing": "~20s total; score barely present except micro-swell on wake then fade",
+      "diegetic_sound": "Kitchen clock soft tick, sofa creak on jolt, bare feet on hall floor, bed sheets, quiet room tone",
+      "silence_or_exclusions": "Prefer near-silence; no melody under final dialogue; exclude any dream residue or tension drones",
+      "alternatives": [
+        "diegetic clock tick only with no score",
+        "single held low cello harmonic"
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "score_intent": "Gentle domestic care montage score, soft acoustic guitar and warm Rhodes or upright piano in a steady mid-slow 70-80 BPM, major-key but slightly weary, looping tender ostinato that feels like daily ritual, light strings enter under Sionna helping Ma and pill-box filling, a subtle bittersweet lift for exhausted multi-role Peter without turning heroic, overall hopeful and grounded family-care mood",
+      "dynamics_arc": "Even medium-low bed through opening reflection (clip 1), slight warm rise on Sionna help (clip 2), steady through counter pills (clip 3), soft peak on exhausted multi-role Peter (clip 4).",
+      "peak_clip_number": 4,
+      "timing": "Continuous montage bed across ~40s; no hard hits; gentle arc only",
+      "diegetic_sound": "Casserole dish clink, afghan rustle, pill-box plastic clicks, apartment daytime room tone, soft footsteps",
+      "silence_or_exclusions": "No drums, no tragedy foreshadowing; keep score supportive under any VO; exclude dark minor turns",
+      "alternatives": [
+        "solo piano waltz-time care theme",
+        "soft string quartet without rhythm section"
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "score_intent": "Tense naturalistic thriller underscore, low pulsing synth and muted irregular percussion suggesting impaired driving at uneasy ~65-90 BPM, gray wet-road atmosphere with sparse dissonant strings under Nick loading Ma and the drive, builds compressed dread then detonates into a sudden full-frequency metal-scream orchestral and designed impact hit with no sustain glory, immediately cutting to near-total musical silence and hollow air for aftermath",
+      "dynamics_arc": "Uneasy medium under drinking residue and load-in (clip 1), holds tense through drive (clip 2), catastrophic peak on metal-scream impact (clip 3), then hard release to near silence (clip 4).",
+      "peak_clip_number": 3,
+      "timing": "Slow burn ~20s then impact stinger under 1s and silence tail; total ~30s",
+      "diegetic_sound": "Car doors, seatbelt, wet tire hiss, engine, sudden metal scream crunch, then distant sirens only after silence beat",
+      "silence_or_exclusions": "Hard cut score to silence after impact; no gore-enhancing hits; no melodic theme for Nick; exclude any heroic or redemptive harmony",
+      "alternatives": [
+        "pure diegetic build with no score until impact stinger",
+        "heartbeat low-frequency pulse only"
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "score_intent": "Raw grief explosion score, begins hollow and empty with a single held low piano note and thin cold air over the vacant chair, then fractures into sobbing string clusters and unstable tempo as Peter collapses into childlike bawling, reaches a raw screamed dissonant peak of scraping strings and pounding low piano on the cursed \u2018Die\u2019 outburst, then gradually softens into embracing warm low cello and gentle sustained chords as Sionna holds him and the release becomes shared mourning rather than rage",
+      "dynamics_arc": "Hollow low open on empty chair (clip 1), steep rise into bawling collapse (clip 2), absolute peak on \u2018Die you fucking jackass\u2019 (clip 3), then held high but consoling release under Sionna\u2019s hold (clip 4).",
+      "peak_clip_number": 3,
+      "timing": "Empty first ~8s, erupt through middle, consoling sustain final third; ~40s",
+      "diegetic_sound": "Apartment hollow room tone, chair/afghan stillness, body drops and fabric, raw vocal sobs prioritized over music at peak",
+      "silence_or_exclusions": "Do not pretty-up the rage peak; leave micro-gaps for sob breaths; exclude sentimental choir or resolution major cadence too early",
+      "alternatives": [
+        "voice-and-room only until Sionna embrace brings soft score",
+        "solo grieving cello without harmony"
+      ]
+    },
+    {
+      "scene_id": "S31",
+      "score_intent": "Somber restrained funeral score, slow tempo ~55-65 BPM, modest organ-like pads and sparse piano with muted solo violin, cool and formal through casket selection and sparse church mass, remains understated and gray, then deepens into a single grounded earthy low-string phrase at graveside as dirt hits the lid, dignified Catholic-adjacent mourning without swelling Hollywood catharsis, ending on unresolved quiet",
+      "dynamics_arc": "Low formal bed through funeral home (clip 1) and sparse mass (clip 2), stays subdued on only-son reflection (clip 3), peaks gently at graveside dirt handful (clip 4).",
+      "peak_clip_number": 4,
+      "timing": "Continuous quiet underscore ~50s; smallest lift only at final graveside beat",
+      "diegetic_sound": "Muffled funeral-home HVAC, sparse coughs, church ambience, rosary beads faint, dirt handful muted thunk on casket lid",
+      "silence_or_exclusions": "No big choir, no bagpipes, no soaring major lift; keep sparse under dialogue; exclude emotional manipulation swells",
+      "alternatives": [
+        "solo far-off church organ only",
+        "silence with only diegetic dirt thunk at end"
+      ]
+    },
+    {
+      "scene_id": "S32",
+      "score_intent": "Clinical tense confrontation underscore, sterile high thin drones and irregular low heartbeat pulse suggesting ICU, slow uneasy 60-70 BPM, remains cool and watchful under bruised Nick\u2019s weak apology and rambling, tightens with dry staccato strings as blame question lands, spikes into sharp dissonant string pressure and held breath on Nick\u2019s defensive explosion, then cools to a cold walking-away drone as Peter leaves without resolution, unresolved and bitter",
+      "dynamics_arc": "Low sterile open on ICU reveal (clip 1), rises through weak confession (clips 2-3), dual peak on blame question and Nick\u2019s outburst (clips 4-5), then controlled tense release on final think-about-it / exit (clip 6).",
+      "peak_clip_number": 5,
+      "timing": "Bed under first half ~25s, tension peak mid-late confrontation, cold exit tail; ~50s",
+      "diegetic_sound": "ICU monitors beep steady, oxygen hiss, curtain, distant hospital PA, bed rail, footsteps on exit",
+      "silence_or_exclusions": "Do not score Nick sympathetically with warm theme; no redemptive cadence; leave air after outburst; exclude action percussion",
+      "alternatives": [
+        "monitor beeps as sole rhythm with minimal drone",
+        "desiccated solo piano single-note interrogation motif"
+      ]
+    },
+    {
+      "scene_id": "S33",
+      "score_intent": "Somber intimate grief score for a Catholic cemetery visit: sparse solo piano and low sustained strings in a minor key, slow tempo around 60-70 BPM, opens hushed and reverent over the wide hilltop view, gently thickens with soft cello as Peter kneels, then swells with restrained warmth and a faint hymn-like lift through the scripture lines I have fought the good fight and I have kept the faith, peaking on the tender reply Yes you did Ma before settling into quiet resolve with lingering piano notes and distant wind-like pads",
+      "dynamics_arc": "Intensity rises steadily from quiet wide establishing (clip 1) through kneeling grief (clip 2) and scripture (clip 3) to peak on the faith affirmation (clip 4), then holds a soft release.",
+      "peak_clip_number": 4,
+      "timing": "Slow sustained cues across ~35s; swell in final third on scripture and reply; no hard cuts",
+      "diegetic_sound": "Light late-fall wind in trees, distant sparse birds, soft fabric and gravel under knees, faint droplet or breath near head hung",
+      "silence_or_exclusions": "No percussion, no bright brass, no modern pop elements; leave space under spoken scripture",
+      "alternatives": [
+        "solo acoustic guitar fingerpicking with soft pad instead of piano",
+        "minimal chapel organ drone under strings"
+      ]
+    },
+    {
+      "scene_id": "S34",
+      "score_intent": "Warm nocturnal neighborhood underscore for a pizza parlor: gentle electric piano, soft brushed drums and muted bass at easy 85-95 BPM, cozy amber tone opens on the oven-glow parlor, lifts slightly with affectionate surrogate-father warmth when Tony claps Peter\u0027s shoulder, dips into a brief dreamy sunlit pastoral color (light acoustic guitar and airy flute-like synth) for the farmyard pizza-face baby flash, then returns to mellow parlor groove with a knowing smile in the harmony on the lines about working too much and giving birth to a new idea",
+      "dynamics_arc": "Mild rise from parlor open (clip 1) to peak warmth on Tony\u0027s concerned shoulder clap (clip 2), soft dip into dream flash (clip 3), then steady gentle close on dialogue (clips 4-5).",
+      "peak_clip_number": 2,
+      "timing": "Continuous low-bed underscore ~40s; brief brighter color shift mid-scene for dream; settle under final lines",
+      "diegetic_sound": "Pizza oven hum, distant kitchen clatter, soft parlor chatter, key jingle, chair creak",
+      "silence_or_exclusions": "No dark tension stingers; keep dream flash non-scary and brief; duck under dialogue",
+      "alternatives": [
+        "light Italian-American accordion color very subtle under parlor",
+        "pure lo-fi Rhodes and vinyl crackle bed"
+      ]
+    },
+    {
+      "scene_id": "S35",
+      "score_intent": "Tense conversational drama score in a daytime pizza parlor: restless low strings and muted pulse around 90 BPM open on worried talk about Nick and the cops, pressure builds under the legal dread, then erupts into raw emotional full-string and piano surge as Peter breaks with I\u0027m not okay I\u0027m not okay with Nick and I\u0027m not okay with Ma being dead I\u0027m not okay with anything, red-faced peak held through the double confession, then releases into softer caring pads and gentle guitar as Sionna counsels not to trip over things behind you and says this is your life I love you",
+      "dynamics_arc": "Starts mid-tension (clips 1-2), peaks hard on Peter\u0027s dual I\u0027m not okay eruptions (clips 3-4), then releases through counsel (clip 5) into warm love close (clip 6).",
+      "peak_clip_number": 4,
+      "timing": "Build across first half of ~40s; climax mid-to-late on eruption; soft landing final third",
+      "diegetic_sound": "Parlor room tone, light kitchen background, body shift and breath on outburst, soft hands on neck massage",
+      "silence_or_exclusions": "No comedy stings; avoid overpowering the monologue; leave air after eruption before counsel",
+      "alternatives": [
+        "sparse heartbeat pulse under eruption then dissolve to solo piano",
+        "desaturated indie-folk guitar bed throughout"
+      ]
+    },
+    {
+      "scene_id": "S36",
+      "score_intent": "Bitter Nick POV legal-grind montage score: cold industrial-tinged strings, low piano stabs and restless minor ostinato around 100 BPM, opens angry and seething on That little bitch rant, hits a hard bitter peak on He had one fucking job take care of Ma, then thins into sterile bureaucratic unease through greasy Jowlish office pass-off and polished Dawson, maintains uneasy courtroom drone under the fat lady judge, and circles back with a returning bitter motif on the closing little bitch VO so the whole stretch feels like one grinding loop of blame and system fatigue",
+      "dynamics_arc": "Opens high bitter (clip 1), peaks on the job rant (clip 2), dips through offices and courtroom (clips 3-6), then re-rises on final VO echo (clip 7).",
+      "peak_clip_number": 2,
+      "timing": "Montage-friendly continuous bed ~55s; motif returns at end; no triumphant resolution",
+      "diegetic_sound": "Apartment room tone, office paper shuffle phones, courtroom murmur gavel wood, footsteps, chair scrape",
+      "silence_or_exclusions": "No heroic legal-thriller brass; keep courtroom music dry and unsympathetic; duck under VO",
+      "alternatives": [
+        "desolate half-time hip-hop adjacent beat under legal grind",
+        "solo detuned piano repeating a four-note blame motif"
+      ]
+    },
+    {
+      "scene_id": "S37",
+      "score_intent": "Dark origin-violence flashback score: sparse tense percussion and low drones open in the junior-high cafeteria, menace rises as tall bad-assed young Nick fills the doorway, tightens into sharp threatening strings and held breath on the lean-in to curly-blonde John, carries a cold fatalistic motif under What comes around goes around, then deepens into heavier oppressive low brass and belt-crack percussive hits on the childhood sidewalk and dad beating imagery, exploding into the scene\u0027s darkest fullest hit on the final What comes around goes around so the cycle of violence feels sealed",
+      "dynamics_arc": "Rises from cafeteria unease (clip 1) through doorway and threat (clips 2-3) and first proverb (clip 4), sustains through beating imagery (clip 5), peaks on final proverb (clip 6).",
+      "peak_clip_number": 6,
+      "timing": "Escalating arc across ~50s; heaviest weight in final third on beating and closing VO",
+      "diegetic_sound": "Cafeteria din muffled, sneaker scuff, close breath and clothing rustle on threat, cold outdoor wind, belt snap, body drag",
+      "silence_or_exclusions": "No nostalgic warm childhood music; no comic bullying cues; leave space for VO proverb",
+      "alternatives": [
+        "distorted distant school-band drumline warped into threat",
+        "almost-silent design with only low-frequency pressure and diegetic hits"
+      ]
+    },
+    {
+      "scene_id": "S38",
+      "score_intent": "Freezing dread approach score: cold sparse synth pads, distant metallic bus rattle tones and slow low pulse around 70-80 BPM, opens numb and gray inside the Milwaukee city bus, gains weight and forward intent as Nick exits into freezing gray streets in heavy coat and boots, then tightens into focused ominous low strings and held tension as he approaches the Sionna duplex porch with dead summer pots, ending on a suspended unresolved chord that primes confrontation without releasing",
+      "dynamics_arc": "Gradual climb from numb bus interior (clip 1) through freezing walk (clip 2) to peak dread on porch approach (clip 3).",
+      "peak_clip_number": 3,
+      "timing": "Slow continuous build ~30s; no climax hit yet\u2014suspend into next scene",
+      "diegetic_sound": "Bus engine and brakes, bag-lady murmur, wind, boot steps on cold pavement and leaves, porch wood creak",
+      "silence_or_exclusions": "No melodic resolution; no warm harmony; keep sparse so footsteps and wind read",
+      "alternatives": [
+        "solo low cello long tones with wind design only",
+        "industrial ambient bed with subtle rising sine tension"
+      ]
+    },
+    {
+      "scene_id": "S39",
+      "score_intent": "Violent attack climax score: begins with uneasy thin strings and quiet domestic dread at the door crack, sharpens into accusatory tense pulse as Nick blames Sionna for jail and Ma, stays tight under Let\u0027s talk about this rationally, then slams into aggressive staccato strings and pounding low percussion as Nick backs her to the hallway wall and the switchblade flicks open between collarbone and throat, holds brutal high tension through Break it off and the friends threat, spikes on Peter\u0027s Holy shit interruption, then detonates into chaotic full-orchestra and distorted hits for the grapple knife-sink red-flies struggle at maximum intensity, and finally cuts toward a cold thin ringing sustain as Nick wipes the blade on her shirt and turns to flee",
+      "dynamics_arc": "Rises from door unease (clip 1) through blame (clips 2-3) and brief rational beat (clip 4), surges on choke and blade (clips 5-8), spikes on Peter\u0027s entrance (clip 9), absolute peak on stab struggle (clip 10), then harsh partial release on wipe-and-flee (clip 11).",
+      "peak_clip_number": 10,
+      "timing": "Long ~70s arc; controlled build first half; sustained threat mid; explosive climax final third; cold tail out",
+      "diegetic_sound": "Door chain and crack, cat, kitchen smell ambience implied soft, body slam to wall, switchblade snick, struggle grunts, knife impact, fabric, footsteps flee",
+      "silence_or_exclusions": "No romantic or soft theme during knife; do not sweeten the stab; brief near-drop before blade flick optional for shock",
+      "alternatives": [
+        "hybrid score with harsh sound-design risers and heart-stop silence on blade open",
+        "raw percussion-and-breath only until orchestra hits on stab"
+      ]
+    },
+    {
+      "scene_id": "S40",
+      "score_intent": "Aftermath escape underscore: dark hollow night bus bed with low drone, irregular heartbeat-like pulse and cold sparse piano tones around 65 BPM, opens still high-adrenaline and sick as Nick boards with bloody right hand pushed in pocket, then slowly drains into numb exhausted sustain on the close-up of cold thick blood on the hand, never fully resolving\u2014just rattling forward into the night with hard breath and leftover shock",
+      "dynamics_arc": "Starts elevated post-violence (clip 1) then eases slightly into numb residual tension on bloody hand close-up (clip 2) without true release.",
+      "peak_clip_number": 1,
+      "timing": "Short ~20s cue; immediate entry on board; gradual thin-out under hand insert",
+      "diegetic_sound": "Night bus interior hum, fare box, cloth pocket rustle, hard breath, distant traffic through windows",
+      "silence_or_exclusions": "No triumphant getaway music; no melodic closure; keep score under breath and bus noise",
+      "alternatives": [
+        "almost pure diegetic bus with single low cello note held",
+        "desolate ambient noise floor with faint tinnitus ring"
+      ]
+    },
+    {
+      "scene_id": "S41",
+      "score_intent": "Urgent cinematic thriller underscore, jagged strings and racing heartbeat percussion at roughly 140 BPM, opens already frantic as he rips the flannel and stacks pressure on the wound, dissonant brass stabs and blood-soaked dread through the soaked shirt and shaking 911 dial, sirens bleed into the score as paramedics burst in, holds tense under the clipped exchange then surges raw and desperate on the confession my brother stabbed her and climaxes in a hanging unresolved hit on oh God will she die with no cathartic release",
+      "dynamics_arc": "Opens at near-peak crisis through clips 1-3, eases slightly for paramedics and the question in clips 4-5, surges again on the confession in clip 6 and hits the scene climax at clip 7.",
+      "peak_clip_number": 7,
+      "timing": "Full ~50s bed under the emergency; hit hard on wound/911, thin under paramedic entry, final unresolved swell on will she die",
+      "diegetic_sound": "Fabric rip, wet blood sounds, phone keypad and ring, distant then close sirens, stomping boots, defibrillator box clatter, monitor beep",
+      "silence_or_exclusions": "Drop or near-mute under the short spoken What happened so dialogue cuts clean; avoid heroic rescue fanfare",
+      "alternatives": [
+        "heartbeat-only percussion bed with no melody",
+        "diegetic sirens and monitor beep carrying tension without full orchestra"
+      ]
+    },
+    {
+      "scene_id": "S42",
+      "score_intent": "Somber sparse hospital ambient score, cold fluorescent hum under muted piano and distant low strings at a slow 60 BPM, exhausted waiting-room grief, a fragile restrained warmth when parents credit him, clinical near-stillness on the recovery insert of shoulder and punctured lung, then a low minor-key pulse and time-lapse swell suggesting years passing into courtroom and prison without triumph or closure",
+      "dynamics_arc": "Low restrained intensity through clips 1-3, gentle rise to a subdued peak on the sentencing time-jump montage in clip 4.",
+      "peak_clip_number": 4,
+      "timing": "~30s continuous bed; thinnest under recovery insert, slight lift into montage end",
+      "diegetic_sound": "Fluorescent buzz, distant ER PA and gurney wheels, soft parental voices, muted courtroom/prison exterior wash in montage",
+      "silence_or_exclusions": "Keep score under dialogue but never compete with parents\u0027 quiet lines; no triumphant justice stinger",
+      "alternatives": [
+        "solo piano only, no strings",
+        "pure ambient drone with no melodic motion"
+      ]
+    },
+    {
+      "scene_id": "S43",
+      "score_intent": "Melancholic intimate drama score, hollow sparse piano and cold winter strings at a slow 70 BPM, opens in blank numb stillness under her zombie stare, stays thin and almost silent under the depressed exchange and I can\u0027t feel myself, builds into a desperate aching swell when he begs stay here with me, then collapses into empty free-fall strings and hollow space as she walks to the bedroom and he narrates fingers slipping off the rocky cliff",
+      "dynamics_arc": "Numb and low through clips 1-4, rises sharply to dual high peaks on the stay plea in clip 5 and the free-fall narration in clip 7, with clip 6 holding elevated ache as she leaves.",
+      "peak_clip_number": 5,
+      "timing": "~45s arc; near-silence under early dialogue, swell on plea, long decay through exit and VO",
+      "diegetic_sound": "Quiet duplex room tone, fabric of recovery top, footsteps to bedroom, soft door or floor creak",
+      "silence_or_exclusions": "Strip score almost bare under I can\u0027t feel me so the line lands cold; no romantic reconciliation theme",
+      "alternatives": [
+        "single sustained cello drone only",
+        "diegetic room tone alone until the stay plea"
+      ]
+    },
+    {
+      "scene_id": "S44",
+      "score_intent": "Reflective indie-cinematic score with soft acoustic guitar, light piano, and muted gray-city pads at a mid-tempo 90 BPM, broader-shouldered Seattle success under a blanket sky, gentle market colors past the street keyboard player, warm still cinnamon-roll calm at Lowell\u0027s ferry window, a brief bittersweet sting when dark brown hair flashes and is not her, then quiet proud solitude under the Tony\u0027s Boy\u0027s Pizza seven-years voiceover",
+      "dynamics_arc": "Gentle low opening through clips 1-3, warms through the caf\u00E9 seat in clip 4, peaks bittersweet on the hair-flash recognition in clip 5, softens on the chain VO in clip 6.",
+      "peak_clip_number": 5,
+      "timing": "~45s walking-to-sitting arc; light bed under exteriors, slight lift at window and hair flash",
+      "diegetic_sound": "Seattle street wash, distant keyboard player melody, ferry horn, market crowd murmur, plate and fork at Lowell\u0027s",
+      "silence_or_exclusions": "Duck under VO clarity on Tony\u0027s Boy\u0027s Pizza; do not score the keyboard player over his own diegetic tune",
+      "alternatives": [
+        "solo nylon guitar with no pads",
+        "diegetic market and ferry soundscape with minimal score"
+      ]
+    },
+    {
+      "scene_id": "S45",
+      "score_intent": "Meditative ambient score with soft singing bowls, sparse piano, and warm low drones at a slow 60 BPM, candlelit citrus-lavender calm in the dark yoga studio, gentle gratefulness breath on the mat, then a quiet unresolved undercurrent of void-left-by-Sionna sorrow and conflicted brother resentment versus DNA sorrow rising beneath the stillness without ever breaking the meditative frame",
+      "dynamics_arc": "Quiet calm in clips 1-2, subtle emotional rise through the void and DNA-sorrow voiceover peaking across clips 3-4.",
+      "peak_clip_number": 3,
+      "timing": "~30s continuous soft bed; stay under VO, slight inner swell on resentment/sorrow lines",
+      "diegetic_sound": "Soft yoga room tone, occasional mat shift, distant communal breath or low chant, candle flicker hush",
+      "silence_or_exclusions": "No rhythmic drive or dark cinematic stingers; keep bowls and drones below VO intelligibility",
+      "alternatives": [
+        "pure singing-bowl and breath bed only",
+        "minimal piano motif repeating under VO"
+      ]
+    },
+    {
+      "scene_id": "S46",
+      "score_intent": "Warm intimate night ambience with soft acoustic guitar and gentle sparse piano at roughly 50 BPM, cozy Belltown apartment hush, orange-and-white cat stillness on the couch, reading-to-sleep drift with almost no drama only soft domestic peace as a quiet gateway into the coming dream",
+      "dynamics_arc": "Consistently low and gentle across clips 1-2 with no sharp peak, a soft settle as he drifts toward sleep.",
+      "peak_clip_number": 2,
+      "timing": "~15s short soft bed fading into sleep; seamless handoff toward dream cue",
+      "diegetic_sound": "Apartment night tone, cat purr and collar tick, page turn, fabric of couch and blanket",
+      "silence_or_exclusions": "No tension or foreshadow stingers; leave space for pure domestic quiet",
+      "alternatives": [
+        "diegetic purr and room tone only",
+        "single soft guitar figure looping once"
+      ]
+    },
+    {
+      "scene_id": "S47",
+      "score_intent": "Ethereal spiritual dream score, luminous pads and distant soft hand drums over bright rolling green hills at a moderate 80 BPM, mystical Indian-tinged flute and gentle tanpura as the sage in white appears, a brief dissonant wrinkle when the dirty pizza box appears on the path, then rising declarative strings and choir-like tones on stop judging things all things are an illusion and you create your own reality, exploding into radiant joyful major-key release and light-flood when sage and box vanish",
+      "dynamics_arc": "Builds steadily from calm wonder in clips 1-3 through the teachings in clips 4-5, peaking in radiant joy at clip 6 when the sage and box vanish.",
+      "peak_clip_number": 6,
+      "timing": "~40s continuous dream arc; lift on sage lines, full radiant release in final third",
+      "diegetic_sound": "Soft wind over hills, footfalls on dirt path, fabric of white wrap, subtle whoosh on vanish",
+      "silence_or_exclusions": "No horror or comedy sting on pizza box; keep sacred tone; brief thin spot under stop judging for clarity",
+      "alternatives": [
+        "tanpura and flute only until final joy swell",
+        "wordless choir bed with no percussion"
+      ]
+    },
+    {
+      "scene_id": "S48",
+      "score_intent": "Hopeful intimate post-dream score, warm soft piano and gentle strings at a calm 75 BPM, opens with a smiling wake in low living-room lamp light and tender domestic peace as Bozo rests on him, purposeful quiet as he grabs the notebook and writes, then a clear resolved swell of courage and grace on the decision I have to see Nick I have to forgive",
+      "dynamics_arc": "Opens warm and lifted in clip 1, softens slightly while writing in clip 2, rises to a clear resolved peak on the forgiveness decision in clip 3.",
+      "peak_clip_number": 3,
+      "timing": "~25s arc from wake through write to decision line; final swell lands on forgive",
+      "diegetic_sound": "Low lamp room tone, cat shift on stomach, notebook cover and pen scratch",
+      "silence_or_exclusions": "Keep pen scratches audible; no dark dread under Nick; leave a breath before the forgive line",
+      "alternatives": [
+        "solo warm piano resolving to a major cadence",
+        "minimal score with emphasis on diegetic pen and cat"
+      ]
+    },
+    {
+      "scene_id": "S49",
+      "score_intent": "Sparse reflective indie-drama underscore, muted piano and distant clean electric guitar over a slow 65\u201375 BPM pulse, opens hushed and hollow with thin sustained pads as Peter surveys the old parlor and alley, gently thickens with a minor-key guitar figure and soft brushed snare under the self-reproach of realizing he was a dupe, then eases back to near-minimal piano and airy room tone as he accepts he is past that role, overall mood bittersweet release rather than grief, no brass or percussion hits",
+      "dynamics_arc": "Low steady bed through clip 1, slight rise into clip 2\u2019s self-reproach peak, then soft release across clip 3.",
+      "peak_clip_number": 2,
+      "timing": "Enter very low under opening exterior wide; swell almost imperceptibly into mid-scene VO; taper to thin sustain by final alley beat and hold under last line.",
+      "diegetic_sound": "Light urban weeds-neighborhood ambience, distant traffic, faint alley dumpster clank, occasional stroller wheels and muffled street voices; no interior music source.",
+      "silence_or_exclusions": "Avoid any triumphant or nostalgic major-key swell; keep score under dialogue/VO; no sudden hits on dumpster or door cuts.",
+      "alternatives": [
+        "solo muted trumpet with sparse piano instead of guitar",
+        "almost fully ambient with only occasional piano notes"
+      ]
+    },
+    {
+      "scene_id": "S50",
+      "score_intent": "Warm mid-tempo heartland-drama cue around 80\u201390 BPM, starts with low acoustic guitar and soft deli-room pad under the seated Reuben-and-fries beat, blooms quickly into fuller strings and gentle snare as Bob\u2019s shocked joyful recognition and pride hit, holds an open-hearted swell through the bear hug with patrons staring, then settles into a calmer supportive mid-dynamic bed for the prison-visit purpose and apartment talk, instrumentation acoustic guitar, small string section, light piano, restrained drums, mood reunion pride mixed with unresolved purpose, no comedy stings",
+      "dynamics_arc": "Clip 1 understated entry, sharp emotional rise peaking across clips 2\u20133 recognition and pride, sustained high through clip 4 hug, then stepped release on clips 5\u20136.",
+      "peak_clip_number": 3,
+      "timing": "Bed in under first deli wide; push swell on Bob\u2019s \u2018Holy shit\u2019 recognition; crest through pride line and hug; pull back under \u2018let the shit go\u2019 and hold moderate through factory/apartment lines.",
+      "diegetic_sound": "Deli interior clatter, fryer hiss, plate and glass sounds, iced-tea pour, background patron murmur that briefly hushes or stares during the hug, distant door chime.",
+      "silence_or_exclusions": "No slapstick or sitcom bass hits on the hug; duck score hard under loud cackle and pride lines so dialogue leads; avoid ominous tones on prison mention.",
+      "alternatives": [
+        "rootsy organ and brushed kit instead of strings",
+        "score-free deli ambience until hug then single warm string swell"
+      ]
+    },
+    {
+      "scene_id": "S51",
+      "score_intent": "Tender bittersweet memory cue, slow 60\u201370 BPM, intimate solo piano with faint high-string harmonics, opens thin and gray over the smaller duplex and empty porch, warms slightly with a fragile major-tinged melody as memory of rockers and Smiley overlays, then resolves into a clearer quieter resolve as he chooses to leave her alone and move on, mood love without possession, gentle fade toward acceptance, no percussion, no dark drones",
+      "dynamics_arc": "Quiet entry on clip 1, rise to emotional peak on clip 2\u2019s wish for her happiness, soft downward release on clip 3\u2019s leave-her-alone resolve.",
+      "peak_clip_number": 2,
+      "timing": "Enter on first exterior approach; lift melody under memory overlay; thin and resolve under final VO; out before hard cut away from duplex.",
+      "diegetic_sound": "Quiet residential day air, distant lawn or street hum, light wind, no porch activity; memory beats may soften diegetic toward score.",
+      "silence_or_exclusions": "No romantic swell that implies reunion; keep below VO; exclude any thriller or stalking tension tones.",
+      "alternatives": [
+        "solo acoustic guitar fingerpicking with same arc",
+        "wordless soft female vocal pad under memory only then silence"
+      ]
+    },
+    {
+      "scene_id": "S52",
+      "score_intent": "Climactic dramatic prison-visit score, begins sparse and tense at ~70 BPM with low cello and muted pulse under metal detectors and wait, builds steadily through the plexiglass greeting into a heavier confrontational bed as Peter catalogues the harms\u2014mother, lifelong hold-down, driving love away\u2014using restrained low strings, piano ostinato, and dark sustained brass pads without becoming action music, then at the forgiveness declaration the harmony opens into a aching major-minor release with fuller strings and high piano, cresting as Nick breaks and weeps admitting he is an asshole and that Peter is more than he ever was, holds raw emotional intensity through the pride and brother-love exchanges, lifts briefly brighter on the pizza-chain and President Olson pride, then gradually thins as the guard ends the visit and they shuffle away, overall arc confession to liberation, tempo flexible rising toward the mid-scene peak then easing, no hip-hop beats or horror stingers",
+      "dynamics_arc": "Clips 1\u20132 low tense entry, climb through clips 3\u20137 confrontation and forgiveness, absolute peak on clips 8\u20139 Nick\u2019s breakdown and \u2018more than I ever was,\u2019 partial release clips 10\u201311 love, secondary lift clips 12\u201314 pride, then exit taper.",
+      "peak_clip_number": 9,
+      "timing": "Bed under security entry; tighten under first receiver lift; escalate phrase-by-phrase through asshole catalogue; open wide on \u2018I forgive you\u2019 and hold crest through Nick\u2019s tears and pride lines; start long decrescendo on guard interruption into shuffle away.",
+      "diegetic_sound": "Prison metal detector beeps, heavy doors and double locks, fluorescent hum, plexiglass muffling, phone-receiver plastic click and room tone, distant inmate/guard voices, chair scrape, guard keys and end-of-visit announcement.",
+      "silence_or_exclusions": "Leave brief near-silence or score dip right before \u2018I forgive you\u2019 so the line lands clean; never mask weeping or key accusations; no triumphant fanfare that undercuts the cost of forgiveness; exclude any comedic sting on \u2018President Olson.\u2019",
+      "alternatives": [
+        "solo piano and low strings only for a more intimate chamber feel",
+        "add subtle wordless choir only on the forgiveness and final pride beats"
+      ]
+    },
+    {
+      "scene_id": "S53",
+      "score_intent": "Resolute peaceful coda, mid-slow 75\u201385 BPM, clear piano and warm sustained strings with light airport-air pad, opens contemplative over the belief she is happy and the send-off of love and hope to Nick, builds with quiet dignity into a simple affirming theme as he names himself President Peter Olson, then gently contracts to a spare final cadence under \u2018This has been Nick and me,\u2019 mood earned calm and self-possession after long arc, no drums, no melancholy collapse, leave a sense of forward motion into departure",
+      "dynamics_arc": "Clips 1\u20132 moderate reflective rise, peak on clip 3 name reveal, soft conclusive release on clip 4 final line.",
+      "peak_clip_number": 3,
+      "timing": "Enter under terminal float/tea nuts; swell under boarding and name whisper; crest briefly on President Peter Olson; taper through jet-bridge walk into final line and out with wheels-up implication.",
+      "diegetic_sound": "Bright terminal crowd wash, PA blur, tea cup and mixed-nuts bag, boarding-pass scanner beep, jet-bridge hum and distant engine whine, footsteps on bridge.",
+      "silence_or_exclusions": "Keep score supportive not grandiose; allow a breath of near-silence or pure terminal air just before the final \u2018This has been Nick and me\u2019; no reprise of prison tension motifs.",
+      "alternatives": [
+        "single sustained string choir with piano melody only",
+        "diegetic-leaning ambient terminal tone with minimal melodic score on name reveal alone"
+      ]
+    }
+  ]
+}

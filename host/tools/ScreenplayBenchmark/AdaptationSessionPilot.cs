@@ -1,0 +1,1789 @@
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using PageToMovie.Engine;
+
+namespace ScreenplayBenchmark;
+
+/// <summary>
+/// Benchmark-only prototype of the staged adaptation-session pipeline described in
+/// <c>host/docs/adaptation-session-pipeline.md</c>:
+///
+///   Book retained in adaptation session
+///     → source-grounded beat plan
+///     → Fountain screenplay
+///     → validate and repair Fountain
+///     → EDL / shot plan
+///     → cast, wardrobe, and locations
+///     → audio plan
+///
+/// Every stage after the first is a small follow-up call using xAI's <c>previous_response_id</c>
+/// chaining (<see cref="XaiResponsesClient"/>) — the book is uploaded and attached exactly once.
+/// Media (image/audio/video) generation is intentionally out of scope: only descriptions.
+///
+/// This is not wired into <c>PageToMovie.Engine</c>/<c>PageToMovie.Api</c> — it exists to prove the
+/// staged approach out (scene coverage, dialogue coverage, cross-file reconciliation, and real
+/// per-call payload size) before any product change is proposed.
+/// </summary>
+public static class AdaptationSessionPilot
+{
+    private sealed class SessionRecord
+    {
+        public string Provider { get; set; } = "xai";
+        public string Model { get; set; } = "";
+        public string BookSha256 { get; set; } = "";
+        public string FileId { get; set; } = "";
+        public long? ExpiresAtUnixSeconds { get; set; }
+        public string CreatedAtUtc { get; set; } = "";
+        public Dictionary<string, string> StageResponseIds { get; set; } = new();
+
+        /// <summary>
+        /// Generation temperature this session's cached stages were produced at. A session created
+        /// before temperature control existed has this null — treated the same as "different value"
+        /// below, so an unknown-temperature artifact is never silently mixed with a controlled one.
+        /// </summary>
+        public double? Temperature { get; set; }
+        public double? JudgeTemperature { get; set; }
+        public int? TargetRuntimeMinutes { get; set; }
+
+        /// <summary>What was actually uploaded (raw text vs. paragraph-tagged) — bumped whenever the
+        /// upload format changes, so an old raw-text upload is never silently reused for prompts that
+        /// now expect [P#] citations to exist. Unlike temperature/runtime, this also forces a real
+        /// re-upload, not just cleared downstream stages.</summary>
+        public int? UploadFormatVersion { get; set; }
+
+        /// <summary>Separate upload of the approved, scene-tagged Fountain — only populated when the
+        /// dual-attach experiment runs. Keyed to a hash of the Fountain text so a regenerated
+        /// screenplay doesn't silently reuse a stale upload.</summary>
+        public string? FountainFileId { get; set; }
+        public string? FountainFileSha256 { get; set; }
+
+        /// <summary>Separate from <see cref="FountainFileId"/> — the full dual-attach pipeline
+        /// generates its OWN Fountain (never mixed with the chained pipeline's), so its upload is
+        /// tracked independently.</summary>
+        public string? FountainFileIdAlt { get; set; }
+        public string? FountainFileShaAlt { get; set; }
+    }
+
+    /// <summary>Bump when <see cref="BuildIndexedBookText"/> or what gets uploaded changes shape.</summary>
+    private const int CurrentUploadFormatVersion = 2;
+
+    public static async Task<int> RunAsync(
+        string bookPath,
+        string? bookSlugArg,
+        string model,
+        int targetRuntimeMinutes,
+        string workspaceRoot,
+        CancellationToken ct,
+        string? judgeModel = null,
+        double temperature = 0.2,
+        double judgeTemperature = 0.0,
+        bool clipShotPlan = false,
+        bool dualAttachClipPlan = false,
+        bool dualAttachAll = true,
+        string? judgeModel2 = null,
+        string? videoModel = null)
+    {
+        if (!File.Exists(bookPath))
+        {
+            Console.WriteLine($"❌ Error: book file not found: {bookPath}");
+            return 1;
+        }
+
+        // Resolved once per run from the actual target video model — never a hardcoded constant.
+        // Different video models have different max clip lengths; ResolveBoundsForModel falls back
+        // to ClipDurationEstimator's generic defaults for any model without catalog-specific bounds
+        // (true for every video model in models_catalog.json today, but the wiring is model-aware
+        // the moment those catalog fields get populated).
+        var (durMinSeconds, durMaxSeconds, durAbsMaxSeconds) = ClipDurationEstimator.ResolveBoundsForModel(videoModel);
+
+        var bookSlug = string.IsNullOrWhiteSpace(bookSlugArg)
+            ? Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant()
+            : bookSlugArg.ToLowerInvariant();
+
+        var outDir = Path.Combine(workspaceRoot, "evals", "adaptation_sessions", bookSlug);
+        Directory.CreateDirectory(outDir);
+
+        Console.WriteLine("==========================================================================");
+        Console.WriteLine($" Adaptation-session pilot — {bookSlug} — model={model} — target={targetRuntimeMinutes}min");
+        Console.WriteLine("==========================================================================");
+
+        using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
+        var client = new XaiResponsesClient(http);
+        if (!client.IsConfigured)
+        {
+            Console.WriteLine("❌ Error: XAI_API_KEY is not set. This pilot makes real, paid xAI calls — no fake mode.");
+            return 1;
+        }
+
+        var bookBytes = await File.ReadAllBytesAsync(bookPath, ct).ConfigureAwait(false);
+        // Hash the ORIGINAL raw bytes for change detection (session invalidation) — the indexed
+        // text derived from it below is what actually gets uploaded, but "did the source book
+        // change" must still mean the real source text, not our own paragraph tags.
+        var bookSha256 = Convert.ToHexStringLower(SHA256.HashData(bookBytes));
+
+        // Paragraph-index the book LOCALLY (no LLM cost) so every downstream stage can cite an exact
+        // paragraph id instead of a free-text quote — a quote can occur more than once (or nearly so)
+        // in a book, making after-the-fact text search an unreliable way to locate it. Citing a number
+        // the model saw directly on its own attached copy has no such ambiguity.
+        var paragraphs = SplitBookIntoParagraphs(System.Text.Encoding.UTF8.GetString(bookBytes));
+        var indexedBookText = BuildIndexedBookText(paragraphs);
+        var indexedBookPath = Path.Combine(outDir, "book_indexed.txt");
+        await File.WriteAllTextAsync(indexedBookPath, indexedBookText, ct).ConfigureAwait(false);
+
+        var sessionPath = Path.Combine(outDir, "session.json");
+        var session = LoadSession(sessionPath);
+        var totalRequestBytes = 0;
+        var tokensByModel = new Dictionary<string, (long Input, long Output, long Cached)>();
+
+        if (session is not null && session.BookSha256 == bookSha256 && !IsExpired(session.ExpiresAtUnixSeconds) &&
+            session.UploadFormatVersion == CurrentUploadFormatVersion)
+        {
+            Console.WriteLine($"📎 Reusing uploaded book: file_id={session.FileId} (no re-upload — proves the no-double-upload rule)");
+        }
+        else
+        {
+            if (session is not null && session.UploadFormatVersion != CurrentUploadFormatVersion)
+                Console.WriteLine($"⚠️  Upload format changed (v{session.UploadFormatVersion?.ToString() ?? "none"} -> v{CurrentUploadFormatVersion}) — forcing a fresh upload.");
+            Console.WriteLine($"📤 Uploading paragraph-indexed book ({paragraphs.Count} paragraphs, first and only upload for this session)...");
+            var upload = await client.UploadBookAsync(indexedBookPath, ct: ct).ConfigureAwait(false);
+            session = new SessionRecord
+            {
+                Model = model,
+                BookSha256 = bookSha256,
+                FileId = upload.FileId,
+                ExpiresAtUnixSeconds = upload.ExpiresAtUnixSeconds,
+                CreatedAtUtc = DateTime.UtcNow.ToString("O"),
+                UploadFormatVersion = CurrentUploadFormatVersion,
+            };
+            SaveSession(sessionPath, session);
+            Console.WriteLine($"   file_id={upload.FileId} bytes={upload.Bytes} expires_at={upload.ExpiresAtUnixSeconds}");
+        }
+
+        // A temperature OR target-runtime change invalidates every cached generation stage (not just
+        // the ones that differ) — a cached beat plan built for a 10-minute target is wrong context
+        // for a 16-minute request, and reusing an unknown/different-temperature artifact alongside
+        // newly-controlled ones would silently defeat the point of controlling it. The book
+        // upload/file_id is unaffected by either (neither has any bearing on that).
+        if (session.StageResponseIds.Count > 0 &&
+            (session.Temperature != temperature || session.JudgeTemperature != judgeTemperature ||
+             session.TargetRuntimeMinutes != targetRuntimeMinutes))
+        {
+            Console.WriteLine(
+                $"⚠️  Settings changed (temperature {Fmt(session.Temperature)} -> {temperature}, judge " +
+                $"{Fmt(session.JudgeTemperature)} -> {judgeTemperature}, target_runtime_minutes " +
+                $"{session.TargetRuntimeMinutes?.ToString() ?? "none"} -> {targetRuntimeMinutes}) — invalidating " +
+                "all cached generation stages so results stay comparable under one controlled setting.");
+            session.StageResponseIds.Clear();
+        }
+        session.Temperature = temperature;
+        session.JudgeTemperature = judgeTemperature;
+        session.TargetRuntimeMinutes = targetRuntimeMinutes;
+        SaveSession(sessionPath, session);
+        Console.WriteLine($"🌡️  temperature={temperature} judge_temperature={judgeTemperature} target_runtime_minutes={targetRuntimeMinutes}");
+
+        // ---- Stage 1: source-grounded beat plan (first turn — attaches the file) ----
+        var (sceneMin, sceneMax) = TargetSceneBand(targetRuntimeMinutes);
+        string beatPlanJson;
+        string lastResponseId;
+        var beatPlanPath = Path.Combine(outDir, "adaptation_plan.json");
+        if (session.StageResponseIds.TryGetValue("beat_plan", out var cachedBeatResp) && File.Exists(beatPlanPath))
+        {
+            Console.WriteLine("♻️  Stage 1 (beat plan): reusing cached artifact.");
+            beatPlanJson = await File.ReadAllTextAsync(beatPlanPath, ct).ConfigureAwait(false);
+            lastResponseId = cachedBeatResp;
+        }
+        else
+        {
+            Console.WriteLine("🧭 Stage 1: source-grounded beat plan...");
+            var beatInstruction = BuildBeatPlanInstruction(targetRuntimeMinutes, sceneMin, sceneMax);
+            var result = await client.StartSessionAsync(model, session.FileId, beatInstruction, ct, temperature).ConfigureAwait(false);
+            totalRequestBytes += result.RequestBytesSent;
+            TrackUsage(tokensByModel, model, result.UsageJson);
+            beatPlanJson = ExtractJson(result.OutputText);
+            await File.WriteAllTextAsync(beatPlanPath, PrettyJson(beatPlanJson), ct).ConfigureAwait(false);
+            lastResponseId = result.ResponseId;
+            session.StageResponseIds["beat_plan"] = lastResponseId;
+            SaveSession(sessionPath, session);
+            Console.WriteLine($"   response_id={lastResponseId} request_bytes={result.RequestBytesSent} (book NOT resent)");
+        }
+
+        // ---- Stage 2: cast, wardrobe, and locations (derived from the beat plan, BEFORE Fountain) ----
+        // Reordered from the original design (which derived these AFTER the EDL) so the Fountain
+        // stage can be handed already-established identities/places instead of being asked to both
+        // invent and write them — this is what actually lets the shared book_to_fountain.txt's
+        // CAST LOOKS & VOICES / LOCATIONS sections shrink to "apply consistently" rather than
+        // "figure out and invent." Variants are tied to beat IDs here (no scene IDs exist yet).
+        string castLocationJson;
+        var castLocationPath = Path.Combine(outDir, "cast_and_locations.json");
+        if (session.StageResponseIds.TryGetValue("cast_locations", out var cachedClResp) && File.Exists(castLocationPath))
+        {
+            Console.WriteLine("♻️  Stage 2 (cast/wardrobe/locations): reusing cached artifact.");
+            castLocationJson = await File.ReadAllTextAsync(castLocationPath, ct).ConfigureAwait(false);
+            lastResponseId = cachedClResp;
+        }
+        else
+        {
+            Console.WriteLine("🧑‍🎤 Stage 2: cast, wardrobe, and locations...");
+            var instruction = BuildCastLocationsInstruction(beatPlanJson);
+            var result = await client.ContinueSessionAsync(model, lastResponseId, instruction, ct, temperature).ConfigureAwait(false);
+            totalRequestBytes += result.RequestBytesSent;
+            TrackUsage(tokensByModel, model, result.UsageJson);
+            castLocationJson = ExtractJson(result.OutputText);
+            await File.WriteAllTextAsync(castLocationPath, PrettyJson(castLocationJson), ct).ConfigureAwait(false);
+            lastResponseId = result.ResponseId;
+            session.StageResponseIds["cast_locations"] = lastResponseId;
+            SaveSession(sessionPath, session);
+            Console.WriteLine($"   response_id={lastResponseId} request_bytes={result.RequestBytesSent} (book NOT resent)");
+        }
+
+        // ---- Stage 3: Fountain screenplay (fed the approved beat plan AND cast/locations) ----
+        var fountainPath = Path.Combine(outDir, "screenplay.fountain");
+        string fountainText;
+        if (session.StageResponseIds.TryGetValue("fountain", out var cachedFountainResp) && File.Exists(fountainPath))
+        {
+            Console.WriteLine("♻️  Stage 3 (Fountain): reusing cached artifact.");
+            fountainText = await File.ReadAllTextAsync(fountainPath, ct).ConfigureAwait(false);
+            lastResponseId = cachedFountainResp;
+        }
+        else
+        {
+            Console.WriteLine("🎬 Stage 3: Fountain screenplay...");
+            var fountainInstruction = BuildFountainInstruction(workspaceRoot, targetRuntimeMinutes, beatPlanJson, castLocationJson);
+            var result = await client.ContinueSessionAsync(model, lastResponseId, fountainInstruction, ct, temperature).ConfigureAwait(false);
+            totalRequestBytes += result.RequestBytesSent;
+            TrackUsage(tokensByModel, model, result.UsageJson);
+            fountainText = StripFences(result.OutputText);
+            await File.WriteAllTextAsync(fountainPath, fountainText, ct).ConfigureAwait(false);
+            lastResponseId = result.ResponseId;
+            session.StageResponseIds["fountain"] = lastResponseId;
+            SaveSession(sessionPath, session);
+            Console.WriteLine($"   response_id={lastResponseId} request_bytes={result.RequestBytesSent} (book NOT resent)");
+        }
+
+        // ---- Stage 4: validate + repair Fountain (local gate, cap 2 repairs) ----
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var findings = AdaptationPackageValidator.ValidateFountainOnly(fountainText, sceneMin, sceneMax);
+            if (findings.Count == 0)
+            {
+                Console.WriteLine("✅ Stage 4: Fountain passes local validation.");
+                break;
+            }
+
+            Console.WriteLine($"🔧 Stage 4: repair attempt {attempt + 1} — {findings.Count} finding(s): {string.Join(" | ", findings)}");
+            var repairInstruction =
+                "The Fountain screenplay you just returned has these specific problems:\n" +
+                string.Join("\n", findings.Select(f => $"- {f}")) +
+                "\n\nReturn the corrected FULL Fountain screenplay only (no markdown fences, no commentary), " +
+                "fixing exactly these issues. Do not change anything else that already works.";
+            var repairResult = await client.ContinueSessionAsync(model, lastResponseId, repairInstruction, ct, temperature).ConfigureAwait(false);
+            totalRequestBytes += repairResult.RequestBytesSent;
+            TrackUsage(tokensByModel, model, repairResult.UsageJson);
+            fountainText = StripFences(repairResult.OutputText);
+            var attemptPath = Path.Combine(outDir, $"screenplay.repair{attempt + 1}.fountain");
+            await File.WriteAllTextAsync(attemptPath, fountainText, ct).ConfigureAwait(false);
+            lastResponseId = repairResult.ResponseId;
+            session.StageResponseIds["fountain"] = lastResponseId;
+            SaveSession(sessionPath, session);
+        }
+        await File.WriteAllTextAsync(fountainPath, fountainText, ct).ConfigureAwait(false);
+
+        // ---- EXPERIMENT (optional, --dual-attach-all): re-run stages 2 onward as a fully independent,
+        // non-chained pipeline — its own cast/locations, its own Fountain, its own EDL, clip plan,
+        // audio plan, and judge — each an independent CompleteWithFilesAsync call attaching only the
+        // files it needs, never previous_response_id. Never mixes chained-pipeline artifacts into the
+        // dual-attach ones, so the two full pipelines are a fair side-by-side comparison.
+        if (dualAttachAll)
+        {
+            await RunDualAttachFullPipelineAsync(
+                client, session, sessionPath, model, temperature, judgeModel, judgeModel2, judgeTemperature,
+                beatPlanJson, workspaceRoot, targetRuntimeMinutes, sceneMin, sceneMax, paragraphs.Count, outDir,
+                durMinSeconds, durMaxSeconds, durAbsMaxSeconds, ct)
+                .ConfigureAwait(false);
+        }
+
+        // ---- Stage 5: EDL / shot plan (validates against the pre-established cast/location keys) ----
+        string edlJson;
+        var edlPath = Path.Combine(outDir, "edit_decision_list.json");
+        if (session.StageResponseIds.TryGetValue("edl", out var cachedEdlResp) && File.Exists(edlPath))
+        {
+            Console.WriteLine("♻️  Stage 5 (EDL): reusing cached artifact.");
+            edlJson = await File.ReadAllTextAsync(edlPath, ct).ConfigureAwait(false);
+            lastResponseId = cachedEdlResp;
+        }
+        else
+        {
+            Console.WriteLine("🎞️  Stage 5: EDL / shot plan...");
+            var edlInstruction = BuildEdlInstruction(fountainText, castLocationJson);
+            var result = await client.ContinueSessionAsync(model, lastResponseId, edlInstruction, ct, temperature).ConfigureAwait(false);
+            totalRequestBytes += result.RequestBytesSent;
+            TrackUsage(tokensByModel, model, result.UsageJson);
+            edlJson = ExtractJson(result.OutputText);
+            await File.WriteAllTextAsync(edlPath, PrettyJson(edlJson), ct).ConfigureAwait(false);
+            lastResponseId = result.ResponseId;
+            session.StageResponseIds["edl"] = lastResponseId;
+            SaveSession(sessionPath, session);
+            Console.WriteLine($"   response_id={lastResponseId} request_bytes={result.RequestBytesSent} (book NOT resent)");
+        }
+
+        // ---- Stage 5.5 (optional): clip-level shot plan, batched by scene group ----
+        // Only runs with --clip-shot-plan. Expands each EDL scene into 2-7 short clips (camera
+        // directive, performance intensity/note, exact dialogue-or-VO fragment, per-clip sound),
+        // batched ~8 scenes per call and chained via previous_response_id — same no-book-resend
+        // mechanism as every other stage. This is what the real product's Stage2PlannerService/
+        // ClipVideoPromptBuilder does at much greater depth (~15 classifiers); this is a deliberately
+        // trimmed version scoped for benchmarking, not product parity.
+        string? clipPlanJson = null;
+        if (clipShotPlan)
+        {
+            var clipPlanPath = Path.Combine(outDir, "clip_shot_plan.json");
+            if (session.StageResponseIds.TryGetValue("clip_plan", out var cachedClipResp) && File.Exists(clipPlanPath))
+            {
+                Console.WriteLine("♻️  Stage 5.5 (clip shot plan): reusing cached artifact.");
+                clipPlanJson = await File.ReadAllTextAsync(clipPlanPath, ct).ConfigureAwait(false);
+                lastResponseId = cachedClipResp;
+            }
+            else
+            {
+                Console.WriteLine("🎥 Stage 5.5: clip-level shot plan (batched)...");
+                var edlScenes = ParseEdlSceneElements(edlJson);
+                var fountainScenes = SplitFountainIntoScenes(fountainText);
+                if (fountainScenes.Count != edlScenes.Count)
+                {
+                    Console.WriteLine(
+                        $"   ⚠️ EDL has {edlScenes.Count} scenes but Fountain split into {fountainScenes.Count} — " +
+                        "batching by the smaller count; see the final reconciliation warning.");
+                }
+                var sceneCount = Math.Min(edlScenes.Count, fountainScenes.Count);
+                const int batchSize = 8;
+                var batchJsonTexts = new List<string>();
+                for (var batchStart = 0; batchStart < sceneCount; batchStart += batchSize)
+                {
+                    var batchEnd = Math.Min(batchStart + batchSize, sceneCount);
+                    var edlSlice = "{\"scenes\":[" +
+                        string.Join(",", edlScenes.GetRange(batchStart, batchEnd - batchStart).Select(e => e.GetRawText())) +
+                        "]}";
+                    var fountainExcerpt = string.Join("\n\n", fountainScenes.GetRange(batchStart, batchEnd - batchStart));
+                    var instruction = BuildClipPlanInstruction(PrettyJson(edlSlice), fountainExcerpt, beatPlanJson, durMaxSeconds);
+                    var result = await client.ContinueSessionAsync(model, lastResponseId, instruction, ct, temperature).ConfigureAwait(false);
+                    totalRequestBytes += result.RequestBytesSent;
+                    TrackUsage(tokensByModel, model, result.UsageJson);
+                    batchJsonTexts.Add(ExtractJson(result.OutputText));
+                    lastResponseId = result.ResponseId;
+                    session.StageResponseIds["clip_plan"] = lastResponseId;
+                    SaveSession(sessionPath, session);
+                    Console.WriteLine(
+                        $"   batch [scenes {batchStart + 1}-{batchEnd}] response_id={lastResponseId} " +
+                        $"request_bytes={result.RequestBytesSent} (book NOT resent)");
+                }
+                clipPlanJson = RecomputeClipDurations(
+                    MergeScenesBatches(batchJsonTexts), durMinSeconds, durMaxSeconds, durAbsMaxSeconds);
+                await File.WriteAllTextAsync(clipPlanPath, PrettyJson(clipPlanJson), ct).ConfigureAwait(false);
+            }
+        }
+
+        // ---- EXPERIMENT (optional, --dual-attach-clip-plan): same clip-plan task, but with no
+        // previous_response_id chaining at all — both the book and the approved Fountain are attached
+        // directly by file_id on every independent batch call, with an explicit layout hint (the EDL's
+        // own source_paragraphs / scene_id) telling the model where to look in each. Produces a
+        // separate artifact and separate cost total so it can be compared against the chained Stage
+        // 5.5 result above on both quality and actual billed tokens — see PrintCostSummary.
+        if (dualAttachClipPlan)
+        {
+            var dualAttachTokens = new Dictionary<string, (long Input, long Output, long Cached)>();
+            var dualAttachBytes = 0;
+
+            var fountainTaggedText = BuildSceneTaggedFountainText(fountainText);
+            var fountainSha256 = Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(fountainTaggedText)));
+            if (session.FountainFileId is null || session.FountainFileSha256 != fountainSha256)
+            {
+                Console.WriteLine("📤 [experiment] Uploading scene-tagged Fountain for dual-attach test...");
+                var fountainTaggedPath = Path.Combine(outDir, "fountain_tagged.txt");
+                await File.WriteAllTextAsync(fountainTaggedPath, fountainTaggedText, ct).ConfigureAwait(false);
+                var fUpload = await client.UploadBookAsync(fountainTaggedPath, ct: ct).ConfigureAwait(false);
+                session.FountainFileId = fUpload.FileId;
+                session.FountainFileSha256 = fountainSha256;
+                SaveSession(sessionPath, session);
+                Console.WriteLine($"   fountain_file_id={fUpload.FileId} bytes={fUpload.Bytes}");
+            }
+            else
+            {
+                Console.WriteLine($"📎 [experiment] Reusing uploaded Fountain: fountain_file_id={session.FountainFileId}");
+            }
+
+            var dualAttachPath = Path.Combine(outDir, "clip_shot_plan_dualattach.json");
+            Console.WriteLine("🧪 [experiment] Clip-level shot plan (dual-attach, no chaining)...");
+            var edlScenesForDual = ParseEdlSceneElements(edlJson);
+            const int dualBatchSize = 8;
+            var dualBatchJsonTexts = new List<string>();
+            for (var batchStart = 0; batchStart < edlScenesForDual.Count; batchStart += dualBatchSize)
+            {
+                var batchEnd = Math.Min(batchStart + dualBatchSize, edlScenesForDual.Count);
+                var edlSlice = "{\"scenes\":[" +
+                    string.Join(",", edlScenesForDual.GetRange(batchStart, batchEnd - batchStart).Select(e => e.GetRawText())) +
+                    "]}";
+                var instruction = BuildDualAttachClipPlanInstruction(PrettyJson(edlSlice), castLocationJson, beatPlanJson, durMaxSeconds);
+                var result = await client.CompleteWithFilesAsync(
+                    model, new[] { session.FileId, session.FountainFileId! }, instruction, ct, temperature).ConfigureAwait(false);
+                dualAttachBytes += result.RequestBytesSent;
+                TrackUsage(dualAttachTokens, model, result.UsageJson);
+                dualBatchJsonTexts.Add(ExtractJson(result.OutputText));
+                Console.WriteLine(
+                    $"   [experiment] batch [scenes {batchStart + 1}-{batchEnd}] response_id={result.ResponseId} " +
+                    $"request_bytes={result.RequestBytesSent} (independent call, no chain)");
+            }
+            var dualAttachJson = RecomputeClipDurations(
+                MergeScenesBatches(dualBatchJsonTexts), durMinSeconds, durMaxSeconds, durAbsMaxSeconds);
+            await File.WriteAllTextAsync(dualAttachPath, PrettyJson(dualAttachJson), ct).ConfigureAwait(false);
+
+            Console.WriteLine($"🧪 [experiment] Dual-attach bytes sent: {dualAttachBytes} (vs. chained clip-plan stage above)");
+            PrintCostSummary(workspaceRoot, dualAttachTokens);
+        }
+
+        // ---- Stage 6: audio plan (batched — a 68-scene unbatched call was observed to silently
+        // truncate, with the model itself appending a "scenes_CONTINUED": [] marker acknowledging it
+        // ran out of room; only 9 of 68 scenes got audio coverage. Same fix as the clip-plan stage.) ----
+        string audioJson;
+        var audioPath = Path.Combine(outDir, "audio_plan.json");
+        if (session.StageResponseIds.TryGetValue("audio_plan", out var cachedAudioResp) && File.Exists(audioPath))
+        {
+            Console.WriteLine("♻️  Stage 6 (audio plan): reusing cached artifact.");
+            audioJson = await File.ReadAllTextAsync(audioPath, ct).ConfigureAwait(false);
+            lastResponseId = cachedAudioResp;
+        }
+        else
+        {
+            Console.WriteLine("🎵 Stage 6: audio plan (batched)...");
+            var edlScenesForAudio = ParseEdlSceneElements(edlJson);
+            const int audioBatchSize = 8;
+            var audioBatchJsonTexts = new List<string>();
+            for (var batchStart = 0; batchStart < edlScenesForAudio.Count; batchStart += audioBatchSize)
+            {
+                var batchEnd = Math.Min(batchStart + audioBatchSize, edlScenesForAudio.Count);
+                var sliceScenes = edlScenesForAudio.GetRange(batchStart, batchEnd - batchStart);
+                var edlSlice = "{\"scenes\":[" + string.Join(",", sliceScenes.Select(e => e.GetRawText())) + "]}";
+                var sceneIdsInBatch = sliceScenes
+                    .Select(e => e.TryGetProperty("scene_id", out var sid) ? sid.GetString() ?? "" : "")
+                    .Where(id => id.Length > 0).ToHashSet();
+                var clipIntensityJson = ExtractClipIntensitySummary(clipPlanJson, sceneIdsInBatch);
+                var instruction = BuildAudioPlanInstruction(PrettyJson(edlSlice), clipIntensityJson);
+                var result = await client.ContinueSessionAsync(model, lastResponseId, instruction, ct, temperature).ConfigureAwait(false);
+                totalRequestBytes += result.RequestBytesSent;
+                TrackUsage(tokensByModel, model, result.UsageJson);
+                audioBatchJsonTexts.Add(ExtractJson(result.OutputText));
+                lastResponseId = result.ResponseId;
+                session.StageResponseIds["audio_plan"] = lastResponseId;
+                SaveSession(sessionPath, session);
+                Console.WriteLine(
+                    $"   batch [scenes {batchStart + 1}-{batchEnd}] response_id={lastResponseId} " +
+                    $"request_bytes={result.RequestBytesSent} (book NOT resent)");
+            }
+            audioJson = MergeScenesBatches(audioBatchJsonTexts);
+            await File.WriteAllTextAsync(audioPath, PrettyJson(audioJson), ct).ConfigureAwait(false);
+        }
+
+        // ---- Stage 7 (optional): one or two independent, book-attached LLM judges ----
+        // Unlike the existing multi-model peer-judge path (ScreenplayJudgmentRubric.BuildPrompt,
+        // Program.cs), which embeds the FULL book text in every judge call for every judge model on
+        // every run, each judge here attaches the book file directly (small, cached-hit-friendly)
+        // rather than inlining it. Deliberately an independent CompleteWithFilesAsync — NOT a
+        // continuation of the generation session — so a judge never inherits chain memory/bias from
+        // having produced the content itself. judgeModel2 (optional, ideally a different provider)
+        // gives a genuine second opinion instead of two same-family judges agreeing for the wrong
+        // reasons.
+        var judgeResults = await RunJudgesAsync(
+            client, new[] { judgeModel, judgeModel2 }, new[] { session.FileId }, fountainText, judgeTemperature,
+            outDir, "judge_review", "Stage 7",
+            (r, m) => { totalRequestBytes += r.RequestBytesSent; TrackUsage(tokensByModel, m, r.UsageJson); },
+            ct).ConfigureAwait(false);
+
+        // ---- Local, zero-cost: paragraph-citation check + annotated book copy ----
+        // The original book file is never touched — this only ever writes a separate output.
+        var citationWarnings = ValidateParagraphCitations(edlJson, paragraphs.Count);
+        var citingScenesByParagraph = new Dictionary<int, List<string>>();
+        try
+        {
+            foreach (var scene in ParseEdlSceneElements(edlJson))
+            {
+                var sceneId = scene.TryGetProperty("scene_id", out var sidEl) ? sidEl.GetString() ?? "?" : "?";
+                if (!scene.TryGetProperty("source_paragraphs", out var spEl) || spEl.ValueKind != JsonValueKind.Array) continue;
+                foreach (var p in spEl.EnumerateArray())
+                {
+                    var m = ParagraphCitationRegex.Match(p.GetString() ?? "");
+                    if (!m.Success) continue;
+                    var n = int.Parse(m.Groups[1].Value);
+                    if (n < 1 || n > paragraphs.Count) continue;
+                    if (!citingScenesByParagraph.TryGetValue(n, out var list))
+                        citingScenesByParagraph[n] = list = new List<string>();
+                    if (!list.Contains(sceneId)) list.Add(sceneId);
+                }
+            }
+        }
+        catch { /* citation warnings above already cover parse issues */ }
+        var annotatedBookPath = Path.Combine(outDir, "source_book_annotated.txt");
+        await File.WriteAllTextAsync(
+            annotatedBookPath,
+            $"Annotated from book_sha256: {bookSha256} — {paragraphs.Count} paragraphs — generated {DateTime.UtcNow:O}\n\n" +
+            BuildAnnotatedBookText(paragraphs, citingScenesByParagraph),
+            ct).ConfigureAwait(false);
+
+        // ---- Full cross-artifact validation ----
+        var report = AdaptationPackageValidator.ValidatePackage(
+            fountainText, edlJson, castLocationJson, audioJson, sceneMin, sceneMax, clipPlanJson);
+        report.Warnings.AddRange(citationWarnings);
+        var reportPath = Path.Combine(outDir, "validation_report.json");
+        await File.WriteAllTextAsync(reportPath, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }), ct).ConfigureAwait(false);
+
+        Console.WriteLine();
+        Console.WriteLine($"📦 Package: {outDir}");
+        Console.WriteLine($"📶 Total NEW bytes sent across all follow-up stages this run: {totalRequestBytes} (book resent: 0 times)");
+        PrintCostSummary(workspaceRoot, tokensByModel);
+        Console.WriteLine(report.Status == "pass"
+            ? "✅ Validation: PASS"
+            : $"❌ Validation: FAIL — {report.Failures.Count} failure(s), {report.Warnings.Count} warning(s)");
+        foreach (var f in report.Failures) Console.WriteLine($"   FAIL: {f}");
+        foreach (var w in report.Warnings) Console.WriteLine($"   WARN: {w}");
+        Console.WriteLine($"   scenes={report.SceneCount} target_band=[{sceneMin},{sceneMax}]" +
+            (report.ClipCount is { } cc ? $" clips={cc}" : ""));
+
+        var mainArtifacts = new Dictionary<string, string>
+        {
+            ["beat_plan"] = "adaptation_plan.json",
+            ["cast_and_locations"] = "cast_and_locations.json",
+            ["screenplay"] = "screenplay.fountain",
+            ["edit_decision_list"] = "edit_decision_list.json",
+            ["audio_plan"] = "audio_plan.json",
+            ["source_book_indexed"] = "book_indexed.txt",
+            ["source_book_annotated"] = "source_book_annotated.txt",
+            ["validation_report"] = "validation_report.json",
+        };
+        if (clipShotPlan) mainArtifacts["clip_shot_plan"] = "clip_shot_plan.json";
+        foreach (var (jm, relPath) in judgeResults)
+            mainArtifacts[$"judge_review_{jm.Replace('/', '_').Replace(':', '_')}"] = relPath;
+        await WriteAdaptationPackageManifestAsync(
+            outDir, "adaptation_package.json", "chained", bookSlug, bookSha256, model,
+            judgeResults.Select(j => j.JudgeModel).ToList(),
+            temperature, judgeTemperature, targetRuntimeMinutes, report, mainArtifacts, ct).ConfigureAwait(false);
+
+        return report.Status == "pass" ? 0 : 2;
+    }
+
+    /// <summary>
+    /// Writes the formal, addressable description of one adaptation package (screenplay + every
+    /// sidecar it came from) — schema version, source book hash, generation settings, validation
+    /// status, and a path+sha256 per artifact. The book/screenplay/sidecars are never repackaged into
+    /// a new container format; the manifest just makes the existing output folder self-describing and
+    /// gives every artifact a content hash, so drift (a file edited by hand, a stale regeneration) is
+    /// detectable rather than assumed away. No shipped project depends on any fixed schema yet, so this
+    /// intentionally does not try to match the current product's cast_seeds.json/blueprint shapes —
+    /// that translation, if ever needed, is a deliberate later step, not implied by this manifest.
+    /// </summary>
+    private static async Task WriteAdaptationPackageManifestAsync(
+        string outDir,
+        string manifestFileName,
+        string pipelineVariant,
+        string bookSlug,
+        string bookSha256,
+        string model,
+        IReadOnlyList<string> judgeModels,
+        double temperature,
+        double judgeTemperature,
+        int targetRuntimeMinutes,
+        AdaptationPackageValidator.ValidationReport report,
+        Dictionary<string, string> artifactRelativePaths,
+        CancellationToken ct)
+    {
+        var artifacts = new List<Dictionary<string, object?>>();
+        foreach (var (key, relPath) in artifactRelativePaths)
+        {
+            var fullPath = Path.Combine(outDir, relPath);
+            var exists = File.Exists(fullPath);
+            string? sha = null;
+            if (exists)
+            {
+                var bytes = await File.ReadAllBytesAsync(fullPath, ct).ConfigureAwait(false);
+                sha = Convert.ToHexStringLower(SHA256.HashData(bytes));
+            }
+            artifacts.Add(new Dictionary<string, object?>
+            {
+                ["key"] = key,
+                ["path"] = relPath,
+                ["exists"] = exists,
+                ["sha256"] = sha,
+            });
+        }
+
+        var manifest = new Dictionary<string, object?>
+        {
+            ["schema_version"] = "adaptation_package.v1",
+            ["pipeline_variant"] = pipelineVariant,
+            ["book_slug"] = bookSlug,
+            ["book_sha256"] = bookSha256,
+            ["provider"] = "xai",
+            ["model"] = model,
+            ["judge_models"] = judgeModels,
+            ["temperature"] = temperature,
+            ["judge_temperature"] = judgeTemperature,
+            ["target_runtime_minutes"] = targetRuntimeMinutes,
+            ["generated_at_utc"] = DateTime.UtcNow.ToString("O"),
+            ["validation_status"] = report.Status,
+            ["scene_count"] = report.SceneCount,
+            ["clip_count"] = report.ClipCount,
+            ["artifacts"] = artifacts,
+        };
+
+        var manifestPath = Path.Combine(outDir, manifestFileName);
+        await File.WriteAllTextAsync(
+            manifestPath,
+            JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }),
+            ct).ConfigureAwait(false);
+        Console.WriteLine($"📋 Adaptation package manifest: {manifestPath}");
+    }
+
+    /// <summary>
+    /// The full pipeline re-run as an independent, non-chained sequence: its own cast/locations, its
+    /// own Fountain, its own EDL, clip plan, audio plan, and judge — every call attaches only the
+    /// files it needs directly (never previous_response_id) and never reads a chained-pipeline
+    /// artifact. All outputs use a "_dualattach_full" suffix so they never collide with the main
+    /// pipeline's files or with the narrower single-stage --dual-attach-clip-plan experiment.
+    /// </summary>
+    private static async Task RunDualAttachFullPipelineAsync(
+        XaiResponsesClient client,
+        SessionRecord session,
+        string sessionPath,
+        string model,
+        double temperature,
+        string? judgeModel,
+        string? judgeModel2,
+        double judgeTemperature,
+        string beatPlanJson,
+        string workspaceRoot,
+        int targetRuntimeMinutes,
+        int sceneMin,
+        int sceneMax,
+        int paragraphCount,
+        string outDir,
+        int durMinSeconds,
+        int durMaxSeconds,
+        int durAbsMaxSeconds,
+        CancellationToken ct)
+    {
+        Console.WriteLine();
+        Console.WriteLine("==========================================================================");
+        Console.WriteLine(" EXPERIMENT: full pipeline, dual-attach (no chaining) — stages 2 onward");
+        Console.WriteLine("==========================================================================");
+
+        var tokensByModelAlt = new Dictionary<string, (long Input, long Output, long Cached)>();
+        var totalBytesAlt = 0;
+        void Track(XaiResponsesClient.SessionTurnResult r, string modelId)
+        {
+            totalBytesAlt += r.RequestBytesSent;
+            TrackUsage(tokensByModelAlt, modelId, r.UsageJson);
+        }
+
+        // ---- Stage 2-alt: cast, wardrobe, and locations ----
+        var castLocationPathAlt = Path.Combine(outDir, "cast_and_locations_dualattach_full.json");
+        string castLocationJsonAlt;
+        if (File.Exists(castLocationPathAlt))
+        {
+            Console.WriteLine("♻️  [full experiment] Stage 2: reusing existing artifact.");
+            castLocationJsonAlt = await File.ReadAllTextAsync(castLocationPathAlt, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            Console.WriteLine("🧑‍🎤 [full experiment] Stage 2: cast, wardrobe, and locations...");
+            var instruction = BuildCastLocationsInstruction(beatPlanJson);
+            var result = await client.CompleteWithFilesAsync(model, new[] { session.FileId }, instruction, ct, temperature).ConfigureAwait(false);
+            Track(result, model);
+            castLocationJsonAlt = ExtractJson(result.OutputText);
+            await File.WriteAllTextAsync(castLocationPathAlt, PrettyJson(castLocationJsonAlt), ct).ConfigureAwait(false);
+        }
+
+        // ---- Stage 3-alt: Fountain screenplay ----
+        var fountainPathAlt = Path.Combine(outDir, "screenplay_dualattach_full.fountain");
+        string fountainTextAlt;
+        if (File.Exists(fountainPathAlt))
+        {
+            Console.WriteLine("♻️  [full experiment] Stage 3: reusing existing artifact.");
+            fountainTextAlt = await File.ReadAllTextAsync(fountainPathAlt, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            Console.WriteLine("🎬 [full experiment] Stage 3: Fountain screenplay...");
+            var instruction = BuildFountainInstruction(workspaceRoot, targetRuntimeMinutes, beatPlanJson, castLocationJsonAlt);
+            var result = await client.CompleteWithFilesAsync(model, new[] { session.FileId }, instruction, ct, temperature).ConfigureAwait(false);
+            Track(result, model);
+            fountainTextAlt = StripFences(result.OutputText);
+
+            // Stage 4-alt: validate + repair (no chain memory — the repair call must restate the
+            // current draft explicitly, unlike the chained pipeline where "what you just returned"
+            // is implicit).
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var findings = AdaptationPackageValidator.ValidateFountainOnly(fountainTextAlt, sceneMin, sceneMax);
+                if (findings.Count == 0)
+                {
+                    Console.WriteLine("✅ [full experiment] Stage 4: Fountain passes local validation.");
+                    break;
+                }
+                Console.WriteLine($"🔧 [full experiment] Stage 4: repair attempt {attempt + 1} — {findings.Count} finding(s).");
+                var repairInstruction =
+                    "The following Fountain screenplay has these specific problems:\n" +
+                    string.Join("\n", findings.Select(f => $"- {f}")) +
+                    "\n\nCURRENT FOUNTAIN SCREENPLAY:\n" + fountainTextAlt +
+                    "\n\nReturn the corrected FULL Fountain screenplay only (no markdown fences, no " +
+                    "commentary), fixing exactly these issues. Do not change anything else that already works.";
+                var repairResult = await client.CompleteWithFilesAsync(model, new[] { session.FileId }, repairInstruction, ct, temperature).ConfigureAwait(false);
+                Track(repairResult, model);
+                fountainTextAlt = StripFences(repairResult.OutputText);
+            }
+            await File.WriteAllTextAsync(fountainPathAlt, fountainTextAlt, ct).ConfigureAwait(false);
+        }
+
+        // Upload this pipeline's OWN Fountain (scene-tagged) — never the chained pipeline's.
+        var fountainTaggedTextAlt = BuildSceneTaggedFountainText(fountainTextAlt);
+        var fountainShaAlt = Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(fountainTaggedTextAlt)));
+        if (session.FountainFileIdAlt is null || session.FountainFileShaAlt != fountainShaAlt)
+        {
+            Console.WriteLine("📤 [full experiment] Uploading this pipeline's own scene-tagged Fountain...");
+            var taggedPath = Path.Combine(outDir, "fountain_tagged_full.txt");
+            await File.WriteAllTextAsync(taggedPath, fountainTaggedTextAlt, ct).ConfigureAwait(false);
+            var fUpload = await client.UploadBookAsync(taggedPath, ct: ct).ConfigureAwait(false);
+            session.FountainFileIdAlt = fUpload.FileId;
+            session.FountainFileShaAlt = fountainShaAlt;
+            SaveSession(sessionPath, session);
+            Console.WriteLine($"   fountain_file_id={fUpload.FileId} bytes={fUpload.Bytes}");
+        }
+        else
+        {
+            Console.WriteLine($"📎 [full experiment] Reusing this pipeline's Fountain upload: {session.FountainFileIdAlt}");
+        }
+
+        // ---- Stage 5-alt: EDL / shot plan ----
+        var edlPathAlt = Path.Combine(outDir, "edit_decision_list_dualattach_full.json");
+        string edlJsonAlt;
+        if (File.Exists(edlPathAlt))
+        {
+            Console.WriteLine("♻️  [full experiment] Stage 5: reusing existing artifact.");
+            edlJsonAlt = await File.ReadAllTextAsync(edlPathAlt, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            Console.WriteLine("🎞️  [full experiment] Stage 5: EDL / shot plan...");
+            var instruction = BuildEdlInstruction(fountainTextAlt, castLocationJsonAlt);
+            var result = await client.CompleteWithFilesAsync(model, new[] { session.FileId }, instruction, ct, temperature).ConfigureAwait(false);
+            Track(result, model);
+            edlJsonAlt = ExtractJson(result.OutputText);
+            await File.WriteAllTextAsync(edlPathAlt, PrettyJson(edlJsonAlt), ct).ConfigureAwait(false);
+        }
+
+        // ---- Stage 5.5-alt: clip-level shot plan (batched, book + Fountain both attached) ----
+        var clipPlanPathAlt = Path.Combine(outDir, "clip_shot_plan_dualattach_full.json");
+        string clipPlanJsonAlt;
+        if (File.Exists(clipPlanPathAlt))
+        {
+            Console.WriteLine("♻️  [full experiment] Stage 5.5: reusing existing artifact.");
+            clipPlanJsonAlt = await File.ReadAllTextAsync(clipPlanPathAlt, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            Console.WriteLine("🎥 [full experiment] Stage 5.5: clip-level shot plan (batched)...");
+            var edlScenes = ParseEdlSceneElements(edlJsonAlt);
+            const int batchSize = 8;
+            var batchJsonTexts = new List<string>();
+            for (var batchStart = 0; batchStart < edlScenes.Count; batchStart += batchSize)
+            {
+                var batchEnd = Math.Min(batchStart + batchSize, edlScenes.Count);
+                var edlSlice = "{\"scenes\":[" +
+                    string.Join(",", edlScenes.GetRange(batchStart, batchEnd - batchStart).Select(e => e.GetRawText())) +
+                    "]}";
+                var instruction = BuildDualAttachClipPlanInstruction(PrettyJson(edlSlice), castLocationJsonAlt, beatPlanJson, durMaxSeconds);
+                var result = await client.CompleteWithFilesAsync(
+                    model, new[] { session.FileId, session.FountainFileIdAlt! }, instruction, ct, temperature).ConfigureAwait(false);
+                Track(result, model);
+                batchJsonTexts.Add(ExtractJson(result.OutputText));
+                Console.WriteLine($"   [full experiment] clip-plan batch [scenes {batchStart + 1}-{batchEnd}]");
+            }
+            clipPlanJsonAlt = RecomputeClipDurations(
+                MergeScenesBatches(batchJsonTexts), durMinSeconds, durMaxSeconds, durAbsMaxSeconds);
+            await File.WriteAllTextAsync(clipPlanPathAlt, PrettyJson(clipPlanJsonAlt), ct).ConfigureAwait(false);
+        }
+
+        // ---- Stage 6-alt: audio plan (batched, no files needed — self-contained from the EDL) ----
+        var audioPathAlt = Path.Combine(outDir, "audio_plan_dualattach_full.json");
+        string audioJsonAlt;
+        if (File.Exists(audioPathAlt))
+        {
+            Console.WriteLine("♻️  [full experiment] Stage 6: reusing existing artifact.");
+            audioJsonAlt = await File.ReadAllTextAsync(audioPathAlt, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            Console.WriteLine("🎵 [full experiment] Stage 6: audio plan (batched)...");
+            var edlScenes = ParseEdlSceneElements(edlJsonAlt);
+            const int batchSize = 8;
+            var batchJsonTexts = new List<string>();
+            for (var batchStart = 0; batchStart < edlScenes.Count; batchStart += batchSize)
+            {
+                var batchEnd = Math.Min(batchStart + batchSize, edlScenes.Count);
+                var sliceScenes = edlScenes.GetRange(batchStart, batchEnd - batchStart);
+                var edlSlice = "{\"scenes\":[" + string.Join(",", sliceScenes.Select(e => e.GetRawText())) + "]}";
+                var sceneIdsInBatch = sliceScenes
+                    .Select(e => e.TryGetProperty("scene_id", out var sid) ? sid.GetString() ?? "" : "")
+                    .Where(id => id.Length > 0).ToHashSet();
+                var clipIntensityJson = ExtractClipIntensitySummary(clipPlanJsonAlt, sceneIdsInBatch);
+                var instruction = BuildAudioPlanInstruction(PrettyJson(edlSlice), clipIntensityJson);
+                var result = await client.CompleteWithFilesAsync(model, Array.Empty<string>(), instruction, ct, temperature).ConfigureAwait(false);
+                Track(result, model);
+                batchJsonTexts.Add(ExtractJson(result.OutputText));
+                Console.WriteLine($"   [full experiment] audio-plan batch [scenes {batchStart + 1}-{batchEnd}] (no files attached)");
+            }
+            audioJsonAlt = MergeScenesBatches(batchJsonTexts);
+            await File.WriteAllTextAsync(audioPathAlt, PrettyJson(audioJsonAlt), ct).ConfigureAwait(false);
+        }
+
+        // ---- Stage 7-alt: one or two independent, book-attached judges — genuinely blind here, since
+        // this call never inherited any sidecar artifacts from conversation memory. ----
+        var judgeResultsAlt = await RunJudgesAsync(
+            client, new[] { judgeModel, judgeModel2 }, new[] { session.FileId, session.FountainFileIdAlt! },
+            fountainTextAlt, judgeTemperature, outDir, "judge_review_dualattach_full", "[full experiment] Stage 7",
+            (r, m) => Track(r, m), ct).ConfigureAwait(false);
+
+        // ---- Validation (paragraph citations + full cross-artifact check) ----
+        var citationWarningsAlt = ValidateParagraphCitations(edlJsonAlt, paragraphCount);
+        var reportAlt = AdaptationPackageValidator.ValidatePackage(
+            fountainTextAlt, edlJsonAlt, castLocationJsonAlt, audioJsonAlt, sceneMin, sceneMax, clipPlanJsonAlt);
+        reportAlt.Warnings.AddRange(citationWarningsAlt);
+        await File.WriteAllTextAsync(
+            Path.Combine(outDir, "validation_report_dualattach_full.json"),
+            JsonSerializer.Serialize(reportAlt, new JsonSerializerOptions { WriteIndented = true }), ct).ConfigureAwait(false);
+
+        Console.WriteLine();
+        Console.WriteLine($"📦 [full experiment] Package suffix: _dualattach_full");
+        Console.WriteLine($"📶 [full experiment] Total NEW bytes sent: {totalBytesAlt} (independent calls, no chain)");
+        PrintCostSummary(workspaceRoot, tokensByModelAlt);
+        Console.WriteLine(reportAlt.Status == "pass"
+            ? "✅ [full experiment] Validation: PASS"
+            : $"❌ [full experiment] Validation: FAIL — {reportAlt.Failures.Count} failure(s), {reportAlt.Warnings.Count} warning(s)");
+        foreach (var f in reportAlt.Failures) Console.WriteLine($"   FAIL: {f}");
+        foreach (var w in reportAlt.Warnings) Console.WriteLine($"   WARN: {w}");
+        Console.WriteLine($"   [full experiment] scenes={reportAlt.SceneCount} target_band=[{sceneMin},{sceneMax}]" +
+            (reportAlt.ClipCount is { } cc ? $" clips={cc}" : ""));
+
+        var altArtifacts = new Dictionary<string, string>
+        {
+            ["cast_and_locations"] = "cast_and_locations_dualattach_full.json",
+            ["screenplay"] = "screenplay_dualattach_full.fountain",
+            ["edit_decision_list"] = "edit_decision_list_dualattach_full.json",
+            ["clip_shot_plan"] = "clip_shot_plan_dualattach_full.json",
+            ["audio_plan"] = "audio_plan_dualattach_full.json",
+            ["validation_report"] = "validation_report_dualattach_full.json",
+        };
+        foreach (var (jm, relPath) in judgeResultsAlt)
+            altArtifacts[$"judge_review_{jm.Replace('/', '_').Replace(':', '_')}"] = relPath;
+        await WriteAdaptationPackageManifestAsync(
+            outDir, "adaptation_package_dualattach_full.json", "dual_attach_full", Path.GetFileName(outDir),
+            session.BookSha256, model, judgeResultsAlt.Select(j => j.JudgeModel).ToList(),
+            temperature, judgeTemperature, targetRuntimeMinutes,
+            reportAlt, altArtifacts, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Rough scene-count band from target runtime, floor-anchored on this repo's own existing
+    /// runtime guidance in prompts/book_to_fountain.txt ("8-18 scenes" for short pieces,
+    /// "15-40 scenes" for a short-film cut of a novel) extended linearly toward feature length so a
+    /// 90-minute target does not collapse to a short-film scene count the way the prior one-shot
+    /// pilot did (9 scenes for Nick and Me).
+    /// </summary>
+    private static (int Min, int Max) TargetSceneBand(int targetRuntimeMinutes)
+    {
+        var min = Math.Max(8, (int)Math.Round(targetRuntimeMinutes / 4.0));
+        var max = Math.Max(min + 4, (int)Math.Round(targetRuntimeMinutes / 2.2));
+        return (min, max);
+    }
+
+    private static string BuildBeatPlanInstruction(int targetRuntimeMinutes, int sceneMin, int sceneMax) => $$"""
+        You have access to the attached complete book. Read it in full before answering. It has been split
+        into numbered paragraphs, each preceded by a tag like [P1], [P2], etc. — cite these exact paragraph
+        numbers as your source locator; never invent a quote to search for later, since the same or similar
+        wording can occur more than once in the book and would be ambiguous to relocate afterward.
+
+        Produce a source-grounded ADAPTATION BEAT PLAN as a single JSON object — no markdown fences,
+        no commentary before or after. Shape:
+        {
+          "characters": [ { "name": "...", "aka": ["..."], "withheld_until": "beat id or null", "notes": "short" } ],
+          "locations_mentioned": ["..."],
+          "timeline": ["ordered short list of major time markers"],
+          "withheld_name_or_twist_rules": ["explicit rules: do not reveal X before beat Y"],
+          "essential_beats": [ { "id": "B1", "summary": "...", "source_evidence": "short paraphrase for a human reader",
+             "source_paragraphs": ["P12","P13"] } ],
+          "target_runtime_minutes": {{targetRuntimeMinutes}},
+          "target_scene_count_min": {{sceneMin}},
+          "target_scene_count_max": {{sceneMax}}
+        }
+
+        This film targets {{targetRuntimeMinutes}} minutes of finished runtime. Do NOT compress this into a
+        short-film beat list — list enough essential_beats that a screenplay covering all of them would need
+        roughly {{sceneMin}}-{{sceneMax}} scenes, one clear location+purpose each. Every beat needs its own
+        source_paragraphs citation — do not invent beats the book does not support. Return JSON only.
+        """;
+
+    private static string BuildFountainInstruction(
+        string workspaceRoot, int targetRuntimeMinutes, string beatPlanJson, string castLocationJson)
+    {
+        var promptPath = Path.Combine(workspaceRoot, "prompts", "book_to_fountain.txt");
+        var rules = File.Exists(promptPath)
+            ? File.ReadAllText(promptPath).Replace("{{TOTAL_RUNTIME_MINUTES}}", targetRuntimeMinutes.ToString())
+            : $"Target about {targetRuntimeMinutes} minutes of finished film. Write a complete Fountain 1.1 screenplay.";
+
+        return $"""
+            STAGED ADAPTATION SESSION — the complete book is already attached to this conversation from your
+            first turn; it is not being resent. Below are the beat plan AND the cast/wardrobe/location
+            descriptions you already produced in earlier turns; use them to guide scene selection and identity,
+            but still ground every scene directly in the book's own text and voice, not only the summaries below.
+
+            APPROVED BEAT PLAN:
+            {beatPlanJson}
+
+            APPROVED CAST, WARDROBE, AND LOCATIONS — these identities and places are already decided; use these
+            exact tokens, descriptions, and location names in Action lines. Do not invent a new physical
+            description or a new location name that conflicts with or duplicates one already established here.
+            The CAST LOOKS & VOICES / LOCATIONS sections of the rules below tell you HOW to keep these consistent
+            and filmable in Action — the WHAT (the actual descriptions) is already decided by the JSON below:
+            {castLocationJson}
+
+            Now write the full Fountain screenplay following these rules exactly:
+
+            {rules}
+            """;
+    }
+
+    // NOTE: these three templates are deliberately plain (non-interpolated) raw strings — they
+    // contain literal JSON braces, which collide with C# raw-string interpolation's brace-counting
+    // rules if written as $"""; the dynamic parts are appended afterward instead of interpolated.
+    private static string BuildEdlInstruction(string fountainText, string castLocationJson)
+    {
+        const string instructions = """
+            Using the APPROVED FOUNTAIN SCREENPLAY below (the book itself — with numbered [P#] paragraph tags —
+            is already attached to this session for source grounding; it is not being resent), produce an EDIT
+            DECISION LIST as a single JSON object — no markdown fences, no commentary. Shape:
+            {
+              "scenes": [
+                { "scene_id": "S1", "heading": "<exact Fountain scene heading text>", "purpose": "...",
+                   "location_key": "LOCATION_...", "cast": ["..."], "wardrobe_or_age_variant": ["..."],
+                   "estimated_duration_seconds": 30, "visual_beats": ["..."],
+                   "source_paragraphs": ["P12","P13"] }
+              ]
+            }
+
+            Every scene heading in the Fountain below must have exactly one corresponding record, in the same
+            order, using the exact heading text (do not merge or split scenes; do not add scenes that are not in
+            the Fountain). "location_key" and cast/wardrobe entries MUST use the exact keys already established
+            in the approved cast/wardrobe/location package below — do not invent new keys; if a scene genuinely
+            needs one not covered there, use the closest existing key rather than fabricating a new one.
+            "source_paragraphs" must cite the exact [P#] paragraph number(s) this specific scene draws from —
+            a subset of its parent beat's paragraphs, narrowed to what THIS scene actually uses (a beat that
+            expanded into several scenes should have its paragraphs split across them, not repeated identically
+            on every one, unless a paragraph genuinely informs more than one scene). Return JSON only.
+
+            APPROVED CAST, WARDROBE, AND LOCATIONS (established before this screenplay was written):
+            """;
+        return instructions + "\n" + castLocationJson + "\n\nAPPROVED FOUNTAIN SCREENPLAY:\n" + fountainText;
+    }
+
+    private static string BuildCastLocationsInstruction(string beatPlanJson)
+    {
+        const string instructions = """
+            Using the APPROVED BEAT PLAN below (the book itself is already attached to this session — do not ask
+            for it again), produce cast/wardrobe and location descriptions as a single JSON object, BEFORE any
+            screenplay is written — no markdown fences, no commentary. Shape:
+            {
+              "cast_seeds": { "characters": [
+                { "key": "NICK_ADULT", "display_name": "Nick", "age_link": null,
+                   "identity_anchors": "stable physical description", "source_evidence": "...",
+                   "render_style_lock": "photorealistic live-action", "voice_label": "...",
+                   "wardrobe_variants": [
+                     { "key": "NICK_PRISON", "description": "...", "source_facts": ["..."],
+                        "creative_direction": "...", "beats": ["B7","B8"] }
+                   ] }
+              ] },
+              "location_bible": { "locations": [
+                { "key": "LOCATION_...", "canonical_name": "...", "source_evidence": "...",
+                   "layout_anchors": ["..."], "lighting_states": ["..."], "persistent_props": ["..."],
+                   "image_brief": "...", "beats": ["B1","B4"] }
+              ] }
+            }
+
+            Cover every character in the beat plan's "characters" list and every entry in "locations_mentioned".
+            Tag wardrobe variants and locations against the beat plan's "essential_beats" ids (no scene numbers
+            exist yet — the screenplay has not been written). Distinguish source facts (book-established) from
+            creative_direction defaults (production choices where the book is silent) — do not invent facts the
+            book does not support. Descriptions only; no images are generated at this stage. Return JSON only.
+            """;
+        return instructions + "\n\nAPPROVED BEAT PLAN:\n" + beatPlanJson;
+    }
+
+    private static string BuildAudioPlanInstruction(string edlJson, string? clipIntensityJson = null)
+    {
+        const string instructions = """
+            Using the EDL below, produce an AUDIO PLAN as a single JSON object — no markdown fences, no commentary.
+            Shape:
+            {
+              "scenes": [
+                { "scene_id": "S1", "score_intent": "...", "dynamics_arc": "...", "peak_clip_number": 4,
+                   "timing": "...", "diegetic_sound": "...",
+                   "silence_or_exclusions": "...", "alternatives": ["..."] }
+              ]
+            }
+
+            "score_intent" is the scene's ENTIRE musical direction (genre, instrumentation, mood, tempo) as
+            ONE continuous prompt — the real music generator accepts a single flat prompt per scene with no
+            per-clip or timestamped control, so any rise/climax/release must be written as prose this one
+            prompt can realize on its own (e.g. "opens hushed and sparse, tempo climbs from 70 to 130 BPM,
+            explodes into a full orchestral hit in the final third, then cuts to near silence"). "dynamics_arc"
+            is a one-sentence summary of where the scene's intensity rises, peaks, and releases, citing clip
+            numbers. "peak_clip_number" is the single clip in this scene with the scene's highest
+            performance_intensity — its emotional climax — omit only if the scene has no clips.
+
+            Exactly one record per EDL scene_id below — same ids, no omissions, no extras. Return JSON only.
+            """;
+        var intensityBlock = string.IsNullOrWhiteSpace(clipIntensityJson)
+            ? ""
+            : "\n\nPER-CLIP PERFORMANCE INTENSITY (1-10 scale, from the approved clip shot plan — ground " +
+              "score_intent, dynamics_arc, and peak_clip_number in these real values; do not re-guess the " +
+              "emotional curve independently):\n" + clipIntensityJson;
+        return instructions + intensityBlock + "\n\nEDL:\n" + edlJson;
+    }
+
+    /// <summary>Extracts a compact per-clip performance_intensity summary (scene_id -> clip_number,
+    /// intensity, short cue) from an already-generated clip plan, scoped to just the given scene ids —
+    /// lets the audio-plan stage ground its music arc in the same intensity signal
+    /// CharacterEmotionArcClassifier drives acting from in the real product, instead of describing mood
+    /// blind to which beat is the actual climax.</summary>
+    private static string? ExtractClipIntensitySummary(string? clipPlanJson, HashSet<string> sceneIds)
+    {
+        if (string.IsNullOrWhiteSpace(clipPlanJson) || sceneIds.Count == 0) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(clipPlanJson);
+            var scenesEl = doc.RootElement.TryGetProperty("scenes", out var s) ? s : doc.RootElement;
+            var scenes = new List<object>();
+            foreach (var scene in scenesEl.EnumerateArray())
+            {
+                var sceneId = scene.TryGetProperty("scene_id", out var sid) ? sid.GetString() ?? "" : "";
+                if (sceneId.Length == 0 || !sceneIds.Contains(sceneId)) continue;
+                if (!scene.TryGetProperty("clips", out var clipsEl) || clipsEl.ValueKind != JsonValueKind.Array) continue;
+
+                var clips = new List<object>();
+                foreach (var clip in clipsEl.EnumerateArray())
+                {
+                    var clipNumber = clip.TryGetProperty("clip_number", out var cn) && cn.ValueKind == JsonValueKind.Number
+                        ? cn.GetInt32() : 0;
+                    int? intensity = clip.TryGetProperty("performance_intensity", out var pi) && pi.ValueKind == JsonValueKind.Number
+                        ? pi.GetInt32() : null;
+                    var cueSource = clip.TryGetProperty("dialogue_or_vo", out var dv) && dv.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(dv.GetString())
+                        ? dv.GetString()
+                        : (clip.TryGetProperty("visual_description", out var vd) && vd.ValueKind == JsonValueKind.String
+                            ? vd.GetString() : null);
+                    clips.Add(new { clip_number = clipNumber, performance_intensity = intensity, cue = TruncateChars(cueSource ?? "", 60) });
+                }
+                scenes.Add(new { scene_id = sceneId, clips });
+            }
+            return scenes.Count > 0 ? JsonSerializer.Serialize(new { scenes }) : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string TruncateChars(string s, int maxChars) => s.Length <= maxChars ? s : s[..maxChars] + "…";
+
+    /// <summary>Splits raw book text into paragraphs (blank-line-separated blocks), trimmed and with
+    /// empty blocks dropped — the unit every source_paragraphs citation refers to by 1-based index.</summary>
+    private static List<string> SplitBookIntoParagraphs(string bookText)
+    {
+        var normalized = bookText.Replace("\r\n", "\n").Replace('\r', '\n');
+        var blocks = Regex.Split(normalized, @"\n\s*\n+");
+        return blocks.Select(b => b.Trim()).Where(b => b.Length > 0).ToList();
+    }
+
+    /// <summary>Builds the paragraph-tagged text that is actually uploaded — each paragraph prefixed
+    /// by a stable [P#] marker the model can cite directly instead of a free-text quote.</summary>
+    private static string BuildIndexedBookText(List<string> paragraphs)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < paragraphs.Count; i++)
+        {
+            sb.Append('[').Append('P').Append(i + 1).Append(']').Append('\n');
+            sb.Append(paragraphs[i]).Append("\n\n");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Builds a local, zero-LLM-cost annotated copy of the book: the same paragraph-tagged
+    /// text, with each paragraph additionally showing which scene(s) cited it as source. The original
+    /// book file is never modified — this is always a separate output file.</summary>
+    private static string BuildAnnotatedBookText(List<string> paragraphs, Dictionary<int, List<string>> citingScenesByParagraph)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < paragraphs.Count; i++)
+        {
+            var paragraphNumber = i + 1;
+            sb.Append('[').Append('P').Append(paragraphNumber).Append(']');
+            if (citingScenesByParagraph.TryGetValue(paragraphNumber, out var scenes) && scenes.Count > 0)
+                sb.Append(" (used by: ").Append(string.Join(", ", scenes)).Append(')');
+            sb.Append('\n').Append(paragraphs[i]).Append("\n\n");
+        }
+        return sb.ToString();
+    }
+
+    private static readonly Regex ParagraphCitationRegex = new(@"^P(\d+)$", RegexOptions.Compiled);
+
+    /// <summary>Checks every EDL scene's source_paragraphs cite an id that actually exists in the
+    /// indexed book — catches a hallucinated citation a text-search approach could never detect.</summary>
+    private static List<string> ValidateParagraphCitations(string edlJson, int maxParagraphId)
+    {
+        var warnings = new List<string>();
+        List<JsonElement> scenes;
+        try
+        {
+            scenes = ParseEdlSceneElements(edlJson);
+        }
+        catch
+        {
+            return warnings; // EDL parse failures are already reported elsewhere
+        }
+        foreach (var scene in scenes)
+        {
+            var sceneId = scene.TryGetProperty("scene_id", out var sid) ? sid.GetString() : "?";
+            if (!scene.TryGetProperty("source_paragraphs", out var sp) || sp.ValueKind != JsonValueKind.Array) continue;
+            foreach (var p in sp.EnumerateArray())
+            {
+                var text = p.GetString() ?? "";
+                var match = ParagraphCitationRegex.Match(text);
+                if (!match.Success)
+                {
+                    warnings.Add($"Scene {sceneId} cites malformed source_paragraphs entry '{text}' (expected 'P<n>').");
+                    continue;
+                }
+                var n = int.Parse(match.Groups[1].Value);
+                if (n < 1 || n > maxParagraphId)
+                    warnings.Add($"Scene {sceneId} cites source_paragraphs '{text}' — out of range (book has {maxParagraphId} paragraphs).");
+            }
+        }
+        return warnings;
+    }
+
+    private static readonly Regex SceneHeadingLineRegex = new(
+        @"^\s*(INT\.|EXT\.|INT/EXT\.|I/E\.|EST\.)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>Splits raw Fountain text into per-scene chunks (heading line + body), in order — used
+    /// to hand the clip-planning stage only the text relevant to its current batch, not the whole
+    /// screenplay every call.</summary>
+    private static List<string> SplitFountainIntoScenes(string fountainText)
+    {
+        var lines = fountainText.Replace("\r\n", "\n").Split('\n');
+        var scenes = new List<string>();
+        var current = new List<string>();
+        foreach (var line in lines)
+        {
+            if (SceneHeadingLineRegex.IsMatch(line))
+            {
+                if (current.Count > 0) scenes.Add(string.Join("\n", current));
+                current = new List<string> { line };
+            }
+            else if (current.Count > 0)
+            {
+                current.Add(line);
+            }
+            // Lines before the first heading (title page) are dropped — not needed for clip planning.
+        }
+        if (current.Count > 0) scenes.Add(string.Join("\n", current));
+        return scenes;
+    }
+
+    /// <summary>Builds the version of the Fountain that gets uploaded for the dual-attach experiment
+    /// — same text, with an [S#] tag before each scene, mirroring the book's [P#] paragraph tags so a
+    /// classifier attached to both files can navigate either one the same way.</summary>
+    private static string BuildSceneTaggedFountainText(string fountainText)
+    {
+        var scenes = SplitFountainIntoScenes(fountainText);
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < scenes.Count; i++)
+            sb.Append('[').Append('S').Append(i + 1).Append(']').Append('\n').Append(scenes[i]).Append("\n\n");
+        return sb.ToString();
+    }
+
+    private static List<JsonElement> ParseEdlSceneElements(string edlJson)
+    {
+        using var doc = JsonDocument.Parse(edlJson);
+        var root = doc.RootElement;
+        var scenesEl = root.TryGetProperty("scenes", out var s) ? s : root;
+        return scenesEl.EnumerateArray().Select(e => e.Clone()).ToList();
+    }
+
+    /// <summary>Approximates the safe dialogue word count for a target video model's max clip length,
+    /// using the same head/tail/words-per-second constants <see cref="ClipDurationEstimator"/> uses to
+    /// compute real durations — so the LLM-facing prompt hint tracks the actual target model instead of
+    /// a fixed guess. Different video models have different max clip lengths (and some have none set
+    /// in the catalog yet, falling back to the generic default), so this must never be a hardcoded
+    /// constant like the pilot's original "about 35 words" turned out to be.</summary>
+    private static int ApproxSafeDialogueWordCount(int maxSeconds)
+    {
+        var budget = Math.Max(ClipDurationEstimator.MinSeconds, maxSeconds - ClipDurationEstimator.DialogueModelPaddingSeconds);
+        var speechBudget = budget - ClipDurationEstimator.SpeechHeadSeconds - ClipDurationEstimator.SpeechTailSeconds;
+        var words = (int)Math.Floor(Math.Max(1, speechBudget) * ClipDurationEstimator.DialogueWordsPerSecond);
+        return Math.Max(10, words);
+    }
+
+    /// <summary>Shared clip-shape/duration guidance for both clip-plan instruction variants below —
+    /// mirrors the real product's <c>ClipDurationEstimator</c>: clip COUNT follows the scene's actual
+    /// dialogue turns and action beats (never a fixed target), and duration is not the model's guess —
+    /// it's recomputed locally afterward from action_class/delivery via the same formula the product
+    /// uses, so ask for those instead of an estimated_duration_seconds number. The dialogue split
+    /// threshold is derived from <paramref name="maxSeconds"/> (the actual target video model's max
+    /// clip length via <see cref="ClipDurationEstimator.ResolveBoundsForModel"/>), not a fixed number —
+    /// this is only a first-pass hint anyway; <c>ExpandClipsInScene</c> mechanically guarantees the
+    /// split afterward regardless of model compliance.</summary>
+    private static string BuildClipCountAndDurationGuidance(int maxSeconds)
+    {
+        var safeWords = ApproxSafeDialogueWordCount(maxSeconds);
+        return $$"""
+        Break each scene into clips at its NATURAL dialogue-turn and action-beat boundaries — one clip
+        per distinct spoken line/turn and per distinct visual action beat. Do NOT target a fixed clip
+        count or a fixed seconds-per-clip; a scene with three lines of dialogue and one action beat gets
+        four clips, a wordless scene gets as many clips as it has distinct visual beats. When a scene
+        compresses a REPEATED occurrence (the same ritual/action happening multiple times — several
+        nights, several attempts), give it one clip per occurrence with a deliberate tension arc across
+        them: vary camera distance/lens and performance_intensity (for example rising tension, a peak,
+        then a release) — do not just restate the same shot description for every repetition.
+        HARD: the target video model's max clip length is {{maxSeconds}}s — if a single Fountain
+        dialogue/VO turn for this scene runs longer than about {{safeWords}} words, split it across two
+        or more consecutive clips (each carrying its own dialogue_or_vo portion of that turn) rather than
+        one clip holding the whole line — a single long turn silently produces a duration estimate
+        clamped to the model's max clip length, understating how long it actually runs. (This is a
+        first-pass target only — any clip that still comes back too long is mechanically split afterward
+        regardless, so do your best rather than counting words exactly.)
+        For "action_class" (silent clips only — omit or use "dialogue" when dialogue_or_vo is non-empty),
+        choose exactly one of: "big_action" (fast/violent movement), "establishing" (opening/orienting
+        shot of a location), "hold" (a still beat, no new action), or "default" (ordinary silent action).
+        For "delivery", use "dialogue" for spoken lines, or "voiceover_internal" for narration/V.O.
+        Do not provide estimated_duration_seconds yourself — it is computed separately from these fields.
+        Every clip's "beat_id" must be one of the approved beat plan's real ids (below) that this clip's
+        content actually comes from — never invent an id and never leave it null when a real match exists.
+        For each scene, set "negative_prompt": a comma-separated list of 5-15 concrete, era/style-specific
+        exclusion tokens preventing anachronisms in this scene's setting (e.g. for an 1840s interior: "no
+        modern wristwatches, no electric light bulbs, no plastic, no zippers, no printed logos"); tailor it
+        to this scene's actual period/place, not a generic list. Per clip, set "continuation": "none" for
+        an ordinary independent shot, or "continues_previous" only when this clip is meant to pick up
+        exactly where the previous clip's last frame left off (same unbroken camera move/action) rather
+        than cut to a new setup — use "continues_previous" sparingly, only for genuine continuous action.
+        Split "sound" into two fields: "ambient_layer" (background tone: room hum, wind, crowd — usually
+        continuous through the clip) and "foley_layer" (specific discrete sound effects tied to an
+        on-screen action: footsteps, a door, cloth). Do NOT include a per-clip score/music field — the
+        real product's music generator only accepts one continuous prompt per SCENE (no per-clip
+        timestamped control), so score/music intent belongs solely in the audio-plan stage, grounded in
+        this clip's "performance_intensity" rather than invented independently per clip.
+        Add "depth_of_field" (e.g. "shallow, subject isolated" or "deep, background legible") and
+        "color_grading" (a short palette/mood descriptor) per clip.
+        """;
+    }
+
+    private static string BuildClipPlanInstruction(string edlSliceJson, string fountainExcerpt, string beatPlanJson, int maxSeconds)
+    {
+        const string instructions = """
+            Using ONLY the scenes below (the book, approved Fountain, and full EDL are already established
+            in this session — do not ask for them again), produce a CLIP-LEVEL SHOT PLAN as a single JSON
+            object for just these scenes — no markdown fences, no commentary. Shape:
+            {
+              "scenes": [
+                { "scene_id": "S1", "negative_prompt": "...",
+                   "clips": [
+                  { "clip_number": 1, "action_class": "default", "delivery": "dialogue",
+                     "visual_description": "...", "camera_directive": "shot type + lens, e.g. tight close-up, 85mm",
+                     "performance_intensity": 7, "performance_note": "short acting note",
+                     "dialogue_or_vo": "exact line or fragment from the Fountain scene below, or empty",
+                     "ambient_layer": "...", "foley_layer": "...",
+                     "depth_of_field": "...", "color_grading": "...", "continuation": "none",
+                     "beat_id": "B2" }
+                ] }
+              ]
+            }
+
+            """;
+        return instructions + BuildClipCountAndDurationGuidance(maxSeconds) +
+            "\n\ndialogue_or_vo must be an exact line or short fragment actually present in the Fountain " +
+            "text below for that scene — never invent dialogue. Cover every scene_id listed below exactly " +
+            "once. Return JSON only.\n\nAPPROVED BEAT PLAN (for beat_id citation):\n" + beatPlanJson +
+            "\n\nEDL SCENES (this batch only):\n" + edlSliceJson +
+            "\n\nFOUNTAIN TEXT FOR THESE SCENES ONLY:\n" + fountainExcerpt;
+    }
+
+    /// <summary>Dual-attach variant of <see cref="BuildClipPlanInstruction"/>: no session memory to
+    /// rely on (this is an independent, non-chained call), so the cast/wardrobe/location context is
+    /// passed explicitly, and the book + Fountain are referenced by their attached files plus an
+    /// explicit paragraph/scene-tag layout instead of an inlined excerpt.</summary>
+    private static string BuildDualAttachClipPlanInstruction(string edlSliceJson, string castLocationJson, string beatPlanJson, int maxSeconds)
+    {
+        const string instructions = """
+            The complete source book and the complete approved Fountain screenplay are BOTH attached to
+            this call as files — the book's paragraphs are tagged [P1], [P2], ...; the Fountain's scenes
+            are tagged [S1], [S2], ... in the same style. This is an independent call with no memory of
+            any earlier turn, so the approved cast/wardrobe/location package and beat plan are included
+            below explicitly.
+
+            Using ONLY the EDL scenes below, produce a CLIP-LEVEL SHOT PLAN as a single JSON object for
+            just these scenes — no markdown fences, no commentary. Shape:
+            {
+              "scenes": [
+                { "scene_id": "S1", "negative_prompt": "...",
+                   "clips": [
+                  { "clip_number": 1, "action_class": "default", "delivery": "dialogue",
+                     "visual_description": "...", "camera_directive": "shot type + lens, e.g. tight close-up, 85mm",
+                     "performance_intensity": 7, "performance_note": "short acting note",
+                     "dialogue_or_vo": "exact line or fragment from the Fountain, or empty",
+                     "ambient_layer": "...", "foley_layer": "...",
+                     "depth_of_field": "...", "color_grading": "...", "continuation": "none",
+                     "beat_id": "B2" }
+                ] }
+              ]
+            }
+
+            LAYOUT — use this to navigate the two attached files instead of reading them end to end: each
+            EDL scene below carries "source_paragraphs" (the book's [P#] tags relevant to it) and its own
+            "scene_id" (the Fountain's matching [S#] tag) — go directly to those tags in the attached
+            files for source grounding and exact wording.
+
+            """;
+        return instructions + BuildClipCountAndDurationGuidance(maxSeconds) +
+            "\n\ndialogue_or_vo must be an exact line or short fragment actually present in that scene's " +
+            "tagged Fountain section — never invent dialogue. Cover every scene_id listed below exactly " +
+            "once. Return JSON only.\n\nAPPROVED BEAT PLAN (for beat_id citation):\n" + beatPlanJson +
+            "\n\nAPPROVED CAST, WARDROBE, AND LOCATIONS:\n" + castLocationJson +
+            "\n\nEDL SCENES (this batch only):\n" + edlSliceJson;
+    }
+
+    private static string MergeScenesBatches(List<string> batchJsonTexts)
+    {
+        var docs = new List<JsonDocument>();
+        try
+        {
+            var allScenes = new List<JsonElement>();
+            foreach (var batchJson in batchJsonTexts)
+            {
+                var doc = JsonDocument.Parse(batchJson);
+                docs.Add(doc);
+                var scenesEl = doc.RootElement.TryGetProperty("scenes", out var s) ? s : doc.RootElement;
+                foreach (var scene in scenesEl.EnumerateArray())
+                    allScenes.Add(scene);
+            }
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("scenes");
+                writer.WriteStartArray();
+                foreach (var scene in allScenes) scene.WriteTo(writer);
+                writer.WriteEndArray();
+                writer.WriteEndObject();
+            }
+            return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        }
+        finally
+        {
+            foreach (var d in docs) d.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Replaces whatever duration the model may have guessed with a deterministic value from the
+    /// product's own <see cref="ClipDurationEstimator"/> — the same formula real clips are timed with
+    /// (speech-rate word/syllable count for dialogue; a word-count curve keyed on action_class for
+    /// silent beats). No extra API call: this is a pure local computation over fields the model already
+    /// returned (dialogue_or_vo, visual_description, action_class, delivery).
+    /// </summary>
+    private readonly record struct ExpandedClip(JsonElement Source, string Dialogue, string Continuation, int ClipNumber, string CameraNudge);
+
+    /// <summary>Small, local (zero-LLM-cost) camera nudges applied to continuation parts of a
+    /// mechanically split monologue, cycled by part index, so back-to-back split clips aren't
+    /// visually identical — without a follow-up LLM call re-authoring camera per part.</summary>
+    private static readonly string[] ContinuationCameraNudges =
+    {
+        "; push in slightly tighter for the continuation",
+        "; hold steady, subtle reframe",
+        "; slow drift closer",
+    };
+
+    /// <summary>
+    /// Deterministically splits any clip whose dialogue_or_vo exceeds the target video model's max
+    /// clip length (<paramref name="maxSeconds"/>, resolved once per run via
+    /// <see cref="ClipDurationEstimator.ResolveBoundsForModel"/> — never a hardcoded constant, since
+    /// different video models have different max clip lengths), using the same
+    /// <see cref="ClipDurationEstimator.DialogueExceedsModelMax"/> /
+    /// <see cref="ClipDurationEstimator.SplitDialogueToFitModelMax"/> logic the real product's
+    /// <c>ExpandLongDialogueBeats</c> uses — a code-level guarantee, not a prompt instruction the
+    /// model can silently ignore. A real test run proved the prompt-only "split it yourself"
+    /// instruction (<see cref="BuildClipCountAndDurationGuidance"/>) is not reliable enough on its
+    /// own: 3 of ~50 dialogue clips in one Tell-Tale Heart run still came back unsplit despite the
+    /// explicit instruction. This runs after generation and never depends on model compliance.
+    /// Like the real product, the split otherwise keeps the source clip's camera/visual fields
+    /// stable across parts; only a small local nudge (<see cref="ContinuationCameraNudges"/>) varies
+    /// per continuation part, so no new LLM call is introduced for what is a rare fallback path.
+    /// </summary>
+    private static List<ExpandedClip> ExpandClipsInScene(JsonElement clipsArray, int maxSeconds)
+    {
+        var result = new List<ExpandedClip>();
+        var nextNumber = 1;
+        foreach (var clip in clipsArray.EnumerateArray())
+        {
+            var dialogue = clip.TryGetProperty("dialogue_or_vo", out var d) ? d.GetString() ?? "" : "";
+            var delivery = clip.TryGetProperty("delivery", out var dl) ? dl.GetString() ?? "none" : "none";
+            var originalContinuation = clip.TryGetProperty("continuation", out var c) ? c.GetString() ?? "none" : "none";
+
+            if (string.IsNullOrWhiteSpace(dialogue) || !ClipDurationEstimator.DialogueExceedsModelMax(dialogue, delivery, maxSeconds))
+            {
+                result.Add(new ExpandedClip(clip, dialogue, originalContinuation, nextNumber++, ""));
+                continue;
+            }
+
+            var parts = ClipDurationEstimator.SplitDialogueToFitModelMax(dialogue, delivery, maxSeconds);
+            for (var i = 0; i < parts.Count; i++)
+            {
+                var continuation = i == 0 ? originalContinuation : "continues_previous";
+                var nudge = i == 0 ? "" : ContinuationCameraNudges[(i - 1) % ContinuationCameraNudges.Length];
+                result.Add(new ExpandedClip(clip, parts[i], continuation, nextNumber++, nudge));
+            }
+        }
+        return result;
+    }
+
+    private static string RecomputeClipDurations(
+        string clipPlanJson, int minSeconds, int maxSeconds, int absMaxSeconds)
+    {
+        using var doc = JsonDocument.Parse(clipPlanJson);
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("scenes");
+            writer.WriteStartArray();
+            var scenesEl = doc.RootElement.TryGetProperty("scenes", out var s) ? s : doc.RootElement;
+            foreach (var scene in scenesEl.EnumerateArray())
+            {
+                writer.WriteStartObject();
+                foreach (var prop in scene.EnumerateObject())
+                {
+                    if (prop.NameEquals("clips") && prop.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        writer.WritePropertyName("clips");
+                        writer.WriteStartArray();
+                        foreach (var expanded in ExpandClipsInScene(prop.Value, maxSeconds))
+                        {
+                            var clip = expanded.Source;
+                            var visual = clip.TryGetProperty("visual_description", out var v) ? v.GetString() ?? "" : "";
+                            var actionClass = clip.TryGetProperty("action_class", out var ac) ? ac.GetString() ?? "" : "";
+                            var delivery = clip.TryGetProperty("delivery", out var dl) ? dl.GetString() ?? "none" : "none";
+                            var duration = ClipDurationEstimator.Estimate(
+                                expanded.Dialogue, visual, actionClass, delivery, minSeconds, maxSeconds, absMaxSeconds);
+                            var originalCameraDirective = clip.TryGetProperty("camera_directive", out var cd) ? cd.GetString() ?? "" : "";
+                            var cameraDirective = expanded.CameraNudge.Length == 0
+                                ? originalCameraDirective
+                                : originalCameraDirective + expanded.CameraNudge;
+
+                            writer.WriteStartObject();
+                            foreach (var clipProp in clip.EnumerateObject())
+                            {
+                                if (clipProp.NameEquals("estimated_duration_seconds")) continue; // replaced below
+                                if (clipProp.NameEquals("dialogue_or_vo")) continue; // replaced below
+                                if (clipProp.NameEquals("continuation")) continue; // replaced below
+                                if (clipProp.NameEquals("clip_number")) continue; // renumbered below
+                                if (clipProp.NameEquals("camera_directive")) continue; // nudged below
+                                clipProp.WriteTo(writer);
+                            }
+                            writer.WriteNumber("clip_number", expanded.ClipNumber);
+                            writer.WriteString("dialogue_or_vo", expanded.Dialogue);
+                            writer.WriteString("continuation", expanded.Continuation);
+                            writer.WriteString("camera_directive", cameraDirective);
+                            writer.WriteNumber("estimated_duration_seconds", duration);
+                            writer.WriteEndObject();
+                        }
+                        writer.WriteEndArray();
+                    }
+                    else
+                    {
+                        prop.WriteTo(writer);
+                    }
+                }
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    private static string BuildJudgeInstruction(string fountainText)
+    {
+        const string instructions = """
+            You are an expert Hollywood Screenplay Coverage Executive and AI Film Director. The complete
+            source book is attached to this call as a file — this is an independent, fresh evaluation
+            call with no memory of how the screenplay below was produced; judge directly against the
+            attached book, not against any assumed generation process.
+
+            Independently judge the APPROVED FOUNTAIN SCREENPLAY below across these 6 dimensions
+            (score 1-10 each, use the full range):
+            1. Adaptation Fidelity & Source Coverage
+            2. Character Disambiguation & Casting Clarity (stable visual descriptions; age/era variants disambiguated)
+            3. AI Video Directibility ("show, don't tell" — concrete, camera-observable, one clip-sized action per beat)
+            4. Dramatic Pacing & Structure
+            5. Dialogue Authenticity & Subtext
+            6. Sound Design & Background Music Scoring
+
+            Also decide productionReady (true/false) independent of the 1-10 scores — false for any single
+            deal-breaking issue (invented major plot, broken/unusable structure, closed-cast violation),
+            even if the averaged scores look fine. List each such issue in disqualifyingIssues.
+
+            Return ONLY valid JSON matching exactly:
+            {
+              "adaptationFidelity": 8.5, "characterDisambiguation": 9.0, "aiVideoDirectibility": 8.0,
+              "dramaticPacing": 7.5, "dialogueAuthenticity": 8.5, "soundDesignMusic": 8.0,
+              "overallQualitativeScore": 8.25, "productionReady": true, "disqualifyingIssues": [],
+              "rationale": "Detailed evaluation rationale..."
+            }
+            """;
+        return instructions + "\n\nAPPROVED FOUNTAIN SCREENPLAY:\n" + fountainText;
+    }
+
+    private static void PrintJudgeSummary(string judgeModel, string judgeJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(judgeJson);
+            var root = doc.RootElement;
+            var overall = root.TryGetProperty("overallQualitativeScore", out var o) ? o.ToString() : "?";
+            var ready = root.TryGetProperty("productionReady", out var pr) ? pr.ToString() : "?";
+            Console.WriteLine($"   judge={judgeModel} overallQualitativeScore={overall}/10 productionReady={ready}");
+            if (root.TryGetProperty("disqualifyingIssues", out var issues) && issues.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var issue in issues.EnumerateArray())
+                    Console.WriteLine($"   DISQUALIFYING: {issue.GetString()}");
+            }
+        }
+        catch
+        {
+            Console.WriteLine("   (judge review saved, but could not be summarized — see judge_review json file)");
+        }
+    }
+
+    /// <summary>Runs one or two independent, book-attached LLM judges against the approved Fountain.
+    /// Every judge call is a fresh <see cref="XaiResponsesClient.CompleteWithFilesAsync"/> — never
+    /// previous_response_id — so a judge never inherits the conversation memory of the pipeline that
+    /// generated the content (self-judging bias). Supports a second, ideally cross-provider, judge
+    /// model so two same-family judges don't simply agree with each other for the wrong reasons.
+    /// Returns (judgeModel, relativeFileName) per judge actually run, for the manifest.</summary>
+    private static async Task<List<(string JudgeModel, string RelativeFileName)>> RunJudgesAsync(
+        XaiResponsesClient client,
+        IEnumerable<string?> judgeModels,
+        IReadOnlyList<string> attachedFileIds,
+        string fountainText,
+        double judgeTemperature,
+        string outDir,
+        string fileNamePrefix,
+        string stageLabel,
+        Action<XaiResponsesClient.SessionTurnResult, string> track,
+        CancellationToken ct)
+    {
+        var results = new List<(string, string)>();
+        var distinctModels = judgeModels
+            .Where(m => !string.IsNullOrWhiteSpace(m))
+            .Select(m => m!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var judgeModel in distinctModels)
+        {
+            var judgeSlug = judgeModel.Replace('/', '_').Replace(':', '_');
+            var relativeFileName = $"{fileNamePrefix}.{judgeSlug}.json";
+            var judgePath = Path.Combine(outDir, relativeFileName);
+            if (File.Exists(judgePath))
+            {
+                Console.WriteLine($"♻️  {stageLabel} (judge: {judgeModel}): reusing cached review.");
+            }
+            else
+            {
+                Console.WriteLine($"⚖️  {stageLabel}: independent LLM judge ({judgeModel}), book attached...");
+                var judgeInstruction = BuildJudgeInstruction(fountainText);
+                var result = await client.CompleteWithFilesAsync(
+                    judgeModel, attachedFileIds, judgeInstruction, ct, judgeTemperature).ConfigureAwait(false);
+                track(result, judgeModel);
+                var judgeJson = ExtractJson(result.OutputText);
+                await File.WriteAllTextAsync(judgePath, PrettyJson(judgeJson), ct).ConfigureAwait(false);
+                Console.WriteLine($"   response_id={result.ResponseId} request_bytes={result.RequestBytesSent} (independent call, book attached)");
+            }
+            PrintJudgeSummary(judgeModel, await File.ReadAllTextAsync(judgePath, ct).ConfigureAwait(false));
+            results.Add((judgeModel, relativeFileName));
+        }
+        return results;
+    }
+
+    private static bool IsExpired(long? expiresAtUnixSeconds) =>
+        expiresAtUnixSeconds is { } exp && DateTimeOffset.FromUnixTimeSeconds(exp) <= DateTimeOffset.UtcNow;
+
+    private static string Fmt(double? value) => value?.ToString() ?? "none";
+
+    /// <summary>Accumulates real token usage (input/output/cached) per model from the Responses
+    /// API's own "usage" field — see <see cref="XaiResponsesClient.SessionTurnResult.UsageJson"/>.
+    /// This is the actual billed quantity; byte counts are only a rough proxy for it.</summary>
+    private static void TrackUsage(Dictionary<string, (long Input, long Output, long Cached)> tokensByModel, string modelId, string? usageJson)
+    {
+        if (string.IsNullOrWhiteSpace(usageJson)) return;
+        try
+        {
+            using var doc = JsonDocument.Parse(usageJson);
+            var root = doc.RootElement;
+            var input = root.TryGetProperty("input_tokens", out var i) ? i.GetInt64() : 0;
+            var output = root.TryGetProperty("output_tokens", out var o) ? o.GetInt64() : 0;
+            var cached = 0L;
+            if (root.TryGetProperty("input_tokens_details", out var d) && d.TryGetProperty("cached_tokens", out var c))
+                cached = c.GetInt64();
+            var prior = tokensByModel.TryGetValue(modelId, out var existing) ? existing : (0, 0, 0);
+            tokensByModel[modelId] = (prior.Item1 + input, prior.Item2 + output, prior.Item3 + cached);
+        }
+        catch { /* usage field absent/malformed — cost summary just omits this call */ }
+    }
+
+    private static readonly Dictionary<string, (double InputPerM, double OutputPerM)> ModelPricingCache = new();
+
+    /// <summary>Reuses the product's own per-model pricing (models_catalog.json) rather than
+    /// hardcoding a second copy of it here.</summary>
+    private static (double InputPerM, double OutputPerM)? LookupModelPricing(string workspaceRoot, string modelId)
+    {
+        if (ModelPricingCache.TryGetValue(modelId, out var cached)) return cached;
+        try
+        {
+            var catalogPath = Path.Combine(workspaceRoot, "host", "PageToMovie.Core", "config", "models_catalog.json");
+            if (!File.Exists(catalogPath)) return null;
+            using var doc = JsonDocument.Parse(File.ReadAllText(catalogPath));
+            foreach (var m in doc.RootElement.GetProperty("models").EnumerateArray())
+            {
+                if (m.TryGetProperty("id", out var idEl) && idEl.GetString() == modelId &&
+                    m.TryGetProperty("inputCostPerMillionTokens", out var inEl) &&
+                    m.TryGetProperty("outputCostPerMillionTokens", out var outEl))
+                {
+                    var pricing = (inEl.GetDouble(), outEl.GetDouble());
+                    ModelPricingCache[modelId] = pricing;
+                    return pricing;
+                }
+            }
+        }
+        catch { /* fall through */ }
+        return null;
+    }
+
+    private static void PrintCostSummary(string workspaceRoot, Dictionary<string, (long Input, long Output, long Cached)> tokensByModel)
+    {
+        double totalCost = 0;
+        var anyPricing = false;
+        foreach (var (modelId, usage) in tokensByModel)
+        {
+            var pricing = LookupModelPricing(workspaceRoot, modelId);
+            var inputM = usage.Input / 1_000_000.0;
+            var outputM = usage.Output / 1_000_000.0;
+            if (pricing is { } p)
+            {
+                anyPricing = true;
+                var cost = inputM * p.InputPerM + outputM * p.OutputPerM;
+                totalCost += cost;
+                Console.WriteLine(
+                    $"   {modelId}: input={usage.Input} (cached={usage.Cached}) output={usage.Output} tokens — ${cost:F4}");
+            }
+            else
+            {
+                Console.WriteLine($"   {modelId}: input={usage.Input} (cached={usage.Cached}) output={usage.Output} tokens — price unknown");
+            }
+        }
+        if (anyPricing)
+            Console.WriteLine($"💵 Estimated real cost this run: ${totalCost:F4} (from actual billed token usage, not byte counts)");
+    }
+
+    private static SessionRecord? LoadSession(string path)
+    {
+        if (!File.Exists(path)) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<SessionRecord>(File.ReadAllText(path));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void SaveSession(string path, SessionRecord session)
+    {
+        var json = JsonSerializer.Serialize(session, new JsonSerializerOptions { WriteIndented = true });
+        var tmp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        File.WriteAllText(tmp, json);
+        File.Move(tmp, path, overwrite: true);
+    }
+
+    /// <summary>Strips ```/```json fences a model may wrap plain-text output in.</summary>
+    private static string StripFences(string text)
+    {
+        text = text.Trim();
+        if (!text.StartsWith("```", StringComparison.Ordinal)) return text;
+        var firstNewline = text.IndexOf('\n');
+        if (firstNewline < 0) return text;
+        var withoutOpenFence = text[(firstNewline + 1)..];
+        var closeIdx = withoutOpenFence.LastIndexOf("```", StringComparison.Ordinal);
+        return closeIdx >= 0 ? withoutOpenFence[..closeIdx].Trim() : withoutOpenFence.Trim();
+    }
+
+    /// <summary>Extracts the first balanced top-level JSON object from model output, tolerating
+    /// code fences and preamble/postamble commentary.</summary>
+    private static string ExtractJson(string text)
+    {
+        var stripped = StripFences(text);
+        for (var i = 0; i < stripped.Length; i++)
+        {
+            if (stripped[i] != '{') continue;
+            var depth = 0;
+            for (var j = i; j < stripped.Length; j++)
+            {
+                if (stripped[j] == '{') depth++;
+                else if (stripped[j] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        var candidate = stripped[i..(j + 1)];
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(candidate);
+                            if (doc.RootElement.ValueKind == JsonValueKind.Object) return candidate;
+                        }
+                        catch { /* keep scanning */ }
+                        break;
+                    }
+                }
+            }
+        }
+        throw new InvalidOperationException("No JSON object found in model output.");
+    }
+
+    private static string PrettyJson(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            return json;
+        }
+    }
+}
