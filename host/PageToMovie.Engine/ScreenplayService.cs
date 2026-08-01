@@ -391,8 +391,9 @@ public static string NormalizeText(string text)
         text = NormalizeText(text ?? "");
         // Unify drifted same-place headings before they seed location_seed_tokens
         text = BookToFountainConverter.NormalizeSceneHeadingWording(text);
-        // Stamp Draft date to today even when the model invents a wrong year
-        text = BookToFountainConverter.FixDraftDate(text);
+        // Do NOT FixDraftDate on every save — stamping "today" changed the file after
+        // approval and falsely set Dirty / "Edited since approval". Date is set at
+        // draft creation / import only (CreateDraftFromBook, ImportAsDraft).
         var sourceDir = Path.Combine(store.GetProjectDir(projectId), "source");
         Directory.CreateDirectory(sourceDir);
         var draftPath = GetDraftPath(store, projectId);
@@ -426,6 +427,7 @@ public static string NormalizeText(string text)
         if (string.IsNullOrWhiteSpace(text))
             return new SaveResult { Ok = false, Error = "Empty screenplay text" };
 
+        text = BookToFountainConverter.FixDraftDate(NormalizeText(text));
         var result = SaveDraft(store, projectId, text);
 
         // Keep a copy under the original name for reference when different
@@ -463,6 +465,7 @@ public static string NormalizeText(string text)
 
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
         var fountain = BookToFountainConverter.ConvertHeuristic(title, book, author);
+        fountain = BookToFountainConverter.FixDraftDate(fountain);
         var save = SaveDraft(store, projectId, fountain);
         if (!save.Ok) return save;
         save.Message = "Screenplay draft ready — review and approve";
@@ -520,6 +523,7 @@ public static string NormalizeText(string text)
                 ct: ct,
                 onVisionMeta: v => visionFromScript = v).ConfigureAwait(false);
 
+            fountain = BookToFountainConverter.FixDraftDate(fountain);
             var save = SaveDraft(store, projectId, fountain);
             if (!save.Ok) return save;
 
@@ -592,8 +596,7 @@ public static string NormalizeText(string text)
                 return new SignOffResult { Ok = false, Error = save.Error };
         }
 
-        // When no body was sent, still run SaveDraft so heading unify + draft-date match
-        // the pipeline used on later autosaves (avoids false "Edited since approval").
+        // When no body was sent, still run SaveDraft so heading unify matches later saves.
         if (text is null)
         {
             var draftPath0 = GetDraftPath(store, projectId);
