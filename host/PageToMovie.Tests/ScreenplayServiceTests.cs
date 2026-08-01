@@ -55,7 +55,7 @@ public class ScreenplayServiceTests : IDisposable
         var save = ScreenplayService.SaveDraft(_store, projectId, fountain);
         Assert.True(save.Ok);
         Assert.True(save.Status.DraftExists);
-        Assert.True(save.Status.Dirty);
+        Assert.False(save.Status.Dirty); // never approved yet — not "edited since approval"
         Assert.False(save.Status.Signed);
         Assert.True(save.Status.SceneHeadingCount >= 2);
 
@@ -255,7 +255,8 @@ public class ScreenplayServiceTests : IDisposable
         var status = _store.GetAdaptationStatus(projectId);
         Assert.Equal("sign_screenplay", status.NextStep);
         Assert.True(status.Screenplay.DraftExists);
-        Assert.True(status.Screenplay.Dirty);
+        Assert.False(status.Screenplay.Dirty); // unsigned draft, not post-approval edit
+        Assert.False(status.Screenplay.Signed);
     }
 
     [Fact]
