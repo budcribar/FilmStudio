@@ -12,7 +12,11 @@
         <h1 class="ptm-adapt-title mb-1">Demo films</h1>
         <p class="ptm-adapt-lede mb-0">
             Shorts published from PageToMovie to YouTube — open to everyone.
-            Star films you like@if (!Session.IsLoggedIn) { <span> (sign in to star)</span> }.
+            Star films you like.
+            @if (!Session.IsLoggedIn)
+            {
+                <span class="text-muted"> Sign in to star.</span>
+            }
         </p>
         @if (!_loading && _demos.Count > 0)
         {
