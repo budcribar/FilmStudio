@@ -73,7 +73,8 @@
     }
     else
     {
-        <div class="demo-grid">
+        @* Bootstrap row-cols: 1 / 2 / 3 columns — reliable with the app's Bootstrap CSS *@
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 demo-grid">
             @foreach (var d in _demos)
             {
                 var about = AboutText(d);
@@ -86,10 +87,10 @@
                 var embedUrl = !string.IsNullOrWhiteSpace(d.YoutubeId)
                     ? $"https://www.youtube.com/embed/{d.YoutubeId}?rel=0"
                     : null;
-                <article class="demo-card @(isHighlight ? "is-highlight" : "")"
+                <div class="col d-flex" @key="d.Id">
+                <article class="demo-card w-100 @(isHighlight ? "is-highlight" : "")"
                          id="@d.Id"
-                         data-testid="demo-card"
-                         @key="d.Id">
+                         data-testid="demo-card">
                     <div class="demo-card-media">
                         @if (embedUrl is not null)
                         {
@@ -195,6 +196,7 @@
                         </footer>
                     </div>
                 </article>
+                </div>
             }
         </div>
     }
