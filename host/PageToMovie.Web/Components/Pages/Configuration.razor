@@ -853,19 +853,26 @@
 
     private double CatalogVideoRate(string resolution)
     {
-        var entry = SupportedModelCatalog.ResolveOrDefault(_modelName, ModelCapability.Video);
-        var table = entry.VideoCostPerSecondByResolution;
-        if (table is not null && table.TryGetValue(resolution, out var exact))
-            return exact;
-        // Same nearest-tier fill as CostReportService for missing res (e.g. Veo has no 480p).
-        if (table is { Count: > 0 })
+        try
         {
-            foreach (var prefer in new[] { "720p", "1080p", "480p" })
+            var entry = SupportedModelCatalog.ResolveOrDefault(_modelName, ModelCapability.Video);
+            var table = entry.VideoCostPerSecondByResolution;
+            if (table is not null && table.TryGetValue(resolution, out var exact))
+                return exact;
+            // Same nearest-tier fill as CostReportService for missing res (e.g. Veo has no 480p).
+            if (table is { Count: > 0 })
             {
-                if (table.TryGetValue(prefer, out var v))
-                    return v;
+                foreach (var prefer in new[] { "720p", "1080p", "480p" })
+                {
+                    if (table.TryGetValue(prefer, out var v))
+                        return v;
+                }
+                return table.Values.Min();
             }
-            return table.Values.Min();
+        }
+        catch (InvalidOperationException)
+        {
+            // Catalog not loaded (rare after embedded fallback) — use list defaults.
         }
         return resolution switch
         {
@@ -877,9 +884,16 @@
 
     private double CatalogImageRate()
     {
-        var entry = SupportedModelCatalog.Find(_imageModel, ModelCapability.Image)
-                    ?? SupportedModelCatalog.ResolveOrDefault(_imageModel, ModelCapability.Image);
-        return entry.ImageCostPerImage ?? 0.05;
+        try
+        {
+            var entry = SupportedModelCatalog.Find(_imageModel, ModelCapability.Image)
+                        ?? SupportedModelCatalog.ResolveOrDefault(_imageModel, ModelCapability.Image);
+            return entry.ImageCostPerImage ?? 0.05;
+        }
+        catch (InvalidOperationException)
+        {
+            return 0.05;
+        }
     }
 
     private static string UsdRate(double v) =>

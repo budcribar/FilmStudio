@@ -344,6 +344,64 @@ public static class SupportedModelCatalog
         EnsureLoaded(overrideJsonPath);
     }
 
+    /// <summary>Parse catalog JSON into static fields. Returns true on success.</summary>
+    public static bool TryLoadFromJson(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try
+        {
+            var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                var container = System.Text.Json.JsonSerializer.Deserialize<ModelCatalogContainerDto>(json, opts);
+                if (container?.Models is { Count: > 0 })
+                {
+                    _loadedEntries = container.Models.Select(FromDto).ToList();
+                    if (container.Capabilities is { Count: > 0 })
+                    {
+                        _loadedCapabilities = container.Capabilities.Select(c => new ModelCapabilityDefinition
+                        {
+                            Id = c.Id,
+                            DisplayName = c.DisplayName,
+                            Description = c.Description,
+                            Order = c.Order,
+                            DefaultModelId = c.DefaultModelId,
+                        }).ToList();
+                    }
+                    else
+                    {
+                        _loadedCapabilities = DefaultCapabilityDefinitions;
+                    }
+
+                    _loadedTaskRankings = container.TaskRankings is { Count: > 0 }
+                        ? new Dictionary<string, List<string>>(container.TaskRankings, StringComparer.OrdinalIgnoreCase)
+                        : DefaultTaskRankings;
+                    return true;
+                }
+            }
+            else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                var dtos = System.Text.Json.JsonSerializer.Deserialize<List<SupportedModelDto>>(json, opts);
+                if (dtos is { Count: > 0 })
+                {
+                    _loadedEntries = dtos.Select(FromDto).ToList();
+                    _loadedCapabilities = DefaultCapabilityDefinitions;
+                    _loadedTaskRankings = DefaultTaskRankings;
+                    return true;
+                }
+            }
+        }
+        catch
+        {
+            // leave unloaded
+        }
+        return false;
+    }
+
+    /// <summary>True when the browser (or any host) has successfully loaded a catalog into memory.</summary>
+    public static bool IsLoaded => _loadedEntries is { Count: > 0 };
+
     private static void EnsureLoaded(string? customPath = null)
     {
         if (_loadedEntries is not null && _loadedCapabilities is not null) return;
@@ -354,55 +412,32 @@ public static class SupportedModelCatalog
         {
             try
             {
-                var json = File.ReadAllText(path);
-                var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                
-                // Parse object format or array format
-                using var doc = System.Text.Json.JsonDocument.Parse(json);
-                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
-                {
-                    var container = System.Text.Json.JsonSerializer.Deserialize<ModelCatalogContainerDto>(json, opts);
-                    if (container?.Models is { Count: > 0 })
-                    {
-                        _loadedEntries = container.Models.Select(FromDto).ToList();
-                        if (container.Capabilities is { Count: > 0 })
-                        {
-                            _loadedCapabilities = container.Capabilities.Select(c => new ModelCapabilityDefinition
-                            {
-                                Id = c.Id,
-                                DisplayName = c.DisplayName,
-                                Description = c.Description,
-                                Order = c.Order,
-                                DefaultModelId = c.DefaultModelId,
-                            }).ToList();
-                        }
-                        else
-                        {
-                            _loadedCapabilities = DefaultCapabilityDefinitions;
-                        }
-
-                        _loadedTaskRankings = container.TaskRankings is { Count: > 0 }
-                            ? new Dictionary<string, List<string>>(container.TaskRankings, StringComparer.OrdinalIgnoreCase)
-                            : DefaultTaskRankings;
-
-                        return;
-                    }
-                }
-                else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
-                {
-                    var dtos = System.Text.Json.JsonSerializer.Deserialize<List<SupportedModelDto>>(json, opts);
-                    if (dtos is { Count: > 0 })
-                    {
-                        _loadedEntries = dtos.Select(FromDto).ToList();
-                        _loadedCapabilities = DefaultCapabilityDefinitions;
-                        return;
-                    }
-                }
+                if (TryLoadFromJson(File.ReadAllText(path)))
+                    return;
             }
             catch
             {
-                // Ignore parse failures and try the next candidate.
+                // Ignore IO/parse failures and try the next candidate.
             }
+        }
+
+        // Blazor WebAssembly (and any host without the file next to the binary): load the
+        // catalog embedded in PageToMovie.Core so Configuration / rate UI can render.
+        try
+        {
+            var asm = typeof(SupportedModelCatalog).Assembly;
+            const string resourceName = "PageToMovie.Core.config.models_catalog.json";
+            using var stream = asm.GetManifestResourceStream(resourceName);
+            if (stream is not null)
+            {
+                using var reader = new StreamReader(stream);
+                if (TryLoadFromJson(reader.ReadToEnd()))
+                    return;
+            }
+        }
+        catch
+        {
+            // fall through to throw
         }
 
         // No hardcoded fallback list here on purpose — a second, hand-maintained copy of the
@@ -414,6 +449,7 @@ public static class SupportedModelCatalog
         // until fixed — nothing gets cached as "working" when it isn't.
         throw new InvalidOperationException(
             "No usable models catalog found. Checked: " + string.Join(", ", candidates) +
+            ", embedded:PageToMovie.Core.config.models_catalog.json" +
             ". Expected an object with a non-empty \"models\" array, or a non-empty array of model entries.");
     }
 
