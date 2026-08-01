@@ -254,10 +254,10 @@ public static class ScreenplayService
         {
             status.Signed = !string.IsNullOrEmpty(meta.SignedHash) &&
                             string.Equals(meta.SignedHash, status.DraftHash, StringComparison.OrdinalIgnoreCase);
-            status.Dirty = !status.Signed;
+            // Dirty only after a real prior approval that no longer matches the draft.
+            // Never-approved drafts are not "edited since approval".
+            status.Dirty = !string.IsNullOrEmpty(meta.SignedHash) && !status.Signed;
         }
-
-
         else
         {
             status.Signed = false;
@@ -334,18 +334,14 @@ public static class ScreenplayService
         if (best is null)
             return false;
 
-        var text = File.ReadAllText(best);
-        File.WriteAllText(draftPath, NormalizeText(text));
+        var text = NormalizeText(File.ReadAllText(best));
+        File.WriteAllText(draftPath, text);
         var meta = ReadMeta(store, projectId);
+        // Hash the bytes we actually wrote (normalized), not the pre-normalize source.
         meta.LastSavedHash = ComputeHash(text);
         meta.LastSavedAt = DateTime.UtcNow.ToString("o");
-        // If Stage 1 already exists from a prior import, treat as signed so shot plan stays available
-        var stage1 = ReadStage1Lite(store, projectId);
-        if (stage1.Present && stage1.SceneCount > 0 && string.IsNullOrEmpty(meta.SignedHash))
-        {
-            meta.SignedHash = meta.LastSavedHash;
-            meta.SignedAt = meta.LastSavedAt;
-        }
+        // Do not auto-approve here — Stage 1 can exist from book import before the user
+        // has reviewed Fountain. Sign-off is an explicit user action.
         WriteMeta(store, projectId, meta);
         return true;
     }
