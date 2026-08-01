@@ -4143,34 +4143,45 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// True when at least one studio AI key is available (ambient scope, personal DB for
-    /// <paramref name="userId"/>, or process env). Used by adaptation UI banners.
+    /// True when this user has a personal studio key (BYOK). Server env keys do not count
+    /// unless <see cref="PageToMovieOptions.AllowServerApiKeyFallback"/> is on.
     /// </summary>
     public bool IsAnyStudioKeyConfigured(string? userId = null)
     {
+        if (_keyProvider is not null && !string.IsNullOrWhiteSpace(userId))
+        {
+            foreach (var provider in new[] { "grok", "gemini", "anthropic", "openai", "fal" })
+            {
+                if (_keyProvider.HasKey(userId, provider))
+                    return true;
+            }
+        }
+
+        // Ambient scope only after personal keys were loaded into the request — still OK
+        // because GetKey no longer injects server env for signed-in users under BYOK.
         if (!string.IsNullOrWhiteSpace(ApiKeyScope.Current)
             || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentGemini)
             || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentAnthropic)
-            || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentFal)
             || !string.IsNullOrWhiteSpace(ApiKeyScope.Get("openai")))
             return true;
 
-        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))
-            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
-            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"))
-            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OPENAI_API_KEY"))
-            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_API_KEY"))
-            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_KEY")))
-            return true;
-
-        if (_keyProvider is null) return false;
-
-        foreach (var provider in new[] { "grok", "gemini", "anthropic", "fal", "openai" })
+        if (_opts.AllowServerApiKeyFallback)
         {
-            if (!string.IsNullOrWhiteSpace(userId) && _keyProvider.HasKey(userId, provider))
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OPENAI_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_KEY")))
                 return true;
-            if (_keyProvider.HasKey(null, provider))
-                return true;
+            if (_keyProvider is not null)
+            {
+                foreach (var provider in new[] { "grok", "gemini", "anthropic", "fal", "openai" })
+                {
+                    if (_keyProvider.HasKey(null, provider))
+                        return true;
+                }
+            }
         }
 
         return false;

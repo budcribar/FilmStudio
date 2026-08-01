@@ -104,10 +104,12 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
 {
     private readonly UserDatabaseService _userDb;
     private readonly AuthOptions _auth;
+    private readonly PageToMovieOptions _opts;
 
     public DbUserApiKeyProvider(UserDatabaseService userDb, IOptions<PageToMovieOptions> opts)
     {
         _userDb = userDb;
+        _opts = opts.Value;
         _auth = opts.Value.Auth ?? new AuthOptions();
     }
 
@@ -159,6 +161,11 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
                     return env.Trim();
             }
         }
+
+        // BYOK default: do not spend a server env key on a signed-in user.
+        var allowServer = _opts.AllowServerApiKeyFallback || string.IsNullOrWhiteSpace(userId);
+        if (!allowServer)
+            return null;
 
         var processEnv = provider switch
         {

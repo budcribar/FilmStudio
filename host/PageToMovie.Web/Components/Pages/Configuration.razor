@@ -71,7 +71,8 @@
         <div class="card-body">
             <p class="small text-muted mb-3">
                 Providers and key names come from <code>models_catalog.json</code> (enabled models).
-                Personal keys are encrypted at rest and used for your account; server env keys are the fallback.
+                <strong>Bring your own key:</strong> paste a personal key per provider (encrypted at rest).
+                Server env keys are not used for your jobs until cost management is enabled.
             </p>
 
             @if (ProviderRows.Count == 0)
@@ -150,7 +151,7 @@
                                 }
                                 @if (p.HasServerKey)
                                 {
-                                    <div class="text-muted">Server env key available as fallback.</div>
+                                    <div class="text-muted">Server env key present on host (not used for your jobs in BYOK mode).</div>
                                 }
                             </div>
 

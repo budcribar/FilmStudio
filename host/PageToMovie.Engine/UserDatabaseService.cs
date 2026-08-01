@@ -565,7 +565,8 @@ public class UserDatabaseService
             row.HasPersonalKey = hasPersonal;
             row.MaskedPersonalKey = MaskKey(personal);
             row.HasServerKey = hasServer;
-            row.ActiveSource = hasPersonal ? "personal" : hasServer ? "server" : "none";
+            // BYOK: "Active" means personal key only; server env is shown but not active spend.
+            row.ActiveSource = hasPersonal ? "personal" : "none";
         }
 
         return new UserSettingsDto

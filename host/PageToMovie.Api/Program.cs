@@ -1990,8 +1990,8 @@ app.MapGet("/health", (ProjectStore store, IOptions<PageToMovieOptions> opts, IU
         useFakes = opts.Value.UseFakes || useFakes,
         enableReadCaches = store.ReadCachesEnabled,
         capacity = opts.Value.Capacity,
-        xaiConfigured = keyProvider.HasKey(user.UserId) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")) || useFakes,
-        xaiKeyPresent = keyProvider.HasKey(user.UserId) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")),
+        xaiConfigured = keyProvider.HasKey(user.UserId) || (opts.Value.AllowServerApiKeyFallback && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))) || useFakes,
+        xaiKeyPresent = keyProvider.HasKey(user.UserId) || (opts.Value.AllowServerApiKeyFallback && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))),
         userId = user.UserId,
         isAdmin = user.IsAdmin,
     }));
