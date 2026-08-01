@@ -7,46 +7,14 @@
 }
 
 .demo-hero {
-    margin-bottom: 2rem;
-    padding: 1.75rem 1.5rem 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.25rem 1.15rem;
     border-radius: 1rem;
     background:
-        radial-gradient(1200px 280px at 10% -20%, rgba(99, 102, 241, 0.22), transparent 55%),
-        radial-gradient(900px 240px at 90% 0%, rgba(226, 179, 66, 0.12), transparent 50%),
+        radial-gradient(900px 220px at 8% -30%, rgba(148, 163, 184, 0.14), transparent 55%),
         var(--fs-bg-card);
     border: 1px solid var(--fs-border-color);
     box-shadow: var(--fs-shadow-card);
-}
-
-.demo-hero-badge {
-    display: inline-block;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--fs-accent-indigo);
-    background: rgba(99, 102, 241, 0.14);
-    border: 1px solid rgba(99, 102, 241, 0.28);
-    border-radius: 999px;
-    padding: 0.2rem 0.65rem;
-    margin-bottom: 0.75rem;
-}
-
-.demo-hero-title {
-    font-family: Outfit, Inter, system-ui, sans-serif;
-    font-weight: 750;
-    font-size: clamp(1.75rem, 3vw, 2.25rem);
-    letter-spacing: -0.02em;
-    margin: 0 0 0.5rem;
-    color: var(--fs-text-primary);
-}
-
-.demo-hero-lead {
-    margin: 0;
-    max-width: 38rem;
-    color: var(--fs-text-muted);
-    line-height: 1.55;
-    font-size: 1rem;
 }
 
 .demo-hero-meta {

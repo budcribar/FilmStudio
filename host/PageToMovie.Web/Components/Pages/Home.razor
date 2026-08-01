@@ -308,15 +308,54 @@ else
     </div>
 }
 
-<div class="card home-showcase-card">
-    <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div class="min-w-0">
-            <div class="fw-semibold">Demo gallery</div>
-            <div class="small text-muted text-truncate" title="@_demoShowcaseHint">
-                @_demoShowcaseHint
+<div class="card home-showcase-card mb-3">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+            <div class="min-w-0">
+                <div class="ptm-adapt-kicker mb-1">Public gallery</div>
+                <div class="fw-semibold fs-5 mb-0">Demo films</div>
+                <div class="small text-muted text-truncate" title="@_demoShowcaseHint">@_demoShowcaseHint</div>
             </div>
+            <a href="/demo" class="btn btn-sm btn-primary flex-shrink-0" data-testid="home-open-demo-gallery">
+                Open gallery →
+            </a>
         </div>
-        <a href="/demo" class="btn btn-sm btn-outline-primary flex-shrink-0">View demos</a>
+        @if (_publicDemos.Count > 0)
+        {
+            <div class="home-showcase-thumbs" aria-label="Recent demo films">
+                @foreach (var d in _publicDemos.Take(4))
+                {
+                    var yt = !string.IsNullOrWhiteSpace(d.YoutubeId) ? d.YoutubeId : null;
+                    var href = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+                        ? d.YoutubeUrl!
+                        : (yt is not null ? $"https://www.youtube.com/watch?v={yt}" : "/demo");
+                    var thumb = yt is not null
+                        ? $"https://img.youtube.com/vi/{yt}/mqdefault.jpg"
+                        : null;
+                    <a class="home-showcase-thumb"
+                       href="@href"
+                       target="@(yt is not null ? "_blank" : null)"
+                       rel="@(yt is not null ? "noopener" : null)"
+                       title="@d.Title">
+                        @if (thumb is not null)
+                        {
+                            <img src="@thumb" alt="" loading="lazy" />
+                        }
+                        else
+                        {
+                            <span class="home-showcase-thumb__ph" aria-hidden="true">▶</span>
+                        }
+                        <span class="home-showcase-thumb__label">@d.Title</span>
+                    </a>
+                }
+            </div>
+        }
+        else if (_demoShowcaseHint.StartsWith("Loading", StringComparison.OrdinalIgnoreCase) == false)
+        {
+            <p class="small text-muted mb-0 mt-1">
+                Publish from Review to appear here. Anyone can browse without signing in.
+            </p>
+        }
     </div>
 </div>
 

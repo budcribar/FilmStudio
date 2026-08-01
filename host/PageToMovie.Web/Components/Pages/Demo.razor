@@ -7,18 +7,12 @@
 <PageTitle>Demo gallery — PageToMovie</PageTitle>
 
 <div class="demo-page">
-    <header class="demo-hero">
-        <div class="demo-hero-badge">AI Film Studio · Public gallery</div>
-        <h1 class="demo-hero-title">See what the pipeline can make</h1>
-        <p class="demo-hero-lead">
-            Shorts made with PageToMovie and published to YouTube — open to everyone.
-            Films appear here once YouTube has the video (YouTube is the source of truth for playback).
-            Star films you like
-            @if (!Session.IsLoggedIn)
-            {
-                <span> (sign in to star)</span>
-            }
-            — ranked by most stars.
+    <header class="demo-hero ptm-page-head">
+        <span class="ptm-adapt-kicker">Studio · Public gallery</span>
+        <h1 class="ptm-adapt-title mb-1">Demo films</h1>
+        <p class="ptm-adapt-lede mb-0">
+            Shorts published from PageToMovie to YouTube — open to everyone.
+            Star films you like@if (!Session.IsLoggedIn) { <span> (sign in to star)</span> }.
         </p>
         @if (!_loading && _demos.Count > 0)
         {
