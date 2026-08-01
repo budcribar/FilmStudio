@@ -349,6 +349,17 @@ public class UserDatabaseService
                     cmd.ExecuteNonQuery();
                 }
 
+                // User-facing cost bucket (screenplay / characters / video / voice / music / other).
+                EnsureColumn(conn, "user_api_calls", "category", "TEXT");
+                try
+                {
+                    using var idxCmd = conn.CreateCommand();
+                    idxCmd.CommandText =
+                        "CREATE INDEX IF NOT EXISTS idx_user_api_calls_category ON user_api_calls(category);";
+                    idxCmd.ExecuteNonQuery();
+                }
+                catch { /* ignore */ }
+
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
@@ -581,7 +592,7 @@ public class UserDatabaseService
         await conn.OpenAsync(ct).ConfigureAwait(false);
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            SELECT id, user_id, ts, project_id, job_id, kind, mode, provider, model, endpoint,
+            SELECT id, user_id, ts, project_id, job_id, kind, mode, category, provider, model, endpoint,
                    http_status, ok, duration_ms, estimated_usd, currency, scene, clip, char_key,
                    resolution, duration_sec, input_tokens, output_tokens, purpose, error, fakes
             FROM user_api_calls
@@ -602,24 +613,27 @@ public class UserDatabaseService
                 JobId = r.IsDBNull(4) ? null : r.GetString(4),
                 Kind = r.GetString(5),
                 Mode = r.IsDBNull(6) ? null : r.GetString(6),
-                Provider = r.IsDBNull(7) ? null : r.GetString(7),
-                Model = r.IsDBNull(8) ? null : r.GetString(8),
-                Endpoint = r.IsDBNull(9) ? null : r.GetString(9),
-                HttpStatus = r.IsDBNull(10) ? null : r.GetInt32(10),
-                Ok = r.GetInt32(11) != 0,
-                DurationMs = r.IsDBNull(12) ? null : r.GetInt64(12),
-                EstimatedUsd = r.IsDBNull(13) ? null : r.GetDouble(13),
-                Currency = r.IsDBNull(14) ? "USD" : r.GetString(14),
-                Scene = r.IsDBNull(15) ? null : r.GetInt32(15),
-                Clip = r.IsDBNull(16) ? null : r.GetInt32(16),
-                CharKey = r.IsDBNull(17) ? null : r.GetString(17),
-                Resolution = r.IsDBNull(18) ? null : r.GetString(18),
-                DurationSec = r.IsDBNull(19) ? null : r.GetDouble(19),
-                InputTokens = r.IsDBNull(20) ? null : r.GetInt32(20),
-                OutputTokens = r.IsDBNull(21) ? null : r.GetInt32(21),
-                Purpose = r.IsDBNull(22) ? null : r.GetString(22),
-                Error = r.IsDBNull(23) ? null : r.GetString(23),
-                Fakes = r.GetInt32(24) != 0,
+                Category = r.IsDBNull(7) || string.IsNullOrWhiteSpace(r.GetString(7))
+                    ? CostCategories.Resolve(r.GetString(5), r.IsDBNull(6) ? null : r.GetString(6))
+                    : CostCategories.Resolve(r.GetString(5), r.IsDBNull(6) ? null : r.GetString(6), r.GetString(7)),
+                Provider = r.IsDBNull(8) ? null : r.GetString(8),
+                Model = r.IsDBNull(9) ? null : r.GetString(9),
+                Endpoint = r.IsDBNull(10) ? null : r.GetString(10),
+                HttpStatus = r.IsDBNull(11) ? null : r.GetInt32(11),
+                Ok = r.GetInt32(12) != 0,
+                DurationMs = r.IsDBNull(13) ? null : r.GetInt64(13),
+                EstimatedUsd = r.IsDBNull(14) ? null : r.GetDouble(14),
+                Currency = r.IsDBNull(15) ? "USD" : r.GetString(15),
+                Scene = r.IsDBNull(16) ? null : r.GetInt32(16),
+                Clip = r.IsDBNull(17) ? null : r.GetInt32(17),
+                CharKey = r.IsDBNull(18) ? null : r.GetString(18),
+                Resolution = r.IsDBNull(19) ? null : r.GetString(19),
+                DurationSec = r.IsDBNull(20) ? null : r.GetDouble(20),
+                InputTokens = r.IsDBNull(21) ? null : r.GetInt32(21),
+                OutputTokens = r.IsDBNull(22) ? null : r.GetInt32(22),
+                Purpose = r.IsDBNull(23) ? null : r.GetString(23),
+                Error = r.IsDBNull(24) ? null : r.GetString(24),
+                Fakes = r.GetInt32(25) != 0,
             });
         }
         return list;
@@ -638,29 +652,29 @@ public class UserDatabaseService
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 INSERT INTO user_api_calls (
-                    user_id, ts, project_id, job_id, kind, mode, provider, model, endpoint,
+                    user_id, ts, project_id, job_id, kind, mode, category, provider, model, endpoint,
                     http_status, ok, duration_ms, estimated_usd, currency,
                     scene, clip, char_key, resolution, duration_sec,
                     input_tokens, output_tokens, prompt_chars, response_chars,
                     request_id, error, purpose, fakes)
                 VALUES (
-                    @userId, @ts, @projectId, @jobId, @kind, @mode, @provider, @model, @endpoint,
+                    @userId, @ts, @projectId, @jobId, @kind, @mode, @category, @provider, @model, @endpoint,
                     @httpStatus, @ok, @durationMs, @estimatedUsd, @currency,
                     @scene, @clip, @charKey, @resolution, @durationSec,
                     @inputTokens, @outputTokens, @promptChars, @responseChars,
                     @requestId, @error, @purpose, @fakes)";
             var ts = (rec.Ts ?? DateTimeOffset.UtcNow).ToString("o");
-            var purpose = !string.IsNullOrWhiteSpace(rec.Mode)
-                ? rec.Mode
-                : !string.IsNullOrWhiteSpace(rec.Kind)
-                    ? rec.Kind
-                    : "api_call";
+            var purpose = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
+            if (!string.IsNullOrWhiteSpace(rec.Mode))
+                purpose = $"{purpose}:{rec.Mode}";
             cmd.Parameters.AddWithValue("@userId", rec.UserId.Trim());
             cmd.Parameters.AddWithValue("@ts", ts);
             cmd.Parameters.AddWithValue("@projectId", (object?)rec.ProjectId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@jobId", (object?)rec.JobId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@kind", rec.Kind ?? "");
             cmd.Parameters.AddWithValue("@mode", (object?)rec.Mode ?? DBNull.Value);
+            var category = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
+            cmd.Parameters.AddWithValue("@category", category);
             cmd.Parameters.AddWithValue("@provider", (object?)rec.Provider ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@model", (object?)rec.Model ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@endpoint", (object?)rec.Endpoint ?? DBNull.Value);
@@ -1614,6 +1628,8 @@ public sealed class UserApiCallRow
     public string? JobId { get; set; }
     public string Kind { get; set; } = "";
     public string? Mode { get; set; }
+    /// <summary>User-facing cost bucket (<see cref="CostCategories"/>).</summary>
+    public string Category { get; set; } = CostCategories.Other;
     public string? Provider { get; set; }
     public string? Model { get; set; }
     public string? Endpoint { get; set; }

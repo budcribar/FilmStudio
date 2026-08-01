@@ -85,6 +85,8 @@ public sealed class ProjectTelemetryService
         if (string.IsNullOrWhiteSpace(rec.Provider) && !string.IsNullOrWhiteSpace(rec.Model))
             rec.Provider = TryProviderForModel(rec.Model, rec.Kind);
         rec.EstimatedUsd ??= EstimateListRateUsd(rec);
+        // Always a user-facing cost bucket (same ids as Estimate & cost pie).
+        rec.Category = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
 
         // Project jsonl (full prompts) when a project is in scope.
         if (!string.IsNullOrWhiteSpace(projectId))
@@ -395,7 +397,12 @@ public sealed class ApiCallTelemetry
     public double? EstimatedUsd { get; set; }
     public int? InputTokens { get; set; }
     public int? OutputTokens { get; set; }
-    /// <summary>video | video_extend | video_poll | image | image_edit | vision | chat | tts | …</summary>
+    /// <summary>
+    /// User-facing cost bucket (<see cref="CostCategories"/>): screenplay, characters, video, voice, music, other.
+    /// Set automatically in <see cref="ProjectTelemetryService.LogApiCallAsync"/> if omitted.
+    /// </summary>
+    public string? Category { get; set; }
+    /// <summary>Transport kind: video | image | chat | … (internal; prefer <see cref="Category"/> for UX).</summary>
     public string Kind { get; set; } = "";
     public string? Endpoint { get; set; }
     public string? Model { get; set; }

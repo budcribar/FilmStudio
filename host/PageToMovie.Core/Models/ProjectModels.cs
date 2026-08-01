@@ -961,7 +961,9 @@ public sealed class CostEvent
 {
     public string? Id { get; set; }
     public string? Ts { get; set; }
-    public string Kind { get; set; } = "video"; // video | image | other
+    public string Kind { get; set; } = "video"; // transport: video | image | chat | …
+    /// <summary>User-facing bucket (<see cref="CostCategories"/>).</summary>
+    public string Category { get; set; } = CostCategories.Other;
     public int? Scene { get; set; }
     public int? Clip { get; set; }
     public string? Model { get; set; }

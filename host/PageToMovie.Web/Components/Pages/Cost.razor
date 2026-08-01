@@ -379,12 +379,12 @@ else
 
     private static readonly (string Id, string Label, string Color)[] Categories =
     {
-        ("screenplay", "Screenplay & planning", "#38bdf8"),
-        ("characters", "Character generation", "#a78bfa"),
-        ("video", "Video generation", "#34d399"),
-        ("voice", "Voice & dialogue audio", "#fbbf24"),
-        ("music", "Music generation", "#f472b6"),
-        ("other", "Other", "#94a3b8"),
+        (CostCategories.Screenplay, CostCategories.Label(CostCategories.Screenplay), "#38bdf8"),
+        (CostCategories.Characters, CostCategories.Label(CostCategories.Characters), "#a78bfa"),
+        (CostCategories.Video, CostCategories.Label(CostCategories.Video), "#34d399"),
+        (CostCategories.Voice, CostCategories.Label(CostCategories.Voice), "#fbbf24"),
+        (CostCategories.Music, CostCategories.Label(CostCategories.Music), "#f472b6"),
+        (CostCategories.Other, CostCategories.Label(CostCategories.Other), "#94a3b8"),
     };
 
     private sealed record CostSlice(string Id, string Label, double Usd, string Color);
@@ -508,12 +508,18 @@ else
         if (_report?.RecentEvents is { Count: > 0 } events)
         {
             foreach (var e in events)
-                totals[MapCategory(e.Kind)] = totals.GetValueOrDefault(MapCategory(e.Kind)) + e.Usd;
+            {
+                var cat = MapCategory(e.Kind, mode: null, category: e.Category);
+                totals[cat] = totals.GetValueOrDefault(cat) + e.Usd;
+            }
         }
         else if (_report?.Actual?.ByKind is { Count: > 0 } byKind)
         {
             foreach (var kv in byKind)
-                totals[MapCategory(kv.Key)] = totals.GetValueOrDefault(MapCategory(kv.Key)) + kv.Value;
+            {
+                var cat = MapCategory(kv.Key);
+                totals[cat] = totals.GetValueOrDefault(cat) + kv.Value;
+            }
         }
 
         // Prefer summary actual total if events are only a "recent" window and under-count
@@ -523,7 +529,10 @@ else
         {
             totals = Categories.ToDictionary(c => c.Id, _ => 0.0, StringComparer.OrdinalIgnoreCase);
             foreach (var kv in bk)
-                totals[MapCategory(kv.Key)] = totals.GetValueOrDefault(MapCategory(kv.Key)) + kv.Value;
+            {
+                var cat = MapCategory(kv.Key);
+                totals[cat] = totals.GetValueOrDefault(cat) + kv.Value;
+            }
         }
 
         return Categories
@@ -536,7 +545,7 @@ else
         if (_report?.RecentEvents is not { Count: > 0 } events)
             return new List<CostEvent>();
         return events
-            .Where(e => string.Equals(MapCategory(e.Kind), categoryId, StringComparison.OrdinalIgnoreCase))
+            .Where(e => string.Equals(MapCategory(e.Kind, category: e.Category), categoryId, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(e => e.Ts ?? "")
             .ToList();
     }
@@ -629,21 +638,9 @@ else
         </ul>
     };
 
-    /// <summary>Map raw ledger kind → user-facing category id.</summary>
-    internal static string MapCategory(string? kind)
-    {
-        var k = (kind ?? "other").Trim().ToLowerInvariant();
-        return k switch
-        {
-            "video" or "film" or "clip" => "video",
-            "image" or "image_edit" or "character" or "portrait" or "plates" => "characters",
-            "music" or "bgm" or "score" => "music",
-            "audio" or "voice" or "tts" or "voice-preview" or "voice_clone" or "speech" => "voice",
-            "chat" or "planning" or "script" or "screenplay" or "vision" or "ocr"
-                or "import" or "cast_extract" or "shot_plan" => "screenplay",
-            _ => "other",
-        };
-    }
+    /// <summary>Map ledger kind/mode → user-facing category (shared with API telemetry).</summary>
+    internal static string MapCategory(string? kind, string? mode = null, string? category = null) =>
+        CostCategories.Resolve(kind, mode, category);
 
     private static string EventDetail(CostEvent e)
     {

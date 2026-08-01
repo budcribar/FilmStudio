@@ -308,6 +308,7 @@ public sealed class CostReportService
                 var evt = new Dictionary<string, object?>
                 {
                     ["kind"] = "video",
+            ["category"] = CostCategories.Video,
                     ["scene"] = scene.SceneNumber,
                     ["clip"] = clip.ClipNumber,
                     ["model"] = model,
@@ -375,6 +376,7 @@ public sealed class CostReportService
         var evt = new Dictionary<string, object?>
         {
             ["kind"] = "video",
+            ["category"] = CostCategories.Video,
             ["scene"] = scene,
             ["clip"] = clip,
             ["model"] = model,
@@ -449,6 +451,7 @@ public sealed class CostReportService
         await AppendCostEventAsync(projectId, new Dictionary<string, object?>
         {
             ["kind"] = "image",
+            ["category"] = CostCategories.Characters,
             ["model"] = model,
             ["character"] = character ?? "",
             ["n_images"] = n,
@@ -616,6 +619,10 @@ public sealed class CostReportService
             Id = e.TryGetProperty("id", out var id) ? id.GetString() : null,
             Ts = e.TryGetProperty("ts", out var ts) ? ts.GetString() : null,
             Kind = e.TryGetProperty("kind", out var k) ? k.GetString() ?? "other" : "other",
+            Category = CostCategories.Resolve(
+                e.TryGetProperty("kind", out var k2) ? k2.GetString() : null,
+                e.TryGetProperty("mode", out var mo) ? mo.GetString() : null,
+                e.TryGetProperty("category", out var cat) ? cat.GetString() : null),
             Scene = TryGetInt(e, "scene", out var sn) ? sn : null,
             Clip = TryGetInt(e, "clip", out var cn) ? cn : null,
             Model = e.TryGetProperty("model", out var m) ? m.GetString() : null,
