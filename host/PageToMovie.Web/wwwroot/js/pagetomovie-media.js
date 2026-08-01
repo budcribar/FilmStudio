@@ -580,6 +580,10 @@ window.PageToMovieMedia = {
      * List audio files under optional prefix (relative to media root).
      * @returns {{ success:boolean, files?: { relativePath:string, name:string, sizeBytes:number }[], error?:string }}
      */
+    /**
+     * List audio files under optional prefix (relative to media root).
+     * @returns {{ success:boolean, files?: { relativePath:string, name:string, sizeBytes:number }[], error?:string }}
+     */
     listAudioFilesAsync: async function (prefix) {
         if (!this._root) return { success: false, error: "Media folder not connected", files: [] };
         const audioExt = new Set([".webm", ".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac"]);
@@ -588,7 +592,6 @@ window.PageToMovieMedia = {
             for await (const [name, handle] of dir.entries()) {
                 const rel = relBase ? `${relBase}/${name}` : name;
                 if (handle.kind === "directory") {
-                    // Stay shallow enough for UX; skip ffmpeg/temp noise
                     if (name.startsWith(".") || name === "node_modules") continue;
                     await walk(handle, rel);
                 } else if (handle.kind === "file") {
@@ -604,16 +607,67 @@ window.PageToMovieMedia = {
             }
         };
         try {
-            let start = this._root;
+            let startDir = this._root;
             let base = "";
             if (prefix && String(prefix).trim()) {
                 const parts = String(prefix).replace(/\\/g, "/").split("/").filter(Boolean);
-                for (const p of parts) {
-                    start = await start.getDirectoryHandle(p, { create: false });
-                    base = base ? `${base}/${p}` : p;
+                for (const part of parts) {
+                    startDir = await startDir.getDirectoryHandle(part, { create: false });
+                    base = base ? `${base}/${part}` : part;
                 }
             }
-            await walk(start, base);
+            await walk(startDir, base);
+            files.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+            return { success: true, files };
+        } catch (err) {
+            return { success: false, error: err.message || String(err), files: [] };
+        }
+    },
+
+    /**
+     * List media files under a project id folder (or any relative prefix).
+     * Used by admin full-project export merge (MP4/MP3/etc. live on the client).
+     * @param {string} prefix e.g. "owner/slug" project id
+     * @returns {{ success:boolean, files?: { relativePath:string, sizeBytes:number }[], error?:string }}
+     */
+    listMediaTreeAsync: async function (prefix) {
+        if (!this._root) return { success: false, error: "Media folder not connected", files: [] };
+        const mediaExt = new Set([
+            ".mp4", ".webm", ".mov", ".mkv", ".m4v",
+            ".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac", ".opus",
+            ".png", ".jpg", ".jpeg", ".webp", ".gif",
+        ]);
+        const files = [];
+        const walk = async (dir, relBase) => {
+            for await (const [name, handle] of dir.entries()) {
+                if (name.startsWith(".") || name === "node_modules") continue;
+                const rel = relBase ? `${relBase}/${name}` : name;
+                if (handle.kind === "directory") {
+                    await walk(handle, rel);
+                } else if (handle.kind === "file") {
+                    const lower = name.toLowerCase();
+                    const dot = lower.lastIndexOf(".");
+                    const ext = dot >= 0 ? lower.slice(dot) : "";
+                    if (!mediaExt.has(ext)) continue;
+                    try {
+                        const f = await handle.getFile();
+                        if (f && f.size > 0)
+                            files.push({ relativePath: rel.replace(/\\/g, "/"), sizeBytes: f.size });
+                    } catch (_) { /* skip */ }
+                }
+            }
+        };
+        try {
+            let startDir = this._root;
+            let base = "";
+            if (prefix && String(prefix).trim()) {
+                const parts = String(prefix).replace(/\\/g, "/").split("/").filter(Boolean);
+                for (const part of parts) {
+                    startDir = await startDir.getDirectoryHandle(part, { create: false });
+                    base = base ? `${base}/${part}` : part;
+                }
+            }
+            await walk(startDir, base);
             files.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
             return { success: true, files };
         } catch (err) {

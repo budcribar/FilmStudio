@@ -519,12 +519,16 @@
         <div class="card mt-3">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <span>Project export / import</span>
-                <span class="small text-muted">Full folder zip for local debug</span>
+                <span class="small text-muted">Server files + local media (MP4/MP3) merged in browser</span>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="fw-semibold small mb-2">Export (download zip)</div>
+                        <p class="small text-muted mb-2">
+                            Stage 1: server project folder. Stage 2: merge MP4/MP3/etc. from your
+                            connected media folder under this project id. Connect the media folder first for a complete archive.
+                        </p>
                         <div class="d-flex flex-wrap gap-2 align-items-center">
                             <select class="form-select form-select-sm" style="max-width: 16rem;"
                                     @bind="_exportProjectId"
@@ -544,7 +548,7 @@
                             <button type="button" class="btn btn-sm btn-primary"
                                     disabled="@(_archiveBusy || string.IsNullOrWhiteSpace(_exportProjectId))"
                                     @onclick="ExportProjectAsync">
-                                @(_archiveBusy && _archiveAction == "export" ? "Zipping…" : "Download full project")
+                                @(_archiveBusy && _archiveAction == "export" ? "Exporting…" : "Download full project + media")
                             </button>
                         </div>
                         <p class="form-text mb-0 mt-1">
@@ -1099,25 +1103,57 @@
         _archiveBusy = true;
         _archiveAction = "export";
         _archiveError = null;
-        _archiveMsg = "Building zip…";
+        _archiveMsg = MediaFolder.IsConnected
+            ? "Building server zip, then merging local media…"
+            : "Building server zip (media folder not connected — MP4/MP3 may be missing)…";
         try
         {
+            // Soft prompt: still export server files if media disconnected
+            if (!MediaFolder.IsConnected)
+            {
+                _archiveMsg = "Media folder not connected — exporting server files only. Connect media folder for MP4/MP3.";
+            }
+
             var (resp, fileName) = await Api.ExportProjectZipAsync(_exportProjectId);
             using (resp)
             {
                 await using var stream = await resp.Content.ReadAsStreamAsync();
                 using var streamRef = new DotNetStreamReference(stream);
+                // Two-stage: server zip stream → browser merges client media → download
                 var result = await Js.InvokeAsync<JsonElement>(
-                    "PageToMovieExport.downloadStreamAsync",
+                    "PageToMovieExport.mergeServerZipWithLocalMediaAsync",
                     fileName,
-                    streamRef);
+                    streamRef,
+                    _exportProjectId);
                 if (result.TryGetProperty("success", out var ok) && ok.GetBoolean())
-                    _archiveMsg = $"Downloaded {fileName}";
+                {
+                    _archiveMsg = result.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
+                        ? m.GetString()
+                        : $"Downloaded {fileName}";
+                }
                 else
                 {
                     var err = result.TryGetProperty("error", out var e) ? e.GetString() : "download failed";
-                    _archiveError = err;
-                    _archiveMsg = null;
+                    // Fallback: plain server zip if merge fails
+                    _archiveMsg = "Merge failed — downloading server zip only…";
+                    StateHasChanged();
+                    var (resp2, fileName2) = await Api.ExportProjectZipAsync(_exportProjectId);
+                    using (resp2)
+                    {
+                        await using var stream2 = await resp2.Content.ReadAsStreamAsync();
+                        using var streamRef2 = new DotNetStreamReference(stream2);
+                        var plain = await Js.InvokeAsync<JsonElement>(
+                            "PageToMovieExport.downloadStreamAsync",
+                            fileName2,
+                            streamRef2);
+                        if (plain.TryGetProperty("success", out var ok2) && ok2.GetBoolean())
+                            _archiveMsg = $"Downloaded {fileName2} (server only). Merge error: {err}";
+                        else
+                        {
+                            _archiveError = err;
+                            _archiveMsg = null;
+                        }
+                    }
                 }
             }
         }

@@ -117,7 +117,7 @@ public sealed class ProjectArchiveService
                             schema = "PageToMovie.project_export.v1",
                             projectId = id,
                             exportedAtUtc = DateTime.UtcNow.ToString("o"),
-                            note = "Full project folder for local debug. Unzip or use Admin → Import project.",
+                            note = "Server project folder. Client browser merges local media (MP4/MP3) into this zip when media folder is connected.",
                         }, JsonOpts));
                     }
 
