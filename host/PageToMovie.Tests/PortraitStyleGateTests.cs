@@ -9,6 +9,7 @@ public sealed class PortraitStyleGateTests
     [InlineData("STYLE LOCK: Live-action gothic period drama; photoreal human faces", false)]
     [InlineData("STYLE LOCK: children's picture-book illustration, painted cartoon", true)]
     [InlineData("photoreal live-action period drama circa 1840s", false)]
+    [InlineData("STYLE LOCK: photoreal live-action continuity portrait — naturalistic face", false)]
     public void PrefersIllustrated_FromProjectStyle(string style, bool illustrated)
     {
         Assert.Equal(
@@ -17,11 +18,14 @@ public sealed class PortraitStyleGateTests
     }
 
     [Fact]
-    public void PrefersIllustrated_DefaultsToIllustrated_WithBookPlatesOrAnimal()
+    public void PrefersIllustrated_OnlyBookArtDefaultsToIllustrated()
     {
-        Assert.True(CharacterDesignService.PrefersIllustratedPortraitStyle(null, hasImageHints: true, isAnimal: false));
-        Assert.True(CharacterDesignService.PrefersIllustratedPortraitStyle("", hasImageHints: false, isAnimal: true));
+        // Image hints (uploads) or animals alone no longer force cartoon — only real book plates.
+        Assert.False(CharacterDesignService.PrefersIllustratedPortraitStyle(null, hasImageHints: true, isAnimal: false));
+        Assert.False(CharacterDesignService.PrefersIllustratedPortraitStyle("", hasImageHints: false, isAnimal: true));
         Assert.False(CharacterDesignService.PrefersIllustratedPortraitStyle(null, hasImageHints: false, isAnimal: false));
+        Assert.True(CharacterDesignService.PrefersIllustratedPortraitStyle(
+            null, hasImageHints: false, isAnimal: false, hasBookSource: true));
     }
 
     [Fact]

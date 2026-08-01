@@ -230,7 +230,8 @@ public sealed class CharacterDesignService
             projectRenderStyleLock: projectStyle,
             wardrobeLockDescription: wardrobeDescription,
             hasIdentityRefs: editRefs.Count > 0,
-            hasCostumeRef: costumeRefPath is not null);
+            hasCostumeRef: costumeRefPath is not null,
+            hasBookIllustrations: ProjectHasBookIllustrations(projectDir));
 
         onProgress?.Invoke(
             $"design prompt ready ({prompt.Length} chars) · image_provider={ImageApiLimits.ResolveProvider(imageProvider, imageModel)} max_refs={maxRefs}");
@@ -980,8 +981,8 @@ public sealed class CharacterDesignService
     internal static string? ReadProjectRenderStyleLock(string projectDir)
     {
         var sourceDir = Path.Combine(projectDir, "source");
-        var hasBook = File.Exists(Path.Combine(sourceDir, "book_full.txt")) ||
-                      Directory.Exists(Path.Combine(sourceDir, "book_images"));
+        // Real illustration plates only — book_full.txt alone is a text import (Poe, etc.).
+        var hasIllustrations = ProjectHasBookIllustrations(projectDir);
 
         try
         {
@@ -993,13 +994,8 @@ public sealed class CharacterDesignService
                     rsl.ValueKind == JsonValueKind.String &&
                     rsl.GetString() is { Length: > 0 } s)
                 {
-                    var style = s.Trim();
-                    // If project has a book source but cast_seeds has a photoreal lock, override with picture-book lock
-                    if (hasBook && RegexContains(style, @"\b(photoreal|photo-?real|live[- ]?action)\b"))
-                    {
-                        return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
-                    }
-                    return style;
+                    // Honor cast extract. Never flip photoreal → cartoon because a text file exists.
+                    return s.Trim();
                 }
             }
         }
@@ -1008,12 +1004,32 @@ public sealed class CharacterDesignService
             // ignore
         }
 
-        if (hasBook)
+        if (hasIllustrations)
         {
             return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
         }
 
-        return null;
+        return "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe, period-appropriate when the story implies it. NOT cartoon, NOT illustration, NOT anime, NOT stylized 3D CGI beauty face";
+    }
+
+    /// <summary>True when source/book_images contains real image files.</summary>
+    internal static bool ProjectHasBookIllustrations(string projectDir)
+    {
+        var imgDir = Path.Combine(projectDir, "source", "book_images");
+        if (!Directory.Exists(imgDir)) return false;
+        try
+        {
+            return Directory.EnumerateFiles(imgDir, "*.*", SearchOption.AllDirectories).Any(f =>
+            {
+                var e = Path.GetExtension(f);
+                return e.Equals(".png", StringComparison.OrdinalIgnoreCase)
+                       || e.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+                       || e.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+                       || e.Equals(".webp", StringComparison.OrdinalIgnoreCase)
+                       || e.Equals(".gif", StringComparison.OrdinalIgnoreCase);
+            });
+        }
+        catch { return false; }
     }
 
 
@@ -1033,7 +1049,7 @@ public sealed class CharacterDesignService
             // Explicit live-action / photoreal project wins over picture-book default.
             if (RegexContains(style,
                     @"\b(photoreal|photo-?real|live[- ]?action|cinematic|film photography|" +
-                    @"period drama|gothic drama|naturalistic skin)\b"))
+                    @"period drama|gothic drama|naturalistic skin|continuity portrait)\b"))
                 return false;
             if (RegexContains(style,
                     @"\b(picture[- ]?book|illustration|illustrated|cartoon|painted cartoon|" +
@@ -1041,8 +1057,8 @@ public sealed class CharacterDesignService
                 return true;
         }
 
-        // No project style: book plates, book sources, or animal heroes default to matching illustration medium.
-        return hasBookSource || hasImageHints || isAnimal;
+        // Only real book art forces illustration when style is ambiguous.
+        return hasBookSource;
     }
 
 
@@ -1059,7 +1075,8 @@ public sealed class CharacterDesignService
         string? projectRenderStyleLock = null,
         string? wardrobeLockDescription = null,
         bool hasIdentityRefs = true,
-        bool hasCostumeRef = false)
+        bool hasCostumeRef = false,
+        bool hasBookIllustrations = false)
     {
         var description = !string.IsNullOrWhiteSpace(descriptionOverride)
             ? descriptionOverride!
@@ -1088,7 +1105,8 @@ public sealed class CharacterDesignService
         var isHumanAdult = CharacterVisualTextScrubber.IsHumanAdultCharacter(
             charKey, ageBand, description, visualLock);
 
-        var illustrated = PrefersIllustratedPortraitStyle(projectRenderStyleLock, hasImageHints, isAnimal);
+        var illustrated = PrefersIllustratedPortraitStyle(
+            projectRenderStyleLock, hasImageHints, isAnimal, hasBookSource: hasBookIllustrations);
 
         var speciesClause = "";
         if (ageBand.StartsWith("child", StringComparison.OrdinalIgnoreCase) ||

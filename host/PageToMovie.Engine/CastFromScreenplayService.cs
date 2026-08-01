@@ -717,19 +717,15 @@ public sealed class CastFromScreenplayService
 
         if (parsed.TryGetValue("render_style_lock", out var rsl) && rsl is not null && !string.IsNullOrWhiteSpace(rsl.ToString()))
         {
-            var style = rsl.ToString()!;
-            if (!string.IsNullOrWhiteSpace(bookText) && PhotorealMediumRegex.IsMatch(style))
-            {
-                outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
-            }
-            else
-            {
-                outDoc["render_style_lock"] = style;
-            }
+            // Keep model medium. Do not invert photoreal → cartoon because book text exists.
+            outDoc["render_style_lock"] = rsl.ToString()!.Trim();
         }
         else if (!string.IsNullOrWhiteSpace(bookText))
         {
-            outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
+            // Text without explicit medium: live-action film portraits by default.
+            outDoc["render_style_lock"] =
+                "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe. " +
+                "NOT cartoon, NOT illustration, NOT anime, NOT stylized 3D CGI beauty face";
         }
 
         // Film-level audience/performance conventions inferred from book (not hardcoded gaze recipes)
