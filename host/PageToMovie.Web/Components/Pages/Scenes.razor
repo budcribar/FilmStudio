@@ -11,9 +11,21 @@
 @using PageToMovie.Core.Models
 @using PageToMovie.Web.Services
 
-<PageTitle>Scenes &amp; Clips</PageTitle>
+<PageTitle>Film · Scenes & clips</PageTitle>
 
-<h1>Scenes &amp; Clips</h1>
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">Studio · Step 5 · Film</span>
+    <h1 class="ptm-adapt-title mb-1">Scenes & clips</h1>
+    <p class="ptm-adapt-lede">
+        Generate and stitch clips on your machine where possible. Check Estimate before a full render if you are watching credits.
+    </p>
+    <p class="small text-muted mb-0">
+        <a href="adaptation/shots">← Shot plan</a>
+        · <a href="characters">Cast & voice</a>
+        · <a href="cost">Estimate</a>
+        · <a href="review">Review →</a>
+    </p>
+</div>
 
 @if (_gateChecked && !ActiveProject.CanScenes)
 {
@@ -26,9 +38,6 @@
 }
 else
 {
-
-
-
 
 @* Feature 8: clip finished but not saved to a local media folder *@
 @if (!string.IsNullOrEmpty(MediaFolder.LocalSaveWarning))
