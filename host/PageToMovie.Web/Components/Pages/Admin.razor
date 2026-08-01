@@ -33,7 +33,7 @@
                 <button class="btn btn-sm btn-outline-info" @onclick="ExportLogsAsync" disabled="@(_archiveBusy && _archiveAction == "export_logs")" title="Download zip archive of all server logs, prompts, edit history, and system state">
                     @(_archiveBusy && _archiveAction == "export_logs" ? "Exporting logs…" : "📥 Download Server Logs")
                 </button>
-                <a href="/admin/demos" class="btn btn-sm btn-outline-primary" title="YouTube gallery admin">🎬 Demo gallery</a>
+                <a href="/admin/demos" class="btn btn-sm btn-outline-primary" title="Connect YouTube channel & sync gallery">🎬 YouTube gallery</a>
                 <a href="/admin/models-catalog" class="btn btn-sm btn-outline-primary" title="Manage model catalog entries and enablement toggles">🤖 Models Catalog</a>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync" disabled="@_busy">Refresh</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="LogoutAsync">Log out</button>
