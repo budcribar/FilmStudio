@@ -32,23 +32,6 @@
 }
 else
 {
-<p class="small text-muted mb-3">
-    <a href="adaptation/screenplay">← Screenplay</a>
-    ·
-    <a href="adaptation/shots">Shot plan</a>
-    ·
-    <a href="cost">Estimate</a>
-    @if (ActiveProject.CanScenes)
-    {
-        <text> · </text>
-        <a href="scenes">Film →</a>
-    }
-    else
-    {
-        <span class="text-muted" title="@ActiveProject.ScenesBlockedReason"> · Film</span>
-    }
-</p>
-
 @* Setup actions only when needed — hide once cast exists / book pictures are matched *@
 @if (NeedsCastBuild)
 {

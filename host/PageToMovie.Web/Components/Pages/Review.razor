@@ -33,10 +33,7 @@
 }
 else
 {
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-    <p class="text-muted mb-0">
-        <a href="scenes">← Film</a> · <a href="cost">Estimate</a> · <a href="demo">Demo gallery</a>
-    </p>
+<div class="d-flex align-items-center justify-content-end flex-wrap gap-2 mb-3">
     @if (_scenes.Count > 0)
     {
         var approvedCount = _scenes.Count(s => s.IsApproved);
