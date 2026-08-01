@@ -62,38 +62,27 @@ public sealed class YouTubeChannelGallerySync
 
         try
         {
+            // Successful list (0 or N videos) is authoritative. Exceptions are glitches — do not hide.
             var uploads = await _youTube.ListChannelUploadsAsync(maxVideos, ct).ConfigureAwait(false);
-            if (uploads.Count == 0)
-            {
-                // Prior bug: hide-on-empty wiped the wall. Restore channel-hidden entries.
-                var restored = _demos.RestoreChannelHiddenDemos();
-                lock (_gate)
-                    _lastError = restored > 0
-                        ? $"Channel returned 0 videos; restored {restored} previously hidden demo(s)"
-                        : "Channel returned 0 videos — left gallery unchanged (no wipe)";
-                _log.LogWarning(
-                    "YouTube channel sync returned 0 videos; restored {Restored} channel-hidden demos",
-                    restored);
-                return (0, 0, restored, false);
-            }
-
             var (added, updated, total) = _demos.SyncFromChannelUploads(uploads, createdBy);
-            // Only prune after a non-empty successful list so a bad OAuth session cannot empty the wall.
-            var hidden = _demos.HideDemosNotOnChannel(uploads.Select(u => u.VideoId).ToList());
+            var hidden = _demos.HideDemosNotOnChannel(
+                uploads.Select(u => u.VideoId).ToList(),
+                listIsAuthoritative: true);
             lock (_gate)
             {
                 _lastSuccessUtc = DateTimeOffset.UtcNow;
-                _lastError = null;
+                _lastError = null; // clean list (even 0 videos) is success, not a glitch
             }
             _log.LogInformation(
                 "YouTube channel sync: {Total} videos ({Added} new, {Updated} updated, {Hidden} not on channel)",
-                total, added, updated, hidden);
-            return (added, updated, total, false);
+                uploads.Count, added, updated, hidden);
+            return (added, updated, uploads.Count, false);
         }
         catch (Exception ex)
         {
+            // Glitch / API error: leave gallery as-is (do not hide, do not assume channel is empty).
             lock (_gate) _lastError = ex.Message;
-            _log.LogWarning(ex, "YouTube channel gallery sync failed");
+            _log.LogWarning(ex, "YouTube channel gallery sync failed — gallery unchanged");
             if (force) throw;
             return (0, 0, 0, false);
         }

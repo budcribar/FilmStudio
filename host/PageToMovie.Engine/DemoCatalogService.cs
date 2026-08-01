@@ -824,18 +824,25 @@ public sealed class DemoCatalogService
         return restored;
     }
 
-    public int HideDemosNotOnChannel(IReadOnlyCollection<string> channelYoutubeIds)
+    /// <param name="listIsAuthoritative">
+    /// True only when YouTube returned a successful list (including empty). False on glitch/error —
+    /// never hide in that case. A successful empty list means the channel has no videos; hide all
+    /// gallery rows that pointed at channel ids no longer present.
+    /// </param>
+    public int HideDemosNotOnChannel(
+        IReadOnlyCollection<string> channelYoutubeIds,
+        bool listIsAuthoritative = true)
     {
+        if (!listIsAuthoritative)
+        {
+            _log.LogWarning("Skip hide-not-on-channel: channel list was not authoritative (glitch/error)");
+            return 0;
+        }
+
         var set = new HashSet<string>(
             (channelYoutubeIds ?? Array.Empty<string>()).Where(s => !string.IsNullOrWhiteSpace(s)),
             StringComparer.OrdinalIgnoreCase);
-        // Empty set usually means list failed, wrong account, or private-title skip — never wipe the gallery.
-        if (set.Count == 0)
-        {
-            _log.LogWarning(
-                "Skip hide-not-on-channel: channel returned 0 video ids (would remove entire gallery)");
-            return 0;
-        }
+        // set.Count == 0 is valid: last video deleted from channel → hide remaining gallery rows.
         var hidden = 0;
         lock (_lock)
         {
