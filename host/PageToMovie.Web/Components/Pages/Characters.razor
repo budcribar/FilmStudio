@@ -311,16 +311,24 @@ else
                             else if (_mode == Mode.Compare && _allCandidates.Count > 0)
                             {
                                 <div class="char-pick">
-                                    <div class="small fw-semibold mb-2">Pick the best look — it becomes the saved preferred picture</div>
-                                    <div class="char-pick__grid">
+                                    <div class="small fw-semibold mb-1">Pick the best look</div>
+                                    <p class="small text-muted mb-3 mb-md-2">
+                                        Large previews so you can compare detail. Click a look to save it as the preferred picture for film.
+                                    </p>
+                                    <div class="char-pick__grid" data-testid="char-pick-grid">
                                         @foreach (var c in _allCandidates)
                                         {
                                             <button type="button"
                                                     class="char-pick__card"
                                                     disabled="@(_busy || JobRunning)"
+                                                    title="Use this look"
+                                                    data-testid="char-pick-card"
                                                     @onclick="@(() => LockCandidateAsync(c))">
-                                                <img src="@c.Url" alt="@c.Label" />
-                                                <span>@c.Label</span>
+                                                <div class="char-pick__frame">
+                                                    <img src="@c.Url" alt="@c.Label" loading="lazy" />
+                                                </div>
+                                                <span class="char-pick__label">@c.Label</span>
+                                                <span class="char-pick__cta">Use this look</span>
                                             </button>
                                         }
                                     </div>
@@ -339,8 +347,7 @@ else
                                     <div class="d-flex flex-wrap align-items-start gap-3 mb-2">
                                         @if (PreferredImageUrl is { Length: > 0 } pu)
                                         {
-                                            <img src="@pu" alt="Preferred" class="rounded border"
-                                                 style="width: 120px; height: 120px; object-fit: cover;" />
+                                            <img src="@pu" alt="Preferred" class="rounded border char-preferred-preview" />
                                         }
                                         <div class="flex-grow-1">
                                             <div class="small fw-semibold mb-1">Preferred look saved</div>
