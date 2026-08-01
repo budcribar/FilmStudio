@@ -2375,7 +2375,7 @@ else
     }
 
     /// <summary>
-    /// Build cut + submit to /api/demos as pending (admin must approve for public /demo).
+    /// Build cut + publish to /api/demos → YouTube upload. Gallery lists the film once YouTube id is set.
     /// </summary>
     private async Task PublishDemoAsync()
     {
@@ -2444,7 +2444,7 @@ else
                     if (pub?.Ok == true)
                     {
                         _activeTab = "review";
-                        _message = (pub.Message ?? $"“{pub.Demo?.Title ?? title}” published to gallery.") +
+                        _message = (pub.Message ?? $"“{pub.Demo?.Title ?? title}” sent to YouTube — it appears in the gallery when the upload finishes.") +
                             (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
                         return;
                     }
@@ -2466,7 +2466,7 @@ else
 
             var msg = res.TryGetProperty("message", out var mEl) ? mEl.GetString() : null;
             _activeTab = "review";
-            _message = (msg ?? $"“{publishedTitle}” published to gallery.") +
+            _message = (msg ?? $"“{publishedTitle}” sent to YouTube — it appears in the gallery when the upload finishes.") +
                 (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
         }
         catch (Exception ex)

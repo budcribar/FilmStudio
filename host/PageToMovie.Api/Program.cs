@@ -5424,9 +5424,15 @@ static object DemoPublicDto(
     upvotedByMe,
     // True when this public film's studio project still exists (gallery Fork button).
     canFork,
-    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
+    // YouTube is gallery playback SoT. Local videoPath only for staging (owner) before upload finishes.
+    videoPath = string.IsNullOrWhiteSpace(d.YoutubeId)
+        ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video"
+        : null,
     d.YoutubeId,
     d.YoutubeUrl,
+    youtubeWatchUrl = string.IsNullOrWhiteSpace(d.YoutubeId)
+        ? null
+        : (string.IsNullOrWhiteSpace(d.YoutubeUrl) ? $"https://www.youtube.com/watch?v={d.YoutubeId}" : d.YoutubeUrl),
     d.YoutubeLikeCount,
     d.YoutubeViewCount,
     visibilityMode,
@@ -5514,7 +5520,7 @@ app.MapGet("/api/demos", async (
     });
 });
 
-/// <summary>Admin moderation list (pending / all statuses).</summary>
+/// <summary>Admin list of demos (reports/removed). Content approval queue is retired — YouTube is the gate.</summary>
 app.MapGet("/api/admin/demos", (
     DemoCatalogService demos,
     IUserContext user,
@@ -5740,7 +5746,10 @@ app.MapPost("/api/projects/{id}/review/movie", async (
     }
 });
 
-/// <summary>Stream demo video if public, or owner/admin for pending.</summary>
+/// <summary>
+/// Demo playback: redirect to YouTube when published there (source of truth).
+/// Local MP4 only while staging (owner/admin) before upload completes.
+/// </summary>
 app.MapGet("/api/demos/{demoId}/video", (
     string demoId,
     DemoCatalogService demos,
@@ -5751,16 +5760,28 @@ app.MapGet("/api/demos/{demoId}/video", (
         return Results.NotFound(new { ok = false, error = "Demo video not found" });
     if (!demos.CanUserViewVideo(d, user.UserId, user.IsAdmin))
         return Results.NotFound(new { ok = false, error = "Demo video not found" });
+
+    // YouTube is the public source of truth — never stream server MP4 once YT id exists.
+    if (!string.IsNullOrWhiteSpace(d.YoutubeId))
+    {
+        var url = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+            ? d.YoutubeUrl!
+            : $"https://www.youtube.com/watch?v={d.YoutubeId.Trim()}";
+        return Results.Redirect(url);
+    }
+
     var path = demos.ResolveMoviePath(demoId);
     if (path is null)
-        return Results.NotFound(new { ok = false, error = "Demo video not found" });
+        return Results.NotFound(new
+        {
+            ok = false,
+            error = "Film is uploading to YouTube — try the gallery again in a moment.",
+            code = "awaiting_youtube",
+        });
     return Results.File(path, "video/mp4", enableRangeProcessing: true);
 });
 
-/// <summary>
-/// Submit a demo for human review (always starts as pending — never auto-public).
-/// Login + project ownership + guidelines acceptance + rate limits.
-/// </summary>
+/// <summary>Register client-side media hash (clips/exports) so the server need not store MP4s.</summary>
 app.MapPost("/api/projects/{id}/media/register", async (
     string id,
     MediaRegisterRequest body,

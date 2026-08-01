@@ -79,21 +79,23 @@
                             var ytWatchUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
                                 ? d.YoutubeUrl
                                 : $"https://www.youtube.com/watch?v={d.YoutubeId}";
-                            var thumbUrl = $"https://img.youtube.com/vi/{d.YoutubeId}/hqdefault.jpg";
-
-                            <a href="@ytWatchUrl" target="_blank" rel="noopener" class="d-block position-relative text-decoration-none overflow-hidden" style="border-radius:0.35rem 0.35rem 0 0;" title="Watch '@d.Title' on YouTube">
-                                <img src="@thumbUrl" alt="@d.Title" style="width:100%; aspect-ratio:16/9; object-fit:cover; display:block;" />
-                                <div class="position-absolute top-50 start-50 translate-middle text-center">
-                                    <div class="btn btn-danger btn-lg rounded-circle shadow px-3 py-2" style="background:#ff0000; border:none; box-shadow:0 4px 15px rgba(255,0,0,0.5);">
-                                        <span class="fs-4">▶</span>
-                                    </div>
-                                </div>
-                            </a>
+                            var embedUrl = $"https://www.youtube.com/embed/{d.YoutubeId}?rel=0";
+                            <div class="demo-yt-frame">
+                                <iframe src="@embedUrl"
+                                        title="@d.Title"
+                                        loading="lazy"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowfullscreen
+                                        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                            </div>
+                            <div class="demo-yt-open">
+                                <a href="@ytWatchUrl" target="_blank" rel="noopener" class="small">Open on YouTube ↗</a>
+                            </div>
                         }
                         else
                         {
                             <div class="bg-dark text-secondary d-flex align-items-center justify-content-center" style="width:100%; aspect-ratio:16/9; border-radius:0.35rem 0.35rem 0 0;">
-                                <span class="small">🎬 Video processing on YouTube…</span>
+                                <span class="small">Uploading to YouTube…</span>
                             </div>
                         }
                     </div>

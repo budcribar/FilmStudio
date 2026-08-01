@@ -663,7 +663,7 @@ public sealed class EngineApiClient
         return await res.Content.ReadAsByteArrayAsync(ct);
     }
 
-    /// <summary>Public demo gallery (approved only; no auth required). sort=top|new.</summary>
+    /// <summary>Public demo gallery — films on YouTube only (no auth). sort=top|new.</summary>
     public async Task<List<DemoListItem>> ListDemosAsync(
         int take = 50,
         string sort = "top",
@@ -794,7 +794,7 @@ public sealed class EngineApiClient
         }
     }
 
-    /// <summary>Submit demo for human review (always pending until admin approves).</summary>
+    /// <summary>Publish demo → YouTube upload; gallery lists once YoutubeId is set.</summary>
     public async Task<DemoPublishResult?> PublishDemoFromWipAsync(
         string projectId,
         string title,
@@ -3635,7 +3635,10 @@ public sealed class DemoPublishResult
 {
     public bool Ok { get; set; }
     public string? Error { get; set; }
+    /// <summary>Legacy; always false — admin content queue is retired.</summary>
     public bool PendingReview { get; set; }
+    /// <summary>True until YouTube id is set; gallery lists only after upload finishes.</summary>
+    public bool AwaitingYouTube { get; set; }
     /// <summary>True when an existing public demo for the project was updated (YouTube V2 replace).</summary>
     public bool ReplacedExisting { get; set; }
     public string? Message { get; set; }

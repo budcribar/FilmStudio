@@ -94,8 +94,8 @@ public sealed class DemoCatalogService
         public DateTimeOffset CreatedAt { get; set; }
         public long SizeBytes { get; set; }
         public string? ContentType { get; set; }
-        /// <summary>pending | public | rejected | removed</summary>
-        public string Status { get; set; } = DemoStatuses.Pending;
+        /// <summary>public | rejected | removed (pending legacy only)</summary>
+        public string Status { get; set; } = DemoStatuses.Public;
         public bool AcceptedGuidelines { get; set; }
         public int ReportCount { get; set; }
         public List<string> ReportNotes { get; set; } = new();
