@@ -29,12 +29,13 @@
             </NavLink>
         </div>
 
-        @if (Session.IsLoggedIn)
+        @* Settings only while keys are missing — long-term BYOK is rare once set. *@
+        @if (Session.IsLoggedIn && NeedsApiSetup)
         {
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/configuration" title="Settings — API keys, models, media folder" data-testid="nav-configuration">
+                <NavLink class="nav-link" href="/configuration" title="Connect API keys (required once)" data-testid="nav-configuration">
                     <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Settings</span> }
+                    @if (!Collapsed) { <span class="nav-label">Setup</span> }
                 </NavLink>
             </div>
         }
@@ -154,10 +155,13 @@
                                     <div class="nav-user-role">@(Session.IsAdmin ? "Administrator" : "Signed in")</div>
                                 </div>
                             </div>
-                            <a class="nav-user-item" role="menuitem" href="/configuration"
-                               @onclick="CloseUserMenu">
-                                Configuration
-                            </a>
+                            @if (NeedsApiSetup)
+                            {
+                                <a class="nav-user-item" role="menuitem" href="/configuration"
+                                   data-testid="nav-user-configuration">
+                                    Setup keys
+                                </a>
+                            }
                             @if (Session.IsAdmin)
                             {
                                 <a class="nav-user-item" role="menuitem" href="/admin"
@@ -206,6 +210,11 @@
 
 @code {
     [Parameter] public bool Collapsed { get; set; }
+
+    /// <summary>Hide Setup once personal studio keys exist.</summary>
+    private bool NeedsApiSetup =>
+        Session.IsLoggedIn
+        && (ActiveProject.Status is null || ActiveProject.Status.XaiConfigured == false);
 
     private bool _started;
     private bool _userMenuOpen;

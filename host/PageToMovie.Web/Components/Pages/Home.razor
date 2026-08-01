@@ -56,23 +56,16 @@ else
         <div class="card-body py-3">
             @if (hasActive)
             {
-                @* One control row + process strip — project name only once (in the dropdown). *@
+                @* Single studio bar: Project · name · visibility · New · Manage · [Setup if keys missing] *@
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2 home-active-toolbar">
-                    <button type="button"
-                            class="btn btn-outline-primary btn-sm flex-shrink-0"
-                            data-testid="home-new-project"
-                            disabled="@_busy"
-                            @onclick="OpenNewProjectAsync"
-                            title="New project">
-                        + New
-                    </button>
+                    <span class="home-project-label text-muted small text-uppercase flex-shrink-0">Project</span>
                     <select class="form-select form-select-sm home-project-select flex-grow-1"
                             style="min-width: 10rem; max-width: 22rem;"
                             data-testid="home-project-picker"
                             value="@(_projects.Active?.Id ?? ActiveProject.ProjectId)"
                             disabled="@_busy"
-                            title="Active project"
-                            aria-label="Active project"
+                            title="Project"
+                            aria-label="Project"
                             @onchange="OnPickerChangedAsync">
                         @foreach (var p in _projects.Projects)
                         {
@@ -87,12 +80,29 @@ else
                         </span>
                     }
                     <button type="button"
+                            class="btn btn-outline-primary btn-sm flex-shrink-0"
+                            data-testid="home-new-project"
+                            disabled="@_busy"
+                            @onclick="OpenNewProjectAsync"
+                            title="New project">
+                        + New
+                    </button>
+                    <button type="button"
                             class="btn btn-outline-secondary btn-sm flex-shrink-0"
                             data-testid="home-manage-projects"
                             aria-expanded="@(_manageExpanded ? "true" : "false")"
                             @onclick="() => _manageExpanded = !_manageExpanded">
                         Manage @(_manageExpanded ? "▴" : "▾")
                     </button>
+                    @if (NeedsApiSetup)
+                    {
+                        <a href="configuration"
+                           class="btn btn-warning btn-sm flex-shrink-0"
+                           data-testid="home-setup-config"
+                           title="Connect your AI API keys">
+                            Setup keys
+                        </a>
+                    }
                 </div>
 
             @if (_manageExpanded && hasActive)
@@ -350,6 +360,10 @@ else
 <ProjectCollaboratorsModal IsOpen="_showCollaboratorsModal" ProjectId="_collaboratorsProjectId" OnClose="CloseCollaboratorsModal" />
 
 @code {
+    /// <summary>Show Setup keys only while personal BYOK studio keys are missing.</summary>
+    private bool NeedsApiSetup =>
+        ActiveProject.Status is null || ActiveProject.Status.XaiConfigured == false;
+
     /// <summary>Only the real current step is highlighted. Setup (0) until keys exist, then pipeline.</summary>
     private string HomeActiveStep
     {

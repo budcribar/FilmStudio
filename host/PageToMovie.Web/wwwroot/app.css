@@ -1656,6 +1656,13 @@ h1:focus {
 .home-project-select {
     font-weight: 600;
 }
+.home-project-label {
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    font-size: 0.7rem !important;
+    line-height: 1;
+    padding-right: 0.15rem;
+}
 .home-manage-panel {
     background: rgba(15, 20, 25, 0.55);
 }
