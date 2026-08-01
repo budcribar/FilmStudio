@@ -262,6 +262,61 @@ public static class SupportedModelCatalog
         ["video_review"] = new() { "gemini-2.5-flash", "grok-4.5" },
     };
 
+    /// <summary>
+    /// Map a Settings "Studio coverage" stage id to a <c>task_rankings</c> key in models_catalog.json.
+    /// Null when that stage has no curated ranking yet.
+    /// </summary>
+    public static string? TaskRankingKeyForCoverage(string? coverageId) =>
+        (coverageId ?? "").Trim().ToLowerInvariant() switch
+        {
+            "planning" => "script_import",
+            "review" => "video_review",
+            "music" => "sound_design",
+            // Additional stages can get rankings as evals land.
+            _ => null,
+        };
+
+    /// <summary>
+    /// Provider podium for a task ranking: place 1 = first unique provider in the model list,
+    /// then 2, 3, … Only the first model for each provider counts.
+    /// </summary>
+    public static IReadOnlyList<ProviderTaskPlace> ProviderPlacesForTask(string? taskKey)
+    {
+        if (string.IsNullOrWhiteSpace(taskKey))
+            return Array.Empty<ProviderTaskPlace>();
+
+        if (!TaskRankings.TryGetValue(taskKey, out var models) || models is null || models.Count == 0)
+            return Array.Empty<ProviderTaskPlace>();
+
+        EnsureLoaded();
+        var places = new List<ProviderTaskPlace>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var modelId in models)
+        {
+            if (string.IsNullOrWhiteSpace(modelId)) continue;
+            var entry = Find(modelId, null) ?? Find(modelId, ModelCapability.Chat);
+            var providerId = entry is not null
+                ? NormalizeProviderId(string.IsNullOrWhiteSpace(entry.ProviderId) ? entry.Provider.ToString() : entry.ProviderId)
+                : GuessProviderFromModelId(modelId);
+            if (string.IsNullOrWhiteSpace(providerId) || !seen.Add(providerId))
+                continue;
+            places.Add(new ProviderTaskPlace(providerId, places.Count + 1, modelId));
+        }
+        return places;
+    }
+
+    private static string GuessProviderFromModelId(string modelId)
+    {
+        var id = modelId.Trim().ToLowerInvariant();
+        if (id.StartsWith("claude") || id.Contains("anthropic")) return "anthropic";
+        if (id.StartsWith("grok") || id.StartsWith("xai")) return "grok";
+        if (id.StartsWith("gemini") || id.StartsWith("google")) return "gemini";
+        if (id.StartsWith("gpt") || id.StartsWith("o1") || id.StartsWith("o3") || id.StartsWith("openai")) return "openai";
+        if (id.StartsWith("fal")) return "fal";
+        if (id.Contains("eleven")) return "elevenlabs";
+        return NormalizeProviderId(id);
+    }
+
     /// <summary>All catalog rows, loaded from models_catalog.json (shipped copy or /data override —
     /// see GetCandidateCatalogPaths). Throws via EnsureLoaded if no usable catalog file exists.</summary>
     public static IReadOnlyList<SupportedModelEntry> Entries
@@ -790,3 +845,6 @@ public sealed class ModelCatalogContainerDto
     public Dictionary<string, List<string>>? TaskRankings { get; set; }
     public List<SupportedModelDto>? Models { get; set; }
 }
+
+/// <summary>One podium slot: which provider and which top model earned that place for a task ranking.</summary>
+public readonly record struct ProviderTaskPlace(string ProviderId, int Place, string TopModelId);

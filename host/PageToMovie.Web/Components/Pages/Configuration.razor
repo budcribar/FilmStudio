@@ -189,12 +189,20 @@
             {
                 var capLabel = CoverageLabel(_keyPickerCapability);
                 var candidates = ProvidersForCapability(_keyPickerCapability).ToList();
+                var rankTask = SupportedModelCatalog.TaskRankingKeyForCoverage(_keyPickerCapability);
+                var places = SupportedModelCatalog.ProviderPlacesForTask(rankTask);
+                var placeByProvider = places.ToDictionary(x => x.ProviderId, x => x, StringComparer.OrdinalIgnoreCase);
                 <div class="mt-4 pt-3 border-top" data-testid="key-picker" id="key-picker">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                         <div>
                             <div class="fw-semibold">Add a key for @capLabel</div>
                             <div class="small text-muted">
-                                Only providers that can do this are shown. Pick one, paste the key, save — then this panel closes.
+                                Only providers that can do this are shown
+                                @if (places.Count > 0)
+                                {
+                                    <span> — ranked for this job (1st / 2nd / 3rd from the models catalog)</span>
+                                }
+                                . Pick one, paste the key, save — then this panel closes.
                             </div>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-secondary"
@@ -216,12 +224,25 @@
                             @foreach (var p in candidates)
                             {
                                 var selected = string.Equals(_keyPickerProviderId, p.ProviderId, StringComparison.OrdinalIgnoreCase);
-                                <div class="col-md-6 col-xl-4" data-testid="provider-key-@p.ProviderId">
-                                    <div class="border rounded p-3 h-100 @(selected ? "border-primary shadow-sm" : "")">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                var hasPlace = placeByProvider.TryGetValue(p.ProviderId, out var placeInfo);
+                                var place = hasPlace ? placeInfo.Place : 0;
+                                var topModel = hasPlace ? placeInfo.TopModelId : null;
+                                <div class="col-md-6 col-xl-4" data-testid="@($"provider-key-{p.ProviderId}")">
+                                    <div class="border rounded p-3 h-100 @(selected ? "border-primary shadow-sm" : "") @(place == 1 ? "border-warning" : "")">
+                                        <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
                                             <div>
-                                                <div class="fw-semibold">@p.DisplayName</div>
-                                                @if (!string.IsNullOrWhiteSpace(p.CapabilitiesSummary))
+                                                <div class="fw-semibold d-flex flex-wrap align-items-center gap-1">
+                                                    <span>@p.DisplayName</span>
+                                                    @if (place >= 1 && place <= 3)
+                                                    {
+                                                        <span class="@PlaceBadgeClass(place)" data-testid="@($"rank-{place}")">@PlaceLabel(place)</span>
+                                                    }
+                                                </div>
+                                                @if (place >= 1 && !string.IsNullOrWhiteSpace(topModel))
+                                                {
+                                                    <div class="small text-muted">Top pick: <code>@topModel</code></div>
+                                                }
+                                                else if (!string.IsNullOrWhiteSpace(p.CapabilitiesSummary))
                                                 {
                                                     <div class="small text-muted">@p.CapabilitiesSummary</div>
                                                 }
@@ -1185,6 +1206,7 @@
     private IEnumerable<ProviderKeyStatusDto> ProvidersForCapability(string? coverageId)
     {
         var id = (coverageId ?? "").ToLowerInvariant();
+        var matched = new List<ProviderKeyStatusDto>();
         foreach (var p in ProviderRows)
         {
             var match = id switch
@@ -1202,9 +1224,34 @@
                 _ => false,
             };
             if (match)
-                yield return p;
+                matched.Add(p);
         }
+
+        // Prefer providers that place on the task_rankings podium for this stage.
+        var taskKey = SupportedModelCatalog.TaskRankingKeyForCoverage(id);
+        var places = SupportedModelCatalog.ProviderPlacesForTask(taskKey)
+            .ToDictionary(x => x.ProviderId, x => x.Place, StringComparer.OrdinalIgnoreCase);
+
+        return matched
+            .OrderBy(p => places.TryGetValue(p.ProviderId, out var place) ? place : 100)
+            .ThenBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase);
     }
+
+    private static string PlaceLabel(int place) => place switch
+    {
+        1 => "1st",
+        2 => "2nd",
+        3 => "3rd",
+        _ => $"#{place}",
+    };
+
+    private static string PlaceBadgeClass(int place) => place switch
+    {
+        1 => "badge text-bg-warning text-dark",
+        2 => "badge text-bg-secondary",
+        3 => "badge text-bg-dark border border-secondary",
+        _ => "badge text-bg-light text-dark",
+    };
 
     private IReadOnlyList<ProviderKeyStatusDto> ProviderRows
     {
