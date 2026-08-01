@@ -122,22 +122,22 @@ else
         {
             <p class="small text-muted mb-2" data-testid="cost-estimate-basis">@_report.Notes</p>
         }
-        @if (_report.Refinement is { UsedHistory: true } r)
+        @if (_report.Refinement is { UsedHistory: true } hist)
         {
             <p class="small mb-3" data-testid="cost-estimate-history">
                 <span class="badge text-bg-success fw-normal me-1">Using history</span>
-                @if (r.AppliedVideoMultiplier > 1.001)
+                @if (hist.AppliedVideoMultiplier > 1.001)
                 {
-                    <span class="text-muted">Video ×@r.AppliedVideoMultiplier.ToString("0.##")</span>
+                    <span class="text-muted">Video ×@hist.AppliedVideoMultiplier.ToString("0.##")</span>
                 }
-                @if (r.LearnedFailRate is double fr)
+                @if (hist.LearnedFailRate is double failRate)
                 {
-                    <span class="text-muted ms-1">· observed fail ~@fr.ToString("P0")</span>
+                    <span class="text-muted ms-1">· observed fail ~@failRate.ToString("P0")</span>
                 }
-                @if (r.VideoApiSamples + r.ReviewApiSamples + r.TimingSamples > 0)
+                @if (hist.VideoApiSamples + hist.ReviewApiSamples + hist.TimingSamples > 0)
                 {
                     <span class="text-muted ms-1">
-                        · samples video @r.VideoApiSamples / review @r.ReviewApiSamples / timing @r.TimingSamples
+                        · samples video @hist.VideoApiSamples / review @hist.ReviewApiSamples / timing @hist.TimingSamples
                     </span>
                 }
             </p>
