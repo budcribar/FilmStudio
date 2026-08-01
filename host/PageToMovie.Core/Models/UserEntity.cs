@@ -81,6 +81,9 @@ public sealed class ProviderKeyStatusDto
 
     /// <summary>Limitations users need before picking this provider (video continue, OCR, etc.).</summary>
     public string? Notes { get; set; }
+
+    /// <summary>Env key names from models_catalog.json <c>requiredEnvKeys</c> (e.g. XAI_API_KEY).</summary>
+    public List<string> RequiredEnvKeys { get; set; } = new();
 }
 
 /// <summary>

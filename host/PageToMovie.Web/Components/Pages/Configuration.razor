@@ -70,15 +70,21 @@
         </div>
         <div class="card-body">
             <p class="small text-muted mb-3">
-                Personal keys are encrypted at rest (AES-256) and used only for your account.
-                Server keys (env vars) apply when you have not attached a personal key for that provider.
-                <strong>Claude does not generate video or images</strong> — use Grok or Gemini for those.
+                Providers and key names come from <code>models_catalog.json</code> (enabled models).
+                Personal keys are encrypted at rest and used for your account; server env keys are the fallback.
             </p>
 
-            <div class="row g-3">
+            @if (ProviderRows.Count == 0)
+            {
+                <div class="alert alert-warning py-2">
+                    No providers listed from the models catalog. Check that <code>models_catalog.json</code> loads, then reload this page.
+                </div>
+            }
+
+            <div class="row g-3" id="api-keys">
                 @foreach (var p in ProviderRows)
                 {
-                    <div class="col-lg-4">
+                    <div class="col-lg-4" data-testid="provider-key-@p.ProviderId">
                         <div class="border rounded p-3 h-100">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
@@ -123,6 +129,17 @@
                                 <p class="small text-muted mb-2">@p.Notes</p>
                             }
 
+                            @if (p.RequiredEnvKeys is { Count: > 0 })
+                            {
+                                <div class="small mb-2">
+                                    <span class="text-muted">Catalog env key:</span>
+                                    @foreach (var ek in p.RequiredEnvKeys)
+                                    {
+                                        <code class="me-1">@ek</code>
+                                    }
+                                </div>
+                            }
+
                             <div class="small mb-2">
                                 @if (p.HasPersonalKey)
                                 {
@@ -139,7 +156,7 @@
                             </div>
 
                             <label class="form-label small mb-1">
-                                @(p.HasPersonalKey ? "Replace personal key" : "Add personal key")
+                                @(p.HasPersonalKey ? "Replace personal key" : "Paste API key")
                             </label>
                             <div class="input-group input-group-sm mb-2">
                                 <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
@@ -766,57 +783,29 @@
     private string? _savingProviderId;
     private string? _apiKeyFeedback;
 
-    private IReadOnlyList<ProviderKeyStatusDto> ProviderRows =>
-        _userSettings?.Providers is { Count: > 0 } list
-            ? list
-            : DefaultProviderRows;
-
-    private static readonly IReadOnlyList<ProviderKeyStatusDto> DefaultProviderRows =
-    [
-        new()
+    private IReadOnlyList<ProviderKeyStatusDto> ProviderRows
+    {
+        get
         {
-            ProviderId = "grok", DisplayName = "xAI / Grok", Family = "Xai",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = true, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Video Gen, Image Gen, Script & Planning, Image Vision / OCR",
-            Notes = "Full generation & planning pipeline (Video Gen, Image Gen, Script Planning, Image Vision / OCR).",
-            ActiveSource = "none",
-        },
-        new()
-        {
-            ProviderId = "gemini", DisplayName = "Google Gemini", Family = "Google",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = true, SupportsVideoReview = true, SupportsImageGen = true, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Video Review (Multimodal MP4 Input), Video Gen (Veo), Image Gen, Script & Planning, Image Vision / OCR",
-            Notes = "Supports native Multimodal Video Review (inputs MP4 files directly for automated clip quality scoring) and Video Gen via Veo.",
-            ActiveSource = "none",
-        },
-        new()
-        {
-            ProviderId = "fal", DisplayName = "Fal.ai", Family = "Fal",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = false, SupportsVision = false,
-            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = true, SupportsScriptPlanning = false, SupportsImageVision = false,
-            CapabilitiesSummary = "Video Gen (HunyuanVideo), Image Gen (Flux.1)",
-            Notes = "Serverless open-source video (HunyuanVideo ~$0.025/clip) and image (Flux.1 Dev / Schnell ~$0.003/img) generation.",
-            ActiveSource = "none",
-        },
-        new()
-        {
-            ProviderId = "anthropic", DisplayName = "Anthropic Claude", Family = "Anthropic",
-            SupportsVideo = false, SupportsImage = false, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = false, SupportsVideoReview = false, SupportsImageGen = false, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Script & Planning, Image Vision / OCR",
-            Notes = "Script & Shot Planning + Image Vision / OCR frame review.",
-            ActiveSource = "none",
-        },
-    ];
+            // Prefer server DTO (includes personal/server key status). Fall back to catalog so
+            // Settings always shows key slots even if the settings API fails or is offline.
+            if (_userSettings?.Providers is { Count: > 0 } list)
+                return list;
+            try { return SupportedModelCatalog.BuildProviderKeyRows(); }
+            catch { return Array.Empty<ProviderKeyStatusDto>(); }
+        }
+    }
 
     private static string ProviderPlaceholder(string providerId) => providerId.ToLowerInvariant() switch
     {
-        "grok" => "xai-...",
-        "gemini" => "AIza...",
-        "fal" => "fal-...",
-        "anthropic" => "sk-ant-...",
+        "grok" => "xai-... (XAI_API_KEY)",
+        "gemini" => "AIza... (GEMINI_API_KEY)",
+        "fal" => "key... (FAL_KEY)",
+        "anthropic" => "sk-ant-... (ANTHROPIC_API_KEY)",
+        "openai" => "sk-... (OPENAI_API_KEY)",
+        "suno" => "SUNO_API_KEY",
+        "aimusicapi" => "AIMUSICAPI_API_KEY",
+        "elevenlabs" => "xi-... (ELEVENLABS_API_KEY)",
         _ => "api key",
     };
 

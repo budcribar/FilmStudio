@@ -553,49 +553,19 @@ public class UserDatabaseService
         if (!personalKeys.ContainsKey("anthropic") && DecryptOptional(user?.EncryptedAnthropicApiKey) is { } a) personalKeys["anthropic"] = a;
         if (!personalKeys.ContainsKey("fal") && DecryptOptional(user?.EncryptedFalApiKey) is { } f) personalKeys["fal"] = f;
 
-        // Dynamically discover all unique providers defined in SupportedModelCatalog (driven by models_catalog.json!)
-        var catalogEntries = SupportedModelCatalog.Entries;
-        var providerGroups = catalogEntries.GroupBy(e => NormalizeProvider(e.ProviderId));
-
-        var providers = new List<ProviderKeyStatusDto>();
-        foreach (var group in providerGroups)
+        // Dynamically discover providers from models_catalog.json (enabled models + requiredEnvKeys).
+        var providers = SupportedModelCatalog.BuildProviderKeyRows();
+        foreach (var row in providers)
         {
-            var pId = group.Key;
-            var sample = group.First();
-            var familyName = sample.Provider.ToString();
-            var displayName = sample.Provider switch
-            {
-                ModelProviderFamily.Xai => "xAI / Grok",
-                ModelProviderFamily.Google => "Google Gemini",
-                ModelProviderFamily.Anthropic => "Anthropic Claude",
-                ModelProviderFamily.Fal => "Fal.ai",
-                _ => char.ToUpperInvariant(pId[0]) + pId[1..],
-            };
-
-            var requiredKeys = group.SelectMany(m => m.RequiredEnvKeys).Distinct().ToList();
-            var hasServer = requiredKeys.Any(EnvPresent);
+            var pId = NormalizeProvider(row.ProviderId);
+            row.ProviderId = pId;
             personalKeys.TryGetValue(pId, out var personal);
-
-            var supportsVideoGen = group.Any(m => m.Capability == ModelCapability.Video && m.SupportsVideoContinue);
-            var supportsVideoReview = group.Any(m => m.SupportsVideoReview);
-            var supportsImageGen = group.Any(m => m.Capability == ModelCapability.Image);
-            var supportsScriptPlanning = group.Any(m => m.Capability == ModelCapability.Chat);
-            var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
-
-            var notes = string.Join("; ", group.Select(m => m.Notes).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Take(2));
-
-            providers.Add(BuildProviderStatus(
-                providerId: pId,
-                displayName: displayName,
-                family: familyName,
-                personal: personal,
-                hasServer: hasServer,
-                supportsVideoGen: supportsVideoGen,
-                supportsVideoReview: supportsVideoReview,
-                supportsImageGen: supportsImageGen,
-                supportsScriptPlanning: supportsScriptPlanning,
-                supportsImageVision: supportsImageVision,
-                notes: notes));
+            var hasPersonal = !string.IsNullOrWhiteSpace(personal);
+            var hasServer = row.RequiredEnvKeys.Any(EnvPresent);
+            row.HasPersonalKey = hasPersonal;
+            row.MaskedPersonalKey = MaskKey(personal);
+            row.HasServerKey = hasServer;
+            row.ActiveSource = hasPersonal ? "personal" : hasServer ? "server" : "none";
         }
 
         return new UserSettingsDto
@@ -1135,7 +1105,11 @@ public class UserDatabaseService
             "xai" or "grok" => "grok",
             "google" or "gemini" => "gemini",
             "claude" or "anthropic" => "anthropic",
-            "fal" => "fal",
+            "fal" or "fal.ai" => "fal",
+            "openai" or "oai" => "openai",
+            "suno" => "suno",
+            "aimusicapi" or "ai-music-api" => "aimusicapi",
+            "elevenlabs" or "eleven" => "elevenlabs",
             _ => p,
         };
     }

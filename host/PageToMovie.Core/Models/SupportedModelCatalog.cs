@@ -534,6 +534,109 @@ public static class SupportedModelCatalog
         Notes = "Not in master catalog — add to models_catalog.json or track as feature request.",
     };
 
+    /// <summary>
+    /// Build Configuration "API keys" rows from the catalog (enabled models only).
+    /// Personal/server key flags are left false — server fills those from SQLite/env.
+    /// </summary>
+    public static List<ProviderKeyStatusDto> BuildProviderKeyRows()
+    {
+        var groups = Entries
+            .Where(e => e.Enabled && e.RequiredEnvKeys is { Count: > 0 })
+            .GroupBy(e => NormalizeProviderId(e.ProviderId), StringComparer.OrdinalIgnoreCase);
+
+        var rows = new List<ProviderKeyStatusDto>();
+        foreach (var group in groups.OrderBy(g => DisplayOrder(g.Key)))
+        {
+            var pId = group.Key;
+            if (string.IsNullOrWhiteSpace(pId) || pId is "none") continue;
+            var sample = group.First();
+            var required = group.SelectMany(m => m.RequiredEnvKeys).Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (required.Count == 0) continue;
+
+            var supportsVideoGen = group.Any(m => m.Capability == ModelCapability.Video);
+            var supportsVideoReview = group.Any(m => m.SupportsVideoReview);
+            var supportsImageGen = group.Any(m => m.Capability == ModelCapability.Image);
+            var supportsScriptPlanning = group.Any(m => m.Capability == ModelCapability.Chat);
+            var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
+            var supportsAudio = group.Any(m => m.Capability == ModelCapability.Audio);
+
+            var caps = new List<string>();
+            if (supportsVideoGen) caps.Add("Video Gen");
+            if (supportsVideoReview) caps.Add("Video Review");
+            if (supportsImageGen) caps.Add("Image Gen");
+            if (supportsScriptPlanning) caps.Add("Script & Planning");
+            if (supportsImageVision) caps.Add("Image Vision / OCR");
+            if (supportsAudio) caps.Add("Audio / Music");
+
+            rows.Add(new ProviderKeyStatusDto
+            {
+                ProviderId = pId,
+                DisplayName = DisplayNameForProvider(pId, sample),
+                Family = string.IsNullOrWhiteSpace(sample.ProviderName) ? sample.Provider.ToString() : sample.ProviderName,
+                ActiveSource = "none",
+                CapabilitiesSummary = caps.Count > 0 ? string.Join(", ", caps) : "—",
+                SupportsVideo = supportsVideoGen || supportsVideoReview,
+                SupportsImage = supportsImageGen,
+                SupportsChat = supportsScriptPlanning,
+                SupportsVision = supportsImageVision,
+                SupportsVideoGen = supportsVideoGen,
+                SupportsVideoReview = supportsVideoReview,
+                SupportsImageGen = supportsImageGen,
+                SupportsScriptPlanning = supportsScriptPlanning,
+                SupportsImageVision = supportsImageVision,
+                RequiredEnvKeys = required,
+                Notes = string.Join("; ", group.Select(m => m.Notes).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Take(2)),
+            });
+        }
+        return rows;
+    }
+
+    public static string NormalizeProviderId(string? providerId)
+    {
+        if (string.IsNullOrWhiteSpace(providerId)) return "";
+        var p = providerId.Trim().ToLowerInvariant();
+        return p switch
+        {
+            "xai" or "grok" => "grok",
+            "google" or "gemini" => "gemini",
+            "claude" or "anthropic" => "anthropic",
+            "fal" or "fal.ai" => "fal",
+            "openai" or "oai" => "openai",
+            "suno" => "suno",
+            "aimusicapi" or "ai-music-api" => "aimusicapi",
+            "elevenlabs" or "eleven" => "elevenlabs",
+            _ => p,
+        };
+    }
+
+    private static string DisplayNameForProvider(string pId, SupportedModelEntry sample) => pId switch
+    {
+        "grok" => "xAI / Grok",
+        "gemini" => "Google Gemini",
+        "anthropic" => "Anthropic Claude",
+        "fal" => "Fal.ai",
+        "openai" => "OpenAI",
+        "suno" => "Suno",
+        "aimusicapi" => "AI Music API",
+        "elevenlabs" => "ElevenLabs",
+        _ => !string.IsNullOrWhiteSpace(sample.ProviderName)
+            ? sample.ProviderName
+            : char.ToUpperInvariant(pId[0]) + pId[1..],
+    };
+
+    private static int DisplayOrder(string pId) => pId switch
+    {
+        "grok" => 0,
+        "gemini" => 1,
+        "openai" => 2,
+        "anthropic" => 3,
+        "fal" => 4,
+        "suno" => 5,
+        "aimusicapi" => 6,
+        "elevenlabs" => 7,
+        _ => 50,
+    };
+
     public static string ProviderIdFor(string? modelId, ModelCapability capability) =>
         ResolveOrDefault(modelId, capability).ProviderId;
 
