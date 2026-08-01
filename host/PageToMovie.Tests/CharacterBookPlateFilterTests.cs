@@ -37,14 +37,16 @@ public class CharacterBookPlateFilterTests : IDisposable
             using var paint = new SKPaint
             {
                 Color = SKColors.Black,
-                TextSize = 16,
                 IsAntialias = true
             };
+            using var font = new SKFont { Size = 16 };
 
             // Draw paragraph text lines (black text on white page)
             for (int y = 50; y < 750; y += 30)
             {
-                canvas.DrawText($"Line of book text at y={y} describing Buster running through the garden.", 40, y, paint);
+                canvas.DrawText(
+                    $"Line of book text at y={y} describing Buster running through the garden.",
+                    40, y, SKTextAlign.Left, font, paint);
             }
 
             using var stream = File.Create(path);

@@ -63,8 +63,8 @@ public class PromptTagsTests
         // Wrapping the sanitized value keeps exactly one real Voice tag pair — the hostile
         // content can no longer inject a premature close or a forged sibling tag.
         var wrapped = PromptTags.Wrap("Voice", sanitized);
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(wrapped, "<Voice>").Count);
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(wrapped, "</Voice>").Count);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(wrapped, "<Voice>"));
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(wrapped, "</Voice>"));
         Assert.DoesNotContain("<Negative>", wrapped);
     }
 

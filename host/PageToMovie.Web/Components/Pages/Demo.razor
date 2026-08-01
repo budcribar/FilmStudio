@@ -75,7 +75,7 @@
                     var about = AboutText(d);
                     var isHighlight = _highlightId == d.Id;
                 }
-                <article class="demo-card @(_playingId == d.Id ? "is-playing" : "") @(isHighlight ? "is-highlight" : "")"
+                <article class="demo-card @(isHighlight ? "is-highlight" : "")"
                          id="@d.Id"
                          data-testid="demo-card"
                          @key="d.Id">
@@ -193,7 +193,6 @@
     private string? _error;
     private string? _message;
     private string? _highlightId;
-    private string? _playingId;
     private string _sort = "top";
     private readonly HashSet<string> _reported = new(StringComparer.OrdinalIgnoreCase);
 

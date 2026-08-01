@@ -3060,7 +3060,7 @@ public sealed class FilmJobService
                         projDir,
                         scene,
                         clip,
-                        prompt: built.Prompt,
+                        prompt: built.Prompt ?? "",
                         scriptText: "",
                         model: model,
                         resolution: resolution,

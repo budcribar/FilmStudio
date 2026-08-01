@@ -1396,7 +1396,7 @@ app.MapPost("/api/system/open-editor", (OpenEditorRequest body, ProjectStore sto
                 System.Diagnostics.Process.Start("open", $"\"{targetPath}\"");
                 return Results.Ok(new OpenEditorResponse { Ok = true, Opened = targetPath, Editor = editorName, VideoUrl = relativeVideoUrl });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Results.Ok(new OpenEditorResponse { Ok = false, IsRemote = true, VideoUrl = relativeVideoUrl, Error = $"Remote server cannot open desktop app. Stream video to open in {editorName}." });
             }
@@ -4539,10 +4539,10 @@ app.MapPost("/api/jobs/youtube-upload", async (
 
         var req = new StartYouTubeUploadRequest
         {
-            ProjectId = projectId,
+            ProjectId = projectId!,
             Title = title,
             Description = description,
-            PrivacyStatus = privacyStatus,
+            PrivacyStatus = privacyStatus ?? "unlisted",
         };
 
         var job = await jobService.StartYouTubeUploadAsync(req);

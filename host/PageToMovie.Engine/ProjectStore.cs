@@ -277,7 +277,10 @@ public sealed class ProjectStore
             else if (f.EndsWith("blueprint.clips.grok.json", StringComparison.OrdinalIgnoreCase) || f.EndsWith("scenes.json", StringComparison.OrdinalIgnoreCase))
             {
                 var bpScenes = GetBlueprintSceneNumbers(projectId);
-                foreach (var sn in bpScenes) modScenes.Add(sn);
+                if (bpScenes is not null)
+                {
+                    foreach (var sn in bpScenes) modScenes.Add(sn);
+                }
             }
         }
 
@@ -3043,9 +3046,9 @@ public sealed class ProjectStore
                     ? real
                     : key;
 
-            if (fields.Speaker.Length > 0)
+            if (!string.IsNullOrEmpty(fields.Speaker))
                 fields.Speaker = Canonicalize(fields.Speaker);
-            if (fields.PrimarySubject.Length > 0)
+            if (!string.IsNullOrEmpty(fields.PrimarySubject))
                 fields.PrimarySubject = Canonicalize(fields.PrimarySubject);
             fields.CharactersOnScreen = fields.CharactersOnScreen
                 .Select(Canonicalize)
@@ -4013,15 +4016,11 @@ public sealed class ProjectStore
             verPath,
             (bytes, _) =>
             {
-                try
-                {
-                    return Task.FromResult(
-                        JsonSerializer.Deserialize<ClipDialogueVerificationResult>(bytes, JsonDefaults.IndentedCaseInsensitive));
-                }
-                catch
-                {
-                    return Task.FromResult<ClipDialogueVerificationResult?>(null);
-                }
+                var parsed = JsonSerializer.Deserialize<ClipDialogueVerificationResult>(
+                    bytes, JsonDefaults.IndentedCaseInsensitive);
+                if (parsed is null)
+                    throw new InvalidOperationException("Empty dialogue verification JSON");
+                return Task.FromResult(parsed);
             },
             ct);
     }
