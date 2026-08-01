@@ -56,28 +56,25 @@ else
         <div class="card-body py-3">
             @if (hasActive)
             {
-                @* One card: studio brand + this film. *@
-                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
-                    <div class="d-flex align-items-center gap-2 min-w-0">
-                        <img src="/favicon.png" alt="" width="36" height="36" class="rounded-2 shadow-sm flex-shrink-0" />
-                        <div class="min-w-0">
-                            <div class="small text-muted">Studio · active film</div>
-                            <h1 class="home-top__title text-truncate mb-0" title="@(ActiveProject.ProjectId ?? _projects.Active?.Id)">
-                                @(ActiveProject.Label ?? activeMeta?.Label ?? activeMeta?.Title ?? ActiveProject.ProjectId ?? _projects.Active?.Id)
-                            </h1>
-                            @if (activeMeta is not null)
-                            {
-                                <span class="badge @VisibilityBadgeClass(activeMeta.VisibilityMode) small fw-normal mt-1">
-                                    @VisibilityBadgeText(activeMeta.VisibilityMode)
-                                </span>
-                            }
-                        </div>
+                @* Two rows only: (1) title + actions  (2) process steps *@
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                    <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                        <img src="/favicon.png" alt="" width="32" height="32" class="rounded-2 shadow-sm flex-shrink-0" />
+                        <h1 class="home-top__title text-truncate mb-0 fs-4" title="@(ActiveProject.ProjectId ?? _projects.Active?.Id)">
+                            @(ActiveProject.Label ?? activeMeta?.Label ?? activeMeta?.Title ?? ActiveProject.ProjectId ?? _projects.Active?.Id)
+                        </h1>
+                        @if (activeMeta is not null)
+                        {
+                            <span class="badge @VisibilityBadgeClass(activeMeta.VisibilityMode) small fw-normal flex-shrink-0">
+                                @VisibilityBadgeText(activeMeta.VisibilityMode)
+                            </span>
+                        }
                     </div>
-                    <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-1 gap-sm-2 flex-shrink-0">
                         @if (_projects.Projects.Count > 1 || _showSwitch)
                         {
                             <select class="form-select form-select-sm"
-                                    style="min-width: 10rem; max-width: 14rem;"
+                                    style="min-width: 8rem; max-width: 12rem;"
                                     data-testid="home-project-picker"
                                     value="@(_projects.Active?.Id ?? ActiveProject.ProjectId)"
                                     disabled="@_busy"
