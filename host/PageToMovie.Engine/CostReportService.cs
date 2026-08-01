@@ -48,14 +48,19 @@ public sealed class CostReportService
         var qaRetryOnFail = GetCfgBool(cfg, "qa_retry_on_fail", defaultValue: true);
         var qaMaxRetries = GetCfgInt(cfg, "qa_max_retries", defaultValue: 1);
         qaMaxRetries = Math.Clamp(qaMaxRetries, 0, 5);
-        var qaFailRate = 0.20;
+        // Prior for "how often QA forces a regen" — start ~1.3× video until telemetry refines it.
+        // (1.3 multiplier ⇒ 0.3 expected extra generations per clip, not a full double.)
+        var qaVideoMultiplier = 1.3;
         if (cfg.TryGetValue("cost_estimates", out var ceQa) && ceQa.ValueKind == JsonValueKind.Object)
         {
-            if (ceQa.TryGetProperty("qa_fail_rate", out var fr) && fr.TryGetDouble(out var frv) && frv >= 0)
-                qaFailRate = Math.Clamp(frv, 0, 1);
+            if (ceQa.TryGetProperty("qa_retry_video_multiplier", out var qm) &&
+                qm.TryGetDouble(out var qmv) && qmv >= 1.0)
+                qaVideoMultiplier = Math.Clamp(qmv, 1.0, 3.0);
+            // Legacy fail-rate knob → convert to multiplier if multiplier not set explicitly.
+            else if (ceQa.TryGetProperty("qa_fail_rate", out var fr) && fr.TryGetDouble(out var frv) && frv >= 0)
+                qaVideoMultiplier = 1.0 + Math.Clamp(frv, 0, 1) * Math.Max(1, qaMaxRetries);
         }
-        var qaExpectedExtraGens = qaRetryOnFail ? qaFailRate * qaMaxRetries : 0.0;
-        // Do not under-count: use the larger of manual avg-retries vs QA-driven extras.
+        var qaExpectedExtraGens = qaRetryOnFail ? Math.Max(0, qaVideoMultiplier - 1.0) : 0.0;
         if (qaExpectedExtraGens > retries)
             retries = qaExpectedExtraGens;
 
@@ -179,7 +184,7 @@ public sealed class CostReportService
         var musicPlan = EstimateMusicGeneration(blueprintClips, rates, cfg);
         var planningPlan = EstimatePlanningWork(blueprintClips, estimateBasis, rates, cfg);
         var reviewPlan = EstimateAutomatedReview(
-            clipsTotal, rates, cfg, qaRetryOnFail, qaFailRate, qaMaxRetries);
+            clipsTotal, rates, cfg, qaRetryOnFail, qaVideoMultiplier);
 
         var estimateByCategory = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
         {
@@ -257,7 +262,7 @@ public sealed class CostReportService
                 $"Rates from selected models (video={videoModel}, image={imageModel}" +
                 (voicePlan.Included ? $", voice={voiceModel}" : "") + "). " +
                 (qaRetryOnFail
-                    ? $"Quality gate retry ON (assume ~{qaFailRate:P0} fail × {qaMaxRetries} max → ~{qaExpectedExtraGens:0.##} extra video attempts/clip); automated review included. "
+                    ? $"Quality gate retry ON (admin auto-regen; video estimate ×{qaVideoMultiplier:0.##} until we learn a better rate from actuals); automated review included. "
                     : "Quality gate retry OFF; still counts one dialogue check per clip when Gemini QA is used. ") +
                 "Actual = tracked spend at list rates when work completed.",
         };
@@ -1415,8 +1420,7 @@ public sealed class CostReportService
         Dictionary<string, object?> rates,
         Dictionary<string, JsonElement> cfg,
         bool qaRetryOnFail,
-        double qaFailRate,
-        int qaMaxRetries)
+        double qaVideoMultiplier)
     {
         if (clipsTotal <= 0)
             return new ScopeEstimate(0, 0, Included: false);
@@ -1436,6 +1440,8 @@ public sealed class CostReportService
         // Token priors are stand-ins until we average from telemetry.
         var inTok = 28_000.0;
         var outTok = 1_200.0;
+        // Review passes track video multiplier: ~1.3× checks when QA retry is on (re-check after regen).
+        var reviewPasses = qaRetryOnFail ? Math.Max(1.0, qaVideoMultiplier) : 1.0;
         if (cfg.TryGetValue("cost_estimates", out var ce) && ce.ValueKind == JsonValueKind.Object)
         {
             if (ce.TryGetProperty("review_input_tokens_per_clip", out var it) && it.TryGetDouble(out var itv) && itv > 0)
@@ -1444,15 +1450,12 @@ public sealed class CostReportService
                 outTok = otv;
             if (ce.TryGetProperty("review_usd_per_clip", out var fixedUsd) && fixedUsd.TryGetDouble(out var fu) && fu > 0)
             {
-                var passesFixed = 1.0 + (qaRetryOnFail ? qaFailRate * Math.Max(1, qaMaxRetries) : 0);
-                var totalFixed = clipsTotal * fu * passesFixed;
+                var totalFixed = clipsTotal * fu * reviewPasses;
                 return new ScopeEstimate(Math.Round(totalFixed, 4), Math.Round(totalFixed, 4), Included: true);
             }
         }
 
         var perClip = inTok * inRate + outTok * outRate;
-        // First pass on every clip; re-check after expected QA-driven regens.
-        var reviewPasses = 1.0 + (qaRetryOnFail ? qaFailRate * Math.Max(1, qaMaxRetries) : 0);
         var total = clipsTotal * perClip * reviewPasses;
         _ = rates;
         return new ScopeEstimate(Math.Round(total, 4), Math.Round(total, 4), Included: true);

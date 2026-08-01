@@ -479,7 +479,9 @@
             <div class="col-md-6 form-check">
                 <input class="form-check-input" type="checkbox" id="qaRetry" @bind="_qaRetry" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="qaRetry">Quality Gate Retry</label>
-                <div class="form-text">Automatically retry video clip generation if quality checks fail.</div>
+                <div class="form-text">
+                    When dialogue QA fails, auto-regenerate the clip (admin mode). Cost estimate uses a ~1.3× video prior until we learn real retry rates from production data.
+                </div>
             </div>
             <div class="col-md-6 form-check">
                 <input class="form-check-input" type="checkbox" id="regenSilent" @bind="_regenSilent" disabled="@_busy" />
