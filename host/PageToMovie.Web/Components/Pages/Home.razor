@@ -10,21 +10,15 @@
 
 <PageTitle>PageToMovie</PageTitle>
 
-<div class="home-hero home-hero--cinema d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
-    <div class="d-flex align-items-center gap-3">
-        <img src="/favicon.png" alt="PageToMovie" width="68" height="68" class="rounded-3 shadow flex-shrink-0" />
-        <div>
-            <span class="home-hero__badge">AI Film Studio</span>
-            <h1 class="display-6 fw-bold mb-0 lh-1">Book, cast, optional voice — then the movie.</h1>
-            <p class="home-hero__lede">
-                Drop a PDF or pick a classic. Personalize cast (and voice if you want), see the estimate, then generate.
-                Media stays on your device where possible — the studio pipeline does the rest.
-            </p>
+<header class="home-top mb-3">
+    <div class="home-top__main">
+        <img src="/favicon.png" alt="" width="40" height="40" class="rounded-2 shadow-sm flex-shrink-0" />
+        <div class="min-w-0">
+            <h1 class="home-top__title">Studio</h1>
+            <p class="home-top__sub mb-0">Book · cast · optional voice · estimate · film</p>
         </div>
     </div>
-
-    <!-- Pages → AI → Movie (HTML labels + gentle CSS motion; fixed stage size so nothing jumps) -->
-    <div class="home-pipeline" role="img" aria-label="Pages into AI into movie">
+    <div class="home-pipeline home-pipeline--compact" role="img" aria-label="Pages into AI into movie">
         <div class="home-pipeline__stage">
             <div class="home-pipeline__icon home-pipeline__pages" aria-hidden="true">
                 <span class="home-pipeline__sheet s1"></span>
@@ -33,26 +27,22 @@
             </div>
             <span class="home-pipeline__label">PAGES</span>
         </div>
-
-        <div class="home-pipeline__arrows" aria-hidden="true" title="Pages feeding into AI">
+        <div class="home-pipeline__arrows" aria-hidden="true">
             <span class="home-pipeline__chev c1">›</span>
             <span class="home-pipeline__chev c2">›</span>
             <span class="home-pipeline__chev c3">›</span>
         </div>
-
         <div class="home-pipeline__stage">
             <div class="home-pipeline__icon home-pipeline__ai" aria-hidden="true">
                 <span class="home-pipeline__brain">🧠</span>
             </div>
             <span class="home-pipeline__label">AI</span>
         </div>
-
-        <div class="home-pipeline__arrows" aria-hidden="true" title="AI generating movie">
+        <div class="home-pipeline__arrows" aria-hidden="true">
             <span class="home-pipeline__chev c1">›</span>
             <span class="home-pipeline__chev c2">›</span>
             <span class="home-pipeline__chev c3">›</span>
         </div>
-
         <div class="home-pipeline__stage">
             <div class="home-pipeline__icon home-pipeline__movie" aria-hidden="true">
                 <span class="home-pipeline__clapper">
@@ -63,30 +53,7 @@
             <span class="home-pipeline__label">MOVIE</span>
         </div>
     </div>
-</div>
-
-<div class="ptm-path-steps" aria-label="How a film is made">
-    <div class="ptm-path-step">
-        <div class="ptm-path-step__kicker">Step 1</div>
-        <h2 class="ptm-path-step__title">Book</h2>
-        <p class="ptm-path-step__body">Classic (cached, cheaper) or your own PDF/text from scratch.</p>
-    </div>
-    <div class="ptm-path-step">
-        <div class="ptm-path-step__kicker">Step 2</div>
-        <h2 class="ptm-path-step__title">Cast</h2>
-        <p class="ptm-path-step__body">Put your child, spouse, or yourself into one or more roles.</p>
-    </div>
-    <div class="ptm-path-step">
-        <div class="ptm-path-step__kicker">Step 3</div>
-        <h2 class="ptm-path-step__title">Voice (optional)</h2>
-        <p class="ptm-path-step__body">Stock voices free — or clone a short personal sample as an add-on.</p>
-    </div>
-    <div class="ptm-path-step">
-        <div class="ptm-path-step__kicker">Step 4</div>
-        <h2 class="ptm-path-step__title">Estimate · film</h2>
-        <p class="ptm-path-step__body">See the quote, sample if you want, then generate and edit.</p>
-    </div>
-</div>
+</header>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -362,89 +329,36 @@
     <div class="col-md-7">
         @if (ActiveProject.HasProject)
         {
-            <div class="card mb-3 border-primary shadow-sm">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <span class="fw-bold fs-6">🎬 Active Project: @ActiveProject.ProjectId</span>
-                    <a href="configuration" class="btn btn-sm btn-light fw-semibold">⚙️ Configuration &amp; Services</a>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted small mb-3">
-                        Work through the film production workflow steps below or switch projects in the list to the left.
-                    </p>
-
-                    <div class="row g-2">
-                        <div class="col-6 col-md">
-                            <a href="adaptation" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center">
-                                <span class="fs-2 mb-1">📜</span>
-                                <strong class="small">1. Book</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Import · screenplay</span>
-                            </a>
+            <div class="card mb-3 home-active-card">
+                <div class="card-body py-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <div class="min-w-0">
+                            <div class="small text-muted">Active project</div>
+                            <div class="fw-semibold text-truncate" title="@ActiveProject.ProjectId">@(ActiveProject.Label ?? ActiveProject.ProjectId)</div>
                         </div>
-                        <div class="col-6 col-md">
-                            <a href="characters" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanCharacters ? "" : "disabled opacity-50")">
-                                <span class="fs-2 mb-1">👥</span>
-                                <strong class="small">2. Cast & voice</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Photos · optional voice</span>
-                            </a>
-                        </div>
-                        <div class="col-6 col-md">
-                            <a href="cost" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center">
-                                <span class="fs-2 mb-1">💳</span>
-                                <strong class="small">3. Estimate</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Quote · confirm</span>
-                            </a>
-                        </div>
-                        <div class="col-6 col-md">
-                            <a href="scenes" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanScenes ? "" : "disabled opacity-50")">
-                                <span class="fs-2 mb-1">🎬</span>
-                                <strong class="small">4. Film</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Clips · stitch</span>
-                            </a>
-                        </div>
-                        <div class="col-6 col-md">
-                            <a href="review" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanReview ? "" : "disabled opacity-50")">
-                                <span class="fs-2 mb-1">✅</span>
-                                <strong class="small">5. Review</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Edit · publish</span>
-                            </a>
-                        </div>
+                        <a href="configuration" class="btn btn-sm btn-outline-secondary">Settings</a>
                     </div>
+                    <StudioProcessStrip Active="book" />
+                </div>
+            </div>
+        }
+        else if (Session.IsLoggedIn)
+        {
+            <div class="card mb-3 home-active-card">
+                <div class="card-body py-3">
+                    <div class="fw-semibold mb-1">No active project</div>
+                    <p class="small text-muted mb-2 mb-md-0">Create or open a project on the left, then work Book → Cast → Estimate → Film → Review.</p>
                 </div>
             </div>
         }
 
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <span>🌟 Studio Showcase &amp; Film Gallery</span>
-                <a href="/demo" class="btn btn-sm btn-outline-info">View All Demos →</a>
-            </div>
-            <div class="card-body">
-                <p class="small text-muted mb-3">
-                    Explore film adaptations produced with PageToMovie. Select any story from the project menu to start editing, or create a new project.
-                </p>
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="border border-secondary rounded p-3 bg-dark bg-opacity-50 h-100 d-flex flex-column justify-content-between">
-                            <div>
-                                <div class="badge bg-danger mb-2">Gothic Drama</div>
-                                <h6 class="fw-bold text-white mb-1">The Tell-Tale Heart</h6>
-                                <p class="small text-muted mb-2">Edgar Allan Poe's chilling masterpiece adapted into cinematic video with orchestrations by Suno AI.</p>
-                            </div>
-                            <a href="/demo" class="btn btn-sm btn-outline-light w-100 mt-2">Watch Demo Film</a>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="border border-secondary rounded p-3 bg-dark bg-opacity-50 h-100 d-flex flex-column justify-content-between">
-                            <div>
-                                <div class="badge bg-primary mb-2">Animation / Storybook</div>
-                                <h6 class="fw-bold text-white mb-1">Buster &amp; Nick</h6>
-                                <p class="small text-muted mb-2">Character-locked visual story featuring hero animals and stylized continuous video clips.</p>
-                            </div>
-                            <a href="/demo" class="btn btn-sm btn-outline-light w-100 mt-2">Watch Demo Film</a>
-                        </div>
-                    </div>
+        <div class="card home-showcase-card">
+            <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <div class="fw-semibold">Demo gallery</div>
+                    <div class="small text-muted">Tell-Tale Heart, Buster & Nick, and more</div>
                 </div>
+                <a href="/demo" class="btn btn-sm btn-outline-primary">View demos</a>
             </div>
         </div>
     </div>

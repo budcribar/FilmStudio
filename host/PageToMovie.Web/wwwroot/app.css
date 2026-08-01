@@ -1608,3 +1608,56 @@ h1:focus {
     padding: 0.75rem 0.85rem;
     background: var(--fs-overlay-soft);
 }
+
+/* Home — compact (less bulk) */
+.home-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--fs-border-color);
+    border-radius: 12px;
+    background: var(--fs-bg-card);
+}
+.home-top__main {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+}
+.home-top__title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+    line-height: 1.2;
+}
+.home-top__sub {
+    font-size: 0.8rem;
+    color: var(--fs-text-muted);
+}
+.home-pipeline--compact {
+    transform: scale(0.85);
+    transform-origin: right center;
+}
+@media (max-width: 640px) {
+    .home-pipeline--compact { display: none; }
+}
+.home-active-card {
+    border: 1px solid var(--fs-border-color);
+    background: var(--fs-bg-card);
+}
+.home-active-card .ptm-step-strip {
+    margin-bottom: 0;
+}
+.home-showcase-card {
+    border: 1px solid var(--fs-border-color);
+    background: var(--fs-bg-card);
+}
+/* De-emphasize bulky home hero leftover if any */
+.home-hero--cinema {
+    padding: 0.85rem 1rem;
+}
