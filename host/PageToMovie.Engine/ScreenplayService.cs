@@ -292,7 +292,7 @@ public static string NormalizeText(string text)
             var matchesV2 = !string.IsNullOrEmpty(meta.SignedHash) &&
                             string.Equals(meta.SignedHash, status.DraftHash, StringComparison.OrdinalIgnoreCase);
             var matchesLegacy = !string.IsNullOrEmpty(meta.SignedHash) &&
-                                string.Equals(meta.SignedHash, ComputeHashLegacy(text), StringComparison.OrdinalIgnoreCase);
+                                string.Equals(meta.SignedHash, ComputeHashLegacy(File.ReadAllText(draftPath)), StringComparison.OrdinalIgnoreCase);
             status.Signed = matchesV2 || matchesLegacy;
             // Dirty only after a real prior approval that no longer matches the draft.
             // Never-approved drafts are not "edited since approval".
