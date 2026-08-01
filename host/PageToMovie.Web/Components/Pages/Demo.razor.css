@@ -1,4 +1,4 @@
-/* Public demo gallery — film cards with synopsis */
+/* Public demo gallery — equal cards, YouTube embeds */
 
 .demo-page {
     max-width: 72rem;
@@ -60,22 +60,26 @@
     margin-bottom: 0.75rem;
 }
 
+/* Two equal columns — Virtualize was breaking this layout */
 .demo-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    align-items: stretch;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 768px) {
     .demo-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 1.75rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5rem;
     }
 }
 
 .demo-card {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    height: 100%;
     background: var(--fs-bg-card);
     border: 1px solid var(--fs-border-color);
     border-radius: 1rem;
@@ -85,30 +89,17 @@
 }
 
 .demo-card:hover {
-    border-color: var(--fs-border-hover);
+    border-color: var(--fs-border-hover, rgba(148, 163, 184, 0.45));
     transform: translateY(-2px);
 }
 
 .demo-card.is-highlight {
-    border-color: rgba(99, 102, 241, 0.55);
-    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), var(--fs-shadow-card);
-}
-
-.demo-card.is-playing {
-    border-color: rgba(34, 197, 94, 0.45);
+    border-color: rgba(148, 163, 184, 0.55);
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.25), var(--fs-shadow-card);
 }
 
 .demo-card-media {
-    background: #000;
-    aspect-ratio: 16 / 9;
-    position: relative;
-}
-
-.demo-card-media video {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    flex-shrink: 0;
     background: #000;
 }
 
@@ -117,17 +108,29 @@
     flex-direction: column;
     gap: 0.85rem;
     padding: 1.1rem 1.15rem 1.15rem;
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .demo-card-title {
     font-family: Outfit, Inter, system-ui, sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
     letter-spacing: -0.015em;
-    margin: 0 0 0.45rem;
     color: var(--fs-text-primary);
     line-height: 1.25;
+}
+
+.demo-yt-open-link {
+    font-size: 0.75rem;
+    color: var(--fs-text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    padding-top: 0.2rem;
+}
+.demo-yt-open-link:hover {
+    color: var(--fs-text-primary);
+    text-decoration: underline;
 }
 
 .demo-card-chips {
@@ -142,9 +145,9 @@
     font-weight: 550;
     padding: 0.15rem 0.5rem;
     border-radius: 999px;
-    background: rgba(99, 102, 241, 0.12);
-    color: var(--fs-link);
-    border: 1px solid rgba(99, 102, 241, 0.22);
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--fs-link, #7dd3fc);
+    border: 1px solid rgba(148, 163, 184, 0.22);
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -159,11 +162,12 @@
 }
 
 .demo-card-about {
-    flex: 1;
+    flex: 1 1 auto;
     padding: 0.75rem 0.85rem;
     border-radius: 0.65rem;
     background: var(--fs-overlay-soft);
     border: 1px solid var(--fs-border-color);
+    min-height: 5.5rem;
 }
 
 .demo-about-label {
@@ -171,16 +175,20 @@
     font-weight: 650;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: var(--fs-accent-amber);
+    color: var(--fs-accent-amber, #e2b342);
     margin: 0 0 0.35rem;
 }
 
 .demo-about-text {
     margin: 0;
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     line-height: 1.55;
     color: var(--fs-text-primary);
     white-space: pre-wrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .demo-card-footer {
@@ -189,9 +197,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.65rem;
-    padding-top: 0.15rem;
     border-top: 1px solid var(--fs-border-color);
-    margin-top: 0.15rem;
+    margin-top: auto;
     padding-top: 0.75rem;
 }
 
@@ -199,11 +206,6 @@
     font-size: 0.82rem;
     color: var(--fs-text-muted);
     min-width: 0;
-}
-
-.demo-card-byline strong {
-    color: var(--fs-text-primary);
-    font-weight: 600;
 }
 
 .demo-card-date {
@@ -214,15 +216,14 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
+    justify-content: flex-end;
 }
 
-/* YouTube is playback source of truth — embed, do not stream server MP4 */
 .demo-yt-frame {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
     background: #000;
-    border-radius: 0.35rem 0.35rem 0 0;
     overflow: hidden;
 }
 .demo-yt-frame iframe {
@@ -232,15 +233,8 @@
     height: 100%;
     border: 0;
 }
-.demo-yt-open {
-    padding: 0.35rem 0.75rem 0;
-    text-align: right;
-}
-.demo-yt-open a {
-    color: var(--fs-text-muted);
-    text-decoration: none;
-}
-.demo-yt-open a:hover {
-    color: var(--fs-text-primary);
-    text-decoration: underline;
+.demo-yt-frame--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

@@ -69,22 +69,25 @@
     else
     {
         <div class="demo-grid">
-            <Virtualize TItem="DemoListItem" Items="_demos" Context="d">
-                @{
-                    var about = AboutText(d);
-                    var isHighlight = _highlightId == d.Id;
-                }
+            @foreach (var d in _demos)
+            {
+                var about = AboutText(d);
+                var isHighlight = _highlightId == d.Id;
+                var ytWatchUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+                    ? d.YoutubeUrl
+                    : (!string.IsNullOrWhiteSpace(d.YoutubeId)
+                        ? $"https://www.youtube.com/watch?v={d.YoutubeId}"
+                        : null);
+                var embedUrl = !string.IsNullOrWhiteSpace(d.YoutubeId)
+                    ? $"https://www.youtube.com/embed/{d.YoutubeId}?rel=0"
+                    : null;
                 <article class="demo-card @(isHighlight ? "is-highlight" : "")"
                          id="@d.Id"
                          data-testid="demo-card"
                          @key="d.Id">
-                    <div class="demo-card-media position-relative">
-                        @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
+                    <div class="demo-card-media">
+                        @if (embedUrl is not null)
                         {
-                            var ytWatchUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
-                                ? d.YoutubeUrl
-                                : $"https://www.youtube.com/watch?v={d.YoutubeId}";
-                            var embedUrl = $"https://www.youtube.com/embed/{d.YoutubeId}?rel=0";
                             <div class="demo-yt-frame">
                                 <iframe src="@embedUrl"
                                         title="@d.Title"
@@ -93,30 +96,29 @@
                                         allowfullscreen
                                         referrerpolicy="strict-origin-when-cross-origin"></iframe>
                             </div>
-                            <div class="demo-yt-open">
-                                <a href="@ytWatchUrl" target="_blank" rel="noopener" class="small">Open on YouTube ↗</a>
-                            </div>
                         }
                         else
                         {
-                            <div class="bg-dark text-secondary d-flex align-items-center justify-content-center" style="width:100%; aspect-ratio:16/9; border-radius:0.35rem 0.35rem 0 0;">
-                                <span class="small">Uploading to YouTube…</span>
+                            <div class="demo-yt-frame demo-yt-frame--empty">
+                                <span class="small text-secondary">Uploading to YouTube…</span>
                             </div>
                         }
                     </div>
                     <div class="demo-card-body">
                         <header class="demo-card-header">
-                            <h2 class="demo-card-title">@d.Title</h2>
-                            <div class="demo-card-chips">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <h2 class="demo-card-title mb-0">@d.Title</h2>
+                                @if (ytWatchUrl is not null)
+                                {
+                                    <a href="@ytWatchUrl" target="_blank" rel="noopener" class="demo-yt-open-link flex-shrink-0">YouTube ↗</a>
+                                }
+                            </div>
+                            <div class="demo-card-chips mt-2">
                                 @if (!string.IsNullOrWhiteSpace(d.ProjectId))
                                 {
                                     <span class="demo-chip" title="Studio project">@d.ProjectId</span>
                                 }
                                 <span class="demo-chip demo-chip-muted">@RelativeDate(d.CreatedAt)</span>
-                                @if (d.SizeBytes > 0)
-                                {
-                                    <span class="demo-chip demo-chip-muted">@FormatBytes(d.SizeBytes)</span>
-                                }
                             </div>
                         </header>
 
@@ -129,7 +131,7 @@
                             <div class="demo-card-byline">
                                 @if (!string.IsNullOrWhiteSpace(d.CreatedBy))
                                 {
-                                    <span>Shared by <a href="creator/@d.CreatedBy" class="text-decoration-none text-info fw-bold">@@@d.CreatedBy</a></span>
+                                    <span>Shared by <a href="creator/@Uri.EscapeDataString(d.CreatedBy)" class="text-decoration-none text-info fw-bold">@@@d.CreatedBy</a></span>
                                 }
                                 else
                                 {
@@ -160,20 +162,26 @@
                                                 : "Sign in to fork this project")"
                                             data-testid="demo-fork"
                                             @onclick="() => ForkDemoAsync(d)">
-                                        🍴 Fork project
+                                        Fork
                                     </button>
                                 }
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-warning"
-                                        disabled="@(_busy || _reported.Contains(d.Id))"
-                                        title="Report inappropriate content"
-                                        @onclick="() => ReportAsync(d)">
-                                    @(_reported.Contains(d.Id) ? "Reported" : "Report")
-                                </button>
-                                @if (Session.IsAdmin || string.Equals(Session.UserId, d.CreatedBy, StringComparison.OrdinalIgnoreCase))
+                                @if (Session.IsLoggedIn && !IsOwnDemo(d))
                                 {
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-warning"
+                                            disabled="@(_busy || _reported.Contains(d.Id))"
+                                            title="Report inappropriate content"
+                                            @onclick="() => ReportAsync(d)">
+                                        @(_reported.Contains(d.Id) ? "Reported" : "Report")
+                                    </button>
+                                }
+                                @if (CanRemove(d))
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
                                             disabled="@_busy"
+                                            title="@(Session.IsAdmin ? "Remove (admin)" : "Remove your film from the gallery")"
+                                            data-testid="demo-remove"
                                             @onclick="() => DeleteAsync(d.Id)">
                                         Remove
                                     </button>
@@ -182,7 +190,7 @@
                         </footer>
                     </div>
                 </article>
-            </Virtualize>
+            }
         </div>
     }
 </div>
@@ -258,7 +266,22 @@
     private bool IsOwnDemo(DemoListItem d) =>
         Session.IsLoggedIn
         && !string.IsNullOrWhiteSpace(d.CreatedBy)
-        && string.Equals(d.CreatedBy, Session.UserId, StringComparison.OrdinalIgnoreCase);
+        && IdentitiesMatch(Session.UserId, d.CreatedBy);
+
+    /// <summary>Remove only for admin or the publisher who uploaded the demo.</summary>
+    private bool CanRemove(DemoListItem d)
+    {
+        if (!Session.IsLoggedIn) return false;
+        if (Session.IsAdmin) return true;
+        return IdentitiesMatch(Session.UserId, d.CreatedBy);
+    }
+
+    private static bool IdentitiesMatch(string? a, string? b)
+    {
+        if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b)) return false;
+        static string Norm(string s) => s.Trim().TrimStart('@');
+        return string.Equals(Norm(a), Norm(b), StringComparison.OrdinalIgnoreCase);
+    }
 
     private string StarButtonTitle(DemoListItem d)
     {
