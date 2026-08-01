@@ -289,7 +289,7 @@ else
                     <button type="button"
                             class="card-header py-1 px-2 d-flex justify-content-between align-items-center gap-2 char-panel-toggle border-0 bg-transparent w-100 text-start"
                             @onclick="() => _panelPictureOpen = !_panelPictureOpen">
-                        <span><strong>Picture</strong></span>
+                        <span><strong>Look & voice</strong></span>
                         <span class="small text-muted">@(_panelPictureOpen ? "▲" : "▼")</span>
                     </button>
                     @if (_panelPictureOpen)
@@ -561,27 +561,31 @@ else
                                     <button type="button" class="btn btn-link btn-sm" @onclick="() => ChoosePictureRoute(PictureRoute.Choose)">← Routes</button>
                                 }
                             }
+
+                            <hr class="my-3" />
+                            <div class="char-voice-inline" data-testid="char-voice-section">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <div>
+                                        <strong class="small">Voice</strong>
+                                        <span class="badge text-bg-secondary ms-1" style="font-size:0.65rem">optional</span>
+                                    </div>
+                                    @if (HasVoiceProfile(_selected))
+                                    {
+                                        <span class="badge text-bg-success" style="font-size:0.65rem">Profile set</span>
+                                    }
+                                    else if (_selected.HasVoiceCloneSample)
+                                    {
+                                        <span class="badge text-bg-info text-dark" style="font-size:0.65rem">Clone sample</span>
+                                    }
+                                </div>
+                                <p class="small text-muted mb-2">
+                                    Stock style is free — describe the voice, or add a personal clone sample. Same character card as the look so you don’t miss it.
+                                </p>
+                                @RenderVoiceEditor()
+                            </div>
                         </div>
                     }
                 </div>
-
-                @if (_mode == Mode.PickSource || _panelVoiceOpen)
-                {
-                    <div class="card mb-2">
-                        <button type="button"
-                                class="card-header py-1 px-2 d-flex justify-content-between align-items-center gap-2 char-panel-toggle border-0 bg-transparent w-100 text-start"
-                                @onclick="() => _panelVoiceOpen = !_panelVoiceOpen">
-                            <span><strong>Voice</strong> <span class="badge text-bg-secondary ms-1" style="font-size:0.65rem">optional add-on</span></span>
-                            <span class="small text-muted">@(_panelVoiceOpen ? "▲" : "▼")</span>
-                        </button>
-                        @if (_panelVoiceOpen)
-                        {
-                            <div class="card-body py-2">
-                                @RenderVoiceEditor()
-                            </div>
-                        }
-                    </div>
-                }
 
                 @if (_deleteConfirm is not null)
                 {
@@ -787,7 +791,6 @@ else
     private string _editVoiceLabel = "";
     private string _editVoiceProfile = "";
     private bool _panelPictureOpen = true;
-    private bool _panelVoiceOpen;
     private bool _voicePreviewBusy;
     private string? _voicePreviewUrl;
     private string? _voicePreviewError;
@@ -1361,40 +1364,14 @@ else
     }
 
     /// <summary>
-    /// Expand the panel that still needs work: missing picture → Picture;
-    /// picture done but no voice → Voice; both done → Picture (browse).
+    /// Look & voice live on one card — keep it open so neither section is buried.
     /// </summary>
     private void ApplyPanelsForSelected()
     {
-        if (_selected is null)
-        {
-            _panelPictureOpen = true;
-            _panelVoiceOpen = false;
-            return;
-        }
-
-        if (_selected.VoiceOnly)
-        {
-            _panelPictureOpen = false;
-            _panelVoiceOpen = true;
-            return;
-        }
-
-        var hasPic = _selected.HasPreferred || _selected.Locked;
-        var hasVoice = HasVoiceProfile(_selected);
-
-        if (hasPic && !hasVoice)
-        {
-            _panelPictureOpen = false;
-            _panelVoiceOpen = true;
-        }
-        else
-        {
-            // Missing look, or both complete — focus picture
-            _panelPictureOpen = true;
-            _panelVoiceOpen = false;
-        }
+        // Single card for picture + voice; always expanded when a character is selected.
+        _panelPictureOpen = true;
     }
+
 
     private void ResetSeedSelection()
     {
@@ -1734,7 +1711,6 @@ else
 
         _mode = Mode.Compare;
         _panelPictureOpen = true;
-        _panelVoiceOpen = false;
         _message = null;
     }
 
