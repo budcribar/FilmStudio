@@ -1137,7 +1137,43 @@ public sealed class EngineApiClient
         return await SendJsonAsync<ProjectsDto>(req, ct);
     }
 
-    public async Task<ProjectsDto?> DeleteProjectAsync(
+    
+    public async Task<ProjectInfo?> RenameProjectAsync(
+        string projectId,
+        string newTitle,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/rename",
+            new RenameProjectRequest { Title = newTitle, Name = newTitle },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Rename failed");
+        }
+        var body = await resp.Content.ReadFromJsonAsync<RenameProjectResponse>(JsonOpts, ct);
+        if (body is null) return null;
+        return new ProjectInfo
+        {
+            Id = body.ProjectId ?? projectId,
+            Title = body.Title,
+            Label = body.Label ?? body.Title,
+        };
+    }
+
+    private sealed class RenameProjectResponse
+    {
+        public bool Ok { get; set; }
+        public string? ProjectId { get; set; }
+        public string? Title { get; set; }
+        public string? Label { get; set; }
+        public string? Message { get; set; }
+        public string? Error { get; set; }
+    }
+
+public async Task<ProjectsDto?> DeleteProjectAsync(
         string projectId,
         CancellationToken ct = default)
     {

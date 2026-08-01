@@ -388,6 +388,12 @@ public sealed class StartBookImportRequest
 }
 
 /// <summary>POST /api/projects — create a new project folder.</summary>
+public sealed class RenameProjectRequest
+{
+    public string? Title { get; set; }
+    public string? Name { get; set; }
+}
+
 public sealed class CreateProjectRequest
 {
     /// <summary>Display name or folder id.</summary>

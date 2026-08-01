@@ -202,6 +202,36 @@ else
                 </div>
             }
 
+            @if (_showRename && hasActive)
+            {
+                <div class="border border-secondary border-opacity-50 rounded p-3 mt-3 bg-dark bg-opacity-75 text-white shadow-sm">
+                    <div class="fw-semibold small text-light mb-2">Rename project</div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <input class="form-control form-control-sm flex-grow-1 bg-white text-dark border-secondary fw-medium"
+                               style="min-width: 10rem; color: #111111 !important; background-color: #ffffff !important;"
+                               data-testid="home-rename-project-name"
+                               value="@_renameName"
+                               @oninput="OnRenameNameInput"
+                               disabled="@_busy"
+                               maxlength="80"
+                               placeholder="New display name"
+                               aria-label="Rename project" />
+                        <button class="btn btn-success btn-sm"
+                                data-testid="home-rename-project-save"
+                                disabled="@(_busy || string.IsNullOrWhiteSpace(_renameName))"
+                                @onclick="ConfirmRenameAsync">
+                            Save name
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm text-light border-secondary"
+                                disabled="@_busy"
+                                @onclick="CancelRename">
+                            Cancel
+                        </button>
+                    </div>
+                    <div class="form-text text-muted mt-1">Changes the display name only — project id stays the same.</div>
+                </div>
+            }
+
             @if (_manageExpanded && hasActive)
             {
                 <div class="mt-3 pt-3 border-top border-secondary border-opacity-25">
@@ -236,6 +266,10 @@ else
                                     <option value="Public">Public (Read-Only)</option>
                                     <option value="Open">Public (Forkable)</option>
                                 </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
+                                        @onclick="BeginRenameAsync">
+                                    Rename
+                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
                                         @onclick="() => OpenCollaboratorsModal(id)">
                                     Collaborate
@@ -322,6 +356,8 @@ else
     private List<JobSnapshot> _myJobs = new();
     private bool _showNew;
     private bool _showSwitch;
+    private bool _showRename;
+    private string _renameName = "";
     /// <summary>Home defaults to a one-row project picker; full project management
     /// (visibility, collaborate, delete, fork/sync) is opt-in via "Manage".</summary>
     private bool _manageExpanded;
@@ -536,6 +572,53 @@ else
     {
         if (e.Key == "Enter" && !_busy && !string.IsNullOrWhiteSpace(_newName))
             await CreateProjectAsync();
+    }
+
+
+    private void BeginRenameAsync()
+    {
+        _showRename = true;
+        _manageExpanded = true;
+        _showNew = false;
+        _renameName = ActiveProject.Label
+            ?? _projects?.Active?.Label
+            ?? _projects?.Active?.Title
+            ?? ActiveProject.ProjectId
+            ?? "";
+    }
+
+    private void OnRenameNameInput(ChangeEventArgs e) => _renameName = e.Value?.ToString() ?? "";
+
+    private void CancelRename()
+    {
+        _showRename = false;
+        _renameName = "";
+    }
+
+    private async Task ConfirmRenameAsync()
+    {
+        var id = _projects?.Active?.Id ?? ActiveProject.ProjectId;
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(_renameName)) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var updated = await Engine.RenameProjectAsync(id, _renameName.Trim());
+            _showRename = false;
+            _message = $"Renamed to “{updated?.Label ?? _renameName.Trim()}”.";
+            await LoadAsync();
+            if (ActiveProject.HasProject)
+                await ActiveProject.RefreshFromApiAsync(Engine);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task CreateProjectAsync()

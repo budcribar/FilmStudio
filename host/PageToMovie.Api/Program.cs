@@ -3342,6 +3342,43 @@ app.MapPost("/api/projects/{id}/visibility", async (
     return Results.Ok(new { ok = true, projectId = proj.Id, visibilityMode = proj.VisibilityMode });
 });
 
+app.MapPost("/api/projects/{id}/rename", async (
+    string id,
+    RenameProjectRequest? body,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+    {
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can rename this project." },
+            statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    try
+    {
+        var title = body?.Title ?? body?.Name ?? "";
+        var proj = await store.RenameProjectAsync(id, title, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = proj.Id,
+            title = proj.Title,
+            label = proj.Label,
+            message = $"Renamed project to “{proj.Label ?? proj.Title}”",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapGet("/api/creators/{handle}", async (
     string handle,
     CreatorProfileService creatorService,
@@ -3927,11 +3964,11 @@ static string GuessImageContentType(string path) =>
     : "application/octet-stream";
 
 // ---- Adaptation (book / Stage 1 / Stage 2 status + jobs) ----
-app.MapGet("/api/projects/{id}/adaptation", (string id, ProjectStore store) =>
+app.MapGet("/api/projects/{id}/adaptation", (string id, ProjectStore store, IUserContext user) =>
 {
     try
     {
-        var status = store.GetAdaptationStatus(id);
+        var status = store.GetAdaptationStatus(id, user.UserId);
         return Results.Ok(new { ok = true, projectId = id, adaptation = status });
     }
     catch (Exception ex)
@@ -4016,7 +4053,7 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (
             return Results.BadRequest(new { ok = false, error = "file required" });
         await using var stream = file.OpenReadStream();
         var path = await store.SaveBookUploadAsync(id, file.FileName, stream);
-        var status = store.GetAdaptationStatus(id);
+        var status = store.GetAdaptationStatus(id, user.UserId);
         return Results.Ok(new
         {
             ok = true,
@@ -4036,7 +4073,7 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (
 /// Import a Fountain file as the editable screenplay draft (does not approve / Stage 1 yet).
 /// User reviews on Screenplay, then sign-off materialises Stage 1.
 /// </summary>
-app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, HttpRequest req, ProjectStore store) =>
+app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, HttpRequest req, ProjectStore store, IUserContext user) =>
 {
     try
     {
@@ -4066,7 +4103,7 @@ app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, H
         if (!result.Ok)
             return Results.BadRequest(new { ok = false, error = result.Error });
 
-        var status = store.GetAdaptationStatus(id);
+        var status = store.GetAdaptationStatus(id, user.UserId);
         return Results.Ok(new
         {
             ok = true,
@@ -4087,7 +4124,7 @@ app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, H
 });
 
 /// <summary>Get the editable Fountain draft + status.</summary>
-app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store) =>
+app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store, IUserContext user) =>
 {
     try
     {
@@ -4098,7 +4135,7 @@ app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store) =>
             projectId = id,
             text = doc.Text,
             screenplay = doc.Status,
-            adaptation = store.GetAdaptationStatus(id),
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
         });
     }
     catch (Exception ex)
@@ -4108,7 +4145,7 @@ app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store) =>
 });
 
 /// <summary>Save Fountain draft (no Stage 1 write).</summary>
-app.MapPut("/api/projects/{id}/screenplay", async (string id, HttpRequest req, ProjectStore store) =>
+app.MapPut("/api/projects/{id}/screenplay", async (string id, HttpRequest req, ProjectStore store, IUserContext user) =>
 {
     try
     {
@@ -4153,7 +4190,7 @@ app.MapPut("/api/projects/{id}/screenplay", async (string id, HttpRequest req, P
             projectId = id,
             message = result.Message,
             screenplay = result.Status,
-            adaptation = store.GetAdaptationStatus(id),
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
         });
     }
     catch (Exception ex)
@@ -4172,6 +4209,7 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
     ProjectStore store,
     CastFromScreenplayService castService,
     PageToMovie.Engine.Abstractions.IChatClient chat,
+    IUserContext user,
     CancellationToken ct) =>
 {
     try
@@ -4237,7 +4275,7 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
             hashChanged = result.HashChanged,
             message = result.Message,
             screenplay = result.Status,
-            adaptation = store.GetAdaptationStatus(id),
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
             cast,
         });
     }
@@ -4271,7 +4309,7 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
             projectId = id,
             message = result.Message,
             screenplay = result.Status,
-            adaptation = store.GetAdaptationStatus(id),
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
         });
     }
     catch (Exception ex)

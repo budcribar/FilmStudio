@@ -1319,6 +1319,58 @@ public sealed class ProjectStore
     /// <summary>
     /// Update project visibility mode ("Private", "Public", or "Open") in project.json.
     /// </summary>
+
+    /// <summary>
+    /// Update display title/label in project.json. Does not move the folder (id stays stable).
+    /// </summary>
+    public async Task<ProjectInfo> RenameProjectAsync(
+        string projectId,
+        string newTitle,
+        CancellationToken ct = default)
+    {
+        var title = (newTitle ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(title))
+            throw new InvalidOperationException("Project name is required.");
+        if (title.Length > 80)
+            title = title[..80].Trim();
+
+        var proj = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
+        var metaPath = Path.Combine(proj.Path, "project.json");
+        Dictionary<string, object?> meta;
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
+                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
+                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        else
+        {
+            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        meta["id"] = proj.Id;
+        meta["title"] = title;
+        meta["label"] = title;
+        if (!string.IsNullOrWhiteSpace(proj.OwnerUserId)) meta["ownerUserId"] = proj.OwnerUserId;
+        if (!string.IsNullOrWhiteSpace(proj.ParentProjectId)) meta["parentProjectId"] = proj.ParentProjectId;
+        if (!string.IsNullOrWhiteSpace(proj.VisibilityMode)) meta["visibilityMode"] = proj.VisibilityMode;
+
+        await File.WriteAllTextAsync(metaPath, JsonSerializer.Serialize(meta, JsonOpts) + "\n", ct).ConfigureAwait(false);
+        InvalidateReadCaches(null);
+
+        proj.Title = title;
+        proj.Label = title;
+        return proj;
+    }
+
+
     public async Task<ProjectInfo> SetProjectVisibilityModeAsync(
         string projectId,
         string visibilityMode,
@@ -4090,7 +4142,41 @@ public sealed class ProjectStore
         return Path.Combine(dir, preferred);
     }
 
-    public AdaptationStatus GetAdaptationStatus(string projectId)
+    /// <summary>
+    /// True when at least one studio AI key is available (ambient scope, personal DB for
+    /// <paramref name="userId"/>, or process env). Used by adaptation UI banners.
+    /// </summary>
+    public bool IsAnyStudioKeyConfigured(string? userId = null)
+    {
+        if (!string.IsNullOrWhiteSpace(ApiKeyScope.Current)
+            || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentGemini)
+            || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentAnthropic)
+            || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentFal)
+            || !string.IsNullOrWhiteSpace(ApiKeyScope.Get("openai")))
+            return true;
+
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))
+            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
+            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"))
+            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OPENAI_API_KEY"))
+            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_API_KEY"))
+            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_KEY")))
+            return true;
+
+        if (_keyProvider is null) return false;
+
+        foreach (var provider in new[] { "grok", "gemini", "anthropic", "fal", "openai" })
+        {
+            if (!string.IsNullOrWhiteSpace(userId) && _keyProvider.HasKey(userId, provider))
+                return true;
+            if (_keyProvider.HasKey(null, provider))
+                return true;
+        }
+
+        return false;
+    }
+
+    public AdaptationStatus GetAdaptationStatus(string projectId, string? userId = null)
     {
         var dir = GetProjectDir(projectId);
         var book = ReadBookSourceStatus(dir);
@@ -4100,22 +4186,10 @@ public sealed class ProjectStore
         // Fountain re-sign that changed Stage 1 makes an existing shot plan stale
         if (screenplay.DraftExists && screenplay.Dirty && stage2.Stage2Ready)
             stage2.Stage2Stale = true;
-        // Prefer ambient scope (request middleware / job), then any configured Grok key
-        // (personal DB or process env). HasKey(null) only sees process env — use empty user
-        // fallbacks via GetKey with common local id when scope is empty.
-        var xai = !string.IsNullOrWhiteSpace(ApiKeyScope.Current)
-                  || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentGemini)
-                  || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentAnthropic)
-                  || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentFal)
-                  || (_keyProvider is not null && (
-                      _keyProvider.HasKey(null)
-                      || _keyProvider.HasKey("local")
-                      || _keyProvider.HasKey("grok")))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_KEY"));
+        // Any planning/gen key is enough for import→screenplay. Prefer ambient scope
+        // (request middleware already loaded this user's personal keys), then provider
+        // lookup for the real userId — never HasKey("grok") as a *user id* (old bug).
+        var xai = IsAnyStudioKeyConfigured(userId);
 
         var cfg = GetConfigSync(projectId);
         var planningModel = cfg.TryGetValue("planning_model_name", out var pmEl) &&
