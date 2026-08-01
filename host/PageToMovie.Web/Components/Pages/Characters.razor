@@ -876,6 +876,17 @@ else
     private long _voiceCloneBust;
     private string? _voiceSaveHint;
     private CancellationTokenSource? _voiceSaveCts;
+
+    /// <summary>
+    /// Phoneme-rich read-aloud for Instant Voice Cloning (ElevenLabs-style).
+    /// Clear sentences, varied vowels/consonants, natural cadence.
+    /// </summary>
+    private const string VoiceCloneReadScript =
+        "Hello. This is my natural speaking voice for a film character. " +
+        "I will speak clearly at a calm, steady pace. " +
+        "The quick brown fox jumps over the lazy dog near the river at twilight. " +
+        "Please measure five, six, seven, eight, nine, and zero. " +
+        "Can you hear every word? Yes — I hope this sample helps you match my voice.";
     private bool _showMediaAudioPicker;
     private bool _loadingMediaAudio;
     private List<ClientMediaFolderService.LocalAudioFile> _mediaAudioFiles = new();
@@ -982,15 +993,22 @@ else
                 }
             </div>
             <p class="form-text mb-2">
-                Record or pick audio from your <strong>media folder</strong>
+                Record a short sample for cloning (ElevenLabs and similar). Stops auto-save to the project
+                and to your media folder when connected — <strong>no “where to save” dialog</strong>.
+                Path: <code>assets/characters/…/voice_clone_sample.*</code>
                 @if (MediaFolder.IsConnected)
                 {
-                    <text> (<code>@MediaFolder.FolderName</code>)</text>
+                    <text> · folder <code>@MediaFolder.FolderName</code></text>
                 }
-                — same place as clip MP4/MP3 files. Auto-saved under
-                <code>assets/characters/…/voice_clone_sample.*</code>.
-                Clone providers (e.g. ElevenLabs) use this sample; style text above still drives film voice previews.
             </p>
+            <div class="ptm-voice-script border border-secondary border-opacity-50 rounded p-2 mb-2 bg-dark bg-opacity-25"
+                 data-testid="voice-clone-script">
+                <div class="small fw-semibold text-info mb-1">Please read this aloud while recording</div>
+                <p class="mb-1 small lh-sm" style="white-space: pre-wrap;">@VoiceCloneReadScript</p>
+                <div class="form-text mb-0" style="font-size:0.72rem;">
+                    ~15–30 seconds · clear speech, normal pace · quiet room · covers many English sounds for better clones
+                </div>
+            </div>
             <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                 @if (!_voiceRecRecording)
                 {
@@ -998,7 +1016,7 @@ else
                             disabled="@(_busy || _voiceCloneBusy || VoiceJobRunning)"
                             @onclick="StartVoiceCloneMicAsync"
                             data-testid="voice-clone-mic-start">
-                        Record mic
+                        Record script
                     </button>
                 }
                 else
@@ -1007,14 +1025,14 @@ else
                             disabled="@_voiceCloneBusy"
                             @onclick="StopVoiceCloneMicAsync"
                             data-testid="voice-clone-mic-stop">
-                        Stop — save to media folder
+                        Stop & save
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-secondary"
                             disabled="@_voiceCloneBusy"
                             @onclick="CancelVoiceCloneMicAsync">
                         Cancel
                     </button>
-                    <span class="small text-danger">Recording…</span>
+                    <span class="small text-danger">Recording… keep reading the script</span>
                 }
                 <button type="button" class="btn btn-sm btn-outline-secondary"
                         disabled="@(_busy || _voiceCloneBusy || VoiceJobRunning)"
@@ -2274,6 +2292,10 @@ else
         _voiceCloneHint = null;
         try
         {
+            // Prefer already-authorized media folder; never open a picker just to start recording.
+            if (!MediaFolder.IsConnected)
+                await MediaFolder.TryReconnectAsync();
+
             var result = await Js.InvokeAsync<VoiceCaptureStartResult>("PageToMovieVoiceCapture.start");
             if (result is null || !result.Ok)
             {
@@ -2281,7 +2303,9 @@ else
                 return;
             }
             _voiceRecRecording = true;
-            _voiceCloneHint = "Recording — speak naturally for 5–15 seconds, then Stop and save.";
+            _voiceCloneHint = MediaFolder.IsConnected
+                ? "Recording — read the script above, then Stop & save (auto-saves to media folder + project)."
+                : "Recording — read the script above, then Stop & save (saves to project; connect media folder for a local copy).";
         }
         catch (Exception ex)
         {
@@ -2410,17 +2434,17 @@ else
         var safeKey = string.Join("_", (_selectedKey ?? "character").Split(Path.GetInvalidFileNameChars()));
         var rel = $"assets/characters/{safeKey}/voice_clone_sample{ext}";
 
-        // Client media folder first (same as clips)
-        var (ok, path, err) = await MediaFolder.SaveBytesAsync(_projectId, rel, bytes);
-        if (!ok)
-        {
-            // Still try server so clone isn't lost entirely
-            _voiceCloneHint = err ?? "Media folder write failed — saving to project only.";
-        }
+        // Client media folder when already connected (no folder picker mid-recording).
+        // Always mirror to the server so previews / ElevenLabs still work.
+        if (!MediaFolder.IsConnected)
+            await MediaFolder.TryReconnectAsync();
+
+        var (ok, path, err) = await MediaFolder.SaveBytesAsync(
+            _projectId, rel, bytes, promptToConnectFolder: false);
+        if (ok)
+            _voiceCloneHint = $"Saved to media folder ({path ?? rel})…";
         else
-        {
-            _voiceCloneHint = $"Saved to media folder: {path ?? rel}";
-        }
+            _voiceCloneHint = "Saving to project…";
 
         await using var ms = new MemoryStream(bytes);
         await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, ms, "voice_clone_sample" + ext);
@@ -2429,9 +2453,11 @@ else
         _voiceCloneBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         RefreshVoiceClonePlayUrl();
         if (ok)
-            _voiceCloneHint = $"Clone sample saved to media folder and project for {_selected.DisplayName}.";
+            _voiceCloneHint = $"Clone sample auto-saved for {_selected.DisplayName} · media folder + project.";
         else
-            _voiceCloneHint = $"Clone sample saved to project. Media folder: {err}";
+            _voiceCloneHint =
+                $"Clone sample auto-saved on the project for {_selected.DisplayName}." +
+                (string.IsNullOrWhiteSpace(err) ? "" : $" Local folder: {err}");
     }
 
     private async Task OnVoiceCloneUploadAsync(InputFileChangeEventArgs e)

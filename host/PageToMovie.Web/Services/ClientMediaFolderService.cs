@@ -885,14 +885,22 @@ public sealed class ClientMediaFolderService
         public long LastModifiedMs { get; set; }
         public string? Error { get; set; }
     }
-    /// <summary>Write bytes into the connected media folder (e.g. voice clone samples).</summary>
+    /// <summary>
+    /// Write bytes into the connected media folder (e.g. voice clone samples).
+    /// By default does <b>not</b> open a folder picker mid-flow — tries silent reconnect only.
+    /// Pass <paramref name="promptToConnectFolder"/> only from an explicit "Connect folder" control.
+    /// </summary>
     public async Task<(bool Ok, string? RelativePath, string? Error)> SaveBytesAsync(
-        string projectId, string relativePath, byte[] bytes)
+        string projectId, string relativePath, byte[] bytes, bool promptToConnectFolder = false)
     {
         if (bytes is null || bytes.Length == 0)
             return (false, null, "Empty audio");
         if (!IsConnected)
+            await TryReconnectAsync();
+        if (!IsConnected)
         {
+            if (!promptToConnectFolder)
+                return (false, null, "Media folder not connected — sample still saved on the project");
             var ok = await ConnectFolderAsync();
             if (!ok) return (false, null, LastStatus ?? "Connect a media folder first");
         }
