@@ -105,6 +105,27 @@ else
                     }
                 </div>
 
+                <div class="home-project-cost d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-2"
+                     data-testid="home-project-cost">
+                    @if (_costLoading && _costEstimateUsd is null && _costActualUsd is null)
+                    {
+                        <span class="small text-muted">Loading cost…</span>
+                    }
+                    else
+                    {
+                        <span class="small">
+                            <span class="text-muted">Estimate</span>
+                            <strong class="ms-1" data-testid="home-cost-estimate">@FormatUsd(_costEstimateUsd)</strong>
+                        </span>
+                        <span class="text-muted small d-none d-sm-inline">·</span>
+                        <span class="small">
+                            <span class="text-muted">Spent</span>
+                            <strong class="ms-1" data-testid="home-cost-spent">@FormatUsd(_costActualUsd)</strong>
+                        </span>
+                        <a href="/cost" class="small ms-sm-1" data-testid="home-cost-details">Details</a>
+                    }
+                </div>
+
             @if (_manageExpanded && hasActive)
             {
                 <div class="home-manage-panel mb-3 p-2 rounded border border-secondary border-opacity-25">
@@ -423,6 +444,12 @@ else
     private string _demoShowcaseHint = "Loading gallery…";
     private List<DemoListItem> _publicDemos = new();
 
+    /// <summary>Planning estimate for the full film (draft path) from cost report.</summary>
+    private double? _costEstimateUsd;
+    /// <summary>Ledger actual spend for this project (catalog list rates).</summary>
+    private double? _costActualUsd;
+    private bool _costLoading;
+
     private async Task ToggleNewProjectAsync()
     {
         _showNew = !_showNew;
@@ -467,6 +494,41 @@ else
         _ => "🔒 Private",
     };
 
+    private static string FormatUsd(double? amount)
+    {
+        if (amount is null) return "—";
+        return amount.Value.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+    }
+
+    private async Task RefreshProjectCostAsync()
+    {
+        var pid = ActiveProject.ProjectId ?? _projects?.Active?.Id;
+        if (string.IsNullOrWhiteSpace(pid) || !Session.IsLoggedIn)
+        {
+            _costEstimateUsd = null;
+            _costActualUsd = null;
+            _costLoading = false;
+            return;
+        }
+
+        _costLoading = true;
+        try
+        {
+            var dto = await Engine.GetCostAsync(pid);
+            var s = dto?.Cost?.Summary;
+            // Estimate = full-film planning (draft path). Spent = ledger actuals.
+            _costEstimateUsd = s?.FullFilmAllDraftUsd;
+            _costActualUsd = s?.ActualUsd;
+        }
+        catch
+        {
+            // Keep prior numbers if refresh fails mid-session
+        }
+        finally
+        {
+            _costLoading = false;
+        }
+    }
 
     private bool CanConfirmDelete => _deleteId is not null;
 
@@ -523,6 +585,12 @@ else
             }
             catch { /* ignore */ }
             SyncJobsExpandedFromJob();
+            // Jobs write cost_ledger on completion — keep home spend fresh.
+            if (snap.Status is "done" or "error" or "cancelled")
+            {
+                try { await RefreshProjectCostAsync(); }
+                catch { /* ignore */ }
+            }
             StateHasChanged();
         });
     }
@@ -616,6 +684,7 @@ else
 
             _projects = await Engine.GetProjectsAsync();
             await ActiveProject.RefreshFromApiAsync(Engine);
+            await RefreshProjectCostAsync();
 
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -732,6 +801,7 @@ else
             {
                 ActiveProject.Set(cid, created.Label ?? created.Title ?? cid);
                 await ActiveProject.RefreshReadinessAsync(Engine);
+            await RefreshProjectCostAsync();
             }
             else
                 await ActiveProject.RefreshFromApiAsync(Engine);
@@ -762,6 +832,7 @@ else
             var a = _projects?.Active;
             ActiveProject.Set(id, a?.Label ?? a?.Title ?? id);
             await ActiveProject.RefreshReadinessAsync(Engine);
+            await RefreshProjectCostAsync();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

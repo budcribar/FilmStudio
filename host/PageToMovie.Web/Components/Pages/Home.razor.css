@@ -1,0 +1,8 @@
+.home-project-cost {
+    padding: 0.2rem 0 0.05rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.home-project-cost strong {
+    font-variant-numeric: tabular-nums;
+}
