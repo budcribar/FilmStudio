@@ -204,12 +204,47 @@ public static class ScreenplayService
 
     public static string ComputeHash(string text)
     {
+        // Approval / dirty hash must ignore pipeline-only stamps (Draft date on every SaveDraft)
+        // and match SaveDraft transforms (scene heading unify).
+        var normalized = NormalizeForApprovalHash(text);
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    /// <summary>Pre-2026 hash: NormalizeText only (kept so old SignedHash still validates).</summary>
+    public static string ComputeHashLegacy(string text)
+    {
         var normalized = NormalizeText(text);
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
-    public static string NormalizeText(string text)
+    /// <summary>
+    /// Stable body for sign-off and dirty detection. Drops title-page fields the app rewrites
+    /// without user edits (Draft date / Date / Last saved) and unifies scene heading wording.
+    /// </summary>
+        public static string NormalizeForApprovalHash(string text)
+    {
+        text = NormalizeText(text);
+        text = BookToFountainConverter.NormalizeSceneHeadingWording(text);
+        var lines = text.Split('\n');
+        var kept = new System.Collections.Generic.List<string>(lines.Length);
+        foreach (var line in lines)
+        {
+            var trim = line.TrimStart();
+            if (trim.StartsWith("Draft date:", StringComparison.OrdinalIgnoreCase)
+                || trim.StartsWith("Date:", StringComparison.OrdinalIgnoreCase)
+                || trim.StartsWith("Last saved:", StringComparison.OrdinalIgnoreCase))
+                continue;
+            kept.Add(line);
+        }
+        var joined = string.Join("\n", kept);
+        if (joined.Length > 0 && !joined.EndsWith('\n'))
+            joined += "\n";
+        return joined;
+    }
+
+public static string NormalizeText(string text)
     {
         text ??= "";
         text = text.Replace("\r\n", "\n").Replace('\r', '\n');
@@ -252,8 +287,13 @@ public static class ScreenplayService
 
         if (status.DraftExists)
         {
-            status.Signed = !string.IsNullOrEmpty(meta.SignedHash) &&
+            // DraftHash uses v2 (approval-stable). Also accept legacy v1 hashes so existing
+            // projects do not all flip to "Edited since approval" after the hash change.
+            var matchesV2 = !string.IsNullOrEmpty(meta.SignedHash) &&
                             string.Equals(meta.SignedHash, status.DraftHash, StringComparison.OrdinalIgnoreCase);
+            var matchesLegacy = !string.IsNullOrEmpty(meta.SignedHash) &&
+                                string.Equals(meta.SignedHash, ComputeHashLegacy(text), StringComparison.OrdinalIgnoreCase);
+            status.Signed = matchesV2 || matchesLegacy;
             // Dirty only after a real prior approval that no longer matches the draft.
             // Never-approved drafts are not "edited since approval".
             status.Dirty = !string.IsNullOrEmpty(meta.SignedHash) && !status.Signed;
@@ -552,6 +592,21 @@ public static class ScreenplayService
                 return new SignOffResult { Ok = false, Error = save.Error };
         }
 
+        // When no body was sent, still run SaveDraft so heading unify + draft-date match
+        // the pipeline used on later autosaves (avoids false "Edited since approval").
+        if (text is null)
+        {
+            var draftPath0 = GetDraftPath(store, projectId);
+            if (!File.Exists(draftPath0))
+                return new SignOffResult { Ok = false, Error = "No screenplay draft to approve" };
+            var existing = File.ReadAllText(draftPath0);
+            if (string.IsNullOrWhiteSpace(existing))
+                return new SignOffResult { Ok = false, Error = "Screenplay draft is empty" };
+            var pre = SaveDraft(store, projectId, existing);
+            if (!pre.Ok)
+                return new SignOffResult { Ok = false, Error = pre.Error };
+        }
+
         var draftPath = GetDraftPath(store, projectId);
         if (!File.Exists(draftPath))
             return new SignOffResult { Ok = false, Error = "No screenplay draft to approve" };
@@ -559,9 +614,6 @@ public static class ScreenplayService
         var draftText = File.ReadAllText(draftPath);
         if (string.IsNullOrWhiteSpace(draftText))
             return new SignOffResult { Ok = false, Error = "Screenplay draft is empty" };
-
-        draftText = NormalizeText(draftText);
-        File.WriteAllText(draftPath, draftText);
 
         var hash = ComputeHash(draftText);
         var metaBefore = ReadMeta(store, projectId);
