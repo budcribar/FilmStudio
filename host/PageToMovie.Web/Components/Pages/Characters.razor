@@ -700,16 +700,18 @@ else
     private string? ListThumbUrl(CharacterSummary c)
     {
         if (c.VoiceOnly) return null;
-        if (c.Locked)
+        // Locked / preferred ref always wins over old generate variants (uploads used to look
+        // "gone" after reload when variant_01 still existed and was preferred in the list).
+        if (c.Locked || !string.IsNullOrWhiteSpace(c.RefUrl))
             return CacheBust(Engine.CharacterRefUrl(_projectId, c.Key));
         if (c.HasPreferred)
         {
-            if (c.Variants.Any(v => v.Index == 1 && v.Exists))
-                return CacheBust(Engine.CharacterVariantUrl(_projectId, c.Key, 1));
             if (c.PreferredUrl is { Length: > 0 } u)
                 return CacheBust(Engine.AbsolutizeMediaUrl(u) ?? u);
             if (c.RefUrl is { Length: > 0 } r)
                 return CacheBust(Engine.AbsolutizeMediaUrl(r) ?? r);
+            if (c.Variants.Any(v => v.Index == 1 && v.Exists))
+                return CacheBust(Engine.CharacterVariantUrl(_projectId, c.Key, 1));
         }
         var book = c.BookRefs.FirstOrDefault(b => b.Exists);
         if (book is not null)
@@ -2521,8 +2523,11 @@ else
             const long max = 25 * 1024 * 1024;
             await using var stream = file.OpenReadStream(max);
             await Engine.UploadCharacterRefAsync(_projectId, _selected.Key, stream, file.Name);
-            _message = $"Locked preferred look for {_selected.DisplayName} from your upload.";
+            _message = $"Saved look for {_selected.DisplayName}.";
+            _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             await LoadAsync();
+            await SoftReloadAsync();
+            try { await ActiveProject.RefreshReadinessAsync(Engine); } catch { /* nav */ }
             ResetCompare();
             _mode = Mode.PickSource;
             _pictureRoute = PictureRoute.Choose;
