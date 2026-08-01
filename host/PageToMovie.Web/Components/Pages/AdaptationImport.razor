@@ -21,25 +21,35 @@
 
         <div class="card mb-4">
             <div class="card-body p-4">
-                <h5 class="card-title mb-1">Drop in a book or screenplay</h5>
-                <p class="text-muted small mb-3">North star: upload PDF, text, or fountain — then the pipeline does the rest. You can edit after.</p>
-                <div class="mb-3">
+                <h5 class="card-title mb-1">Import source</h5>
+                <p class="text-muted small mb-3">PDF, text, or fountain — then the pipeline runs. You can edit after.</p>
+
+                <label class="ptm-dropzone @(_importing || Busy || JobRunning ? "ptm-dropzone--disabled" : "") @(_dragOver ? "ptm-dropzone--active" : "")"
+                       @ondragenter="OnDragEnter"
+                       @ondragover="OnDragOver"
+                       @ondragover:preventDefault
+                       @ondragleave="OnDragLeave"
+                       @ondrop:preventDefault
+                       @ondrop="OnDragLeave">
                     <InputFile OnChange="OnSourceSelectedAsync"
-                               class="form-control"
-                               style="max-width: 28rem;"
+                               class="ptm-dropzone__input"
                                accept=".fountain,.spmd,.pdf,.txt"
                                data-testid="import-file-input"
                                disabled="@(_importing || Busy || JobRunning)" />
-                    @if (!string.IsNullOrWhiteSpace(_chosenFileName))
-                    {
-                        <div class="fs-file-chosen" data-testid="import-file-name">
-                            <span class="fs-file-chosen-label">Selected:</span>@_chosenFileName
-                        </div>
-                    }
-                    <div class="form-text mt-2">
-                        Supports screenplay (.fountain), PDF, or book text (.txt)
+                    <div class="ptm-dropzone__inner" aria-hidden="true">
+                        <div class="ptm-dropzone__icon">📖</div>
+                        <div class="ptm-dropzone__title">Drop your book here</div>
+                        <div class="ptm-dropzone__hint">or click to choose a file</div>
+                        <div class="ptm-dropzone__types">.pdf · .txt · .fountain</div>
                     </div>
-                </div>
+                </label>
+
+                @if (!string.IsNullOrWhiteSpace(_chosenFileName))
+                {
+                    <div class="fs-file-chosen mt-2" data-testid="import-file-name">
+                        <span class="fs-file-chosen-label">Selected:</span>@_chosenFileName
+                    </div>
+                }
 
                 @if (_importing)
                 {
@@ -110,6 +120,7 @@
     private string _importStatus = "";
     private int? _importPct;
     private string? _chosenFileName;
+    private bool _dragOver;
 
     private bool CanContinueToScreenplay =>
         Status is not null &&
@@ -126,6 +137,20 @@
             Nav.NavigateTo("/login?returnUrl=/adaptation/import");
         }
     }
+
+    private void OnDragEnter(DragEventArgs e)
+    {
+        if (_importing || Busy || JobRunning) return;
+        _dragOver = true;
+    }
+
+    private void OnDragOver(DragEventArgs e)
+    {
+        if (_importing || Busy || JobRunning) return;
+        _dragOver = true;
+    }
+
+    private void OnDragLeave(DragEventArgs e) => _dragOver = false;
 
     private async Task OnSourceSelectedAsync(InputFileChangeEventArgs e)
     {

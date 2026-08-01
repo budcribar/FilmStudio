@@ -1661,3 +1661,67 @@ h1:focus {
 .home-hero--cinema {
     padding: 0.85rem 1rem;
 }
+
+/* Book import — drop your book here */
+.ptm-dropzone {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    padding: 1.75rem 1.25rem;
+    border: 2px dashed var(--fs-border-strong, rgba(148, 163, 184, 0.45));
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(56, 189, 248, 0.06), transparent 70%);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    margin-bottom: 0.5rem;
+}
+.ptm-dropzone:hover:not(.ptm-dropzone--disabled),
+.ptm-dropzone--active:not(.ptm-dropzone--disabled) {
+    border-color: var(--fs-accent, #38bdf8);
+    background: linear-gradient(180deg, rgba(56, 189, 248, 0.12), transparent 70%);
+}
+.ptm-dropzone--disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.ptm-dropzone__input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+.ptm-dropzone--disabled .ptm-dropzone__input {
+    cursor: not-allowed;
+}
+.ptm-dropzone__inner {
+    text-align: center;
+    pointer-events: none;
+    z-index: 1;
+}
+.ptm-dropzone__icon {
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+.ptm-dropzone__title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+}
+.ptm-dropzone__hint {
+    font-size: 0.9rem;
+    color: var(--fs-text-muted);
+    margin-bottom: 0.5rem;
+}
+.ptm-dropzone__types {
+    font-size: 0.75rem;
+    color: var(--fs-text-muted);
+    opacity: 0.9;
+}
