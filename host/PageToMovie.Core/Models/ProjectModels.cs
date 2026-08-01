@@ -1056,11 +1056,29 @@ public sealed class CostReport
     public string HeroResolution { get; set; } = "720p";
     public string? ModelName { get; set; }
     public string? VideoProvider { get; set; }
+    /// <summary>Active image model used for character-portrait estimates.</summary>
+    public string? ImageModelName { get; set; }
+    /// <summary>Active planning/chat model (screenplay / shot plan).</summary>
+    public string? PlanningModelName { get; set; }
+    /// <summary>Active voice model when voice is in scope.</summary>
+    public string? VoiceModelName { get; set; }
+    /// <summary>
+    /// What drove clip counts: <c>shot_plan</c> (blueprint), <c>screenplay</c> (post-import durations),
+    /// or <c>none</c> (no book yet).
+    /// </summary>
+    public string EstimateBasis { get; set; } = "none";
+    /// <summary>True when optional personal voice is included in the estimate.</summary>
+    public bool VoiceIncludedInEstimate { get; set; }
     public double OutputRateDraft { get; set; }
     public double OutputRateHero { get; set; }
     public double AssumeAvgRetries { get; set; }
     public CostReportSummary Summary { get; set; } = new();
     public CostLedgerSummary Actual { get; set; } = new();
+    /// <summary>
+    /// Full-film planning estimate by user-facing category
+    /// (screenplay, characters, video, voice, music, other).
+    /// </summary>
+    public Dictionary<string, double> EstimateByCategory { get; set; } = new();
     public List<CostSceneRow> Scenes { get; set; } = new();
     public List<CostScenarioRow> Scenarios { get; set; } = new();
     public List<CostEvent> RecentEvents { get; set; } = new();

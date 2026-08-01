@@ -60,6 +60,8 @@ else
         var s = _report.Summary;
         var slices = BuildSpentSlices();
         var totalSpent = slices.Sum(x => x.Usd);
+        var estSlices = BuildEstimateSlices();
+        var estTotal = estSlices.Sum(x => x.Usd);
         var estimate = s.FullFilmAllDraftUsd;
 
         @* —— Simple top summary —— *@
@@ -95,70 +97,75 @@ else
             </div>
         </div>
 
-        @* —— Pie + legend —— *@
+        @if (!string.IsNullOrWhiteSpace(_report.Notes))
+        {
+            <p class="small text-muted mb-3" data-testid="cost-estimate-basis">@_report.Notes</p>
+        }
+        <div class="small text-muted mb-3 d-flex flex-wrap gap-2">
+            @if (!string.IsNullOrWhiteSpace(_report.ModelName))
+            {
+                <span class="badge text-bg-secondary fw-normal">Video · @_report.ModelName</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(_report.ImageModelName))
+            {
+                <span class="badge text-bg-secondary fw-normal">Portraits · @_report.ImageModelName</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(_report.PlanningModelName))
+            {
+                <span class="badge text-bg-secondary fw-normal">Planning · @_report.PlanningModelName</span>
+            }
+            @if (_report.VoiceIncludedInEstimate && !string.IsNullOrWhiteSpace(_report.VoiceModelName))
+            {
+                <span class="badge text-bg-secondary fw-normal">Voice · @_report.VoiceModelName</span>
+            }
+            else
+            {
+                <span class="badge text-bg-dark border border-secondary fw-normal text-muted">Voice · not in estimate</span>
+            }
+        </div>
+
+        @* —— Estimate pie —— *@
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="fw-semibold mb-1">Planned cost breakdown</div>
+                <p class="small text-muted mb-3">
+                    @if (string.Equals(_report.EstimateBasis, "none", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span>Import a book so we can size the film. Estimates use your selected models.</span>
+                    }
+                    else if (string.Equals(_report.EstimateBasis, "screenplay", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span>From the imported screenplay (scene lengths). Refines after the shot plan and cast choices.</span>
+                    }
+                    else
+                    {
+                        <span>From the shot plan and current cast / voice choices. Model rates from Settings.</span>
+                    }
+                </p>
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-5 d-flex justify-content-center">
+                        @RenderPie(estSlices, estTotal, "Estimate", "cost-estimate-pie")
+                    </div>
+                    <div class="col-md-7">
+                        @RenderLegend(estSlices, estTotal)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* —— Spent pie + legend —— *@
         <div class="card mb-4">
             <div class="card-body">
                 <div class="fw-semibold mb-1">Where spend went</div>
                 <p class="small text-muted mb-3">
-                    Based on tracked work for this project. Open a category for details.
+                    Tracked work so far. Open a category for details.
                 </p>
                 <div class="row g-4 align-items-center">
                     <div class="col-md-5 d-flex justify-content-center">
-                        @if (totalSpent <= 0.0001)
-                        {
-                            <div class="cost-pie-empty text-center text-muted py-4">
-                                <div class="cost-pie-placeholder mb-2" aria-hidden="true"></div>
-                                <div class="small">No spend recorded yet</div>
-                            </div>
-                        }
-                        else
-                        {
-                            <svg class="cost-pie" viewBox="0 0 42 42" width="220" height="220"
-                                 role="img" aria-label="Spend by category">
-                                <circle cx="21" cy="21" r="15.915" fill="transparent"
-                                        stroke="rgba(148,163,184,0.15)" stroke-width="6" />
-                                @{
-                                    var offset = 25.0; // start at top
-                                    foreach (var slice in slices.Where(x => x.Usd > 0))
-                                    {
-                                        var pct = 100.0 * slice.Usd / totalSpent;
-                                        <circle class="cost-pie-slice"
-                                                cx="21" cy="21" r="15.915"
-                                                fill="transparent"
-                                                stroke="@slice.Color"
-                                                stroke-width="6"
-                                                stroke-dasharray="@pct.ToString("0.###", CultureInfo.InvariantCulture) @( (100 - pct).ToString("0.###", CultureInfo.InvariantCulture) )"
-                                                stroke-dashoffset="@offset.ToString("0.###", CultureInfo.InvariantCulture)"
-                                                data-testid="@($"cost-slice-{slice.Id}")" />
-                                        offset -= pct;
-                                    }
-                                }
-                                <circle cx="21" cy="21" r="11.5" class="cost-pie-hole" />
-                                <text x="21" y="20.2" text-anchor="middle" class="cost-pie-center-label">Spent</text>
-                                <text x="21" y="24.5" text-anchor="middle" class="cost-pie-center-value">@Usd(totalSpent)</text>
-                            </svg>
-                        }
+                        @RenderPie(slices, totalSpent, "Spent", "cost-spent-pie")
                     </div>
                     <div class="col-md-7">
-                        <ul class="list-unstyled mb-0 cost-legend">
-                            @foreach (var slice in slices)
-                            {
-                                var pct = totalSpent > 0 ? 100.0 * slice.Usd / totalSpent : 0;
-                                <li class="d-flex align-items-center justify-content-between gap-2 py-1">
-                                    <span class="d-flex align-items-center gap-2 min-w-0">
-                                        <span class="cost-swatch" style="background:@slice.Color"></span>
-                                        <span class="text-truncate">@slice.Label</span>
-                                    </span>
-                                    <span class="text-nowrap small">
-                                        <strong>@Usd(slice.Usd)</strong>
-                                        @if (totalSpent > 0)
-                                        {
-                                            <span class="text-muted ms-1">(@pct.ToString("0")%)</span>
-                                        }
-                                    </span>
-                                </li>
-                            }
-                        </ul>
+                        @RenderLegend(slices, totalSpent)
                     </div>
                 </div>
             </div>
@@ -450,6 +457,94 @@ else
             .OrderByDescending(e => e.Ts ?? "")
             .ToList();
     }
+
+    private List<CostSlice> BuildEstimateSlices()
+    {
+        var by = _report?.EstimateByCategory;
+        return Categories
+            .Select(c =>
+            {
+                var usd = 0.0;
+                if (by is not null)
+                {
+                    if (by.TryGetValue(c.Id, out var v)) usd = v;
+                    else
+                    {
+                        // tolerate alternate keys
+                        foreach (var kv in by)
+                        {
+                            if (string.Equals(kv.Key, c.Id, StringComparison.OrdinalIgnoreCase))
+                            {
+                                usd = kv.Value;
+                                break;
+                            }
+                        }
+                    }
+                }
+                return new CostSlice(c.Id, c.Label, Math.Round(usd, 2), c.Color);
+            })
+            .ToList();
+    }
+
+    private RenderFragment RenderPie(List<CostSlice> slices, double total, string centerLabel, string testId) => __builder =>
+    {
+        if (total <= 0.0001)
+        {
+            <div class="cost-pie-empty text-center text-muted py-4" data-testid="@testId">
+                <div class="cost-pie-placeholder mb-2" aria-hidden="true"></div>
+                <div class="small">No @centerLabel.ToLowerInvariant() yet</div>
+            </div>
+        }
+        else
+        {
+            <svg class="cost-pie" viewBox="0 0 42 42" width="220" height="220"
+                 role="img" aria-label="@centerLabel by category" data-testid="@testId">
+                <circle cx="21" cy="21" r="15.915" fill="transparent"
+                        stroke="rgba(148,163,184,0.15)" stroke-width="6" />
+                @{
+                    var offset = 25.0;
+                    foreach (var slice in slices.Where(x => x.Usd > 0))
+                    {
+                        var pct = 100.0 * slice.Usd / total;
+                        <circle class="cost-pie-slice"
+                                cx="21" cy="21" r="15.915"
+                                fill="transparent"
+                                stroke="@slice.Color"
+                                stroke-width="6"
+                                stroke-dasharray="@pct.ToString("0.###", CultureInfo.InvariantCulture) @((100 - pct).ToString("0.###", CultureInfo.InvariantCulture))"
+                                stroke-dashoffset="@offset.ToString("0.###", CultureInfo.InvariantCulture)" />
+                        offset -= pct;
+                    }
+                }
+                <circle cx="21" cy="21" r="11.5" class="cost-pie-hole" />
+                <text x="21" y="20.2" text-anchor="middle" class="cost-pie-center-label">@centerLabel</text>
+                <text x="21" y="24.5" text-anchor="middle" class="cost-pie-center-value">@Usd(total)</text>
+            </svg>
+        }
+    };
+
+    private RenderFragment RenderLegend(List<CostSlice> slices, double total) => __builder =>
+    {
+        <ul class="list-unstyled mb-0 cost-legend">
+            @foreach (var slice in slices)
+            {
+                var pct = total > 0 ? 100.0 * slice.Usd / total : 0;
+                <li class="d-flex align-items-center justify-content-between gap-2 py-1">
+                    <span class="d-flex align-items-center gap-2 min-w-0">
+                        <span class="cost-swatch" style="background:@slice.Color"></span>
+                        <span class="text-truncate">@slice.Label</span>
+                    </span>
+                    <span class="text-nowrap small">
+                        <strong>@Usd(slice.Usd)</strong>
+                        @if (total > 0 && slice.Usd > 0)
+                        {
+                            <span class="text-muted ms-1">(@pct.ToString("0")%)</span>
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+    };
 
     /// <summary>Map raw ledger kind → user-facing category id.</summary>
     internal static string MapCategory(string? kind)

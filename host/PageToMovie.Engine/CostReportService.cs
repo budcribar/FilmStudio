@@ -46,6 +46,15 @@ public sealed class CostReportService
         var actual = SummarizeLedger(ledger);
 
         var blueprintClips = await LoadBlueprintClipsAsync(projectId, ct).ConfigureAwait(false);
+        var estimateBasis = blueprintClips.Any(s => s.Clips.Count > 0) ? "shot_plan" : "none";
+        if (estimateBasis == "none")
+        {
+            // Post-import (before shot plan): derive clip count from screenplay scene durations.
+            blueprintClips = await LoadScreenplayDerivedClipsAsync(projectId, cfg, ct).ConfigureAwait(false);
+            if (blueprintClips.Any(s => s.Clips.Count > 0))
+                estimateBasis = "screenplay";
+        }
+
         var onDisk = IndexOnDiskClips(projectId);
         var heroes = await LoadHeroMapAsync(projectId, ct).ConfigureAwait(false);
 
@@ -140,13 +149,54 @@ public sealed class CostReportService
 
         var scenarios = BuildScenarios(blueprintClips, onDisk, cfg, rates, retries, draftRes, heroRes);
 
+        // Non-video scope (model-dependent): cast portraits, optional voice, music, planning.
+        var videoModel = GetStr(cfg, "model_name", "grok-imagine-video");
+        var imageModel = GetStr(cfg, "image_model_name", "grok-imagine-image-quality");
+        var planningModel = GetStr(cfg, "planning_model_name",
+            GetStr(cfg, "chat_model_name", "grok-4.5"));
+        var voiceModel = GetStr(cfg, "voice_model_name", "eleven_multilingual_v2");
+        var audioModel = GetStr(cfg, "audio_model_name", "fal-ai/musicgen");
+
+        var castPlan = EstimateCharacterGeneration(projectId, rates, cfg);
+        var voicePlan = EstimateVoiceGeneration(projectId, rates, cfg);
+        var musicPlan = EstimateMusicGeneration(blueprintClips, rates, cfg);
+        var planningPlan = EstimatePlanningWork(blueprintClips, estimateBasis, rates, cfg);
+
+        var estimateByCategory = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["screenplay"] = Math.Round(planningPlan.Usd, 2),
+            ["characters"] = Math.Round(castPlan.Usd, 2),
+            ["video"] = Math.Round(allDraft, 2),
+            ["voice"] = Math.Round(voicePlan.Usd, 2),
+            ["music"] = Math.Round(musicPlan.Usd, 2),
+            ["other"] = 0,
+        };
+        var nonVideo = castPlan.Usd + voicePlan.Usd + musicPlan.Usd + planningPlan.Usd;
+        var fullDraft = allDraft + nonVideo;
+        var fullHero = allHero + nonVideo;
+        // Remaining first-pass: missing video + unfinished cast/voice/music (planning mostly already spent).
+        var remainingExtras = castPlan.RemainingUsd + voicePlan.RemainingUsd + musicPlan.RemainingUsd;
+        remainingDraft += remainingExtras;
+
+        var basisNote = estimateBasis switch
+        {
+            "shot_plan" => "Clip count from the shot plan.",
+            "screenplay" => "Clip count estimated from screenplay scene lengths (before shot plan).",
+            _ => "Import a book to unlock a film estimate.",
+        };
+
         return new CostReport
         {
             ProjectId = projectId,
             DraftResolution = draftRes,
             HeroResolution = heroRes,
-            ModelName = GetStr(cfg, "model_name", "grok-imagine-video"),
+            ModelName = videoModel,
             VideoProvider = GetStr(cfg, "video_provider", "grok"),
+            ImageModelName = imageModel,
+            PlanningModelName = planningModel,
+            VoiceModelName = voicePlan.Included ? voiceModel : null,
+            EstimateBasis = estimateBasis,
+            VoiceIncludedInEstimate = voicePlan.Included,
             OutputRateDraft = OutputRate(draftRes, draftRates),
             OutputRateHero = OutputRate(heroRes, heroRates),
             AssumeAvgRetries = retries,
@@ -167,13 +217,14 @@ public sealed class CostReportService
                 FinishDraftUsd = Math.Round(spent + remainingDraft, 2),
                 FinishDraftPlusHeroUsd = Math.Round(spent + remainingDraft + remainingHero, 2),
                 FinishFromActualUsd = Math.Round(actual.ActualUsd + remainingDraft, 2),
-                FullFilmAllDraftUsd = Math.Round(allDraft, 2),
-                FullFilmAllHeroUsd = Math.Round(allHero, 2),
+                FullFilmAllDraftUsd = Math.Round(fullDraft, 2),
+                FullFilmAllHeroUsd = Math.Round(fullHero, 2),
                 ScenesWithMedia = rows.Count(r => r.ClipsOnDisk > 0),
                 ScenesHero = rows.Count(r => r.IsHero),
                 ScenesTotal = rows.Count,
             },
             Actual = actual,
+            EstimateByCategory = estimateByCategory,
             Scenes = rows,
             Scenarios = scenarios,
             RecentEvents = ledger
@@ -181,9 +232,10 @@ public sealed class CostReportService
                 .Take(Math.Clamp(recentLimit, 1, 200))
                 .ToList(),
             Notes =
-                "Estimates = planning (vendor list rates for the selected video/image models × scope). " +
-                "Actual = cost_ledger at catalog list rates when each job completed (not a provider invoice). " +
-                "Backfill historical clips if actual looks low.",
+                basisNote + " " +
+                $"Rates from selected models (video={videoModel}, image={imageModel}" +
+                (voicePlan.Included ? $", voice={voiceModel}" : "") + "). " +
+                "Actual = tracked spend at list rates when work completed.",
         };
     }
 
@@ -1119,6 +1171,264 @@ public sealed class CostReportService
             double.TryParse(p.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out v))
             return true;
         return false;
+    }
+
+
+    /// <summary>
+    /// When no shot plan yet: invent clip slots from Fountain scene duration targets so
+    /// post-import estimates work (model rates × planned seconds).
+    /// </summary>
+    private async Task<List<BlueprintSceneClips>> LoadScreenplayDerivedClipsAsync(
+        string projectId,
+        Dictionary<string, JsonElement> cfg,
+        CancellationToken ct)
+    {
+        await Task.Yield();
+        var list = new List<BlueprintSceneClips>();
+        var model = ScreenplayService.TryBuildModelFromProject(_projects, projectId);
+        if (model is null) return list;
+
+        if (!model.TryGetValue("scenes", out var scenesObj) || scenesObj is not List<object?> scenes)
+            return list;
+
+        var defaultDur = GetDouble(cfg, "duration_seconds", 8);
+        if (defaultDur < 2) defaultDur = 8;
+
+        var sn = 0;
+        foreach (var raw in scenes)
+        {
+            if (raw is not Dictionary<string, object?> s) continue;
+            sn++;
+            string setting = "";
+            if (s.TryGetValue("setting", out var setObj) && setObj is not null)
+                setting = setObj.ToString() ?? "";
+            else if (s.TryGetValue("heading", out var hObj) && hObj is not null)
+                setting = hObj.ToString() ?? "";
+            var target = ToPositiveDouble(
+                s.TryGetValue("duration_target_seconds", out var d1) ? d1 : null,
+                ToPositiveDouble(
+                    s.TryGetValue("estimated_duration_seconds", out var d2) ? d2 : null,
+                    24));
+            target = Math.Clamp(target, defaultDur, 600);
+
+            var nClips = Math.Max(1, (int)Math.Ceiling(target / defaultDur));
+            var clips = new List<BlueprintClip>();
+            var remaining = target;
+            for (var i = 1; i <= nClips; i++)
+            {
+                var dur = i == nClips ? Math.Max(1, remaining) : Math.Min(defaultDur, remaining);
+                clips.Add(new BlueprintClip
+                {
+                    ClipNumber = i,
+                    DurationSec = dur,
+                    Continuation = i > 1 ? "prev" : "none",
+                });
+                remaining -= dur;
+            }
+
+            var chars = new List<string>();
+            if (s.TryGetValue("characters_on_screen", out var cos) && cos is List<object?> cosList)
+            {
+                foreach (var x in cosList)
+                {
+                    var name = x?.ToString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        chars.Add(name!);
+                }
+            }
+
+            list.Add(new BlueprintSceneClips
+            {
+                SceneNumber = s.TryGetValue("scene_number", out var snObj) && snObj is not null
+                    && int.TryParse(snObj.ToString(), out var snParsed) ? snParsed : sn,
+                Setting = setting ?? "",
+                Clips = clips,
+                CharactersOnScreen = chars,
+            });
+        }
+
+        return list.OrderBy(x => x.SceneNumber).ToList();
+    }
+
+    private readonly record struct ScopeEstimate(double Usd, double RemainingUsd, bool Included);
+
+    /// <summary>Character portraits: variants × image-model unit cost (catalog).</summary>
+    private ScopeEstimate EstimateCharacterGeneration(
+        string projectId,
+        Dictionary<string, object?> rates,
+        Dictionary<string, JsonElement> cfg)
+    {
+        var unit = GetDouble(rates, "image_output_quality", 0.05);
+        var variants = 3;
+        if (cfg.TryGetValue("cost_estimates", out var ce) && ce.ValueKind == JsonValueKind.Object)
+        {
+            if (ce.TryGetProperty("character_variants", out var cv) && cv.TryGetInt32(out var n) && n > 0)
+                variants = Math.Clamp(n, 1, 6);
+        }
+
+        var chars = _projects.ListCharacters(projectId);
+        var onScreen = chars.Where(c => !c.VoiceOnly).ToList();
+        if (onScreen.Count == 0)
+            return new ScopeEstimate(0, 0, Included: false);
+
+        double total = 0, remaining = 0;
+        foreach (var c in onScreen)
+        {
+            // Plan for a full generate cycle per character; locked looks are already paid for.
+            var planned = variants * unit;
+            total += planned;
+            if (!c.Locked)
+                remaining += planned;
+        }
+
+        return new ScopeEstimate(Math.Round(total, 4), Math.Round(remaining, 4), Included: true);
+    }
+
+    /// <summary>
+    /// Personal voice only when the project has opted in (clone samples / profiles) or
+    /// cost_estimates.include_voice is true. Priced from voice model catalog when present.
+    /// </summary>
+    private ScopeEstimate EstimateVoiceGeneration(
+        string projectId,
+        Dictionary<string, object?> rates,
+        Dictionary<string, JsonElement> cfg)
+    {
+        var include = false;
+        double cloneUsd = 0.0;
+        double ttsPerCharUsd = 0.0;
+
+        if (cfg.TryGetValue("cost_estimates", out var ce) && ce.ValueKind == JsonValueKind.Object)
+        {
+            if (ce.TryGetProperty("include_voice", out var iv) &&
+                iv.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                include = iv.GetBoolean();
+            if (ce.TryGetProperty("voice_clone_usd", out var vc) && vc.TryGetDouble(out var v1))
+                cloneUsd = v1;
+            if (ce.TryGetProperty("voice_tts_per_character_usd", out var vt) && vt.TryGetDouble(out var v2))
+                ttsPerCharUsd = v2;
+        }
+
+        var chars = _projects.ListCharacters(projectId);
+        var withVoice = chars.Where(c =>
+            c.HasVoiceCloneSample || !string.IsNullOrWhiteSpace(c.VoiceProfile)).ToList();
+        if (withVoice.Count > 0)
+            include = true;
+
+        if (!include || chars.Count == 0)
+            return new ScopeEstimate(0, 0, Included: false);
+
+        // Prefer catalog voice entry if it ever gains unit prices; else planning knobs / defaults.
+        var voiceId = GetStr(cfg, "voice_model_name", "eleven_multilingual_v2");
+        var voiceEntry = SupportedModelCatalog.Find(voiceId, ModelCapability.Voice);
+        // Defaults: clone ~$0.00 when sample already on disk; TTS dialogue budget per speaking role.
+        if (cloneUsd <= 0) cloneUsd = 0.0; // clone API often free tier / included — keep 0 unless configured
+        if (ttsPerCharUsd <= 0) ttsPerCharUsd = 0.12; // rough list-rate stand-in per speaking character
+
+        var targets = withVoice.Count > 0 ? withVoice : chars.Where(c => !c.VoiceOnly).ToList();
+        if (targets.Count == 0)
+            targets = chars.ToList();
+
+        double total = 0, remaining = 0;
+        foreach (var c in targets)
+        {
+            var line = ttsPerCharUsd + (c.HasVoiceCloneSample ? 0 : cloneUsd);
+            total += line;
+            // Still generating film dialogue for everyone in scope until video is done — keep remaining = total for now
+            // unless voice profile already approved and we only need TTS at film time (still unpaid).
+            remaining += line;
+        }
+
+        _ = voiceEntry;
+        _ = rates;
+        return new ScopeEstimate(Math.Round(total, 4), Math.Round(remaining, 4), Included: true);
+    }
+
+    /// <summary>Background music: one track per scene with media plan, using audio model if priced.</summary>
+    private static ScopeEstimate EstimateMusicGeneration(
+        List<BlueprintSceneClips> scenes,
+        Dictionary<string, object?> rates,
+        Dictionary<string, JsonElement> cfg)
+    {
+        if (scenes.Count == 0)
+            return new ScopeEstimate(0, 0, Included: false);
+
+        var perScene = 0.08;
+        if (cfg.TryGetValue("cost_estimates", out var ce) && ce.ValueKind == JsonValueKind.Object &&
+            ce.TryGetProperty("music_per_scene_usd", out var m) && m.TryGetDouble(out var mv) && mv >= 0)
+            perScene = mv;
+
+        // Disable when audio model is "none"
+        var audioModel = GetStr(cfg, "audio_model_name", "");
+        if (string.Equals(audioModel, "none", StringComparison.OrdinalIgnoreCase))
+            return new ScopeEstimate(0, 0, Included: false);
+
+        var n = scenes.Count(s => s.Clips.Count > 0);
+        if (n == 0) n = scenes.Count;
+        var total = n * perScene;
+        _ = rates;
+        return new ScopeEstimate(Math.Round(total, 4), Math.Round(total, 4), Included: total > 0);
+    }
+
+    /// <summary>
+    /// Screenplay / shot-plan LLM work. Uses chat model token rates when available;
+    /// after import the screenplay pass is treated as done (remaining ≈ shot plan only).
+    /// </summary>
+    private static ScopeEstimate EstimatePlanningWork(
+        List<BlueprintSceneClips> scenes,
+        string estimateBasis,
+        Dictionary<string, object?> rates,
+        Dictionary<string, JsonElement> cfg)
+    {
+        if (scenes.Count == 0 && estimateBasis == "none")
+            return new ScopeEstimate(0, 0, Included: false);
+
+        var planningId = GetStr(cfg, "planning_model_name",
+            GetStr(cfg, "chat_model_name", "grok-4.5"));
+        var entry = SupportedModelCatalog.Find(planningId, ModelCapability.Chat)
+                    ?? SupportedModelCatalog.ResolveOrDefault(planningId, ModelCapability.Chat);
+
+        // Rough token budgets: import screenplay ~80k in / 20k out; shot plan ~40k / 25k.
+        var inRate = (entry.InputCostPerMillionTokens ?? 2.0) / 1_000_000.0;
+        var outRate = (entry.OutputCostPerMillionTokens ?? 10.0) / 1_000_000.0;
+
+        var sceneN = Math.Max(1, scenes.Count);
+        var importUsd = (80_000 * inRate) + (20_000 * outRate);
+        // Scale mild with scene count
+        importUsd *= Math.Clamp(sceneN / 12.0, 0.6, 2.5);
+        var shotPlanUsd = (40_000 * inRate) + (25_000 * outRate);
+        shotPlanUsd *= Math.Clamp(sceneN / 12.0, 0.6, 2.5);
+
+        double total, remaining;
+        if (estimateBasis == "shot_plan")
+        {
+            // Both passes done for planning purposes
+            total = importUsd + shotPlanUsd;
+            remaining = 0;
+        }
+        else if (estimateBasis == "screenplay")
+        {
+            total = importUsd + shotPlanUsd;
+            remaining = shotPlanUsd; // shot plan still ahead
+        }
+        else
+        {
+            total = importUsd + shotPlanUsd;
+            remaining = total;
+        }
+
+        _ = rates;
+        return new ScopeEstimate(Math.Round(total, 4), Math.Round(remaining, 4), Included: true);
+    }
+
+    private static double ToPositiveDouble(object? v, double fallback)
+    {
+        if (v is null) return fallback;
+        try
+        {
+            var d = Convert.ToDouble(v, CultureInfo.InvariantCulture);
+            return d > 0 ? d : fallback;
+        }
+        catch { return fallback; }
     }
 
     private sealed class BlueprintSceneClips
