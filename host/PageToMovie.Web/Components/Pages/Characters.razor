@@ -4,8 +4,10 @@
 @inject JobHubClient Hub
 @inject AdminSessionService Session
 @inject ActiveProjectState ActiveProject
+@inject ClientMediaFolderService MediaFolder
 @inject IJSRuntime Js
 @using PageToMovie.Core.Models
+@using PageToMovie.Web.Services
 @using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Cast & voice</PageTitle>
@@ -803,6 +805,11 @@ else
     private string? _voiceCloneError;
     private string? _voiceClonePlayUrl;
     private long _voiceCloneBust;
+    private string? _voiceSaveHint;
+    private CancellationTokenSource? _voiceSaveCts;
+    private bool _showMediaAudioPicker;
+    private bool _loadingMediaAudio;
+    private List<ClientMediaFolderService.LocalAudioFile> _mediaAudioFiles = new();
 
     private int SelectedSeedCount => _seedOrder.Count;
 
@@ -834,10 +841,7 @@ else
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" class="btn btn-sm btn-primary"
-                    disabled="@(_busy || VoiceJobRunning)" @onclick="SaveVoiceAsync">
-                Save voice
-            </button>
+            <span class="small text-muted">@(_voiceSaveHint ?? "Profile saves automatically")</span>
             <button type="button"
                     class="btn btn-sm btn-outline-secondary"
                     disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
@@ -892,7 +896,6 @@ else
         }
         @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
         {
-            @* Short film sample is MP4 (video+audio); legacy MP3 still works in &lt;video&gt; or &lt;audio&gt;. *@
             <video class="mt-2 w-100 rounded border" style="max-height: 240px; background: #000;"
                    controls autoplay playsinline src="@_voicePreviewUrl" @key="_voicePreviewUrl"></video>
         }
@@ -910,9 +913,14 @@ else
                 }
             </div>
             <p class="form-text mb-2">
-                Record with the mic or upload audio of the person speaking. Stored as a clone template
-                for <strong>ElevenLabs</strong> (or other Voice models in the catalog). Add
-                <code>ELEVENLABS_API_KEY</code> under Settings → API keys. Style text above still drives film voice previews today.
+                Record or pick audio from your <strong>media folder</strong>
+                @if (MediaFolder.IsConnected)
+                {
+                    <text> (<code>@MediaFolder.FolderName</code>)</text>
+                }
+                — same place as clip MP4/MP3 files. Auto-saved under
+                <code>assets/characters/…/voice_clone_sample.*</code>.
+                Clone providers (e.g. ElevenLabs) use this sample; style text above still drives film voice previews.
             </p>
             <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                 @if (!_voiceRecRecording)
@@ -930,7 +938,7 @@ else
                             disabled="@_voiceCloneBusy"
                             @onclick="StopVoiceCloneMicAsync"
                             data-testid="voice-clone-mic-stop">
-                        Stop and save
+                        Stop — save to media folder
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-secondary"
                             disabled="@_voiceCloneBusy"
@@ -939,13 +947,12 @@ else
                     </button>
                     <span class="small text-danger">Recording…</span>
                 }
-                <label class="btn btn-sm btn-outline-secondary mb-0">
-                    Upload audio
-                    <InputFile OnChange="OnVoiceCloneUploadAsync"
-                               accept="audio/*,.mp3,.wav,.webm,.m4a,.ogg"
-                               class="d-none"
-                               data-testid="voice-clone-upload" />
-                </label>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        disabled="@(_busy || _voiceCloneBusy || VoiceJobRunning)"
+                        @onclick="OpenMediaFolderAudioPickerAsync"
+                        data-testid="voice-clone-from-folder">
+                    Pick from media folder
+                </button>
                 @if (_selected?.HasVoiceCloneSample == true)
                 {
                     <button type="button" class="btn btn-sm btn-outline-danger"
@@ -955,6 +962,44 @@ else
                     </button>
                 }
             </div>
+            @if (_showMediaAudioPicker)
+            {
+                <div class="border border-secondary border-opacity-50 rounded p-2 mt-2 bg-dark bg-opacity-50"
+                     data-testid="voice-clone-folder-picker">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="small">Audio in media folder</strong>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                                @onclick="() => _showMediaAudioPicker = false">✕</button>
+                    </div>
+                    @if (_loadingMediaAudio)
+                    {
+                        <div class="small text-muted">Scanning folder…</div>
+                    }
+                    else if (_mediaAudioFiles.Count == 0)
+                    {
+                        <div class="small text-muted mb-2">
+                            No audio files under this project in the media folder yet.
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                @onclick="OpenMediaFolderAudioPickerAsync">Refresh</button>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
+                            @foreach (var f in _mediaAudioFiles)
+                            {
+                                <button type="button"
+                                        class="list-group-item list-group-item-action list-group-item-dark py-1 px-2 small text-start"
+                                        disabled="@(_busy || _voiceCloneBusy)"
+                                        @onclick="@(() => PickMediaFolderAudioAsync(f))">
+                                    <span class="text-truncate d-block">@f.Name</span>
+                                    <span class="text-muted" style="font-size:0.7rem;">@f.RelativePath · @(Math.Max(1, f.SizeBytes / 1024)) KB</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
             @if (!string.IsNullOrEmpty(_voiceCloneHint))
             {
                 <div class="form-text">@_voiceCloneHint</div>
@@ -968,6 +1013,7 @@ else
                 <audio class="mt-2 w-100" controls src="@_voiceClonePlayUrl" @key="_voiceClonePlayUrl"></audio>
             }
         </div>
+
     };
 
     private bool _extractingCast;
@@ -1817,11 +1863,14 @@ else
         }
     }
 
-    private async Task SaveVoiceAsync()
+    private async Task SaveVoiceAsync(bool silent = false)
     {
         if (_selected is null) return;
-        _busy = true;
-        _error = null;
+        if (!silent)
+        {
+            _busy = true;
+            _error = null;
+        }
         try
         {
             await Engine.UpdateCharacterVoiceAsync(
@@ -1829,34 +1878,73 @@ else
                 _selected.Key,
                 voiceProfile: _editVoiceProfile,
                 voiceLabel: _editVoiceLabel);
-            _message = $"Saved voice for {_selected.DisplayName}";
+            if (!silent)
+                _message = $"Saved voice for {_selected.DisplayName}";
             await SoftReloadAsync();
-            // re-bind edit fields after reload
             if (_selected is not null)
             {
                 _editVoiceLabel = _selected.VoiceLabel ?? "";
                 _editVoiceProfile = _selected.VoiceProfile ?? "";
             }
-            // Nav tooltips / Scenes gate depend on cast + shot-plan readiness
             try { await ActiveProject.RefreshReadinessAsync(Engine); } catch { /* nav */ }
-            // Next-step CTA handles “cast complete” — don’t stack another “ready” message
-            if (IsCastComplete)
+            if (IsCastComplete && !silent)
                 _message = null;
         }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
+        catch (Exception ex)
+        {
+            if (!silent) _error = ex.Message;
+            else throw;
+        }
+        finally
+        {
+            if (!silent) _busy = false;
+        }
     }
 
     private void OnVoiceLabelInput(ChangeEventArgs e)
     {
         _editVoiceLabel = e.Value?.ToString() ?? "";
         MarkVoiceStaleIfPlaying();
+        ScheduleAutoSaveVoice();
     }
 
     private void OnVoiceProfileInput(ChangeEventArgs e)
     {
         _editVoiceProfile = e.Value?.ToString() ?? "";
         MarkVoiceStaleIfPlaying();
+        ScheduleAutoSaveVoice();
+    }
+
+    private void ScheduleAutoSaveVoice()
+    {
+        _voiceSaveCts?.Cancel();
+        _voiceSaveCts = new CancellationTokenSource();
+        var token = _voiceSaveCts.Token;
+        _ = AutoSaveVoiceDebouncedAsync(token);
+    }
+
+    private async Task AutoSaveVoiceDebouncedAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(700, token);
+            if (token.IsCancellationRequested || _selected is null) return;
+            _voiceSaveHint = "Saving…";
+            await InvokeAsync(StateHasChanged);
+            await SaveVoiceAsync(silent: true);
+            if (!token.IsCancellationRequested)
+            {
+                _voiceSaveHint = "Saved";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException) { }
+        catch (Exception ex)
+        {
+            _voiceSaveHint = "Save failed";
+            _error = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private void MarkVoiceStaleIfPlaying()
@@ -2008,32 +2096,34 @@ else
 
     private async Task StopVoiceCloneMicAsync()
     {
-        if (string.IsNullOrEmpty(_projectId) || string.IsNullOrEmpty(_selectedKey)) return;
+        if (_selected is null || string.IsNullOrEmpty(_selectedKey)) return;
         _voiceCloneBusy = true;
         _voiceCloneError = null;
+        _voiceCloneHint = "Saving recording…";
+        StateHasChanged();
         try
         {
             var result = await Js.InvokeAsync<VoiceCaptureStopResult>("PageToMovieVoiceCapture.stop");
             _voiceRecRecording = false;
-            if (result is null || !result.Ok || string.IsNullOrWhiteSpace(result.Base64))
+            if (result is null || !result.Ok || string.IsNullOrEmpty(result.Base64))
             {
-                _voiceCloneError = result?.Error ?? "Empty recording.";
+                _voiceCloneError = result?.Error ?? "No audio captured";
                 return;
             }
-            var bytes = Convert.FromBase64String(result.Base64);
-            await using var ms = new MemoryStream(bytes);
+            var raw = Convert.FromBase64String(result.Base64);
             var name = string.IsNullOrWhiteSpace(result.FileName) ? "voice_clone_sample.webm" : result.FileName!;
-            await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, ms, name);
-            _voiceCloneHint = "Clone sample saved.";
-            await ReloadSelectedCharacterAsync();
+            await PersistVoiceCloneSampleAsync(raw, name);
         }
         catch (Exception ex)
         {
             _voiceCloneError = ex.Message;
             _voiceRecRecording = false;
-            try { await Js.InvokeVoidAsync("PageToMovieVoiceCapture.cancel"); } catch { }
         }
-        finally { _voiceCloneBusy = false; }
+        finally
+        {
+            _voiceCloneBusy = false;
+            StateHasChanged();
+        }
     }
 
     private async Task CancelVoiceCloneMicAsync()
@@ -2043,19 +2133,126 @@ else
         _voiceCloneHint = "Recording cancelled.";
     }
 
+    private async Task OpenMediaFolderAudioPickerAsync()
+    {
+        _voiceCloneError = null;
+        _showMediaAudioPicker = true;
+        _loadingMediaAudio = true;
+        StateHasChanged();
+        try
+        {
+            if (!MediaFolder.IsConnected)
+            {
+                var ok = await MediaFolder.ConnectFolderAsync();
+                if (!ok)
+                {
+                    _voiceCloneError = MediaFolder.LastStatus ?? "Connect your media folder first (same folder as MP4 clips).";
+                    _showMediaAudioPicker = false;
+                    return;
+                }
+            }
+            var files = await MediaFolder.ListAudioFilesAsync(_projectId);
+            // Prefer project-scoped files; if empty, list whole folder
+            if (files.Count == 0)
+                files = await MediaFolder.ListAudioFilesAsync(null);
+            _mediaAudioFiles = files.ToList();
+            _voiceCloneHint = _mediaAudioFiles.Count > 0
+                ? $"Found {_mediaAudioFiles.Count} audio file(s) — click one to use as clone sample."
+                : "No audio in the media folder yet.";
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+        }
+        finally
+        {
+            _loadingMediaAudio = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PickMediaFolderAudioAsync(ClientMediaFolderService.LocalAudioFile file)
+    {
+        if (_selected is null || string.IsNullOrEmpty(_selectedKey)) return;
+        _voiceCloneBusy = true;
+        _voiceCloneError = null;
+        _voiceCloneHint = $"Loading {file.Name}…";
+        StateHasChanged();
+        try
+        {
+            var bytes = await MediaFolder.ReadLocalBytesAsync(file.RelativePath);
+            if (bytes is null || bytes.Length == 0)
+            {
+                _voiceCloneError = "Could not read that file from the media folder.";
+                return;
+            }
+            await PersistVoiceCloneSampleAsync(bytes, file.Name);
+            _showMediaAudioPicker = false;
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+        }
+        finally
+        {
+            _voiceCloneBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Write clone sample to the client media folder (source of truth for large media) and
+    /// mirror metadata/bytes to the server so previews and ElevenLabs still work.
+    /// </summary>
+    private async Task PersistVoiceCloneSampleAsync(byte[] bytes, string fileName)
+    {
+        if (_selected is null || string.IsNullOrEmpty(_selectedKey)) return;
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        if (ext is not (".webm" or ".mp3" or ".wav" or ".m4a" or ".ogg" or ".aac" or ".mp4"))
+            ext = ".webm";
+        if (ext == ".mp4") ext = ".webm";
+        var safeKey = string.Join("_", (_selectedKey ?? "character").Split(Path.GetInvalidFileNameChars()));
+        var rel = $"assets/characters/{safeKey}/voice_clone_sample{ext}";
+
+        // Client media folder first (same as clips)
+        var (ok, path, err) = await MediaFolder.SaveBytesAsync(_projectId, rel, bytes);
+        if (!ok)
+        {
+            // Still try server so clone isn't lost entirely
+            _voiceCloneHint = err ?? "Media folder write failed — saving to project only.";
+        }
+        else
+        {
+            _voiceCloneHint = $"Saved to media folder: {path ?? rel}";
+        }
+
+        await using var ms = new MemoryStream(bytes);
+        await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, ms, "voice_clone_sample" + ext);
+        await SoftReloadAsync();
+        RefreshVoiceClonePlayUrl();
+        _voiceCloneBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        RefreshVoiceClonePlayUrl();
+        if (ok)
+            _voiceCloneHint = $"Clone sample saved to media folder and project for {_selected.DisplayName}.";
+        else
+            _voiceCloneHint = $"Clone sample saved to project. Media folder: {err}";
+    }
+
     private async Task OnVoiceCloneUploadAsync(InputFileChangeEventArgs e)
     {
-        if (string.IsNullOrEmpty(_projectId) || string.IsNullOrEmpty(_selectedKey)) return;
+        // Legacy OS file picker path — prefer media folder; still supported if invoked.
+        if (_selected is null || _selected.VoiceOnly) return;
         var file = e.File;
         if (file is null) return;
         _voiceCloneBusy = true;
         _voiceCloneError = null;
         try
         {
-            await using var stream = file.OpenReadStream(15 * 1024 * 1024);
-            await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, stream, file.Name);
-            _voiceCloneHint = $"Uploaded {file.Name} as clone sample.";
-            await ReloadSelectedCharacterAsync();
+            const long max = 15 * 1024 * 1024;
+            await using var stream = file.OpenReadStream(max);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            await PersistVoiceCloneSampleAsync(ms.ToArray(), file.Name);
         }
         catch (Exception ex) { _voiceCloneError = ex.Message; }
         finally { _voiceCloneBusy = false; }
@@ -2168,6 +2365,15 @@ else
     }
 
     public async ValueTask DisposeAsync()
+    {
+        _voiceSaveCts?.Cancel();
+        _voiceSaveCts?.Dispose();
+        // original continues
+        await DisposeAsyncCore();
+    }
+
+    private async ValueTask DisposeAsyncCore()
+
     {
         Hub.JobUpdated -= OnJobUpdated;
         Hub.JobLog -= OnJobLog;
