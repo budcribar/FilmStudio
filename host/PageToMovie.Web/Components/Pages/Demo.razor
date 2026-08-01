@@ -11,9 +11,9 @@
         <div class="demo-hero-badge">AI Film Studio · Public gallery</div>
         <h1 class="demo-hero-title">See what the pipeline can make</h1>
         <p class="demo-hero-lead">
-            Approved shorts made with PageToMovie — open to everyone.
-            New submissions wait for human review before they appear here
-            (no automatic AI scanning). Star films you like
+            Shorts made with PageToMovie and published to YouTube — open to everyone.
+            Films appear here once YouTube has the video (YouTube is the source of truth for playback).
+            Star films you like
             @if (!Session.IsLoggedIn)
             {
                 <span> (sign in to star)</span>
@@ -61,7 +61,7 @@
                 <div class="demo-empty-icon" aria-hidden="true">🎬</div>
                 <h2 class="h4 mb-2">No published films yet</h2>
                 <p class="text-muted mb-0 mx-auto" style="max-width: 28rem;">
-                    New films appear here as they are published.
+                    New films appear here after they are published to YouTube from Review.
                     <a href="/login">Sign in</a> to create your own.
                 </p>
             </div>

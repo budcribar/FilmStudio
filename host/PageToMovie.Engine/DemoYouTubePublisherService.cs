@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Uploads an approved public demo's local movie.mp4 to YouTube (reusing the same authorized
+/// Uploads a published demo's local movie.mp4 to YouTube (reusing the same authorized
 /// channel connection as the Review page's WIP-movie upload — <see cref="YouTubeAuthService"/>).
 /// On first publish: upload, store YoutubeId, delete local movie.mp4.
 /// On re-publish (Item 11 / V2): when a local movie exists beside an existing YoutubeId,

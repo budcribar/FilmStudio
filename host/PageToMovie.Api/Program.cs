@@ -5458,7 +5458,7 @@ static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
     d.PrivacyStatus,
 };
 
-/// <summary>Public gallery: only approved demos (no login). sort=top|new (default top by upvotes).</summary>
+/// <summary>Public gallery: demos on YouTube (no login). sort=top|new (default top by upvotes).</summary>
 app.MapGet("/api/demos", async (
     DemoCatalogService demos,
     DemoUpvoteService upvotes,
@@ -6158,17 +6158,25 @@ app.MapPost("/api/demos", async (
                 isAiSyntheticContent: isAiSynthetic,
                 privacyStatus: privacyStatus,
                 tags: tags);
+            // Always push to YouTube — gallery only lists films with a YouTube id.
+            var demoIdForUpload = entry.Id;
+            _ = Task.Run(() => youTubePublisher.PublishAsync(demoIdForUpload, CancellationToken.None));
+            autoPublic = true;
         }
 
         return Results.Ok(new
         {
             ok = true,
-            pendingReview = !autoPublic && !replacedExisting,
-            autoPublic,
+            // No admin review queue — YouTube upload is the gate for the public wall.
+            pendingReview = false,
+            awaitingYouTube = string.IsNullOrWhiteSpace(entry.YoutubeId),
+            autoPublic = true,
             replacedExisting,
             message = replacedExisting
-                ? "Updated published demo."
-                : "Film published to gallery.",
+                ? "Updated cut — uploading to YouTube. Gallery shows it when the upload finishes."
+                : string.IsNullOrWhiteSpace(entry.YoutubeId)
+                    ? "Publishing to YouTube… It appears in the gallery when the upload finishes."
+                    : "Film is live on YouTube and in the gallery.",
             demo = DemoPublicDto(entry),
             pagePath = "/demo",
         });
@@ -6179,7 +6187,7 @@ app.MapPost("/api/demos", async (
     }
 });
 
-/// <summary>Report a public demo (any viewer; optional login). Auto-pending after 3 reports.</summary>
+/// <summary>Report a public demo (any viewer; optional login). Auto-removed after 3 reports.</summary>
 app.MapPost("/api/demos/{demoId}/report", (
     string demoId,
     DemoReportRequest? body,
