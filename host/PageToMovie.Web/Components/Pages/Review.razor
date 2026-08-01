@@ -294,9 +294,21 @@ else if (_activeTab == "play")
 
 @if (_showWipPlayer && _clientStitching)
 {
-    <div class="card mb-3 border-secondary">
-        <div class="card-body py-2 small text-muted">
-            Combining full cut in browser… @_clientStitchStatus
+    <div class="card mb-3 border-primary" data-testid="preview-progress">
+        <div class="card-header py-2 fw-semibold">Building preview…</div>
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+                <span>@(_clientStitchStatus ?? "Starting…")</span>
+                <span>@_clientStitchPercent%</span>
+            </div>
+            <div class="progress" style="height: 0.55rem;" role="progressbar"
+                 aria-valuenow="@_clientStitchPercent" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                     style="width: @(Math.Clamp(_clientStitchPercent, 2, 100))%"></div>
+            </div>
+            <p class="small text-muted mb-0 mt-2">
+                Combining scenes in your browser — this can take a bit for long films.
+            </p>
         </div>
     </div>
 }
@@ -307,11 +319,11 @@ else if (_showWipPlayer && (!string.IsNullOrEmpty(_clientWipUrl) || _wipExists))
             <span>
                 @if (!string.IsNullOrEmpty(_clientWipUrl))
                 {
-                    <span>WIP preview <span class="badge bg-info text-dark ms-1">client stitch</span></span>
+                    <span>Preview</span>
                 }
                 else
                 {
-                    <span>WIP movie <code class="small">@(_wipPath ?? "assets/movie_wip.mp4")</code></span>
+                    <span>Preview</span>
                     @if (_wipStale)
                     {
                         <span class="badge bg-warning text-dark ms-1">stale</span>
@@ -383,7 +395,7 @@ else if (_showWipPlayer && (!string.IsNullOrEmpty(_clientWipUrl) || _wipExists))
                 <code class="small">S@(playSn.ToString("D2"))</code>
                 @if (!string.IsNullOrEmpty(_clientSceneUrl))
                 {
-                    <span class="badge bg-info text-dark ms-1">client stitch</span>
+                    
                 }
             </span>
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideScenePlayerAsync">Hide</button>
@@ -488,7 +500,7 @@ else if (_showScenePlayer && _clientStitching)
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Scenes &amp; clips</span>
-                <span class="small text-muted fw-normal">Play stitches in browser · WIP is separate</span>
+                <span class="small text-muted fw-normal">Play builds a preview in your browser</span>
             </div>
             <div class="card-body p-0">
                 @if (_scenes.Count == 0)
@@ -556,7 +568,7 @@ else if (_showScenePlayer && _clientStitching)
                                             <div class="d-flex flex-wrap gap-1 justify-content-end">
                                                 <button class="btn btn-sm btn-success"
                                                         disabled="@(_busy || JobRunning || (s.ClipsOnDisk == 0 && !s.CompositeExists))"
-                                                        title="Play scene (browser stitch from clips)"
+                                                        title="Play this scene"
                                                         @onclick="() => PlaySceneAsync(sn)">
                                                     ▶ Play
                                                 </button>
@@ -601,7 +613,7 @@ else if (_showScenePlayer && _clientStitching)
                     <div class="d-flex gap-1">
                         <button class="btn btn-sm btn-success"
                                 disabled="@(_busy || JobRunning || (ClipCountOnDisk(sel) == 0 && !SceneHasComposite(sel)))"
-                                title="Play scene (browser stitch from clips)"
+                                title="Play this scene"
                                 @onclick="() => PlaySceneAsync(sel)">
                             ▶ Play scene
                         </button>
@@ -759,7 +771,7 @@ else if (_showScenePlayer && _clientStitching)
                     <p class="small text-muted mb-0 mt-3">
                         <strong>Review</strong> drafts AI feedback (includes previous clip end when C2+).
                         <strong>Apply suggestions</strong> shows edits; <strong>Apply + regen</strong> writes them and re-gens.
-                        <strong>Play scene</strong> / <strong>Play WIP</strong> stitch in the browser when needed (no server ffmpeg for preview).
+                        <strong>Play</strong> builds a preview in your browser from scene clips.
                     </p>
                 </div>
             </div>
@@ -825,7 +837,7 @@ else if (_activeTab == "play")
         <div class="card-header border-secondary d-flex justify-content-between align-items-center py-2.5" style="background-color: #1e293b !important;">
             <div class="d-flex align-items-center gap-2">
                 <span class="fs-5">🎬</span>
-                <span class="fw-bold fs-6">Full Movie Player</span>
+                <span class="fw-bold fs-6">Preview</span>
                 @if (string.IsNullOrEmpty(_clientWipUrl) && !string.IsNullOrEmpty(_wipUpdatedAt))
                 {
                     <span class="badge bg-dark border border-secondary text-white-50">updated @_wipUpdatedAt · @FormatBytes(_wipBytes)</span>
@@ -836,10 +848,23 @@ else if (_activeTab == "play")
         <div class="card-body p-3">
             @if (_clientStitching)
             {
-                <div class="p-5 text-center text-info">
-                    <div class="spinner-border text-info me-2" role="status"></div>
-                    <div class="fw-semibold mt-2">Stitching full movie preview in browser…</div>
-                    <div class="small text-muted mt-1">@_clientStitchStatus</div>
+                <div class="p-4 text-center" data-testid="preview-progress-play-tab">
+                    <div class="fw-semibold mb-2">Building preview…</div>
+                    <div class="d-flex justify-content-between small text-muted mb-1 mx-auto" style="max-width: 420px;">
+                        <span>@(_clientStitchStatus ?? "Starting…")</span>
+                        <span>@_clientStitchPercent%</span>
+                    </div>
+                    <div class="progress mx-auto mb-2" style="max-width: 420px; height: 0.55rem;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             style="width: @(Math.Clamp(_clientStitchPercent, 2, 100))%"></div>
+                    </div>
+                    <div class="small text-muted">Combining scenes in your browser — keep this tab open.</div>
+                </div>
+            }
+            else if (string.IsNullOrEmpty(_clientWipUrl) && !_wipExists)
+            {
+                <div class="p-4 text-center text-muted">
+                    <p class="mb-2">No preview yet. Click <strong>Play</strong> again after clips are ready on Film.</p>
                 </div>
             }
             else
@@ -854,11 +879,11 @@ else if (_activeTab == "play")
                     <span class="small text-muted">
                         @if (!string.IsNullOrEmpty(_clientWipUrl))
                         {
-                            <span>Stitched directly in browser from scene clips</span>
+                            <span>Preview</span>
                         }
                         else
                         {
-                            <span>Saved movie file on server</span>
+                            <span>Saved movie file</span>
                         }
                     </span>
                     <div class="d-flex gap-2">
@@ -1209,6 +1234,7 @@ else
     private string? _clientWipUrl;
     private string? _clientSceneUrl;
     private bool _clientStitching;
+    private int _clientStitchPercent;
     private string? _clientStitchStatus;
     private bool _showScenePlayer;
     private int? _playingScene;
@@ -1460,13 +1486,29 @@ else
                 {
                     var cleanPid = System.Text.RegularExpressions.Regex.Replace(_projectId, @"[^\w\.-]", "_");
                     var fileName = $"{cleanPid}_full.mp4";
-                    _message = $"🎬 Downloaded movie to your PC — opening in {res.Editor ?? _preferredVideoEditor}." +
-                        (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
-                    await JS.InvokeVoidAsync("eval", $"const a=document.createElement('a');a.href='{movieUrl}';a.download='{fileName}';document.body.appendChild(a);a.click();document.body.removeChild(a);");
+                    var dl = await JS.InvokeAsync<System.Text.Json.JsonElement>(
+                        "PageToMovieExport.downloadUrlAsync", movieUrl, fileName);
+                    var ok = dl.ValueKind == System.Text.Json.JsonValueKind.Object
+                             && dl.TryGetProperty("success", out var okEl)
+                             && okEl.ValueKind == System.Text.Json.JsonValueKind.True;
+                    if (!ok)
+                    {
+                        var err = dl.ValueKind == System.Text.Json.JsonValueKind.Object
+                                  && dl.TryGetProperty("error", out var errEl)
+                                  && errEl.ValueKind == System.Text.Json.JsonValueKind.String
+                            ? errEl.GetString()
+                            : null;
+                        _error = err ?? "Could not download the movie file. Try Play first to build a preview.";
+                    }
+                    else
+                    {
+                        _message = $"Downloaded movie — open it in {res.Editor ?? _preferredVideoEditor}." +
+                            (_lastExportMissingMusic ? " (Media folder not connected — background music may be missing.)" : "");
+                    }
                 }
                 else
                 {
-                    _error = res.Error ?? "Could not prepare full movie. Ensure at least one scene clip exists.";
+                    _error = res.Error ?? "Could not prepare full movie. Generate clips on Film, then try Play first.";
                 }
             }
         }
@@ -1565,7 +1607,9 @@ else
             _wipPath = meta?.Path;
             _wipUpdatedAt = meta?.UpdatedAt;
             _wipBytes = meta?.Bytes ?? 0;
-            if (!_wipExists)
+            // Never hide an active browser preview / in-progress stitch just because the
+            // server has no on-disk WIP yet — that made Play look dead for 10–20s.
+            if (!_wipExists && string.IsNullOrEmpty(_clientWipUrl) && !_clientStitching && !_showWipPlayer)
                 _showWipPlayer = false;
         }
         catch
@@ -1599,23 +1643,33 @@ else
         try
         {
             _activeTab = "play";
+            _error = null;
+            _showClipPlayer = false;
+            _showScenePlayer = false;
+            _clientSceneUrl = null;
+            // Show progress shell immediately — before any network — so Play never looks dead.
             _showWipPlayer = true;
+            _clientStitching = true;
+            _clientStitchPercent = 1;
+            _clientStitchStatus = "Checking project…";
+            await InvokeAsync(StateHasChanged);
+
             await RefreshWipMetaAsync();
 
             if (!string.IsNullOrEmpty(_clientWipUrl) && !_wipStale)
             {
-                _message = "Playing WIP";
+                _clientStitching = false;
+                _message = "Preview ready";
                 return;
             }
 
-            await RefreshWipMetaAsync();
             if (_wipExists && !_wipStale)
             {
                 _clientWipUrl = null;
+                _clientStitching = false;
                 _showWipPlayer = true;
-                _showScenePlayer = false;
                 _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                _message = "Playing WIP (up to date)";
+                _message = "Preview ready";
                 return;
             }
 
@@ -1626,50 +1680,84 @@ else
                 .ToList();
             if (sceneNums.Count == 0)
             {
+                _clientStitching = false;
+                _showWipPlayer = false;
                 _error = MediaFolder.IsConnected
                     ? "No scene videos were found in your local media folder or on the server."
                     : "Connect your local media folder to rebuild this movie from your synced clips.";
                 return;
             }
 
-            _clientStitching = true;
-            _error = null;
-            _clientStitchStatus = "Collecting scenes…";
-            _showClipPlayer = false;
-            _showScenePlayer = false;
-            _clientSceneUrl = null;
-            _showWipPlayer = true;
             _clientWipUrl = null;
+            _clientStitchStatus = $"Preparing {sceneNums.Count} scene(s)…";
+            _clientStitchPercent = 3;
+            await InvokeAsync(StateHasChanged);
+
             try
             {
-                // Revoke the OLD preview before collecting new segments — see the comment in
-                // EnsureShareableMovieUrlAsync for why revoking after collection can destroy a
-                // blob the segments list still needs.
                 await Stitch.RevokePreviewUrlAsync();
                 var meta = await Engine.GetWipMovieMetaAsync(_projectId);
                 var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
-                var urls = await Stitch.CollectAndMixSceneSegmentsAsync(_projectId, sceneNums, _scenes, stale);
+
+                var progress = new Progress<StitchProgress>(p =>
+                {
+                    _clientStitchPercent = Math.Clamp(p.Percent, 0, 99);
+                    if (!string.IsNullOrWhiteSpace(p.Message))
+                        _clientStitchStatus = p.Message;
+                    _ = InvokeAsync(StateHasChanged);
+                });
+
+                var urls = await Stitch.CollectAndMixSceneSegmentsAsync(
+                    _projectId, sceneNums, _scenes, stale, progress: progress);
                 if (urls.Count == 0)
                 {
-                    _error = "No scene videos were found";
+                    _error = "No scene videos were found to build a preview. Generate clips on Film first, or connect your media folder.";
                     _showWipPlayer = false;
+                    _clientWipUrl = null;
                     return;
                 }
 
                 _clientStitchStatus = urls.Count == 1
-                    ? "Loading…"
-                    : $"Combining {urls.Count} file(s)…";
-                var result = await Stitch.ConcatAsync(urls);
+                    ? "Loading preview…"
+                    : $"Combining {urls.Count} of {sceneNums.Count} scene(s)…";
+                _clientStitchPercent = Math.Max(_clientStitchPercent, 72);
+                await InvokeAsync(StateHasChanged);
+
+                var finalProgress = new Progress<StitchProgress>(p =>
+                {
+                    // Map final concat 0–100 into 72–99.
+                    _clientStitchPercent = 72 + (int)Math.Round(p.Percent * 0.27);
+                    if (!string.IsNullOrWhiteSpace(p.Message))
+                        _clientStitchStatus = p.Message;
+                    _ = InvokeAsync(StateHasChanged);
+                });
+                var result = await Stitch.ConcatAsync(urls, progress: finalProgress);
                 if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
                 {
-                    _error = result.Error ?? "Browser stitch failed";
+                    _error = result.Error ?? "Could not build preview in the browser.";
+                    _showWipPlayer = false;
+                    _clientWipUrl = null;
+                    return;
+                }
+
+                // Probe duration so we don't show a silent 0:00 "ready" player.
+                _clientStitchStatus = "Checking preview…";
+                _clientStitchPercent = 96;
+                await InvokeAsync(StateHasChanged);
+                var seconds = await Stitch.ProbeDurationAsync(result.Url);
+                if (seconds is null or <= 0.05)
+                {
+                    _error = "Preview built but the video is empty or unreadable (0:00). " +
+                             "Check that clips exist on Film / in your media folder, then try Play again.";
+                    _clientWipUrl = null;
                     _showWipPlayer = false;
                     return;
                 }
 
                 _clientWipUrl = result.Url;
                 _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                _message = $"WIP preview ready (browser) — {sceneNums.Count} scene(s)";
+                _clientStitchPercent = 100;
+                _message = $"Preview ready · {urls.Count} of {sceneNums.Count} scenes";
             }
             catch (Exception ex)
             {
@@ -1681,6 +1769,7 @@ else
             {
                 _clientStitching = false;
                 _clientStitchStatus = null;
+                _clientStitchPercent = 0;
             }
         }
         finally
@@ -2525,25 +2614,35 @@ else
             return null;
 
         _clientStitching = true;
-        _clientStitchStatus = "Preparing cut for upload…";
+        _showWipPlayer = true;
+        _clientStitchStatus = "Preparing movie…";
+        _clientStitchPercent = 2;
         try
         {
-            // Revoke the OLD preview before collecting new segments, not after — CollectAndMix-
-            // SceneSegmentsAsync's internal per-scene concatVideosAsync calls reuse the JS side's
-            // single shared blob-tracking slot, so a scene segment with no music to mix can end up
-            // being exactly the URL RevokePreviewUrlAsync() would revoke; calling it here (before
-            // any new segment exists) means it can only ever revoke a blob from a prior, separate
-            // operation, never one this call just built. Revoking after collection blew up the
-            // final combine's fetch of that segment with "Failed to fetch" the moment that
-            // coincidence happened — reproducible on a single, non-double-clicked Share & Export.
+            // Revoke the OLD preview before collecting new segments (see prior comment).
             await Stitch.RevokePreviewUrlAsync();
             var meta = await Engine.GetWipMovieMetaAsync(_projectId);
             var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
-            var urls = await Stitch.CollectAndMixSceneSegmentsAsync(_projectId, sceneNums, _scenes, stale);
+            var progress = new Progress<StitchProgress>(p =>
+            {
+                _clientStitchPercent = Math.Clamp(p.Percent, 0, 99);
+                if (!string.IsNullOrWhiteSpace(p.Message))
+                    _clientStitchStatus = p.Message;
+                _ = InvokeAsync(StateHasChanged);
+            });
+            var urls = await Stitch.CollectAndMixSceneSegmentsAsync(
+                _projectId, sceneNums, _scenes, stale, progress: progress);
             if (urls.Count == 0) return null;
-            var result = await Stitch.ConcatAsync(urls);
+            _clientStitchStatus = $"Combining {urls.Count} scene(s)…";
+            _clientStitchPercent = 75;
+            await InvokeAsync(StateHasChanged);
+            var result = await Stitch.ConcatAsync(urls, progress: progress);
             if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
                 throw new InvalidOperationException(result.Error ?? "Browser stitch failed");
+            var seconds = await Stitch.ProbeDurationAsync(result.Url);
+            if (seconds is null or <= 0.05)
+                throw new InvalidOperationException(
+                    "Movie file is empty or unreadable. Generate clips on Film, connect your media folder, then try again.");
             _clientWipUrl = result.Url;
             _showWipPlayer = true;
             _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -2553,6 +2652,7 @@ else
         {
             _clientStitching = false;
             _clientStitchStatus = null;
+            _clientStitchPercent = 0;
         }
     }
 

@@ -108,16 +108,28 @@ public sealed class ClientVideoStitchService
         IReadOnlyList<int> sceneNumbers,
         IReadOnlyList<SceneSummary>? sceneList,
         IReadOnlySet<int>? staleScenes,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IProgress<StitchProgress>? progress = null)
     {
+        var ordered = sceneNumbers.Distinct().OrderBy(x => x).ToList();
         var segments = new List<string>();
-        foreach (var sn in sceneNumbers.Distinct().OrderBy(x => x))
+        var total = Math.Max(1, ordered.Count);
+        var i = 0;
+        foreach (var sn in ordered)
         {
             ct.ThrowIfCancellationRequested();
+            i++;
+            // Collection phase maps to ~0–70% of overall preview build.
+            var basePct = (int)Math.Round(70.0 * (i - 1) / total);
+            var endPct = (int)Math.Round(70.0 * i / total);
+            progress?.Report(new StitchProgress(basePct, $"Preparing scene {i} of {total} (S{sn:D2})…"));
 
             var sceneUrls = await CollectSceneMediaUrlsAsync(projectId, new[] { sn }, sceneList, staleScenes, ct);
             if (sceneUrls.Count == 0)
+            {
+                progress?.Report(new StitchProgress(endPct, $"Scene S{sn:D2}: no video found — skipped"));
                 continue;
+            }
 
             string sceneUrl;
             if (sceneUrls.Count == 1)
@@ -126,13 +138,19 @@ public sealed class ClientVideoStitchService
             }
             else
             {
-                var concat = await ConcatAsync(sceneUrls, ct);
+                progress?.Report(new StitchProgress(basePct + 1, $"Combining clips for S{sn:D2}…"));
+                var concat = await ConcatAsync(sceneUrls, ct, progress: null);
                 if (!concat.Success || string.IsNullOrWhiteSpace(concat.Url))
+                {
+                    progress?.Report(new StitchProgress(endPct, $"Scene S{sn:D2}: stitch failed — skipped"));
                     continue;
+                }
                 sceneUrl = concat.Url!;
             }
 
+            progress?.Report(new StitchProgress(endPct - 1, $"Mixing audio for S{sn:D2}…"));
             segments.Add(await MixSceneMusicAsync(projectId, sceneUrl, sn, ct: ct));
+            progress?.Report(new StitchProgress(endPct, $"Scene {i} of {total} ready"));
         }
         return segments;
     }
@@ -163,20 +181,28 @@ public sealed class ClientVideoStitchService
 
     public async Task<ClientStitchResult> ConcatAsync(
         IReadOnlyList<string> urls,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IProgress<StitchProgress>? progress = null)
     {
         if (urls is null || urls.Count == 0)
             return ClientStitchResult.Fail("No video URLs to combine");
 
         if (urls.Count == 1)
+        {
+            progress?.Report(new StitchProgress(100, "Ready"));
             return ClientStitchResult.Ok(urls[0], count: 1, single: true);
+        }
 
+        DotNetObjectReference<StitchProgressBridge>? bridgeRef = null;
         try
         {
+            var bridge = new StitchProgressBridge(progress);
+            bridgeRef = DotNetObjectReference.Create(bridge);
             var raw = await _js.InvokeAsync<JsConcatResult>(
                 "PageToMovieFfmpeg.concatVideosAsync",
                 ct,
-                (object)urls.ToArray());
+                (object)urls.ToArray(),
+                bridgeRef);
 
             if (raw is null)
                 return ClientStitchResult.Fail("No response from browser stitch");
@@ -196,6 +222,10 @@ public sealed class ClientVideoStitchService
         catch (Exception ex)
         {
             return ClientStitchResult.Fail(ex.Message);
+        }
+        finally
+        {
+            bridgeRef?.Dispose();
         }
     }
 
@@ -411,4 +441,20 @@ public sealed class ClientStitchResult
 
     public static ClientStitchResult Fail(string error) =>
         new() { Success = false, Error = error };
+}
+
+
+/// <summary>Progress for browser-side preview stitch (percent 0–100 + status line).</summary>
+public readonly record struct StitchProgress(int Percent, string Message);
+
+/// <summary>JS-invokable bridge so ffmpeg.wasm can push percent updates into .NET.</summary>
+public sealed class StitchProgressBridge
+{
+    private readonly IProgress<StitchProgress>? _progress;
+
+    public StitchProgressBridge(IProgress<StitchProgress>? progress) => _progress = progress;
+
+    [JSInvokable]
+    public void Report(int percent, string? message) =>
+        _progress?.Report(new StitchProgress(Math.Clamp(percent, 0, 100), message ?? ""));
 }

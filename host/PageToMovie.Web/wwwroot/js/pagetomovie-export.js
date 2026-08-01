@@ -31,6 +31,43 @@ window.PageToMovieExport = {
     },
 
     /**
+     * Download a blob: or authenticated http(s) movie URL as a file.
+     * Fetches first so auth cookies / blob URLs work (plain <a download> often fails with "file not available").
+     */
+    downloadUrlAsync: async function (url, fileName) {
+        try {
+            if (!url) return { success: false, error: "No movie URL to download" };
+            let blobUrl = url;
+            let revoke = false;
+            if (!String(url).startsWith("blob:")) {
+                const res = await fetch(url, { credentials: "include" });
+                if (!res.ok) {
+                    return { success: false, error: "Download failed (" + res.status + "). Build a preview with Play first." };
+                }
+                const blob = await res.blob();
+                if (!blob || blob.size < 64) {
+                    return { success: false, error: "Movie file is empty. Build a preview with Play first." };
+                }
+                blobUrl = URL.createObjectURL(blob);
+                revoke = true;
+            }
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = fileName || "movie.mp4";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            if (revoke) {
+                setTimeout(function () { try { URL.revokeObjectURL(blobUrl); } catch (_) {} }, 30_000);
+            }
+            return { success: true };
+        } catch (err) {
+            console.error("downloadUrlAsync failed:", err);
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+    /**
      * Checks if modern File System Access API is supported by the user's browser.
      */
     supportsFileSystemAccess: function () {

@@ -3,9 +3,18 @@
  * All static ffmpeg assets are served same-origin from /js/ffmpeg/ for maximum speed & zero CORS issues.
  */
 function reportProgress(onProgress, pct, msg) {
-    if (typeof onProgress === "function") {
-        try { onProgress(pct, msg); } catch (_) { }
-    }
+    if (!onProgress) return;
+    try {
+        if (typeof onProgress === "function") {
+            onProgress(pct, msg);
+            return;
+        }
+        // DotNetObjectReference from Blazor (StitchProgressBridge.Report)
+        if (typeof onProgress.invokeMethodAsync === "function") {
+            onProgress.invokeMethodAsync("Report", pct, msg || "");
+            return;
+        }
+    } catch (_) { /* ignore progress errors */ }
 }
 
 window.PageToMovieFfmpeg = {
