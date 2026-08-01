@@ -545,6 +545,43 @@ window.PageToMovieMedia = {
      * Write raw bytes (base64) into the media folder at relativePath.
      * Used for voice-clone samples (same client-first storage as MP3/MP4).
      */
+
+    /**
+     * Write raw bytes into the media folder (preferred for large MP4/MP3 from zip import).
+     * @param {Uint8Array|ArrayBuffer} bytes
+     * @param {string} relativePath e.g. "owner/slug/assets/video/scene_01_clip_01.mp4"
+     */
+    saveBytesAsync: async function (bytes, relativePath) {
+        if (!this._root) {
+            const c = await this.connectFolderAsync();
+            if (!c.success) return c;
+        }
+        try {
+            const buf = bytes instanceof Uint8Array
+                ? bytes
+                : new Uint8Array(bytes);
+            const sha = await this._sha256Hex(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+            const { dir, fileName } = await this._ensurePathAsync(relativePath);
+            const fh = await dir.getFileHandle(fileName, { create: true });
+            const w = await fh.createWritable();
+            await w.write(buf);
+            await w.close();
+            const key = relativePath.replace(/\\/g, "/");
+            if (this._blobUrls[key]) {
+                try { URL.revokeObjectURL(this._blobUrls[key]); } catch (_) { /* */ }
+                delete this._blobUrls[key];
+            }
+            return {
+                success: true,
+                sha256: sha,
+                sizeBytes: buf.byteLength,
+                relativePath: key,
+            };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
     saveBytesBase64Async: async function (base64, relativePath) {
         if (!this._root) {
             const c = await this.connectFolderAsync();

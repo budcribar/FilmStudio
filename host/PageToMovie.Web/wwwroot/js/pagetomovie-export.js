@@ -363,6 +363,104 @@ window.PageToMovieExport = {
         }
     },
 
+
+    /**
+     * Stage 2 of project import: from a full export zip, write media files into the
+     * connected client media folder under {targetProjectId}/assets/…
+     * Server import should already have received the zip (stage 1).
+     */
+    importZipMediaToClientFolderAsync: async function (contentStreamReference, targetProjectId) {
+        try {
+            if (!window.PageToMovieMedia) {
+                return { success: false, error: "PageToMovieMedia not loaded", written: 0 };
+            }
+            if (!window.PageToMovieMedia._root) {
+                const c = await window.PageToMovieMedia.connectFolderAsync();
+                if (!c.success) {
+                    return {
+                        success: false,
+                        error: c.error || "Connect a local media folder to restore MP4/MP3 files",
+                        written: 0,
+                        needsMediaFolder: true,
+                    };
+                }
+            }
+
+            const targetId = (targetProjectId || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+            if (!targetId) {
+                return { success: false, error: "Project id required", written: 0 };
+            }
+
+            const buf = await contentStreamReference.arrayBuffer();
+            const entries = await this._zipReadAllAsync(new Uint8Array(buf));
+            const mediaExt = new Set([
+                ".mp4", ".webm", ".mov", ".mkv", ".m4v",
+                ".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac", ".opus",
+                ".png", ".jpg", ".jpeg", ".webp", ".gif",
+            ]);
+
+            let written = 0;
+            let skipped = 0;
+            const errors = [];
+
+            for (const e of entries) {
+                let name = (e.name || "").replace(/\\/g, "/");
+                if (!name || name.endsWith("/")) continue;
+                // strip leading ./
+                name = name.replace(/^\.\//, "");
+                const base = name.split("/").pop() || "";
+                const dot = base.lastIndexOf(".");
+                const ext = dot >= 0 ? base.slice(dot).toLowerCase() : "";
+                if (!mediaExt.has(ext)) {
+                    skipped++;
+                    continue;
+                }
+
+                // Map zip entry → media folder path under target project id
+                // Forms: "{anyPrefix}/assets/…", "assets/…", or "{targetId}/…"
+                let clientRel;
+                const assetsIdx = name.toLowerCase().indexOf("/assets/");
+                if (assetsIdx >= 0) {
+                    clientRel = `${targetId}${name.slice(assetsIdx)}`; // keeps /assets/...
+                } else if (name.toLowerCase().startsWith("assets/")) {
+                    clientRel = `${targetId}/${name}`;
+                } else if (name.toLowerCase().startsWith(targetId.toLowerCase() + "/")) {
+                    clientRel = name; // already correct prefix
+                } else {
+                    // Loose media at zip root of project folder
+                    clientRel = `${targetId}/${base}`;
+                }
+
+                try {
+                    const res = await window.PageToMovieMedia.saveBytesAsync(e.data, clientRel);
+                    if (res && res.success) written++;
+                    else {
+                        skipped++;
+                        if (res && res.error && errors.length < 5)
+                            errors.push(`${clientRel}: ${res.error}`);
+                    }
+                } catch (err) {
+                    skipped++;
+                    if (errors.length < 5)
+                        errors.push(`${clientRel}: ${err.message || err}`);
+                }
+            }
+
+            return {
+                success: true,
+                written,
+                skipped,
+                errors,
+                message: written > 0
+                    ? `Restored ${written} media file(s) to local folder`
+                    : (errors[0] || "No media files found in zip to restore locally"),
+            };
+        } catch (err) {
+            console.error("importZipMediaToClientFolderAsync failed:", err);
+            return { success: false, error: err.message || String(err), written: 0 };
+        }
+    },
+
     /** @returns {Promise<{name:string, data:Uint8Array}[]>} */
     _zipReadAllAsync: async function (u8) {
         const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);

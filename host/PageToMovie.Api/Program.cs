@@ -5325,27 +5325,40 @@ app.MapGet("/api/projects/{id}/media/sync", async (
     {
         await store.RequireProjectAsync(id, ct);
         var projectDir = store.GetProjectDir(id);
-        var videoDir = Path.Combine(projectDir, "assets", "video");
+        // Media that may have arrived via full project import (video, music, audio, history).
         var list = new List<object>();
-
-        if (Directory.Exists(videoDir))
+        var assetsRoot = Path.Combine(projectDir, "assets");
+        var mediaExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            var files = Directory.GetFiles(videoDir, "*", SearchOption.TopDirectoryOnly)
-                .Where(f => f.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith(".clip.json", StringComparison.OrdinalIgnoreCase));
+            ".mp4", ".webm", ".mov", ".mkv", ".m4v",
+            ".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac", ".opus",
+            ".png", ".jpg", ".jpeg", ".webp", ".gif",
+        };
 
-            foreach (var file in files)
+        if (Directory.Exists(assetsRoot))
+        {
+            foreach (var file in Directory.EnumerateFiles(assetsRoot, "*", SearchOption.AllDirectories))
             {
-                var relPath = $"assets/video/{Path.GetFileName(file)}";
+                var name = Path.GetFileName(file);
+                if (name is "Thumbs.db" or ".DS_Store") continue;
+                var ext = Path.GetExtension(file);
+                var isClipJson = name.EndsWith(".clip.json", StringComparison.OrdinalIgnoreCase);
+                if (!isClipJson && !mediaExts.Contains(ext))
+                    continue;
+
+                var relPath = Path.GetRelativePath(projectDir, file).Replace('\\', '/');
                 var fi = new FileInfo(file);
-                var isMp4 = file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
+                var isMp4 = ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase);
 
                 string? sha256 = null;
                 try
                 {
-                    using var fs = File.OpenRead(file);
-                    var hashBytes = System.Security.Cryptography.SHA256.HashData(fs);
-                    sha256 = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                    if (fi.Length <= 64L * 1024 * 1024)
+                    {
+                        using var fs = File.OpenRead(file);
+                        var hashBytes = System.Security.Cryptography.SHA256.HashData(fs);
+                        sha256 = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                    }
                 }
                 catch { /* best-effort sha256 */ }
 
@@ -5355,7 +5368,7 @@ app.MapGet("/api/projects/{id}/media/sync", async (
                 list.Add(new
                 {
                     relativePath = relPath,
-                    fileName = Path.GetFileName(file),
+                    fileName = name,
                     sizeBytes = fi.Length,
                     sha256,
                     isMp4,
