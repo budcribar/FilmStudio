@@ -60,19 +60,13 @@
     margin-bottom: 0.75rem;
 }
 
-/* Equal-width columns; each card is a vertical stack (media on top, meta below). */
+/* Fluid columns: as many equal cards as fit (~20rem min). Each card stacks media above meta. */
 .demo-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
     gap: 1.5rem;
     align-items: stretch;
     width: 100%;
-}
-
-@media (min-width: 900px) {
-    .demo-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 }
 
 .demo-card {
