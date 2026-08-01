@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.ML.Tokenizers.Data.Cl100kBase</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.ML.Tokenizers.Cl100kBaseTokenizerData">
+            <summary>
+            Cl100kBaseTokenizerData is internally used by Microsoft.ML.Tokenizers library to bind to the cl100k_base.tiktoken data file.
+            </summary>
+        </member>
+    </members>
+</doc>

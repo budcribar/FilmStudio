@@ -9,7 +9,14 @@
 
 <PageTitle>Cast & voice</PageTitle>
 
-<h1>Cast & voice</h1>
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">Studio · Step 3</span>
+    <h1 class="ptm-adapt-title mb-1">Cast & voice</h1>
+    <p class="ptm-adapt-lede">
+        Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free;
+        clone / profile is an add-on path when you want a personal sample.
+    </p>
+</div>
 
 @if (_gateChecked && !ActiveProject.CanCharacters)
 {
@@ -22,21 +29,20 @@
 }
 else
 {
-<p class="text-muted mb-1">
-    Set each cast member’s look before generating clips.
-</p>
 <p class="small text-muted mb-3">
     <a href="adaptation/screenplay">← Screenplay</a>
     ·
     <a href="adaptation/shots">Shot plan</a>
+    ·
+    <a href="cost">Estimate</a>
     @if (ActiveProject.CanScenes)
     {
         <text> · </text>
-        <a href="scenes">Scenes →</a>
+        <a href="scenes">Film →</a>
     }
     else
     {
-        <span class="text-muted" title="@ActiveProject.ScenesBlockedReason"> · Scenes</span>
+        <span class="text-muted" title="@ActiveProject.ScenesBlockedReason"> · Film</span>
     }
 </p>
 
@@ -533,7 +539,7 @@ else
                         <button type="button"
                                 class="card-header py-1 px-2 d-flex justify-content-between align-items-center gap-2 char-panel-toggle border-0 bg-transparent w-100 text-start"
                                 @onclick="() => _panelVoiceOpen = !_panelVoiceOpen">
-                            <span><strong>Voice</strong></span>
+                            <span><strong>Voice</strong> <span class="badge text-bg-secondary ms-1" style="font-size:0.65rem">optional add-on</span></span>
                             <span class="small text-muted">@(_panelVoiceOpen ? "▲" : "▼")</span>
                         </button>
                         @if (_panelVoiceOpen)
@@ -778,7 +784,7 @@ else
                       disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
                       placeholder="Adult male; low soft presence — used in film video prompts (voice style)"></textarea>
             <div class="form-text">
-                Play generates a short film clip with this voice description + dialogue (same path as scene clips).
+                Optional: describe the voice (or use a personal style label). Play previews a short sample clip with this profile + dialogue.
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">

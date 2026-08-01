@@ -373,32 +373,39 @@
                     </p>
 
                     <div class="row g-2">
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md">
                             <a href="adaptation" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center">
                                 <span class="fs-2 mb-1">📜</span>
                                 <strong class="small">1. Book</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Screenplay &amp; Shots</span>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Import · screenplay</span>
                             </a>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md">
                             <a href="characters" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanCharacters ? "" : "disabled opacity-50")">
                                 <span class="fs-2 mb-1">👥</span>
-                                <strong class="small">2. Cast</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Cast &amp; Portraits</span>
+                                <strong class="small">2. Cast & voice</strong>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Photos · optional voice</span>
                             </a>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md">
+                            <a href="cost" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <span class="fs-2 mb-1">💳</span>
+                                <strong class="small">3. Estimate</strong>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Quote · confirm</span>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md">
                             <a href="scenes" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanScenes ? "" : "disabled opacity-50")">
                                 <span class="fs-2 mb-1">🎬</span>
-                                <strong class="small">3. Film</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Clips &amp; Music</span>
+                                <strong class="small">4. Film</strong>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Clips · stitch</span>
                             </a>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md">
                             <a href="review" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanReview ? "" : "disabled opacity-50")">
                                 <span class="fs-2 mb-1">✅</span>
-                                <strong class="small">4. Review</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Full Cut &amp; Publish</span>
+                                <strong class="small">5. Review</strong>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Edit · publish</span>
                             </a>
                         </div>
                     </div>

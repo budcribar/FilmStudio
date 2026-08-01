@@ -1578,3 +1578,12 @@ h1:focus {
     line-height: 1.5;
     margin: 0.35rem 0 0;
 }
+
+.ptm-page-head {
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--fs-border-color);
+    margin-bottom: 1rem;
+}
+.ptm-page-head .ptm-adapt-lede {
+    margin-bottom: 0.5rem;
+}
