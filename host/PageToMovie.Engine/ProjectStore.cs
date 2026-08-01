@@ -1207,6 +1207,8 @@ public sealed class ProjectStore
             ["description"] = "",
             ["ownerUserId"] = string.IsNullOrWhiteSpace(ownerUserId) ? owner : ownerUserId.Trim(),
             ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"),
+            // Format version for export/import converters (ProjectMigrationService).
+            ["schema_version"] = ProjectFormatVersions.ProjectSchemaVersion,
         };
         await File.WriteAllTextAsync(
             Path.Combine(dir, "project.json"),

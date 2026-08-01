@@ -310,17 +310,22 @@ window.PageToMovieExport = {
                 }
             }
 
-            // Annotate export meta if present
+            // Annotate export meta if present (keep projectSchemaVersion; bump package fields)
             const metaKey = [...byPath.keys()].find(k => k.endsWith("/_export_meta.json") || k === "_export_meta.json");
             if (metaKey) {
                 try {
                     const prev = new TextDecoder().decode(byPath.get(metaKey));
                     const obj = JSON.parse(prev);
+                    obj.package = obj.package || "PageToMovie.project_export";
+                    obj.exportFormatVersion = 2;
                     obj.schema = "PageToMovie.project_export.v2";
                     obj.clientMediaMerged = true;
                     obj.clientMediaFilesAdded = clientAdded;
                     obj.clientMediaListError = mediaError || undefined;
-                    obj.note = "Server project folder + client media folder (MP4/MP3/etc.). Import via Admin → Import project.";
+                    obj.clientMergedAtUtc = new Date().toISOString();
+                    obj.note = "Server project folder + client media folder (MP4/MP3/etc.). " +
+                        "projectSchemaVersion drives ProjectMigrationService on import; " +
+                        "exportFormatVersion is the zip package shape.";
                     byPath.set(metaKey, new TextEncoder().encode(JSON.stringify(obj, null, 2)));
                 } catch (_) { /* keep original meta */ }
             }

@@ -109,16 +109,24 @@ public sealed class ProjectArchiveService
                 using (var zip = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: true))
                 {
                     // Manifest for importers
+                    // Ensure project.json carries schema_version before packaging (for converters).
+                    try
+                    {
+                        EnsureProjectSchemaVersionOnDisk(projectDir);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Export: could not stamp schema_version on {ProjectId}", id);
+                    }
+
+                    var projectSchema = ProjectFormatVersions.TryReadProjectSchemaVersion(projectDir)
+                                        ?? ProjectFormatVersions.ProjectSchemaVersion;
                     var metaEntry = zip.CreateEntry($"{id}/_export_meta.json", CompressionLevel.Fastest);
                     using (var w = new StreamWriter(metaEntry.Open(), Encoding.UTF8))
                     {
-                        w.Write(JsonSerializer.Serialize(new
-                        {
-                            schema = "PageToMovie.project_export.v1",
-                            projectId = id,
-                            exportedAtUtc = DateTime.UtcNow.ToString("o"),
-                            note = "Server project folder. Client browser merges local media (MP4/MP3) into this zip when media folder is connected.",
-                        }, JsonOpts));
+                        w.Write(JsonSerializer.Serialize(
+                            ProjectFormatVersions.BuildExportMeta(id, projectSchema),
+                            JsonOpts));
                     }
 
                     foreach (var file in Directory.EnumerateFiles(projectDir, "*", SearchOption.AllDirectories))
@@ -233,14 +241,21 @@ public sealed class ProjectArchiveService
             // Copy extracted content into projects/{id}
             CopyDirectory(contentRoot, dest);
 
+            var exportMeta = ProjectFormatVersions.TryReadExportMeta(contentRoot)
+                             ?? ProjectFormatVersions.TryReadExportMeta(dest);
+            var schemaBefore = ProjectFormatVersions.TryReadProjectSchemaVersion(dest)
+                               ?? exportMeta?.ProjectSchemaVersion
+                               ?? "v0";
+
             // Ensure project.json id and optional ownerUserId match
             await EnsureProjectJsonIdAsync(dest, id, targetUserId, ct).ConfigureAwait(false);
 
+            var migrated = false;
             if (_migrations is not null)
             {
                 try
                 {
-                    await _migrations.MigrateIfNeededAsync(dest, ct).ConfigureAwait(false);
+                    migrated = await _migrations.MigrateIfNeededAsync(dest, ct).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -248,19 +263,36 @@ public sealed class ProjectArchiveService
                 }
             }
 
+            var schemaAfter = ProjectFormatVersions.TryReadProjectSchemaVersion(dest)
+                              ?? ProjectFormatVersions.ProjectSchemaVersion;
+
             _projects.InvalidateReadCaches(null);
             var info = await _projects.ActivateAsync(id, ct).ConfigureAwait(false);
 
-            _log.LogInformation("Imported project {ProjectId} from zip (overwrite={Overwrite})", id, overwrite);
+            _log.LogInformation(
+                "Imported project {ProjectId} from zip (overwrite={Overwrite}, exportFmt={ExportFmt}, schema {Before}→{After}, migrated={Migrated})",
+                id, overwrite, exportMeta?.ExportFormatVersion, schemaBefore, schemaAfter, migrated);
+
+            var msg = overwrite
+                ? $"Imported and replaced project “{id}”"
+                : $"Imported project “{id}”";
+            if (migrated)
+                msg += $" · converted project schema {schemaBefore} → {schemaAfter}";
+            else if (!string.Equals(schemaBefore, schemaAfter, StringComparison.OrdinalIgnoreCase))
+                msg += $" · schema {schemaAfter}";
+            if (exportMeta?.ExportFormatVersion is int efv)
+                msg += $" · export format v{efv}";
 
             return new ProjectImportResult
             {
                 Ok = true,
                 ProjectId = id,
                 Project = info,
-                Message = overwrite
-                    ? $"Imported and replaced project “{id}”"
-                    : $"Imported project “{id}”",
+                Message = msg,
+                ExportFormatVersion = exportMeta?.ExportFormatVersion,
+                ProjectSchemaVersionBefore = schemaBefore,
+                ProjectSchemaVersionAfter = schemaAfter,
+                Migrated = migrated,
             };
         }
         finally
@@ -475,6 +507,25 @@ public sealed class ProjectArchiveService
             File.Copy(file, target, overwrite: true);
         }
     }
+
+    /// <summary>Stamp project.json schema_version when missing (export-time safety net).</summary>
+    static void EnsureProjectSchemaVersionOnDisk(string projectDir)
+    {
+        var path = Path.Combine(projectDir, "project.json");
+        if (!File.Exists(path)) return;
+        var text = File.ReadAllText(path);
+        using var doc = JsonDocument.Parse(text);
+        if (doc.RootElement.TryGetProperty("schema_version", out var existing) &&
+            existing.ValueKind == JsonValueKind.String &&
+            !string.IsNullOrWhiteSpace(existing.GetString()))
+            return;
+
+        var dict = JsonSerializer.Deserialize<Dictionary<string, object?>>(text, JsonOpts)
+                   ?? new Dictionary<string, object?>();
+        dict["schema_version"] = ProjectFormatVersions.ProjectSchemaVersion;
+        dict["schema_version_stamped_at_utc"] = DateTime.UtcNow.ToString("o");
+        File.WriteAllText(path, JsonSerializer.Serialize(dict, JsonOpts) + "\n");
+    }
 }
 
 public sealed class ProjectExportResult : IAsyncDisposable, IDisposable
@@ -497,4 +548,9 @@ public sealed class ProjectImportResult
     public ProjectInfo? Project { get; init; }
     public string? Message { get; init; }
     public string? Error { get; init; }
+    /// <summary>From _export_meta.json when present.</summary>
+    public int? ExportFormatVersion { get; init; }
+    public string? ProjectSchemaVersionBefore { get; init; }
+    public string? ProjectSchemaVersionAfter { get; init; }
+    public bool Migrated { get; init; }
 }
