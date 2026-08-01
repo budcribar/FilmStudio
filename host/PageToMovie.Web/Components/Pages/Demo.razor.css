@@ -1,9 +1,12 @@
 /* Public demo gallery — equal cards, YouTube embeds */
 
 .demo-page {
-    max-width: 72rem;
+    /* Use full main column so 2–3 cards can sit side by side on wide screens */
+    max-width: min(100%, 90rem);
+    width: 100%;
     margin: 0 auto;
     padding-bottom: 3rem;
+    box-sizing: border-box;
 }
 
 .demo-hero {
@@ -60,13 +63,33 @@
     margin-bottom: 0.75rem;
 }
 
-/* Fluid columns: as many equal cards as fit (~20rem min). Each card stacks media above meta. */
+/* Multi-column gallery. Prefer fixed breakpoints — auto-fit+min(100%) often stays 1-col. */
 .demo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    grid-template-columns: 1fr;
     gap: 1.5rem;
     align-items: stretch;
     width: 100%;
+    box-sizing: border-box;
+}
+
+/* Side-by-side as soon as the main pane is wide enough for two cards */
+@media (min-width: 640px) {
+    .demo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1100px) {
+    .demo-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1500px) {
+    .demo-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 .demo-card {

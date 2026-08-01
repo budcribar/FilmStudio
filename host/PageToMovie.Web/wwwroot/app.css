@@ -1811,3 +1811,37 @@ h1:focus {
     margin-top: 0.75rem;
     margin-bottom: 0;
 }
+
+/* === demo gallery multi-column (global) === */
+.demo-page {
+    max-width: min(100%, 90rem);
+    width: 100%;
+    box-sizing: border-box;
+}
+.demo-page .demo-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    width: 100%;
+    align-items: stretch;
+}
+@media (min-width: 640px) {
+    .demo-page .demo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (min-width: 1100px) {
+    .demo-page .demo-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+@media (min-width: 1500px) {
+    .demo-page .demo-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+.demo-page .demo-card {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+}
