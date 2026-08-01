@@ -5440,6 +5440,8 @@ static object DemoPublicDto(
         : null,
     d.YoutubeId,
     d.YoutubeUrl,
+    d.Category,
+    d.Tags,
     youtubeWatchUrl = string.IsNullOrWhiteSpace(d.YoutubeId)
         ? null
         : (string.IsNullOrWhiteSpace(d.YoutubeUrl) ? $"https://www.youtube.com/watch?v={d.YoutubeId}" : d.YoutubeUrl),

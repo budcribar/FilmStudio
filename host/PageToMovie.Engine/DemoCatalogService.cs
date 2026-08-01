@@ -110,6 +110,9 @@ public sealed class DemoCatalogService
         public string PrivacyStatus { get; set; } = "public";
         public List<string>? Tags { get; set; }
 
+        /// <summary>Studio-only taxonomy (e.g. storybook, horror). Not from YouTube — kept across channel sync.</summary>
+        public string? Category { get; set; }
+
         /// <summary>none | uploading | done | failed. "done" means the video now lives on YouTube
         /// and <see cref="Id"/>'s local movie.mp4 has been deleted (server footprint goal).</summary>
         public string YoutubeUploadStatus { get; set; } = "none";
@@ -731,7 +734,8 @@ public sealed class DemoCatalogService
         string title,
         string? description,
         string? createdBy,
-        string? projectId = null)
+        string? projectId = null,
+        bool fromChannel = false)
     {
         var ytId = ExtractYouTubeVideoId(youtubeIdOrUrl)
             ?? throw new InvalidOperationException(
@@ -741,25 +745,27 @@ public sealed class DemoCatalogService
 
         lock (_lock)
         {
-            // Avoid duplicate wall entries for the same video
+            // Match by YouTube id — channel is playback SoT; studio fields (category/tags/project) stay local.
             var existing = LoadAllUnlocked()
                 .FirstOrDefault(e =>
-                    string.Equals(e.YoutubeId, ytId, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(e.Status, DemoStatuses.Removed, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(e.Status, DemoStatuses.Rejected, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(e.YoutubeId, ytId, StringComparison.OrdinalIgnoreCase));
             if (existing is not null)
             {
+                // Title/description always from YouTube when channel-syncing (or when provided).
                 existing.Title = title.Trim();
-                if (!string.IsNullOrWhiteSpace(description))
-                    existing.Description = description.Trim();
+                if (fromChannel || !string.IsNullOrWhiteSpace(description))
+                    existing.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
                 existing.Status = DemoStatuses.Public;
                 existing.YoutubeUploadStatus = "done";
                 existing.YoutubeUploadError = null;
                 existing.YoutubeUrl = $"https://www.youtube.com/watch?v={ytId}";
-                if (!string.IsNullOrWhiteSpace(projectId))
+                // ProjectId / Category / Tags / CreatedBy are studio-owned — only set if empty or explicit projectId
+                if (!string.IsNullOrWhiteSpace(projectId) && string.IsNullOrWhiteSpace(existing.ProjectId))
                     existing.ProjectId = projectId.Trim();
+                if (string.IsNullOrWhiteSpace(existing.CreatedBy) && !string.IsNullOrWhiteSpace(createdBy))
+                    existing.CreatedBy = createdBy;
                 SaveUnlocked(existing);
-                _log.LogInformation("Demo {Id} re-linked to existing YouTube {Yt}", existing.Id, ytId);
+                _log.LogInformation("Demo {Id} matched YouTube {Yt} (title refreshed from channel)", existing.Id, ytId);
                 return existing;
             }
 
@@ -782,6 +788,38 @@ public sealed class DemoCatalogService
                 id, ytId, entry.Title, createdBy);
             return entry;
         }
+    }
+
+    /// <summary>
+    /// After a channel sync: hide public demos whose YouTube id is no longer on the channel
+    /// (stale manual entries / renamed ghosts). Studio category/tags kept if they return later.
+    /// </summary>
+    public int HideDemosNotOnChannel(IReadOnlyCollection<string> channelYoutubeIds)
+    {
+        var set = new HashSet<string>(
+            (channelYoutubeIds ?? Array.Empty<string>()).Where(s => !string.IsNullOrWhiteSpace(s)),
+            StringComparer.OrdinalIgnoreCase);
+        var hidden = 0;
+        lock (_lock)
+        {
+            foreach (var e in LoadAllUnlocked())
+            {
+                if (string.IsNullOrWhiteSpace(e.YoutubeId))
+                    continue;
+                if (string.Equals(e.Status, DemoStatuses.Removed, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(e.Status, DemoStatuses.Rejected, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (set.Contains(e.YoutubeId))
+                    continue;
+                e.Status = DemoStatuses.Removed;
+                e.ReviewNote = "Hidden: video not on connected Page to Movie channel";
+                SaveUnlocked(e);
+                hidden++;
+            }
+        }
+        if (hidden > 0)
+            _log.LogInformation("Hid {N} gallery demos not present on YouTube channel", hidden);
+        return hidden;
     }
 
     /// <summary>
@@ -811,7 +849,8 @@ public sealed class DemoCatalogService
                 v.VideoId,
                 v.Title,
                 v.Description,
-                createdBy);
+                createdBy,
+                fromChannel: true);
             if (existed) updated++;
             else added++;
         }

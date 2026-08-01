@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -63,14 +64,15 @@ public sealed class YouTubeChannelGallerySync
         {
             var uploads = await _youTube.ListChannelUploadsAsync(maxVideos, ct).ConfigureAwait(false);
             var (added, updated, total) = _demos.SyncFromChannelUploads(uploads, createdBy);
+            var hidden = _demos.HideDemosNotOnChannel(uploads.Select(u => u.VideoId).ToList());
             lock (_gate)
             {
                 _lastSuccessUtc = DateTimeOffset.UtcNow;
                 _lastError = null;
             }
             _log.LogInformation(
-                "YouTube channel sync: {Total} videos ({Added} new, {Updated} updated)",
-                total, added, updated);
+                "YouTube channel sync: {Total} videos ({Added} new, {Updated} updated, {Hidden} not on channel)",
+                total, added, updated, hidden);
             return (added, updated, total, false);
         }
         catch (Exception ex)
