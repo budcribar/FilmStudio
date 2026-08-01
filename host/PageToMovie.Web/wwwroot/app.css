@@ -1725,3 +1725,17 @@ h1:focus {
     color: var(--fs-text-muted);
     opacity: 0.9;
 }
+
+/* Home — one studio + project surface */
+.home-studio-card {
+    border: 1px solid var(--fs-border-color);
+    background: var(--fs-bg-card);
+    border-radius: 14px;
+}
+.home-studio-card .home-top__title {
+    font-size: 1.25rem;
+}
+.home-studio-card .ptm-step-strip {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+}

@@ -10,51 +10,6 @@
 
 <PageTitle>PageToMovie</PageTitle>
 
-<header class="home-top mb-3">
-    <div class="home-top__main">
-        <img src="/favicon.png" alt="" width="40" height="40" class="rounded-2 shadow-sm flex-shrink-0" />
-        <div class="min-w-0">
-            <h1 class="home-top__title">Studio</h1>
-            <p class="home-top__sub mb-0">Book · cast · optional voice · estimate · film</p>
-        </div>
-    </div>
-    <div class="home-pipeline home-pipeline--compact" role="img" aria-label="Pages into AI into movie">
-        <div class="home-pipeline__stage">
-            <div class="home-pipeline__icon home-pipeline__pages" aria-hidden="true">
-                <span class="home-pipeline__sheet s1"></span>
-                <span class="home-pipeline__sheet s2"></span>
-                <span class="home-pipeline__sheet s3"></span>
-            </div>
-            <span class="home-pipeline__label">PAGES</span>
-        </div>
-        <div class="home-pipeline__arrows" aria-hidden="true">
-            <span class="home-pipeline__chev c1">›</span>
-            <span class="home-pipeline__chev c2">›</span>
-            <span class="home-pipeline__chev c3">›</span>
-        </div>
-        <div class="home-pipeline__stage">
-            <div class="home-pipeline__icon home-pipeline__ai" aria-hidden="true">
-                <span class="home-pipeline__brain">🧠</span>
-            </div>
-            <span class="home-pipeline__label">AI</span>
-        </div>
-        <div class="home-pipeline__arrows" aria-hidden="true">
-            <span class="home-pipeline__chev c1">›</span>
-            <span class="home-pipeline__chev c2">›</span>
-            <span class="home-pipeline__chev c3">›</span>
-        </div>
-        <div class="home-pipeline__stage">
-            <div class="home-pipeline__icon home-pipeline__movie" aria-hidden="true">
-                <span class="home-pipeline__clapper">
-                    <span class="home-pipeline__clapper-top"></span>
-                    <span class="home-pipeline__clapper-body"></span>
-                </span>
-            </div>
-            <span class="home-pipeline__label">MOVIE</span>
-        </div>
-    </div>
-</header>
-
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-danger">@_error</div>
@@ -73,17 +28,21 @@
 
 @if (!Session.IsLoggedIn)
 {
-    <div class="card mb-3">
-        <div class="card-body py-3">
-            <strong>Sign in required.</strong>
-            <a href="login?returnUrl=/" class="alert-link ms-1">Sign in or create an account</a>
-            to open projects and connect providers.
+    <div class="card mb-3 home-active-card">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center gap-3">
+            <img src="/favicon.png" alt="" width="36" height="36" class="rounded-2 shadow-sm flex-shrink-0" />
+            <div class="min-w-0 flex-grow-1">
+                <div class="small text-muted">Studio</div>
+                <div class="fw-semibold">Sign in to open your film</div>
+                <div class="small text-muted">Book · cast · optional voice · estimate · film</div>
+            </div>
+            <a href="login?returnUrl=/" class="btn btn-primary btn-sm">Sign in</a>
         </div>
     </div>
 }
 else if (_projects is null)
 {
-    <div class="card mb-3 home-active-card">
+    <div class="card mb-3 home-studio-card">
         <div class="card-body py-3 text-muted small">Loading projects…</div>
     </div>
 }
@@ -93,23 +52,26 @@ else
         string.Equals(p.Id, _projects.Active?.Id, StringComparison.OrdinalIgnoreCase));
     var hasActive = ActiveProject.HasProject || !string.IsNullOrWhiteSpace(_projects.Active?.Id);
 
-    <div class="card mb-3 home-active-card">
+    <div class="card mb-3 home-studio-card">
         <div class="card-body py-3">
             @if (hasActive)
             {
-                @* Single surface when a project is already selected for this user. *@
+                @* One card: studio brand + this film. *@
                 <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
-                    <div class="min-w-0">
-                        <div class="small text-muted">Active project</div>
-                        <div class="fw-semibold text-truncate" title="@(ActiveProject.ProjectId ?? _projects.Active?.Id)">
-                            @(ActiveProject.Label ?? activeMeta?.Label ?? activeMeta?.Title ?? ActiveProject.ProjectId ?? _projects.Active?.Id)
+                    <div class="d-flex align-items-center gap-2 min-w-0">
+                        <img src="/favicon.png" alt="" width="36" height="36" class="rounded-2 shadow-sm flex-shrink-0" />
+                        <div class="min-w-0">
+                            <div class="small text-muted">Studio · active film</div>
+                            <h1 class="home-top__title text-truncate mb-0" title="@(ActiveProject.ProjectId ?? _projects.Active?.Id)">
+                                @(ActiveProject.Label ?? activeMeta?.Label ?? activeMeta?.Title ?? ActiveProject.ProjectId ?? _projects.Active?.Id)
+                            </h1>
+                            @if (activeMeta is not null)
+                            {
+                                <span class="badge @VisibilityBadgeClass(activeMeta.VisibilityMode) small fw-normal mt-1">
+                                    @VisibilityBadgeText(activeMeta.VisibilityMode)
+                                </span>
+                            }
                         </div>
-                        @if (activeMeta is not null)
-                        {
-                            <span class="badge @VisibilityBadgeClass(activeMeta.VisibilityMode) small fw-normal mt-1">
-                                @VisibilityBadgeText(activeMeta.VisibilityMode)
-                            </span>
-                        }
                     </div>
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         @if (_projects.Projects.Count > 1 || _showSwitch)
@@ -158,11 +120,15 @@ else
             }
             else
             {
-                @* No active project — show create / pick, not a second empty “active” card. *@
+                @* Empty studio: brand + pick/create only. *@
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                    <div>
-                        <div class="fw-semibold">Choose a project</div>
-                        <div class="small text-muted">Create one or open an existing film.</div>
+                    <div class="d-flex align-items-center gap-2 min-w-0">
+                        <img src="/favicon.png" alt="" width="36" height="36" class="rounded-2 shadow-sm flex-shrink-0" />
+                        <div class="min-w-0">
+                            <div class="small text-muted">Studio</div>
+                            <h1 class="home-top__title mb-0">Choose a film</h1>
+                            <div class="home-top__sub">Book · cast · optional voice · estimate · film</div>
+                        </div>
                     </div>
                     <button class="btn btn-primary btn-sm"
                             data-testid="home-new-project"
