@@ -116,6 +116,15 @@ else
                         <span class="small">
                             <span class="text-muted">Estimate</span>
                             <strong class="ms-1" data-testid="home-cost-estimate">@FormatUsd(_costEstimateUsd)</strong>
+                            @if (!string.IsNullOrWhiteSpace(_costResolution))
+                            {
+                                <span class="text-muted ms-1">(@_costResolution</span>
+                                @if (_costVideoRate is > 0)
+                                {
+                                    <span class="text-muted"> · @FormatUsd(_costVideoRate)/s</span>
+                                }
+                                <span class="text-muted">)</span>
+                            }
                         </span>
                         <span class="text-muted small d-none d-sm-inline">·</span>
                         <span class="small">
@@ -448,6 +457,8 @@ else
     private double? _costEstimateUsd;
     /// <summary>Ledger actual spend for this project (catalog list rates).</summary>
     private double? _costActualUsd;
+    private string? _costResolution;
+    private double? _costVideoRate;
     private bool _costLoading;
 
     private async Task ToggleNewProjectAsync()
@@ -507,6 +518,8 @@ else
         {
             _costEstimateUsd = null;
             _costActualUsd = null;
+            _costResolution = null;
+            _costVideoRate = null;
             _costLoading = false;
             return;
         }
@@ -514,11 +527,24 @@ else
         _costLoading = true;
         try
         {
-            var dto = await Engine.GetCostAsync(pid);
+            // Match film resolution so Home estimate tracks 480p / 720p / 1080p rates.
+            string? draftRes = null;
+            try
+            {
+                var cfg = await Engine.GetConfigAsync(pid);
+                if (cfg?.Config is not null &&
+                    cfg.Config.TryGetValue("resolution", out var resEl) &&
+                    resEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                    draftRes = resEl.GetString();
+            }
+            catch { /* use server default */ }
+
+            var dto = await Engine.GetCostAsync(pid, draftResolution: draftRes);
             var s = dto?.Cost?.Summary;
-            // Estimate = full-film planning (draft path). Spent = ledger actuals.
             _costEstimateUsd = s?.FullFilmAllDraftUsd;
             _costActualUsd = s?.ActualUsd;
+            _costResolution = dto?.Cost?.DraftResolution ?? draftRes;
+            _costVideoRate = dto?.Cost?.OutputRateDraft;
         }
         catch
         {

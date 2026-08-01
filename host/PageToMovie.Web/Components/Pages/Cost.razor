@@ -48,6 +48,21 @@ else
                 }
             </select>
         </div>
+        <div>
+            <label class="form-label small mb-0">Video resolution</label>
+            <div class="btn-group" role="group" aria-label="Video resolution">
+                @foreach (var res in new[] { "480p", "720p", "1080p" })
+                {
+                    <button type="button"
+                            class="btn btn-sm @(_draftRes == res ? "btn-primary" : "btn-outline-secondary")"
+                            data-testid="@($"cost-res-{res}")"
+                            disabled="@_busy"
+                            @onclick="() => SetDraftResolutionAsync(res)">
+                        @res
+                    </button>
+                }
+            </div>
+        </div>
         <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Refresh</button>
     </div>
 
@@ -71,7 +86,13 @@ else
                     <div class="card-body text-center py-4">
                         <div class="text-muted small text-uppercase mb-1">Estimate</div>
                         <div class="display-6 fs-2 cost-hero-num" data-testid="cost-estimate">@Usd(estimate)</div>
-                        <div class="small text-muted mt-1">Planned full film</div>
+                        <div class="small text-muted mt-1">
+                            Full film · <strong>@_report.DraftResolution</strong>
+                            @if (_report.OutputRateDraft > 0)
+                            {
+                                <span> · @Usd(_report.OutputRateDraft)/sec video</span>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -122,7 +143,36 @@ else
             {
                 <span class="badge text-bg-dark border border-secondary fw-normal text-muted">Voice · not in estimate</span>
             }
+            <span class="badge text-bg-primary fw-normal" data-testid="cost-res-badge">
+                Video · @_report.DraftResolution · @Usd(_report.OutputRateDraft)/sec
+            </span>
         </div>
+
+        @if (_report.Scenarios.Count > 0)
+        {
+            <div class="card mb-3 border-secondary border-opacity-25">
+                <div class="card-body py-2">
+                    <div class="small text-muted mb-2">Video cost changes a lot with resolution — pick one:</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var r in _report.Scenarios)
+                        {
+                            var active = string.Equals(r.Resolution, _draftRes, StringComparison.OrdinalIgnoreCase);
+                            <button type="button"
+                                    class="btn btn-sm @(active ? "btn-primary" : "btn-outline-secondary")"
+                                    disabled="@_busy"
+                                    @onclick="() => SetDraftResolutionAsync(r.Resolution)">
+                                <span class="fw-semibold">@r.Resolution</span>
+                                <span class="ms-1">@Usd(r.FullFilmUsd)</span>
+                                <span class="text-muted ms-1 small">(@Usd(r.RatePerSec)/s)</span>
+                            </button>
+                        }
+                    </div>
+                    <div class="form-text mb-0">
+                        Full-film numbers above include cast, planning, and optional voice; these chips are video-heavy scenarios at catalog rates for the selected video model.
+                    </div>
+                </div>
+            </div>
+        }
 
         @* —— Estimate pie —— *@
         <div class="card mb-4">
@@ -247,7 +297,8 @@ else
                     <div class="row g-2 align-items-end mb-3">
                         <div class="col-6 col-md-2">
                             <label class="form-label small mb-0">Draft res</label>
-                            <select class="form-select form-select-sm" @bind="_draftRes" @bind:after="LoadAsync" disabled="@_busy">
+                            <select class="form-select form-select-sm" value="@_draftRes"
+                                    @onchange="OnAdvancedDraftResAsync" disabled="@_busy">
                                 <option value="480p">480p</option>
                                 <option value="720p">720p</option>
                                 <option value="1080p">1080p</option>
@@ -381,6 +432,36 @@ else
         }
     }
 
+    private Task OnAdvancedDraftResAsync(ChangeEventArgs e) =>
+        SetDraftResolutionAsync(e.Value?.ToString() ?? _draftRes);
+
+    private async Task SetDraftResolutionAsync(string res)
+    {
+        res = (res ?? "480p").Trim().ToLowerInvariant();
+        if (res is not ("480p" or "720p" or "1080p"))
+            return;
+        if (string.Equals(_draftRes, res, StringComparison.OrdinalIgnoreCase) && _report is not null)
+            return;
+
+        _draftRes = res;
+        // Persist so film generation and Home estimate use the same resolution.
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_projectId))
+            {
+                await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?>
+                {
+                    ["resolution"] = _draftRes,
+                });
+            }
+        }
+        catch
+        {
+            // Still recompute estimate even if save fails
+        }
+        await LoadAsync();
+    }
+
     private async Task LoadAsync()
     {
         _busy = true;
@@ -389,6 +470,8 @@ else
         {
             var dto = await Engine.GetCostAsync(_projectId, _draftRes, _heroRes, _retries);
             _report = dto?.Cost;
+            if (_report is not null && !string.IsNullOrWhiteSpace(_report.DraftResolution))
+                _draftRes = _report.DraftResolution;
         }
         catch (Exception ex)
         {
