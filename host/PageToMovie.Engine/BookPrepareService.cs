@@ -823,6 +823,14 @@ public sealed class BookPrepareService
             ["text_words"] = analysis.TextWords,
             ["text_quality"] = analysis.TextQuality,
             ["book_kind"] = analysis.BookKind,
+            // Initial film medium from import analysis (refined at screenplay adaptation).
+            ["visual_medium"] = analysis.BookKind == "picture_book"
+                ? "illustrated_picture_book"
+                : "photoreal_live_action",
+            ["render_style_lock"] = analysis.BookKind == "picture_book"
+                ? "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action"
+                : "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe. NOT cartoon, NOT illustration, NOT anime",
+            ["medium_source"] = "import_extract_meta",
             ["suggested_total_minutes"] = analysis.SuggestedTotalMinutes,
             ["suggested_chunk_pages"] = analysis.SuggestedChunkPages,
             ["strategy"] = new Dictionary<string, object?>

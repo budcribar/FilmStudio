@@ -25,6 +25,25 @@ public sealed class ProjectVisionMetaTests
     }
 
     [Fact]
+    public void TryRead_UsesExtractMetaBookKind()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "ptm-extract-" + Guid.NewGuid().ToString("n"));
+        Directory.CreateDirectory(Path.Combine(dir, "source"));
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "source", "extract_meta.json"),
+                """{"schema_version":"extract_meta.v1","book_kind":"short","pages":12}""");
+            var read = ProjectVisionMeta.TryRead(dir);
+            Assert.NotNull(read);
+            Assert.Equal(ProjectVisionMeta.MediumPhotoreal, read!.VisualMedium);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, true); } catch { }
+        }
+    }
+
+    [Fact]
     public void RoundTrip_WriteRead()
     {
         var dir = Path.Combine(Path.GetTempPath(), "ptm-vision-" + Guid.NewGuid().ToString("n"));

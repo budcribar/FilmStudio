@@ -7,7 +7,8 @@ namespace PageToMovie.Engine;
 /// <summary>
 /// Structured visual medium decided at book→screenplay (adaptation) time.
 /// Source of truth for photoreal vs illustrated — not regex over Fountain prose.
-/// File: <c>source/vision_meta.json</c>.
+/// Primary store: import sidecar <c>source/extract_meta.json</c> (book_kind + visual_medium).
+/// Optional overlay: <c>source/vision_meta.json</c>.
 /// </summary>
 public static class ProjectVisionMeta
 {
@@ -49,9 +50,31 @@ public static class ProjectVisionMeta
     public static string GetPath(string projectDir) =>
         Path.Combine(projectDir, "source", FileName);
 
+    /// <summary>Import sidecar from BookPrepareService — primary shared store.</summary>
+    public const string ExtractMetaFileName = "extract_meta.json";
+
+    public static string GetExtractMetaPath(string projectDir) =>
+        Path.Combine(projectDir, "source", ExtractMetaFileName);
+
     public static Document? TryRead(string projectDir)
     {
-        var path = GetPath(projectDir);
+        // 1) Optional overlay (tests / explicit writes)
+        var overlay = TryReadVisionFile(GetPath(projectDir));
+        if (overlay is not null &&
+            string.Equals(overlay.DecidedBy, "adaptation", StringComparison.OrdinalIgnoreCase))
+            return overlay;
+
+        // 2) Import extract_meta.json (book_full + analysis at prepare time)
+        var fromExtract = TryReadExtractMeta(projectDir);
+        if (fromExtract is not null)
+            return fromExtract;
+
+        // 3) vision_meta.json fallback
+        return overlay ?? TryReadVisionFile(GetPath(projectDir));
+    }
+
+    static Document? TryReadVisionFile(string path)
+    {
         if (!File.Exists(path)) return null;
         try
         {
@@ -63,10 +86,65 @@ public static class ProjectVisionMeta
             doc.VisualMedium = NormalizeMedium(doc.VisualMedium);
             return doc;
         }
-        catch
+        catch { return null; }
+    }
+
+    /// <summary>Read medium fields from import <c>extract_meta.json</c>.</summary>
+    public static Document? TryReadExtractMeta(string projectDir)
+    {
+        var path = GetExtractMetaPath(projectDir);
+        if (!File.Exists(path)) return null;
+        try
         {
-            return null;
+            using var jd = JsonDocument.Parse(File.ReadAllText(path));
+            var root = jd.RootElement;
+            string? medium = null;
+            string? style = null;
+            string? source = null;
+            string? notes = null;
+
+            if (root.TryGetProperty("visual_medium", out var vm) && vm.ValueKind == JsonValueKind.String)
+                medium = vm.GetString();
+            if (root.TryGetProperty("render_style_lock", out var rsl) && rsl.ValueKind == JsonValueKind.String)
+                style = rsl.GetString();
+            if (root.TryGetProperty("medium_source", out var ms) && ms.ValueKind == JsonValueKind.String)
+                source = ms.GetString();
+            if (root.TryGetProperty("notes", out var n))
+            {
+                if (n.ValueKind == JsonValueKind.String) notes = n.GetString();
+                else if (n.ValueKind == JsonValueKind.Array)
+                    notes = string.Join("; ", n.EnumerateArray().Select(x => x.GetString()).Where(s => !string.IsNullOrWhiteSpace(s)));
+            }
+
+            // Legacy extract_meta: only book_kind
+            if (string.IsNullOrWhiteSpace(medium) &&
+                root.TryGetProperty("book_kind", out var bk) &&
+                bk.ValueKind == JsonValueKind.String)
+            {
+                medium = string.Equals(bk.GetString(), "picture_book", StringComparison.OrdinalIgnoreCase)
+                    ? MediumIllustrated
+                    : MediumPhotoreal;
+                source ??= "import_book_kind";
+            }
+
+            if (string.IsNullOrWhiteSpace(medium) && string.IsNullOrWhiteSpace(style))
+                return null;
+
+            var med = NormalizeMedium(medium ?? MediumPhotoreal);
+            return new Document
+            {
+                VisualMedium = med,
+                RenderStyleLock = string.IsNullOrWhiteSpace(style) ? DefaultStyleLock(med) : style!.Trim(),
+                DecidedBy = source is "adaptation" or "adaptation_llm" ? "adaptation"
+                    : source is "cast_extract" ? "cast_extract"
+                    : "import",
+                Notes = notes,
+                DecidedAt = root.TryGetProperty("prepared_at", out var pa) && pa.ValueKind == JsonValueKind.String
+                    ? pa.GetString()
+                    : null,
+            };
         }
+        catch { return null; }
     }
 
     public static void Write(string projectDir, Document doc)
@@ -77,6 +155,11 @@ public static class ProjectVisionMeta
         doc.DecidedAt = DateTimeOffset.UtcNow.ToString("o");
         if (string.IsNullOrWhiteSpace(doc.RenderStyleLock))
             doc.RenderStyleLock = DefaultStyleLock(doc.VisualMedium);
+
+        // Keep import sidecar as the shared home (merge into extract_meta when present).
+        MergeIntoExtractMeta(projectDir, doc);
+
+        // Also write vision_meta for callers/tests that look for the thin file.
         var path = GetPath(projectDir);
         var json = JsonSerializer.Serialize(doc, new JsonSerializerOptions
         {
@@ -84,6 +167,47 @@ public static class ProjectVisionMeta
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         });
         File.WriteAllText(path, json);
+    }
+
+    static void MergeIntoExtractMeta(string projectDir, Document doc)
+    {
+        var path = GetExtractMetaPath(projectDir);
+        Dictionary<string, object?> root;
+        if (File.Exists(path))
+        {
+            try
+            {
+                root = JsonSerializer.Deserialize<Dictionary<string, object?>>(
+                    File.ReadAllText(path),
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                    ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                root = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        else
+        {
+            root = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["schema_version"] = "extract_meta.v1",
+                ["prepared_at"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
+            };
+        }
+
+        root["visual_medium"] = doc.VisualMedium;
+        root["render_style_lock"] = doc.RenderStyleLock;
+        root["medium_source"] = doc.DecidedBy == "adaptation" ? "adaptation" : (doc.DecidedBy ?? "import");
+        root["medium_decided_at"] = doc.DecidedAt;
+        if (!string.IsNullOrWhiteSpace(doc.Notes))
+            root["medium_notes"] = doc.Notes;
+        if (!string.IsNullOrWhiteSpace(doc.PerformanceLock))
+            root["performance_lock"] = doc.PerformanceLock;
+
+        File.WriteAllText(
+            path,
+            JsonSerializer.Serialize(root, new JsonSerializerOptions { WriteIndented = true }) + Environment.NewLine);
     }
 
     public static string NormalizeMedium(string? raw)
