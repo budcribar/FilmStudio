@@ -120,7 +120,27 @@ else
 
         @if (!string.IsNullOrWhiteSpace(_report.Notes))
         {
-            <p class="small text-muted mb-3" data-testid="cost-estimate-basis">@_report.Notes</p>
+            <p class="small text-muted mb-2" data-testid="cost-estimate-basis">@_report.Notes</p>
+        }
+        @if (_report.Refinement is { UsedHistory: true } r)
+        {
+            <p class="small mb-3" data-testid="cost-estimate-history">
+                <span class="badge text-bg-success fw-normal me-1">Using history</span>
+                @if (r.AppliedVideoMultiplier > 1.001)
+                {
+                    <span class="text-muted">Video ×@r.AppliedVideoMultiplier.ToString("0.##")</span>
+                }
+                @if (r.LearnedFailRate is double fr)
+                {
+                    <span class="text-muted ms-1">· observed fail ~@fr.ToString("P0")</span>
+                }
+                @if (r.VideoApiSamples + r.ReviewApiSamples + r.TimingSamples > 0)
+                {
+                    <span class="text-muted ms-1">
+                        · samples video @r.VideoApiSamples / review @r.ReviewApiSamples / timing @r.TimingSamples
+                    </span>
+                }
+            </p>
         }
         <div class="small text-muted mb-3 d-flex flex-wrap gap-2">
             @if (!string.IsNullOrWhiteSpace(_report.ModelName))

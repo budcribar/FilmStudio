@@ -1051,6 +1051,23 @@ public sealed class CostScenarioRow
     public double AssumeAvgRetries { get; set; }
 }
 
+/// <summary>How planning estimates were adjusted from stored actuals (DB / ledger).</summary>
+public sealed class CostEstimateRefinement
+{
+    public bool UsedHistory { get; set; }
+    public int VideoApiSamples { get; set; }
+    public int ReviewApiSamples { get; set; }
+    public int TimingSamples { get; set; }
+    public int ProjectLedgerEvents { get; set; }
+    /// <summary>QA video multiplier prior before history (e.g. 1.3).</summary>
+    public double PriorVideoMultiplier { get; set; } = 1.3;
+    /// <summary>Multiplier after blending history (fail/truncation rate, etc.).</summary>
+    public double AppliedVideoMultiplier { get; set; } = 1.0;
+    public double? LearnedFailRate { get; set; }
+    public double HistoryWeight { get; set; }
+    public string Notes { get; set; } = "";
+}
+
 public sealed class CostReport
 {
     public string ProjectId { get; set; } = "";
@@ -1081,6 +1098,7 @@ public sealed class CostReport
     /// (screenplay, characters, video, voice, music, other).
     /// </summary>
     public Dictionary<string, double> EstimateByCategory { get; set; } = new();
+    public CostEstimateRefinement Refinement { get; set; } = new();
     public List<CostSceneRow> Scenes { get; set; } = new();
     public List<CostScenarioRow> Scenarios { get; set; } = new();
     public List<CostEvent> RecentEvents { get; set; } = new();

@@ -19,11 +19,22 @@ public sealed class CostReportService
 
     private readonly ProjectStore _projects;
     private readonly CreditService? _credits;
+    private readonly UserDatabaseService? _userDb;
+    private readonly ClipTimingTelemetryRepository? _timingDb;
 
-    public CostReportService(ProjectStore projects, CreditService? credits = null)
+    private const int MinApiSamples = 8;
+    private const int MinTimingSamples = 5;
+
+    public CostReportService(
+        ProjectStore projects,
+        CreditService? credits = null,
+        UserDatabaseService? userDb = null,
+        ClipTimingTelemetryRepository? timingDb = null)
     {
         _projects = projects;
         _credits = credits;
+        _userDb = userDb;
+        _timingDb = timingDb;
     }
 
     public async Task<CostReport> GetReportAsync(
@@ -42,30 +53,30 @@ public sealed class CostReportService
         var retries = assumeAvgRetries
             ?? GetDouble(rates, "assume_avg_retries", 0);
 
-        // Quality Gate Retry (config): dialogue/auto-review failure → expected extra video gens.
-        // Default ON in Configuration UI (qa_retry_on_fail). Even before full pipeline wiring,
-        // estimates should price the intended behavior.
+        // Quality Gate Retry (config) + history-refined video multiplier.
         var qaRetryOnFail = GetCfgBool(cfg, "qa_retry_on_fail", defaultValue: true);
         var qaMaxRetries = GetCfgInt(cfg, "qa_max_retries", defaultValue: 1);
         qaMaxRetries = Math.Clamp(qaMaxRetries, 0, 5);
-        // Prior for "how often QA forces a regen" — start ~1.3× video until telemetry refines it.
-        // (1.3 multiplier ⇒ 0.3 expected extra generations per clip, not a full double.)
-        var qaVideoMultiplier = 1.3;
+        var priorVideoMultiplier = 1.3;
         if (cfg.TryGetValue("cost_estimates", out var ceQa) && ceQa.ValueKind == JsonValueKind.Object)
         {
             if (ceQa.TryGetProperty("qa_retry_video_multiplier", out var qm) &&
                 qm.TryGetDouble(out var qmv) && qmv >= 1.0)
-                qaVideoMultiplier = Math.Clamp(qmv, 1.0, 3.0);
-            // Legacy fail-rate knob → convert to multiplier if multiplier not set explicitly.
+                priorVideoMultiplier = Math.Clamp(qmv, 1.0, 3.0);
             else if (ceQa.TryGetProperty("qa_fail_rate", out var fr) && fr.TryGetDouble(out var frv) && frv >= 0)
-                qaVideoMultiplier = 1.0 + Math.Clamp(frv, 0, 1) * Math.Max(1, qaMaxRetries);
+                priorVideoMultiplier = 1.0 + Math.Clamp(frv, 0, 1) * Math.Max(1, qaMaxRetries);
         }
-        var qaExpectedExtraGens = qaRetryOnFail ? Math.Max(0, qaVideoMultiplier - 1.0) : 0.0;
-        if (qaExpectedExtraGens > retries)
-            retries = qaExpectedExtraGens;
 
         var ledger = await GetCostLedgerAsync(projectId, ct).ConfigureAwait(false);
         var actual = SummarizeLedger(ledger);
+
+        var refinement = await BuildHistoryRefinementAsync(
+            projectId, priorVideoMultiplier, qaRetryOnFail, qaMaxRetries, actual, ct)
+            .ConfigureAwait(false);
+        var qaVideoMultiplier = qaRetryOnFail ? refinement.AppliedVideoMultiplier : 1.0;
+        var qaExpectedExtraGens = qaRetryOnFail ? Math.Max(0, qaVideoMultiplier - 1.0) : 0.0;
+        if (qaExpectedExtraGens > retries)
+            retries = qaExpectedExtraGens;
 
         var blueprintClips = await LoadBlueprintClipsAsync(projectId, ct).ConfigureAwait(false);
         var estimateBasis = blueprintClips.Any(s => s.Clips.Count > 0) ? "shot_plan" : "none";
@@ -186,6 +197,8 @@ public sealed class CostReportService
         var reviewPlan = EstimateAutomatedReview(
             clipsTotal, rates, cfg, qaRetryOnFail, qaVideoMultiplier);
 
+        var catalogVideoDraft = allDraft;
+        var catalogVideoHero = allHero;
         var estimateByCategory = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
         {
             [CostCategories.Screenplay] = Math.Round(planningPlan.Usd, 2),
@@ -196,9 +209,21 @@ public sealed class CostReportService
             [CostCategories.Review] = Math.Round(reviewPlan.Usd, 2),
             [CostCategories.Other] = 0,
         };
-        var nonVideo = castPlan.Usd + voicePlan.Usd + musicPlan.Usd + planningPlan.Usd + reviewPlan.Usd;
+
+        // Blend unit costs with portfolio averages when sample sizes allow.
+        ApplyHistoryUnitCosts(estimateByCategory, refinement, clipsTotal);
+
+        allDraft = estimateByCategory.GetValueOrDefault(CostCategories.Video);
+        var nonVideo =
+            estimateByCategory.GetValueOrDefault(CostCategories.Screenplay) +
+            estimateByCategory.GetValueOrDefault(CostCategories.Characters) +
+            estimateByCategory.GetValueOrDefault(CostCategories.Voice) +
+            estimateByCategory.GetValueOrDefault(CostCategories.Music) +
+            estimateByCategory.GetValueOrDefault(CostCategories.Review) +
+            estimateByCategory.GetValueOrDefault(CostCategories.Other);
         var fullDraft = allDraft + nonVideo;
-        var fullHero = allHero + nonVideo;
+        var videoScale = catalogVideoDraft > 0.01 ? allDraft / catalogVideoDraft : 1.0;
+        var fullHero = catalogVideoHero * videoScale + nonVideo;
         // Remaining first-pass: missing video + unfinished cast/voice/music (planning mostly already spent).
         var remainingExtras = castPlan.RemainingUsd + voicePlan.RemainingUsd + musicPlan.RemainingUsd
             + reviewPlan.RemainingUsd;
@@ -251,6 +276,7 @@ public sealed class CostReportService
             },
             Actual = actual,
             EstimateByCategory = estimateByCategory,
+            Refinement = refinement,
             Scenes = rows,
             Scenarios = scenarios,
             RecentEvents = ledger
@@ -262,8 +288,9 @@ public sealed class CostReportService
                 $"Rates from selected models (video={videoModel}, image={imageModel}" +
                 (voicePlan.Included ? $", voice={voiceModel}" : "") + "). " +
                 (qaRetryOnFail
-                    ? $"Quality gate retry ON (admin auto-regen; video estimate ×{qaVideoMultiplier:0.##} until we learn a better rate from actuals); automated review included. "
-                    : "Quality gate retry OFF; still counts one dialogue check per clip when Gemini QA is used. ") +
+                    ? $"Quality gate retry ON (admin auto-regen; video ×{qaVideoMultiplier:0.##}). "
+                    : "Quality gate retry OFF. ") +
+                (string.IsNullOrWhiteSpace(refinement.Notes) ? "" : refinement.Notes + " ") +
                 "Actual = tracked spend at list rates when work completed.",
         };
     }
@@ -1415,6 +1442,127 @@ public sealed class CostReportService
     /// When quality-gate retry is on, count re-review after expected failed regens.
     /// Extra <em>video</em> cost for regens is folded into clip attempts via retries.
     /// </summary>
+
+    private ApiCostHistoryStats? _historyApiStats;
+
+    private async Task<CostEstimateRefinement> BuildHistoryRefinementAsync(
+        string projectId,
+        double priorVideoMultiplier,
+        bool qaRetryOnFail,
+        int qaMaxRetries,
+        CostLedgerSummary projectActual,
+        CancellationToken ct)
+    {
+        var refn = new CostEstimateRefinement
+        {
+            PriorVideoMultiplier = priorVideoMultiplier,
+            AppliedVideoMultiplier = qaRetryOnFail ? priorVideoMultiplier : 1.0,
+            ProjectLedgerEvents = projectActual.EventCount,
+        };
+
+        double? failRate = null;
+        var timingSamples = 0;
+        if (_timingDb is not null)
+        {
+            var global = await _timingDb.GetDialogueFailRateAsync(MinTimingSamples, projectId: null, ct)
+                .ConfigureAwait(false);
+            var project = await _timingDb.GetDialogueFailRateAsync(MinTimingSamples, projectId, ct)
+                .ConfigureAwait(false);
+            if (project is { } p)
+            {
+                failRate = p.FailRate;
+                timingSamples = p.Samples;
+            }
+            else if (global is { } g)
+            {
+                failRate = g.FailRate;
+                timingSamples = g.Samples;
+            }
+        }
+        refn.TimingSamples = timingSamples;
+        refn.LearnedFailRate = failRate;
+
+        ApiCostHistoryStats? apiStats = null;
+        if (_userDb is not null)
+        {
+            var projectStats = await _userDb.GetApiCostHistoryStatsAsync(userId: null, projectId, ct)
+                .ConfigureAwait(false);
+            var globalStats = await _userDb.GetApiCostHistoryStatsAsync(userId: null, projectId: null, ct)
+                .ConfigureAwait(false);
+            apiStats = projectStats.TotalCalls >= MinApiSamples ? projectStats : globalStats;
+            if (apiStats.ByCategory.TryGetValue(CostCategories.Video, out var v))
+                refn.VideoApiSamples = v.Count;
+            if (apiStats.ByCategory.TryGetValue(CostCategories.Review, out var r))
+                refn.ReviewApiSamples = r.Count;
+        }
+
+        var learnedMult = priorVideoMultiplier;
+        if (qaRetryOnFail && failRate is double fr)
+        {
+            learnedMult = 1.0 + Math.Clamp(fr, 0, 0.9) * Math.Max(1, qaMaxRetries);
+            learnedMult = Math.Clamp(learnedMult, 1.0, 2.5);
+        }
+
+        var w = timingSamples <= 0 ? 0.0 : Math.Min(1.0, timingSamples / 30.0);
+        refn.HistoryWeight = w;
+        if (qaRetryOnFail)
+            refn.AppliedVideoMultiplier = Math.Round(priorVideoMultiplier * (1 - w) + learnedMult * w, 3);
+
+        refn.UsedHistory = timingSamples >= MinTimingSamples || refn.VideoApiSamples >= MinApiSamples
+            || projectActual.EventCount >= MinApiSamples;
+
+        var bits = new List<string>();
+        if (timingSamples >= MinTimingSamples && failRate is double fr2)
+            bits.Add($"timing QA fail ~{fr2:P0} (n={timingSamples})");
+        if (refn.VideoApiSamples > 0)
+            bits.Add($"{refn.VideoApiSamples} video API samples");
+        if (refn.ReviewApiSamples > 0)
+            bits.Add($"{refn.ReviewApiSamples} review API samples");
+        if (projectActual.EventCount > 0)
+            bits.Add($"{projectActual.EventCount} project ledger events");
+        if (bits.Count == 0)
+            bits.Add("no history yet — using catalog priors");
+        else if (w > 0 && qaRetryOnFail)
+            bits.Add($"video mult {priorVideoMultiplier:0.##}→{refn.AppliedVideoMultiplier:0.##} (weight {w:0.00})");
+        refn.Notes = "History: " + string.Join("; ", bits) + ".";
+
+        _historyApiStats = apiStats;
+        return refn;
+    }
+
+    private void ApplyHistoryUnitCosts(
+        Dictionary<string, double> estimateByCategory,
+        CostEstimateRefinement refinement,
+        int clipsTotal)
+    {
+        var stats = _historyApiStats;
+        if (stats is null || stats.TotalCalls < MinApiSamples)
+            return;
+
+        void Blend(string cat, double plannedUnits, double catalogTotal)
+        {
+            if (!stats.ByCategory.TryGetValue(cat, out var row) || row.Count < MinApiSamples)
+                return;
+            if (plannedUnits <= 0 || catalogTotal <= 0)
+                return;
+            var empiric = row.AvgUsd * plannedUnits;
+            var w = Math.Min(1.0, row.Count / 40.0);
+            var blended = catalogTotal * (1 - w) + empiric * w;
+            blended = Math.Clamp(blended, catalogTotal * 0.4, catalogTotal * 2.5);
+            estimateByCategory[cat] = Math.Round(blended, 2);
+            refinement.UsedHistory = true;
+            refinement.HistoryWeight = Math.Max(refinement.HistoryWeight, w);
+        }
+
+        Blend(CostCategories.Video, Math.Max(1, clipsTotal), estimateByCategory.GetValueOrDefault(CostCategories.Video));
+        Blend(CostCategories.Review, Math.Max(1, clipsTotal), estimateByCategory.GetValueOrDefault(CostCategories.Review));
+        Blend(CostCategories.Characters, 1, estimateByCategory.GetValueOrDefault(CostCategories.Characters));
+        Blend(CostCategories.Screenplay, 1, estimateByCategory.GetValueOrDefault(CostCategories.Screenplay));
+        Blend(CostCategories.Voice, 1, estimateByCategory.GetValueOrDefault(CostCategories.Voice));
+        Blend(CostCategories.Music, Math.Max(1, clipsTotal > 0 ? clipsTotal / 4.0 : 1),
+            estimateByCategory.GetValueOrDefault(CostCategories.Music));
+    }
+
     private static ScopeEstimate EstimateAutomatedReview(
         int clipsTotal,
         Dictionary<string, object?> rates,

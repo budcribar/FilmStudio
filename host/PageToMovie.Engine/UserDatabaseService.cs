@@ -639,6 +639,66 @@ public class UserDatabaseService
         return list;
     }
 
+
+    /// <summary>
+    /// Aggregate list-rate spend from user_api_calls for estimate refinement.
+    /// When <paramref name="userId"/> is null/empty, uses all users (portfolio prior).
+    /// </summary>
+    public async Task<ApiCostHistoryStats> GetApiCostHistoryStatsAsync(
+        string? userId = null,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var stats = new ApiCostHistoryStats();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT
+                    COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
+                    COUNT(*),
+                    COALESCE(SUM(estimated_usd), 0),
+                    COALESCE(AVG(estimated_usd), 0)
+                FROM user_api_calls
+                WHERE ok = 1
+                  AND estimated_usd IS NOT NULL
+                  AND estimated_usd > 0
+                  AND (@userId = '' OR user_id = @userId)
+                  AND (@projectId = '' OR project_id = @projectId)
+                GROUP BY cat
+                """;
+            cmd.Parameters.AddWithValue("@userId", string.IsNullOrWhiteSpace(userId) ? "" : userId.Trim());
+            cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                var cat = CostCategories.Resolve(r.GetString(0), null, r.GetString(0));
+                var count = r.GetInt32(1);
+                var sum = r.GetDouble(2);
+                var avg = r.GetDouble(3);
+                stats.TotalCalls += count;
+                stats.TotalUsd += sum;
+                if (!stats.ByCategory.TryGetValue(cat, out var row))
+                {
+                    row = new CategoryCostStats { Category = cat };
+                    stats.ByCategory[cat] = row;
+                }
+                row.Count += count;
+                row.TotalUsd += sum;
+                row.AvgUsd = row.Count > 0 ? row.TotalUsd / row.Count : 0;
+                _ = avg;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "GetApiCostHistoryStatsAsync failed");
+        }
+        return stats;
+    }
+
     public async Task InsertUserApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
     {
         if (rec is null || string.IsNullOrWhiteSpace(rec.UserId))
@@ -1648,4 +1708,22 @@ public sealed class UserApiCallRow
     public string? Purpose { get; set; }
     public string? Error { get; set; }
     public bool Fakes { get; set; }
+}
+
+
+/// <summary>Portfolio / user API spend aggregates for cost estimate refinement.</summary>
+public sealed class ApiCostHistoryStats
+{
+    public int TotalCalls { get; set; }
+    public double TotalUsd { get; set; }
+    public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class CategoryCostStats
+{
+    public string Category { get; set; } = CostCategories.Other;
+    public int Count { get; set; }
+    public double TotalUsd { get; set; }
+    public double AvgUsd { get; set; }
 }
