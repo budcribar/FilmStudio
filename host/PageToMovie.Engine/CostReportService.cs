@@ -164,12 +164,14 @@ public sealed class CostReportService
 
         var estimateByCategory = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
         {
-            ["screenplay"] = Math.Round(planningPlan.Usd, 2),
-            ["characters"] = Math.Round(castPlan.Usd, 2),
-            ["video"] = Math.Round(allDraft, 2),
-            ["voice"] = Math.Round(voicePlan.Usd, 2),
-            ["music"] = Math.Round(musicPlan.Usd, 2),
-            ["other"] = 0,
+            [CostCategories.Screenplay] = Math.Round(planningPlan.Usd, 2),
+            [CostCategories.Characters] = Math.Round(castPlan.Usd, 2),
+            [CostCategories.Video] = Math.Round(allDraft, 2),
+            [CostCategories.Voice] = Math.Round(voicePlan.Usd, 2),
+            [CostCategories.Music] = Math.Round(musicPlan.Usd, 2),
+            // Review is actual-driven (Gemini clip/movie QA, plate rankers); prior stays 0 until we add knobs.
+            [CostCategories.Review] = 0,
+            [CostCategories.Other] = 0,
         };
         var nonVideo = castPlan.Usd + voicePlan.Usd + musicPlan.Usd + planningPlan.Usd;
         var fullDraft = allDraft + nonVideo;

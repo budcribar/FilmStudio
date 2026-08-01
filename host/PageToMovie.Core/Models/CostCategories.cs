@@ -11,6 +11,10 @@ public static class CostCategories
     public const string Video = "video";
     public const string Voice = "voice";
     public const string Music = "music";
+    /// <summary>
+    /// Auto QA / pickers after generation: best portrait, Gemini clip/movie review, dialogue checks.
+    /// </summary>
+    public const string Review = "review";
     public const string Other = "other";
 
     /// <summary>Stable display order for pies and category cards.</summary>
@@ -21,6 +25,7 @@ public static class CostCategories
         (Video, "Video generation"),
         (Voice, "Voice & dialogue audio"),
         (Music, "Music generation"),
+        (Review, "Automated review"),
         (Other, "Other"),
     ];
 
@@ -47,19 +52,30 @@ public static class CostCategories
         // Purpose tags win over transport kind when we know them.
         if (m.Length > 0)
         {
+            // Automated review / QA (post-generation pickers and Gemini video reviews).
+            if (m.Contains("review", StringComparison.Ordinal) ||
+                m is "plate_rank_classify" or "dialogue_verify" or "dialogue_verification"
+                or "clip_auto_review" or "clip-auto-review" or "movie_auto_review"
+                or "movie_review_synthesis" or "auto_review")
+                return Review;
+
             if (m.StartsWith("book_to_fountain", StringComparison.Ordinal) ||
-                m is "vision_meta_adaptation" or "learning_propose")
-                return m == "learning_propose" ? Other : Screenplay;
+                m is "vision_meta_adaptation")
+                return Screenplay;
+
+            if (m is "learning_propose")
+                return Other;
 
             if (m is "cast_from_screenplay" or "cast_visual_literalize" or "species_kind_classify"
-                or "plate_rank_classify" or "character_emotion_arc_classify" or "wardrobe_continuity_classify")
+                or "character_emotion_arc_classify" or "wardrobe_continuity_classify")
                 return Characters;
 
+            // Shot-plan / style classifiers while planning the film (not post-hoc QA).
             if (m is "shot_plan_refine_classify" or "beat_pacing_classify" or "camera_director_classify"
                 or "cinematic_lighting_classify" or "negative_prompt_classify" or "depth_of_field_classify"
                 or "color_palette_grading_classify" or "silent_beat_classify" or "onscreen_cast_classify"
                 or "extend_cut_classify")
-                return Screenplay; // planning / shot plan — not pixels yet
+                return Screenplay;
 
             if (m is "ambient_sfx_classify" or "sound_design_composer_classify")
                 return Music;
@@ -70,7 +86,7 @@ public static class CostCategories
             if (m is "music" or "bgm" or "score" or "scene_music")
                 return Music;
 
-            // Video modes: fresh, video-extend, reseed, done, failed, …
+            // Video generation modes (not review).
             if (m is "fresh" or "video-extend" or "video_extend" or "reseed" or "extend"
                 or "done" or "failed" or "running" or "queued")
                 return Video;
@@ -78,12 +94,17 @@ public static class CostCategories
 
         return k switch
         {
+            // Post-gen QA jobs often use these kinds (see FilmJobService).
+            "clip-auto-review" or "clip-auto-review-batch" or "movie-auto-review"
+                or "video_review" or "dialogue_verification" or "auto_review" => Review,
             "video" or "video_extend" or "video_poll" or "film" or "clip" => Video,
             "image" or "image_edit" or "character" or "portrait" or "plates" => Characters,
             "music" or "bgm" or "score" => Music,
             "audio" or "voice" or "tts" or "voice-preview" or "voice_clone" or "speech" => Voice,
-            "chat" or "planning" or "script" or "screenplay" or "vision" or "ocr"
+            "chat" or "planning" or "script" or "screenplay" or "ocr"
                 or "import" or "cast_extract" or "shot_plan" => Screenplay,
+            // Generic vision: often review frames/clips; import OCR uses chat/ocr kinds above.
+            "vision" => Review,
             _ => Other,
         };
     }
