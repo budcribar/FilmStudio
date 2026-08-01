@@ -68,6 +68,22 @@ public class UserDatabaseService
         if (Directory.Exists("/app/data"))
             return "/app/data";
 
+        // Local Visual Studio / Windows: keep tokens & users outside the repo so Clean/Rebuild
+        // never deletes OAuth (YouTube) or personal API keys. Workspace still holds projects.
+        try
+        {
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (!string.IsNullOrWhiteSpace(local))
+            {
+                var stable = Path.Combine(local, "PageToMovie", "data");
+                Directory.CreateDirectory(stable);
+                // One-time: copy legacy workspace/data DB if stable is empty.
+                TryMigrateLegacyWorkspaceData(workspace, stable);
+                return stable;
+            }
+        }
+        catch { /* fall through */ }
+
         if (!string.IsNullOrWhiteSpace(workspace))
             return Path.Combine(workspace.Trim(), "data");
 

@@ -12,8 +12,9 @@ namespace PageToMovie.Engine;
 /// <summary>
 /// Manages the single shared OAuth2 connection PageToMovie uses to upload the WIP movie to
 /// YouTube. One channel per instance, admin-connected via POST /api/youtube/connect —
-/// not a per-user credential. Refresh token is persisted under
-/// <c>{workspace}/.PageToMovie/youtube_token/</c> (Google.Apis' own FileDataStore format).
+/// not a per-user credential. Refresh token is persisted in SQLite
+/// <c>oauth_data_store</c> inside <c>pagetomovie.db</c> under the resolved data directory
+/// (see <see cref="UserDatabaseService.ResolveDataDirectory"/>) so it survives process restarts.
 /// </summary>
 public sealed class YouTubeAuthService
 {
@@ -47,6 +48,8 @@ public sealed class YouTubeAuthService
         if (!IsConfigured)
             return null;
         var dataDir = UserDatabaseService.ResolveDataDirectory(_projects.WorkspaceRoot);
+        System.Diagnostics.Trace.TraceInformation(
+            "YouTube OAuth token store: {0} (pagetomovie.db / oauth_data_store)", dataDir);
         return new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
         {
             ClientSecrets = new ClientSecrets { ClientId = CleanClientId, ClientSecret = CleanClientSecret },
@@ -371,7 +374,9 @@ public sealed class SqliteDataStore : IDataStore
         if (string.IsNullOrWhiteSpace(key)) return Task.CompletedTask;
         try
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(value);
+            // Google.Apis TokenResponse expects Newtonsoft shape (same as FileDataStore).
+            // System.Text.Json does not round-trip RefreshToken reliably → "lost" after restart.
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value);
             using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
             conn.Open();
             using var cmd = conn.CreateCommand();
@@ -387,7 +392,12 @@ public sealed class SqliteDataStore : IDataStore
             cmd.Parameters.AddWithValue("@updated_at", DateTimeOffset.UtcNow.ToString("o"));
             cmd.ExecuteNonQuery();
         }
-        catch { /* best effort */ }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "SqliteDataStore.StoreAsync failed key={0}: {1}", key, ex.Message);
+            throw; // surface failure so OAuth exchange is not silent-success
+        }
         return Task.CompletedTask;
     }
 
@@ -421,11 +431,22 @@ public sealed class SqliteDataStore : IDataStore
             if (string.IsNullOrWhiteSpace(result))
                 return Task.FromResult(default(T)!);
 
-            var val = System.Text.Json.JsonSerializer.Deserialize<T>(result);
-            return Task.FromResult(val!);
+            // Prefer Newtonsoft (Google.Apis FileDataStore compatible). Fallback STJ for older rows.
+            try
+            {
+                var val = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(result);
+                if (val is not null)
+                    return Task.FromResult(val);
+            }
+            catch { /* try STJ */ }
+
+            var stj = System.Text.Json.JsonSerializer.Deserialize<T>(result);
+            return Task.FromResult(stj!);
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.TraceError(
+                "SqliteDataStore.GetAsync failed key={0}: {1}", key, ex.Message);
             return Task.FromResult(default(T)!);
         }
     }
