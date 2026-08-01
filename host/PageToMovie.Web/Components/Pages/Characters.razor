@@ -1,6 +1,7 @@
 @page "/characters"
 @implements IAsyncDisposable
 @inject EngineApiClient Engine
+@inject StudioCapabilityState Caps
 @inject JobHubClient Hub
 @inject AdminSessionService Session
 @inject ActiveProjectState ActiveProject
@@ -983,6 +984,12 @@ else
         }
 
         <hr class="my-3" />
+        <CapabilityLockedControl Enabled="@Caps.VoiceCloneReady"
+                                 BlockedReason="@Caps.VoiceCloneBlockedReason"
+                                 SettingsHref="@Caps.VoiceCloneSettingsHref"
+                                 TitleWhenEnabled="Record a short sample for cloning"
+                                 TestId="voice-clone-gate"
+                                 CssClass="w-100">
         <div class="ptm-voice-clone">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                 <div>
@@ -1088,6 +1095,7 @@ else
                 <audio class="mt-2 w-100" controls src="@_voiceClonePlayUrl" @key="_voiceClonePlayUrl"></audio>
             }
         </div>
+        </CapabilityLockedControl>
 
     };
 
@@ -1197,6 +1205,9 @@ else
 
             await ActiveProject.RefreshReadinessAsync(Engine);
             _gateChecked = true;
+            if (!string.IsNullOrEmpty(_projectId))
+                await Caps.RefreshAsync(Engine, _projectId);
+
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanCharacters)
                 return;
 
