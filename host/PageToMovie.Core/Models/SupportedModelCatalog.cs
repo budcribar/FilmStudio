@@ -630,7 +630,7 @@ public static class SupportedModelCatalog
         "openai" => "OpenAI",
         "suno" => "Suno",
         "aimusicapi" => "AI Music API",
-        "elevenlabs" => "ElevenLabs",
+        "elevenlabs" => "Voice cloning",
         _ => !string.IsNullOrWhiteSpace(sample.ProviderName)
             ? sample.ProviderName
             : char.ToUpperInvariant(pId[0]) + pId[1..],
@@ -644,7 +644,7 @@ public static class SupportedModelCatalog
         "anthropic" => "Script & planning and image vision. Not for video or image gen.",
         "fal" => "Open-source video/image (and some audio) via Fal serverless.",
         "suno" or "aimusicapi" => "Background music generation.",
-        "elevenlabs" => "Voice clone and TTS for personal dialogue (optional add-on).",
+        "elevenlabs" => "Record a short sample to personalize character dialogue.",
         _ => null,
     };
 

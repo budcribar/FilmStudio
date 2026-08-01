@@ -878,7 +878,7 @@ else
     private CancellationTokenSource? _voiceSaveCts;
 
     /// <summary>
-    /// Phoneme-rich read-aloud for Instant Voice Cloning (ElevenLabs-style).
+    /// Phoneme-rich read-aloud for voice cloning.
     /// Clear sentences, varied vowels/consonants, natural cadence.
     /// </summary>
     private const string VoiceCloneReadScript =
@@ -2406,7 +2406,7 @@ else
 
     /// <summary>
     /// Write clone sample to the client media folder (source of truth for large media) and
-    /// mirror metadata/bytes to the server so previews and ElevenLabs still work.
+    /// mirror metadata/bytes to the server so previews still work.
     /// </summary>
     private async Task PersistVoiceCloneSampleAsync(byte[] bytes, string fileName)
     {
@@ -2419,7 +2419,7 @@ else
         var rel = $"assets/characters/{safeKey}/voice_clone_sample{ext}";
 
         // Client media folder when already connected (no folder picker mid-recording).
-        // Always mirror to the server so previews / ElevenLabs still work.
+        // Always mirror to the server so previews still work.
         if (!MediaFolder.IsConnected)
             await MediaFolder.TryReconnectAsync();
 

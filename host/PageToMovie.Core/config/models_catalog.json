@@ -39,7 +39,7 @@
     {
       "id": "voice",
       "displayName": "Voice Clone / TTS",
-      "description": "Personal voice clone from a short sample, then TTS for dialogue (ElevenLabs).",
+      "description": "Personal voice clone from a short sample, then spoken dialogue for the film.",
       "defaultModelId": "eleven_multilingual_v2",
       "order": 70
     }
@@ -654,7 +654,7 @@
     },
     {
       "id": "eleven_multilingual_v2",
-      "displayName": "ElevenLabs Multilingual v2 (TTS)",
+      "displayName": "Multilingual voice",
       "capability": "Voice",
       "provider": "ElevenLabs",
       "apiBase": "https://api.elevenlabs.io/v1",
@@ -666,11 +666,11 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Primary TTS model for cloned personal voices. Requires ELEVENLABS_API_KEY. Pair with voice clone sample on Cast."
+      "notes": "Spoken dialogue from a personal clone sample on Cast."
     },
     {
       "id": "eleven_voice_clone",
-      "displayName": "ElevenLabs Instant Voice Clone",
+      "displayName": "Instant voice clone",
       "capability": "Voice",
       "provider": "ElevenLabs",
       "apiBase": "https://api.elevenlabs.io/v1",
