@@ -78,7 +78,7 @@ PageToMovie.Engine
     · No native ffmpeg (browser ffmpeg.wasm only)
     · locks · worker pools · metrics · assets/video/scene_XX_clip_YY.mp4
 
-Demo gallery     — public approved shorts; report → admin review
+Demo gallery     — YouTube-hosted shorts; report → auto-remove after 3
 PageToMovie.Fakes     — fake Grok clients + MP4 fixtures (no xAI spend)
 PageToMovie.LoadSim   — concurrent VUs against LoadSimBuster sandbox
 PageToMovie.Tests     — unit tests</pre>
@@ -116,7 +116,7 @@ PageToMovie.Tests     — unit tests</pre>
             <li><strong>Locks</strong> — scene / WIP / stage / character exclusive locks</li>
             <li><strong>Workers</strong> — API pool + FFmpeg pool with capacity caps</li>
             <li><strong>Play / stitch</strong> — browser concatenates clip MP4s (no server WIP required to preview)</li>
-            <li><strong>Demo</strong> — share from Review → pending; public gallery after admin approve</li>
+            <li><strong>Demo</strong> — share from Review → upload to YouTube; gallery lists when YouTube id is set</li>
             <li><strong>Admin</strong> — users/credits, config, learning, demo moderation</li>
             <li><strong>LoadSim</strong> — uses checked-in <code>projects/LoadSimBuster</code></li>
         </ul>

@@ -1214,7 +1214,6 @@ public sealed class CharacterBookPlateService
             int stepY = Math.Max(1, bitmap.Height / samplesY);
 
             int totalSamples = 0;
-            int bgCount = 0;
             int colorCount = 0;
 
             int width = bitmap.Width;

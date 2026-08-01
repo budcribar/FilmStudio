@@ -157,7 +157,7 @@ public class Stage2VisualPromptTests : IDisposable
         Assert.DoesNotContain("no legible text", neg, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("no watermarks", neg, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("no crowd extras", neg, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(1, Regex.Matches(neg, "no watermarks", RegexOptions.IgnoreCase).Count);
+        Assert.Single(Regex.Matches(neg, "no watermarks", RegexOptions.IgnoreCase));
         Assert.Contains("no extra unmentioned hats", neg, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -186,7 +186,7 @@ public class Stage2VisualPromptTests : IDisposable
         Assert.Contains("no crowd extras", built.Prompt, StringComparison.OrdinalIgnoreCase);
         // Gen builder owns technical suffix (stripped from action if present, then re-appended)
         Assert.Contains("/ 720p, 24fps", built.Prompt, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(1, Regex.Matches(built.Prompt, @"/\s*\d+p\s*,\s*\d+fps", RegexOptions.IgnoreCase).Count);
+        Assert.Single(Regex.Matches(built.Prompt, @"/\s*\d+p\s*,\s*\d+fps", RegexOptions.IgnoreCase));
     }
 
     [Fact]

@@ -10,9 +10,17 @@
 @inject ClientMediaFolderService MediaFolder
 @using PageToMovie.Core.Models
 
-<PageTitle>Review</PageTitle>
+<PageTitle>Review · final cut</PageTitle>
 
-<h1>Review</h1>
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">Studio · Edit afterward</span>
+    <h1 class="ptm-adapt-title mb-1">Review</h1>
+    <p class="ptm-adapt-lede mb-0">
+        Approve scenes, play the cut, publish. The north star is automatic generation — this is where you refine.
+    </p>
+</div>
+
+<StudioProcessStrip Active="review" />
 
 @if (_gateChecked && !ActiveProject.CanReview)
 {
@@ -25,10 +33,7 @@
 }
 else
 {
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-    <p class="text-muted mb-0">
-        Review your movie scenes, track approved content, and play or share the final film.
-    </p>
+<div class="d-flex align-items-center justify-content-end flex-wrap gap-2 mb-3">
     @if (_scenes.Count > 0)
     {
         var approvedCount = _scenes.Count(s => s.IsApproved);
@@ -881,23 +886,36 @@ else if (_activeTab == "share")
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="SetTabReview">Back to Review</button>
         </div>
         <div class="card-body p-4 text-white">
+<div class="alert alert-secondary border-secondary py-2 px-3 mb-3 small" data-testid="review-share-channel-note">
+    Films publish to the private <strong>Page to Movie</strong> YouTube channel <em>only through this app</em>
+    (no YouTube Studio for creators). The gallery plays those uploads.
+</div>
 @if (_youTubeStatus is not null && _youTubeStatus.Configured)
 {
     @if (!_youTubeStatus.Connected)
     {
-        <div class="alert alert-warning d-flex align-items-center justify-content-between mb-3 py-2 px-3 shadow-sm" data-testid="review-youtube-connect-alert">
-            <div class="small">
-                <strong>⚠️ YouTube Channel Not Connected:</strong> Server credentials are set up, but your YouTube channel needs a one-time connection to upload demos automatically.
+        @if (Session.IsAdmin)
+        {
+            <div class="alert alert-warning d-flex align-items-center justify-content-between mb-3 py-2 px-3 shadow-sm" data-testid="review-youtube-connect-alert">
+                <div class="small">
+                    <strong>Channel not connected:</strong> One-time admin OAuth so the app can upload to Page to Movie.
+                </div>
+                <button type="button" class="btn btn-sm btn-warning fw-bold text-dark ms-3 text-nowrap" @onclick="ConnectYouTubeAsync">
+                    Connect Page to Movie channel
+                </button>
             </div>
-            <button type="button" class="btn btn-sm btn-warning fw-bold text-dark ms-3 text-nowrap" @onclick="ConnectYouTubeAsync">
-                🔗 Connect YouTube Channel
-            </button>
-        </div>
+        }
+        else
+        {
+            <div class="alert alert-warning py-2 px-3 mb-3 small" data-testid="review-youtube-waiting-admin">
+                The Page to Movie channel isn’t connected yet. An admin must connect it once before publishes can upload.
+            </div>
+        }
     }
     else
     {
         <div class="alert alert-success py-2 px-3 mb-3 small d-flex align-items-center justify-content-between" data-testid="review-youtube-connected-alert">
-            <span>✅ Connected to <strong>PageToMovie YouTube Channel</strong>. Published films upload to YouTube automatically.</span>
+            <span>✅ Page to Movie channel ready — publish from here to put your film on the wall.</span>
             @if (Session.IsAdmin)
             {
                 <button type="button" class="btn btn-sm btn-link text-white-50 p-0 ms-2 text-decoration-none" @onclick="DisconnectYouTubeAsync">(disconnect)</button>
@@ -990,7 +1008,7 @@ else
                 <button type="button" class="btn btn-primary px-4" data-testid="review-save-confirm"
                         disabled="@(_busy || !_demoAcceptedGuidelines)"
                         @onclick="ConfirmSaveAsync">
-                    Publish to Demo Gallery
+                    Publish to Page to Movie gallery
                 </button>
             </div>
 }
@@ -2370,7 +2388,7 @@ else
     }
 
     /// <summary>
-    /// Build cut + submit to /api/demos as pending (admin must approve for public /demo).
+    /// Build cut + publish to /api/demos → YouTube upload. Gallery lists the film once YouTube id is set.
     /// </summary>
     private async Task PublishDemoAsync()
     {
@@ -2439,7 +2457,7 @@ else
                     if (pub?.Ok == true)
                     {
                         _activeTab = "review";
-                        _message = (pub.Message ?? $"“{pub.Demo?.Title ?? title}” published to gallery.") +
+                        _message = (pub.Message ?? $"“{pub.Demo?.Title ?? title}” sent to YouTube — it appears in the gallery when the upload finishes.") +
                             (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
                         return;
                     }
@@ -2461,7 +2479,7 @@ else
 
             var msg = res.TryGetProperty("message", out var mEl) ? mEl.GetString() : null;
             _activeTab = "review";
-            _message = (msg ?? $"“{publishedTitle}” published to gallery.") +
+            _message = (msg ?? $"“{publishedTitle}” sent to YouTube — it appears in the gallery when the upload finishes.") +
                 (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
         }
         catch (Exception ex)

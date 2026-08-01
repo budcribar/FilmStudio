@@ -94,7 +94,7 @@ public class ClipDialogueVerificationTests
         {
             var opts = Microsoft.Extensions.Options.Options.Create(new PageToMovie.Core.Options.PageToMovieOptions { WorkspaceRoot = tempDir });
             var store = new ProjectStore(opts);
-            var service = new ClipDialogueVerificationService(store, new MockVisionClient(), null);
+            var service = new ClipDialogueVerificationService(store, new MockVisionClient(), new ProjectTelemetryService(store, Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectTelemetryService>.Instance));
             var result = service.LoadVerification("test_proj", 1, 1);
             Assert.Null(result);
         }
@@ -114,7 +114,7 @@ public class ClipDialogueVerificationTests
         {
             var opts = Microsoft.Extensions.Options.Options.Create(new PageToMovie.Core.Options.PageToMovieOptions { WorkspaceRoot = tempDir });
             var store = new ProjectStore(opts);
-            var service = new ClipDialogueVerificationService(store, new MockVisionClient(), null);
+            var service = new ClipDialogueVerificationService(store, new MockVisionClient(), new ProjectTelemetryService(store, Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectTelemetryService>.Instance));
 
             var vo = new ClipDialogueVerificationResult
             {

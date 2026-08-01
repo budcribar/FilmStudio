@@ -885,4 +885,112 @@ public sealed class ClientMediaFolderService
         public long LastModifiedMs { get; set; }
         public string? Error { get; set; }
     }
+    /// <summary>
+    /// Write bytes into the connected media folder (e.g. voice clone samples).
+    /// By default does <b>not</b> open a folder picker mid-flow — tries silent reconnect only.
+    /// Pass <paramref name="promptToConnectFolder"/> only from an explicit "Connect folder" control.
+    /// </summary>
+    public async Task<(bool Ok, string? RelativePath, string? Error)> SaveBytesAsync(
+        string projectId, string relativePath, byte[] bytes, bool promptToConnectFolder = false)
+    {
+        if (bytes is null || bytes.Length == 0)
+            return (false, null, "Empty audio");
+        if (!IsConnected)
+            await TryReconnectAsync();
+        if (!IsConnected)
+        {
+            if (!promptToConnectFolder)
+                return (false, null, "Media folder not connected — sample still saved on the project");
+            var ok = await ConnectFolderAsync();
+            if (!ok) return (false, null, LastStatus ?? "Connect a media folder first");
+        }
+        try
+        {
+            var clientPath = relativePath.StartsWith(projectId + "/", StringComparison.OrdinalIgnoreCase)
+                ? relativePath
+                : $"{projectId.Trim()}/{relativePath.TrimStart('/')}";
+            var b64 = Convert.ToBase64String(bytes);
+            var res = await _js.InvokeAsync<JsSaveBytesResult>(
+                "PageToMovieMedia.saveBytesBase64Async", b64, clientPath);
+            if (res is { Success: true })
+            {
+                LastStatus = $"Saved {Path.GetFileName(clientPath)} to media folder";
+                Changed?.Invoke();
+                return (true, res.RelativePath ?? clientPath, null);
+            }
+            return (false, null, res?.Error ?? "Could not write to media folder");
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
+    /// <summary>List audio files under the media folder (optional project prefix).</summary>
+    public async Task<IReadOnlyList<LocalAudioFile>> ListAudioFilesAsync(string? projectId = null)
+    {
+        if (!IsConnected) return Array.Empty<LocalAudioFile>();
+        try
+        {
+            var prefix = string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim();
+            var res = await _js.InvokeAsync<JsListAudioResult>("PageToMovieMedia.listAudioFilesAsync", prefix);
+            if (res is not { Success: true, Files: not null }) return Array.Empty<LocalAudioFile>();
+            return res.Files
+                .Select(f => new LocalAudioFile
+                {
+                    RelativePath = f.RelativePath ?? "",
+                    Name = f.Name ?? Path.GetFileName(f.RelativePath ?? "") ?? "audio",
+                    SizeBytes = f.SizeBytes,
+                })
+                .Where(f => f.RelativePath.Length > 0)
+                .ToList();
+        }
+        catch
+        {
+            return Array.Empty<LocalAudioFile>();
+        }
+    }
+
+    /// <summary>Read a file already in the media folder as bytes.</summary>
+    public async Task<byte[]?> ReadLocalBytesAsync(string relativePath, int minBytes = 0)
+    {
+        if (!IsConnected || string.IsNullOrWhiteSpace(relativePath)) return null;
+        try
+        {
+            var res = await _js.InvokeAsync<JsBytesResult>("PageToMovieMedia.getBytesAsync", relativePath, minBytes);
+            return res is { Success: true, Bytes: not null } ? res.Bytes : null;
+        }
+        catch { return null; }
+    }
+
+    public sealed class LocalAudioFile
+    {
+        public string RelativePath { get; set; } = "";
+        public string Name { get; set; } = "";
+        public long SizeBytes { get; set; }
+    }
+
+    private sealed class JsSaveBytesResult
+    {
+        public bool Success { get; set; }
+        public string? RelativePath { get; set; }
+        public string? Error { get; set; }
+        public long SizeBytes { get; set; }
+    }
+
+    private sealed class JsListAudioResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+        public List<JsListAudioEntry>? Files { get; set; }
+    }
+
+    private sealed class JsListAudioEntry
+    {
+        public string? RelativePath { get; set; }
+        public string? Name { get; set; }
+        public long SizeBytes { get; set; }
+    }
+
+
 }

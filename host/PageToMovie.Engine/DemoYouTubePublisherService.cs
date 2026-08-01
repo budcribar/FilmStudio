@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Uploads an approved public demo's local movie.mp4 to YouTube (reusing the same authorized
+/// Uploads a published demo's local movie.mp4 to YouTube (reusing the same authorized
 /// channel connection as the Review page's WIP-movie upload — <see cref="YouTubeAuthService"/>).
 /// On first publish: upload, store YoutubeId, delete local movie.mp4.
 /// On re-publish (Item 11 / V2): when a local movie exists beside an existing YoutubeId,
@@ -82,9 +82,10 @@ public sealed class DemoYouTubePublisherService
         {
             // Re-read entry for latest metadata (title/privacy) while uploading.
             entry = _demos.TryGet(demoId) ?? entry;
+            // Channel is app-operated; default unlisted so gallery can embed without open YT browse.
             var privacy = entry.PrivacyStatus is "private" or "unlisted" or "public"
                 ? entry.PrivacyStatus
-                : "public";
+                : "unlisted";
             var video = new Video
             {
                 Snippet = new VideoSnippet

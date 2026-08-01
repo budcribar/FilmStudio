@@ -24,10 +24,17 @@ public sealed class ActiveProjectState
     /// <summary>Same as CanScenes for review of generated clips.</summary>
     public bool CanReview { get; private set; }
 
+    /// <summary>
+    /// Cost quote is only useful once a screenplay exists (import + draft/approve).
+    /// Not available after a failed or incomplete book import.
+    /// </summary>
+    public bool CanEstimate { get; private set; }
+
     /// <summary>Operator hint when a nav item is disabled (short, no jargon).</summary>
     public string CharactersBlockedReason { get; private set; } = "Approve the screenplay first";
     public string ScenesBlockedReason { get; private set; } = "Finish the shot plan first";
     public string ReviewBlockedReason { get; private set; } = "Finish the shot plan first";
+    public string EstimateBlockedReason { get; private set; } = "Finish importing the book and approve the screenplay first";
 
     public event Action? Changed;
 
@@ -118,7 +125,7 @@ public sealed class ActiveProjectState
         Status = a;
         if (a is null)
         {
-            if (!CanCharacters && !CanScenes && !CanReview)
+            if (!CanCharacters && !CanScenes && !CanReview && !CanEstimate)
                 return false;
             ClearReadiness();
             return true;
@@ -144,20 +151,30 @@ public sealed class ActiveProjectState
         else
             scenesReason = "Finish the shot plan first";
 
+        // Estimate after book/screenplay is real — never when import failed mid-way.
+        var estimateReady = screenplayReady;
+        var estimateReason = estimateReady
+            ? ""
+            : "Finish importing the book and approve the screenplay first";
+
         var changed =
             CanCharacters != screenplayReady ||
             CanScenes != shotsReady ||
             CanReview != shotsReady ||
+            CanEstimate != estimateReady ||
             !string.Equals(CharactersBlockedReason, charactersReason, StringComparison.Ordinal) ||
             !string.Equals(ScenesBlockedReason, scenesReason, StringComparison.Ordinal) ||
-            !string.Equals(ReviewBlockedReason, scenesReason, StringComparison.Ordinal);
+            !string.Equals(ReviewBlockedReason, scenesReason, StringComparison.Ordinal) ||
+            !string.Equals(EstimateBlockedReason, estimateReason, StringComparison.Ordinal);
 
         CanCharacters = screenplayReady;
         CharactersBlockedReason = charactersReason;
         CanScenes = shotsReady;
         CanReview = shotsReady;
+        CanEstimate = estimateReady;
         ScenesBlockedReason = scenesReason;
         ReviewBlockedReason = scenesReason;
+        EstimateBlockedReason = estimateReason;
         return changed;
     }
 
@@ -166,8 +183,10 @@ public sealed class ActiveProjectState
         CanCharacters = false;
         CanScenes = false;
         CanReview = false;
+        CanEstimate = false;
         CharactersBlockedReason = "Approve the screenplay first";
         ScenesBlockedReason = "Finish the shot plan first";
         ReviewBlockedReason = "Finish the shot plan first";
+        EstimateBlockedReason = "Finish importing the book and approve the screenplay first";
     }
 }

@@ -228,6 +228,10 @@ public sealed class CharacterSummary
     public string VisualLock { get; set; } = "";
     public string VoiceProfile { get; set; } = "";
     public string VoiceLabel { get; set; } = "";
+    /// <summary>Operator uploaded/recorded audio used as a voice-clone template (future TTS providers).</summary>
+    public bool HasVoiceCloneSample { get; set; }
+    public string? VoiceCloneFileName { get; set; }
+    public string? VoiceCloneUrl { get; set; }
     public bool VoiceOnly { get; set; }
     public bool Locked { get; set; }
     public string? RefFileName { get; set; }
@@ -384,6 +388,12 @@ public sealed class StartBookImportRequest
 }
 
 /// <summary>POST /api/projects — create a new project folder.</summary>
+public sealed class RenameProjectRequest
+{
+    public string? Title { get; set; }
+    public string? Name { get; set; }
+}
+
 public sealed class CreateProjectRequest
 {
     /// <summary>Display name or folder id.</summary>
@@ -951,7 +961,9 @@ public sealed class CostEvent
 {
     public string? Id { get; set; }
     public string? Ts { get; set; }
-    public string Kind { get; set; } = "video"; // video | image | other
+    public string Kind { get; set; } = "video"; // transport: video | image | chat | …
+    /// <summary>User-facing bucket (<see cref="CostCategories"/>).</summary>
+    public string Category { get; set; } = CostCategories.Other;
     public int? Scene { get; set; }
     public int? Clip { get; set; }
     public string? Model { get; set; }
@@ -1039,6 +1051,23 @@ public sealed class CostScenarioRow
     public double AssumeAvgRetries { get; set; }
 }
 
+/// <summary>How planning estimates were adjusted from stored actuals (DB / ledger).</summary>
+public sealed class CostEstimateRefinement
+{
+    public bool UsedHistory { get; set; }
+    public int VideoApiSamples { get; set; }
+    public int ReviewApiSamples { get; set; }
+    public int TimingSamples { get; set; }
+    public int ProjectLedgerEvents { get; set; }
+    /// <summary>QA video multiplier prior before history (e.g. 1.3).</summary>
+    public double PriorVideoMultiplier { get; set; } = 1.3;
+    /// <summary>Multiplier after blending history (fail/truncation rate, etc.).</summary>
+    public double AppliedVideoMultiplier { get; set; } = 1.0;
+    public double? LearnedFailRate { get; set; }
+    public double HistoryWeight { get; set; }
+    public string Notes { get; set; } = "";
+}
+
 public sealed class CostReport
 {
     public string ProjectId { get; set; } = "";
@@ -1046,11 +1075,30 @@ public sealed class CostReport
     public string HeroResolution { get; set; } = "720p";
     public string? ModelName { get; set; }
     public string? VideoProvider { get; set; }
+    /// <summary>Active image model used for character-portrait estimates.</summary>
+    public string? ImageModelName { get; set; }
+    /// <summary>Active planning/chat model (screenplay / shot plan).</summary>
+    public string? PlanningModelName { get; set; }
+    /// <summary>Active voice model when voice is in scope.</summary>
+    public string? VoiceModelName { get; set; }
+    /// <summary>
+    /// What drove clip counts: <c>shot_plan</c> (blueprint), <c>screenplay</c> (post-import durations),
+    /// or <c>none</c> (no book yet).
+    /// </summary>
+    public string EstimateBasis { get; set; } = "none";
+    /// <summary>True when optional personal voice is included in the estimate.</summary>
+    public bool VoiceIncludedInEstimate { get; set; }
     public double OutputRateDraft { get; set; }
     public double OutputRateHero { get; set; }
     public double AssumeAvgRetries { get; set; }
     public CostReportSummary Summary { get; set; } = new();
     public CostLedgerSummary Actual { get; set; } = new();
+    /// <summary>
+    /// Full-film planning estimate by user-facing category
+    /// (screenplay, characters, video, voice, music, other).
+    /// </summary>
+    public Dictionary<string, double> EstimateByCategory { get; set; } = new();
+    public CostEstimateRefinement Refinement { get; set; } = new();
     public List<CostSceneRow> Scenes { get; set; } = new();
     public List<CostScenarioRow> Scenarios { get; set; } = new();
     public List<CostEvent> RecentEvents { get; set; } = new();

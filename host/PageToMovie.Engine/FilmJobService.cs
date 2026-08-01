@@ -513,6 +513,7 @@ public sealed class FilmJobService
                 ["suno"] = run.SunoApiKey,
                 ["aimusicapi"] = run.AiMusicApiKey,
             }))
+            using (UserApiCallScope.Push(run.UserId))
             {
                 var startedAt = DateTimeOffset.UtcNow;
                 var success = false;
@@ -2480,6 +2481,37 @@ public sealed class FilmJobService
             });
             await AppendLogAsync(startMsg);
 
+            // Admin-only quality gate: after dialogue QA fails, auto-regen up to qa_max_retries.
+            var qaRetryOnFail = false;
+            var qaMaxRetries = 1;
+            try
+            {
+                var cfgMap = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfgMap.TryGetValue("qa_retry_on_fail", out var qe))
+                {
+                    if (qe.ValueKind is JsonValueKind.True) qaRetryOnFail = true;
+                    else if (qe.ValueKind is JsonValueKind.False) qaRetryOnFail = false;
+                    else if (qe.ValueKind == JsonValueKind.String &&
+                             bool.TryParse(qe.GetString(), out var qb))
+                        qaRetryOnFail = qb;
+                }
+                else
+                    qaRetryOnFail = true; // match Configuration default
+
+                if (cfgMap.TryGetValue("qa_max_retries", out var qm) && qm.TryGetInt32(out var qmi))
+                    qaMaxRetries = Math.Clamp(qmi, 0, 5);
+            }
+            catch { /* keep defaults */ }
+
+            var adminQaRetry = qaRetryOnFail && _user.IsAdmin &&
+                               _dialogueVerification is not null &&
+                               _dialogueVerification.IsConfigured;
+            if (qaRetryOnFail && !_user.IsAdmin)
+                await AppendLogAsync("Quality gate retry is on, but auto-regen runs in admin mode only.");
+            else if (adminQaRetry)
+                await AppendLogAsync(
+                    $"Admin quality gate retry ON (max {qaMaxRetries} re-gen(s) per clip on dialogue fail).");
+
             var done = 0;
             var failed = 0;
             var lastGeneratedClipNum = 0;
@@ -2516,6 +2548,60 @@ public sealed class FilmJobService
                         previousClipEl: prevClipEl,
                         blueprintRoot: bp.RootElement,
                         incomingDurationPaddingSec: incomingPadding);
+
+                    if (adminQaRetry && ClipHasSpokenAudio(clip))
+                    {
+                        for (var qaAttempt = 1; qaAttempt <= qaMaxRetries; qaAttempt++)
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            ClipDialogueVerificationResult? ver = null;
+                            try
+                            {
+                                ver = await _dialogueVerification!
+                                    .VerifyClipDialogueAsync(projectId, req.Scene, cn, force: true, ct: ct)
+                                    .ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                await AppendLogAsync(
+                                    $"  [QA] dialogue check failed to run S{req.Scene:D2}C{cn}: {ex.Message}");
+                                break;
+                            }
+
+                            if (ver is null || !DialogueQaNeedsRegen(ver))
+                            {
+                                if (ver is not null)
+                                    await AppendLogAsync(
+                                        $"  [QA] S{req.Scene:D2}C{cn} ok ({ver.Status})");
+                                break;
+                            }
+
+                            await AppendLogAsync(
+                                $"  [QA] S{req.Scene:D2}C{cn} {ver.Status} — auto-regen {qaAttempt}/{qaMaxRetries} (admin)…");
+                            try
+                            {
+                                await _learning.AppendAsync(new ReviewLearningEvent
+                                {
+                                    ProjectId = projectId,
+                                    Type = "qa_auto_retry",
+                                    Scene = req.Scene,
+                                    Clip = cn,
+                                    Note = ver.Status,
+                                    Outcome = $"attempt_{qaAttempt}",
+                                    JobId = Snapshot.JobId,
+                                    ActionTaken = "admin_dialogue_qa_regen",
+                                }).ConfigureAwait(false);
+                            }
+                            catch { /* non-fatal */ }
+
+                            carryoverPaddingSec = await GenerateOneClipAsync(
+                                projectId, projectDir, req.Scene, cn, clip, resolution, ct,
+                                previousClipEl: prevClipEl,
+                                blueprintRoot: bp.RootElement,
+                                incomingDurationPaddingSec: incomingPadding);
+                        }
+                    }
+
                     lastGeneratedClipNum = cn;
                     done++;
                     // Fresh clips x/y + status pills while scene gen is still running.
@@ -3059,7 +3145,7 @@ public sealed class FilmJobService
                         projDir,
                         scene,
                         clip,
-                        prompt: built.Prompt,
+                        prompt: built.Prompt ?? "",
                         scriptText: "",
                         model: model,
                         resolution: resolution,
@@ -3399,6 +3485,22 @@ public sealed class FilmJobService
         }
         catch { /* ignore */ }
         return null;
+    }
+
+
+    /// <summary>Admin quality-gate: regenerate when dialogue QA says mismatch / swap / truncated.</summary>
+    private static bool DialogueQaNeedsRegen(ClipDialogueVerificationResult ver)
+    {
+        var status = (ver.Status ?? "").Trim().ToLowerInvariant();
+        if (status is "mismatch" or "speaker_swap")
+            return true;
+        if (ClipDialogueVerificationService.LooksTruncated(ver))
+            return true;
+        if (!string.IsNullOrWhiteSpace(ver.ExpectedDialogue) &&
+            ver.DialogueAccuracyScore < 0.5 &&
+            status is not "no_speech" and not "verified")
+            return true;
+        return false;
     }
 
     /// <summary>

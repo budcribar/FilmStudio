@@ -112,6 +112,43 @@ public sealed class ClipTimingTelemetryRepository
         }
     }
 
+    /// <summary>
+    /// Share of spoken clips marked dialogue-truncated (proxy for QA fail / regen need).
+    /// Returns null when sample size is below <paramref name="minSamples"/>.
+    /// </summary>
+    public async Task<(double FailRate, int Samples)?> GetDialogueFailRateAsync(
+        int minSamples = 5,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT COUNT(*), COALESCE(SUM(dialogue_truncated), 0)
+                FROM clip_timing_telemetry
+                WHERE word_count > 0
+                  AND (@projectId = '' OR project_id = @projectId)
+                """;
+            cmd.Parameters.AddWithValue("@projectId",
+                string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            if (!await r.ReadAsync(ct).ConfigureAwait(false))
+                return null;
+            var n = r.GetInt32(0);
+            if (n < minSamples) return null;
+            var fails = r.GetInt32(1);
+            return (fails / (double)n, n);
+        }
+        catch (Exception ex)
+        {
+            _log?.LogDebug(ex, "GetDialogueFailRateAsync failed");
+            return null;
+        }
+    }
+
     public async Task RecordTelemetryAsync(TimingTelemetryRecord record)
     {
         try

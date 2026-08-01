@@ -9,6 +9,7 @@ builder.Services.Configure<EngineApiOptions>(
 
 builder.Services.AddScoped<AdminSessionService>();
 builder.Services.AddScoped<ActiveProjectState>();
+builder.Services.AddScoped<StudioCapabilityState>();
 builder.Services.AddScoped<ThemeState>();
 builder.Services.AddScoped<ClientVideoStitchService>();
 builder.Services.AddScoped<ClientMediaFolderService>();

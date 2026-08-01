@@ -359,10 +359,22 @@ public sealed class GrokVisionClient : IVisionClient
     {
         if (string.IsNullOrWhiteSpace(prompt))
             throw new ArgumentException("prompt required", nameof(prompt));
-        var paths = (imagePaths ?? Array.Empty<string>())
-            .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p) && AllowedImageExtensions.Contains(Path.GetExtension(p)))
+        var requested = (imagePaths ?? Array.Empty<string>())
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .ToList();
+        var paths = requested
+            .Where(p => File.Exists(p) && AllowedImageExtensions.Contains(Path.GetExtension(p)))
             .Take(8)
             .ToList();
+        if (requested.Count > 0 && paths.Count == 0)
+        {
+            var sample = requested[0];
+            var ext = Path.GetExtension(sample);
+            var exists = File.Exists(sample);
+            throw new InvalidOperationException(
+                $"Vision call received {requested.Count} image path(s) but none were attachable " +
+                $"(exists={exists}, ext='{ext}'). Use png/jpg/webp.");
+        }
 
         var content = new List<object?>();
         foreach (var path in paths)

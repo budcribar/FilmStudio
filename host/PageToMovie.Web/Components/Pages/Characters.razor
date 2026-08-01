@@ -1,15 +1,28 @@
 @page "/characters"
 @implements IAsyncDisposable
 @inject EngineApiClient Engine
+@inject StudioCapabilityState Caps
 @inject JobHubClient Hub
 @inject AdminSessionService Session
 @inject ActiveProjectState ActiveProject
+@inject ClientMediaFolderService MediaFolder
+@inject IJSRuntime Js
 @using PageToMovie.Core.Models
+@using PageToMovie.Web.Services
 @using Microsoft.AspNetCore.Components.Forms
 
-<PageTitle>Characters</PageTitle>
+<PageTitle>Cast & voice</PageTitle>
 
-<h1>Characters</h1>
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">Studio · Step 3</span>
+    <h1 class="ptm-adapt-title mb-1">Cast & voice</h1>
+    <p class="ptm-adapt-lede">
+        Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free;
+        clone / profile is an add-on path when you want a personal sample.
+    </p>
+</div>
+
+<StudioProcessStrip Active="cast" />
 
 @if (_gateChecked && !ActiveProject.CanCharacters)
 {
@@ -22,24 +35,6 @@
 }
 else
 {
-<p class="text-muted mb-1">
-    Set each cast member’s look before generating clips.
-</p>
-<p class="small text-muted mb-3">
-    <a href="adaptation/screenplay">← Screenplay</a>
-    ·
-    <a href="adaptation/shots">Shot plan</a>
-    @if (ActiveProject.CanScenes)
-    {
-        <text> · </text>
-        <a href="scenes">Scenes →</a>
-    }
-    else
-    {
-        <span class="text-muted" title="@ActiveProject.ScenesBlockedReason"> · Scenes</span>
-    }
-</p>
-
 @* Setup actions only when needed — hide once cast exists / book pictures are matched *@
 @if (NeedsCastBuild)
 {
@@ -297,253 +292,367 @@ else
                     <button type="button"
                             class="card-header py-1 px-2 d-flex justify-content-between align-items-center gap-2 char-panel-toggle border-0 bg-transparent w-100 text-start"
                             @onclick="() => _panelPictureOpen = !_panelPictureOpen">
-                        <span><strong>Picture</strong></span>
+                        <span><strong>Look & voice</strong></span>
                         <span class="small text-muted">@(_panelPictureOpen ? "▲" : "▼")</span>
                     </button>
                     @if (_panelPictureOpen)
                     {
                         <div class="card-body py-2">
-                            <div class="row g-2 mb-2">
-                                <div class="col-md-7">
-                                    <label class="form-label small fw-semibold mb-0">Description</label>
-                                    <textarea class="form-control form-control-sm" rows="2"
-                                              @bind="_editDescription" @bind:event="oninput"
-                                              disabled="@(_busy || JobRunning)"
-                                              placeholder="How they look"></textarea>
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label small fw-semibold mb-0">Visual lock</label>
-                                    <textarea class="form-control form-control-sm" rows="2"
-                                              @bind="_editVisualLock" @bind:event="oninput"
-                                              disabled="@(_busy || JobRunning)"
-                                              placeholder="Coat, markings, proportions"></textarea>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <button type="button" class="btn btn-sm btn-primary"
-                                        disabled="@(_busy || JobRunning)"
-                                        @onclick="SaveLookAsync">
-                                    Save look
-                                </button>
-                                @if (_savingLook)
-                                {
-                                    <div class="mt-2">
-                                        <div class="small text-muted mb-1">Saving look…</div>
-                                        <div class="progress" style="height: 0.5rem;">
-                                            <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                                 role="progressbar" style="width: 100%"
-                                                 aria-label="Saving look"></div>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-
-                            @if (_mode == Mode.PickSource)
+                            @if (_mode == Mode.WaitingGenerate)
                             {
-                                <hr class="my-3" />
-                                <div class="small fw-semibold mb-2">Reference pictures</div>
-                                <div class="d-flex flex-wrap gap-2 mb-3">
-                                    @if (_selected.HasPreferred)
+                                <div class="alert alert-info mb-0 py-2">
+                                    Generating three looks for @_selected.DisplayName…
+                                    @if (JobRunning)
                                     {
-                                        var prefOn = SeedRank("p") > 0;
-                                        <div class="char-seed-tile-wrap">
-                                            <button type="button"
-                                                    class="char-seed-tile @(prefOn ? "char-seed-tile--on char-seed-tile--send" : "")"
-                                                    disabled="@(_busy || JobRunning)"
-                                                    @onclick="@(() => ToggleSeedKey("p"))">
-                                                @if (prefOn)
-                                                {
-                                                    <span class="char-seed-tile__rank char-seed-tile__rank--send">@SeedRank("p")</span>
-                                                }
-                                                @if (PreferredImageUrl is { Length: > 0 } pu)
-                                                {
-                                                    <img src="@pu" alt="Preferred" />
-                                                }
-                                                <span class="char-seed-tile__label">Preferred</span>
-                                            </button>
-                                            <button type="button" class="char-seed-hide" title="Delete"
-                                                    disabled="@(_busy || JobRunning)"
-                                                    @onclick="@(() => RequestDeleteImage("preferred", 0))">×</button>
-                                        </div>
-                                    }
-                                    @foreach (var v in _selected.Variants.Where(x => x.Exists))
-                                    {
-                                        var idx = v.Index ?? 0;
-                                        var key = $"v{idx}";
-                                        var on = SeedRank(key) > 0;
-                                        var vsrc = !string.IsNullOrEmpty(v.Url)
-                                            ? CacheBust(v.Url!)
-                                            : CacheBust(Engine.CharacterVariantUrl(_projectId, _selected.Key, idx));
-                                        <div class="char-seed-tile-wrap">
-                                            <button type="button"
-                                                    class="char-seed-tile @(on ? "char-seed-tile--on char-seed-tile--send" : "")"
-                                                    disabled="@(_busy || JobRunning)"
-                                                    @onclick="@(() => ToggleSeedKey(key))">
-                                                @if (on)
-                                                {
-                                                    <span class="char-seed-tile__rank char-seed-tile__rank--send">@SeedRank(key)</span>
-                                                }
-                                                <img src="@vsrc" alt="V@(idx)" />
-                                                <span class="char-seed-tile__label">Option @idx</span>
-                                            </button>
-                                            <button type="button" class="char-seed-hide" title="Delete"
-                                                    disabled="@(_busy || JobRunning)"
-                                                    @onclick="@(() => RequestDeleteImage("variant", idx))">×</button>
-                                        </div>
-                                    }
-                                    @foreach (var b in _selected.BookRefs.Where(x => x.Exists))
-                                    {
-                                        var bi = b.Index ?? 0;
-                                        var key = $"b{bi}";
-                                        var on = SeedRank(key) > 0;
-                                        var src = !string.IsNullOrEmpty(b.Url)
-                                            ? CacheBust(b.Url!)
-                                            : CacheBust(Engine.CharacterBookRefUrl(_projectId, _selected.Key, bi));
-                                        <div class="char-seed-tile-wrap">
-                                            <button type="button"
-                                                    class="char-seed-tile @(on ? "char-seed-tile--on char-seed-tile--send" : "")"
-                                                    disabled="@(_busy || JobRunning)"
-                                                    @onclick="@(() => ToggleSeedKey(key))">
-                                                @if (on)
-                                                {
-                                                    <span class="char-seed-tile__rank char-seed-tile__rank--send">@SeedRank(key)</span>
-                                                }
-                                                <img src="@src" alt="Book" />
-                                                <span class="char-seed-tile__label">Book</span>
-                                            </button>
-                                            <button type="button" class="char-seed-hide" title="Delete"
-                                                    disabled="@(_busy || JobRunning)"
-                                                    @onclick="@(() => RequestDeleteImage("bookref", bi))">×</button>
-                                        </div>
-                                    }
-                                    @if (!_selected.HasPreferred &&
-                                         !_selected.Variants.Any(v => v.Exists) &&
-                                         !_selected.BookRefs.Any(b => b.Exists))
-                                    {
-                                        <span class="small text-muted">No pictures yet.</span>
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2 py-0"
+                                                disabled="@_busy" @onclick="CancelAsync">Cancel</button>
                                     }
                                 </div>
-
-                                <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-                                    <button type="button" class="btn btn-primary"
-                                            disabled="@(_busy || JobRunning || string.IsNullOrWhiteSpace(_editDescription) && SelectedSeedCount == 0)"
-                                            @onclick="StartRegenerateAsync">
-                                        Generate
-                                    </button>
-                                    <label class="btn btn-outline-primary btn-sm mb-0 @(_busy || JobRunning ? "disabled" : "")">
-                                        Upload…
-                                        <InputFile OnChange="OnUploadRefAsync"
-                                                   accept=".png,.jpg,.jpeg,.webp,.gif"
-                                                   class="d-none"
-                                                   disabled="@(_busy || JobRunning)" />
-                                    </label>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                            disabled="@(_busy || JobRunning)"
-                                            @onclick="ToggleBookCandidateGalleryAsync"
-                                            title="Choose book pictures that guide the next generate">
-                                        Pick book pictures
-                                    </button>
-                                </div>
-
-                                @if (_showBookCandidateGallery)
-                                {
-                                    <div class="border border-secondary border-opacity-50 rounded p-3 mt-3 mb-3 bg-dark bg-opacity-75 text-white shadow-sm">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <div>
-                                                <strong class="small text-light">Book pictures for @_selected.DisplayName</strong>
-                                                <div class="small text-muted">Select up to 3 to guide generation (used as reference pictures).</div>
-                                            </div>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _showBookCandidateGallery = false">✕ Close</button>
-                                        </div>
-
-                                        @if (_loadingBookCandidates)
-                                        {
-                                            <div class="small text-muted py-2">Scanning and ranking book illustrations…</div>
-                                        }
-                                        else if (_rankedBookCandidates is null || _rankedBookCandidates.Count == 0)
-                                        {
-                                            <div class="small text-muted py-2">No book illustration candidates found.</div>
-                                        }
-                                        else
-                                        {
-                                            <div class="d-flex flex-wrap gap-2 py-2" style="max-height: 320px; overflow-y: auto;">
-                                                @foreach (var cand in _rankedBookCandidates)
-                                                {
-                                                    var isSel = _selectedBookCandidatePaths.Contains(cand.PathRel, StringComparer.OrdinalIgnoreCase);
-                                                    <div class="border rounded p-1 text-center bg-dark"
-                                                         style="width: 110px; cursor: pointer; border-color: @(isSel ? "#6366f1" : "#374151"); background: @(isSel ? "rgba(99, 102, 241, 0.25)" : "#151922");"
-                                                         @onclick="() => ToggleBookCandidateSelection(cand.PathRel)">
-                                                        <div class="position-relative mb-1" style="height: 100px; background: #000; overflow: hidden; border-radius: 4px;">
-                                                            <img src="@cand.Url" alt="@cand.Name" style="width: 100%; height: 100%; object-fit: contain;" />
-                                                            @if (isSel)
-                                                            {
-                                                                <span class="badge bg-primary position-absolute top-0 end-0 m-1">✓</span>
-                                                            }
-                                                        </div>
-                                                        <div class="small text-truncate text-light fw-semibold" style="font-size: 0.72rem;">@(cand.Page > 0 ? $"Page {cand.Page}" : cand.Name)</div>
-                                                        <div class="badge bg-secondary opacity-75" style="font-size: 0.65rem;">@Math.Round(cand.Score)% match</div>
-                                                    </div>
-                                                }
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-50">
-                                                <span class="small text-muted">@_selectedBookCandidatePaths.Count of 3 selected</span>
-                                                <button type="button" class="btn btn-sm btn-success" disabled="@(_busy || _savingBookRefs)" @onclick="ApplySelectedBookCandidatesAsync">
-                                                    @(_savingBookRefs ? "Saving…" : "Use for generation")
-                                                </button>
-                                            </div>
-                                        }
-                                    </div>
-                                }
-
-                            }
-                            else if (_mode == Mode.WaitingGenerate)
-                            {
-                                <div class="alert alert-info mb-0">Generating portraits…</div>
                             }
                             else if (_mode == Mode.Compare && _allCandidates.Count > 0)
                             {
                                 <div class="char-pick">
-                                    <div class="small fw-semibold mb-2">Pick the best look</div>
-                                    <div class="char-pick__grid">
+                                    <div class="small fw-semibold mb-1">Pick the best look</div>
+                                    <p class="small text-muted mb-3 mb-md-2">
+                                        Click a picture to zoom and compare detail. Use <strong>Use this look</strong> only when you’ve chosen.
+                                    </p>
+                                    <div class="char-pick__grid" data-testid="char-pick-grid">
                                         @foreach (var c in _allCandidates)
                                         {
-                                            <button type="button"
-                                                    class="char-pick__card"
-                                                    disabled="@(_busy || JobRunning)"
-                                                    @onclick="@(() => LockCandidateAsync(c))">
-                                                <img src="@c.Url" alt="@c.Label" />
-                                                <span>@c.Label</span>
-                                            </button>
+                                            <div class="char-pick__card" data-testid="char-pick-card">
+                                                <button type="button"
+                                                        class="char-pick__frame char-pick__frame--zoomable"
+                                                        disabled="@(_busy || JobRunning)"
+                                                        title="Zoom — inspect detail"
+                                                        aria-label="Zoom @c.Label"
+                                                        @onclick="@(() => OpenLookZoom(c))">
+                                                    <img src="@c.Url" alt="@c.Label" loading="lazy" />
+                                                    <span class="char-pick__zoom-badge" aria-hidden="true">🔍 Zoom</span>
+                                                </button>
+                                                <span class="char-pick__label">@c.Label</span>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-primary char-pick__use"
+                                                        disabled="@(_busy || JobRunning)"
+                                                        title="Save as preferred look for film"
+                                                        @onclick="@(() => LockCandidateAsync(c))">
+                                                    Use this look
+                                                </button>
+                                            </div>
                                         }
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-secondary mt-2"
                                             disabled="@(_busy || JobRunning)"
                                             @onclick="BackToSource">
-                                        ← Back
+                                        ← Change route
                                     </button>
                                 </div>
+
+                                @* Full-screen zoom lightbox for detail compare *@
+                                @if (_zoomCandidate is not null)
+                                {
+                                    <div class="char-zoom"
+                                         role="dialog"
+                                         aria-modal="true"
+                                         aria-label="Zoomed character look"
+                                         data-testid="char-look-zoom"
+                                         @onclick="CloseLookZoom">
+                                        <div class="char-zoom__panel" @onclick:stopPropagation="true">
+                                            <div class="char-zoom__toolbar">
+                                                <span class="char-zoom__title">@_zoomCandidate.Label</span>
+                                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                    <button type="button" class="btn btn-sm btn-outline-light"
+                                                            disabled="@(_allCandidates.Count < 2)"
+                                                            @onclick="ZoomPrev"
+                                                            title="Previous look">←</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-light"
+                                                            disabled="@(_allCandidates.Count < 2)"
+                                                            @onclick="ZoomNext"
+                                                            title="Next look">→</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-light"
+                                                            @onclick="ToggleLookZoomScale"
+                                                            title="Toggle 1× / 2×">
+                                                        @(_zoomScale > 1.01 ? "1× fit" : "2× zoom")
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-primary"
+                                                            disabled="@(_busy || JobRunning)"
+                                                            @onclick="@(() => LockFromZoomAsync())">
+                                                        Use this look
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                            @onclick="CloseLookZoom">Close</button>
+                                                </div>
+                                            </div>
+                                            <div class="char-zoom__stage @(_zoomScale > 1.01 ? "is-zoomed" : null)"
+                                                 @onclick="ToggleLookZoomScale">
+                                                <img src="@_zoomCandidate.Url"
+                                                     alt="@_zoomCandidate.Label"
+                                                     class="char-zoom__img"
+                                                     style="transform: scale(@_zoomScale.ToString(System.Globalization.CultureInfo.InvariantCulture));"
+                                                     draggable="false" />
+                                            </div>
+                                            <p class="char-zoom__hint small text-muted mb-0">
+                                                Click image to toggle 2× · arrows switch looks · Esc closes
+                                            </p>
+                                        </div>
+                                    </div>
+                                }
                             }
+                            else if (_mode == Mode.PickSource)
+                            {
+                                @* Already have a preferred look *@
+                                @if (_selected.HasPreferred && _pictureRoute == PictureRoute.Choose)
+                                {
+                                    <div class="d-flex flex-wrap align-items-start gap-3 mb-2">
+                                        @if (PreferredImageUrl is { Length: > 0 } pu)
+                                        {
+                                            <img src="@pu" alt="Preferred" class="rounded border char-preferred-preview" />
+                                        }
+                                        <div class="flex-grow-1">
+                                            <div class="small fw-semibold mb-1">Preferred look saved</div>
+                                            <p class="small text-muted mb-2">This picture is used for film. Change it anytime.</p>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        disabled="@(_busy || JobRunning)"
+                                                        @onclick="() => ChoosePictureRoute(PictureRoute.Generate)">
+                                                    Generate new looks
+                                                </button>
+                                                <label class="btn btn-sm btn-outline-primary mb-0 @(_busy || JobRunning ? "disabled" : "")">
+                                                    Replace with upload
+                                                    <InputFile OnChange="OnUploadRefAsync"
+                                                               accept=".png,.jpg,.jpeg,.webp,.gif"
+                                                               class="d-none"
+                                                               disabled="@(_busy || JobRunning)" />
+                                                </label>
+                                                @if (CanUseBookPictures)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                            disabled="@(_busy || JobRunning)"
+                                                            @onclick="() => ChoosePictureRoute(PictureRoute.Book)">
+                                                        From book pictures
+                                                    </button>
+                                                }
+                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                        disabled="@(_busy || JobRunning)"
+                                                        @onclick="@(() => RequestDeleteImage("preferred", 0))">
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else if (_pictureRoute == PictureRoute.Choose)
+                                {
+                                    <p class="small text-muted mb-2">How do you want the look for <strong>@_selected.DisplayName</strong>?</p>
+                                    <div class="d-flex flex-column gap-2">
+                                        <button type="button"
+                                                class="btn btn-outline-primary text-start"
+                                                disabled="@(_busy || JobRunning)"
+                                                @onclick="() => ChoosePictureRoute(PictureRoute.Generate)"
+                                                data-testid="char-route-generate">
+                                            <strong>Generate from description</strong>
+                                            <div class="small opacity-75">Edit look text → create 3 options → pick one</div>
+                                        </button>
+                                        <label class="btn btn-outline-primary text-start mb-0 @(_busy || JobRunning ? "disabled" : "")"
+                                               data-testid="char-route-upload">
+                                            <strong>Upload a photo</strong>
+                                            <div class="small opacity-75">Your picture becomes the preferred look — no description needed</div>
+                                            <InputFile OnChange="OnUploadRefAsync"
+                                                       accept=".png,.jpg,.jpeg,.webp,.gif"
+                                                       class="d-none"
+                                                       disabled="@(_busy || JobRunning)" />
+                                        </label>
+                                        @if (CanUseBookPictures)
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-outline-primary text-start"
+                                                    disabled="@(_busy || JobRunning)"
+                                                    @onclick="() => ChoosePictureRoute(PictureRoute.Book)"
+                                                    data-testid="char-route-book">
+                                                <strong>Guide from book pictures</strong>
+                                                <div class="small opacity-75">Pick illustrations from the PDF, then generate looks from them</div>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                else if (_pictureRoute == PictureRoute.Generate)
+                                {
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="small fw-semibold">Generate from description</span>
+                                        <button type="button" class="btn btn-link btn-sm text-muted p-0"
+                                                @onclick="() => ChoosePictureRoute(PictureRoute.Choose)">← Routes</button>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-7">
+                                            <label class="form-label small fw-semibold mb-0">Description</label>
+                                            <textarea class="form-control form-control-sm" rows="3"
+                                                      value="@_editDescription"
+                                                      @oninput="OnLookDescriptionInput"
+                                                      disabled="@(_busy || JobRunning)"
+                                                      placeholder="How they look"></textarea>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-semibold mb-0">Visual lock <span class="text-muted fw-normal">(optional)</span></label>
+                                            <textarea class="form-control form-control-sm" rows="3"
+                                                      value="@_editVisualLock"
+                                                      @oninput="OnLookVisualLockInput"
+                                                      disabled="@(_busy || JobRunning)"
+                                                      placeholder="Coat, markings, proportions that must stay fixed"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                                        <button type="button" class="btn btn-primary btn-sm"
+                                                disabled="@(_busy || JobRunning || string.IsNullOrWhiteSpace(_editDescription))"
+                                                @onclick="StartRegenerateAsync"
+                                                data-testid="char-generate-looks">
+                                            Generate 3 looks
+                                        </button>
+                                        <span class="small text-muted" data-testid="look-autosave-hint">
+                                            @(_lookSaveHint ?? "Text saves automatically")
+                                        </span>
+                                        @if (_savingLook)
+                                        {
+                                            <span class="small text-muted">Saving…</span>
+                                        }
+                                    </div>
+                                }
+                                else if (_pictureRoute == PictureRoute.Book)
+                                {
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="small fw-semibold">Guide from book pictures</span>
+                                        <button type="button" class="btn btn-link btn-sm text-muted p-0"
+                                                @onclick="() => { _showBookCandidateGallery = false; ChoosePictureRoute(PictureRoute.Choose); }">← Routes</button>
+                                    </div>
+                                    <p class="small text-muted mb-2">
+                                        Select up to 3 illustrations that look like this character, then generate portraits guided by those pages.
+                                    </p>
+                                    @if (!_showBookCandidateGallery && !_selected.BookRefs.Any(b => b.Exists))
+                                    {
+                                        <button type="button" class="btn btn-primary btn-sm"
+                                                disabled="@(_busy || JobRunning)"
+                                                @onclick="ToggleBookCandidateGalleryAsync">
+                                            Browse book pictures…
+                                        </button>
+                                    }
+                                    @if (_selected.BookRefs.Any(b => b.Exists))
+                                    {
+                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                            @foreach (var b in _selected.BookRefs.Where(x => x.Exists))
+                                            {
+                                                var bi = b.Index ?? 0;
+                                                var src = !string.IsNullOrEmpty(b.Url)
+                                                    ? CacheBust(b.Url!)
+                                                    : CacheBust(Engine.CharacterBookRefUrl(_projectId, _selected.Key, bi));
+                                                <div class="char-seed-tile-wrap">
+                                                    <div class="char-seed-tile char-seed-tile--on">
+                                                        <img src="@src" alt="Book" />
+                                                        <span class="char-seed-tile__label">Book</span>
+                                                    </div>
+                                                    <button type="button" class="char-seed-hide" title="Remove"
+                                                            disabled="@(_busy || JobRunning)"
+                                                            @onclick="@(() => RequestDeleteImage("bookref", bi))">×</button>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    disabled="@(_busy || JobRunning)"
+                                                    @onclick="ToggleBookCandidateGalleryAsync">
+                                                Change book picks
+                                            </button>
+                                            <button type="button" class="btn btn-primary btn-sm"
+                                                    disabled="@(_busy || JobRunning)"
+                                                    @onclick="StartBookGuidedGenerateAsync">
+                                                Generate 3 looks from book
+                                            </button>
+                                        </div>
+                                    }
+
+                                    @if (_showBookCandidateGallery)
+                                    {
+                                        <div class="border border-secondary border-opacity-50 rounded p-3 mt-3 bg-dark bg-opacity-75 text-white shadow-sm">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <strong class="small text-light">Book pictures for @_selected.DisplayName</strong>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                        @onclick="() => _showBookCandidateGallery = false">✕</button>
+                                            </div>
+                                            @if (_loadingBookCandidates)
+                                            {
+                                                <div class="small text-muted py-2">Scanning book illustrations…</div>
+                                            }
+                                            else if (_rankedBookCandidates is null || _rankedBookCandidates.Count == 0)
+                                            {
+                                                <div class="small text-muted py-2">No book illustration candidates found for this project.</div>
+                                            }
+                                            else
+                                            {
+                                                <div class="d-flex flex-wrap gap-2 py-2" style="max-height: 320px; overflow-y: auto;">
+                                                    @foreach (var cand in _rankedBookCandidates)
+                                                    {
+                                                        var isSel = _selectedBookCandidatePaths.Contains(cand.PathRel, StringComparer.OrdinalIgnoreCase);
+                                                        <div class="border rounded p-1 text-center bg-dark"
+                                                             style="width: 110px; cursor: pointer; border-color: @(isSel ? "#6366f1" : "#374151"); background: @(isSel ? "rgba(99, 102, 241, 0.25)" : "#151922");"
+                                                             @onclick="() => ToggleBookCandidateSelection(cand.PathRel)">
+                                                            <div class="position-relative mb-1" style="height: 100px; background: #000; overflow: hidden; border-radius: 4px;">
+                                                                <img src="@cand.Url" alt="@cand.Name" style="width: 100%; height: 100%; object-fit: contain;" />
+                                                                @if (isSel)
+                                                                {
+                                                                    <span class="badge bg-primary position-absolute top-0 end-0 m-1">✓</span>
+                                                                }
+                                                            </div>
+                                                            <div class="small text-truncate text-light fw-semibold" style="font-size: 0.72rem;">@(cand.Page > 0 ? $"Page {cand.Page}" : cand.Name)</div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-50">
+                                                    <span class="small text-muted">@_selectedBookCandidatePaths.Count of 3 selected</span>
+                                                    <button type="button" class="btn btn-sm btn-success"
+                                                            disabled="@(_busy || _savingBookRefs || _selectedBookCandidatePaths.Count == 0)"
+                                                            @onclick="ApplySelectedBookCandidatesAsync">
+                                                        @(_savingBookRefs ? "Saving…" : "Use selected")
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                }
+                                else if (_pictureRoute == PictureRoute.Upload)
+                                {
+                                    @* Upload is one-shot via InputFile on route cards; this branch is a fallback *@
+                                    <label class="btn btn-primary btn-sm mb-0">
+                                        Choose photo…
+                                        <InputFile OnChange="OnUploadRefAsync"
+                                                   accept=".png,.jpg,.jpeg,.webp,.gif"
+                                                   class="d-none"
+                                                   disabled="@(_busy || JobRunning)" />
+                                    </label>
+                                    <button type="button" class="btn btn-link btn-sm" @onclick="() => ChoosePictureRoute(PictureRoute.Choose)">← Routes</button>
+                                }
+                            }
+
+                            <hr class="my-3" />
+                            <div class="char-voice-inline" data-testid="char-voice-section">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <div>
+                                        <strong class="small">Voice</strong>
+                                        <span class="badge text-bg-secondary ms-1" style="font-size:0.65rem">optional</span>
+                                    </div>
+                                    @if (HasVoiceProfile(_selected))
+                                    {
+                                        <span class="badge text-bg-success" style="font-size:0.65rem">Profile set</span>
+                                    }
+                                    else if (_selected.HasVoiceCloneSample)
+                                    {
+                                        <span class="badge text-bg-info text-dark" style="font-size:0.65rem">Clone sample</span>
+                                    }
+                                </div>
+                                <p class="small text-muted mb-2">
+                                    Describe the voice style, or record a clone sample below.
+                                </p>
+                                @RenderVoiceEditor()
+                            </div>
                         </div>
                     }
                 </div>
-
-                @if (_mode == Mode.PickSource || _panelVoiceOpen)
-                {
-                    <div class="card mb-2">
-                        <button type="button"
-                                class="card-header py-1 px-2 d-flex justify-content-between align-items-center gap-2 char-panel-toggle border-0 bg-transparent w-100 text-start"
-                                @onclick="() => _panelVoiceOpen = !_panelVoiceOpen">
-                            <span><strong>Voice</strong></span>
-                            <span class="small text-muted">@(_panelVoiceOpen ? "▲" : "▼")</span>
-                        </button>
-                        @if (_panelVoiceOpen)
-                        {
-                            <div class="card-body py-2">
-                                @RenderVoiceEditor()
-                            </div>
-                        }
-                    </div>
-                }
 
                 @if (_deleteConfirm is not null)
                 {
@@ -561,6 +670,9 @@ else
 
 @code {
     private enum Mode { PickSource, WaitingGenerate, Compare }
+
+    /// <summary>First choose how to set the look — only that path's UI is shown.</summary>
+    private enum PictureRoute { Choose, Generate, Upload, Book }
 
     private sealed class Candidate
     {
@@ -589,16 +701,18 @@ else
     private string? ListThumbUrl(CharacterSummary c)
     {
         if (c.VoiceOnly) return null;
-        if (c.Locked)
+        // Locked / preferred ref always wins over old generate variants (uploads used to look
+        // "gone" after reload when variant_01 still existed and was preferred in the list).
+        if (c.Locked || !string.IsNullOrWhiteSpace(c.RefUrl))
             return CacheBust(Engine.CharacterRefUrl(_projectId, c.Key));
         if (c.HasPreferred)
         {
-            if (c.Variants.Any(v => v.Index == 1 && v.Exists))
-                return CacheBust(Engine.CharacterVariantUrl(_projectId, c.Key, 1));
             if (c.PreferredUrl is { Length: > 0 } u)
                 return CacheBust(Engine.AbsolutizeMediaUrl(u) ?? u);
             if (c.RefUrl is { Length: > 0 } r)
                 return CacheBust(Engine.AbsolutizeMediaUrl(r) ?? r);
+            if (c.Variants.Any(v => v.Index == 1 && v.Exists))
+                return CacheBust(Engine.CharacterVariantUrl(_projectId, c.Key, 1));
         }
         var book = c.BookRefs.FirstOrDefault(b => b.Exists);
         if (book is not null)
@@ -635,7 +749,11 @@ else
     private long _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     private Mode _mode = Mode.PickSource;
+    private PictureRoute _pictureRoute = PictureRoute.Choose;
+
     private List<Candidate> _allCandidates = new();
+    private Candidate? _zoomCandidate;
+    private double _zoomScale = 1;
     private PendingDelete? _deleteConfirm;
 
     private bool _showBookCandidateGallery;
@@ -741,16 +859,40 @@ else
     private string _savedLookDescription = "";
     private string _savedLookVisualLock = "";
     private bool _savingLook;
+    private string? _lookSaveHint;
+    private CancellationTokenSource? _lookSaveCts;
+    private const int LookAutosaveDebounceMs = 800;
     private string _editVoiceLabel = "";
     private string _editVoiceProfile = "";
     private bool _panelPictureOpen = true;
-    private bool _panelVoiceOpen;
     private bool _voicePreviewBusy;
     private string? _voicePreviewUrl;
     private string? _voicePreviewError;
     private string? _voicePreviewHint;
     private bool _voicePreviewStale;
     private long _voiceAudioBust;
+    private bool _voiceCloneBusy;
+    private bool _voiceRecRecording;
+    private string? _voiceCloneHint;
+    private string? _voiceCloneError;
+    private string? _voiceClonePlayUrl;
+    private long _voiceCloneBust;
+    private string? _voiceSaveHint;
+    private CancellationTokenSource? _voiceSaveCts;
+
+    /// <summary>
+    /// Phoneme-rich read-aloud for voice cloning.
+    /// Clear sentences, varied vowels/consonants, natural cadence.
+    /// </summary>
+    private const string VoiceCloneReadScript =
+        "Hello. This is my natural speaking voice for a film character. " +
+        "I will speak clearly at a calm, steady pace. " +
+        "The quick brown fox jumps over the lazy dog near the river at twilight. " +
+        "Please measure five, six, seven, eight, nine, and zero. " +
+        "Can you hear every word? Yes — I hope this sample helps you match my voice.";
+    private bool _showMediaAudioPicker;
+    private bool _loadingMediaAudio;
+    private List<ClientMediaFolderService.LocalAudioFile> _mediaAudioFiles = new();
 
     private int SelectedSeedCount => _seedOrder.Count;
 
@@ -778,14 +920,11 @@ else
                       disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
                       placeholder="Adult male; low soft presence — used in film video prompts (voice style)"></textarea>
             <div class="form-text">
-                Play generates a short film clip with this voice description + dialogue (same path as scene clips).
+                Optional: describe the voice (or use a personal style label). Play previews a short sample clip with this profile + dialogue.
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" class="btn btn-sm btn-primary"
-                    disabled="@(_busy || VoiceJobRunning)" @onclick="SaveVoiceAsync">
-                Save voice
-            </button>
+            <span class="small text-muted">@(_voiceSaveHint ?? "Profile saves automatically")</span>
             <button type="button"
                     class="btn btn-sm btn-outline-secondary"
                     disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
@@ -840,10 +979,124 @@ else
         }
         @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
         {
-            @* Short film sample is MP4 (video+audio); legacy MP3 still works in &lt;video&gt; or &lt;audio&gt;. *@
             <video class="mt-2 w-100 rounded border" style="max-height: 240px; background: #000;"
                    controls autoplay playsinline src="@_voicePreviewUrl" @key="_voicePreviewUrl"></video>
         }
+
+        <hr class="my-3" />
+        <CapabilityLockedControl Enabled="@Caps.VoiceCloneReady"
+                                 BlockedReason="@Caps.VoiceCloneBlockedReason"
+                                 SettingsHref="@Caps.VoiceCloneSettingsHref"
+                                 TitleWhenEnabled="Record a short sample for cloning"
+                                 TestId="voice-clone-gate"
+                                 CssClass="w-100">
+        <div class="ptm-voice-clone">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                <div>
+                    <strong class="small">Voice clone</strong>
+                </div>
+                @if (_selected?.HasVoiceCloneSample == true)
+                {
+                    <span class="badge text-bg-success" style="font-size:0.65rem">Ready</span>
+                }
+            </div>
+            <p class="form-text mb-2">Record a short sample for cloning.</p>
+            <div class="ptm-voice-script border border-secondary border-opacity-50 rounded p-2 mb-2 bg-dark bg-opacity-25"
+                 data-testid="voice-clone-script">
+                <div class="small fw-semibold text-info mb-1">Read this aloud</div>
+                <p class="mb-0 small lh-sm" style="white-space: pre-wrap;">@VoiceCloneReadScript</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                @if (!_voiceRecRecording)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                            disabled="@(_busy || _voiceCloneBusy || VoiceJobRunning)"
+                            @onclick="StartVoiceCloneMicAsync"
+                            data-testid="voice-clone-mic-start">
+                        Record
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-danger"
+                            disabled="@_voiceCloneBusy"
+                            @onclick="StopVoiceCloneMicAsync"
+                            data-testid="voice-clone-mic-stop">
+                        Done
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            disabled="@_voiceCloneBusy"
+                            @onclick="CancelVoiceCloneMicAsync">
+                        Cancel
+                    </button>
+                    <span class="small text-danger">Recording…</span>
+                }
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        disabled="@(_busy || _voiceCloneBusy || VoiceJobRunning)"
+                        @onclick="OpenMediaFolderAudioPickerAsync"
+                        data-testid="voice-clone-from-folder">
+                    Use existing audio
+                </button>
+                @if (_selected?.HasVoiceCloneSample == true)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            disabled="@(_busy || _voiceCloneBusy)"
+                            @onclick="DeleteVoiceCloneSampleAsync">
+                        Remove sample
+                    </button>
+                }
+            </div>
+            @if (_showMediaAudioPicker)
+            {
+                <div class="border border-secondary border-opacity-50 rounded p-2 mt-2 bg-dark bg-opacity-50"
+                     data-testid="voice-clone-folder-picker">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="small">Your audio files</strong>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                                @onclick="() => _showMediaAudioPicker = false">✕</button>
+                    </div>
+                    @if (_loadingMediaAudio)
+                    {
+                        <div class="small text-muted">Scanning folder…</div>
+                    }
+                    else if (_mediaAudioFiles.Count == 0)
+                    {
+                        <div class="small text-muted mb-2">No audio files found yet.</div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                @onclick="OpenMediaFolderAudioPickerAsync">Refresh</button>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
+                            @foreach (var f in _mediaAudioFiles)
+                            {
+                                <button type="button"
+                                        class="list-group-item list-group-item-action list-group-item-dark py-1 px-2 small text-start"
+                                        disabled="@(_busy || _voiceCloneBusy)"
+                                        @onclick="@(() => PickMediaFolderAudioAsync(f))">
+                                    <span class="text-truncate d-block">@f.Name</span>
+                                    <span class="text-muted" style="font-size:0.7rem;">@f.RelativePath · @(Math.Max(1, f.SizeBytes / 1024)) KB</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_voiceCloneHint))
+            {
+                <div class="form-text">@_voiceCloneHint</div>
+            }
+            @if (!string.IsNullOrEmpty(_voiceCloneError))
+            {
+                <div class="alert alert-danger py-1 small mb-0">@_voiceCloneError</div>
+            }
+            @if (!string.IsNullOrEmpty(_voiceClonePlayUrl))
+            {
+                <audio class="mt-2 w-100" controls src="@_voiceClonePlayUrl" @key="_voiceClonePlayUrl"></audio>
+            }
+        </div>
+        </CapabilityLockedControl>
+
     };
 
     private bool _extractingCast;
@@ -952,6 +1205,9 @@ else
 
             await ActiveProject.RefreshReadinessAsync(Engine);
             _gateChecked = true;
+            if (!string.IsNullOrEmpty(_projectId))
+                await Caps.RefreshAsync(Engine, _projectId);
+
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanCharacters)
                 return;
 
@@ -1209,8 +1465,13 @@ else
             _editVisualLock = _selected.VisualLock ?? "";
             _savedLookDescription = _editDescription;
             _savedLookVisualLock = _editVisualLock;
+            _lookSaveHint = null;
+            _lookSaveCts?.Cancel();
             _editVoiceLabel = _selected.VoiceLabel ?? "";
             _editVoiceProfile = _selected.VoiceProfile ?? "";
+            RefreshVoiceClonePlayUrl();
+            _voiceCloneHint = null;
+            _voiceCloneError = null;
             _voicePreviewUrl = null;
             _voicePreviewError = null;
             _voicePreviewHint = null;
@@ -1226,6 +1487,8 @@ else
         {
             ResetCompare();
             _mode = Mode.PickSource;
+            if (switched)
+                _pictureRoute = PictureRoute.Choose;
             _error = null;
             _message = null;
             ResetSeedSelection();
@@ -1235,40 +1498,14 @@ else
     }
 
     /// <summary>
-    /// Expand the panel that still needs work: missing picture → Picture;
-    /// picture done but no voice → Voice; both done → Picture (browse).
+    /// Look & voice live on one card — keep it open so neither section is buried.
     /// </summary>
     private void ApplyPanelsForSelected()
     {
-        if (_selected is null)
-        {
-            _panelPictureOpen = true;
-            _panelVoiceOpen = false;
-            return;
-        }
-
-        if (_selected.VoiceOnly)
-        {
-            _panelPictureOpen = false;
-            _panelVoiceOpen = true;
-            return;
-        }
-
-        var hasPic = _selected.HasPreferred || _selected.Locked;
-        var hasVoice = HasVoiceProfile(_selected);
-
-        if (hasPic && !hasVoice)
-        {
-            _panelPictureOpen = false;
-            _panelVoiceOpen = true;
-        }
-        else
-        {
-            // Missing look, or both complete — focus picture
-            _panelPictureOpen = true;
-            _panelVoiceOpen = false;
-        }
+        // Single card for picture + voice; always expanded when a character is selected.
+        _panelPictureOpen = true;
     }
+
 
     private void ResetSeedSelection()
     {
@@ -1371,15 +1608,54 @@ else
         return "page";
     }
 
+    /// <summary>Book-guided path only when the project has a PDF or page images.</summary>
+    private bool CanUseBookPictures =>
+        ActiveProject.Status?.Book is { } book
+        && (book.PdfExists || book.PageImageCount > 0);
+
+    private void ChoosePictureRoute(PictureRoute route)
+    {
+        _pictureRoute = route;
+        _error = null;
+        if (route == PictureRoute.Book)
+            _ = ToggleBookCandidateGalleryAsync();
+        if (route == PictureRoute.Choose)
+            _showBookCandidateGallery = false;
+        StateHasChanged();
+    }
+
+    /// <summary>Book path: ensure selected plates are seeds, then generate 3 looks.</summary>
+    private async Task StartBookGuidedGenerateAsync()
+    {
+        if (_selected is null) return;
+        if (_selectedBookCandidatePaths.Count > 0)
+        {
+            var ok = await EnsureGalleryBookSelectionAppliedAsync();
+            if (!ok) return;
+        }
+        if (!_selected.BookRefs.Any(b => b.Exists) && SelectedSeedCount == 0)
+        {
+            _error = "Select at least one book picture first.";
+            return;
+        }
+        _seedOrder.Clear();
+        AddBookRefsToSeedOrder();
+        await StartRegenerateAsync();
+    }
+
     private void BackToSource()
     {
+        CloseLookZoom();
         ResetCompare();
         _mode = Mode.PickSource;
+        if (_selected?.HasPreferred == true)
+            _pictureRoute = PictureRoute.Choose;
     }
 
     private void ResetCompare()
     {
         _allCandidates = new();
+        CloseLookZoom();
     }
 
     private async Task StartRegenerateAsync()
@@ -1571,8 +1847,57 @@ else
 
         _mode = Mode.Compare;
         _panelPictureOpen = true;
-        _panelVoiceOpen = false;
         _message = null;
+    }
+
+
+    private void OpenLookZoom(Candidate c)
+    {
+        _zoomCandidate = c;
+        _zoomScale = 1;
+    }
+
+    private void CloseLookZoom()
+    {
+        _zoomCandidate = null;
+        _zoomScale = 1;
+    }
+
+    private void ToggleLookZoomScale()
+    {
+        _zoomScale = _zoomScale > 1.01 ? 1 : 2;
+    }
+
+    private void ZoomPrev()
+    {
+        if (_zoomCandidate is null || _allCandidates.Count == 0) return;
+        var i = _allCandidates.FindIndex(x =>
+            string.Equals(x.Url, _zoomCandidate.Url, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.Label, _zoomCandidate.Label, StringComparison.Ordinal));
+        if (i < 0) i = 0;
+        i = (i - 1 + _allCandidates.Count) % _allCandidates.Count;
+        _zoomCandidate = _allCandidates[i];
+        _zoomScale = 1;
+    }
+
+    private void ZoomNext()
+    {
+        if (_zoomCandidate is null || _allCandidates.Count == 0) return;
+        var i = _allCandidates.FindIndex(x =>
+            string.Equals(x.Url, _zoomCandidate.Url, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.Label, _zoomCandidate.Label, StringComparison.Ordinal));
+        if (i < 0) i = 0;
+        i = (i + 1) % _allCandidates.Count;
+        _zoomCandidate = _allCandidates[i];
+        _zoomScale = 1;
+    }
+
+    private async Task LockFromZoomAsync()
+    {
+        if (_zoomCandidate is null) return;
+        var c = _zoomCandidate;
+        CloseLookZoom();
+        await LockCandidateAsync(c);
     }
 
     private async Task LockCandidateAsync(Candidate c)
@@ -1591,6 +1916,7 @@ else
             await RefreshNavReadinessAsync();
             ResetCompare();
             _mode = Mode.PickSource;
+            _pictureRoute = PictureRoute.Choose;
             ApplyPanelsForSelected();
             // Include preferred + remaining generated options as seeds for next regen
             ResetSeedSelection();
@@ -1608,41 +1934,97 @@ else
         finally { _busy = false; }
     }
 
-    private async Task SaveLookAsync()
+    private void OnLookDescriptionInput(ChangeEventArgs e)
+    {
+        _editDescription = e.Value?.ToString() ?? "";
+        ScheduleAutoSaveLook();
+    }
+
+    private void OnLookVisualLockInput(ChangeEventArgs e)
+    {
+        _editVisualLock = e.Value?.ToString() ?? "";
+        ScheduleAutoSaveLook();
+    }
+
+    /// <summary>
+    /// Debounced autosave: wait until typing pauses (~800ms) so we do not hit the API on every keystroke.
+    /// Same pattern as voice profile autosave on this card.
+    /// </summary>
+    private void ScheduleAutoSaveLook()
+    {
+        _lookSaveCts?.Cancel();
+        _lookSaveCts = new CancellationTokenSource();
+        var token = _lookSaveCts.Token;
+        _lookSaveHint = "Pending…";
+        _ = AutoSaveLookDebouncedAsync(token);
+    }
+
+    private async Task AutoSaveLookDebouncedAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(LookAutosaveDebounceMs, token);
+            if (token.IsCancellationRequested || _selected is null) return;
+            _lookSaveHint = "Saving…";
+            await InvokeAsync(StateHasChanged);
+            await SaveLookAsync(silent: true);
+            if (!token.IsCancellationRequested)
+            {
+                _lookSaveHint = "Saved";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException) { /* typing continued — new debounce wins */ }
+        catch (Exception ex)
+        {
+            _lookSaveHint = "Save failed";
+            _error = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    /// <param name="silent">Autosave: no full-page busy, no toast spam; skip AI scrub (cheap disk write).</param>
+    private async Task SaveLookAsync(bool silent = false)
     {
         if (_selected is null) return;
 
-        // Snapshot identity + text at click — never re-read _selected after await for the POST.
+        // Snapshot identity + text — never re-read _selected after await for the POST.
         var charKey = _selected.Key;
         var displayName = _selected.DisplayName;
 
-        // No text change → no API (skip Grok scrub + disk write)
+        // No text change → no API
         var desc = _editDescription ?? "";
         var vis = _editVisualLock ?? "";
         if (string.Equals(desc, _savedLookDescription, StringComparison.Ordinal) &&
             string.Equals(vis, _savedLookVisualLock, StringComparison.Ordinal))
         {
-            _error = null;
-            _message = "No look changes.";
+            if (!silent)
+            {
+                _error = null;
+                _message = "No look changes.";
+            }
             return;
         }
 
-        _busy = true;
+        if (!silent)
+        {
+            _busy = true;
+            _error = null;
+            _message = null;
+        }
         _savingLook = true;
-        _error = null;
-        _message = null;
         try
         {
+            // Autosave: no Grok scrub (cost + latency every pause). Explicit saves / generate can scrub.
             var result = await Engine.UpdateCharacterLookAsync(
                 _projectId,
                 charKey,
                 description: desc,
                 visualLock: vis,
-                scrubWithAi: true);
+                scrubWithAi: !silent);
 
-            // Only rebind editors if the operator is still on this character
             var stillOnChar = string.Equals(_selectedKey, charKey, StringComparison.OrdinalIgnoreCase);
-            if (stillOnChar)
+            if (stillOnChar && !silent)
             {
                 if (!string.IsNullOrWhiteSpace(result.Description))
                     _editDescription = result.Description!;
@@ -1650,38 +2032,57 @@ else
                     _editVisualLock = result.VisualLock;
             }
 
-            _message = $"Saved look for {displayName}";
+            if (!silent)
+                _message = $"Saved look for {displayName}";
 
+            // Soft reload on silent is fine but keep editors stable if scrub didn't rewrite.
             await SoftReloadAsync();
             if (stillOnChar &&
                 string.Equals(_selectedKey, charKey, StringComparison.OrdinalIgnoreCase) &&
                 _selected is not null)
             {
-                if (!string.IsNullOrWhiteSpace(result.Description))
+                if (!silent && !string.IsNullOrWhiteSpace(result.Description))
                     _editDescription = result.Description!;
+                else if (silent)
+                {
+                    // Keep what the operator typed; mark as saved baseline
+                }
                 else
-                    _editDescription = _selected.Description ?? "";
-                if (result.VisualLock is not null)
+                    _editDescription = _selected.Description ?? _editDescription;
+
+                if (!silent && result.VisualLock is not null)
                     _editVisualLock = result.VisualLock;
-                else
-                    _editVisualLock = _selected.VisualLock ?? "";
-                _savedLookDescription = _editDescription;
-                _savedLookVisualLock = _editVisualLock;
+                else if (!silent)
+                    _editVisualLock = _selected.VisualLock ?? _editVisualLock;
+
+                _savedLookDescription = _editDescription ?? "";
+                _savedLookVisualLock = _editVisualLock ?? "";
             }
         }
-        catch (Exception ex) { _error = ex.Message; _message = null; }
+        catch (Exception ex)
+        {
+            if (!silent)
+            {
+                _error = ex.Message;
+                _message = null;
+            }
+            else throw;
+        }
         finally
         {
-            _busy = false;
+            if (!silent) _busy = false;
             _savingLook = false;
         }
     }
 
-    private async Task SaveVoiceAsync()
+    private async Task SaveVoiceAsync(bool silent = false)
     {
         if (_selected is null) return;
-        _busy = true;
-        _error = null;
+        if (!silent)
+        {
+            _busy = true;
+            _error = null;
+        }
         try
         {
             await Engine.UpdateCharacterVoiceAsync(
@@ -1689,34 +2090,74 @@ else
                 _selected.Key,
                 voiceProfile: _editVoiceProfile,
                 voiceLabel: _editVoiceLabel);
-            _message = $"Saved voice for {_selected.DisplayName}";
+            if (!silent)
+                _message = $"Saved voice for {_selected.DisplayName}";
             await SoftReloadAsync();
-            // re-bind edit fields after reload
             if (_selected is not null)
             {
                 _editVoiceLabel = _selected.VoiceLabel ?? "";
                 _editVoiceProfile = _selected.VoiceProfile ?? "";
             }
-            // Nav tooltips / Scenes gate depend on cast + shot-plan readiness
             try { await ActiveProject.RefreshReadinessAsync(Engine); } catch { /* nav */ }
-            // Next-step CTA handles “cast complete” — don’t stack another “ready” message
-            if (IsCastComplete)
+            if (IsCastComplete && !silent)
                 _message = null;
         }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
+        catch (Exception ex)
+        {
+            if (!silent) _error = ex.Message;
+            else throw;
+        }
+        finally
+        {
+            if (!silent) _busy = false;
+        }
     }
 
     private void OnVoiceLabelInput(ChangeEventArgs e)
     {
         _editVoiceLabel = e.Value?.ToString() ?? "";
         MarkVoiceStaleIfPlaying();
+        ScheduleAutoSaveVoice();
     }
 
     private void OnVoiceProfileInput(ChangeEventArgs e)
     {
         _editVoiceProfile = e.Value?.ToString() ?? "";
         MarkVoiceStaleIfPlaying();
+        ScheduleAutoSaveVoice();
+    }
+
+    private void ScheduleAutoSaveVoice()
+    {
+        _voiceSaveCts?.Cancel();
+        _lookSaveCts?.Cancel();
+        _voiceSaveCts = new CancellationTokenSource();
+        var token = _voiceSaveCts.Token;
+        _ = AutoSaveVoiceDebouncedAsync(token);
+    }
+
+    private async Task AutoSaveVoiceDebouncedAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(700, token);
+            if (token.IsCancellationRequested || _selected is null) return;
+            _voiceSaveHint = "Saving…";
+            await InvokeAsync(StateHasChanged);
+            await SaveVoiceAsync(silent: true);
+            if (!token.IsCancellationRequested)
+            {
+                _voiceSaveHint = "Saved";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException) { }
+        catch (Exception ex)
+        {
+            _voiceSaveHint = "Save failed";
+            _error = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private void MarkVoiceStaleIfPlaying()
@@ -1832,6 +2273,253 @@ else
         finally { _busy = false; }
     }
 
+
+    private void RefreshVoiceClonePlayUrl()
+    {
+        if (_selected?.HasVoiceCloneSample == true && !string.IsNullOrEmpty(_projectId) && !string.IsNullOrEmpty(_selectedKey))
+        {
+            _voiceCloneBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _voiceClonePlayUrl = Engine.CharacterVoiceCloneSampleUrl(_projectId, _selectedKey, _voiceCloneBust);
+        }
+        else
+            _voiceClonePlayUrl = null;
+    }
+
+    private async Task StartVoiceCloneMicAsync()
+    {
+        _voiceCloneError = null;
+        _voiceCloneHint = null;
+        try
+        {
+            // Prefer already-authorized media folder; never open a picker just to start recording.
+            if (!MediaFolder.IsConnected)
+                await MediaFolder.TryReconnectAsync();
+
+            var result = await Js.InvokeAsync<VoiceCaptureStartResult>("PageToMovieVoiceCapture.start");
+            if (result is null || !result.Ok)
+            {
+                _voiceCloneError = "Could not access microphone.";
+                return;
+            }
+            _voiceRecRecording = true;
+            _voiceCloneHint = "Recording — read the script, then tap Done.";
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+            _voiceRecRecording = false;
+        }
+    }
+
+    private async Task StopVoiceCloneMicAsync()
+    {
+        if (_selected is null || string.IsNullOrEmpty(_selectedKey)) return;
+        _voiceCloneBusy = true;
+        _voiceCloneError = null;
+        _voiceCloneHint = "Saving…";
+        StateHasChanged();
+        try
+        {
+            var result = await Js.InvokeAsync<VoiceCaptureStopResult>("PageToMovieVoiceCapture.stop");
+            _voiceRecRecording = false;
+            if (result is null || !result.Ok || string.IsNullOrEmpty(result.Base64))
+            {
+                _voiceCloneError = result?.Error ?? "No audio captured";
+                return;
+            }
+            var raw = Convert.FromBase64String(result.Base64);
+            var name = string.IsNullOrWhiteSpace(result.FileName) ? "voice_clone_sample.webm" : result.FileName!;
+            await PersistVoiceCloneSampleAsync(raw, name);
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+            _voiceRecRecording = false;
+        }
+        finally
+        {
+            _voiceCloneBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CancelVoiceCloneMicAsync()
+    {
+        try { await Js.InvokeVoidAsync("PageToMovieVoiceCapture.cancel"); } catch { }
+        _voiceRecRecording = false;
+        _voiceCloneHint = "Recording cancelled.";
+    }
+
+    private async Task OpenMediaFolderAudioPickerAsync()
+    {
+        _voiceCloneError = null;
+        _showMediaAudioPicker = true;
+        _loadingMediaAudio = true;
+        StateHasChanged();
+        try
+        {
+            if (!MediaFolder.IsConnected)
+            {
+                var ok = await MediaFolder.ConnectFolderAsync();
+                if (!ok)
+                {
+                    _voiceCloneError = MediaFolder.LastStatus ?? "Connect a folder first to pick existing audio.";
+                    _showMediaAudioPicker = false;
+                    return;
+                }
+            }
+            var files = await MediaFolder.ListAudioFilesAsync(_projectId);
+            // Prefer project-scoped files; if empty, list whole folder
+            if (files.Count == 0)
+                files = await MediaFolder.ListAudioFilesAsync(null);
+            _mediaAudioFiles = files.ToList();
+            _voiceCloneHint = _mediaAudioFiles.Count > 0
+                ? $"Found {_mediaAudioFiles.Count} file(s) — choose one."
+                : "No audio files found yet.";
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+        }
+        finally
+        {
+            _loadingMediaAudio = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PickMediaFolderAudioAsync(ClientMediaFolderService.LocalAudioFile file)
+    {
+        if (_selected is null || string.IsNullOrEmpty(_selectedKey)) return;
+        _voiceCloneBusy = true;
+        _voiceCloneError = null;
+        _voiceCloneHint = $"Loading {file.Name}…";
+        StateHasChanged();
+        try
+        {
+            var bytes = await MediaFolder.ReadLocalBytesAsync(file.RelativePath);
+            if (bytes is null || bytes.Length == 0)
+            {
+                _voiceCloneError = "Could not read that file.";
+                return;
+            }
+            await PersistVoiceCloneSampleAsync(bytes, file.Name);
+            _showMediaAudioPicker = false;
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+        }
+        finally
+        {
+            _voiceCloneBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Write clone sample to the client media folder (source of truth for large media) and
+    /// mirror metadata/bytes to the server so previews still work.
+    /// </summary>
+    private async Task PersistVoiceCloneSampleAsync(byte[] bytes, string fileName)
+    {
+        if (_selected is null || string.IsNullOrEmpty(_selectedKey)) return;
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        if (ext is not (".webm" or ".mp3" or ".wav" or ".m4a" or ".ogg" or ".aac" or ".mp4"))
+            ext = ".webm";
+        if (ext == ".mp4") ext = ".webm";
+        var safeKey = string.Join("_", (_selectedKey ?? "character").Split(Path.GetInvalidFileNameChars()));
+        var rel = $"assets/characters/{safeKey}/voice_clone_sample{ext}";
+
+        // Client media folder when already connected (no folder picker mid-recording).
+        // Always mirror to the server so previews still work.
+        if (!MediaFolder.IsConnected)
+            await MediaFolder.TryReconnectAsync();
+
+        await MediaFolder.SaveBytesAsync(
+            _projectId, rel, bytes, promptToConnectFolder: false);
+        _voiceCloneHint = "Saving…";
+
+        await using var ms = new MemoryStream(bytes);
+        await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, ms, "voice_clone_sample" + ext);
+        await SoftReloadAsync();
+        RefreshVoiceClonePlayUrl();
+        _voiceCloneBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        RefreshVoiceClonePlayUrl();
+        _voiceCloneHint = "Sample saved.";
+    }
+
+    private async Task OnVoiceCloneUploadAsync(InputFileChangeEventArgs e)
+    {
+        // Legacy OS file picker path — prefer media folder; still supported if invoked.
+        if (_selected is null || _selected.VoiceOnly) return;
+        var file = e.File;
+        if (file is null) return;
+        _voiceCloneBusy = true;
+        _voiceCloneError = null;
+        try
+        {
+            const long max = 15 * 1024 * 1024;
+            await using var stream = file.OpenReadStream(max);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            await PersistVoiceCloneSampleAsync(ms.ToArray(), file.Name);
+        }
+        catch (Exception ex) { _voiceCloneError = ex.Message; }
+        finally { _voiceCloneBusy = false; }
+    }
+
+    private async Task DeleteVoiceCloneSampleAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId) || string.IsNullOrEmpty(_selectedKey)) return;
+        _voiceCloneBusy = true;
+        try
+        {
+            await Engine.DeleteVoiceCloneSampleAsync(_projectId, _selectedKey);
+            _voiceCloneHint = "Sample removed.";
+            _voiceClonePlayUrl = null;
+            await ReloadSelectedCharacterAsync();
+        }
+        catch (Exception ex) { _voiceCloneError = ex.Message; }
+        finally { _voiceCloneBusy = false; }
+    }
+
+    private async Task ReloadSelectedCharacterAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId)) return;
+        try
+        {
+            var dto = await Engine.GetCharactersAsync(_projectId);
+            _chars = dto?.Characters ?? new List<CharacterSummary>();
+            _selected = _chars.FirstOrDefault(c =>
+                string.Equals(c.Key, _selectedKey, StringComparison.OrdinalIgnoreCase));
+            if (_selected is not null)
+            {
+                _editVoiceLabel = _selected.VoiceLabel ?? "";
+                _editVoiceProfile = _selected.VoiceProfile ?? "";
+                RefreshVoiceClonePlayUrl();
+            }
+        }
+        catch { }
+    }
+
+    private sealed class VoiceCaptureStartResult
+    {
+        public bool Ok { get; set; }
+        public string? MimeType { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class VoiceCaptureStopResult
+    {
+        public bool Ok { get; set; }
+        public string? MimeType { get; set; }
+        public string? Base64 { get; set; }
+        public string? FileName { get; set; }
+        public string? Error { get; set; }
+        public long ByteLength { get; set; }
+    }
+
     private async Task OnUploadRefAsync(InputFileChangeEventArgs e)
     {
         if (_selected is null || _selected.VoiceOnly) return;
@@ -1846,10 +2534,14 @@ else
             const long max = 25 * 1024 * 1024;
             await using var stream = file.OpenReadStream(max);
             await Engine.UploadCharacterRefAsync(_projectId, _selected.Key, stream, file.Name);
-            _message = $"Locked preferred look for {_selected.DisplayName} from your upload.";
+            _message = $"Saved look for {_selected.DisplayName}.";
+            _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             await LoadAsync();
+            await SoftReloadAsync();
+            try { await ActiveProject.RefreshReadinessAsync(Engine); } catch { /* nav */ }
             ResetCompare();
             _mode = Mode.PickSource;
+            _pictureRoute = PictureRoute.Choose;
         }
         catch (Exception ex)
         {
@@ -1887,6 +2579,15 @@ else
     }
 
     public async ValueTask DisposeAsync()
+    {
+        _voiceSaveCts?.Cancel();
+        _voiceSaveCts?.Dispose();
+        // original continues
+        await DisposeAsyncCore();
+    }
+
+    private async ValueTask DisposeAsyncCore()
+
     {
         Hub.JobUpdated -= OnJobUpdated;
         Hub.JobLog -= OnJobLog;

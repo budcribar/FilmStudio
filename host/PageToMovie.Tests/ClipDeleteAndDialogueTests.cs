@@ -405,7 +405,7 @@ public class ClipDeleteAndDialogueTests
         var (root, _, store) = SetUpProject("dialogueverify", ThreeClipBlueprint);
         try
         {
-            var verifier = new ClipDialogueVerificationService(store, new NullVisionClient(), null);
+            var verifier = new ClipDialogueVerificationService(store, new NullVisionClient(), new ProjectTelemetryService(store, Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectTelemetryService>.Instance));
             await verifier.SaveVerificationAsync("Demo", new ClipDialogueVerificationResult
             {
                 SceneNumber = 1,

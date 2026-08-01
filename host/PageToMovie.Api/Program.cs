@@ -144,6 +144,7 @@ builder.Services.AddSingleton<ProjectArchiveService>();
 builder.Services.AddSingleton<ServerLogExportService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
+builder.Services.AddSingleton<YouTubeChannelGallerySync>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
 builder.Services.AddSingleton<ProjectAutoGitService>();
 builder.Services.AddSingleton<MovieAutoReviewService>();
@@ -480,6 +481,7 @@ app.Use(async (context, next) =>
         ["suno"] = suno,
         ["aimusicapi"] = aimusicapi,
     }))
+    using (UserApiCallScope.Push(uid))
     {
         await next();
     }
@@ -1395,7 +1397,7 @@ app.MapPost("/api/system/open-editor", (OpenEditorRequest body, ProjectStore sto
                 System.Diagnostics.Process.Start("open", $"\"{targetPath}\"");
                 return Results.Ok(new OpenEditorResponse { Ok = true, Opened = targetPath, Editor = editorName, VideoUrl = relativeVideoUrl });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Results.Ok(new OpenEditorResponse { Ok = false, IsRemote = true, VideoUrl = relativeVideoUrl, Error = $"Remote server cannot open desktop app. Stream video to open in {editorName}." });
             }
@@ -1884,7 +1886,7 @@ app.MapGet("/api/youtube/status", async (YouTubeAuthService youTube, Cancellatio
     return Results.Ok(new { ok = true, configured = youTube.IsConfigured, connected });
 });
 
-app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService youTube) =>
+app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService youTube, string? returnTo) =>
 {
     if (!user.IsAdmin)
         return Results.Json(new { ok = false, error = "admin role required" },
@@ -1896,7 +1898,7 @@ app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService yo
             error = "YouTube OAuth is not configured (PageToMovie:YouTube:ClientId/ClientSecret/RedirectUri).",
         }, statusCode: StatusCodes.Status409Conflict);
     var state = Guid.NewGuid().ToString("N");
-    return Results.Ok(new { ok = true, url = youTube.BuildAuthorizationUrl(state) });
+    return Results.Ok(new { ok = true, url = youTube.BuildAuthorizationUrl(state, returnTo) });
 });
 
 async Task ProcessYouTubeOAuthCallbackAsync(HttpContext http, YouTubeAuthService youTube, CancellationToken ct)
@@ -1926,32 +1928,35 @@ async Task ProcessYouTubeOAuthCallbackAsync(HttpContext http, YouTubeAuthService
             error = Uri.UnescapeDataString(mErr.Groups[1].Value);
     }
 
+    var returnPath = "/review";
+    var stateOk = !string.IsNullOrWhiteSpace(state) && youTube.TryConsumeState(state!, out returnPath);
+
     if (!string.IsNullOrWhiteSpace(error))
     {
-        http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(error)}");
+        http.Response.Redirect($"{returnPath}?youtube=error&message={Uri.EscapeDataString(error)}");
         return;
     }
 
     if (string.IsNullOrWhiteSpace(code))
     {
-        http.Response.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Missing authorization code from Google."));
+        http.Response.Redirect(returnPath + "?youtube=error&message=" + Uri.EscapeDataString("Missing authorization code from Google."));
         return;
     }
 
-    if (string.IsNullOrWhiteSpace(state) || !youTube.ConsumeState(state))
+    if (!stateOk)
     {
-        http.Response.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Invalid or expired request."));
+        http.Response.Redirect(returnPath + "?youtube=error&message=" + Uri.EscapeDataString("Invalid or expired request."));
         return;
     }
 
     try
     {
         await youTube.ExchangeCodeAsync(code, ct);
-        http.Response.Redirect("/review?youtube=connected");
+        http.Response.Redirect($"{returnPath}?youtube=connected");
     }
     catch (Exception ex)
     {
-        http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
+        http.Response.Redirect($"{returnPath}?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
     }
 }
 
@@ -1990,8 +1995,8 @@ app.MapGet("/health", (ProjectStore store, IOptions<PageToMovieOptions> opts, IU
         useFakes = opts.Value.UseFakes || useFakes,
         enableReadCaches = store.ReadCachesEnabled,
         capacity = opts.Value.Capacity,
-        xaiConfigured = keyProvider.HasKey(user.UserId) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")) || useFakes,
-        xaiKeyPresent = keyProvider.HasKey(user.UserId) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")),
+        xaiConfigured = keyProvider.HasKey(user.UserId) || (opts.Value.AllowServerApiKeyFallback && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))) || useFakes,
+        xaiKeyPresent = keyProvider.HasKey(user.UserId) || (opts.Value.AllowServerApiKeyFallback && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))),
         userId = user.UserId,
         isAdmin = user.IsAdmin,
     }));
@@ -2318,6 +2323,43 @@ app.MapGet("/api/stage2-status", async (ProjectStore store, CancellationToken ct
 });
 
 // ---- Supported models (master catalog: model id → endpoint + required keys) ----
+/// <summary>Raw models_catalog.json for Blazor WASM bootstrap (public read).</summary>
+app.MapGet("/api/models/catalog-json", () =>
+{
+    try
+    {
+        var path = SupportedModelCatalog.GetCatalogFilePath();
+        if (System.IO.File.Exists(path))
+            return Results.Text(System.IO.File.ReadAllText(path), "application/json");
+
+        var asm = typeof(SupportedModelCatalog).Assembly;
+        foreach (var name in asm.GetManifestResourceNames()
+                     .Where(n => n.EndsWith("models_catalog.json", StringComparison.OrdinalIgnoreCase)))
+        {
+            using var stream = asm.GetManifestResourceStream(name);
+            if (stream is null) continue;
+            using var reader = new StreamReader(stream);
+            return Results.Text(reader.ReadToEnd(), "application/json");
+        }
+
+        if (SupportedModelCatalog.IsLoaded)
+        {
+            return Results.Json(new
+            {
+                models = SupportedModelCatalog.ToDtoList(enabledOnly: false),
+                capabilities = SupportedModelCatalog.RegisteredCapabilities,
+                taskRankings = SupportedModelCatalog.TaskRankings,
+            });
+        }
+
+        return Results.NotFound(new { ok = false, error = "models_catalog.json not found on server" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { ok = false, error = ex.Message }, statusCode: 500);
+    }
+});
+
 app.MapGet("/api/models", (string? capability) =>
 {
     IReadOnlyList<SupportedModelDto> list;
@@ -2535,6 +2577,89 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
             charKey,
             message = "Voice seed updated",
         });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Upload or replace voice-clone template audio (mic recording or file).
+/// Multipart field: file. Stored under assets/characters/{key}/voice_clone_sample.*.
+/// Used as a reference for future TTS clone providers; does not replace voice_profile text.
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone-sample", async (
+    string id,
+    string charKey,
+    HttpRequest req,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        if (!req.HasFormContentType)
+            return Results.BadRequest(new { ok = false, error = "multipart form required (field: file)" });
+
+        var form = await req.ReadFormAsync(ct);
+        var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+        if (file is null || file.Length == 0)
+            return Results.BadRequest(new { ok = false, error = "No audio file (field: file)" });
+        if (file.Length > 15 * 1024 * 1024)
+            return Results.BadRequest(new { ok = false, error = "Audio too large (max 15 MB)." });
+
+        await using var stream = file.OpenReadStream();
+        var path = await store.SaveVoiceCloneSampleAsync(id, charKey, stream, file.FileName, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            fileName = Path.GetFileName(path),
+            url = $"/api/projects/{Uri.EscapeDataString(id)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
+            message = "Voice clone sample saved — optional add-on template for personal voice.",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
+    (string id, string charKey, ProjectStore store) =>
+{
+    try
+    {
+        var path = store.GetVoiceCloneSamplePath(id, charKey);
+        if (!File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "No voice clone sample yet." });
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        var contentType = ext switch
+        {
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".m4a" or ".aac" => "audio/mp4",
+            ".ogg" => "audio/ogg",
+            _ => "audio/webm",
+        };
+        return Results.File(path, contentType, Path.GetFileName(path));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapDelete("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
+    (string id, string charKey, ProjectStore store) =>
+{
+    try
+    {
+        var removed = store.DeleteVoiceCloneSample(id, charKey);
+        return Results.Ok(new { ok = true, removed, projectId = id, charKey });
     }
     catch (Exception ex)
     {
@@ -3259,6 +3384,43 @@ app.MapPost("/api/projects/{id}/visibility", async (
     return Results.Ok(new { ok = true, projectId = proj.Id, visibilityMode = proj.VisibilityMode });
 });
 
+app.MapPost("/api/projects/{id}/rename", async (
+    string id,
+    RenameProjectRequest? body,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+    {
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can rename this project." },
+            statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    try
+    {
+        var title = body?.Title ?? body?.Name ?? "";
+        var proj = await store.RenameProjectAsync(id, title, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = proj.Id,
+            title = proj.Title,
+            label = proj.Label,
+            message = $"Renamed project to “{proj.Label ?? proj.Title}”",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapGet("/api/creators/{handle}", async (
     string handle,
     CreatorProfileService creatorService,
@@ -3283,7 +3445,7 @@ app.MapGet("/api/users/search", async (
     if (string.IsNullOrWhiteSpace(q) || q.Trim().TrimStart('@').Length < 1)
         return Results.Ok(new { ok = true, handles = Array.Empty<string>() });
 
-    var found = await userDb.SearchUsernamesAsync(q, take: 8, ct);
+    var found = await userDb.SearchUsernamesAsync(q, take: 15, ct);
     var handles = found.Select(u => u.StartsWith('@') ? u : "@" + u).ToList();
     return Results.Ok(new { ok = true, handles });
 });
@@ -3844,11 +4006,11 @@ static string GuessImageContentType(string path) =>
     : "application/octet-stream";
 
 // ---- Adaptation (book / Stage 1 / Stage 2 status + jobs) ----
-app.MapGet("/api/projects/{id}/adaptation", (string id, ProjectStore store) =>
+app.MapGet("/api/projects/{id}/adaptation", (string id, ProjectStore store, IUserContext user) =>
 {
     try
     {
-        var status = store.GetAdaptationStatus(id);
+        var status = store.GetAdaptationStatus(id, user.UserId);
         return Results.Ok(new { ok = true, projectId = id, adaptation = status });
     }
     catch (Exception ex)
@@ -3862,10 +4024,15 @@ app.MapPost("/api/jobs/book-prepare", async (
     FilmJobService jobService,
     IUserContext user,
     UserDatabaseService userDb,
+    IUserApiKeyProvider keys,
     IOptions<PageToMovieOptions> opts) =>
 {
-    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
-        return denied;
+    // PDF extract / plain text needs no AI key. Vision OCR only if requested or auto-selected later.
+    if (AuthGate.RequireLogin(user, opts) is { } deniedLogin)
+        return deniedLogin;
+    if (body.ForceVision &&
+        await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes, keys, requireVisionKey: true) is { } deniedVision)
+        return deniedVision;
     try
     {
         if (string.IsNullOrWhiteSpace(body.ProjectId))
@@ -3890,9 +4057,10 @@ app.MapPost("/api/jobs/book-import", async (
     FilmJobService jobService,
     IUserContext user,
     UserDatabaseService userDb,
+    IUserApiKeyProvider keys,
     IOptions<PageToMovieOptions> opts) =>
 {
-    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
+    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes, keys) is { } denied)
         return denied;
     try
     {
@@ -3933,7 +4101,7 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (
             return Results.BadRequest(new { ok = false, error = "file required" });
         await using var stream = file.OpenReadStream();
         var path = await store.SaveBookUploadAsync(id, file.FileName, stream);
-        var status = store.GetAdaptationStatus(id);
+        var status = store.GetAdaptationStatus(id, user.UserId);
         return Results.Ok(new
         {
             ok = true,
@@ -3953,7 +4121,7 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (
 /// Import a Fountain file as the editable screenplay draft (does not approve / Stage 1 yet).
 /// User reviews on Screenplay, then sign-off materialises Stage 1.
 /// </summary>
-app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, HttpRequest req, ProjectStore store) =>
+app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, HttpRequest req, ProjectStore store, IUserContext user) =>
 {
     try
     {
@@ -3983,7 +4151,7 @@ app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, H
         if (!result.Ok)
             return Results.BadRequest(new { ok = false, error = result.Error });
 
-        var status = store.GetAdaptationStatus(id);
+        var status = store.GetAdaptationStatus(id, user.UserId);
         return Results.Ok(new
         {
             ok = true,
@@ -4004,7 +4172,7 @@ app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, H
 });
 
 /// <summary>Get the editable Fountain draft + status.</summary>
-app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store) =>
+app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store, IUserContext user) =>
 {
     try
     {
@@ -4015,7 +4183,7 @@ app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store) =>
             projectId = id,
             text = doc.Text,
             screenplay = doc.Status,
-            adaptation = store.GetAdaptationStatus(id),
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
         });
     }
     catch (Exception ex)
@@ -4025,7 +4193,7 @@ app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store) =>
 });
 
 /// <summary>Save Fountain draft (no Stage 1 write).</summary>
-app.MapPut("/api/projects/{id}/screenplay", async (string id, HttpRequest req, ProjectStore store) =>
+app.MapPut("/api/projects/{id}/screenplay", async (string id, HttpRequest req, ProjectStore store, IUserContext user) =>
 {
     try
     {
@@ -4070,7 +4238,7 @@ app.MapPut("/api/projects/{id}/screenplay", async (string id, HttpRequest req, P
             projectId = id,
             message = result.Message,
             screenplay = result.Status,
-            adaptation = store.GetAdaptationStatus(id),
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
         });
     }
     catch (Exception ex)
@@ -4089,6 +4257,7 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
     ProjectStore store,
     CastFromScreenplayService castService,
     PageToMovie.Engine.Abstractions.IChatClient chat,
+    IUserContext user,
     CancellationToken ct) =>
 {
     try
@@ -4154,7 +4323,7 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
             hashChanged = result.HashChanged,
             message = result.Message,
             screenplay = result.Status,
-            adaptation = store.GetAdaptationStatus(id),
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
             cast,
         });
     }
@@ -4171,10 +4340,11 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     PageToMovie.Engine.Abstractions.IChatClient chat,
     IUserContext user,
     UserDatabaseService userDb,
+    IUserApiKeyProvider keys,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
-    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
+    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes, keys) is { } denied)
         return denied;
     try
     {
@@ -4188,7 +4358,7 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
             projectId = id,
             message = result.Message,
             screenplay = result.Status,
-            adaptation = store.GetAdaptationStatus(id),
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
         });
     }
     catch (Exception ex)
@@ -4364,8 +4534,14 @@ app.MapPost("/api/jobs/youtube-upload", async (
     HttpRequest request,
     FilmJobService jobService,
     ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
+    // Shared channel OAuth lives on the server — clients only upload via this UI/API path.
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
     try
     {
         string? projectId = null;
@@ -4410,10 +4586,10 @@ app.MapPost("/api/jobs/youtube-upload", async (
 
         var req = new StartYouTubeUploadRequest
         {
-            ProjectId = projectId,
+            ProjectId = projectId!,
             Title = title,
             Description = description,
-            PrivacyStatus = privacyStatus,
+            PrivacyStatus = privacyStatus ?? "unlisted",
         };
 
         var job = await jobService.StartYouTubeUploadAsync(req);
@@ -4834,6 +5010,29 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review/
     }
 });
 
+
+app.MapGet("/api/me/api-calls", async (
+    int? take,
+    IUserContext user,
+    UserDatabaseService userDb,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var rows = await userDb.ListUserApiCallsAsync(user.UserId, take ?? 100, ct);
+    var totalUsd = rows.Where(r => r.EstimatedUsd is > 0).Sum(r => r.EstimatedUsd!.Value);
+    return Results.Ok(new
+    {
+        ok = true,
+        userId = user.UserId,
+        count = rows.Count,
+        estimatedUsdSum = Math.Round(totalUsd, 4),
+        notes = "List-rate estimates at call time (catalog). Not provider invoices. Full prompts stay on the project telemetry file.",
+        calls = rows,
+    });
+});
+
 // ---- Cost (ledger + estimates) ----
 app.MapGet("/api/projects/{id}/cost", async (
     string id,
@@ -5126,27 +5325,40 @@ app.MapGet("/api/projects/{id}/media/sync", async (
     {
         await store.RequireProjectAsync(id, ct);
         var projectDir = store.GetProjectDir(id);
-        var videoDir = Path.Combine(projectDir, "assets", "video");
+        // Media that may have arrived via full project import (video, music, audio, history).
         var list = new List<object>();
-
-        if (Directory.Exists(videoDir))
+        var assetsRoot = Path.Combine(projectDir, "assets");
+        var mediaExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            var files = Directory.GetFiles(videoDir, "*", SearchOption.TopDirectoryOnly)
-                .Where(f => f.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith(".clip.json", StringComparison.OrdinalIgnoreCase));
+            ".mp4", ".webm", ".mov", ".mkv", ".m4v",
+            ".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac", ".opus",
+            ".png", ".jpg", ".jpeg", ".webp", ".gif",
+        };
 
-            foreach (var file in files)
+        if (Directory.Exists(assetsRoot))
+        {
+            foreach (var file in Directory.EnumerateFiles(assetsRoot, "*", SearchOption.AllDirectories))
             {
-                var relPath = $"assets/video/{Path.GetFileName(file)}";
+                var name = Path.GetFileName(file);
+                if (name is "Thumbs.db" or ".DS_Store") continue;
+                var ext = Path.GetExtension(file);
+                var isClipJson = name.EndsWith(".clip.json", StringComparison.OrdinalIgnoreCase);
+                if (!isClipJson && !mediaExts.Contains(ext))
+                    continue;
+
+                var relPath = Path.GetRelativePath(projectDir, file).Replace('\\', '/');
                 var fi = new FileInfo(file);
-                var isMp4 = file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
+                var isMp4 = ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase);
 
                 string? sha256 = null;
                 try
                 {
-                    using var fs = File.OpenRead(file);
-                    var hashBytes = System.Security.Cryptography.SHA256.HashData(fs);
-                    sha256 = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                    if (fi.Length <= 64L * 1024 * 1024)
+                    {
+                        using var fs = File.OpenRead(file);
+                        var hashBytes = System.Security.Cryptography.SHA256.HashData(fs);
+                        sha256 = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                    }
                 }
                 catch { /* best-effort sha256 */ }
 
@@ -5156,7 +5368,7 @@ app.MapGet("/api/projects/{id}/media/sync", async (
                 list.Add(new
                 {
                     relativePath = relPath,
-                    fileName = Path.GetFileName(file),
+                    fileName = name,
                     sizeBytes = fi.Length,
                     sha256,
                     isMp4,
@@ -5272,9 +5484,17 @@ static object DemoPublicDto(
     upvotedByMe,
     // True when this public film's studio project still exists (gallery Fork button).
     canFork,
-    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
+    // YouTube is gallery playback SoT. Local videoPath only for staging (owner) before upload finishes.
+    videoPath = string.IsNullOrWhiteSpace(d.YoutubeId)
+        ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video"
+        : null,
     d.YoutubeId,
     d.YoutubeUrl,
+    d.Category,
+    d.Tags,
+    youtubeWatchUrl = string.IsNullOrWhiteSpace(d.YoutubeId)
+        ? null
+        : (string.IsNullOrWhiteSpace(d.YoutubeUrl) ? $"https://www.youtube.com/watch?v={d.YoutubeId}" : d.YoutubeUrl),
     d.YoutubeLikeCount,
     d.YoutubeViewCount,
     visibilityMode,
@@ -5306,16 +5526,21 @@ static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
     d.PrivacyStatus,
 };
 
-/// <summary>Public gallery: only approved demos (no login). sort=top|new (default top by upvotes).</summary>
+/// <summary>Public gallery: demos on YouTube (no login). sort=top|new (default top by upvotes).</summary>
 app.MapGet("/api/demos", async (
     DemoCatalogService demos,
     DemoUpvoteService upvotes,
     ProjectStore store,
     IUserContext user,
+    YouTubeChannelGallerySync channelSync,
     int? take,
     string? sort,
     CancellationToken ct) =>
 {
+    // YouTube channel is SoT: quietly refresh catalog when connected (throttled).
+    try { await channelSync.EnsureSyncedAsync(force: false, ct: ct); }
+    catch { /* non-fatal for public list */ }
+
     var list = demos.ListPublic(take ?? 50).ToList();
     var ids = list.Select(d => d.Id).ToList();
     var counts = await upvotes.GetCountsAsync(ids, ct);
@@ -5353,6 +5578,11 @@ app.MapGet("/api/demos", async (
     {
         ok = true,
         sort = sortKey is "new" ? "new" : "top",
+        youtubeSync = new
+        {
+            lastSuccessUtc = channelSync.LastSuccessUtc,
+            lastError = channelSync.LastError,
+        },
         demos = ordered.Select(d => DemoPublicDto(
             d,
             counts.GetValueOrDefault(d.Id),
@@ -5362,7 +5592,7 @@ app.MapGet("/api/demos", async (
     });
 });
 
-/// <summary>Admin moderation list (pending / all statuses).</summary>
+/// <summary>Admin list of demos (reports/removed). Content approval queue is retired — YouTube is the gate.</summary>
 app.MapGet("/api/admin/demos", (
     DemoCatalogService demos,
     IUserContext user,
@@ -5384,6 +5614,81 @@ app.MapGet("/api/admin/demos", (
         demos = list.Select(DemoAdminDto),
         pendingCount = demos.List(200, DemoCatalogService.DemoStatuses.Pending).Count,
     });
+});
+
+/// <summary>
+/// Admin: register an existing YouTube video on the public gallery (no local MP4 upload).
+/// Body: { youtubeIdOrUrl, title, description?, projectId? }
+/// </summary>
+app.MapPost("/api/admin/demos/from-youtube", (
+    DemoCatalogService demos,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    RegisterYouTubeDemoRequest? body) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "Admin only" }, statusCode: StatusCodes.Status403Forbidden);
+    if (body is null || string.IsNullOrWhiteSpace(body.YoutubeIdOrUrl) || string.IsNullOrWhiteSpace(body.Title))
+        return Results.BadRequest(new { ok = false, error = "youtubeIdOrUrl and title are required" });
+    try
+    {
+        var entry = demos.RegisterFromYouTube(
+            body.YoutubeIdOrUrl,
+            body.Title,
+            body.Description,
+            createdBy: user.UserId,
+            projectId: body.ProjectId);
+        return Results.Ok(new
+        {
+            ok = true,
+            message = $"“{entry.Title}” is on the public gallery (YouTube).",
+            demo = DemoAdminDto(entry),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Admin: pull every upload from the connected YouTube channel into the public gallery catalog.</summary>
+app.MapPost("/api/admin/demos/sync-youtube", async (
+    YouTubeChannelGallerySync channelSync,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "Admin only" }, statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var (added, updated, total, skipped) = await channelSync.EnsureSyncedAsync(
+            force: true,
+            createdBy: user.UserId,
+            maxVideos: 100,
+            ct: ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            added,
+            updated,
+            total,
+            skipped,
+            message = total == 0 && skipped
+                ? "Nothing to sync (channel not connected or empty)."
+                : $"Synced {total} channel video(s): {added} new, {updated} updated.",
+            lastError = channelSync.LastError,
+            lastSuccessUtc = channelSync.LastSuccessUtc,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
 });
 
 /// <summary>Public metadata for a public demo; owner/admin can see pending.</summary>
@@ -5588,7 +5893,10 @@ app.MapPost("/api/projects/{id}/review/movie", async (
     }
 });
 
-/// <summary>Stream demo video if public, or owner/admin for pending.</summary>
+/// <summary>
+/// Demo playback: redirect to YouTube when published there (source of truth).
+/// Local MP4 only while staging (owner/admin) before upload completes.
+/// </summary>
 app.MapGet("/api/demos/{demoId}/video", (
     string demoId,
     DemoCatalogService demos,
@@ -5599,16 +5907,28 @@ app.MapGet("/api/demos/{demoId}/video", (
         return Results.NotFound(new { ok = false, error = "Demo video not found" });
     if (!demos.CanUserViewVideo(d, user.UserId, user.IsAdmin))
         return Results.NotFound(new { ok = false, error = "Demo video not found" });
+
+    // YouTube is the public source of truth — never stream server MP4 once YT id exists.
+    if (!string.IsNullOrWhiteSpace(d.YoutubeId))
+    {
+        var url = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+            ? d.YoutubeUrl!
+            : $"https://www.youtube.com/watch?v={d.YoutubeId.Trim()}";
+        return Results.Redirect(url);
+    }
+
     var path = demos.ResolveMoviePath(demoId);
     if (path is null)
-        return Results.NotFound(new { ok = false, error = "Demo video not found" });
+        return Results.NotFound(new
+        {
+            ok = false,
+            error = "Film is uploading to YouTube — try the gallery again in a moment.",
+            code = "awaiting_youtube",
+        });
     return Results.File(path, "video/mp4", enableRangeProcessing: true);
 });
 
-/// <summary>
-/// Submit a demo for human review (always starts as pending — never auto-public).
-/// Login + project ownership + guidelines acceptance + rate limits.
-/// </summary>
+/// <summary>Register client-side media hash (clips/exports) so the server need not store MP4s.</summary>
 app.MapPost("/api/projects/{id}/media/register", async (
     string id,
     MediaRegisterRequest body,
@@ -5767,6 +6087,8 @@ app.MapPost("/api/demos", async (
     if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
         return denied;
 
+    // Uploads go only through this API → shared "Page to Movie" YouTube channel (OAuth on server).
+    // Creators never need YouTube Studio; admins alone connect the channel.
     try
     {
         string? title = null;
@@ -5827,7 +6149,9 @@ app.MapPost("/api/demos", async (
         title = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
         description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         projectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim();
-        privacyStatus = privacyStatus is "public" or "unlisted" or "private" ? privacyStatus : "public";
+        // Default unlisted: channel is operated privately; gallery embeds still work.
+        // true "private" would hide films from everyone except the channel owner.
+        privacyStatus = privacyStatus is "public" or "unlisted" or "private" ? privacyStatus : "unlisted";
         var tags = string.IsNullOrWhiteSpace(tagsRaw)
             ? null
             : tagsRaw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
@@ -6006,17 +6330,25 @@ app.MapPost("/api/demos", async (
                 isAiSyntheticContent: isAiSynthetic,
                 privacyStatus: privacyStatus,
                 tags: tags);
+            // Always push to YouTube — gallery only lists films with a YouTube id.
+            var demoIdForUpload = entry.Id;
+            _ = Task.Run(() => youTubePublisher.PublishAsync(demoIdForUpload, CancellationToken.None));
+            autoPublic = true;
         }
 
         return Results.Ok(new
         {
             ok = true,
-            pendingReview = !autoPublic && !replacedExisting,
-            autoPublic,
+            // No admin review queue — YouTube upload is the gate for the public wall.
+            pendingReview = false,
+            awaitingYouTube = string.IsNullOrWhiteSpace(entry.YoutubeId),
+            autoPublic = true,
             replacedExisting,
             message = replacedExisting
-                ? "Updated published demo."
-                : "Film published to gallery.",
+                ? "Updated cut — uploading to YouTube. Gallery shows it when the upload finishes."
+                : string.IsNullOrWhiteSpace(entry.YoutubeId)
+                    ? "Publishing to YouTube… It appears in the gallery when the upload finishes."
+                    : "Film is live on YouTube and in the gallery.",
             demo = DemoPublicDto(entry),
             pagePath = "/demo",
         });
@@ -6027,7 +6359,7 @@ app.MapPost("/api/demos", async (
     }
 });
 
-/// <summary>Report a public demo (any viewer; optional login). Auto-pending after 3 reports.</summary>
+/// <summary>Report a public demo (any viewer; optional login). Auto-removed after 3 reports.</summary>
 app.MapPost("/api/demos/{demoId}/report", (
     string demoId,
     DemoReportRequest? body,
@@ -6374,6 +6706,7 @@ namespace PageToMovie.Api
     public record ProjectVisibilityRequest(string VisibilityMode);
     public record SetBookRefsRequest(List<string>? ImagePaths);
     public record MovieReviewRequest(List<MovieAutoReviewKeyframe>? Keyframes);
+    public record RegisterYouTubeDemoRequest(string? YoutubeIdOrUrl, string? Title, string? Description, string? ProjectId);
 
     public sealed class TestEmailRequest
     {

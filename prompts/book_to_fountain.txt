@@ -1,3 +1,6 @@
+After adaptation, the Fountain screenplay is the source of truth for cast, looks,
+visual medium, and story beats used by portrait generation and filming.
+
 Act as an expert screenwriter adapting a book into an editable Fountain 1.1 screenplay.
 
 This is the operator-facing screenplay. Downstream shot/clip work is driven from this
@@ -210,10 +213,15 @@ later shots stay consistent:
 - Filmable identity only: species/age/build/hair/face/wardrobe + stable colors/markings
   that must not drift.
 - Signature props/wardrobe the book establishes must stay on when those characters re-enter.
-- One render medium for the whole film (period live-action / gothic / stylized illustration / …).
-  State medium once early (title-page Notes: or first Action) if helpful.
-  Humans and animals share one medium — never photoreal people beside cartoon animals
-  unless the whole piece is live-action.
+- **RENDER MEDIUM (HARD — write into the screenplay):** Infer the film's visual medium
+  from the BOOK CONTENT (tone, genre, and whether it is an illustrated children's story
+  vs literary prose vs live-action drama). Put ONE clear medium statement early —
+  title-page Notes: and/or the first Action line — e.g.
+  "Notes: Medium = photoreal live-action gothic period drama, naturalistic faces and fabric."
+  or "Notes: Medium = stylized children's picture-book illustration; painted storybook look."
+  Do NOT leave medium implied only by file type. The screenplay is the source of truth for
+  later cast portraits and clips. Humans and animals share that one medium — never mix
+  photoreal people with cartoon animals unless the whole piece is live-action.
 - Nicknames / epithets belong in dialogue or titles, NOT as physical description.
 - Metaphorical wardrobe: if text is figurative, do not invent garments the story never shows.
 - Exclusive OR in the book: pick ONE for that beat.
@@ -341,3 +349,27 @@ LEARNINGS (appended from Film Studio edit log)
 ================================================================
 <!-- STAGE1_LEARNINGS_START -->
 <!-- STAGE1_LEARNINGS_END -->
+
+================================================================
+VISION META SIDECAR (HARD — after the full Fountain)
+================================================================
+After you finish the complete Fountain screenplay, append a machine-readable sidecar
+(not part of the screenplay body). Production uses this for character portraits and clips.
+
+Decide visual_medium from STORY CONTENT (genre, illustrated children's book vs literary
+prose vs live-action drama). Do not invent medium from file type alone.
+
+Append exactly this block at the very end of your response:
+
+---VISION_META---
+{"visual_medium":"photoreal_live_action","render_style_lock":"STYLE LOCK: … one medium for all cast …","notes":"short rationale"}
+---END_VISION_META---
+
+visual_medium MUST be one of:
+- photoreal_live_action  (classic short stories, novels, gothic/period drama, most literary prose)
+- illustrated_picture_book  (children's picture books, painted storybook worlds)
+- stylized_3d_animated  (feature-style CG animation look)
+
+render_style_lock: one STYLE LOCK sentence the image model will obey.
+Nothing after ---END_VISION_META---.
+

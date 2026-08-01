@@ -23,6 +23,14 @@ public sealed class PageToMovieOptions
     public bool UseFakes { get; set; }
 
     /// <summary>
+    /// When false (default), users must bring their own API keys (personal DB). Process
+    /// env keys are not used for user jobs and do not count as "configured" — keep this
+    /// off until server-side cost/credit control is solid. Set true only for local ops
+    /// / demos: <c>PageToMovie__AllowServerApiKeyFallback=true</c>.
+    /// </summary>
+    public bool AllowServerApiKeyFallback { get; set; }
+
+    /// <summary>
     /// When true (default), vision-check character portraits before lock so a photoreal
     /// project cannot lock a sketch/illustration (and vice versa). Set false only for
     /// emergency bypass: <c>PageToMovie__RequirePortraitStyleGate=false</c>.

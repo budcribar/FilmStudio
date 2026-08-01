@@ -137,8 +137,8 @@
 
 .nav-user-trigger:hover,
 .nav-user-menu.is-open .nav-user-trigger {
-    background: rgba(99, 102, 241, 0.16);
-    border-color: rgba(99, 102, 241, 0.35);
+    background: rgba(107, 140, 174, 0.16);
+    border-color: rgba(107, 140, 174, 0.35);
 }
 
 .nav-user-avatar {
@@ -153,8 +153,8 @@
     font-weight: 700;
     letter-spacing: 0.02em;
     color: #fff;
-    background: linear-gradient(145deg, #6366f1 0%, #a855f7 100%);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+    background: linear-gradient(145deg, #6b8cae 0%, #a855f7 100%);
+    box-shadow: 0 0 0 2px rgba(107, 140, 174, 0.25);
     user-select: none;
 }
 
@@ -258,7 +258,7 @@
 }
 
 .nav-user-item:hover {
-    background: rgba(99, 102, 241, 0.18);
+    background: rgba(107, 140, 174, 0.18);
     color: #fff;
 }
 
@@ -382,9 +382,9 @@
 }
 
 .nav-item ::deep a.active {
-    background: linear-gradient(90deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%);
+    background: linear-gradient(90deg, rgba(107, 140, 174, 0.22) 0%, rgba(107, 140, 174, 0.08) 100%);
     color: #ffffff;
-    border-left: 3px solid #6366f1;
+    border-left: 3px solid #6b8cae;
     border-radius: 6px;
 }
 
