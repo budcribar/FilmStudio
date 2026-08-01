@@ -18,13 +18,105 @@
     <link rel="stylesheet" href="/css/fountain-editor.css" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="icon" type="image/png" href="favicon.png" />
+    @* Inline boot styles so the spinner paints before app.css / WASM download. *@
+    <style>
+        #app-boot {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            background: #0b0f14;
+            color: #e8eef6;
+            font-family: Inter, system-ui, sans-serif;
+            transition: opacity 0.25s ease;
+        }
+        #app-boot.ptm-boot--done {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #app-boot .ptm-boot__mark {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+        }
+        #app-boot .ptm-boot__title {
+            font-family: Outfit, Inter, system-ui, sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            font-size: 1.15rem;
+            margin: 0;
+        }
+        #app-boot .ptm-boot__sub {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        #app-boot .ptm-boot__spinner {
+            width: 2.25rem;
+            height: 2.25rem;
+            border: 3px solid rgba(56, 189, 248, 0.2);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: ptm-boot-spin 0.7s linear infinite;
+        }
+        @@keyframes ptm-boot-spin {
+            to { transform: rotate(360deg); }
+        }
+        @@media (prefers-reduced-motion: reduce) {
+            #app-boot .ptm-boot__spinner { animation: none; border-top-color: #38bdf8; }
+        }
+    </style>
     <HeadOutlet @rendermode="InteractiveWebAssemblyNoPrerender" />
 </head>
 
 <body>
+    @* Static boot UI — visible until Blazor WebAssembly finishes starting (no prerender). *@
+    <div id="app-boot" role="status" aria-live="polite" aria-busy="true">
+        <img class="ptm-boot__mark" src="/favicon.png" width="56" height="56" alt="" />
+        <p class="ptm-boot__title">PageToMovie</p>
+        <div class="ptm-boot__spinner" aria-hidden="true"></div>
+        <p class="ptm-boot__sub">Starting studio…</p>
+    </div>
+
     @* Interactive WebAssembly — UI + client stitch run in the browser; API is REST + SignalR. *@
     <Routes @rendermode="InteractiveWebAssemblyNoPrerender" />
-    <script src="_framework/blazor.web.js"></script>
+    <script src="_framework/blazor.web.js" autostart="false"></script>
+    <script>
+        (function () {
+            function hideBoot() {
+                var el = document.getElementById("app-boot");
+                if (!el) return;
+                el.classList.add("ptm-boot--done");
+                el.setAttribute("aria-busy", "false");
+                window.setTimeout(function () {
+                    if (el && el.parentNode) el.parentNode.removeChild(el);
+                }, 280);
+            }
+            function start() {
+                if (!window.Blazor || typeof Blazor.start !== "function") {
+                    // Framework script missing — still clear boot so the page is usable.
+                    hideBoot();
+                    return;
+                }
+                Blazor.start().then(hideBoot).catch(function (err) {
+                    console.error("Blazor start failed", err);
+                    var sub = document.querySelector("#app-boot .ptm-boot__sub");
+                    if (sub) sub.textContent = "Studio failed to start — check the console.";
+                    var spin = document.querySelector("#app-boot .ptm-boot__spinner");
+                    if (spin) spin.style.animation = "none";
+                });
+            }
+            if (document.readyState === "loading")
+                document.addEventListener("DOMContentLoaded", start);
+            else
+                start();
+        })();
+    </script>
     <script src="/js/admin-charts.js"></script>
     <script src="/lib/codemirror/codemirror.min.js"></script>
     <script src="/js/fountain/fountain-syntax.js"></script>
