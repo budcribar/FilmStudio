@@ -31,6 +31,17 @@ public class SupportedModelCatalogTests
         Assert.False(SupportedModelCatalog.IsUsableCatalogJson(json));
     }
 
+    [Theory]
+    [InlineData("grok-imagine-video", 7)]   // multi-plate identity conditioning
+    [InlineData("hunyuan-video", 1)]        // single init/reference image only (true i2v)
+    [InlineData("fal-ai/wan-2.1", 1)]       // single init/reference image only (true i2v)
+    [InlineData("veo-3.1", 0)]              // not implemented — fail loud, not silently ignored
+    public void MaxReferenceImages_MatchesRealPerModelCapability(string modelId, int expectedMax)
+    {
+        var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
+        Assert.Equal(expectedMax, entry.MaxReferenceImages);
+    }
+
     [Fact]
     public void SaveCatalogJson_throws_and_does_not_touch_disk_on_invalid_structure()
     {

@@ -54,9 +54,14 @@ public sealed class GrokVideoClient : IVideoClient
         string? startFrameImagePath = null,
         string? continueFromVideoPath = null)
     {
+        // Model-aware, not a bare hardcoded 7 — Grok's real max differs from Fal's Wan/Hunyuan
+        // (single init-image only) and Veo (0, not implemented), so a flat constant here would
+        // either short-change Grok or silently over-attach refs to a model that can't use them.
+        var maxRefsForModel = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video)
+            .MaxReferenceImages ?? 7;
         var refs = (referenceImagePaths ?? Array.Empty<string>())
             .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
-            .Take(7)
+            .Take(maxRefsForModel)
             .ToList();
         var hasContinue = !string.IsNullOrWhiteSpace(continueFromVideoPath) &&
                           File.Exists(continueFromVideoPath);

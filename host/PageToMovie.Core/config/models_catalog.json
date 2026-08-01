@@ -183,6 +183,7 @@
       "enabled": true,
       "supportsVideoContinue": true,
       "supportsReferenceImages": true,
+      "maxReferenceImages": 7,
       "supportsVideoReview": false,
       "videoCostPerSecondByResolution": {
         "480p": 0.05,
@@ -205,12 +206,13 @@
       "enabled": false,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
+      "maxReferenceImages": 1,
       "supportsVideoReview": false,
       "videoCostPerSecondByResolution": {
         "720p": 0.005,
         "1080p": 0.005
       },
-      "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip)."
+      "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip). Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading."
     },
     {
       "id": "fal-ai/wan-2.1",
@@ -226,12 +228,13 @@
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
+      "maxReferenceImages": 1,
       "supportsVideoReview": false,
       "videoCostPerSecondByResolution": {
         "720p": 0.025,
         "1080p": 0.025
       },
-      "notes": "Alibaba Wan 2.1 open-weights 1080p image-to-video model hosted on Fal.ai serverless GPUs (~$0.12 per 5s clip)."
+      "notes": "Alibaba Wan 2.1 open-weights 1080p image-to-video model hosted on Fal.ai serverless GPUs (~$0.12 per 5s clip). Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading."
     },
     {
       "id": "veo-3.1",
@@ -246,6 +249,7 @@
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
+      "maxReferenceImages": 0,
       "supportsVideoReview": false,
       "minClipDurationSeconds": 4,
       "maxClipDurationSeconds": 8,
@@ -255,7 +259,7 @@
         "720p": 0.4,
         "1080p": 0.4
       },
-      "notes": "Wired via GeminiVideoClient (text/image-to-video only). Documented duration is exactly 4, 6, or 8 seconds (not an arbitrary range) — 1080p/4K surfaces often restrict to 8s only; no 480p support. Confirmed via Gemini video docs / AI Studio Veo / Cloud Veo 3.1 pages, not yet verified against a live account."
+      "notes": "Wired via GeminiVideoClient (text/image-to-video only). Documented duration is exactly 4, 6, or 8 seconds (not an arbitrary range) — 1080p/4K surfaces often restrict to 8s only; no 480p support. Some surfaces document up to 3 multi-image 'ingredients' reference images, but GeminiVideoClient does not implement that conditioning path — it throws NotSupportedException rather than silently ignoring reference images, so maxReferenceImages is 0 here (fail loud) until ingredients support is actually built. Confirmed via Gemini video docs / AI Studio Veo / Cloud Veo 3.1 pages, not yet verified against a live account."
     },
     {
       "id": "grok-imagine-image-quality",

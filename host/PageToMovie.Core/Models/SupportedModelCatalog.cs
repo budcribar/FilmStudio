@@ -122,6 +122,17 @@ public sealed class SupportedModelEntry
     public bool SupportsReferenceImages { get; init; } = true;
 
     /// <summary>
+    /// Real max reference images this model's API accepts (Video only) — a plain
+    /// <see cref="SupportsReferenceImages"/> boolean isn't precise enough: Fal's Wan/HunyuanVideo
+    /// accept exactly one init/reference image (true single-image i2v, not Grok-style multi-plate
+    /// identity conditioning), so treating "supports" as "accepts up to N" would silently attach
+    /// more images than the model can actually use. Null falls back to whatever the caller's own
+    /// historical default was (today 7 for Grok in <c>GrokVideoClient</c>, 5 at the
+    /// <c>FilmJobService</c> call site) until every model has a confirmed real number here.
+    /// </summary>
+    public int? MaxReferenceImages { get; init; }
+
+    /// <summary>
     /// When true, accepts native MP4 video & audio files directly for clip/dialogue review (Google Gemini).
     /// </summary>
     public bool SupportsVideoReview { get; init; } = false;
@@ -711,6 +722,7 @@ public static class SupportedModelCatalog
         ProviderId = e.ProviderId,
         SupportsVideoContinue = e.SupportsVideoContinue,
         SupportsReferenceImages = e.SupportsReferenceImages,
+        MaxReferenceImages = e.MaxReferenceImages,
         SupportsVideoReview = e.SupportsVideoReview,
         MinClipDurationSeconds = e.MinClipDurationSeconds,
         MaxClipDurationSeconds = e.MaxClipDurationSeconds,
@@ -739,6 +751,7 @@ public static class SupportedModelCatalog
         FeatureRequestUrl = d.FeatureRequestUrl,
         SupportsVideoContinue = d.SupportsVideoContinue,
         SupportsReferenceImages = d.SupportsReferenceImages,
+        MaxReferenceImages = d.MaxReferenceImages,
         SupportsVideoReview = d.SupportsVideoReview,
         MinClipDurationSeconds = d.MinClipDurationSeconds,
         MaxClipDurationSeconds = d.MaxClipDurationSeconds,
@@ -768,6 +781,7 @@ public sealed class SupportedModelDto
     public string? ProviderId { get; set; }
     public bool SupportsVideoContinue { get; set; } = true;
     public bool SupportsReferenceImages { get; set; } = true;
+    public int? MaxReferenceImages { get; set; }
     public bool SupportsVideoReview { get; set; }
     public int? MinClipDurationSeconds { get; set; }
     public int? MaxClipDurationSeconds { get; set; }

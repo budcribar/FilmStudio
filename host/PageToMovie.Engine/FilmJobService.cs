@@ -2902,7 +2902,9 @@ public sealed class FilmJobService
                 previousClipVisualPrompt: prevVisual,
                 previousClipVideoPath: prevVideoPath,
                 startFrameImagePath: null,
-                maxRefs: 5,
+                // Model-aware, not a hardcoded 5 — Grok's real max is 7; Wan/Hunyuan only take a
+                // single init/reference image; Veo doesn't implement reference conditioning at all.
+                maxRefs: modelEntry.MaxReferenceImages ?? 5,
                 styleHead: styleHead,
                 videoModel: model);
 
