@@ -5565,6 +5565,11 @@ app.MapGet("/api/demos", async (
     {
         ok = true,
         sort = sortKey is "new" ? "new" : "top",
+        youtubeSync = new
+        {
+            lastSuccessUtc = channelSync.LastSuccessUtc,
+            lastError = channelSync.LastError,
+        },
         demos = ordered.Select(d => DemoPublicDto(
             d,
             counts.GetValueOrDefault(d.Id),
@@ -5596,6 +5601,7 @@ app.MapGet("/api/admin/demos", (
         demos = list.Select(DemoAdminDto),
         pendingCount = demos.List(200, DemoCatalogService.DemoStatuses.Pending).Count,
     });
+});
 
 /// <summary>
 /// Admin: register an existing YouTube video on the public gallery (no local MP4 upload).
@@ -5631,6 +5637,8 @@ app.MapPost("/api/admin/demos/from-youtube", (
     catch (Exception ex)
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
 
 /// <summary>Admin: pull every upload from the connected YouTube channel into the public gallery catalog.</summary>
 app.MapPost("/api/admin/demos/sync-youtube", async (
@@ -5668,11 +5676,6 @@ app.MapPost("/api/admin/demos/sync-youtube", async (
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
-});
-
-    }
-});
-
 });
 
 /// <summary>Public metadata for a public demo; owner/admin can see pending.</summary>

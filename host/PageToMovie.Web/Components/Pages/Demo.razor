@@ -59,9 +59,14 @@
                 <div class="demo-empty-icon" aria-hidden="true">🎬</div>
                 <h2 class="h4 mb-2">No published films yet</h2>
                 <p class="text-muted mb-0 mx-auto" style="max-width: 28rem;">
-                    Films appear when the studio’s YouTube channel has public uploads
-                    (admin: connect channel and sync). Publish from Review also lands here.
-                    <a href="/login">Sign in</a> to create your own.
+                    @if (!string.IsNullOrWhiteSpace(_youtubeSyncHint))
+                    {
+                        @_youtubeSyncHint
+                    }
+                    else
+                    {
+                        <text>No films on the wall yet. Publish from Review, or admin: connect the PageToMovieStudio channel and sync under Admin.</text>
+                    }
                 </p>
             </div>
         </div>
@@ -196,6 +201,8 @@
 </div>
 
 @code {
+    private string? _youtubeSyncHint;
+
     private List<DemoListItem> _demos = new();
     private bool _loading = true;
     private bool _busy;
@@ -229,18 +236,32 @@
         await ReloadAsync();
     }
 
+    private static string? FormatYoutubeSyncHint(DemoYoutubeSyncInfo? sync, int demoCount)
+    {
+        if (demoCount > 0) return null;
+        if (sync is null) return null;
+        if (!string.IsNullOrWhiteSpace(sync.LastError))
+            return "YouTube sync: " + sync.LastError + " — reconnect PageToMovieStudio (Admin) and force sync.";
+        if (sync.LastSuccessUtc is null)
+            return "YouTube channel not synced yet. Admin: connect PageToMovieStudio and sync.";
+        return null;
+    }
+
     private async Task ReloadAsync()
     {
         _loading = true;
         _error = null;
         try
         {
-            _demos = await Engine.ListDemosAsync(100, _sort);
+            var (demos, ytSync) = await Engine.ListDemosDetailedAsync(100, _sort);
+            _demos = demos;
+            _youtubeSyncHint = FormatYoutubeSyncHint(ytSync, demos.Count);
         }
         catch (Exception ex)
         {
             _error = FriendlyNetError(ex);
             _demos = new();
+            _youtubeSyncHint = null;
         }
         finally
         {

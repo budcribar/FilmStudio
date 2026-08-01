@@ -681,11 +681,21 @@ public sealed class EngineApiClient
         string sort = "top",
         CancellationToken ct = default)
     {
+        var (demos, _) = await ListDemosDetailedAsync(take, sort, ct);
+        return demos;
+    }
+
+    /// <summary>Gallery list plus YouTube channel sync diagnostics.</summary>
+    public async Task<(List<DemoListItem> Demos, DemoYoutubeSyncInfo? YoutubeSync)> ListDemosDetailedAsync(
+        int take = 50,
+        string sort = "top",
+        CancellationToken ct = default)
+    {
         SyncIdentityHeaders();
         var q = $"take={take}&sort={Uri.EscapeDataString(sort ?? "top")}";
         var dto = await _http.GetFromJsonAsync<DemoListEnvelope>(
             $"/api/demos?{q}", JsonOpts, ct);
-        return dto?.Demos ?? new List<DemoListItem>();
+        return (dto?.Demos ?? new List<DemoListItem>(), dto?.YoutubeSync);
     }
 
     /// <summary>Star a public demo (signed-in). Returns updated count.</summary>
@@ -3637,8 +3647,16 @@ public sealed class MediaTokenDto
     public string? Error { get; set; }
 }
 
+public sealed class DemoYoutubeSyncInfo
+{
+    public DateTimeOffset? LastSuccessUtc { get; set; }
+    public string? LastError { get; set; }
+}
+
 public sealed class DemoListEnvelope
 {
+    [System.Text.Json.Serialization.JsonPropertyName("youtubeSync")]
+    public DemoYoutubeSyncInfo? YoutubeSync { get; set; }
     public bool Ok { get; set; }
     public List<DemoListItem> Demos { get; set; } = new();
 }

@@ -63,7 +63,22 @@ public sealed class YouTubeChannelGallerySync
         try
         {
             var uploads = await _youTube.ListChannelUploadsAsync(maxVideos, ct).ConfigureAwait(false);
+            if (uploads.Count == 0)
+            {
+                // Prior bug: hide-on-empty wiped the wall. Restore channel-hidden entries.
+                var restored = _demos.RestoreChannelHiddenDemos();
+                lock (_gate)
+                    _lastError = restored > 0
+                        ? $"Channel returned 0 videos; restored {restored} previously hidden demo(s)"
+                        : "Channel returned 0 videos — left gallery unchanged (no wipe)";
+                _log.LogWarning(
+                    "YouTube channel sync returned 0 videos; restored {Restored} channel-hidden demos",
+                    restored);
+                return (0, 0, restored, false);
+            }
+
             var (added, updated, total) = _demos.SyncFromChannelUploads(uploads, createdBy);
+            // Only prune after a non-empty successful list so a bad OAuth session cannot empty the wall.
             var hidden = _demos.HideDemosNotOnChannel(uploads.Select(u => u.VideoId).ToList());
             lock (_gate)
             {

@@ -794,11 +794,48 @@ public sealed class DemoCatalogService
     /// After a channel sync: hide public demos whose YouTube id is no longer on the channel
     /// (stale manual entries / renamed ghosts). Studio category/tags kept if they return later.
     /// </summary>
+    /// <summary>
+    /// Undo accidental gallery wipe when sync listed 0 videos (channel-hidden only).
+    /// </summary>
+    public int RestoreChannelHiddenDemos()
+    {
+        var restored = 0;
+        lock (_lock)
+        {
+            foreach (var e in LoadAllUnlocked())
+            {
+                if (!string.Equals(e.Status, DemoStatuses.Removed, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (string.IsNullOrWhiteSpace(e.YoutubeId))
+                    continue;
+                var note = e.ReviewNote ?? "";
+                if (!note.Contains("not on connected", StringComparison.OrdinalIgnoreCase)
+                    && !note.Contains("Hidden: video not on", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                e.Status = DemoStatuses.Public;
+                e.ReviewNote = null;
+                e.YoutubeUploadStatus = "done";
+                SaveUnlocked(e);
+                restored++;
+            }
+        }
+        if (restored > 0)
+            _log.LogInformation("Restored {N} gallery demos previously hidden by empty channel sync", restored);
+        return restored;
+    }
+
     public int HideDemosNotOnChannel(IReadOnlyCollection<string> channelYoutubeIds)
     {
         var set = new HashSet<string>(
             (channelYoutubeIds ?? Array.Empty<string>()).Where(s => !string.IsNullOrWhiteSpace(s)),
             StringComparer.OrdinalIgnoreCase);
+        // Empty set usually means list failed, wrong account, or private-title skip — never wipe the gallery.
+        if (set.Count == 0)
+        {
+            _log.LogWarning(
+                "Skip hide-not-on-channel: channel returned 0 video ids (would remove entire gallery)");
+            return 0;
+        }
         var hidden = 0;
         lock (_lock)
         {

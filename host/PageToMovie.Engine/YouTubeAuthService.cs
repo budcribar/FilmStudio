@@ -245,15 +245,16 @@ public sealed class YouTubeAuthService
                     continue;
                 var sn = item.Snippet;
                 var title = (sn?.Title ?? "").Trim();
-                if (title.Length == 0
-                    || title.Equals("Private video", StringComparison.OrdinalIgnoreCase)
-                    || title.Equals("Deleted video", StringComparison.OrdinalIgnoreCase))
+                // Deleted = gone from channel. "Private video" still has an id for the owner —
+                // keep it and enrich via videos.list below (skipping used to empty the gallery).
+                if (title.Equals("Deleted video", StringComparison.OrdinalIgnoreCase))
                     continue;
+                if (title.Length == 0 || title.Equals("Private video", StringComparison.OrdinalIgnoreCase))
+                    title = videoId.Trim(); // placeholder until videos.list fills real title
 
                 DateTimeOffset? published = null;
                 try
                 {
-                    // Google client versions differ on property names
                     var prop = sn?.GetType().GetProperty("PublishedAtDateTimeOffset");
                     if (prop?.GetValue(sn) is DateTimeOffset dto)
                         published = dto;
@@ -279,7 +280,53 @@ public sealed class YouTubeAuthService
                 break;
         }
 
+        // Owner videos.list restores real titles/thumbs when playlistItems only said "Private video".
+        if (list.Count > 0)
+            list = await EnrichUploadsFromVideosListAsync(youtube, list, ct).ConfigureAwait(false);
+
         return list;
+    }
+
+    static async Task<List<ChannelUploadVideo>> EnrichUploadsFromVideosListAsync(
+        Google.Apis.YouTube.v3.YouTubeService youtube,
+        List<ChannelUploadVideo> list,
+        CancellationToken ct)
+    {
+        var byId = list.ToDictionary(v => v.VideoId, StringComparer.OrdinalIgnoreCase);
+        var ids = list.Select(v => v.VideoId).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        for (var i = 0; i < ids.Count; i += 50)
+        {
+            var batch = ids.Skip(i).Take(50).ToList();
+            var req = youtube.Videos.List("snippet");
+            req.Id = string.Join(',', batch);
+            var resp = await req.ExecuteAsync(ct).ConfigureAwait(false);
+            foreach (var v in resp.Items ?? Array.Empty<Google.Apis.YouTube.v3.Data.Video>())
+            {
+                if (v.Id is null || !byId.ContainsKey(v.Id)) continue;
+                var sn = v.Snippet;
+                var title = (sn?.Title ?? "").Trim();
+                if (title.Length == 0) continue;
+                var thumb = sn?.Thumbnails?.Medium?.Url
+                    ?? sn?.Thumbnails?.High?.Url
+                    ?? sn?.Thumbnails?.Default__?.Url
+                    ?? byId[v.Id].ThumbnailUrl;
+                DateTimeOffset? published = byId[v.Id].PublishedAt;
+                try
+                {
+                    if (sn?.PublishedAt is DateTime dt)
+                        published = new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Utc));
+                }
+                catch { /* keep prior */ }
+                byId[v.Id] = new ChannelUploadVideo(
+                    v.Id,
+                    title,
+                    string.IsNullOrWhiteSpace(sn?.Description) ? byId[v.Id].Description : sn!.Description.Trim(),
+                    published,
+                    thumb);
+            }
+        }
+        // Preserve playlist order
+        return list.Select(v => byId.TryGetValue(v.VideoId, out var e) ? e : v).ToList();
     }
 }
 
