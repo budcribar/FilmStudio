@@ -369,13 +369,15 @@ window.PageToMovieMedia = {
     /**
      * Read a project-relative file (e.g. assets/video/scene_01_clip_01.mp4) as byte array.
      */
-    getBytesAsync: async function (relativePath) {
+    getBytesAsync: async function (relativePath, minBytes) {
         if (!this._root) return { success: false, error: "Media folder not connected" };
         try {
             const fh = await this._resolveFileHandleAsync(relativePath);
             if (!fh) return { success: false, error: "Not found in media folder" };
             const file = await fh.getFile();
-            if (!file || file.size < 1024)
+            // Clips used 1KB floor; voice samples can be shorter — allow 1 byte default when minBytes=0.
+            const floor = (minBytes === 0 || minBytes) ? minBytes : 1024;
+            if (!file || file.size < floor)
                 return { success: false, error: "File missing or empty" };
             const buf = await file.arrayBuffer();
             return { success: true, bytes: new Uint8Array(buf), sizeBytes: file.size };
@@ -537,5 +539,176 @@ window.PageToMovieMedia = {
         const digest = await crypto.subtle.digest("SHA-256", arrayBuffer);
         const bytes = new Uint8Array(digest);
         return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+    },
+
+    /**
+     * Write raw bytes (base64) into the media folder at relativePath.
+     * Used for voice-clone samples (same client-first storage as MP3/MP4).
+     */
+
+    /**
+     * Write raw bytes into the media folder (preferred for large MP4/MP3 from zip import).
+     * @param {Uint8Array|ArrayBuffer} bytes
+     * @param {string} relativePath e.g. "owner/slug/assets/video/scene_01_clip_01.mp4"
+     */
+    saveBytesAsync: async function (bytes, relativePath) {
+        if (!this._root) {
+            const c = await this.connectFolderAsync();
+            if (!c.success) return c;
+        }
+        try {
+            const buf = bytes instanceof Uint8Array
+                ? bytes
+                : new Uint8Array(bytes);
+            const sha = await this._sha256Hex(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+            const { dir, fileName } = await this._ensurePathAsync(relativePath);
+            const fh = await dir.getFileHandle(fileName, { create: true });
+            const w = await fh.createWritable();
+            await w.write(buf);
+            await w.close();
+            const key = relativePath.replace(/\\/g, "/");
+            if (this._blobUrls[key]) {
+                try { URL.revokeObjectURL(this._blobUrls[key]); } catch (_) { /* */ }
+                delete this._blobUrls[key];
+            }
+            return {
+                success: true,
+                sha256: sha,
+                sizeBytes: buf.byteLength,
+                relativePath: key,
+            };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+    saveBytesBase64Async: async function (base64, relativePath) {
+        if (!this._root) {
+            const c = await this.connectFolderAsync();
+            if (!c.success) return c;
+        }
+        try {
+            const bin = atob(base64);
+            const buf = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            const sha = await this._sha256Hex(buf.buffer);
+            const { dir, fileName } = await this._ensurePathAsync(relativePath);
+            const fh = await dir.getFileHandle(fileName, { create: true });
+            const w = await fh.createWritable();
+            await w.write(buf);
+            await w.close();
+            const key = relativePath.replace(/\\/g, "/");
+            if (this._blobUrls[key]) {
+                try { URL.revokeObjectURL(this._blobUrls[key]); } catch (_) { /* */ }
+                delete this._blobUrls[key];
+            }
+            return {
+                success: true,
+                sha256: sha,
+                sizeBytes: buf.byteLength,
+                relativePath: key,
+            };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+    /**
+     * List audio files under optional prefix (relative to media root).
+     * @returns {{ success:boolean, files?: { relativePath:string, name:string, sizeBytes:number }[], error?:string }}
+     */
+    /**
+     * List audio files under optional prefix (relative to media root).
+     * @returns {{ success:boolean, files?: { relativePath:string, name:string, sizeBytes:number }[], error?:string }}
+     */
+    listAudioFilesAsync: async function (prefix) {
+        if (!this._root) return { success: false, error: "Media folder not connected", files: [] };
+        const audioExt = new Set([".webm", ".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac"]);
+        const files = [];
+        const walk = async (dir, relBase) => {
+            for await (const [name, handle] of dir.entries()) {
+                const rel = relBase ? `${relBase}/${name}` : name;
+                if (handle.kind === "directory") {
+                    if (name.startsWith(".") || name === "node_modules") continue;
+                    await walk(handle, rel);
+                } else if (handle.kind === "file") {
+                    const lower = name.toLowerCase();
+                    const dot = lower.lastIndexOf(".");
+                    const ext = dot >= 0 ? lower.slice(dot) : "";
+                    if (!audioExt.has(ext)) continue;
+                    try {
+                        const f = await handle.getFile();
+                        files.push({ relativePath: rel.replace(/\\/g, "/"), name, sizeBytes: f.size });
+                    } catch (_) { /* skip */ }
+                }
+            }
+        };
+        try {
+            let startDir = this._root;
+            let base = "";
+            if (prefix && String(prefix).trim()) {
+                const parts = String(prefix).replace(/\\/g, "/").split("/").filter(Boolean);
+                for (const part of parts) {
+                    startDir = await startDir.getDirectoryHandle(part, { create: false });
+                    base = base ? `${base}/${part}` : part;
+                }
+            }
+            await walk(startDir, base);
+            files.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+            return { success: true, files };
+        } catch (err) {
+            return { success: false, error: err.message || String(err), files: [] };
+        }
+    },
+
+    /**
+     * List media files under a project id folder (or any relative prefix).
+     * Used by admin full-project export merge (MP4/MP3/etc. live on the client).
+     * @param {string} prefix e.g. "owner/slug" project id
+     * @returns {{ success:boolean, files?: { relativePath:string, sizeBytes:number }[], error?:string }}
+     */
+    listMediaTreeAsync: async function (prefix) {
+        if (!this._root) return { success: false, error: "Media folder not connected", files: [] };
+        const mediaExt = new Set([
+            ".mp4", ".webm", ".mov", ".mkv", ".m4v",
+            ".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac", ".opus",
+            ".png", ".jpg", ".jpeg", ".webp", ".gif",
+        ]);
+        const files = [];
+        const walk = async (dir, relBase) => {
+            for await (const [name, handle] of dir.entries()) {
+                if (name.startsWith(".") || name === "node_modules") continue;
+                const rel = relBase ? `${relBase}/${name}` : name;
+                if (handle.kind === "directory") {
+                    await walk(handle, rel);
+                } else if (handle.kind === "file") {
+                    const lower = name.toLowerCase();
+                    const dot = lower.lastIndexOf(".");
+                    const ext = dot >= 0 ? lower.slice(dot) : "";
+                    if (!mediaExt.has(ext)) continue;
+                    try {
+                        const f = await handle.getFile();
+                        if (f && f.size > 0)
+                            files.push({ relativePath: rel.replace(/\\/g, "/"), sizeBytes: f.size });
+                    } catch (_) { /* skip */ }
+                }
+            }
+        };
+        try {
+            let startDir = this._root;
+            let base = "";
+            if (prefix && String(prefix).trim()) {
+                const parts = String(prefix).replace(/\\/g, "/").split("/").filter(Boolean);
+                for (const part of parts) {
+                    startDir = await startDir.getDirectoryHandle(part, { create: false });
+                    base = base ? `${base}/${part}` : part;
+                }
+            }
+            await walk(startDir, base);
+            files.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+            return { success: true, files };
+        } catch (err) {
+            return { success: false, error: err.message || String(err), files: [] };
+        }
     },
 };

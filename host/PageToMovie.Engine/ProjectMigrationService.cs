@@ -10,9 +10,13 @@ namespace PageToMovie.Engine;
 /// Manages schema versioning for PageToMovie projects and automatically executes
 /// sequential migration steps (e.g. v0 → v1 clip naming & sidecars, v1 → v2 prompt label tags)
 /// on import, export, and load.
+/// Keep <see cref="CurrentSchemaVersion"/> aligned with
+/// <see cref="ProjectFormatVersions.ProjectSchemaVersion"/>. Export zip shape is versioned
+/// separately via <see cref="ProjectFormatVersions.ExportFormatVersion"/>.
 /// </summary>
 public sealed class ProjectMigrationService
 {
+    /// <summary>Latest on-disk project schema. Bump when adding a migration step below.</summary>
     public const string CurrentSchemaVersion = "v2";
 
     private readonly ClipSidecarService _sidecars;

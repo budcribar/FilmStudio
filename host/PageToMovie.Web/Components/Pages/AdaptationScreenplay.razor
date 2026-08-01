@@ -3,7 +3,7 @@
 @implements IAsyncDisposable
 @inject IJSRuntime Js
 
-<PageTitle>Adaptation · Screenplay</PageTitle>
+<PageTitle>Book · Screenplay</PageTitle>
 
 <AdaptationShell Host="this" Step="screenplay">
     <div class="card mb-3">
@@ -320,11 +320,10 @@
 
     private bool CanEdit => _editorReady && !Busy && !JobRunning;
 
-    /// <summary>Has ever been signed off, or has an active Stage 1 plan.</summary>
+    /// <summary>User has approved at least once (signed hash recorded).</summary>
     private bool WasEverSigned =>
         _screenplayStatus?.Signed == true
-        || !string.IsNullOrWhiteSpace(_screenplayStatus?.SignedHash)
-        || Status?.Stage1.Present == true;
+        || !string.IsNullOrWhiteSpace(_screenplayStatus?.SignedHash);
 
     /// <summary>Approved and not edited since sign-off.</summary>
     private bool IsApprovedClean =>

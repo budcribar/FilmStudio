@@ -376,3 +376,7 @@ host/loadsim*.json
 /projects/TellTaleHeartV7 - Copy/pipeline_state.json
 /projects/TellTaleHeartV7 - Copy/project.json
 /projects/TellTaleHeartV7 - Copy/project_rules.json
+
+# Never commit local nuget restore under host
+host/%USERPROFILE%/
+host/**/.nuget/

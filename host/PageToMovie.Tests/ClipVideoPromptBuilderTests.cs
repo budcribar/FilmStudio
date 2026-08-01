@@ -676,7 +676,7 @@ public class ClipVideoPromptBuilderTests
         Assert.Equal(2, built.CastCount);
         Assert.Equal(2, built.OnScreenKeys.Count);
         Assert.Contains("<CastCount>exactly 2", built.Prompt);
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(built.Prompt, "<CastCount>").Count);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(built.Prompt, "<CastCount>"));
         Assert.DoesNotContain("CAST COUNT: exactly 1", built.Prompt);
         Assert.True(built.Prompt.IndexOf("<CastCount", StringComparison.OrdinalIgnoreCase) <
                     built.Prompt.IndexOf("<Clip", StringComparison.OrdinalIgnoreCase));

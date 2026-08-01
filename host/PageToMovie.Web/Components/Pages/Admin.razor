@@ -33,6 +33,7 @@
                 <button class="btn btn-sm btn-outline-info" @onclick="ExportLogsAsync" disabled="@(_archiveBusy && _archiveAction == "export_logs")" title="Download zip archive of all server logs, prompts, edit history, and system state">
                     @(_archiveBusy && _archiveAction == "export_logs" ? "Exporting logs…" : "📥 Download Server Logs")
                 </button>
+                <a href="/admin/demos" class="btn btn-sm btn-outline-primary" title="Connect YouTube channel & sync gallery">🎬 YouTube gallery</a>
                 <a href="/admin/models-catalog" class="btn btn-sm btn-outline-primary" title="Manage model catalog entries and enablement toggles">🤖 Models Catalog</a>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync" disabled="@_busy">Refresh</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="LogoutAsync">Log out</button>
@@ -518,12 +519,16 @@
         <div class="card mt-3">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <span>Project export / import</span>
-                <span class="small text-muted">Full folder zip for local debug</span>
+                <span class="small text-muted">Server files + local media (MP4/MP3) merged in browser</span>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="fw-semibold small mb-2">Export (download zip)</div>
+                        <p class="small text-muted mb-2">
+                            Stage 1: server project folder. Stage 2: merge MP4/MP3/etc. from your
+                            connected media folder under this project id. Connect the media folder first for a complete archive.
+                        </p>
                         <div class="d-flex flex-wrap gap-2 align-items-center">
                             <select class="form-select form-select-sm" style="max-width: 16rem;"
                                     @bind="_exportProjectId"
@@ -543,7 +548,7 @@
                             <button type="button" class="btn btn-sm btn-primary"
                                     disabled="@(_archiveBusy || string.IsNullOrWhiteSpace(_exportProjectId))"
                                     @onclick="ExportProjectAsync">
-                                @(_archiveBusy && _archiveAction == "export" ? "Zipping…" : "Download full project")
+                                @(_archiveBusy && _archiveAction == "export" ? "Exporting…" : "Download full project + media")
                             </button>
                         </div>
                         <p class="form-text mb-0 mt-1">
@@ -552,6 +557,10 @@
                     </div>
                     <div class="col-md-6">
                         <div class="fw-semibold small mb-2">Import (upload zip)</div>
+                        <p class="small text-muted mb-2">
+                            Stage 1: project files to the server. Stage 2: MP4/MP3/etc. into your
+                            connected media folder (same layout as export). Connect the media folder first for a full restore.
+                        </p>
                         <InputFile OnChange="OnImportFileSelected" accept=".zip,application/zip"
                                    class="form-control form-control-sm mb-2"
                                    disabled="@_archiveBusy" />
@@ -1098,25 +1107,57 @@
         _archiveBusy = true;
         _archiveAction = "export";
         _archiveError = null;
-        _archiveMsg = "Building zip…";
+        _archiveMsg = MediaFolder.IsConnected
+            ? "Building server zip, then merging local media…"
+            : "Building server zip (media folder not connected — MP4/MP3 may be missing)…";
         try
         {
+            // Soft prompt: still export server files if media disconnected
+            if (!MediaFolder.IsConnected)
+            {
+                _archiveMsg = "Media folder not connected — exporting server files only. Connect media folder for MP4/MP3.";
+            }
+
             var (resp, fileName) = await Api.ExportProjectZipAsync(_exportProjectId);
             using (resp)
             {
                 await using var stream = await resp.Content.ReadAsStreamAsync();
                 using var streamRef = new DotNetStreamReference(stream);
+                // Two-stage: server zip stream → browser merges client media → download
                 var result = await Js.InvokeAsync<JsonElement>(
-                    "PageToMovieExport.downloadStreamAsync",
+                    "PageToMovieExport.mergeServerZipWithLocalMediaAsync",
                     fileName,
-                    streamRef);
+                    streamRef,
+                    _exportProjectId);
                 if (result.TryGetProperty("success", out var ok) && ok.GetBoolean())
-                    _archiveMsg = $"Downloaded {fileName}";
+                {
+                    _archiveMsg = result.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
+                        ? m.GetString()
+                        : $"Downloaded {fileName}";
+                }
                 else
                 {
                     var err = result.TryGetProperty("error", out var e) ? e.GetString() : "download failed";
-                    _archiveError = err;
-                    _archiveMsg = null;
+                    // Fallback: plain server zip if merge fails
+                    _archiveMsg = "Merge failed — downloading server zip only…";
+                    StateHasChanged();
+                    var (resp2, fileName2) = await Api.ExportProjectZipAsync(_exportProjectId);
+                    using (resp2)
+                    {
+                        await using var stream2 = await resp2.Content.ReadAsStreamAsync();
+                        using var streamRef2 = new DotNetStreamReference(stream2);
+                        var plain = await Js.InvokeAsync<JsonElement>(
+                            "PageToMovieExport.downloadStreamAsync",
+                            fileName2,
+                            streamRef2);
+                        if (plain.TryGetProperty("success", out var ok2) && ok2.GetBoolean())
+                            _archiveMsg = $"Downloaded {fileName2} (server only). Merge error: {err}";
+                        else
+                        {
+                            _archiveError = err;
+                            _archiveMsg = null;
+                        }
+                    }
                 }
             }
         }
@@ -1183,23 +1224,73 @@
         _archiveBusy = true;
         _archiveAction = "import";
         _archiveError = null;
-        _archiveMsg = "Uploading and importing…";
+        _archiveMsg = MediaFolder.IsConnected
+            ? "Stage 1/2: uploading project to server…"
+            : "Uploading project to server (connect media folder to restore MP4/MP3 locally)…";
         try
         {
-            await using var stream = _importFile.OpenReadStream(MaxImportBytes);
+            // Buffer once — server import + client media extract both need the bytes.
+            await using var upload = _importFile.OpenReadStream(MaxImportBytes);
+            using var ms = new MemoryStream();
+            await upload.CopyToAsync(ms);
+            ms.Position = 0;
+
             var result = await Api.ImportProjectZipAsync(
-                stream,
+                ms,
                 _importFile.Name,
                 preferredId: string.IsNullOrWhiteSpace(_importPreferredId) ? null : _importPreferredId.Trim(),
                 overwrite: _importOverwrite,
                 targetUserId: string.IsNullOrWhiteSpace(_importTargetUserId) ? null : _importTargetUserId.Trim());
-            _archiveMsg = result?.Message
-                          ?? $"Imported {result?.ProjectId ?? "project"}";
-            _importFile = null;
-            if (result is not null && !string.IsNullOrWhiteSpace(result.ProjectId))
+
+            var pid = result?.ProjectId?.Trim();
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(result?.Message))
+                parts.Add(result!.Message!);
+            else if (!string.IsNullOrWhiteSpace(pid))
+                parts.Add($"Imported {pid}");
+
+            // Stage 2: media from the same zip → local media folder (source of truth for playback).
+            if (!string.IsNullOrWhiteSpace(pid))
             {
-                await MediaFolder.SyncProjectMediaToClientAsync(result.ProjectId);
+                _archiveMsg = "Stage 2/2: restoring media to local folder…";
+                StateHasChanged();
+                try
+                {
+                    ms.Position = 0;
+                    using var streamRef = new DotNetStreamReference(ms);
+                    var media = await Js.InvokeAsync<JsonElement>(
+                        "PageToMovieExport.importZipMediaToClientFolderAsync",
+                        streamRef,
+                        pid);
+                    if (media.TryGetProperty("success", out var ok) && ok.GetBoolean())
+                    {
+                        var written = media.TryGetProperty("written", out var w) && w.ValueKind == JsonValueKind.Number
+                            ? w.GetInt32()
+                            : 0;
+                        if (media.TryGetProperty("message", out var mm) && mm.ValueKind == JsonValueKind.String
+                            && !string.IsNullOrWhiteSpace(mm.GetString()))
+                            parts.Add(mm.GetString()!);
+                        else if (written > 0)
+                            parts.Add($"{written} media file(s) restored locally");
+                    }
+                    else
+                    {
+                        var err = media.TryGetProperty("error", out var e) ? e.GetString() : "local media restore failed";
+                        parts.Add($"Local media: {err}");
+                        // Fallback: pull whatever landed on the server
+                        await MediaFolder.SyncProjectMediaToClientAsync(pid);
+                    }
+                }
+                catch (Exception mex)
+                {
+                    parts.Add($"Local media restore error: {mex.Message}");
+                    try { await MediaFolder.SyncProjectMediaToClientAsync(pid); }
+                    catch { /* best effort */ }
+                }
             }
+
+            _archiveMsg = string.Join(" · ", parts.Where(s => !string.IsNullOrWhiteSpace(s)));
+            _importFile = null;
             await RefreshProjectOptionsAsync();
             await RefreshAsync();
         }

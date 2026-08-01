@@ -10,6 +10,8 @@ public enum ModelCapability
     Chat,
     Vision,
     Audio,
+    /// <summary>Voice clone / TTS (e.g. ElevenLabs) — dialogue personalization, not BGM.</summary>
+    Voice,
 }
 
 /// <summary>
@@ -41,6 +43,8 @@ public enum ModelProviderFamily
     Suno = 4,
     /// <summary>Suno via aimusicapi.ai (<c>AIMUSICAPI_API_KEY</c>) — a different unofficial Suno reseller.</summary>
     AiMusicApi = 5,
+    /// <summary>ElevenLabs (<c>ELEVENLABS_API_KEY</c>) — voice clone + TTS for personal dialogue.</summary>
+    ElevenLabs = 6,
 }
 
 /// <summary>
@@ -192,6 +196,7 @@ public sealed class SupportedModelEntry
             ModelProviderFamily.Fal => "fal",
             ModelProviderFamily.Suno => "suno",
             ModelProviderFamily.AiMusicApi => "aimusicapi",
+            ModelProviderFamily.ElevenLabs => "elevenlabs",
             _ => "grok",
         };
 }
@@ -353,6 +358,64 @@ public static class SupportedModelCatalog
         EnsureLoaded(overrideJsonPath);
     }
 
+    /// <summary>Parse catalog JSON into static fields. Returns true on success.</summary>
+    public static bool TryLoadFromJson(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try
+        {
+            var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                var container = System.Text.Json.JsonSerializer.Deserialize<ModelCatalogContainerDto>(json, opts);
+                if (container?.Models is { Count: > 0 })
+                {
+                    _loadedEntries = container.Models.Select(FromDto).ToList();
+                    if (container.Capabilities is { Count: > 0 })
+                    {
+                        _loadedCapabilities = container.Capabilities.Select(c => new ModelCapabilityDefinition
+                        {
+                            Id = c.Id,
+                            DisplayName = c.DisplayName,
+                            Description = c.Description,
+                            Order = c.Order,
+                            DefaultModelId = c.DefaultModelId,
+                        }).ToList();
+                    }
+                    else
+                    {
+                        _loadedCapabilities = DefaultCapabilityDefinitions;
+                    }
+
+                    _loadedTaskRankings = container.TaskRankings is { Count: > 0 }
+                        ? new Dictionary<string, List<string>>(container.TaskRankings, StringComparer.OrdinalIgnoreCase)
+                        : DefaultTaskRankings;
+                    return true;
+                }
+            }
+            else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                var dtos = System.Text.Json.JsonSerializer.Deserialize<List<SupportedModelDto>>(json, opts);
+                if (dtos is { Count: > 0 })
+                {
+                    _loadedEntries = dtos.Select(FromDto).ToList();
+                    _loadedCapabilities = DefaultCapabilityDefinitions;
+                    _loadedTaskRankings = DefaultTaskRankings;
+                    return true;
+                }
+            }
+        }
+        catch
+        {
+            // leave unloaded
+        }
+        return false;
+    }
+
+    /// <summary>True when the browser (or any host) has successfully loaded a catalog into memory.</summary>
+    public static bool IsLoaded => _loadedEntries is { Count: > 0 };
+
     private static void EnsureLoaded(string? customPath = null)
     {
         if (_loadedEntries is not null && _loadedCapabilities is not null) return;
@@ -363,66 +426,48 @@ public static class SupportedModelCatalog
         {
             try
             {
-                var json = File.ReadAllText(path);
-                var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                
-                // Parse object format or array format
-                using var doc = System.Text.Json.JsonDocument.Parse(json);
-                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
-                {
-                    var container = System.Text.Json.JsonSerializer.Deserialize<ModelCatalogContainerDto>(json, opts);
-                    if (container?.Models is { Count: > 0 })
-                    {
-                        _loadedEntries = container.Models.Select(FromDto).ToList();
-                        if (container.Capabilities is { Count: > 0 })
-                        {
-                            _loadedCapabilities = container.Capabilities.Select(c => new ModelCapabilityDefinition
-                            {
-                                Id = c.Id,
-                                DisplayName = c.DisplayName,
-                                Description = c.Description,
-                                Order = c.Order,
-                                DefaultModelId = c.DefaultModelId,
-                            }).ToList();
-                        }
-                        else
-                        {
-                            _loadedCapabilities = DefaultCapabilityDefinitions;
-                        }
-
-                        _loadedTaskRankings = container.TaskRankings is { Count: > 0 }
-                            ? new Dictionary<string, List<string>>(container.TaskRankings, StringComparer.OrdinalIgnoreCase)
-                            : DefaultTaskRankings;
-
-                        return;
-                    }
-                }
-                else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
-                {
-                    var dtos = System.Text.Json.JsonSerializer.Deserialize<List<SupportedModelDto>>(json, opts);
-                    if (dtos is { Count: > 0 })
-                    {
-                        _loadedEntries = dtos.Select(FromDto).ToList();
-                        _loadedCapabilities = DefaultCapabilityDefinitions;
-                        return;
-                    }
-                }
+                if (TryLoadFromJson(File.ReadAllText(path)))
+                    return;
             }
             catch
             {
-                // Ignore parse failures and try the next candidate.
+                // Ignore IO/parse failures and try the next candidate.
             }
         }
 
-        // No hardcoded fallback list here on purpose — a second, hand-maintained copy of the
-        // catalog is worse than failing loudly: it silently drifts from models_catalog.json (it
-        // already had at least once) and, if it were ever actually hit, would mean production is
-        // quietly running on a stale/wrong model list instead of surfacing the real problem, which
-        // is that the shipped catalog file (see PageToMovie.Core.csproj) or a /data override is
-        // missing or unparseable. _loadedEntries stays null, so this throws again on every access
-        // until fixed — nothing gets cached as "working" when it isn't.
+        // Blazor WebAssembly (and any host without the file next to the binary): load the
+        // catalog embedded in PageToMovie.Core so Configuration / rate UI can render.
+        try
+        {
+            var asm = typeof(SupportedModelCatalog).Assembly;
+            foreach (var resourceName in asm.GetManifestResourceNames()
+                         .Where(n => n.EndsWith("models_catalog.json", StringComparison.OrdinalIgnoreCase)))
+            {
+                using var stream = asm.GetManifestResourceStream(resourceName);
+                if (stream is null) continue;
+                using var reader = new StreamReader(stream);
+                if (TryLoadFromJson(reader.ReadToEnd()))
+                    return;
+            }
+        }
+        catch
+        {
+            // fall through
+        }
+
+        // Browser has no /data or AppContext catalog path. Soft-load an empty shell so
+        // Configuration can render; LoadCatalogAsync then hydrates via /api/models/catalog-json.
+        if (OperatingSystem.IsBrowser())
+        {
+            _loadedEntries = new List<SupportedModelEntry>();
+            _loadedCapabilities = DefaultCapabilityDefinitions;
+            _loadedTaskRankings = DefaultTaskRankings;
+            return;
+        }
+
         throw new InvalidOperationException(
             "No usable models catalog found. Checked: " + string.Join(", ", candidates) +
+            ", embedded:PageToMovie.Core.config.models_catalog.json" +
             ". Expected an object with a non-empty \"models\" array, or a non-empty array of model entries.");
     }
 
@@ -505,6 +550,124 @@ public static class SupportedModelCatalog
         RequiredEnvKeys = [XaiApiKeyEnv],
         Enabled = false,
         Notes = "Not in master catalog — add to models_catalog.json or track as feature request.",
+    };
+
+    /// <summary>
+    /// Build Configuration "API keys" rows from the catalog (enabled models only).
+    /// Personal/server key flags are left false — server fills those from SQLite/env.
+    /// </summary>
+    public static List<ProviderKeyStatusDto> BuildProviderKeyRows()
+    {
+        var groups = Entries
+            .Where(e => e.Enabled && e.RequiredEnvKeys is { Count: > 0 })
+            .GroupBy(e => NormalizeProviderId(e.ProviderId), StringComparer.OrdinalIgnoreCase);
+
+        var rows = new List<ProviderKeyStatusDto>();
+        foreach (var group in groups.OrderBy(g => DisplayOrder(g.Key)))
+        {
+            var pId = group.Key;
+            if (string.IsNullOrWhiteSpace(pId) || pId is "none") continue;
+            var sample = group.First();
+            var required = group.SelectMany(m => m.RequiredEnvKeys).Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (required.Count == 0) continue;
+
+            var supportsVideoGen = group.Any(m => m.Capability == ModelCapability.Video);
+            var supportsVideoReview = group.Any(m => m.SupportsVideoReview);
+            var supportsImageGen = group.Any(m => m.Capability == ModelCapability.Image);
+            var supportsScriptPlanning = group.Any(m => m.Capability == ModelCapability.Chat);
+            var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
+            var supportsAudio = group.Any(m => m.Capability == ModelCapability.Audio);
+            var supportsVoice = group.Any(m => m.Capability == ModelCapability.Voice);
+
+            var caps = new List<string>();
+            if (supportsVideoGen) caps.Add("Video Gen");
+            if (supportsVideoReview) caps.Add("Video Review");
+            if (supportsImageGen) caps.Add("Image Gen");
+            if (supportsScriptPlanning) caps.Add("Script & Planning");
+            if (supportsImageVision) caps.Add("Image Vision / OCR");
+            if (supportsAudio) caps.Add("Audio / Music");
+            if (supportsVoice) caps.Add("Voice clone / TTS");
+
+            rows.Add(new ProviderKeyStatusDto
+            {
+                ProviderId = pId,
+                DisplayName = DisplayNameForProvider(pId, sample),
+                Family = string.IsNullOrWhiteSpace(sample.ProviderName) ? sample.Provider.ToString() : sample.ProviderName,
+                ActiveSource = "none",
+                CapabilitiesSummary = caps.Count > 0 ? string.Join(", ", caps) : "—",
+                SupportsVideo = supportsVideoGen || supportsVideoReview,
+                SupportsImage = supportsImageGen,
+                SupportsChat = supportsScriptPlanning,
+                SupportsVision = supportsImageVision,
+                SupportsVideoGen = supportsVideoGen,
+                SupportsVideoReview = supportsVideoReview,
+                SupportsImageGen = supportsImageGen,
+                SupportsScriptPlanning = supportsScriptPlanning,
+                SupportsImageVision = supportsImageVision,
+                RequiredEnvKeys = required,
+                // Provider cards are for API keys — never dump per-model engineering notes here.
+                Notes = ShortProviderBlurb(pId),
+            });
+        }
+        return rows;
+    }
+
+    public static string NormalizeProviderId(string? providerId)
+    {
+        if (string.IsNullOrWhiteSpace(providerId)) return "";
+        var p = providerId.Trim().ToLowerInvariant();
+        return p switch
+        {
+            "xai" or "grok" => "grok",
+            "google" or "gemini" => "gemini",
+            "claude" or "anthropic" => "anthropic",
+            "fal" or "fal.ai" => "fal",
+            "openai" or "oai" => "openai",
+            "suno" => "suno",
+            "aimusicapi" or "ai-music-api" => "aimusicapi",
+            "elevenlabs" or "eleven" => "elevenlabs",
+            _ => p,
+        };
+    }
+
+    private static string DisplayNameForProvider(string pId, SupportedModelEntry sample) => pId switch
+    {
+        "grok" => "xAI / Grok",
+        "gemini" => "Google Gemini",
+        "anthropic" => "Anthropic Claude",
+        "fal" => "Fal.ai",
+        "openai" => "OpenAI",
+        "suno" => "Suno",
+        "aimusicapi" => "AI Music API",
+        "elevenlabs" => "Voice cloning",
+        _ => !string.IsNullOrWhiteSpace(sample.ProviderName)
+            ? sample.ProviderName
+            : char.ToUpperInvariant(pId[0]) + pId[1..],
+    };
+
+    private static string? ShortProviderBlurb(string pId) => pId switch
+    {
+        "grok" => "Video, image, script, and vision for the main studio pipeline.",
+        "gemini" => "Video review (MP4), Veo video gen, image, and planning.",
+        "openai" => "Script & planning (chat). Not for video or image generation.",
+        "anthropic" => "Script & planning and image vision. Not for video or image gen.",
+        "fal" => "Open-source video/image (and some audio) via Fal serverless.",
+        "suno" or "aimusicapi" => "Background music generation.",
+        "elevenlabs" => "Record a short sample to personalize character dialogue.",
+        _ => null,
+    };
+
+    private static int DisplayOrder(string pId) => pId switch
+    {
+        "grok" => 0,
+        "gemini" => 1,
+        "openai" => 2,
+        "anthropic" => 3,
+        "fal" => 4,
+        "suno" => 5,
+        "aimusicapi" => 6,
+        "elevenlabs" => 7,
+        _ => 50,
     };
 
     public static string ProviderIdFor(string? modelId, ModelCapability capability) =>

@@ -68,10 +68,55 @@ public class UserDatabaseService
         if (Directory.Exists("/app/data"))
             return "/app/data";
 
+        // Local Visual Studio / Windows: keep tokens & users outside the repo so Clean/Rebuild
+        // never deletes OAuth (YouTube) or personal API keys. Workspace still holds projects.
+        try
+        {
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (!string.IsNullOrWhiteSpace(local))
+            {
+                var stable = Path.Combine(local, "PageToMovie", "data");
+                Directory.CreateDirectory(stable);
+                // One-time: copy legacy workspace/data DB if stable is empty.
+                TryMigrateLegacyWorkspaceData(workspace, stable);
+                return stable;
+            }
+        }
+        catch { /* fall through */ }
+
         if (!string.IsNullOrWhiteSpace(workspace))
             return Path.Combine(workspace.Trim(), "data");
 
         return Path.Combine(Path.GetTempPath(), "PageToMovie", "data");
+    }
+
+
+    /// <summary>
+    /// Copy <c>pagetomovie.db</c> from repo workspace/data into LocalAppData when the
+    /// stable store has no DB yet (preserves YouTube OAuth after the path change).
+    /// </summary>
+    static void TryMigrateLegacyWorkspaceData(string? workspace, string stableDir)
+    {
+        try
+        {
+            var destDb = Path.Combine(stableDir, "pagetomovie.db");
+            if (File.Exists(destDb))
+                return;
+            if (string.IsNullOrWhiteSpace(workspace))
+                return;
+            var srcDb = Path.Combine(workspace.Trim(), "data", "pagetomovie.db");
+            if (!File.Exists(srcDb))
+                return;
+            File.Copy(srcDb, destDb, overwrite: false);
+            foreach (var name in new[] { "pagetomovie.db-wal", "pagetomovie.db-shm" })
+            {
+                var s = Path.Combine(workspace.Trim(), "data", name);
+                var d = Path.Combine(stableDir, name);
+                if (File.Exists(s) && !File.Exists(d))
+                    File.Copy(s, d, overwrite: false);
+            }
+        }
+        catch { /* best effort */ }
     }
 
     private static bool IsIsolatedTestWorkspace(string? workspace)
@@ -263,6 +308,57 @@ public class UserDatabaseService
                     ";
                     cmd.ExecuteNonQuery();
                 }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        CREATE TABLE IF NOT EXISTS user_api_calls (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id TEXT NOT NULL,
+                            ts TEXT NOT NULL,
+                            project_id TEXT,
+                            job_id TEXT,
+                            kind TEXT NOT NULL,
+                            mode TEXT,
+                            provider TEXT,
+                            model TEXT,
+                            endpoint TEXT,
+                            http_status INTEGER,
+                            ok INTEGER NOT NULL DEFAULT 1,
+                            duration_ms INTEGER,
+                            estimated_usd REAL,
+                            currency TEXT NOT NULL DEFAULT 'USD',
+                            scene INTEGER,
+                            clip INTEGER,
+                            char_key TEXT,
+                            resolution TEXT,
+                            duration_sec REAL,
+                            input_tokens INTEGER,
+                            output_tokens INTEGER,
+                            prompt_chars INTEGER,
+                            response_chars INTEGER,
+                            request_id TEXT,
+                            error TEXT,
+                            purpose TEXT,
+                            fakes INTEGER NOT NULL DEFAULT 0
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_user_ts ON user_api_calls(user_id, ts);
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_project ON user_api_calls(project_id);
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_kind ON user_api_calls(kind);
+                    ";
+                    cmd.ExecuteNonQuery();
+                }
+
+                // User-facing cost bucket (screenplay / characters / video / voice / music / other).
+                EnsureColumn(conn, "user_api_calls", "category", "TEXT");
+                try
+                {
+                    using var idxCmd = conn.CreateCommand();
+                    idxCmd.CommandText =
+                        "CREATE INDEX IF NOT EXISTS idx_user_api_calls_category ON user_api_calls(category);";
+                    idxCmd.ExecuteNonQuery();
+                }
+                catch { /* ignore */ }
 
                 using (var cmd = conn.CreateCommand())
                 {
@@ -478,6 +574,196 @@ public class UserDatabaseService
         }
     }
 
+
+    /// <summary>
+    /// Append one API call for BYOK cost attribution. Never throws to callers — telemetry must not break gen.
+    /// </summary>
+
+    public async Task<List<UserApiCallRow>> ListUserApiCallsAsync(
+        string userId,
+        int take = 100,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var list = new List<UserApiCallRow>();
+        if (string.IsNullOrWhiteSpace(userId)) return list;
+        take = Math.Clamp(take, 1, 500);
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT id, user_id, ts, project_id, job_id, kind, mode, category, provider, model, endpoint,
+                   http_status, ok, duration_ms, estimated_usd, currency, scene, clip, char_key,
+                   resolution, duration_sec, input_tokens, output_tokens, purpose, error, fakes
+            FROM user_api_calls
+            WHERE user_id = @userId
+            ORDER BY id DESC
+            LIMIT @take";
+        cmd.Parameters.AddWithValue("@userId", userId.Trim());
+        cmd.Parameters.AddWithValue("@take", take);
+        using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await r.ReadAsync(ct).ConfigureAwait(false))
+        {
+            list.Add(new UserApiCallRow
+            {
+                Id = r.GetInt64(0),
+                UserId = r.GetString(1),
+                Ts = r.GetString(2),
+                ProjectId = r.IsDBNull(3) ? null : r.GetString(3),
+                JobId = r.IsDBNull(4) ? null : r.GetString(4),
+                Kind = r.GetString(5),
+                Mode = r.IsDBNull(6) ? null : r.GetString(6),
+                Category = r.IsDBNull(7) || string.IsNullOrWhiteSpace(r.GetString(7))
+                    ? CostCategories.Resolve(r.GetString(5), r.IsDBNull(6) ? null : r.GetString(6))
+                    : CostCategories.Resolve(r.GetString(5), r.IsDBNull(6) ? null : r.GetString(6), r.GetString(7)),
+                Provider = r.IsDBNull(8) ? null : r.GetString(8),
+                Model = r.IsDBNull(9) ? null : r.GetString(9),
+                Endpoint = r.IsDBNull(10) ? null : r.GetString(10),
+                HttpStatus = r.IsDBNull(11) ? null : r.GetInt32(11),
+                Ok = r.GetInt32(12) != 0,
+                DurationMs = r.IsDBNull(13) ? null : r.GetInt64(13),
+                EstimatedUsd = r.IsDBNull(14) ? null : r.GetDouble(14),
+                Currency = r.IsDBNull(15) ? "USD" : r.GetString(15),
+                Scene = r.IsDBNull(16) ? null : r.GetInt32(16),
+                Clip = r.IsDBNull(17) ? null : r.GetInt32(17),
+                CharKey = r.IsDBNull(18) ? null : r.GetString(18),
+                Resolution = r.IsDBNull(19) ? null : r.GetString(19),
+                DurationSec = r.IsDBNull(20) ? null : r.GetDouble(20),
+                InputTokens = r.IsDBNull(21) ? null : r.GetInt32(21),
+                OutputTokens = r.IsDBNull(22) ? null : r.GetInt32(22),
+                Purpose = r.IsDBNull(23) ? null : r.GetString(23),
+                Error = r.IsDBNull(24) ? null : r.GetString(24),
+                Fakes = r.GetInt32(25) != 0,
+            });
+        }
+        return list;
+    }
+
+
+    /// <summary>
+    /// Aggregate list-rate spend from user_api_calls for estimate refinement.
+    /// When <paramref name="userId"/> is null/empty, uses all users (portfolio prior).
+    /// </summary>
+    public async Task<ApiCostHistoryStats> GetApiCostHistoryStatsAsync(
+        string? userId = null,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var stats = new ApiCostHistoryStats();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT
+                    COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
+                    COUNT(*),
+                    COALESCE(SUM(estimated_usd), 0),
+                    COALESCE(AVG(estimated_usd), 0)
+                FROM user_api_calls
+                WHERE ok = 1
+                  AND estimated_usd IS NOT NULL
+                  AND estimated_usd > 0
+                  AND (@userId = '' OR user_id = @userId)
+                  AND (@projectId = '' OR project_id = @projectId)
+                GROUP BY cat
+                """;
+            cmd.Parameters.AddWithValue("@userId", string.IsNullOrWhiteSpace(userId) ? "" : userId.Trim());
+            cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                var cat = CostCategories.Resolve(r.GetString(0), null, r.GetString(0));
+                var count = r.GetInt32(1);
+                var sum = r.GetDouble(2);
+                var avg = r.GetDouble(3);
+                stats.TotalCalls += count;
+                stats.TotalUsd += sum;
+                if (!stats.ByCategory.TryGetValue(cat, out var row))
+                {
+                    row = new CategoryCostStats { Category = cat };
+                    stats.ByCategory[cat] = row;
+                }
+                row.Count += count;
+                row.TotalUsd += sum;
+                row.AvgUsd = row.Count > 0 ? row.TotalUsd / row.Count : 0;
+                _ = avg;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "GetApiCostHistoryStatsAsync failed");
+        }
+        return stats;
+    }
+
+    public async Task InsertUserApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
+    {
+        if (rec is null || string.IsNullOrWhiteSpace(rec.UserId))
+            return;
+
+        EnsureDatabaseInitialized();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT INTO user_api_calls (
+                    user_id, ts, project_id, job_id, kind, mode, category, provider, model, endpoint,
+                    http_status, ok, duration_ms, estimated_usd, currency,
+                    scene, clip, char_key, resolution, duration_sec,
+                    input_tokens, output_tokens, prompt_chars, response_chars,
+                    request_id, error, purpose, fakes)
+                VALUES (
+                    @userId, @ts, @projectId, @jobId, @kind, @mode, @category, @provider, @model, @endpoint,
+                    @httpStatus, @ok, @durationMs, @estimatedUsd, @currency,
+                    @scene, @clip, @charKey, @resolution, @durationSec,
+                    @inputTokens, @outputTokens, @promptChars, @responseChars,
+                    @requestId, @error, @purpose, @fakes)";
+            var ts = (rec.Ts ?? DateTimeOffset.UtcNow).ToString("o");
+            var purpose = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
+            if (!string.IsNullOrWhiteSpace(rec.Mode))
+                purpose = $"{purpose}:{rec.Mode}";
+            cmd.Parameters.AddWithValue("@userId", rec.UserId.Trim());
+            cmd.Parameters.AddWithValue("@ts", ts);
+            cmd.Parameters.AddWithValue("@projectId", (object?)rec.ProjectId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@jobId", (object?)rec.JobId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@kind", rec.Kind ?? "");
+            cmd.Parameters.AddWithValue("@mode", (object?)rec.Mode ?? DBNull.Value);
+            var category = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
+            cmd.Parameters.AddWithValue("@category", category);
+            cmd.Parameters.AddWithValue("@provider", (object?)rec.Provider ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@model", (object?)rec.Model ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@endpoint", (object?)rec.Endpoint ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@httpStatus", (object?)rec.HttpStatus ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ok", rec.Ok ? 1 : 0);
+            cmd.Parameters.AddWithValue("@durationMs", (object?)rec.DurationMs ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@estimatedUsd", (object?)rec.EstimatedUsd ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@currency", "USD");
+            cmd.Parameters.AddWithValue("@scene", (object?)rec.Scene ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@clip", (object?)rec.Clip ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@charKey", (object?)rec.CharKey ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@resolution", (object?)rec.Resolution ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@durationSec", (object?)rec.DurationSec ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@inputTokens", (object?)rec.InputTokens ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@outputTokens", (object?)rec.OutputTokens ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@promptChars", (object?)rec.PromptChars ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@responseChars", (object?)rec.ResponseChars ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@requestId", (object?)rec.RequestId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@error", string.IsNullOrWhiteSpace(rec.Error) ? DBNull.Value : (rec.Error!.Length > 500 ? rec.Error[..500] : rec.Error));
+            cmd.Parameters.AddWithValue("@purpose", purpose ?? "");
+            cmd.Parameters.AddWithValue("@fakes", rec.Fakes ? 1 : 0);
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "InsertUserApiCallAsync failed for {UserId}", rec.UserId);
+        }
+    }
+
     public async Task<string?> GetDecryptedXaiApiKeyAsync(string userId, CancellationToken ct = default) =>
         await GetDecryptedProviderApiKeyAsync(userId, "grok", ct).ConfigureAwait(false);
 
@@ -553,49 +839,20 @@ public class UserDatabaseService
         if (!personalKeys.ContainsKey("anthropic") && DecryptOptional(user?.EncryptedAnthropicApiKey) is { } a) personalKeys["anthropic"] = a;
         if (!personalKeys.ContainsKey("fal") && DecryptOptional(user?.EncryptedFalApiKey) is { } f) personalKeys["fal"] = f;
 
-        // Dynamically discover all unique providers defined in SupportedModelCatalog (driven by models_catalog.json!)
-        var catalogEntries = SupportedModelCatalog.Entries;
-        var providerGroups = catalogEntries.GroupBy(e => NormalizeProvider(e.ProviderId));
-
-        var providers = new List<ProviderKeyStatusDto>();
-        foreach (var group in providerGroups)
+        // Dynamically discover providers from models_catalog.json (enabled models + requiredEnvKeys).
+        var providers = SupportedModelCatalog.BuildProviderKeyRows();
+        foreach (var row in providers)
         {
-            var pId = group.Key;
-            var sample = group.First();
-            var familyName = sample.Provider.ToString();
-            var displayName = sample.Provider switch
-            {
-                ModelProviderFamily.Xai => "xAI / Grok",
-                ModelProviderFamily.Google => "Google Gemini",
-                ModelProviderFamily.Anthropic => "Anthropic Claude",
-                ModelProviderFamily.Fal => "Fal.ai",
-                _ => char.ToUpperInvariant(pId[0]) + pId[1..],
-            };
-
-            var requiredKeys = group.SelectMany(m => m.RequiredEnvKeys).Distinct().ToList();
-            var hasServer = requiredKeys.Any(EnvPresent);
+            var pId = NormalizeProvider(row.ProviderId);
+            row.ProviderId = pId;
             personalKeys.TryGetValue(pId, out var personal);
-
-            var supportsVideoGen = group.Any(m => m.Capability == ModelCapability.Video && m.SupportsVideoContinue);
-            var supportsVideoReview = group.Any(m => m.SupportsVideoReview);
-            var supportsImageGen = group.Any(m => m.Capability == ModelCapability.Image);
-            var supportsScriptPlanning = group.Any(m => m.Capability == ModelCapability.Chat);
-            var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
-
-            var notes = string.Join("; ", group.Select(m => m.Notes).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Take(2));
-
-            providers.Add(BuildProviderStatus(
-                providerId: pId,
-                displayName: displayName,
-                family: familyName,
-                personal: personal,
-                hasServer: hasServer,
-                supportsVideoGen: supportsVideoGen,
-                supportsVideoReview: supportsVideoReview,
-                supportsImageGen: supportsImageGen,
-                supportsScriptPlanning: supportsScriptPlanning,
-                supportsImageVision: supportsImageVision,
-                notes: notes));
+            var hasPersonal = !string.IsNullOrWhiteSpace(personal);
+            var hasServer = row.RequiredEnvKeys.Any(EnvPresent);
+            row.HasPersonalKey = hasPersonal;
+            row.MaskedPersonalKey = MaskKey(personal);
+            row.HasServerKey = hasServer;
+            // BYOK: "Active" means personal key only; server env is shown but not active spend.
+            row.ActiveSource = hasPersonal ? "personal" : "none";
         }
 
         return new UserSettingsDto
@@ -1135,7 +1392,11 @@ public class UserDatabaseService
             "xai" or "grok" => "grok",
             "google" or "gemini" => "gemini",
             "claude" or "anthropic" => "anthropic",
-            "fal" => "fal",
+            "fal" or "fal.ai" => "fal",
+            "openai" or "oai" => "openai",
+            "suno" => "suno",
+            "aimusicapi" or "ai-music-api" => "aimusicapi",
+            "elevenlabs" or "eleven" => "elevenlabs",
             _ => p,
         };
     }
@@ -1415,4 +1676,54 @@ public class UserDatabaseService
             EmailConfirmedAt = confirmed,
         };
     }
+}
+
+/// <summary>One row from user_api_calls (list-rate cost attribution).</summary>
+public sealed class UserApiCallRow
+{
+    public long Id { get; set; }
+    public string UserId { get; set; } = "";
+    public string Ts { get; set; } = "";
+    public string? ProjectId { get; set; }
+    public string? JobId { get; set; }
+    public string Kind { get; set; } = "";
+    public string? Mode { get; set; }
+    /// <summary>User-facing cost bucket (<see cref="CostCategories"/>).</summary>
+    public string Category { get; set; } = CostCategories.Other;
+    public string? Provider { get; set; }
+    public string? Model { get; set; }
+    public string? Endpoint { get; set; }
+    public int? HttpStatus { get; set; }
+    public bool Ok { get; set; }
+    public long? DurationMs { get; set; }
+    public double? EstimatedUsd { get; set; }
+    public string Currency { get; set; } = "USD";
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public string? CharKey { get; set; }
+    public string? Resolution { get; set; }
+    public double? DurationSec { get; set; }
+    public int? InputTokens { get; set; }
+    public int? OutputTokens { get; set; }
+    public string? Purpose { get; set; }
+    public string? Error { get; set; }
+    public bool Fakes { get; set; }
+}
+
+
+/// <summary>Portfolio / user API spend aggregates for cost estimate refinement.</summary>
+public sealed class ApiCostHistoryStats
+{
+    public int TotalCalls { get; set; }
+    public double TotalUsd { get; set; }
+    public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class CategoryCostStats
+{
+    public string Category { get; set; } = CostCategories.Other;
+    public int Count { get; set; }
+    public double TotalUsd { get; set; }
+    public double AvgUsd { get; set; }
 }

@@ -39,6 +39,18 @@ public sealed class EngineApiClient
         return body ?? new ModelsCatalogResponse();
     }
 
+    /// <summary>Raw catalog JSON for SupportedModelCatalog.TryLoadFromJson (WASM has no file).</summary>
+    public async Task<string?> GetModelsCatalogJsonAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await _http.GetAsync("/api/models/catalog-json", ct);
+            if (!resp.IsSuccessStatusCode) return null;
+            return await resp.Content.ReadAsStringAsync(ct);
+        }
+        catch { return null; }
+    }
+
     public async Task<string> SaveModelsCatalogRawAsync(string rawJson, CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Put, "/api/admin/models-catalog")
@@ -663,8 +675,18 @@ public sealed class EngineApiClient
         return await res.Content.ReadAsByteArrayAsync(ct);
     }
 
-    /// <summary>Public demo gallery (approved only; no auth required). sort=top|new.</summary>
+    /// <summary>Public demo gallery — films on YouTube only (no auth). sort=top|new.</summary>
     public async Task<List<DemoListItem>> ListDemosAsync(
+        int take = 50,
+        string sort = "top",
+        CancellationToken ct = default)
+    {
+        var (demos, _) = await ListDemosDetailedAsync(take, sort, ct);
+        return demos;
+    }
+
+    /// <summary>Gallery list plus YouTube channel sync diagnostics.</summary>
+    public async Task<(List<DemoListItem> Demos, DemoYoutubeSyncInfo? YoutubeSync)> ListDemosDetailedAsync(
         int take = 50,
         string sort = "top",
         CancellationToken ct = default)
@@ -673,7 +695,7 @@ public sealed class EngineApiClient
         var q = $"take={take}&sort={Uri.EscapeDataString(sort ?? "top")}";
         var dto = await _http.GetFromJsonAsync<DemoListEnvelope>(
             $"/api/demos?{q}", JsonOpts, ct);
-        return dto?.Demos ?? new List<DemoListItem>();
+        return (dto?.Demos ?? new List<DemoListItem>(), dto?.YoutubeSync);
     }
 
     /// <summary>Star a public demo (signed-in). Returns updated count.</summary>
@@ -744,8 +766,44 @@ public sealed class EngineApiClient
         return resp.IsSuccessStatusCode;
     }
 
-    /// <summary>Admin moderation list (any status).</summary>
+    /// <summary>Admin: pull all uploads from the connected YouTube channel into the gallery.</summary>
+    public async Task<(bool Ok, string? Message, string? Error, int Added, int Updated, int Total)> SyncYouTubeChannelDemosAsync(
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/demos/sync-youtube");
+        var dto = await SendJsonAsync<DemoChannelSyncResult>(req, ct);
+        return (
+            dto?.Ok == true,
+            dto?.Message,
+            dto?.Error,
+            dto?.Added ?? 0,
+            dto?.Updated ?? 0,
+            dto?.Total ?? 0);
+    }
 
+    /// <summary>Admin: put an existing YouTube video on the public gallery.</summary>
+    public async Task<(bool Ok, string? Message, string? Error)> RegisterDemoFromYouTubeAsync(
+        string youtubeIdOrUrl,
+        string title,
+        string? description = null,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/demos/from-youtube")
+        {
+            Content = JsonContent.Create(new
+            {
+                youtubeIdOrUrl,
+                title,
+                description,
+                projectId,
+            }, options: JsonOpts),
+        };
+        var dto = await SendJsonAsync<DemoFromYouTubeResult>(req, ct);
+        return (dto?.Ok == true, dto?.Message, dto?.Error);
+    }
+
+    /// <summary>Admin list (any status). YouTube is the public gallery gate.</summary>
     public async Task<DemoAdminListEnvelope?> ListAdminDemosAsync(
         string? status = null,
         int take = 100,
@@ -794,7 +852,7 @@ public sealed class EngineApiClient
         }
     }
 
-    /// <summary>Submit demo for human review (always pending until admin approves).</summary>
+    /// <summary>Publish demo → YouTube upload; gallery lists once YoutubeId is set.</summary>
     public async Task<DemoPublishResult?> PublishDemoFromWipAsync(
         string projectId,
         string title,
@@ -1137,7 +1195,43 @@ public sealed class EngineApiClient
         return await SendJsonAsync<ProjectsDto>(req, ct);
     }
 
-    public async Task<ProjectsDto?> DeleteProjectAsync(
+    
+    public async Task<ProjectInfo?> RenameProjectAsync(
+        string projectId,
+        string newTitle,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/rename",
+            new RenameProjectRequest { Title = newTitle, Name = newTitle },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Rename failed");
+        }
+        var body = await resp.Content.ReadFromJsonAsync<RenameProjectResponse>(JsonOpts, ct);
+        if (body is null) return null;
+        return new ProjectInfo
+        {
+            Id = body.ProjectId ?? projectId,
+            Title = body.Title,
+            Label = body.Label ?? body.Title,
+        };
+    }
+
+    private sealed class RenameProjectResponse
+    {
+        public bool Ok { get; set; }
+        public string? ProjectId { get; set; }
+        public string? Title { get; set; }
+        public string? Label { get; set; }
+        public string? Message { get; set; }
+        public string? Error { get; set; }
+    }
+
+public async Task<ProjectsDto?> DeleteProjectAsync(
         string projectId,
         CancellationToken ct = default)
     {
@@ -1674,9 +1768,13 @@ public sealed class EngineApiClient
         await _http.GetFromJsonAsync<YouTubeStatusDto>("/api/youtube/status", JsonOpts, ct);
 
     /// <summary>Admin-only. Returns the Google consent URL to navigate the browser to.</summary>
-    public async Task<string> GetYouTubeConnectUrlAsync(CancellationToken ct = default)
+    /// <param name="returnTo">Where OAuth should land (e.g. /admin/demos).</param>
+    public async Task<string> GetYouTubeConnectUrlAsync(string? returnTo = null, CancellationToken ct = default)
     {
-        using var resp = await _http.GetAsync("/api/youtube/connect-url", ct);
+        var path = "/api/youtube/connect-url";
+        if (!string.IsNullOrWhiteSpace(returnTo))
+            path += "?returnTo=" + Uri.EscapeDataString(returnTo.Trim());
+        using var resp = await _http.GetAsync(path, ct);
         var body = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
@@ -2753,6 +2851,63 @@ public sealed class EngineApiClient
         return url;
     }
 
+    /// <summary>Upload mic/file audio as voice-clone template for a character.</summary>
+    public async Task UploadVoiceCloneSampleAsync(
+        string projectId,
+        string charKey,
+        Stream content,
+        string fileName,
+        CancellationToken ct = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var streamContent = new StreamContent(content);
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            ext switch
+            {
+                ".mp3" => "audio/mpeg",
+                ".wav" => "audio/wav",
+                ".m4a" or ".aac" => "audio/mp4",
+                ".ogg" => "audio/ogg",
+                _ => "audio/webm",
+            });
+        form.Add(streamContent, "file", fileName);
+
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
+            form,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public string CharacterVoiceCloneSampleUrl(string projectId, string charKey, long cacheBust = 0)
+    {
+        var url = BrowserMediaPath(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample");
+        if (cacheBust > 0)
+            url += (url.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "t=" + cacheBust;
+        return url;
+    }
+
+    public async Task DeleteVoiceCloneSampleAsync(
+        string projectId,
+        string charKey,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.DeleteAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     /// <summary>
     /// Save look text; by default API runs AI scrub (literal + base look). Returns cleaned fields.
     /// </summary>
@@ -3357,6 +3512,24 @@ public sealed class YouTubeStatusDto
     public bool Connected { get; set; }
 }
 
+public sealed class DemoFromYouTubeResult
+{
+    public bool Ok { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+}
+
+public sealed class DemoChannelSyncResult
+{
+    public bool Ok { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+    public int Added { get; set; }
+    public int Updated { get; set; }
+    public int Total { get; set; }
+    public bool Skipped { get; set; }
+}
+
 public sealed class YouTubeConnectUrlDto
 {
     public bool Ok { get; set; }
@@ -3474,8 +3647,16 @@ public sealed class MediaTokenDto
     public string? Error { get; set; }
 }
 
+public sealed class DemoYoutubeSyncInfo
+{
+    public DateTimeOffset? LastSuccessUtc { get; set; }
+    public string? LastError { get; set; }
+}
+
 public sealed class DemoListEnvelope
 {
+    [System.Text.Json.Serialization.JsonPropertyName("youtubeSync")]
+    public DemoYoutubeSyncInfo? YoutubeSync { get; set; }
     public bool Ok { get; set; }
     public List<DemoListItem> Demos { get; set; } = new();
 }
@@ -3490,6 +3671,7 @@ public sealed class DemoAdminListEnvelope
 
 public sealed class DemoListItem
 {
+    public string? Category { get; set; }
     public string Id { get; set; } = "";
     public string Title { get; set; } = "";
     public string? Description { get; set; }
@@ -3542,7 +3724,10 @@ public sealed class DemoPublishResult
 {
     public bool Ok { get; set; }
     public string? Error { get; set; }
+    /// <summary>Legacy; always false — admin content queue is retired.</summary>
     public bool PendingReview { get; set; }
+    /// <summary>True until YouTube id is set; gallery lists only after upload finishes.</summary>
+    public bool AwaitingYouTube { get; set; }
     /// <summary>True when an existing public demo for the project was updated (YouTube V2 replace).</summary>
     public bool ReplacedExisting { get; set; }
     public string? Message { get; set; }

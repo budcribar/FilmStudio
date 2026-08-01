@@ -14,22 +14,13 @@
      onclick="document.querySelector('.navbar-toggler')?.click()">
     <nav class="nav flex-column nav-main" aria-label="Main">
         <div class="nav-main-links">
+        @* Prototype look-feel: Home · Demo · Settings, then project studio pipeline *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" title="Home & Studio Overview" data-testid="nav-studio">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span>
                 @if (!Collapsed) { <span class="nav-label">Home</span> }
             </NavLink>
         </div>
-
-        @if (Session.IsLoggedIn)
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/configuration" title="Configuration & Projects" data-testid="nav-configuration">
-                    <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Configuration</span> }
-                </NavLink>
-            </div>
-        }
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/demo" title="Public demo gallery — no sign-in required" data-testid="nav-demo">
@@ -38,29 +29,40 @@
             </NavLink>
         </div>
 
+        @* Settings always available once signed in. *@
+        @if (Session.IsLoggedIn)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/configuration" title="Settings — API keys, models, media folder" data-testid="nav-configuration">
+                    <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
+                    @if (!Collapsed) { <span class="nav-label">Settings</span> }
+                </NavLink>
+            </div>
+        }
+
         @if (ActiveProject.HasProject)
         {
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/adaptation" Match="NavLinkMatch.Prefix" title="Adaptation" data-testid="nav-adaptation">
+                <NavLink class="nav-link" href="/adaptation" Match="NavLinkMatch.Prefix" title="Book & screenplay (studio)" data-testid="nav-adaptation">
                     <span class="bi bi-book-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Adaptation</span> }
+                    @if (!Collapsed) { <span class="nav-label">Book</span> }
                 </NavLink>
             </div>
 
             @NavItem(
                 enabled: ActiveProject.CanCharacters,
                 href: "/characters",
-                title: ActiveProject.CanCharacters ? "Characters" : ActiveProject.CharactersBlockedReason,
+                title: ActiveProject.CanCharacters ? "Cast & voices" : ActiveProject.CharactersBlockedReason,
                 iconClass: "bi-people-fill-nav-menu",
-                label: "Characters",
+                label: "Cast",
                 testId: "nav-characters")
 
             @NavItem(
                 enabled: ActiveProject.CanScenes,
                 href: "/scenes",
-                title: ActiveProject.CanScenes ? "Scenes" : ActiveProject.ScenesBlockedReason,
+                title: ActiveProject.CanScenes ? "Scenes & film" : ActiveProject.ScenesBlockedReason,
                 iconClass: "bi-film-nav-menu",
-                label: "Scenes",
+                label: "Film",
                 testId: "nav-scenes")
 
             @NavItem(
@@ -72,9 +74,9 @@
                 testId: "nav-review")
 
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/cost" title="Cost">
+                <NavLink class="nav-link" href="/cost" title="Estimate & cost">
                     <span class="bi bi-cash-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Cost</span> }
+                    @if (!Collapsed) { <span class="nav-label">Estimate</span> }
                 </NavLink>
             </div>
         }
@@ -87,12 +89,6 @@
                 <NavLink class="nav-link" href="/admin" title="Admin">
                     <span class="bi bi-shield-lock-nav-menu" aria-hidden="true"></span>
                     @if (!Collapsed) { <span class="nav-label">Admin</span> }
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/admin/demos" title="Demo moderation" data-testid="nav-admin-demos">
-                    <span class="bi bi-film-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Demo review</span> }
                 </NavLink>
             </div>
             <div class="nav-item px-3">
@@ -154,18 +150,14 @@
                                 </div>
                             </div>
                             <a class="nav-user-item" role="menuitem" href="/configuration"
-                               @onclick="CloseUserMenu">
-                                Configuration
+                               data-testid="nav-user-configuration">
+                                Settings
                             </a>
                             @if (Session.IsAdmin)
                             {
                                 <a class="nav-user-item" role="menuitem" href="/admin"
                                    @onclick="CloseUserMenu">
                                     Admin dashboard
-                                </a>
-                                <a class="nav-user-item" role="menuitem" href="/admin/demos"
-                                   @onclick="CloseUserMenu">
-                                    Demo review
                                 </a>
                             }
                             <a class="nav-user-item" role="menuitem" href="/about"
@@ -205,8 +197,7 @@
 
 @code {
     [Parameter] public bool Collapsed { get; set; }
-
-    private bool _started;
+private bool _started;
     private bool _userMenuOpen;
 
     private string UserInitials

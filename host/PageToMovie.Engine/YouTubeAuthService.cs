@@ -1,3 +1,4 @@
+using System.Linq;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Services;
@@ -11,8 +12,9 @@ namespace PageToMovie.Engine;
 /// <summary>
 /// Manages the single shared OAuth2 connection PageToMovie uses to upload the WIP movie to
 /// YouTube. One channel per instance, admin-connected via POST /api/youtube/connect —
-/// not a per-user credential. Refresh token is persisted under
-/// <c>{workspace}/.PageToMovie/youtube_token/</c> (Google.Apis' own FileDataStore format).
+/// not a per-user credential. Refresh token is persisted in SQLite
+/// <c>oauth_data_store</c> inside <c>pagetomovie.db</c> under the resolved data directory
+/// (see <see cref="UserDatabaseService.ResolveDataDirectory"/>) so it survives process restarts.
 /// </summary>
 public sealed class YouTubeAuthService
 {
@@ -22,7 +24,7 @@ public sealed class YouTubeAuthService
     private readonly ProjectStore _projects;
     private readonly YouTubeOptions _opts;
     private readonly Lazy<GoogleAuthorizationCodeFlow?> _flow;
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTimeOffset> _pendingStates = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTimeOffset Expiry, string ReturnPath)> _pendingStates = new();
 
     public YouTubeAuthService(ProjectStore projects, IOptions<PageToMovieOptions> opts)
     {
@@ -46,6 +48,8 @@ public sealed class YouTubeAuthService
         if (!IsConfigured)
             return null;
         var dataDir = UserDatabaseService.ResolveDataDirectory(_projects.WorkspaceRoot);
+        System.Diagnostics.Trace.TraceInformation(
+            "YouTube OAuth token store: {0} (pagetomovie.db / oauth_data_store)", dataDir);
         return new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
         {
             ClientSecrets = new ClientSecrets { ClientId = CleanClientId, ClientSecret = CleanClientSecret },
@@ -55,17 +59,21 @@ public sealed class YouTubeAuthService
             {
                 YouTubeService.Scope.YoutubeUpload,
                 YouTubeService.Scope.YoutubeForceSsl,
+                // List channel uploads for the public demo wall (YouTube = source of truth).
+                YouTubeService.Scope.YoutubeReadonly,
             },
             DataStore = new SqliteDataStore(dataDir),
         });
     }
 
     /// <summary>Builds the Google consent URL. <paramref name="state"/> round-trips through the callback.</summary>
-    public string BuildAuthorizationUrl(string state)
+    /// <param name="returnPath">Relative path after OAuth (e.g. /admin/demos or /review).</param>
+    public string BuildAuthorizationUrl(string state, string? returnPath = null)
     {
         var flow = _flow.Value ?? throw new InvalidOperationException(
             "YouTube OAuth is not configured — set PageToMovie:YouTube:ClientId/ClientSecret/RedirectUri.");
-        _pendingStates[state] = DateTimeOffset.UtcNow.Add(StateTtl);
+        var ret = NormalizeReturnPath(returnPath);
+        _pendingStates[state] = (DateTimeOffset.UtcNow.Add(StateTtl), ret);
         PruneExpiredStates();
         var request = (Google.Apis.Auth.OAuth2.Requests.GoogleAuthorizationCodeRequestUrl)
             flow.CreateAuthorizationCodeRequest(CleanRedirectUri);
@@ -76,20 +84,50 @@ public sealed class YouTubeAuthService
         return request.Build().ToString();
     }
 
-    public bool ConsumeState(string state)
+    /// <summary>Validates state and returns the post-OAuth path (default /review).</summary>
+    public bool TryConsumeState(string state, out string returnPath)
     {
+        returnPath = "/review";
         if (string.IsNullOrWhiteSpace(state)) return false;
-        if (_pendingStates.TryRemove(state, out var expiry))
-            return expiry >= DateTimeOffset.UtcNow;
+        if (_pendingStates.TryRemove(state, out var entry))
+        {
+            if (entry.Expiry < DateTimeOffset.UtcNow) return false;
+            returnPath = entry.ReturnPath;
+            return true;
+        }
         // Fallback: if in-memory dictionary was cleared (e.g. app restart), accept valid state token
-        return state.Length >= 16;
+        if (state.Length >= 16)
+        {
+            returnPath = "/review";
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Legacy; prefer <see cref="TryConsumeState"/>.</summary>
+    public bool ConsumeState(string state) => TryConsumeState(state, out _);
+
+    private static string NormalizeReturnPath(string? returnPath)
+    {
+        var p = (returnPath ?? "").Trim();
+        if (p.Length == 0) return "/review";
+        if (!p.StartsWith('/')) p = "/" + p;
+        // Only same-site relative paths
+        if (p.StartsWith("//", StringComparison.Ordinal) || p.Contains("://", StringComparison.Ordinal))
+            return "/review";
+        if (p.StartsWith("/admin", StringComparison.OrdinalIgnoreCase)
+            || p.StartsWith("/review", StringComparison.OrdinalIgnoreCase)
+            || p.StartsWith("/demo", StringComparison.OrdinalIgnoreCase)
+            || p == "/")
+            return p.Split('?', 2)[0];
+        return "/review";
     }
 
     private void PruneExpiredStates()
     {
         var now = DateTimeOffset.UtcNow;
         foreach (var kv in _pendingStates)
-            if (kv.Value < now)
+            if (kv.Value.Expiry < now)
                 _pendingStates.TryRemove(kv.Key, out _);
     }
 
@@ -161,7 +199,140 @@ public sealed class YouTubeAuthService
             return null;
         }
     }
+
+    public sealed record ChannelUploadVideo(
+        string VideoId,
+        string Title,
+        string? Description,
+        DateTimeOffset? PublishedAt,
+        string? ThumbnailUrl);
+
+    /// <summary>
+    /// All uploads on the connected channel (uploads playlist), newest first.
+    /// Requires a connected OAuth channel (re-connect after scope change if list fails).
+    /// </summary>
+    public async Task<IReadOnlyList<ChannelUploadVideo>> ListChannelUploadsAsync(
+        int maxResults = 50,
+        CancellationToken ct = default)
+    {
+        maxResults = Math.Clamp(maxResults, 1, 200);
+        var youtube = await GetServiceAsync(ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException(
+                "YouTube channel is not connected. Connect it from Admin → Demo gallery first.");
+
+        var chReq = youtube.Channels.List("contentDetails,snippet");
+        chReq.Mine = true;
+        var chResp = await chReq.ExecuteAsync(ct).ConfigureAwait(false);
+        var channel = chResp.Items?.FirstOrDefault()
+            ?? throw new InvalidOperationException("No YouTube channel found for this OAuth account.");
+        var uploadsPlaylist = channel.ContentDetails?.RelatedPlaylists?.Uploads;
+        if (string.IsNullOrWhiteSpace(uploadsPlaylist))
+            throw new InvalidOperationException("Channel has no uploads playlist.");
+
+        var list = new List<ChannelUploadVideo>();
+        string? pageToken = null;
+        while (list.Count < maxResults)
+        {
+            var plReq = youtube.PlaylistItems.List("snippet,contentDetails");
+            plReq.PlaylistId = uploadsPlaylist;
+            plReq.MaxResults = Math.Min(50, maxResults - list.Count);
+            if (!string.IsNullOrEmpty(pageToken))
+                plReq.PageToken = pageToken;
+
+            var plResp = await plReq.ExecuteAsync(ct).ConfigureAwait(false);
+            foreach (var item in plResp.Items ?? Array.Empty<Google.Apis.YouTube.v3.Data.PlaylistItem>())
+            {
+                var videoId = item.ContentDetails?.VideoId
+                    ?? item.Snippet?.ResourceId?.VideoId;
+                if (string.IsNullOrWhiteSpace(videoId))
+                    continue;
+                var sn = item.Snippet;
+                var title = (sn?.Title ?? "").Trim();
+                // Deleted = gone from channel. "Private video" still has an id for the owner —
+                // keep it and enrich via videos.list below (skipping used to empty the gallery).
+                if (title.Equals("Deleted video", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (title.Length == 0 || title.Equals("Private video", StringComparison.OrdinalIgnoreCase))
+                    title = videoId.Trim(); // placeholder until videos.list fills real title
+
+                DateTimeOffset? published = null;
+                try
+                {
+                    var prop = sn?.GetType().GetProperty("PublishedAtDateTimeOffset");
+                    if (prop?.GetValue(sn) is DateTimeOffset dto)
+                        published = dto;
+                    else if (sn?.PublishedAt is DateTime dt)
+                        published = new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Utc));
+                }
+                catch { /* optional */ }
+
+                var thumb = sn?.Thumbnails?.Medium?.Url
+                    ?? sn?.Thumbnails?.High?.Url
+                    ?? sn?.Thumbnails?.Default__?.Url;
+
+                list.Add(new ChannelUploadVideo(
+                    videoId.Trim(),
+                    title,
+                    string.IsNullOrWhiteSpace(sn?.Description) ? null : sn!.Description.Trim(),
+                    published,
+                    thumb));
+            }
+
+            pageToken = plResp.NextPageToken;
+            if (string.IsNullOrEmpty(pageToken))
+                break;
+        }
+
+        // Owner videos.list restores real titles/thumbs when playlistItems only said "Private video".
+        if (list.Count > 0)
+            list = await EnrichUploadsFromVideosListAsync(youtube, list, ct).ConfigureAwait(false);
+
+        return list;
+    }
+
+    static async Task<List<ChannelUploadVideo>> EnrichUploadsFromVideosListAsync(
+        Google.Apis.YouTube.v3.YouTubeService youtube,
+        List<ChannelUploadVideo> list,
+        CancellationToken ct)
+    {
+        var byId = list.ToDictionary(v => v.VideoId, StringComparer.OrdinalIgnoreCase);
+        var ids = list.Select(v => v.VideoId).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        for (var i = 0; i < ids.Count; i += 50)
+        {
+            var batch = ids.Skip(i).Take(50).ToList();
+            var req = youtube.Videos.List("snippet");
+            req.Id = string.Join(',', batch);
+            var resp = await req.ExecuteAsync(ct).ConfigureAwait(false);
+            foreach (var v in resp.Items ?? Array.Empty<Google.Apis.YouTube.v3.Data.Video>())
+            {
+                if (v.Id is null || !byId.ContainsKey(v.Id)) continue;
+                var sn = v.Snippet;
+                var title = (sn?.Title ?? "").Trim();
+                if (title.Length == 0) continue;
+                var thumb = sn?.Thumbnails?.Medium?.Url
+                    ?? sn?.Thumbnails?.High?.Url
+                    ?? sn?.Thumbnails?.Default__?.Url
+                    ?? byId[v.Id].ThumbnailUrl;
+                DateTimeOffset? published = byId[v.Id].PublishedAt;
+                try
+                {
+                    if (sn?.PublishedAt is DateTime dt)
+                        published = new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Utc));
+                }
+                catch { /* keep prior */ }
+                byId[v.Id] = new ChannelUploadVideo(
+                    v.Id,
+                    title,
+                    string.IsNullOrWhiteSpace(sn?.Description) ? byId[v.Id].Description : sn!.Description.Trim(),
+                    published,
+                    thumb);
+            }
+        }
+        // Preserve playlist order
+        return list.Select(v => byId.TryGetValue(v.VideoId, out var e) ? e : v).ToList();
+    }
 }
+
 
 /// <summary>
 /// Persistent SQLite uploader/OAuth token storage backed by <c>pagetomovie.db</c> in persistent <c>/data</c>.
@@ -203,7 +374,9 @@ public sealed class SqliteDataStore : IDataStore
         if (string.IsNullOrWhiteSpace(key)) return Task.CompletedTask;
         try
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(value);
+            // Google.Apis TokenResponse expects Newtonsoft shape (same as FileDataStore).
+            // System.Text.Json does not round-trip RefreshToken reliably → "lost" after restart.
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value);
             using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
             conn.Open();
             using var cmd = conn.CreateCommand();
@@ -219,7 +392,12 @@ public sealed class SqliteDataStore : IDataStore
             cmd.Parameters.AddWithValue("@updated_at", DateTimeOffset.UtcNow.ToString("o"));
             cmd.ExecuteNonQuery();
         }
-        catch { /* best effort */ }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "SqliteDataStore.StoreAsync failed key={0}: {1}", key, ex.Message);
+            throw; // surface failure so OAuth exchange is not silent-success
+        }
         return Task.CompletedTask;
     }
 
@@ -253,11 +431,22 @@ public sealed class SqliteDataStore : IDataStore
             if (string.IsNullOrWhiteSpace(result))
                 return Task.FromResult(default(T)!);
 
-            var val = System.Text.Json.JsonSerializer.Deserialize<T>(result);
-            return Task.FromResult(val!);
+            // Prefer Newtonsoft (Google.Apis FileDataStore compatible). Fallback STJ for older rows.
+            try
+            {
+                var val = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(result);
+                if (val is not null)
+                    return Task.FromResult(val);
+            }
+            catch { /* try STJ */ }
+
+            var stj = System.Text.Json.JsonSerializer.Deserialize<T>(result);
+            return Task.FromResult(stj!);
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.TraceError(
+                "SqliteDataStore.GetAsync failed key={0}: {1}", key, ex.Message);
             return Task.FromResult(default(T)!);
         }
     }

@@ -11,7 +11,7 @@ main {
 }
 
 .sidebar {
-    background: linear-gradient(180deg, #090b10 0%, #131622 100%);
+    background: linear-gradient(180deg, #08090c 0%, #12141a 55%, #151922 100%);
     border-right: 1px solid rgba(255, 255, 255, 0.07);
     display: flex;
     flex-direction: column;

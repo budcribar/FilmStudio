@@ -1,0 +1,30 @@
+@namespace PageToMovie.Web.Components
+@* Grayed control with hover reason + link to Settings focused on a capability. *@
+<div class="d-inline-flex flex-wrap align-items-center gap-1 @CssClass"
+     title="@(Enabled ? (TitleWhenEnabled ?? "") : BlockedReason)"
+     data-testid="@TestId">
+    <span class="d-inline-flex flex-wrap align-items-center gap-1 @(Enabled ? "" : "opacity-50")"
+          style="@(Enabled ? null : "pointer-events: none; cursor: not-allowed;")"
+          aria-disabled="@(!Enabled)">
+        @ChildContent
+    </span>
+    @if (!Enabled)
+    {
+        <a class="small text-nowrap"
+           href="@SettingsHref"
+           title="@BlockedReason"
+           data-testid="@(TestId)-setup-link">
+            Set up →
+        </a>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Enabled { get; set; }
+    [Parameter] public string BlockedReason { get; set; } = "This feature needs a model in Settings.";
+    [Parameter] public string SettingsHref { get; set; } = "/configuration#models";
+    [Parameter] public string? TitleWhenEnabled { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string TestId { get; set; } = "capability-locked";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

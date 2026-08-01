@@ -98,7 +98,7 @@ public sealed class ProjectRulesService
     }
 
     /// <summary>
-    /// Upsert an active style rule from cast extract <c>render_style_lock</c> (book/screenplay medium).
+    /// Upsert style rule from cast extract <c>render_style_lock</c> (derived from Fountain SoT).
     /// Does not overwrite a user-approved style rule (different id / non-system approver).
     /// </summary>
     public bool EnsureStyleRuleFromRenderLock(

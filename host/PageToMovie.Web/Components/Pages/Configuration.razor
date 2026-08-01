@@ -11,11 +11,12 @@
 @inject NavigationManager Nav
 @inject ClientMediaFolderService MediaFolder
 
-<PageTitle>Configuration</PageTitle>
+<PageTitle>Settings</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-        <h1 class="mb-1">Configuration</h1>
+        <span class="ptm-adapt-kicker">Account & providers</span>
+        <h1 class="mb-1 ptm-adapt-title">Settings</h1>
         <p class="text-muted mb-0">
             @if (!string.IsNullOrWhiteSpace(_projectId))
             {
@@ -69,24 +70,45 @@
         </div>
         <div class="card-body">
             <p class="small text-muted mb-3">
-                Personal keys are encrypted at rest (AES-256) and used only for your account.
-                Server keys (env vars) apply when you have not attached a personal key for that provider.
-                <strong>Claude does not generate video or images</strong> — use Grok or Gemini for those.
+                <strong>Bring your own key</strong> per provider (encrypted at rest).
+                Keys unlock providers; the <strong>Models</strong> section below picks which provider wins for each stage.
+                See <em>Studio coverage</em> for what’s still missing.
             </p>
 
-            <div class="row g-3">
+            @if (ProviderRows.Count == 0)
+            {
+                <div class="alert alert-warning py-2">
+                    No providers listed from the models catalog. Check that <code>models_catalog.json</code> loads, then reload this page.
+                </div>
+            }
+
+            <div class="row g-3" id="api-keys">
                 @foreach (var p in ProviderRows)
                 {
-                    <div class="col-lg-4">
+                    <div class="col-lg-4" data-testid="provider-key-@p.ProviderId">
                         <div class="border rounded p-3 h-100">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
                                     <div class="fw-semibold">@p.DisplayName</div>
-                                    <div class="small text-muted">@p.CapabilitiesSummary</div>
+                                    @{
+                                        var usedFor = CoverageUsesForProvider(p.ProviderId);
+                                    }
+                                    @if (usedFor.Count > 0)
+                                    {
+                                        <div class="small text-success">In use: @string.Join(" · ", usedFor)</div>
+                                    }
+                                    else if (p.IsConfigured)
+                                    {
+                                        <div class="small text-muted">Key saved · not selected for any stage</div>
+                                    }
                                 </div>
-                                @if (p.IsConfigured)
+                                @if (p.IsConfigured && usedFor.Count > 0)
                                 {
-                                    <span class="badge bg-success">Active</span>
+                                    <span class="badge bg-success">In use</span>
+                                }
+                                else if (p.IsConfigured)
+                                {
+                                    <span class="badge bg-secondary">Idle</span>
                                 }
                                 else
                                 {
@@ -117,28 +139,21 @@
                                 }
                             </div>
 
-                            @if (!string.IsNullOrWhiteSpace(p.Notes))
+                            @if (!string.IsNullOrWhiteSpace(p.Notes) && p.Notes.Length <= 220)
                             {
                                 <p class="small text-muted mb-2">@p.Notes</p>
                             }
 
-                            <div class="small mb-2">
-                                @if (p.HasPersonalKey)
-                                {
-                                    <div><strong>Personal key:</strong> <code>@p.MaskedPersonalKey</code></div>
-                                }
-                                else
-                                {
-                                    <div class="text-muted">No personal key saved.</div>
-                                }
-                                @if (p.HasServerKey)
-                                {
-                                    <div class="text-muted">Server env key available as fallback.</div>
-                                }
-                            </div>
+
+                            @if (p.HasPersonalKey && !string.IsNullOrWhiteSpace(p.MaskedPersonalKey))
+                            {
+                                <div class="small mb-2">
+                                    <strong>Key:</strong> <code>@p.MaskedPersonalKey</code>
+                                </div>
+                            }
 
                             <label class="form-label small mb-1">
-                                @(p.HasPersonalKey ? "Replace personal key" : "Add personal key")
+                                @(p.HasPersonalKey ? "Replace personal key" : "Paste API key")
                             </label>
                             <div class="input-group input-group-sm mb-2">
                                 <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
@@ -187,6 +202,115 @@
                     <span>@_apiKeyFeedback</span>
                 </div>
             }
+
+            <!-- Capability coverage: which selected model uses which key -->
+            <div class="mt-4 pt-3 border-top" data-testid="capability-coverage">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <div>
+                        <div class="fw-semibold">Studio coverage</div>
+                        <div class="small text-muted mb-0">
+                            Each job uses the <strong>model you pick</strong> for that stage — not “any key that can do it.”
+                            If Grok and Gemini both have keys, video gen still follows the Video model dropdown; review follows Video review.
+                        </div>
+                    </div>
+                    @{
+                        var cov = BuildCoverageRows();
+                        var needed = cov.Count(c => c.Required && !c.OptionalOff);
+                        var ready = cov.Count(c => c.Required && !c.OptionalOff && c.KeyReady);
+                        var missing = cov.Where(c => c.Required && !c.OptionalOff && !c.KeyReady).ToList();
+                    }
+                    <div class="text-end">
+                        @if (missing.Count == 0)
+                        {
+                            <span class="badge text-bg-success">All required keys ready · @ready/@needed</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-warning text-dark">Missing @missing.Count required · @ready/@needed ready</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-2">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>What you do</th>
+                                <th>Model in use</th>
+                                <th>Needs key for</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in cov)
+                            {
+                                <tr class="@(c.OptionalOff ? "opacity-50" : "")" data-testid="coverage-@c.Id">
+                                    <td>
+                                        <div class="fw-semibold small">@c.Label</div>
+                                        @if (!string.IsNullOrWhiteSpace(c.Hint))
+                                        {
+                                            <div class="text-muted" style="font-size:0.75rem;">@c.Hint</div>
+                                        }
+                                    </td>
+                                    <td class="small">
+                                        @if (c.OptionalOff)
+                                        {
+                                            <span class="text-muted">Off</span>
+                                        }
+                                        else
+                                        {
+                                            <code>@c.ModelId</code>
+                                        }
+                                    </td>
+                                    <td class="small">
+                                        @if (c.OptionalOff || string.IsNullOrWhiteSpace(c.ProviderDisplay))
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@c.ProviderDisplay</span>
+                                        }
+                                    </td>
+                                    <td class="small">
+                                        @if (c.OptionalOff)
+                                        {
+                                            <span class="badge text-bg-secondary">Optional</span>
+                                        }
+                                        else if (c.KeyReady)
+                                        {
+                                            <span class="badge text-bg-success">Ready</span>
+                                        }
+                                        else if (string.IsNullOrWhiteSpace(c.ProviderId))
+                                        {
+                                            <span class="badge text-bg-secondary">No key needed</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-danger">Add @c.ProviderDisplay key</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (missing.Count > 0)
+                {
+                    <div class="alert alert-warning py-2 small mb-0">
+                        Still needed:
+                        @string.Join(", ", missing.Select(m => m.ProviderDisplay).Distinct())
+                        — paste those keys above. Extra providers (with keys but not in this table) are <strong>idle</strong> until you switch a model to them.
+                    </div>
+                }
+                else
+                {
+                    <p class="small text-muted mb-0">
+                        Extra keys you keep (e.g. Gemini when Grok does video gen) stay available for other stages or if you change a model later.
+                    </p>
+                }
+            </div>
         </div>
     </div>
 
@@ -300,14 +424,28 @@
         </div>
     </div>
 
-    <div class="card mb-3">
+    <div class="card mb-3" id="models">
         <div class="card-header fw-bold">Models</div>
         <div class="card-body">
             <p class="small text-muted mb-3">
                 Select models for each stage of production. These choices correspond directly to the 5 capabilities in <strong>Account &amp; API Keys</strong>.
             </p>
+            @if (FocusActive)
+            {
+                <div class="alert alert-info py-2 small d-flex flex-wrap justify-content-between align-items-center gap-2" data-testid="models-focus-banner">
+                    <span>
+                        Showing models for <strong>@FocusLabel</strong> — pick one below, then save.
+                        @if (!string.IsNullOrWhiteSpace(FocusKeyHint))
+                        {
+                            <span class="text-muted">(@FocusKeyHint)</span>
+                        }
+                    </span>
+                    <a class="btn btn-sm btn-outline-secondary" href="/configuration#models">Show all models</a>
+                </div>
+            }
+
             <div class="row g-3">
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 @FocusSlotClass("video")" data-testid="model-slot-video" style="@FocusSlotStyle("video")">
                     <label class="form-label fw-semibold">Video Generation</label>
                     <select class="form-select" @bind="_modelName" disabled="@_busy">
                         @foreach (var m in _videoModels)
@@ -326,7 +464,7 @@
                     <div class="form-text text-muted">Generates MP4 video clips from prompts and character plates.</div>
                 </div>
 
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 @FocusSlotClass("image")" data-testid="model-slot-image" style="@FocusSlotStyle("image")">
                     <label class="form-label fw-semibold">Portrait / Image Generation</label>
                     <select class="form-select" @bind="_imageModel" disabled="@_busy">
                         @foreach (var m in _imageModels)
@@ -345,7 +483,7 @@
                     <div class="form-text text-muted">Creates character reference portraits and book plate graphics.</div>
                 </div>
 
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 @FocusSlotClass("planning")" data-testid="model-slot-planning" style="@FocusSlotStyle("planning")">
                     <label class="form-label fw-semibold">Script &amp; Planning</label>
                     <select class="form-select" @bind="_planningModel" disabled="@_busy">
                         @foreach (var m in _planningModels)
@@ -364,7 +502,7 @@
                     <div class="form-text text-muted">Screenplay reasoning, shot planning, and cast analysis.</div>
                 </div>
 
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 @FocusSlotClass("vision")" data-testid="model-slot-vision" style="@FocusSlotStyle("vision")">
                     <label class="form-label fw-semibold">Image Vision &amp; OCR</label>
                     <select class="form-select" @bind="_visionModel" disabled="@_busy">
                         @foreach (var m in _visionModels)
@@ -383,7 +521,7 @@
                     <div class="form-text text-muted">Book page OCR, cast-on-image classification, and frame inspection.</div>
                 </div>
 
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 @FocusSlotClass("review")" data-testid="model-slot-review" style="@FocusSlotStyle("review")">
                     <label class="form-label fw-semibold">Video &amp; Clip Review (Multimodal)</label>
                     <select class="form-select" @bind="_qualityModel" disabled="@_busy">
                         @foreach (var m in _videoReviewModels)
@@ -403,7 +541,7 @@
                     <div class="form-text text-muted">Evaluates dialogue &amp; lip sync (Google Gemini natively analyzes MP4 video files).</div>
                 </div>
 
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-xl-4 @FocusSlotClass("music")" data-testid="model-slot-music" style="@FocusSlotStyle("music")">
                     <label class="form-label fw-semibold">Audio &amp; Music Generation</label>
                     <select class="form-select" @bind="_audioModel" disabled="@_busy">
                         @foreach (var m in _audioModels)
@@ -420,6 +558,28 @@
                         <div class="form-text">@ah</div>
                     }
                     <div class="form-text text-muted">Generates beat-aligned background music scores and audio soundscapes.</div>
+                </div>
+
+                <div class="col-md-6 col-xl-4 @FocusSlotClass("voice")" data-testid="model-slot-voice" style="@FocusSlotStyle("voice")">
+                    <label class="form-label fw-semibold">Voice clone</label>
+                    <select class="form-select" @bind="_voiceModel" disabled="@_busy">
+                        @foreach (var m in _voiceModels)
+                        {
+                            <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        }
+                        @if (_voiceModels.All(m => !string.Equals(m.Id, _voiceModel, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <option value="@_voiceModel">@_voiceModel (not in list)</option>
+                        }
+                    </select>
+                    @if (ModelHint(_voiceModel, "voice") is { } vch)
+                    {
+                        <div class="form-text">@vch</div>
+                    }
+                    <div class="form-text text-muted">
+                        Personal voice samples for characters. Choose a model and add the provider key above.
+                        Set to None to leave clone off.
+                    </div>
                 </div>
             </div>
 
@@ -479,7 +639,9 @@
             <div class="col-md-6 form-check">
                 <input class="form-check-input" type="checkbox" id="qaRetry" @bind="_qaRetry" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="qaRetry">Quality Gate Retry</label>
-                <div class="form-text">Automatically retry video clip generation if quality checks fail.</div>
+                <div class="form-text">
+                    When dialogue QA fails, auto-regenerate the clip (admin mode). Cost estimate uses a ~1.3× video prior until we learn real retry rates from production data.
+                </div>
             </div>
             <div class="col-md-6 form-check">
                 <input class="form-check-input" type="checkbox" id="regenSilent" @bind="_regenSilent" disabled="@_busy" />
@@ -599,6 +761,9 @@
     private string _visionModel = "grok-4.5";
     private string _qualityModel = "gemini-2.5-flash";
     private string _audioModel = "fal-ai/stable-audio";
+    private string _voiceModel = "none";
+    /// <summary>Deep-link from gated features: music | voice | review | video | …</summary>
+    private string? _focusCapability;
     private bool _enableBackgroundMusic = true;
     private int _backgroundMusicVolumePercent = 20;
     private string _aspect = "16:9";
@@ -622,9 +787,11 @@
     private List<SupportedModelDto> _visionModels = new();
     private List<SupportedModelDto> _videoReviewModels = new();
     private List<SupportedModelDto> _audioModels = new();
+    private List<SupportedModelDto> _voiceModels = new();
 
     protected override async Task OnInitializedAsync()
     {
+        ParseFocusFromUri();
         try
         {
             try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
@@ -683,6 +850,15 @@
     {
         try
         {
+            // WASM: hydrate SupportedModelCatalog from API (no local models_catalog.json).
+            try
+            {
+                var raw = await Engine.GetModelsCatalogJsonAsync();
+                if (!string.IsNullOrWhiteSpace(raw))
+                    SupportedModelCatalog.TryLoadFromJson(raw);
+            }
+            catch { /* rate UI uses defaults */ }
+
             var list = await Engine.GetSupportedModelsAsync();
             _allModels = list.ToList();
             _videoModels = _allModels.Where(m => m.Capability == "video").ToList();
@@ -690,6 +866,7 @@
             _planningModels = _allModels.Where(m => m.Capability == "chat").ToList();
             _visionModels = _allModels.Where(m => m.Capability == "vision").ToList();
             _audioModels = _allModels.Where(m => m.Capability == "audio").ToList();
+            _voiceModels = _allModels.Where(m => m.Capability == "voice").ToList();
             _videoReviewModels = _allModels.Where(m => m.SupportsVideoReview || m.Capability is "chat" or "vision")
                 .GroupBy(m => m.Id)
                 .Select(g => g.First()).ToList();
@@ -709,6 +886,10 @@
 
             if (!_audioModels.Any(m => m.Id == "none"))
                 _audioModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" });
+            if (_voiceModels.Count == 0)
+                _voiceModels.Add(new SupportedModelDto { Id = "eleven_multilingual_v2", DisplayName = "Voice clone (default)", Provider = "ElevenLabs" });
+            if (!_voiceModels.Any(m => m.Id == "none"))
+                _voiceModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (no voice clone)", Provider = "None" });
         }
         catch
         {
@@ -724,6 +905,67 @@
         }
     }
 
+
+    private void ParseFocusFromUri()
+    {
+        try
+        {
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            var q = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (q.TryGetValue("focus", out var f) && !string.IsNullOrWhiteSpace(f))
+                _focusCapability = NormalizeFocus(f.ToString());
+        }
+        catch { _focusCapability = null; }
+    }
+
+    private static string? NormalizeFocus(string? raw)
+    {
+        var s = (raw ?? "").Trim().ToLowerInvariant();
+        return s switch
+        {
+            "music" or "audio" or "bgm" => "music",
+            "voice" or "voice_clone" or "clone" or "tts" => "voice",
+            "review" or "qa" or "video_review" or "quality" => "review",
+            "video" or "film" => "video",
+            "image" or "portrait" or "characters" => "image",
+            "planning" or "script" or "chat" or "screenplay" => "planning",
+            "vision" or "ocr" => "vision",
+            _ => string.IsNullOrWhiteSpace(s) ? null : s,
+        };
+    }
+
+    private bool FocusActive => !string.IsNullOrWhiteSpace(_focusCapability);
+
+    private string FocusLabel => _focusCapability switch
+    {
+        "music" => "Background music",
+        "voice" => "Voice clone",
+        "review" => "Video review (QA)",
+        "video" => "Video generation",
+        "image" => "Character portraits",
+        "planning" => "Script & planning",
+        "vision" => "Image vision / OCR",
+        _ => _focusCapability ?? "Models",
+    };
+
+    private string? FocusKeyHint => _focusCapability switch
+    {
+        "music" => "needs music model + provider key",
+        "voice" => "needs voice model + Voice cloning key",
+        "review" => "often Gemini for native video review",
+        _ => null,
+    };
+
+    private string FocusSlotClass(string slot) =>
+        FocusActive && string.Equals(_focusCapability, slot, StringComparison.OrdinalIgnoreCase)
+            ? "border border-info rounded p-2 bg-info bg-opacity-10"
+            : "";
+
+    private string FocusSlotStyle(string slot) =>
+        FocusActive && !string.Equals(_focusCapability, slot, StringComparison.OrdinalIgnoreCase)
+            ? "display:none"
+            : "";
+
     private string? ModelHint(string modelId, string capability)
     {
         var m = _allModels.FirstOrDefault(x =>
@@ -732,15 +974,10 @@
             ?? _allModels.FirstOrDefault(x =>
                 string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase));
         if (m is null) return null;
-        var keys = m.RequiredEnvKeys is { Count: > 0 }
-            ? string.Join(", ", m.RequiredEnvKeys)
-            : "—";
-        var ep = string.IsNullOrEmpty(m.EndpointPath) ? "" : $" · {m.EndpointPath}";
-        var baseHint = $"{m.Provider}{ep} · key: {keys}";
-        // Surface catalog limitations (e.g. Veo: no clip continue / no locked plates).
+        // Product copy only — skip vendor/env key plumbing for end users.
         if (!string.IsNullOrWhiteSpace(m.Notes))
-            return $"{baseHint} — {m.Notes}";
-        return baseHint;
+            return m.Notes;
+        return m.DisplayName;
     }
 
     private UserSettingsDto? _userSettings;
@@ -765,57 +1002,163 @@
     private string? _savingProviderId;
     private string? _apiKeyFeedback;
 
-    private IReadOnlyList<ProviderKeyStatusDto> ProviderRows =>
-        _userSettings?.Providers is { Count: > 0 } list
-            ? list
-            : DefaultProviderRows;
 
-    private static readonly IReadOnlyList<ProviderKeyStatusDto> DefaultProviderRows =
-    [
-        new()
+    private sealed class CoverageRow
+    {
+        public string Id { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string Hint { get; set; } = "";
+        public string ModelId { get; set; } = "";
+        public string ProviderId { get; set; } = "";
+        public string ProviderDisplay { get; set; } = "";
+        public bool Required { get; set; } = true;
+        public bool OptionalOff { get; set; }
+        public bool KeyReady { get; set; }
+    }
+
+    private IReadOnlyList<CoverageRow> BuildCoverageRows()
+    {
+        var rows = new List<CoverageRow>
         {
-            ProviderId = "grok", DisplayName = "xAI / Grok", Family = "Xai",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = true, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Video Gen, Image Gen, Script & Planning, Image Vision / OCR",
-            Notes = "Full generation & planning pipeline (Video Gen, Image Gen, Script Planning, Image Vision / OCR).",
-            ActiveSource = "none",
-        },
-        new()
+            MakeCoverage("video", "Video generation", "Clips / film", _modelName, "video", required: true),
+            MakeCoverage("image", "Character portraits", "Image gen", _imageModel, "image", required: true),
+            MakeCoverage("planning", "Script & planning", "Screenplay, cast, shot plan", _planningModel, "chat", required: true),
+            MakeCoverage("vision", "Image vision / OCR", "Book pages & image understanding", _visionModel, "vision", required: true),
+            MakeCoverage("review", "Video review (QA)", "Dialogue check & auto-review", _qualityModel, "chat", required: true, preferVideoReview: true),
+            MakeCoverage("music", "Background music", "Optional scores", _audioModel, "audio", required: false),
+            MakeCoverage("voice", "Voice clone", "Optional character voice sample", _voiceModel, "voice", required: false),
+        };
+        return rows;
+    }
+
+    private CoverageRow MakeCoverage(
+        string id,
+        string label,
+        string hint,
+        string modelId,
+        string capability,
+        bool required,
+        bool preferVideoReview = false,
+        string? forceProviderId = null)
+    {
+        // Optional stage turned off (music "none", etc.).
+        var off = string.IsNullOrWhiteSpace(modelId)
+                  || modelId.Equals("none", StringComparison.OrdinalIgnoreCase)
+                  || modelId.Equals("disabled", StringComparison.OrdinalIgnoreCase);
+
+        // Voice clone is optional add-on: show provider status, not a model dropdown id.
+        if (id == "voice")
         {
-            ProviderId = "gemini", DisplayName = "Google Gemini", Family = "Google",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = true, SupportsVideoReview = true, SupportsImageGen = true, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Video Review (Multimodal MP4 Input), Video Gen (Veo), Image Gen, Script & Planning, Image Vision / OCR",
-            Notes = "Supports native Multimodal Video Review (inputs MP4 files directly for automated clip quality scoring) and Video Gen via Veo.",
-            ActiveSource = "none",
-        },
-        new()
+            var voiceRow = ProviderRows.FirstOrDefault(p =>
+                string.Equals(p.ProviderId, "elevenlabs", StringComparison.OrdinalIgnoreCase));
+            var hasVoice = voiceRow?.IsConfigured == true;
+            return new CoverageRow
+            {
+                Id = id,
+                Label = label,
+                Hint = hint,
+                ModelId = hasVoice ? "Sample ready to clone" : "Not set up",
+                ProviderId = "elevenlabs",
+                ProviderDisplay = voiceRow?.DisplayName ?? "Voice cloning",
+                Required = false,
+                OptionalOff = !hasVoice,
+                KeyReady = hasVoice,
+            };
+        }
+
+        string providerId;
+        if (!string.IsNullOrWhiteSpace(forceProviderId))
+            providerId = SupportedModelCatalog.NormalizeProviderId(forceProviderId);
+        else if (off)
+            providerId = "";
+        else
+            providerId = ResolveProviderIdForModel(modelId, capability, preferVideoReview);
+
+        var providerRow = ProviderRows.FirstOrDefault(pr =>
+            string.Equals(pr.ProviderId, providerId, StringComparison.OrdinalIgnoreCase));
+        var display = providerRow?.DisplayName
+                      ?? (string.IsNullOrWhiteSpace(providerId) ? "" : providerId);
+        var keyReady = off || string.IsNullOrWhiteSpace(providerId) || (providerRow?.IsConfigured ?? false);
+
+        return new CoverageRow
         {
-            ProviderId = "fal", DisplayName = "Fal.ai", Family = "Fal",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = false, SupportsVision = false,
-            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = true, SupportsScriptPlanning = false, SupportsImageVision = false,
-            CapabilitiesSummary = "Video Gen (HunyuanVideo), Image Gen (Flux.1)",
-            Notes = "Serverless open-source video (HunyuanVideo ~$0.025/clip) and image (Flux.1 Dev / Schnell ~$0.003/img) generation.",
-            ActiveSource = "none",
-        },
-        new()
+            Id = id,
+            Label = label,
+            Hint = hint,
+            ModelId = off ? "Off" : modelId,
+            ProviderId = providerId,
+            ProviderDisplay = display,
+            Required = required,
+            OptionalOff = !required && off,
+            // Optional + off counts as "ready" for the checklist (nothing missing).
+            KeyReady = keyReady || (!required && off),
+        };
+    }
+
+    private string ResolveProviderIdForModel(string modelId, string capability, bool preferVideoReview)
+    {
+        var m = _allModels.FirstOrDefault(x =>
+            string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase) &&
+            (preferVideoReview
+                ? (x.SupportsVideoReview || string.Equals(x.Capability, capability, StringComparison.OrdinalIgnoreCase))
+                : string.Equals(x.Capability, capability, StringComparison.OrdinalIgnoreCase)))
+            ?? _allModels.FirstOrDefault(x => string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase));
+
+        if (m is not null)
         {
-            ProviderId = "anthropic", DisplayName = "Anthropic Claude", Family = "Anthropic",
-            SupportsVideo = false, SupportsImage = false, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = false, SupportsVideoReview = false, SupportsImageGen = false, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Script & Planning, Image Vision / OCR",
-            Notes = "Script & Shot Planning + Image Vision / OCR frame review.",
-            ActiveSource = "none",
-        },
-    ];
+            if (!string.IsNullOrWhiteSpace(m.ProviderId))
+                return SupportedModelCatalog.NormalizeProviderId(m.ProviderId);
+            if (!string.IsNullOrWhiteSpace(m.Provider))
+                return SupportedModelCatalog.NormalizeProviderId(m.Provider);
+        }
+
+        var cap = capability.ToLowerInvariant() switch
+        {
+            "video" => ModelCapability.Video,
+            "image" => ModelCapability.Image,
+            "vision" => ModelCapability.Vision,
+            "audio" => ModelCapability.Audio,
+            "voice" => ModelCapability.Voice,
+            _ => ModelCapability.Chat,
+        };
+        return SupportedModelCatalog.NormalizeProviderId(
+            SupportedModelCatalog.ProviderIdFor(modelId, cap));
+    }
+
+    private List<string> CoverageUsesForProvider(string providerId)
+    {
+        return BuildCoverageRows()
+            .Where(c => !c.OptionalOff
+                        && !string.IsNullOrWhiteSpace(c.ProviderId)
+                        && string.Equals(c.ProviderId, providerId, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Label)
+            .Distinct()
+            .ToList();
+    }
+
+    private IReadOnlyList<ProviderKeyStatusDto> ProviderRows
+    {
+        get
+        {
+            // Prefer server DTO (includes personal/server key status). Fall back to catalog so
+            // Settings always shows key slots even if the settings API fails or is offline.
+            if (_userSettings?.Providers is { Count: > 0 } list)
+                return list;
+            try { return SupportedModelCatalog.BuildProviderKeyRows(); }
+            catch { return Array.Empty<ProviderKeyStatusDto>(); }
+        }
+    }
 
     private static string ProviderPlaceholder(string providerId) => providerId.ToLowerInvariant() switch
     {
-        "grok" => "xai-...",
-        "gemini" => "AIza...",
-        "fal" => "fal-...",
-        "anthropic" => "sk-ant-...",
+        "grok" => "xai-... (XAI_API_KEY)",
+        "gemini" => "AIza... (GEMINI_API_KEY)",
+        "fal" => "key... (FAL_KEY)",
+        "anthropic" => "sk-ant-... (ANTHROPIC_API_KEY)",
+        "openai" => "sk-... (OPENAI_API_KEY)",
+        "suno" => "SUNO_API_KEY",
+        "aimusicapi" => "AIMUSICAPI_API_KEY",
+        "elevenlabs" => "Paste your voice API key",
         _ => "api key",
     };
 
@@ -827,8 +1170,8 @@
 
     private static string ModelOptionLabel(SupportedModelDto m)
     {
-        var prov = string.IsNullOrWhiteSpace(m.ProviderId) ? m.Provider : m.ProviderId;
-        return $"{m.DisplayName} · {prov} ({m.Id})";
+        // Keep dropdowns readable — no raw provider ids or env-key plumbing.
+        return string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName;
     }
 
     private string VendorLabel(string modelId, string capability)
@@ -852,19 +1195,26 @@
 
     private double CatalogVideoRate(string resolution)
     {
-        var entry = SupportedModelCatalog.ResolveOrDefault(_modelName, ModelCapability.Video);
-        var table = entry.VideoCostPerSecondByResolution;
-        if (table is not null && table.TryGetValue(resolution, out var exact))
-            return exact;
-        // Same nearest-tier fill as CostReportService for missing res (e.g. Veo has no 480p).
-        if (table is { Count: > 0 })
+        try
         {
-            foreach (var prefer in new[] { "720p", "1080p", "480p" })
+            var entry = SupportedModelCatalog.ResolveOrDefault(_modelName, ModelCapability.Video);
+            var table = entry.VideoCostPerSecondByResolution;
+            if (table is not null && table.TryGetValue(resolution, out var exact))
+                return exact;
+            // Same nearest-tier fill as CostReportService for missing res (e.g. Veo has no 480p).
+            if (table is { Count: > 0 })
             {
-                if (table.TryGetValue(prefer, out var v))
-                    return v;
+                foreach (var prefer in new[] { "720p", "1080p", "480p" })
+                {
+                    if (table.TryGetValue(prefer, out var v))
+                        return v;
+                }
+                return table.Values.Min();
             }
-            return table.Values.Min();
+        }
+        catch (Exception)
+        {
+            // Catalog not loaded (rare after embedded fallback) — use list defaults.
         }
         return resolution switch
         {
@@ -876,9 +1226,16 @@
 
     private double CatalogImageRate()
     {
-        var entry = SupportedModelCatalog.Find(_imageModel, ModelCapability.Image)
-                    ?? SupportedModelCatalog.ResolveOrDefault(_imageModel, ModelCapability.Image);
-        return entry.ImageCostPerImage ?? 0.05;
+        try
+        {
+            var entry = SupportedModelCatalog.Find(_imageModel, ModelCapability.Image)
+                        ?? SupportedModelCatalog.ResolveOrDefault(_imageModel, ModelCapability.Image);
+            return entry.ImageCostPerImage ?? 0.05;
+        }
+        catch (Exception)
+        {
+            return 0.05;
+        }
     }
 
     private static string UsdRate(double v) =>
@@ -983,6 +1340,7 @@
             _visionModel = GetStr("vision_model_name", _visionModel);
             _qualityModel = GetStr("quality_model_name", _qualityModel);
             _audioModel = GetStr("audio_model_name", _audioModel);
+            _voiceModel = GetStr("voice_model_name", _voiceModel);
             _enableBackgroundMusic = GetBool("enable_background_music", _enableBackgroundMusic);
             _backgroundMusicVolumePercent = GetInt("background_music_volume_percent", _backgroundMusicVolumePercent);
             _aspect = GetStr("aspect_ratio", _aspect);
@@ -1061,6 +1419,7 @@
             ["vision_model_name"] = _visionModel,
             ["quality_model_name"] = _qualityModel,
             ["audio_model_name"] = _audioModel,
+            ["voice_model_name"] = _voiceModel,
             ["enable_background_music"] = _enableBackgroundMusic,
             ["background_music_volume_percent"] = _backgroundMusicVolumePercent,
             ["model_selections"] = new Dictionary<string, string>
