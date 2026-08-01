@@ -1,5 +1,7 @@
 @using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
 @inject EngineApiClient Engine
+@inject AdminSessionService Session
 
 @if (IsOpen)
 {
@@ -16,10 +18,10 @@
          style="z-index: 1055;"
          @onclick="Close">
         <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
-            <div class="modal-content">
-                <div class="modal-header py-3">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header py-3 border-secondary">
                     <h5 class="modal-title fw-semibold" id="invite-collab-title">Invite collaborator</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
                 </div>
                 <div class="modal-body">
                     @if (!string.IsNullOrWhiteSpace(statusMessage))
@@ -30,53 +32,70 @@
                     <div class="mb-3 position-relative">
                         <label class="form-label" for="invite-handle">Handle</label>
                         <div class="input-group">
-                            <span class="input-group-text">@@</span>
+                            <span class="input-group-text bg-dark text-white border-secondary">@@</span>
                             <input id="invite-handle"
                                    type="text"
-                                   class="form-control"
-                                   placeholder="Start typing a handle…"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Type a letter — matching handles appear"
                                    autocomplete="off"
+                                   role="combobox"
+                                   aria-expanded="@(_suggestions.Count > 0)"
+                                   aria-controls="invite-handle-list"
+                                   aria-autocomplete="list"
                                    value="@searchHandle"
-                                   @oninput="OnHandleInput" />
+                                   @oninput="OnHandleInput"
+                                   @onkeydown="OnHandleKeyDown"
+                                   @onfocus="OnHandleFocus" />
                         </div>
                         @if (_searching)
                         {
-                            <div class="form-text">Searching…</div>
+                            <div class="form-text text-white-50">Searching…</div>
                         }
                         else if (_suggestions.Count > 0)
                         {
-                            <ul class="list-group position-absolute w-100 shadow mt-1"
-                                style="z-index: 20; max-height: 12rem; overflow-y: auto;">
-                                @foreach (var h in _suggestions)
+                            <ul id="invite-handle-list"
+                                class="list-group position-absolute shadow mt-1 collab-handle-dd"
+                                role="listbox"
+                                style="z-index: 30; left: 0; right: 0; max-height: 14rem; overflow-y: auto;">
+                                @for (var i = 0; i < _suggestions.Count; i++)
                                 {
+                                    var h = _suggestions[i];
                                     var bare = h.TrimStart('@');
-                                    <li class="list-group-item list-group-item-action py-2"
+                                    var idx = i;
+                                    <li class="list-group-item list-group-item-action py-2 collab-handle-dd__item @(_highlight == idx ? "active" : "")"
+                                        role="option"
+                                        aria-selected="@(_highlight == idx)"
                                         style="cursor: pointer;"
-                                        @onclick="() => PickHandle(bare)">
-                                        @h
+                                        @onclick="() => PickHandle(bare)"
+                                        @onmouseenter="() => _highlight = idx">
+                                        <span class="fw-semibold">@@@bare</span>
                                     </li>
                                 }
                             </ul>
                         }
-                        else if (_searchAttempted && searchHandle.Trim().Length >= 2 && !_searching)
+                        else if (_searchAttempted && searchHandle.Trim().Length >= 1 && !_searching)
                         {
-                            <div class="form-text">No matching handles. You can still send by email.</div>
+                            <div class="form-text text-white-50">No matching handles. Invite by email below, or try another letter.</div>
+                        }
+                        else
+                        {
+                            <div class="form-text text-white-50">Type to filter everyone with a public handle (e.g. <kbd>b</kbd> shows all B… names).</div>
                         }
                     </div>
 
                     <div class="mb-0">
-                        <label class="form-label" for="invite-email">Email</label>
+                        <label class="form-label" for="invite-email">Email <span class="text-white-50 fw-normal">(optional)</span></label>
                         <input id="invite-email"
                                type="email"
-                               class="form-control"
-                               placeholder="collaborator@example.com"
+                               class="form-control bg-dark text-white border-secondary"
+                               placeholder="if they don’t have a handle yet"
                                autocomplete="email"
                                @bind="emailInput"
                                @bind:event="oninput" />
-                        <div class="form-text">Use email if they don’t have a handle yet.</div>
+                        <div class="form-text text-white-50">Use email only when they have no handle yet.</div>
                     </div>
                 </div>
-                <div class="modal-footer py-2">
+                <div class="modal-footer py-2 border-secondary">
                     <button type="button" class="btn btn-outline-secondary" @onclick="Close" disabled="@isSending">Cancel</button>
                     <button type="button"
                             class="btn btn-primary"
@@ -89,6 +108,24 @@
         </div>
     </div>
 }
+
+<style>
+    .collab-handle-dd {
+        background: #0f1419;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        border-radius: 0.5rem;
+    }
+    .collab-handle-dd__item {
+        background: #0f1419 !important;
+        color: #e2e8f0 !important;
+        border-color: rgba(148, 163, 184, 0.2) !important;
+    }
+    .collab-handle-dd__item:hover,
+    .collab-handle-dd__item.active {
+        background: rgba(56, 189, 248, 0.18) !important;
+        color: #fff !important;
+    }
+</style>
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
@@ -103,6 +140,7 @@
     private bool _searching;
     private bool _searchAttempted;
     private List<string> _suggestions = new();
+    private int _highlight = -1;
     private int _searchSeq;
     private CancellationTokenSource? _searchCts;
 
@@ -113,6 +151,7 @@
         searchHandle = "";
         emailInput = "";
         _suggestions.Clear();
+        _highlight = -1;
         _searchAttempted = false;
         CancelSearch();
         if (OnClose.HasDelegate)
@@ -130,14 +169,51 @@
     {
         searchHandle = e.Value?.ToString() ?? "";
         _suggestions.Clear();
+        _highlight = -1;
         _searchAttempted = false;
         await DebouncedSearchAsync();
+    }
+
+    private async Task OnHandleFocus()
+    {
+        // If they already typed something, refresh the list on focus
+        if (searchHandle.Trim().Length >= 1 && _suggestions.Count == 0)
+            await DebouncedSearchAsync();
+    }
+
+    private async Task OnHandleKeyDown(KeyboardEventArgs e)
+    {
+        if (_suggestions.Count == 0) return;
+        if (e.Key == "ArrowDown")
+        {
+            _highlight = _highlight < 0 ? 0 : Math.Min(_highlight + 1, _suggestions.Count - 1);
+            await InvokeAsync(StateHasChanged);
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            _highlight = _highlight <= 0 ? _suggestions.Count - 1 : _highlight - 1;
+            await InvokeAsync(StateHasChanged);
+        }
+        else if (e.Key is "Enter" or "Tab")
+        {
+            if (_highlight >= 0 && _highlight < _suggestions.Count)
+            {
+                PickHandle(_suggestions[_highlight].TrimStart('@'));
+            }
+        }
+        else if (e.Key == "Escape")
+        {
+            _suggestions.Clear();
+            _highlight = -1;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private void PickHandle(string bare)
     {
         searchHandle = bare ?? "";
         _suggestions.Clear();
+        _highlight = -1;
         _searchAttempted = false;
         StateHasChanged();
     }
@@ -146,9 +222,11 @@
     {
         CancelSearch();
         var q = searchHandle.Trim().TrimStart('@');
-        if (q.Length < 2)
+        // One letter is enough — "b" → all handles starting with b
+        if (q.Length < 1)
         {
             _searching = false;
+            _suggestions.Clear();
             return;
         }
 
@@ -158,11 +236,29 @@
         _searching = true;
         try
         {
-            await Task.Delay(250, cts.Token);
+            await Task.Delay(180, cts.Token);
             if (seq != _searchSeq) return;
             var found = await Engine.SearchUserHandlesAsync(q, cts.Token);
             if (seq != _searchSeq) return;
-            _suggestions = found.ToList();
+
+            // Hide self from the picker
+            var me = (Session.UserId ?? "").Trim();
+            var meHandle = (Session.DisplayHandle ?? "").Trim().TrimStart('@');
+            _suggestions = found
+                .Select(h => h.Trim())
+                .Where(h =>
+                {
+                    var bare = h.TrimStart('@');
+                    if (meHandle.Length > 0 &&
+                        string.Equals(bare, meHandle, StringComparison.OrdinalIgnoreCase))
+                        return false;
+                    if (me.Length > 0 &&
+                        string.Equals(bare, me, StringComparison.OrdinalIgnoreCase))
+                        return false;
+                    return true;
+                })
+                .ToList();
+            _highlight = _suggestions.Count > 0 ? 0 : -1;
             _searchAttempted = true;
         }
         catch (OperationCanceledException)

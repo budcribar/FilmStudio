@@ -3404,7 +3404,7 @@ app.MapGet("/api/users/search", async (
     if (string.IsNullOrWhiteSpace(q) || q.Trim().TrimStart('@').Length < 1)
         return Results.Ok(new { ok = true, handles = Array.Empty<string>() });
 
-    var found = await userDb.SearchUsernamesAsync(q, take: 8, ct);
+    var found = await userDb.SearchUsernamesAsync(q, take: 15, ct);
     var handles = found.Select(u => u.StartsWith('@') ? u : "@" + u).ToList();
     return Results.Ok(new { ok = true, handles });
 });
