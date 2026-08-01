@@ -42,6 +42,23 @@ public sealed class CostReportService
         var retries = assumeAvgRetries
             ?? GetDouble(rates, "assume_avg_retries", 0);
 
+        // Quality Gate Retry (config): dialogue/auto-review failure → expected extra video gens.
+        // Default ON in Configuration UI (qa_retry_on_fail). Even before full pipeline wiring,
+        // estimates should price the intended behavior.
+        var qaRetryOnFail = GetCfgBool(cfg, "qa_retry_on_fail", defaultValue: true);
+        var qaMaxRetries = GetCfgInt(cfg, "qa_max_retries", defaultValue: 1);
+        qaMaxRetries = Math.Clamp(qaMaxRetries, 0, 5);
+        var qaFailRate = 0.20;
+        if (cfg.TryGetValue("cost_estimates", out var ceQa) && ceQa.ValueKind == JsonValueKind.Object)
+        {
+            if (ceQa.TryGetProperty("qa_fail_rate", out var fr) && fr.TryGetDouble(out var frv) && frv >= 0)
+                qaFailRate = Math.Clamp(frv, 0, 1);
+        }
+        var qaExpectedExtraGens = qaRetryOnFail ? qaFailRate * qaMaxRetries : 0.0;
+        // Do not under-count: use the larger of manual avg-retries vs QA-driven extras.
+        if (qaExpectedExtraGens > retries)
+            retries = qaExpectedExtraGens;
+
         var ledger = await GetCostLedgerAsync(projectId, ct).ConfigureAwait(false);
         var actual = SummarizeLedger(ledger);
 
@@ -161,6 +178,8 @@ public sealed class CostReportService
         var voicePlan = EstimateVoiceGeneration(projectId, rates, cfg);
         var musicPlan = EstimateMusicGeneration(blueprintClips, rates, cfg);
         var planningPlan = EstimatePlanningWork(blueprintClips, estimateBasis, rates, cfg);
+        var reviewPlan = EstimateAutomatedReview(
+            clipsTotal, rates, cfg, qaRetryOnFail, qaFailRate, qaMaxRetries);
 
         var estimateByCategory = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
         {
@@ -169,15 +188,15 @@ public sealed class CostReportService
             [CostCategories.Video] = Math.Round(allDraft, 2),
             [CostCategories.Voice] = Math.Round(voicePlan.Usd, 2),
             [CostCategories.Music] = Math.Round(musicPlan.Usd, 2),
-            // Review is actual-driven (Gemini clip/movie QA, plate rankers); prior stays 0 until we add knobs.
-            [CostCategories.Review] = 0,
+            [CostCategories.Review] = Math.Round(reviewPlan.Usd, 2),
             [CostCategories.Other] = 0,
         };
-        var nonVideo = castPlan.Usd + voicePlan.Usd + musicPlan.Usd + planningPlan.Usd;
+        var nonVideo = castPlan.Usd + voicePlan.Usd + musicPlan.Usd + planningPlan.Usd + reviewPlan.Usd;
         var fullDraft = allDraft + nonVideo;
         var fullHero = allHero + nonVideo;
         // Remaining first-pass: missing video + unfinished cast/voice/music (planning mostly already spent).
-        var remainingExtras = castPlan.RemainingUsd + voicePlan.RemainingUsd + musicPlan.RemainingUsd;
+        var remainingExtras = castPlan.RemainingUsd + voicePlan.RemainingUsd + musicPlan.RemainingUsd
+            + reviewPlan.RemainingUsd;
         remainingDraft += remainingExtras;
 
         var basisNote = estimateBasis switch
@@ -237,6 +256,9 @@ public sealed class CostReportService
                 basisNote + " " +
                 $"Rates from selected models (video={videoModel}, image={imageModel}" +
                 (voicePlan.Included ? $", voice={voiceModel}" : "") + "). " +
+                (qaRetryOnFail
+                    ? $"Quality gate retry ON (assume ~{qaFailRate:P0} fail × {qaMaxRetries} max → ~{qaExpectedExtraGens:0.##} extra video attempts/clip); automated review included. "
+                    : "Quality gate retry OFF; still counts one dialogue check per clip when Gemini QA is used. ") +
                 "Actual = tracked spend at list rates when work completed.",
         };
     }
@@ -1382,6 +1404,78 @@ public sealed class CostReportService
     /// Screenplay / shot-plan LLM work. Uses chat model token rates when available;
     /// after import the screenplay pass is treated as done (remaining ≈ shot plan only).
     /// </summary>
+
+    /// <summary>
+    /// Post-clip automated review (Gemini dialogue check / optional clip auto-review).
+    /// When quality-gate retry is on, count re-review after expected failed regens.
+    /// Extra <em>video</em> cost for regens is folded into clip attempts via retries.
+    /// </summary>
+    private static ScopeEstimate EstimateAutomatedReview(
+        int clipsTotal,
+        Dictionary<string, object?> rates,
+        Dictionary<string, JsonElement> cfg,
+        bool qaRetryOnFail,
+        double qaFailRate,
+        int qaMaxRetries)
+    {
+        if (clipsTotal <= 0)
+            return new ScopeEstimate(0, 0, Included: false);
+
+        // Prefer quality/vision model for Gemini-style native video dialogue QA.
+        var reviewModelId = GetStr(cfg, "quality_model_name",
+            GetStr(cfg, "vision_model_name",
+                GetStr(cfg, "planning_model_name", "grok-4.5")));
+        var entry = SupportedModelCatalog.Find(reviewModelId, ModelCapability.Vision)
+                    ?? SupportedModelCatalog.Find(reviewModelId, ModelCapability.Chat)
+                    ?? SupportedModelCatalog.ResolveOrDefault(reviewModelId, ModelCapability.Chat);
+
+        var inRate = (entry.InputCostPerMillionTokens ?? 2.0) / 1_000_000.0;
+        var outRate = (entry.OutputCostPerMillionTokens ?? 10.0) / 1_000_000.0;
+
+        // One dialogue/speaker verification pass per clip (video+audio multimodal prior).
+        // Token priors are stand-ins until we average from telemetry.
+        var inTok = 28_000.0;
+        var outTok = 1_200.0;
+        if (cfg.TryGetValue("cost_estimates", out var ce) && ce.ValueKind == JsonValueKind.Object)
+        {
+            if (ce.TryGetProperty("review_input_tokens_per_clip", out var it) && it.TryGetDouble(out var itv) && itv > 0)
+                inTok = itv;
+            if (ce.TryGetProperty("review_output_tokens_per_clip", out var ot) && ot.TryGetDouble(out var otv) && otv > 0)
+                outTok = otv;
+            if (ce.TryGetProperty("review_usd_per_clip", out var fixedUsd) && fixedUsd.TryGetDouble(out var fu) && fu > 0)
+            {
+                var passesFixed = 1.0 + (qaRetryOnFail ? qaFailRate * Math.Max(1, qaMaxRetries) : 0);
+                var totalFixed = clipsTotal * fu * passesFixed;
+                return new ScopeEstimate(Math.Round(totalFixed, 4), Math.Round(totalFixed, 4), Included: true);
+            }
+        }
+
+        var perClip = inTok * inRate + outTok * outRate;
+        // First pass on every clip; re-check after expected QA-driven regens.
+        var reviewPasses = 1.0 + (qaRetryOnFail ? qaFailRate * Math.Max(1, qaMaxRetries) : 0);
+        var total = clipsTotal * perClip * reviewPasses;
+        _ = rates;
+        return new ScopeEstimate(Math.Round(total, 4), Math.Round(total, 4), Included: true);
+    }
+
+    private static bool GetCfgBool(Dictionary<string, JsonElement> cfg, string key, bool defaultValue)
+    {
+        if (!cfg.TryGetValue(key, out var el)) return defaultValue;
+        if (el.ValueKind is JsonValueKind.True) return true;
+        if (el.ValueKind is JsonValueKind.False) return false;
+        if (el.ValueKind == JsonValueKind.String && bool.TryParse(el.GetString(), out var b)) return b;
+        return defaultValue;
+    }
+
+    private static int GetCfgInt(Dictionary<string, JsonElement> cfg, string key, int defaultValue)
+    {
+        if (!cfg.TryGetValue(key, out var el)) return defaultValue;
+        if (el.TryGetInt32(out var i)) return i;
+        if (el.ValueKind == JsonValueKind.String && int.TryParse(el.GetString(), out var j)) return j;
+        if (el.TryGetDouble(out var d)) return (int)Math.Round(d);
+        return defaultValue;
+    }
+
     private static ScopeEstimate EstimatePlanningWork(
         List<BlueprintSceneClips> scenes,
         string estimateBasis,
