@@ -595,6 +595,8 @@ public static class SupportedModelCatalog
                 SupportsImageGen = supportsImageGen,
                 SupportsScriptPlanning = supportsScriptPlanning,
                 SupportsImageVision = supportsImageVision,
+                SupportsAudio = supportsAudio,
+                SupportsVoice = supportsVoice,
                 RequiredEnvKeys = required,
                 // Provider cards are for API keys — never dump per-model engineering notes here.
                 Notes = ShortProviderBlurb(pId),

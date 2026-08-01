@@ -79,6 +79,8 @@ public sealed class ProviderKeyStatusDto
     public bool SupportsImageGen { get; set; }
     public bool SupportsScriptPlanning { get; set; }
     public bool SupportsImageVision { get; set; }
+    public bool SupportsAudio { get; set; }
+    public bool SupportsVoice { get; set; }
 
     /// <summary>Limitations users need before picking this provider (video continue, OCR, etc.).</summary>
     public string? Notes { get; set; }
