@@ -56,60 +56,43 @@ else
         <div class="card-body py-3">
             @if (hasActive)
             {
-                @* Two rows only: (1) title + actions  (2) process steps *@
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                    <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
-                        <img src="/favicon.png" alt="" width="32" height="32" class="rounded-2 shadow-sm flex-shrink-0" />
-                        <h1 class="home-top__title text-truncate mb-0 fs-4" title="@(ActiveProject.ProjectId ?? _projects.Active?.Id)">
-                            @(ActiveProject.Label ?? activeMeta?.Label ?? activeMeta?.Title ?? ActiveProject.ProjectId ?? _projects.Active?.Id)
-                        </h1>
-                        @if (activeMeta is not null)
+                @* One control row + process strip — project name only once (in the dropdown). *@
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2 home-active-toolbar">
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm flex-shrink-0"
+                            data-testid="home-new-project"
+                            disabled="@_busy"
+                            @onclick="OpenNewProjectAsync"
+                            title="New project">
+                        + New
+                    </button>
+                    <select class="form-select form-select-sm home-project-select flex-grow-1"
+                            style="min-width: 10rem; max-width: 22rem;"
+                            data-testid="home-project-picker"
+                            value="@(_projects.Active?.Id ?? ActiveProject.ProjectId)"
+                            disabled="@_busy"
+                            title="Active project"
+                            aria-label="Active project"
+                            @onchange="OnPickerChangedAsync">
+                        @foreach (var p in _projects.Projects)
                         {
-                            <span class="badge @VisibilityBadgeClass(activeMeta.VisibilityMode) small fw-normal flex-shrink-0">
-                                @VisibilityBadgeText(activeMeta.VisibilityMode)
-                            </span>
+                            <option value="@p.Id">@(p.Label ?? p.Title ?? p.Id)</option>
                         }
-                    </div>
-                    <div class="d-flex flex-wrap align-items-center gap-1 gap-sm-2 flex-shrink-0">
-                        @if (_projects.Projects.Count > 1 || _showSwitch)
-                        {
-                            <select class="form-select form-select-sm"
-                                    style="min-width: 8rem; max-width: 12rem;"
-                                    data-testid="home-project-picker"
-                                    value="@(_projects.Active?.Id ?? ActiveProject.ProjectId)"
-                                    disabled="@_busy"
-                                    title="Switch project"
-                                    @onchange="OnPickerChangedAsync">
-                                @foreach (var p in _projects.Projects)
-                                {
-                                    <option value="@p.Id">@(p.Label ?? p.Title ?? p.Id)</option>
-                                }
-                            </select>
-                        }
-                        else if (_projects.Projects.Count == 1)
-                        {
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-secondary"
-                                    disabled="@_busy"
-                                    @onclick="() => _showSwitch = true"
-                                    title="Switch or open another project">
-                                Switch
-                            </button>
-                        }
-                        <button class="btn btn-outline-primary btn-sm"
-                                data-testid="home-new-project"
-                                disabled="@_busy"
-                                @onclick="OpenNewProjectAsync">
-                            + New
-                        </button>
-                        <button type="button"
-                                class="btn btn-outline-secondary btn-sm"
-                                data-testid="home-manage-projects"
-                                aria-expanded="@(_manageExpanded ? "true" : "false")"
-                                @onclick="() => _manageExpanded = !_manageExpanded">
-                            Manage @(_manageExpanded ? "▴" : "▾")
-                        </button>
-                    </div>
+                    </select>
+                    @if (activeMeta is not null)
+                    {
+                        <span class="badge @VisibilityBadgeClass(activeMeta.VisibilityMode) small fw-normal flex-shrink-0"
+                              title="Visibility">
+                            @VisibilityBadgeText(activeMeta.VisibilityMode)
+                        </span>
+                    }
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                            data-testid="home-manage-projects"
+                            aria-expanded="@(_manageExpanded ? "true" : "false")"
+                            @onclick="() => _manageExpanded = !_manageExpanded">
+                        Manage @(_manageExpanded ? "▴" : "▾")
+                    </button>
                 </div>
 
                 <StudioProcessStrip Active="@HomeActiveStep" />

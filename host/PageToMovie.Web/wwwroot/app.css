@@ -1650,6 +1650,12 @@ h1:focus {
     border: 1px solid var(--fs-border-color);
     background: var(--fs-bg-card);
 }
+.home-active-toolbar {
+    gap: 0.5rem !important;
+}
+.home-project-select {
+    font-weight: 600;
+}
 .home-active-card .ptm-step-strip {
     margin-bottom: 0;
 }
