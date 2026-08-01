@@ -102,6 +102,7 @@ public static class ChatCallModes
     public const string BookToFountainLocationsRetry = "book_to_fountain_locations_retry";
     public const string BookToFountainSpeakersRetry = "book_to_fountain_speakers_retry";
     public const string CastFromScreenplay = "cast_from_screenplay";
+    public const string VisionMetaAdaptation = "vision_meta_adaptation";
     public const string CastVisualLiteralize = "cast_visual_literalize";
     public const string LearningPropose = "learning_propose";
     public const string SilentBeatClassify = "silent_beat_classify";

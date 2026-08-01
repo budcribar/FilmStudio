@@ -480,6 +480,28 @@ public static class ScreenplayService
 
             var save = SaveDraft(store, projectId, fountain);
             if (!save.Ok) return save;
+
+            // Structured visual medium at adaptation time (not regex on Fountain later).
+            if (chat is not null && chat.IsConfigured)
+            {
+                try
+                {
+                    await ProjectVisionMeta.DecideAtAdaptationAsync(
+                        projectDir,
+                        title,
+                        book,
+                        fountain,
+                        chat,
+                        model,
+                        onProgress,
+                        ct).ConfigureAwait(false);
+                }
+                catch (Exception metaEx)
+                {
+                    onProgress?.Invoke("Vision medium metadata skipped: " + metaEx.Message);
+                }
+            }
+
             save.Message = "Screenplay draft ready — review and approve";
             return save;
         }

@@ -980,11 +980,10 @@ public sealed class CharacterDesignService
     /// </summary>
     internal static string? ReadProjectRenderStyleLock(string projectDir)
     {
-        // Screenplay (Fountain) is the source of truth for visual medium.
-        // cast_seeds is derived from Fountain and may be stale — only used if Fountain is silent.
-        var fromFountain = TryReadMediumFromFountain(projectDir);
-        if (!string.IsNullOrWhiteSpace(fromFountain))
-            return fromFountain;
+        // Structured metadata from adaptation (or cast) — never regex over Fountain prose.
+        var vision = ProjectVisionMeta.TryRead(projectDir);
+        if (!string.IsNullOrWhiteSpace(vision?.RenderStyleLock))
+            return vision!.RenderStyleLock!.Trim();
 
         try
         {
@@ -1001,55 +1000,6 @@ public sealed class CharacterDesignService
         catch
         {
             // ignore
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Parse medium from screenplay Notes / early body when cast_seeds has no render_style_lock.
-    /// </summary>
-    internal static string? TryReadMediumFromFountain(string projectDir)
-    {
-        foreach (var rel in new[]
-                 {
-                     Path.Combine("source", "screenplay.fountain"),
-                     Path.Combine("source", "screenplay_approved.fountain"),
-                     Path.Combine("source", "adaptation.fountain"),
-                 })
-        {
-            var path = Path.Combine(projectDir, rel);
-            if (!File.Exists(path)) continue;
-            string text;
-            try { text = File.ReadAllText(path); }
-            catch { continue; }
-            if (string.IsNullOrWhiteSpace(text)) continue;
-            var head = text.Length > 6_000 ? text[..6_000] : text;
-
-            if (RegexContains(head,
-                    @"\b(picture[- ]?book|storybook|illustrated children|children'?s book illustration|" +
-                    @"painted cartoon|stylized (?:3d )?animated|not photoreal)\b"))
-            {
-                return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast " +
-                       "(animals and humans share the same medium) -- not photoreal, not live-action";
-            }
-
-            if (RegexContains(head,
-                    @"\b(photoreal|photo-?real|live[- ]?action|period drama|gothic|naturalistic skin|" +
-                    @"film photography|cinematic live)\b"))
-            {
-                return "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe, " +
-                       "period-appropriate when the story implies it. NOT cartoon, NOT illustration, NOT anime";
-            }
-
-            // Explicit "Medium = …" line
-            var m = System.Text.RegularExpressions.Regex.Match(
-                head,
-                @"(?im)^\s*(?:Notes:\s*)?Medium\s*[=:]\s*(.+)$");
-            if (m.Success && m.Groups[1].Value.Trim() is { Length: > 0 } med)
-                return med.StartsWith("STYLE", StringComparison.OrdinalIgnoreCase)
-                    ? med.Trim()
-                    : "STYLE LOCK: " + med.Trim();
         }
 
         return null;
@@ -1143,8 +1093,9 @@ public sealed class CharacterDesignService
         var isHumanAdult = CharacterVisualTextScrubber.IsHumanAdultCharacter(
             charKey, ageBand, description, visualLock);
 
+        // Illustrated vs photoreal from structured vision_meta / STYLE LOCK — not file type.
         var illustrated = PrefersIllustratedPortraitStyle(
-            projectRenderStyleLock, hasImageHints, isAnimal, hasBookSource: hasBookIllustrations);
+            projectRenderStyleLock, hasImageHints, isAnimal, hasBookSource: false);
 
         var speciesClause = "";
         if (ageBand.StartsWith("child", StringComparison.OrdinalIgnoreCase) ||

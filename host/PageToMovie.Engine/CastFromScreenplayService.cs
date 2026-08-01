@@ -241,6 +241,11 @@ public sealed class CastFromScreenplayService
                 _projectRules.EnsureStyleRuleFromRenderLock(projectId, rsl, approvedBy: "cast_extract"))
                 onProgress?.Invoke("Project style rule updated from book/screenplay medium.");
 
+            // Persist structured medium for portraits (prefer adaptation vision_meta if already set).
+            var rslText = normalized.TryGetValue("render_style_lock", out var rslV) ? rslV?.ToString() : null;
+            var perfText = normalized.TryGetValue("performance_lock", out var plV) ? plV?.ToString() : null;
+            ProjectVisionMeta.UpsertFromCast(_projects.GetProjectDir(projectId), rslText, perfText);
+
             if (normalized.TryGetValue("performance_lock", out var perfObj) &&
                 perfObj?.ToString() is { Length: > 0 } perf &&
                 _projectRules.EnsurePerformanceRuleFromLock(projectId, perf, approvedBy: "cast_extract"))
