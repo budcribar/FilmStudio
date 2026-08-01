@@ -31,7 +31,7 @@ public sealed class CostReportService
         string? draftResolution = null,
         string? heroResolution = null,
         double? assumeAvgRetries = null,
-        int recentLimit = 40,
+        int recentLimit = 200,
         CancellationToken ct = default)
     {
         var cfg = await LoadConfigMapAsync(projectId, ct).ConfigureAwait(false);
