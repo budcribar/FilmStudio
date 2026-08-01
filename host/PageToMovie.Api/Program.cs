@@ -2323,6 +2323,43 @@ app.MapGet("/api/stage2-status", async (ProjectStore store, CancellationToken ct
 });
 
 // ---- Supported models (master catalog: model id → endpoint + required keys) ----
+/// <summary>Raw models_catalog.json for Blazor WASM bootstrap (public read).</summary>
+app.MapGet("/api/models/catalog-json", () =>
+{
+    try
+    {
+        var path = SupportedModelCatalog.GetCatalogFilePath();
+        if (System.IO.File.Exists(path))
+            return Results.Text(System.IO.File.ReadAllText(path), "application/json");
+
+        var asm = typeof(SupportedModelCatalog).Assembly;
+        foreach (var name in asm.GetManifestResourceNames()
+                     .Where(n => n.EndsWith("models_catalog.json", StringComparison.OrdinalIgnoreCase)))
+        {
+            using var stream = asm.GetManifestResourceStream(name);
+            if (stream is null) continue;
+            using var reader = new StreamReader(stream);
+            return Results.Text(reader.ReadToEnd(), "application/json");
+        }
+
+        if (SupportedModelCatalog.IsLoaded)
+        {
+            return Results.Json(new
+            {
+                models = SupportedModelCatalog.ToDtoList(enabledOnly: false),
+                capabilities = SupportedModelCatalog.RegisteredCapabilities,
+                taskRankings = SupportedModelCatalog.TaskRankings,
+            });
+        }
+
+        return Results.NotFound(new { ok = false, error = "models_catalog.json not found on server" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { ok = false, error = ex.Message }, statusCode: 500);
+    }
+});
+
 app.MapGet("/api/models", (string? capability) =>
 {
     IReadOnlyList<SupportedModelDto> list;

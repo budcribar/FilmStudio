@@ -701,6 +701,15 @@
     {
         try
         {
+            // WASM: hydrate SupportedModelCatalog from API (no local models_catalog.json).
+            try
+            {
+                var raw = await Engine.GetModelsCatalogJsonAsync();
+                if (!string.IsNullOrWhiteSpace(raw))
+                    SupportedModelCatalog.TryLoadFromJson(raw);
+            }
+            catch { /* rate UI uses defaults */ }
+
             var list = await Engine.GetSupportedModelsAsync();
             _allModels = list.ToList();
             _videoModels = _allModels.Where(m => m.Capability == "video").ToList();
@@ -859,7 +868,7 @@
                 return table.Values.Min();
             }
         }
-        catch (InvalidOperationException)
+        catch (Exception)
         {
             // Catalog not loaded (rare after embedded fallback) — use list defaults.
         }
@@ -879,7 +888,7 @@
                         ?? SupportedModelCatalog.ResolveOrDefault(_imageModel, ModelCapability.Image);
             return entry.ImageCostPerImage ?? 0.05;
         }
-        catch (InvalidOperationException)
+        catch (Exception)
         {
             return 0.05;
         }

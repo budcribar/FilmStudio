@@ -39,6 +39,18 @@ public sealed class EngineApiClient
         return body ?? new ModelsCatalogResponse();
     }
 
+    /// <summary>Raw catalog JSON for SupportedModelCatalog.TryLoadFromJson (WASM has no file).</summary>
+    public async Task<string?> GetModelsCatalogJsonAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await _http.GetAsync("/api/models/catalog-json", ct);
+            if (!resp.IsSuccessStatusCode) return null;
+            return await resp.Content.ReadAsStringAsync(ct);
+        }
+        catch { return null; }
+    }
+
     public async Task<string> SaveModelsCatalogRawAsync(string rawJson, CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Put, "/api/admin/models-catalog")

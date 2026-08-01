@@ -431,10 +431,11 @@ public static class SupportedModelCatalog
         try
         {
             var asm = typeof(SupportedModelCatalog).Assembly;
-            const string resourceName = "PageToMovie.Core.config.models_catalog.json";
-            using var stream = asm.GetManifestResourceStream(resourceName);
-            if (stream is not null)
+            foreach (var resourceName in asm.GetManifestResourceNames()
+                         .Where(n => n.EndsWith("models_catalog.json", StringComparison.OrdinalIgnoreCase)))
             {
+                using var stream = asm.GetManifestResourceStream(resourceName);
+                if (stream is null) continue;
                 using var reader = new StreamReader(stream);
                 if (TryLoadFromJson(reader.ReadToEnd()))
                     return;
@@ -442,16 +443,19 @@ public static class SupportedModelCatalog
         }
         catch
         {
-            // fall through to throw
+            // fall through
         }
 
-        // No hardcoded fallback list here on purpose — a second, hand-maintained copy of the
-        // catalog is worse than failing loudly: it silently drifts from models_catalog.json (it
-        // already had at least once) and, if it were ever actually hit, would mean production is
-        // quietly running on a stale/wrong model list instead of surfacing the real problem, which
-        // is that the shipped catalog file (see PageToMovie.Core.csproj) or a /data override is
-        // missing or unparseable. _loadedEntries stays null, so this throws again on every access
-        // until fixed — nothing gets cached as "working" when it isn't.
+        // Browser has no /data or AppContext catalog path. Soft-load an empty shell so
+        // Configuration can render; LoadCatalogAsync then hydrates via /api/models/catalog-json.
+        if (OperatingSystem.IsBrowser())
+        {
+            _loadedEntries = new List<SupportedModelEntry>();
+            _loadedCapabilities = DefaultCapabilityDefinitions;
+            _loadedTaskRankings = DefaultTaskRankings;
+            return;
+        }
+
         throw new InvalidOperationException(
             "No usable models catalog found. Checked: " + string.Join(", ", candidates) +
             ", embedded:PageToMovie.Core.config.models_catalog.json" +
