@@ -592,7 +592,8 @@ public static class SupportedModelCatalog
                 SupportsScriptPlanning = supportsScriptPlanning,
                 SupportsImageVision = supportsImageVision,
                 RequiredEnvKeys = required,
-                Notes = string.Join("; ", group.Select(m => m.Notes).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Take(2)),
+                // Provider cards are for API keys — never dump per-model engineering notes here.
+                Notes = ShortProviderBlurb(pId),
             });
         }
         return rows;
@@ -629,6 +630,18 @@ public static class SupportedModelCatalog
         _ => !string.IsNullOrWhiteSpace(sample.ProviderName)
             ? sample.ProviderName
             : char.ToUpperInvariant(pId[0]) + pId[1..],
+    };
+
+    private static string? ShortProviderBlurb(string pId) => pId switch
+    {
+        "grok" => "Video, image, script, and vision for the main studio pipeline.",
+        "gemini" => "Video review (MP4), Veo video gen, image, and planning.",
+        "openai" => "Script & planning (chat). Not for video or image generation.",
+        "anthropic" => "Script & planning and image vision. Not for video or image gen.",
+        "fal" => "Open-source video/image (and some audio) via Fal serverless.",
+        "suno" or "aimusicapi" => "Background music generation.",
+        "elevenlabs" => "Voice clone and TTS for personal dialogue (optional add-on).",
+        _ => null,
     };
 
     private static int DisplayOrder(string pId) => pId switch
