@@ -310,11 +310,13 @@ else
 
 <div class="card home-showcase-card">
     <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
+        <div class="min-w-0">
             <div class="fw-semibold">Demo gallery</div>
-            <div class="small text-muted">Tell-Tale Heart, Buster & Nick, and more</div>
+            <div class="small text-muted text-truncate" title="@_demoShowcaseHint">
+                @_demoShowcaseHint
+            </div>
         </div>
-        <a href="/demo" class="btn btn-sm btn-outline-primary">View demos</a>
+        <a href="/demo" class="btn btn-sm btn-outline-primary flex-shrink-0">View demos</a>
     </div>
 </div>
 
@@ -380,6 +382,9 @@ else
     private bool _jobsExpanded;
     /// <summary>Null = follow auto rules; otherwise honor last user click.</summary>
     private bool? _jobsUserPreference;
+    /// <summary>Titles of real public demos (never invented marketing names).</summary>
+    private string _demoShowcaseHint = "Loading gallery…";
+    private List<DemoListItem> _publicDemos = new();
 
     private async Task ToggleNewProjectAsync()
     {
@@ -453,6 +458,7 @@ else
         Hub.JobLog += OnJobLog;
         try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
         await LoadAsync();
+        await LoadDemoShowcaseAsync();
         try
         {
             await Hub.StartAsync();
@@ -504,6 +510,38 @@ else
             l.Contains("[Grok] Submit", StringComparison.OrdinalIgnoreCase) ||
             l.Contains("video-extend", StringComparison.OrdinalIgnoreCase) ||
             l.Contains("reference-to-video", StringComparison.OrdinalIgnoreCase));
+
+
+    /// <summary>Fill the home gallery blurb from real public demos only.</summary>
+    private async Task LoadDemoShowcaseAsync()
+    {
+        try
+        {
+            _publicDemos = await Engine.ListDemosAsync(8, "top");
+            if (_publicDemos.Count == 0)
+            {
+                _demoShowcaseHint = "No published films yet — be the first";
+            }
+            else
+            {
+                var titles = _publicDemos
+                    .Select(d => (d.Title ?? d.ProjectId ?? "").Trim())
+                    .Where(s => s.Length > 0)
+                    .Take(4)
+                    .ToList();
+                if (titles.Count == 0)
+                    _demoShowcaseHint = $"{_publicDemos.Count} film{(_publicDemos.Count == 1 ? "" : "s")} on the wall";
+                else if (_publicDemos.Count > titles.Count)
+                    _demoShowcaseHint = string.Join(", ", titles) + $" · +{_publicDemos.Count - titles.Count} more";
+                else
+                    _demoShowcaseHint = string.Join(", ", titles);
+            }
+        }
+        catch
+        {
+            _demoShowcaseHint = "Community films made with PageToMovie";
+        }
+    }
 
     private async Task LoadAsync()
     {
