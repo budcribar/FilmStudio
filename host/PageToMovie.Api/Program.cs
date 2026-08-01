@@ -4501,17 +4501,9 @@ app.MapPost("/api/jobs/youtube-upload", async (
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
+    // Shared channel OAuth lives on the server — clients only upload via this UI/API path.
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
-    if (!user.IsAdmin)
-    {
-        return Results.Json(new
-        {
-            ok = false,
-            error = "Only admins can upload to the shared YouTube channel.",
-            code = "admin_youtube_only",
-        }, statusCode: StatusCodes.Status403Forbidden);
-    }
 
     try
     {
@@ -6040,17 +6032,8 @@ app.MapPost("/api/demos", async (
     if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
         return denied;
 
-    // Shared YouTube channel: only admins may upload / publish to the public wall.
-    if (!user.IsAdmin)
-    {
-        return Results.Json(new
-        {
-            ok = false,
-            error = "Only admins can publish to the public demo gallery (shared YouTube channel).",
-            code = "admin_publish_only",
-        }, statusCode: StatusCodes.Status403Forbidden);
-    }
-
+    // Uploads go only through this API → shared "Page to Movie" YouTube channel (OAuth on server).
+    // Creators never need YouTube Studio; admins alone connect the channel.
     try
     {
         string? title = null;
@@ -6111,7 +6094,9 @@ app.MapPost("/api/demos", async (
         title = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
         description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         projectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim();
-        privacyStatus = privacyStatus is "public" or "unlisted" or "private" ? privacyStatus : "public";
+        // Default unlisted: channel is operated privately; gallery embeds still work.
+        // true "private" would hide films from everyone except the channel owner.
+        privacyStatus = privacyStatus is "public" or "unlisted" or "private" ? privacyStatus : "unlisted";
         var tags = string.IsNullOrWhiteSpace(tagsRaw)
             ? null
             : tagsRaw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();

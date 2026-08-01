@@ -82,9 +82,10 @@ public sealed class DemoYouTubePublisherService
         {
             // Re-read entry for latest metadata (title/privacy) while uploading.
             entry = _demos.TryGet(demoId) ?? entry;
+            // Channel is app-operated; default unlisted so gallery can embed without open YT browse.
             var privacy = entry.PrivacyStatus is "private" or "unlisted" or "public"
                 ? entry.PrivacyStatus
-                : "public";
+                : "unlisted";
             var video = new Video
             {
                 Snippet = new VideoSnippet
