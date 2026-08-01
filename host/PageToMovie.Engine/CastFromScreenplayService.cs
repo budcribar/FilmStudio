@@ -286,7 +286,10 @@ public sealed class CastFromScreenplayService
     private static string BuildUserPrompt(string fountain, string? book)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("You are the closed-cast authority. Read the FOUNTAIN and BOOK and decide the cast.");
+        sb.AppendLine("You are the closed-cast authority.");
+        sb.AppendLine("SOURCE OF TRUTH: the FOUNTAIN screenplay. It must describe the story world,");
+        sb.AppendLine("including visual medium and on-screen cast. BOOK text is supporting detail only");
+        sb.AppendLine("when Fountain is thin — never override Fountain medium or cast with book-only invention.");
         sb.AppendLine("There is NO external name list and NO forced candidate list — membership is your judgment only.");
         sb.AppendLine("Include every person or animal who appears on screen or speaks (including silent leads");
         sb.AppendLine("named only in action lines, and titled beings from the book/title when they are story roles).");
@@ -420,15 +423,16 @@ public sealed class CastFromScreenplayService
                 !string.Equals(keyCore, display, StringComparison.OrdinalIgnoreCase))
                 queryNames.Add(keyCore);
 
+            // Fountain is source of truth; book only fills gaps.
             var look = "";
-            if (!string.IsNullOrWhiteSpace(bookText))
+            if (!string.IsNullOrWhiteSpace(fountainText))
             {
-                look = HarvestNameLookExcerpts(bookText, queryNames, maxChars: 1_200);
+                look = HarvestNameLookExcerpts(fountainText, queryNames, maxChars: 1_200);
                 look = CollapseLookExcerptToSentence(look, display);
             }
-            if (string.IsNullOrWhiteSpace(look) && !string.IsNullOrWhiteSpace(fountainText))
+            if (string.IsNullOrWhiteSpace(look) && !string.IsNullOrWhiteSpace(bookText))
             {
-                look = HarvestNameLookExcerpts(fountainText, queryNames, maxChars: 800);
+                look = HarvestNameLookExcerpts(bookText, queryNames, maxChars: 800);
                 look = CollapseLookExcerptToSentence(look, display);
             }
             if (string.IsNullOrWhiteSpace(look)) continue;

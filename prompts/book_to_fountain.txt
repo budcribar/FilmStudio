@@ -1,3 +1,6 @@
+After adaptation, the Fountain screenplay is the source of truth for cast, looks,
+visual medium, and story beats used by portrait generation and filming.
+
 Act as an expert screenwriter adapting a book into an editable Fountain 1.1 screenplay.
 
 This is the operator-facing screenplay. Downstream shot/clip work is driven from this

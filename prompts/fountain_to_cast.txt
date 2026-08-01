@@ -1,8 +1,11 @@
 Act as a casting director and continuity supervisor for a film adaptation.
 
-Your task: read the FOUNTAIN screenplay (and optional BOOK text) and produce a
-CLOSED CAST list as JSON only — for production pinning (portraits, book plates,
-multi-ref video). Do NOT rewrite the screenplay.
+Your task: produce a CLOSED CAST list as JSON only — for production pinning
+(portraits, book plates, multi-ref video). Do NOT rewrite the screenplay.
+
+SOURCE OF TRUTH: the FOUNTAIN screenplay. It must already describe the book's story
+world (cast, looks, visual medium). Optional BOOK text is supporting evidence only —
+never override Fountain medium, cast membership, or identity with book-only guesses.
 
 ================================================================
 GOALS

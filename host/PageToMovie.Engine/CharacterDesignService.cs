@@ -980,8 +980,12 @@ public sealed class CharacterDesignService
     /// </summary>
     internal static string? ReadProjectRenderStyleLock(string projectDir)
     {
-        // Screenplay / cast extract is the source of truth for medium — not "is there a
-        // book_full.txt" vs "are there book_images files".
+        // Screenplay (Fountain) is the source of truth for visual medium.
+        // cast_seeds is derived from Fountain and may be stale — only used if Fountain is silent.
+        var fromFountain = TryReadMediumFromFountain(projectDir);
+        if (!string.IsNullOrWhiteSpace(fromFountain))
+            return fromFountain;
+
         try
         {
             var castPath = Path.Combine(projectDir, "source", ScreenplayService.CastSeedsFileName);
@@ -998,11 +1002,6 @@ public sealed class CharacterDesignService
         {
             // ignore
         }
-
-        // Fountain title Notes / early action often carries "Medium = …" from adaptation.
-        var fromFountain = TryReadMediumFromFountain(projectDir);
-        if (!string.IsNullOrWhiteSpace(fromFountain))
-            return fromFountain;
 
         return null;
     }
