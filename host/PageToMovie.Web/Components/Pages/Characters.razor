@@ -313,23 +313,30 @@ else
                                 <div class="char-pick">
                                     <div class="small fw-semibold mb-1">Pick the best look</div>
                                     <p class="small text-muted mb-3 mb-md-2">
-                                        Large previews so you can compare detail. Click a look to save it as the preferred picture for film.
+                                        Click a picture to zoom and compare detail. Use <strong>Use this look</strong> only when you’ve chosen.
                                     </p>
                                     <div class="char-pick__grid" data-testid="char-pick-grid">
                                         @foreach (var c in _allCandidates)
                                         {
-                                            <button type="button"
-                                                    class="char-pick__card"
-                                                    disabled="@(_busy || JobRunning)"
-                                                    title="Use this look"
-                                                    data-testid="char-pick-card"
-                                                    @onclick="@(() => LockCandidateAsync(c))">
-                                                <div class="char-pick__frame">
+                                            <div class="char-pick__card" data-testid="char-pick-card">
+                                                <button type="button"
+                                                        class="char-pick__frame char-pick__frame--zoomable"
+                                                        disabled="@(_busy || JobRunning)"
+                                                        title="Zoom — inspect detail"
+                                                        aria-label="Zoom @c.Label"
+                                                        @onclick="@(() => OpenLookZoom(c))">
                                                     <img src="@c.Url" alt="@c.Label" loading="lazy" />
-                                                </div>
+                                                    <span class="char-pick__zoom-badge" aria-hidden="true">🔍 Zoom</span>
+                                                </button>
                                                 <span class="char-pick__label">@c.Label</span>
-                                                <span class="char-pick__cta">Use this look</span>
-                                            </button>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-primary char-pick__use"
+                                                        disabled="@(_busy || JobRunning)"
+                                                        title="Save as preferred look for film"
+                                                        @onclick="@(() => LockCandidateAsync(c))">
+                                                    Use this look
+                                                </button>
+                                            </div>
                                         }
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-secondary mt-2"
@@ -338,6 +345,56 @@ else
                                         ← Change route
                                     </button>
                                 </div>
+
+                                @* Full-screen zoom lightbox for detail compare *@
+                                @if (_zoomCandidate is not null)
+                                {
+                                    <div class="char-zoom"
+                                         role="dialog"
+                                         aria-modal="true"
+                                         aria-label="Zoomed character look"
+                                         data-testid="char-look-zoom"
+                                         @onclick="CloseLookZoom">
+                                        <div class="char-zoom__panel" @onclick:stopPropagation="true">
+                                            <div class="char-zoom__toolbar">
+                                                <span class="char-zoom__title">@_zoomCandidate.Label</span>
+                                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                    <button type="button" class="btn btn-sm btn-outline-light"
+                                                            disabled="@(_allCandidates.Count < 2)"
+                                                            @onclick="ZoomPrev"
+                                                            title="Previous look">←</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-light"
+                                                            disabled="@(_allCandidates.Count < 2)"
+                                                            @onclick="ZoomNext"
+                                                            title="Next look">→</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-light"
+                                                            @onclick="ToggleLookZoomScale"
+                                                            title="Toggle 1× / 2×">
+                                                        @(_zoomScale > 1.01 ? "1× fit" : "2× zoom")
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-primary"
+                                                            disabled="@(_busy || JobRunning)"
+                                                            @onclick="@(() => LockFromZoomAsync())">
+                                                        Use this look
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                            @onclick="CloseLookZoom">Close</button>
+                                                </div>
+                                            </div>
+                                            <div class="char-zoom__stage @(_zoomScale > 1.01 ? "is-zoomed" : null)"
+                                                 @onclick="ToggleLookZoomScale">
+                                                <img src="@_zoomCandidate.Url"
+                                                     alt="@_zoomCandidate.Label"
+                                                     class="char-zoom__img"
+                                                     style="transform: scale(@_zoomScale.ToString(System.Globalization.CultureInfo.InvariantCulture));"
+                                                     draggable="false" />
+                                            </div>
+                                            <p class="char-zoom__hint small text-muted mb-0">
+                                                Click image to toggle 2× · arrows switch looks · Esc closes
+                                            </p>
+                                        </div>
+                                    </div>
+                                }
                             }
                             else if (_mode == Mode.PickSource)
                             {
@@ -692,6 +749,8 @@ else
     private PictureRoute _pictureRoute = PictureRoute.Choose;
 
     private List<Candidate> _allCandidates = new();
+    private Candidate? _zoomCandidate;
+    private double _zoomScale = 1;
     private PendingDelete? _deleteConfirm;
 
     private bool _showBookCandidateGallery;
@@ -1569,6 +1628,7 @@ else
 
     private void BackToSource()
     {
+        CloseLookZoom();
         ResetCompare();
         _mode = Mode.PickSource;
         if (_selected?.HasPreferred == true)
@@ -1578,6 +1638,7 @@ else
     private void ResetCompare()
     {
         _allCandidates = new();
+        CloseLookZoom();
     }
 
     private async Task StartRegenerateAsync()
@@ -1770,6 +1831,56 @@ else
         _mode = Mode.Compare;
         _panelPictureOpen = true;
         _message = null;
+    }
+
+
+    private void OpenLookZoom(Candidate c)
+    {
+        _zoomCandidate = c;
+        _zoomScale = 1;
+    }
+
+    private void CloseLookZoom()
+    {
+        _zoomCandidate = null;
+        _zoomScale = 1;
+    }
+
+    private void ToggleLookZoomScale()
+    {
+        _zoomScale = _zoomScale > 1.01 ? 1 : 2;
+    }
+
+    private void ZoomPrev()
+    {
+        if (_zoomCandidate is null || _allCandidates.Count == 0) return;
+        var i = _allCandidates.FindIndex(x =>
+            string.Equals(x.Url, _zoomCandidate.Url, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.Label, _zoomCandidate.Label, StringComparison.Ordinal));
+        if (i < 0) i = 0;
+        i = (i - 1 + _allCandidates.Count) % _allCandidates.Count;
+        _zoomCandidate = _allCandidates[i];
+        _zoomScale = 1;
+    }
+
+    private void ZoomNext()
+    {
+        if (_zoomCandidate is null || _allCandidates.Count == 0) return;
+        var i = _allCandidates.FindIndex(x =>
+            string.Equals(x.Url, _zoomCandidate.Url, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.Label, _zoomCandidate.Label, StringComparison.Ordinal));
+        if (i < 0) i = 0;
+        i = (i + 1) % _allCandidates.Count;
+        _zoomCandidate = _allCandidates[i];
+        _zoomScale = 1;
+    }
+
+    private async Task LockFromZoomAsync()
+    {
+        if (_zoomCandidate is null) return;
+        var c = _zoomCandidate;
+        CloseLookZoom();
+        await LockCandidateAsync(c);
     }
 
     private async Task LockCandidateAsync(Candidate c)
