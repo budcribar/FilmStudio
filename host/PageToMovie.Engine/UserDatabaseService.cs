@@ -90,6 +90,35 @@ public class UserDatabaseService
         return Path.Combine(Path.GetTempPath(), "PageToMovie", "data");
     }
 
+
+    /// <summary>
+    /// Copy <c>pagetomovie.db</c> from repo workspace/data into LocalAppData when the
+    /// stable store has no DB yet (preserves YouTube OAuth after the path change).
+    /// </summary>
+    static void TryMigrateLegacyWorkspaceData(string? workspace, string stableDir)
+    {
+        try
+        {
+            var destDb = Path.Combine(stableDir, "pagetomovie.db");
+            if (File.Exists(destDb))
+                return;
+            if (string.IsNullOrWhiteSpace(workspace))
+                return;
+            var srcDb = Path.Combine(workspace.Trim(), "data", "pagetomovie.db");
+            if (!File.Exists(srcDb))
+                return;
+            File.Copy(srcDb, destDb, overwrite: false);
+            foreach (var name in new[] { "pagetomovie.db-wal", "pagetomovie.db-shm" })
+            {
+                var s = Path.Combine(workspace.Trim(), "data", name);
+                var d = Path.Combine(stableDir, name);
+                if (File.Exists(s) && !File.Exists(d))
+                    File.Copy(s, d, overwrite: false);
+            }
+        }
+        catch { /* best effort */ }
+    }
+
     private static bool IsIsolatedTestWorkspace(string? workspace)
     {
         if (string.IsNullOrWhiteSpace(workspace)) return false;
