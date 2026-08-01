@@ -744,6 +744,21 @@ public sealed class EngineApiClient
         return resp.IsSuccessStatusCode;
     }
 
+    /// <summary>Admin: pull all uploads from the connected YouTube channel into the gallery.</summary>
+    public async Task<(bool Ok, string? Message, string? Error, int Added, int Updated, int Total)> SyncYouTubeChannelDemosAsync(
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/demos/sync-youtube");
+        var dto = await SendJsonAsync<DemoChannelSyncResult>(req, ct);
+        return (
+            dto?.Ok == true,
+            dto?.Message,
+            dto?.Error,
+            dto?.Added ?? 0,
+            dto?.Updated ?? 0,
+            dto?.Total ?? 0);
+    }
+
     /// <summary>Admin: put an existing YouTube video on the public gallery.</summary>
     public async Task<(bool Ok, string? Message, string? Error)> RegisterDemoFromYouTubeAsync(
         string youtubeIdOrUrl,
@@ -3480,6 +3495,17 @@ public sealed class DemoFromYouTubeResult
     public bool Ok { get; set; }
     public string? Message { get; set; }
     public string? Error { get; set; }
+}
+
+public sealed class DemoChannelSyncResult
+{
+    public bool Ok { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+    public int Added { get; set; }
+    public int Updated { get; set; }
+    public int Total { get; set; }
+    public bool Skipped { get; set; }
 }
 
 public sealed class YouTubeConnectUrlDto

@@ -144,6 +144,7 @@ builder.Services.AddSingleton<ProjectArchiveService>();
 builder.Services.AddSingleton<ServerLogExportService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
+builder.Services.AddSingleton<YouTubeChannelGallerySync>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
 builder.Services.AddSingleton<ProjectAutoGitService>();
 builder.Services.AddSingleton<MovieAutoReviewService>();
@@ -5473,10 +5474,15 @@ app.MapGet("/api/demos", async (
     DemoUpvoteService upvotes,
     ProjectStore store,
     IUserContext user,
+    YouTubeChannelGallerySync channelSync,
     int? take,
     string? sort,
     CancellationToken ct) =>
 {
+    // YouTube channel is SoT: quietly refresh catalog when connected (throttled).
+    try { await channelSync.EnsureSyncedAsync(force: false, ct: ct); }
+    catch { /* non-fatal for public list */ }
+
     var list = demos.ListPublic(take ?? 50).ToList();
     var ids = list.Select(d => d.Id).ToList();
     var counts = await upvotes.GetCountsAsync(ids, ct);
@@ -5580,6 +5586,45 @@ app.MapPost("/api/admin/demos/from-youtube", (
     catch (Exception ex)
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
+
+/// <summary>Admin: pull every upload from the connected YouTube channel into the public gallery catalog.</summary>
+app.MapPost("/api/admin/demos/sync-youtube", async (
+    YouTubeChannelGallerySync channelSync,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "Admin only" }, statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var (added, updated, total, skipped) = await channelSync.EnsureSyncedAsync(
+            force: true,
+            createdBy: user.UserId,
+            maxVideos: 100,
+            ct: ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            added,
+            updated,
+            total,
+            skipped,
+            message = total == 0 && skipped
+                ? "Nothing to sync (channel not connected or empty)."
+                : $"Synced {total} channel video(s): {added} new, {updated} updated.",
+            lastError = channelSync.LastError,
+            lastSuccessUtc = channelSync.LastSuccessUtc,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
     }
 });
 

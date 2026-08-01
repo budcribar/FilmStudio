@@ -10,7 +10,7 @@
         <div>
             <h1 class="h3 mb-0">Demo gallery</h1>
             <p class="text-muted small mb-0">
-                YouTube is the source of truth. Connect the channel, then link existing videos so they appear on the public wall.
+                YouTube is the source of truth. Connect the channel, then <strong>Sync channel → gallery</strong> to import every upload. The public wall also refreshes from the channel when you open it.
             </p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
@@ -56,7 +56,7 @@
                             }
                             else if (_yt.Connected)
                             {
-                                <span class="text-success">Connected — demos can upload / gallery can use this channel.</span>
+                                <span class="text-success">Connected — gallery can list this channel’s uploads (sync or open /demo).</span>
                             }
                             else
                             {
@@ -64,19 +64,24 @@
                             }
                         </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        @if (_yt is { Configured: true, Connected: false })
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if (_yt is { Configured: true, Connected: true })
+                        {
+                            <button type="button" class="btn btn-primary btn-sm fw-semibold"
+                                    disabled="@_busy" @onclick="SyncChannelAsync"
+                                    title="List every upload on the connected channel and put them on the public gallery">
+                                Sync channel → gallery
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    disabled="@_busy" @onclick="DisconnectYouTubeAsync">
+                                Disconnect
+                            </button>
+                        }
+                        else if (_yt is { Configured: true, Connected: false })
                         {
                             <button type="button" class="btn btn-warning btn-sm fw-semibold"
                                     disabled="@_busy" @onclick="ConnectYouTubeAsync">
                                 Connect YouTube
-                            </button>
-                        }
-                        else if (_yt is { Connected: true })
-                        {
-                            <button type="button" class="btn btn-outline-secondary btn-sm"
-                                    disabled="@_busy" @onclick="DisconnectYouTubeAsync">
-                                Disconnect
                             </button>
                         }
                     </div>
@@ -341,6 +346,26 @@
             await Api.DisconnectYouTubeAsync();
             _message = "YouTube channel disconnected.";
             await RefreshYouTubeAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task SyncChannelAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var (ok, msg, err, added, updated, total) = await Api.SyncYouTubeChannelDemosAsync();
+            if (!ok)
+            {
+                _error = err ?? msg ?? "Channel sync failed.";
+                return;
+            }
+            _message = msg ?? $"Synced {total} video(s) ({added} new, {updated} updated).";
+            await ReloadAsync();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

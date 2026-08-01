@@ -1,3 +1,4 @@
+using System.Linq;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Services;
@@ -55,6 +56,8 @@ public sealed class YouTubeAuthService
             {
                 YouTubeService.Scope.YoutubeUpload,
                 YouTubeService.Scope.YoutubeForceSsl,
+                // List channel uploads for the public demo wall (YouTube = source of truth).
+                YouTubeService.Scope.YoutubeReadonly,
             },
             DataStore = new SqliteDataStore(dataDir),
         });
@@ -193,7 +196,93 @@ public sealed class YouTubeAuthService
             return null;
         }
     }
+
+    public sealed record ChannelUploadVideo(
+        string VideoId,
+        string Title,
+        string? Description,
+        DateTimeOffset? PublishedAt,
+        string? ThumbnailUrl);
+
+    /// <summary>
+    /// All uploads on the connected channel (uploads playlist), newest first.
+    /// Requires a connected OAuth channel (re-connect after scope change if list fails).
+    /// </summary>
+    public async Task<IReadOnlyList<ChannelUploadVideo>> ListChannelUploadsAsync(
+        int maxResults = 50,
+        CancellationToken ct = default)
+    {
+        maxResults = Math.Clamp(maxResults, 1, 200);
+        var youtube = await GetServiceAsync(ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException(
+                "YouTube channel is not connected. Connect it from Admin → Demo gallery first.");
+
+        var chReq = youtube.Channels.List("contentDetails,snippet");
+        chReq.Mine = true;
+        var chResp = await chReq.ExecuteAsync(ct).ConfigureAwait(false);
+        var channel = chResp.Items?.FirstOrDefault()
+            ?? throw new InvalidOperationException("No YouTube channel found for this OAuth account.");
+        var uploadsPlaylist = channel.ContentDetails?.RelatedPlaylists?.Uploads;
+        if (string.IsNullOrWhiteSpace(uploadsPlaylist))
+            throw new InvalidOperationException("Channel has no uploads playlist.");
+
+        var list = new List<ChannelUploadVideo>();
+        string? pageToken = null;
+        while (list.Count < maxResults)
+        {
+            var plReq = youtube.PlaylistItems.List("snippet,contentDetails");
+            plReq.PlaylistId = uploadsPlaylist;
+            plReq.MaxResults = Math.Min(50, maxResults - list.Count);
+            if (!string.IsNullOrEmpty(pageToken))
+                plReq.PageToken = pageToken;
+
+            var plResp = await plReq.ExecuteAsync(ct).ConfigureAwait(false);
+            foreach (var item in plResp.Items ?? Array.Empty<Google.Apis.YouTube.v3.Data.PlaylistItem>())
+            {
+                var videoId = item.ContentDetails?.VideoId
+                    ?? item.Snippet?.ResourceId?.VideoId;
+                if (string.IsNullOrWhiteSpace(videoId))
+                    continue;
+                var sn = item.Snippet;
+                var title = (sn?.Title ?? "").Trim();
+                if (title.Length == 0
+                    || title.Equals("Private video", StringComparison.OrdinalIgnoreCase)
+                    || title.Equals("Deleted video", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                DateTimeOffset? published = null;
+                try
+                {
+                    // Google client versions differ on property names
+                    var prop = sn?.GetType().GetProperty("PublishedAtDateTimeOffset");
+                    if (prop?.GetValue(sn) is DateTimeOffset dto)
+                        published = dto;
+                    else if (sn?.PublishedAt is DateTime dt)
+                        published = new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Utc));
+                }
+                catch { /* optional */ }
+
+                var thumb = sn?.Thumbnails?.Medium?.Url
+                    ?? sn?.Thumbnails?.High?.Url
+                    ?? sn?.Thumbnails?.Default__?.Url;
+
+                list.Add(new ChannelUploadVideo(
+                    videoId.Trim(),
+                    title,
+                    string.IsNullOrWhiteSpace(sn?.Description) ? null : sn!.Description.Trim(),
+                    published,
+                    thumb));
+            }
+
+            pageToken = plResp.NextPageToken;
+            if (string.IsNullOrEmpty(pageToken))
+                break;
+        }
+
+        return list;
+    }
 }
+
 
 /// <summary>
 /// Persistent SQLite uploader/OAuth token storage backed by <c>pagetomovie.db</c> in persistent <c>/data</c>.

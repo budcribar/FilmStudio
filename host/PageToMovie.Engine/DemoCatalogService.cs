@@ -784,6 +784,40 @@ public sealed class DemoCatalogService
         }
     }
 
+    /// <summary>
+    /// Upsert public gallery entries for every channel upload. Returns counts.
+    /// Skips videos already removed/rejected intentionally? — re-public if still on channel.
+    /// </summary>
+    public (int Added, int Updated, int Total) SyncFromChannelUploads(
+        IReadOnlyList<YouTubeAuthService.ChannelUploadVideo> videos,
+        string? createdBy = "youtube-channel")
+    {
+        if (videos is null || videos.Count == 0)
+            return (0, 0, 0);
+
+        var added = 0;
+        var updated = 0;
+        foreach (var v in videos)
+        {
+            if (string.IsNullOrWhiteSpace(v.VideoId))
+                continue;
+            bool existed;
+            lock (_lock)
+            {
+                existed = LoadAllUnlocked().Any(e =>
+                    string.Equals(e.YoutubeId, v.VideoId, StringComparison.OrdinalIgnoreCase));
+            }
+            RegisterFromYouTube(
+                v.VideoId,
+                v.Title,
+                v.Description,
+                createdBy);
+            if (existed) updated++;
+            else added++;
+        }
+        return (added, updated, added + updated);
+    }
+
     /// <summary>Parse watch / youtu.be / embed / raw 11-char ids.</summary>
     public static string? ExtractYouTubeVideoId(string? input)
     {
