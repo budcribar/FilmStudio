@@ -267,6 +267,46 @@ public class UserDatabaseService
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
+                        CREATE TABLE IF NOT EXISTS user_api_calls (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id TEXT NOT NULL,
+                            ts TEXT NOT NULL,
+                            project_id TEXT,
+                            job_id TEXT,
+                            kind TEXT NOT NULL,
+                            mode TEXT,
+                            provider TEXT,
+                            model TEXT,
+                            endpoint TEXT,
+                            http_status INTEGER,
+                            ok INTEGER NOT NULL DEFAULT 1,
+                            duration_ms INTEGER,
+                            estimated_usd REAL,
+                            currency TEXT NOT NULL DEFAULT 'USD',
+                            scene INTEGER,
+                            clip INTEGER,
+                            char_key TEXT,
+                            resolution TEXT,
+                            duration_sec REAL,
+                            input_tokens INTEGER,
+                            output_tokens INTEGER,
+                            prompt_chars INTEGER,
+                            response_chars INTEGER,
+                            request_id TEXT,
+                            error TEXT,
+                            purpose TEXT,
+                            fakes INTEGER NOT NULL DEFAULT 0
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_user_ts ON user_api_calls(user_id, ts);
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_project ON user_api_calls(project_id);
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_kind ON user_api_calls(kind);
+                    ";
+                    cmd.ExecuteNonQuery();
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
                         INSERT INTO users (user_id, username, password_hash, role, created_at, email_confirmed_at)
                         VALUES ('admin', 'admin', @hash, 'Admin', @created, @created)
                         ON CONFLICT(user_id) DO UPDATE SET
@@ -475,6 +515,133 @@ public class UserDatabaseService
             {
                 await SaveProviderApiKeyAsync(userId, kvp.Key, kvp.Value, ct).ConfigureAwait(false);
             }
+        }
+    }
+
+
+    /// <summary>
+    /// Append one API call for BYOK cost attribution. Never throws to callers — telemetry must not break gen.
+    /// </summary>
+
+    public async Task<List<UserApiCallRow>> ListUserApiCallsAsync(
+        string userId,
+        int take = 100,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var list = new List<UserApiCallRow>();
+        if (string.IsNullOrWhiteSpace(userId)) return list;
+        take = Math.Clamp(take, 1, 500);
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT id, user_id, ts, project_id, job_id, kind, mode, provider, model, endpoint,
+                   http_status, ok, duration_ms, estimated_usd, currency, scene, clip, char_key,
+                   resolution, duration_sec, input_tokens, output_tokens, purpose, error, fakes
+            FROM user_api_calls
+            WHERE user_id = @userId
+            ORDER BY id DESC
+            LIMIT @take";
+        cmd.Parameters.AddWithValue("@userId", userId.Trim());
+        cmd.Parameters.AddWithValue("@take", take);
+        using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await r.ReadAsync(ct).ConfigureAwait(false))
+        {
+            list.Add(new UserApiCallRow
+            {
+                Id = r.GetInt64(0),
+                UserId = r.GetString(1),
+                Ts = r.GetString(2),
+                ProjectId = r.IsDBNull(3) ? null : r.GetString(3),
+                JobId = r.IsDBNull(4) ? null : r.GetString(4),
+                Kind = r.GetString(5),
+                Mode = r.IsDBNull(6) ? null : r.GetString(6),
+                Provider = r.IsDBNull(7) ? null : r.GetString(7),
+                Model = r.IsDBNull(8) ? null : r.GetString(8),
+                Endpoint = r.IsDBNull(9) ? null : r.GetString(9),
+                HttpStatus = r.IsDBNull(10) ? null : r.GetInt32(10),
+                Ok = r.GetInt32(11) != 0,
+                DurationMs = r.IsDBNull(12) ? null : r.GetInt64(12),
+                EstimatedUsd = r.IsDBNull(13) ? null : r.GetDouble(13),
+                Currency = r.IsDBNull(14) ? "USD" : r.GetString(14),
+                Scene = r.IsDBNull(15) ? null : r.GetInt32(15),
+                Clip = r.IsDBNull(16) ? null : r.GetInt32(16),
+                CharKey = r.IsDBNull(17) ? null : r.GetString(17),
+                Resolution = r.IsDBNull(18) ? null : r.GetString(18),
+                DurationSec = r.IsDBNull(19) ? null : r.GetDouble(19),
+                InputTokens = r.IsDBNull(20) ? null : r.GetInt32(20),
+                OutputTokens = r.IsDBNull(21) ? null : r.GetInt32(21),
+                Purpose = r.IsDBNull(22) ? null : r.GetString(22),
+                Error = r.IsDBNull(23) ? null : r.GetString(23),
+                Fakes = r.GetInt32(24) != 0,
+            });
+        }
+        return list;
+    }
+
+    public async Task InsertUserApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
+    {
+        if (rec is null || string.IsNullOrWhiteSpace(rec.UserId))
+            return;
+
+        EnsureDatabaseInitialized();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT INTO user_api_calls (
+                    user_id, ts, project_id, job_id, kind, mode, provider, model, endpoint,
+                    http_status, ok, duration_ms, estimated_usd, currency,
+                    scene, clip, char_key, resolution, duration_sec,
+                    input_tokens, output_tokens, prompt_chars, response_chars,
+                    request_id, error, purpose, fakes)
+                VALUES (
+                    @userId, @ts, @projectId, @jobId, @kind, @mode, @provider, @model, @endpoint,
+                    @httpStatus, @ok, @durationMs, @estimatedUsd, @currency,
+                    @scene, @clip, @charKey, @resolution, @durationSec,
+                    @inputTokens, @outputTokens, @promptChars, @responseChars,
+                    @requestId, @error, @purpose, @fakes)";
+            var ts = (rec.Ts ?? DateTimeOffset.UtcNow).ToString("o");
+            var purpose = !string.IsNullOrWhiteSpace(rec.Mode)
+                ? rec.Mode
+                : !string.IsNullOrWhiteSpace(rec.Kind)
+                    ? rec.Kind
+                    : "api_call";
+            cmd.Parameters.AddWithValue("@userId", rec.UserId.Trim());
+            cmd.Parameters.AddWithValue("@ts", ts);
+            cmd.Parameters.AddWithValue("@projectId", (object?)rec.ProjectId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@jobId", (object?)rec.JobId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@kind", rec.Kind ?? "");
+            cmd.Parameters.AddWithValue("@mode", (object?)rec.Mode ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@provider", (object?)rec.Provider ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@model", (object?)rec.Model ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@endpoint", (object?)rec.Endpoint ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@httpStatus", (object?)rec.HttpStatus ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ok", rec.Ok ? 1 : 0);
+            cmd.Parameters.AddWithValue("@durationMs", (object?)rec.DurationMs ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@estimatedUsd", (object?)rec.EstimatedUsd ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@currency", "USD");
+            cmd.Parameters.AddWithValue("@scene", (object?)rec.Scene ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@clip", (object?)rec.Clip ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@charKey", (object?)rec.CharKey ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@resolution", (object?)rec.Resolution ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@durationSec", (object?)rec.DurationSec ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@inputTokens", (object?)rec.InputTokens ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@outputTokens", (object?)rec.OutputTokens ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@promptChars", (object?)rec.PromptChars ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@responseChars", (object?)rec.ResponseChars ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@requestId", (object?)rec.RequestId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@error", string.IsNullOrWhiteSpace(rec.Error) ? DBNull.Value : (rec.Error!.Length > 500 ? rec.Error[..500] : rec.Error));
+            cmd.Parameters.AddWithValue("@purpose", purpose ?? "");
+            cmd.Parameters.AddWithValue("@fakes", rec.Fakes ? 1 : 0);
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "InsertUserApiCallAsync failed for {UserId}", rec.UserId);
         }
     }
 
@@ -1390,4 +1557,34 @@ public class UserDatabaseService
             EmailConfirmedAt = confirmed,
         };
     }
+}
+
+/// <summary>One row from user_api_calls (list-rate cost attribution).</summary>
+public sealed class UserApiCallRow
+{
+    public long Id { get; set; }
+    public string UserId { get; set; } = "";
+    public string Ts { get; set; } = "";
+    public string? ProjectId { get; set; }
+    public string? JobId { get; set; }
+    public string Kind { get; set; } = "";
+    public string? Mode { get; set; }
+    public string? Provider { get; set; }
+    public string? Model { get; set; }
+    public string? Endpoint { get; set; }
+    public int? HttpStatus { get; set; }
+    public bool Ok { get; set; }
+    public long? DurationMs { get; set; }
+    public double? EstimatedUsd { get; set; }
+    public string Currency { get; set; } = "USD";
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public string? CharKey { get; set; }
+    public string? Resolution { get; set; }
+    public double? DurationSec { get; set; }
+    public int? InputTokens { get; set; }
+    public int? OutputTokens { get; set; }
+    public string? Purpose { get; set; }
+    public string? Error { get; set; }
+    public bool Fakes { get; set; }
 }

@@ -513,6 +513,7 @@ public sealed class FilmJobService
                 ["suno"] = run.SunoApiKey,
                 ["aimusicapi"] = run.AiMusicApiKey,
             }))
+            using (UserApiCallScope.Push(run.UserId))
             {
                 var startedAt = DateTimeOffset.UtcNow;
                 var success = false;

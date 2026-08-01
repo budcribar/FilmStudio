@@ -480,6 +480,7 @@ app.Use(async (context, next) =>
         ["suno"] = suno,
         ["aimusicapi"] = aimusicapi,
     }))
+    using (UserApiCallScope.Push(uid))
     {
         await next();
     }
@@ -4960,6 +4961,29 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review/
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+});
+
+
+app.MapGet("/api/me/api-calls", async (
+    int? take,
+    IUserContext user,
+    UserDatabaseService userDb,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var rows = await userDb.ListUserApiCallsAsync(user.UserId, take ?? 100, ct);
+    var totalUsd = rows.Where(r => r.EstimatedUsd is > 0).Sum(r => r.EstimatedUsd!.Value);
+    return Results.Ok(new
+    {
+        ok = true,
+        userId = user.UserId,
+        count = rows.Count,
+        estimatedUsdSum = Math.Round(totalUsd, 4),
+        notes = "List-rate estimates at call time (catalog). Not provider invoices. Full prompts stay on the project telemetry file.",
+        calls = rows,
+    });
 });
 
 // ---- Cost (ledger + estimates) ----

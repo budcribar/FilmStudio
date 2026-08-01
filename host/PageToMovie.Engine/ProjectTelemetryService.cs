@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Utils;
+using PageToMovie.Core.Models;
+using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -32,12 +34,17 @@ public sealed class ProjectTelemetryService
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly ProjectStore _projects;
+    private readonly UserDatabaseService? _userDb;
     private readonly ILogger<ProjectTelemetryService> _log;
 
-    public ProjectTelemetryService(ProjectStore projects, ILogger<ProjectTelemetryService> log)
+    public ProjectTelemetryService(
+        ProjectStore projects,
+        ILogger<ProjectTelemetryService> log,
+        UserDatabaseService? userDb = null)
     {
         _projects = projects;
         _log = log;
+        _userDb = userDb;
     }
 
     /// <summary>Bind telemetry writes to a project for the current async flow.</summary>
@@ -72,23 +79,111 @@ public sealed class ProjectTelemetryService
     public async Task LogApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
     {
         var projectId = rec.ProjectId ?? CurrentProjectId;
-        if (string.IsNullOrWhiteSpace(projectId))
-        {
-            _log.LogDebug("api_calls skip — no project id (kind={Kind})", rec.Kind);
-            return;
-        }
-
-        rec.ProjectId = projectId;
+        rec.UserId ??= UserApiCallScope.UserId;
         if (rec.Ts is null)
             rec.Ts = DateTimeOffset.UtcNow;
+        if (string.IsNullOrWhiteSpace(rec.Provider) && !string.IsNullOrWhiteSpace(rec.Model))
+            rec.Provider = TryProviderForModel(rec.Model, rec.Kind);
+        rec.EstimatedUsd ??= EstimateListRateUsd(rec);
 
+        // Project jsonl (full prompts) when a project is in scope.
+        if (!string.IsNullOrWhiteSpace(projectId))
+        {
+            rec.ProjectId = projectId;
+            try
+            {
+                await AppendJsonlAsync(ApiCallsPath(projectId), rec, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "api_calls append failed for {ProjectId}", projectId);
+            }
+        }
+        else
+        {
+            _log.LogDebug("api_calls project skip — no project id (kind={Kind})", rec.Kind);
+        }
+
+        // Always attribute to user SQLite when we know who paid / whose key ran.
+        if (_userDb is not null && !string.IsNullOrWhiteSpace(rec.UserId))
+        {
+            try
+            {
+                await _userDb.InsertUserApiCallAsync(rec, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "user_api_calls insert failed for {UserId}", rec.UserId);
+            }
+        }
+    }
+
+    private static string? TryProviderForModel(string model, string? kind)
+    {
         try
         {
-            await AppendJsonlAsync(ApiCallsPath(projectId), rec, ct).ConfigureAwait(false);
+            var cap = kind?.ToLowerInvariant() switch
+            {
+                "image" or "image_edit" => ModelCapability.Image,
+                "video" or "video_extend" or "video_poll" => ModelCapability.Video,
+                "vision" => ModelCapability.Vision,
+                "audio" or "tts" or "music" => ModelCapability.Audio,
+                "voice" => ModelCapability.Voice,
+                _ => ModelCapability.Chat,
+            };
+            return SupportedModelCatalog.Find(model, cap)?.ProviderId
+                   ?? SupportedModelCatalog.Find(model)?.ProviderId;
         }
-        catch (Exception ex)
+        catch { return null; }
+    }
+
+    /// <summary>Catalog list-rate estimate — not a provider invoice line.</summary>
+    public static double? EstimateListRateUsd(ApiCallTelemetry rec)
+    {
+        try
         {
-            _log.LogWarning(ex, "api_calls append failed for {ProjectId}", projectId);
+            var model = rec.Model ?? "";
+            var kind = (rec.Kind ?? "").ToLowerInvariant();
+            if (kind is "image" or "image_edit")
+            {
+                var entry = SupportedModelCatalog.Find(model, ModelCapability.Image)
+                            ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Image);
+                var unit = entry.ImageCostPerImage ?? 0.02;
+                var n = Math.Max(1, rec.ImageCount ?? 1);
+                return Math.Round(unit * n, 6);
+            }
+            if (kind is "video" or "video_extend")
+            {
+                var entry = SupportedModelCatalog.Find(model, ModelCapability.Video)
+                            ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
+                var res = rec.Resolution ?? "480p";
+                double rate = 0.05;
+                if (entry.VideoCostPerSecondByResolution is { } table)
+                {
+                    if (!table.TryGetValue(res, out rate))
+                        rate = table.Values.DefaultIfEmpty(0.05).First();
+                }
+                var sec = rec.DurationSec ?? 6;
+                return Math.Round(rate * sec, 6);
+            }
+            // chat / vision / other text: token rates or char/4 proxy
+            var chat = SupportedModelCatalog.Find(model, ModelCapability.Chat)
+                       ?? SupportedModelCatalog.Find(model, ModelCapability.Vision)
+                       ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Chat);
+            var inPerM = chat.InputCostPerMillionTokens ?? 0;
+            var outPerM = chat.OutputCostPerMillionTokens ?? 0;
+            if (inPerM <= 0 && outPerM <= 0)
+                return null;
+            var inTok = rec.InputTokens
+                        ?? Math.Max(0, (rec.PromptChars ?? ((rec.SystemPrompt?.Length ?? 0) + (rec.UserPrompt?.Length ?? 0))) / 4);
+            var outTok = rec.OutputTokens
+                         ?? Math.Max(0, (rec.ResponseChars ?? (rec.ResponsePreview?.Length ?? 0)) / 4);
+            var usd = (inTok / 1_000_000.0) * inPerM + (outTok / 1_000_000.0) * outPerM;
+            return usd > 0 ? Math.Round(usd, 6) : null;
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -292,6 +387,14 @@ public sealed class ApiCallTelemetry
 {
     public DateTimeOffset? Ts { get; set; }
     public string? ProjectId { get; set; }
+    /// <summary>Signed-in user who triggered the call (BYOK / cost attribution).</summary>
+    public string? UserId { get; set; }
+    /// <summary>Provider id: grok, gemini, openai, anthropic, fal, …</summary>
+    public string? Provider { get; set; }
+    /// <summary>List-rate USD estimate at call time (catalog). Not a provider invoice.</summary>
+    public double? EstimatedUsd { get; set; }
+    public int? InputTokens { get; set; }
+    public int? OutputTokens { get; set; }
     /// <summary>video | video_extend | video_poll | image | image_edit | vision | chat | tts | …</summary>
     public string Kind { get; set; } = "";
     public string? Endpoint { get; set; }
