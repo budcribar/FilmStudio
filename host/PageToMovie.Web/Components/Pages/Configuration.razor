@@ -130,20 +130,12 @@
                             }
 
 
-                            <div class="small mb-2">
-                                @if (p.HasPersonalKey)
-                                {
-                                    <div><strong>Personal key:</strong> <code>@p.MaskedPersonalKey</code></div>
-                                }
-                                else
-                                {
-                                    <div class="text-muted">No personal key saved.</div>
-                                }
-                                @if (p.HasServerKey)
-                                {
-                                    <div class="text-muted">Server env key present on host (not used for your jobs in BYOK mode).</div>
-                                }
-                            </div>
+                            @if (p.HasPersonalKey && !string.IsNullOrWhiteSpace(p.MaskedPersonalKey))
+                            {
+                                <div class="small mb-2">
+                                    <strong>Key:</strong> <code>@p.MaskedPersonalKey</code>
+                                </div>
+                            }
 
                             <label class="form-label small mb-1">
                                 @(p.HasPersonalKey ? "Replace personal key" : "Paste API key")
