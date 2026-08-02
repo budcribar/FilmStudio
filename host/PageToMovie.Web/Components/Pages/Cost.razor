@@ -1,6 +1,7 @@
 @page "/cost"
 @inject EngineApiClient Engine
 @inject ActiveProjectState ActiveProject
+@inject AdminSessionService Session
 @inject NavigationManager Nav
 @using PageToMovie.Core.Models
 @using System.Globalization
@@ -8,41 +9,40 @@
 <PageTitle>Estimate & cost</PageTitle>
 
 <div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Studio · Step 4 · Confirm</span>
+    <span class="ptm-adapt-kicker">Studio · Estimate</span>
     <h1 class="ptm-adapt-title mb-1">Estimate & cost</h1>
     <p class="ptm-adapt-lede mb-0">
-        See what this film is planned to cost, what you’ve spent so far, and where the money went.
+        See what this film is planned to cost, what you’ve spent so far, and where the money went —
+        by project and by vendor.
     </p>
 </div>
 
-<StudioProcessStrip Active="estimate" />
-
-<div class="alert alert-secondary py-2 small mb-3" data-testid="cost-simple-hint">
-    <strong>Tip:</strong> Library book + your narrator voice only is the cheap path —
-    <a href="simple-voice" class="alert-link">open simple voice</a>
-    (no face re-film). Resolution and extras below still apply to full production.
-</div>
-
-@if (!ActiveProject.CanEstimate)
+@if (ActiveProject.HasProject)
 {
-    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <StudioProcessStrip Active="estimate" FullStudio="true" />
+}
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+@* Soft gate — still show spend breakdown when screenplay is not ready yet. *@
+@if (ActiveProject.HasProject && !ActiveProject.CanEstimate)
+{
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <strong>Estimate locked.</strong>
+            <strong>Full quote needs a screenplay.</strong>
             @ActiveProject.EstimateBlockedReason
+            You can still see what you’ve already spent.
         </div>
         <a class="btn btn-sm btn-warning fw-semibold" href="adaptation">Go to Book →</a>
     </div>
 }
-else
-{
-    @if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger">@_error</div>
-    }
-    @if (!string.IsNullOrEmpty(_message))
-    {
-        <div class="alert alert-success">@_message</div>
-    }
 
     <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
         <div style="min-width: 12rem;">
@@ -540,7 +540,6 @@ else
             }
         </div>
     }
-}
 
 @code {
     private bool _busy;

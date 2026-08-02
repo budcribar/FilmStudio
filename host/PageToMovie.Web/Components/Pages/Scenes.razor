@@ -29,7 +29,7 @@
     </p>
 </div>
 
-<StudioProcessStrip Active="film" SimpleMode="@IsSimpleFilm" />
+<StudioProcessStrip Active="film" SimpleMode="@IsSimpleFilm" FullStudio="@(!IsSimpleFilm)" />
 
 @if (IsSimpleFilm)
 {

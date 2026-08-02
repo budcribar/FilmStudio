@@ -43,7 +43,7 @@
     </div>
 }
 
-<StudioProcessStrip Active="cast" SimpleMode="@(_simpleMode || ActiveProject.IsSimpleVoice)" />
+<StudioProcessStrip Active="cast" SimpleMode="@_simpleMode" FullStudio="@(!_simpleMode)" />
 
 @if (_gateChecked && !ActiveProject.CanCharacters)
 {
