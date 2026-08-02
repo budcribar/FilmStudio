@@ -93,6 +93,8 @@ public interface IChatClient
 /// <summary>Canonical <see cref="IChatClient.CompleteAsync"/> mode tags for telemetry.</summary>
 public static class ChatCallModes
 {
+    public const string PromptImprovementReview = "prompt_improvement_review";
+    public const string SidecarPlanning = "sidecar_planning";
     public const string BookToFountain = "book_to_fountain";
     public const string BookToFountainRetry = "book_to_fountain_retry";
     public const string BookToFountainCoverage = "book_to_fountain_coverage";

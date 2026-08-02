@@ -123,8 +123,16 @@ public static class DeterministicSyntaxScorer
             result.DiagnosticWarnings.Add($"Vague location heading(s) found: {string.Join("; ", vagueLocations.Take(3))}");
         }
 
-        // Closing Transition Audit
-        bool hasClosingTransition = Regex.IsMatch(fountainText, @"\b(FADE OUT\.|THE END|> THE END <)\s*$", RegexOptions.IgnoreCase);
+        // Closing Transition Audit. Use the parsed Fountain elements rather than a raw-text
+        // regex: Fountain permits forced transitions (>FADE OUT.) and centered end cards
+        // (>THE END<), both of which are valid endings.
+        var lastElement = elements.LastOrDefault();
+        bool hasClosingTransition = lastElement is not null &&
+            ((lastElement.Type == FountainParser.ElementType.Transition &&
+              Regex.IsMatch(lastElement.Text, @"^FADE\s+OUT\.?$", RegexOptions.IgnoreCase)) ||
+             (lastElement.Type == FountainParser.ElementType.Centered &&
+              Regex.IsMatch(lastElement.Text, @"^THE\s+END$", RegexOptions.IgnoreCase)) ||
+             Regex.IsMatch(lastElement.Text, @"^THE\s+END$", RegexOptions.IgnoreCase));
         if (!hasClosingTransition)
         {
             formatScore -= 5.0;
