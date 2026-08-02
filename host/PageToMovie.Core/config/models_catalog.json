@@ -40,7 +40,7 @@
       "id": "voice",
       "displayName": "Voice Clone / TTS",
       "description": "Personal voice clone from a short sample, then spoken dialogue or narration for the film.",
-      "defaultModelId": "eleven_multilingual_v2",
+      "defaultModelId": "eleven_voice_clone",
       "order": 70
     },
     {

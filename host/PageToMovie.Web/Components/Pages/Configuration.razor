@@ -907,7 +907,18 @@
             if (!_audioModels.Any(m => m.Id == "none"))
                 _audioModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" });
             if (_voiceModels.Count == 0)
-                _voiceModels.Add(new SupportedModelDto { Id = "eleven_multilingual_v2", DisplayName = "Voice clone (default)", Provider = "ElevenLabs" });
+            {
+                _voiceModels.Add(new SupportedModelDto { Id = "eleven_voice_clone", DisplayName = "Instant voice clone (ElevenLabs)", Provider = "ElevenLabs", ProviderId = "elevenlabs", IsVoiceCloneStep = true });
+                _voiceModels.Add(new SupportedModelDto { Id = "eleven_multilingual_v2", DisplayName = "Multilingual TTS (ElevenLabs)", Provider = "ElevenLabs", ProviderId = "elevenlabs" });
+                _voiceModels.Add(new SupportedModelDto { Id = "fal-ai/minimax/voice-clone", DisplayName = "MiniMax voice clone (Fal)", Provider = "Fal", ProviderId = "fal", IsVoiceCloneStep = true });
+                _voiceModels.Add(new SupportedModelDto { Id = "fal-ai/minimax/speech-02-hd", DisplayName = "MiniMax speech (Fal)", Provider = "Fal", ProviderId = "fal" });
+            }
+            // Clone models first so Settings / coverage pick the right step, not TTS-only ids.
+            _voiceModels = _voiceModels
+                .OrderBy(m => string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(m => m.IsVoiceCloneStep ? 0 : 1)
+                .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
             if (!_voiceModels.Any(m => m.Id == "none"))
                 _voiceModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (no voice clone)", Provider = "None" });
         }
@@ -1474,10 +1485,17 @@
                 if (providerId is "fal" or "suno" or "aimusicapi")
                 {
                     EnsureMusicModelForProvider(providerId);
-                    if (!string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
-                    {
-                        try { await PersistProjectConfigAsync(); } catch { /* optional */ }
-                    }
+                }
+                // Voice key (ElevenLabs) or Fal while adding voice coverage: pick clone-step model, not TTS-only.
+                if (providerId is "elevenlabs"
+                    || (providerId is "fal" && string.Equals(_coverageEditId, "voice", StringComparison.OrdinalIgnoreCase)))
+                {
+                    EnsureVoiceModelForProvider(providerId);
+                }
+                if ((providerId is "fal" or "suno" or "aimusicapi" or "elevenlabs")
+                    && !string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
+                {
+                    try { await PersistProjectConfigAsync(); } catch { /* optional */ }
                 }
             }
 
@@ -1496,6 +1514,51 @@
         }
     }
 
+
+
+    /// <summary>After saving a voice-provider key, pick a clone-step model so coverage matches catalog.</summary>
+    private void EnsureVoiceModelForProvider(string providerId)
+    {
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var currentProvider = ResolveProviderIdForModel(_voiceModel, "voice", preferVideoReview: false);
+        var off = string.IsNullOrWhiteSpace(_voiceModel)
+                  || _voiceModel.Equals("none", StringComparison.OrdinalIgnoreCase)
+                  || _voiceModel.Equals("disabled", StringComparison.OrdinalIgnoreCase)
+                  || string.Equals(_voiceModel, "eleven_multilingual_v2", StringComparison.OrdinalIgnoreCase)
+                  || string.Equals(_voiceModel, "fal-ai/minimax/speech-02-hd", StringComparison.OrdinalIgnoreCase);
+
+        if (!off && string.Equals(currentProvider, pid, StringComparison.OrdinalIgnoreCase))
+        {
+            var cur = _voiceModels.FirstOrDefault(m => string.Equals(m.Id, _voiceModel, StringComparison.OrdinalIgnoreCase));
+            if (cur is { IsVoiceCloneStep: true })
+                return;
+        }
+
+        static string PidOf(SupportedModelDto m) =>
+            !string.IsNullOrWhiteSpace(m.ProviderId)
+                ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
+                : SupportedModelCatalog.NormalizeProviderId(m.Provider);
+
+        var pick = _voiceModels.FirstOrDefault(m =>
+            !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
+            && m.IsVoiceCloneStep
+            && string.Equals(PidOf(m), pid, StringComparison.OrdinalIgnoreCase))
+            ?? _voiceModels.FirstOrDefault(m =>
+                !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(PidOf(m), pid, StringComparison.OrdinalIgnoreCase));
+
+        if (pick is null)
+        {
+            _voiceModel = pid switch
+            {
+                "elevenlabs" => "eleven_voice_clone",
+                "fal" => "fal-ai/minimax/voice-clone",
+                _ => _voiceModel,
+            };
+            return;
+        }
+        _voiceModel = pick.Id;
+    }
 
     /// <summary>After saving a music-provider key, pick a matching music model so coverage goes Ready.</summary>
     private void EnsureMusicModelForProvider(string providerId)
@@ -1571,6 +1634,9 @@
             if (string.Equals(_audioModel, "fal-ai/stable-audio", StringComparison.OrdinalIgnoreCase))
                 _audioModel = "fal-ai/stable-audio-2.0";
             _voiceModel = GetStr("voice_model_name", _voiceModel);
+            // Catalog default used to be TTS-only; clone step is the coverage model.
+            if (string.Equals(_voiceModel, "eleven_multilingual_v2", StringComparison.OrdinalIgnoreCase))
+                _voiceModel = "eleven_voice_clone";
             _enableBackgroundMusic = GetBool("enable_background_music", _enableBackgroundMusic);
             _backgroundMusicVolumePercent = GetInt("background_music_volume_percent", _backgroundMusicVolumePercent);
             _aspect = GetStr("aspect_ratio", _aspect);
