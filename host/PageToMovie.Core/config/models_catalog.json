@@ -185,12 +185,16 @@
       "supportsReferenceImages": true,
       "maxReferenceImages": 7,
       "supportsVideoReview": false,
+      "minClipDurationSeconds": 1,
+      "maxClipDurationSeconds": 15,
+      "absMaxClipDurationSeconds": 15,
+      "maxExtensionSeconds": 10,
       "videoCostPerSecondByResolution": {
         "480p": 0.05,
         "720p": 0.07,
         "1080p": 0.25
       },
-      "notes": "Also uses videos/extensions for clip continue."
+      "notes": "Also uses videos/extensions for clip continue. Fresh text/image-to-video allows 1-15s; the new portion of a reference/continue call is tighter (often <=10s, not independently confirmed to the second — maxExtensionSeconds is a conservative estimate, not a documented exact figure). 1080p pricing (0.25/s) may actually belong to a separate 'Grok Imagine 1.5' variant not yet split out as its own catalog entry — base model 480p/720p rates (0.05/0.07) are confirmed against docs.x.ai."
     },
     {
       "id": "hunyuan-video",
@@ -209,10 +213,14 @@
       "maxReferenceImages": 1,
       "supportsVideoReview": false,
       "videoCostPerSecondByResolution": {
-        "720p": 0.005,
-        "1080p": 0.005
+        "720p": 0,
+        "1080p": 0
       },
-      "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip). Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading."
+      "videoBaseCostByResolution": {
+        "720p": 0.40,
+        "1080p": 0.40
+      },
+      "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs. Billed as a flat ~$0.40/video (frame-count-based generation, not duration-based) — NOT per-second; a prior per-second rate here (0.005/s) underpriced a 5s clip by ~16x ($0.025 vs the real ~$0.40 flat fee). Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading. Deliberately no min/max/absMaxClipDurationSeconds: the real API parameter is num_frames (85 or 129) + fps, not seconds — forcing a seconds-shaped min/max onto a frame-count model would itself be a wrong approximation; needs its own frame-count-based representation (tracked separately), not a generic duration bound."
     },
     {
       "id": "fal-ai/wan-2.1",
@@ -230,11 +238,20 @@
       "supportsReferenceImages": true,
       "maxReferenceImages": 1,
       "supportsVideoReview": false,
+      "minClipDurationSeconds": 5,
+      "maxClipDurationSeconds": 6,
+      "absMaxClipDurationSeconds": 6,
       "videoCostPerSecondByResolution": {
-        "720p": 0.025,
-        "1080p": 0.025
+        "480p": 0,
+        "720p": 0,
+        "1080p": 0
       },
-      "notes": "Alibaba Wan 2.1 open-weights 1080p image-to-video model hosted on Fal.ai serverless GPUs (~$0.12 per 5s clip). Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading."
+      "videoBaseCostByResolution": {
+        "480p": 0.20,
+        "720p": 0.40,
+        "1080p": 0.40
+      },
+      "notes": "Alibaba Wan 2.1 open-weights image-to-video model hosted on Fal.ai serverless GPUs. Billed as a flat fee per video (frame-count-based generation, not duration-based), not per-second — a prior per-second rate here (0.025/s) underpriced a 5s 720p clip by ~3x ($0.125 vs the real ~$0.40 flat fee). 1080p flat fee not independently documented; assumed equal to 720p pending confirmation. Duration is a narrow ~5-6s band (81-100 frames @ 5-24fps typical), NOT the generic 3-10s range — approximated here in seconds even though frames+fps is the more precise real parameter. Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading."
     },
     {
       "id": "veo-3.1",

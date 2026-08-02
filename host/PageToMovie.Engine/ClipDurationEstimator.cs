@@ -82,18 +82,47 @@ public static class ClipDurationEstimator
     /// min/max clamp via <see cref="ResolveBoundsForModel"/> for any model without a declared
     /// discrete set, so this is a safe drop-in replacement for a bare Math.Clamp call everywhere.
     /// </summary>
-    public static int ResolveActualDurationForModel(string? modelId, int requestedSeconds)
+    /// <param name="isExtensionMode">
+    /// True for image-to-video / reference-conditioned / video-extend calls, which some providers
+    /// (Grok) cap tighter than a fresh text-to-video clip — applies
+    /// <see cref="SupportedModelEntry.MaxExtensionSeconds"/> as an additional ceiling on top of the
+    /// normal result when the model declares one.
+    /// </param>
+    public static int ResolveActualDurationForModel(
+        string? modelId, int requestedSeconds, bool isExtensionMode = false)
     {
         var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
+        int resolved;
         if (entry?.AllowedDurationsSeconds is { Count: > 0 } allowed)
         {
-            return allowed
+            resolved = allowed
                 .OrderBy(d => Math.Abs(d - requestedSeconds))
                 .ThenBy(d => d)
                 .First();
         }
-        var (min, max, _) = ResolveBoundsForModel(modelId);
-        return Math.Clamp(requestedSeconds, min, max);
+        else
+        {
+            var (min, max, _) = ResolveBoundsForModel(modelId);
+            resolved = Math.Clamp(requestedSeconds, min, max);
+        }
+
+        if (isExtensionMode && entry?.MaxExtensionSeconds is { } extMax && resolved > extMax)
+            resolved = extMax;
+
+        return resolved;
+    }
+
+    /// <summary>
+    /// Resolves the max duration for a clip that will be generated as an extend-from-previous
+    /// continuation, for planning purposes (e.g. deciding how many beats can be coalesced into one
+    /// clip before it needs its own fresh cut). Falls back to <paramref name="fallbackMax"/> — the
+    /// model's normal fresh-generation max — for any model without a declared tighter extension
+    /// cap, matching today's behavior for every model except Grok.
+    /// </summary>
+    public static int ResolveExtensionMaxForModel(string? modelId, int fallbackMax)
+    {
+        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
+        return entry?.MaxExtensionSeconds ?? fallbackMax;
     }
 
     /// <summary>

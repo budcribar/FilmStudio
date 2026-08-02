@@ -15,6 +15,7 @@ window.PageToMovieFfmpeg = {
     _blobUrl: null,
     _silenceSessions: {},
     _silenceSessionSeq: 0,
+    _trimTailSeq: 0,
     _lock: Promise.resolve(),
 
     _assets: {
@@ -390,6 +391,64 @@ window.PageToMovieFfmpeg = {
                 const outUrl = URL.createObjectURL(blob);
                 reportProgress(onProgress, 100, "Silence trim done");
                 return { success: true, url: outUrl };
+            } catch (err) {
+                return { success: false, error: err.message || String(err) };
+            } finally {
+                try { await ffmpeg.deleteFile(inName); } catch (_) { /* */ }
+                try { await ffmpeg.deleteFile(outName); } catch (_) { /* */ }
+            }
+        });
+    },
+
+    // Trims a video down to its last `keepSeconds` — used to prepare a video-extend continuation
+    // source (see FilmJobService.GenerateOneClipAsync): the model rejects input video longer than
+    // its own max clip length, so the client keeps only the tail before uploading it. Standalone
+    // (not tied to the silence-trim session bookkeeping that encodeSliceAsync uses) since the
+    // caller only ever wants one trim, not an analyze-then-slice round trip.
+    trimTailAsync: async function (url, keepSeconds, onProgress) {
+        if (!url) return { success: false, error: "No URL" };
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return { success: false, error: load.error };
+
+            const ffmpeg = self._ffmpeg;
+            const seq = ++self._trimTailSeq;
+            const inName = "trimtail_in_" + seq + ".mp4";
+            const outName = "trimtail_out_" + seq + ".mp4";
+            try {
+                reportProgress(onProgress, 10, "Loading clip…");
+                const data = await self._safeFetchFile(url);
+                await ffmpeg.writeFile(inName, data);
+
+                reportProgress(onProgress, 30, "Probing duration…");
+                const probe = await self._probeDurationMemfsAsync(inName);
+                if (!probe.success || !(probe.seconds > 0)) {
+                    return { success: false, error: "Could not read source duration" };
+                }
+
+                const totalSec = probe.seconds;
+                const keepSec = Math.max(0.5, Math.min(keepSeconds, totalSec));
+                const startSec = Math.max(0, totalSec - keepSec);
+
+                reportProgress(onProgress, 55, "Trimming tail…");
+                const args = ["-hide_banner", "-y"];
+                if (startSec > 0.001) args.push("-ss", String(startSec));
+                args.push("-i", inName);
+                args.push("-t", String(keepSec));
+                args.push(
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-movflags", "+faststart",
+                    outName);
+                await ffmpeg.exec(args);
+
+                reportProgress(onProgress, 90, "Preparing…");
+                const out = await ffmpeg.readFile(outName);
+                const blob = new Blob([out.buffer], { type: "video/mp4" });
+                const outUrl = URL.createObjectURL(blob);
+                reportProgress(onProgress, 100, "Trim done");
+                return { success: true, url: outUrl, sourceDurationSec: totalSec, keptSec: keepSec };
             } catch (err) {
                 return { success: false, error: err.message || String(err) };
             } finally {

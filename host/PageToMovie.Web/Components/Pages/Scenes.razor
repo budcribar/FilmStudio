@@ -3075,6 +3075,11 @@ else
             return d;
         }
 
+        // Video-extend continuity (see FilmJobService.GenerateOneClipAsync + ClientMediaFolderService.
+        // PrepareExtendSourceAsync): resolved once per batch, not per target, since it's the same
+        // active project setting for every clip here.
+        var extendModel = await ResolveActiveVideoExtendModelAsync();
+
         foreach (var (sn, cn) in targets)
         {
             if (cn <= 1) continue;
@@ -3098,6 +3103,45 @@ else
                     await Engine.UploadClipAsync(_projectId, sn, prevClipNum, localBytes);
                 }
             }
+
+            if (extendModel is { } maxInputSeconds)
+            {
+                var wantsExtend = string.Equals(
+                    sceneDetail?.Clips?.FirstOrDefault(c => c.ClipNumber == cn)?.Continuation,
+                    "extend_previous", StringComparison.OrdinalIgnoreCase);
+                if (wantsExtend)
+                {
+                    // Best-effort: a false return just means no extend-source file appears on the
+                    // server, so it falls back to today's fresh-gen behavior — never blocks generation.
+                    await MediaFolder.PrepareExtendSourceAsync(_projectId, sn, cn, maxInputSeconds);
+                }
+            }
+        }
+    }
+
+    /// <summary>Active project video model's max input length for a real video-extend call, or
+    /// null when the model doesn't support real continuity (today: only Grok's video model does)
+    /// or lookup fails.</summary>
+    private async Task<double?> ResolveActiveVideoExtendModelAsync()
+    {
+        try
+        {
+            var cfg = await Engine.GetConfigAsync(_projectId);
+            var modelId = cfg?.Config is { } c && c.TryGetValue("model_name", out var el) &&
+                          el.ValueKind == System.Text.Json.JsonValueKind.String
+                ? el.GetString()
+                : null;
+            if (string.IsNullOrWhiteSpace(modelId)) return null;
+
+            var models = await Engine.GetSupportedModelsAsync(capability: "video");
+            var entry = models.FirstOrDefault(m => string.Equals(m.Id, modelId, StringComparison.OrdinalIgnoreCase));
+            if (entry is not { SupportsVideoContinue: true }) return null;
+
+            return entry.AbsMaxClipDurationSeconds ?? entry.MaxClipDurationSeconds ?? 15;
+        }
+        catch
+        {
+            return null;
         }
     }
 

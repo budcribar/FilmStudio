@@ -84,9 +84,12 @@ public sealed class GrokVideoClient : IVideoClient
         // Image / reference-to-video / extension max duration is bounded by the model's own limits
         // — resolved from the catalog (snapping to a discrete allowed-durations set if the model
         // declares one, e.g. Veo's 4/6/8s, else a plain min/max clamp), not a bare hardcoded 1-10,
-        // so this stays correct if a future model's real bounds differ.
+        // so this stays correct if a future model's real bounds differ. isExtensionMode applies
+        // MaxExtensionSeconds too — Grok's real fresh-generation max (15s) is looser than what the
+        // "new portion" of a reference/continue call allows (often <=10s).
         if (hasStart || refs.Count > 0 || hasContinue)
-            durationSeconds = ClipDurationEstimator.ResolveActualDurationForModel(model, durationSeconds);
+            durationSeconds = ClipDurationEstimator.ResolveActualDurationForModel(
+                model, durationSeconds, isExtensionMode: true);
 
         // Encode media once — retries only change prompt text
         string? videoUri = null;

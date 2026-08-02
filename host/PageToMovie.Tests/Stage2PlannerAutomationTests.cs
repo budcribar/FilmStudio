@@ -303,4 +303,78 @@ public sealed class Stage2PlannerAutomationTests
         Assert.Equal(2, coalesced.Count);
         Assert.False(coalesced[0].ContainsKey("secondary_speaker"));
     }
+
+    [Fact]
+    public void CoalesceCrossSpeakerDialogueBeats_RespectsTighterExtensionCapWhenGroupExtends()
+    {
+        // Each line (4 words, ~2.44s) fits under the fresh per-line cap (10/2=5) but not the
+        // tighter extension per-line cap (4/2=2) — a clip that will extend from the previous one
+        // (e.g. Grok's tighter MaxExtensionSeconds) must not merge past what it can actually fit.
+        var line = string.Join(" ", Enumerable.Repeat("word", 4));
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1", ["speaker"] = "Character_Nick", ["dialogue"] = line, ["location_id"] = "Loc_Porch",
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2", ["speaker"] = "Character_Sionna", ["dialogue"] = line, ["location_id"] = "Loc_Porch",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var extended = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(
+            beats, maxSeconds: 10, extensionMaxSeconds: 4, extendsFromPrevious: new[] { true, false });
+        Assert.Equal(2, extended.Count);
+        Assert.False(extended[0].ContainsKey("secondary_speaker"));
+
+        var fresh = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(
+            beats, maxSeconds: 10, extensionMaxSeconds: 4, extendsFromPrevious: new[] { false, false });
+        Assert.Single(fresh);
+        Assert.Equal("Character_Sionna", fresh[0]["secondary_speaker"]);
+    }
+
+    [Fact]
+    public void CoalesceShortMonologueBeats_RespectsTighterExtensionCapWhenGroupExtends()
+    {
+        // Combined dialogue (17 words, ~7.4s) fits under a fresh max of 10 but not a tighter
+        // extension max of 6.
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1", ["speaker"] = "Character_Nick",
+            ["dialogue"] = string.Join(" ", Enumerable.Repeat("word", 8)),
+            ["location_id"] = "Loc_Porch", ["delivery"] = "spoken_on_camera",
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2", ["speaker"] = "Character_Nick",
+            ["dialogue"] = string.Join(" ", Enumerable.Repeat("word", 9)),
+            ["location_id"] = "Loc_Porch", ["delivery"] = "spoken_on_camera",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var extended = Stage2PlannerService.CoalesceShortMonologueBeats(
+            beats, maxSeconds: 10, extensionMaxSeconds: 6, extendsFromPrevious: new[] { true, false });
+        Assert.Equal(2, extended.Count);
+
+        var fresh = Stage2PlannerService.CoalesceShortMonologueBeats(
+            beats, maxSeconds: 10, extensionMaxSeconds: 6, extendsFromPrevious: new[] { false, false });
+        Assert.Single(fresh);
+    }
+
+    [Fact]
+    public void Coalesce_WithoutExtendInfo_BehavesExactlyAsBeforeUsingFreshMaxOnly()
+    {
+        var line = string.Join(" ", Enumerable.Repeat("word", 4));
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1", ["speaker"] = "Character_Nick", ["dialogue"] = line, ["location_id"] = "Loc_Porch",
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2", ["speaker"] = "Character_Sionna", ["dialogue"] = line, ["location_id"] = "Loc_Porch",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var coalesced = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 10);
+        Assert.Single(coalesced);
+    }
 }

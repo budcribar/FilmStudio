@@ -3,6 +3,11 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 
+// Lets tests exercise the internal rate-table/pricing math (BuildVideoRateTable,
+// BuildVideoBaseRateTable, RatesFromModels) directly, rather than only through the full
+// ProjectStore-backed public API — pure calculation logic is worth unit-testing in isolation.
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("PageToMovie.Tests")]
+
 namespace PageToMovie.Engine;
 
 /// <summary>
@@ -611,7 +616,8 @@ public sealed class CostReportService
         var duration = clip.DurationSec > 0 ? clip.DurationSec : 8;
         var attempts = 1.0 + Math.Max(0, retries);
         var outRate = OutputRate(resolution, rates);
-        var videoOut = duration * outRate * attempts;
+        var baseRate = BaseRate(resolution, rates);
+        var videoOut = (duration * outRate + baseRate) * attempts;
         var refImg = 0.0;
         if (GetBool(rates, "assume_ref_image_per_clip", true))
             refImg = GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts;
@@ -621,7 +627,7 @@ public sealed class CostReportService
         return (videoOut + refImg + extend, duration);
     }
 
-    private static (double Usd, double DurationSec, double RatePerSec, double VideoOut, double RefImg, double ExtendIn)
+    internal static (double Usd, double DurationSec, double RatePerSec, double VideoOut, double RefImg, double ExtendIn)
         PriceVideo(
             double durationSec,
             string resolution,
@@ -633,7 +639,8 @@ public sealed class CostReportService
         var duration = Math.Max(0, durationSec);
         attempts = Math.Max(1, attempts);
         var outRate = OutputRate(resolution, rates);
-        var videoOut = duration * outRate * attempts;
+        var baseRate = BaseRate(resolution, rates);
+        var videoOut = (duration * outRate + baseRate) * attempts;
         var refImg = hasRef ? GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts : 0;
         var extend = isExtend
             ? duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts
@@ -1098,10 +1105,15 @@ public sealed class CostReportService
             ?? imagePrimary;
 
         var videoTable = BuildVideoRateTable(video);
+        var videoBaseTable = BuildVideoBaseRateTable(video);
         // True whenever any part of the price had to fall back to a guess rather than this
         // model's actual catalog data — flows into the recorded cost event below so the ledger
         // itself shows which numbers are verified vendor pricing vs an unverified placeholder.
-        var videoPricingIsEstimated = video.VideoCostPerSecondByResolution is not { Count: > 0 };
+        // A model priced entirely via a flat base fee (no per-second rate at all, e.g. Hunyuan/Wan)
+        // is NOT estimated as long as that base-fee data is real, so check both tables.
+        var videoPricingIsEstimated =
+            video.VideoCostPerSecondByResolution is not { Count: > 0 } &&
+            video.VideoBaseCostByResolution is not { Count: > 0 };
         var qualityUnit = imagePrimary.ImageCostPerImage ?? FallbackImageQualityCostPerImage;
         var standardUnit = imageStandard.ImageCostPerImage ?? imagePrimary.ImageCostPerImage ?? FallbackImageStandardCostPerImage;
         var imagePricingIsEstimated = imagePrimary.ImageCostPerImage is null;
@@ -1115,6 +1127,7 @@ public sealed class CostReportService
             ["image_model"] = imagePrimary.Id,
             ["image_provider"] = imagePrimary.ProviderId,
             ["video_output_per_sec"] = videoTable,
+            ["video_base_per_video"] = videoBaseTable,
             // Reference / extend add-ons — not published per-vendor in the catalog yet for ANY
             // model, so these two are always an estimate regardless of video_pricing_source.
             ["video_input_image"] = FallbackVideoRefImageCost,
@@ -1191,6 +1204,31 @@ public sealed class CostReportService
         return table;
     }
 
+    /// <summary>
+    /// Per-resolution flat $/video from the catalog entry — the counterpart to
+    /// <see cref="BuildVideoRateTable"/> for providers that bill a fixed fee per generation
+    /// regardless of length (Fal's Hunyuan/Wan, which are frame-count-based, not duration-based).
+    /// Unlike the per-second table, a model with no base-cost data gets an EMPTY table (base = 0
+    /// for every resolution) rather than falling back to some other provider's flat fee — there is
+    /// no sensible "generic" flat-fee guess the way there's a generic per-second one.
+    /// </summary>
+    internal static Dictionary<string, double> BuildVideoBaseRateTable(SupportedModelEntry video)
+    {
+        var table = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        if (video.VideoBaseCostByResolution is { Count: > 0 } src)
+        {
+            foreach (var kv in src)
+            {
+                if (!string.IsNullOrWhiteSpace(kv.Key) && kv.Value >= 0)
+                    table[kv.Key.Trim()] = kv.Value;
+            }
+            FillMissingRes(table, "720p", "1080p", "480p");
+            FillMissingRes(table, "480p", "720p", "1080p");
+            FillMissingRes(table, "1080p", "720p", "480p");
+        }
+        return table;
+    }
+
     private static void FillMissingRes(
         Dictionary<string, double> table,
         string res,
@@ -1220,6 +1258,21 @@ public sealed class CostReportService
             if (table.Count > 0) return table.Values.First();
         }
         return FallbackVideoCostPerSec720p;
+    }
+
+    /// <summary>Flat $/video for this resolution — 0 when the model has no base-cost data (a
+    /// genuinely per-second-only provider like Grok/Veo), never a nonzero guess.</summary>
+    private static double BaseRate(string resolution, Dictionary<string, object?> rates)
+    {
+        var res = (resolution ?? "720p").ToLowerInvariant().Trim();
+        if (rates.TryGetValue("video_base_per_video", out var t) &&
+            t is Dictionary<string, double> table)
+        {
+            if (table.TryGetValue(res, out var r)) return r;
+            if (table.TryGetValue("720p", out var d)) return d;
+            if (table.Count > 0) return table.Values.First();
+        }
+        return 0;
     }
 
     private static string GetStr(Dictionary<string, JsonElement> cfg, string key, string fallback) =>

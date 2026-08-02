@@ -112,11 +112,23 @@ public class ClipDurationEstimatorTests
     [Fact]
     public void ResolveBoundsForModel_ReturnsCatalogValuesForKnownVideoModel()
     {
-        // grok-imagine-video is configured in SupportedModelCatalog with explicit clip-duration bounds.
+        // grok-imagine-video is configured in SupportedModelCatalog with explicit clip-duration
+        // bounds — real docs.x.ai fresh text/image-to-video range is 1-15s.
         var (min, max, absMax) = ClipDurationEstimator.ResolveBoundsForModel("grok-imagine-video");
-        Assert.Equal(3, min);
-        Assert.Equal(10, max);
-        Assert.Equal(12, absMax);
+        Assert.Equal(1, min);
+        Assert.Equal(15, max);
+        Assert.Equal(15, absMax);
+    }
+
+    [Fact]
+    public void ResolveBoundsForModel_ReturnsNarrowRealRangeForWan()
+    {
+        // fal-ai/wan-2.1's real usable range is a narrow ~5-6s band (81-100 frames @ 5-24fps),
+        // not the generic 3-10s default.
+        var (min, max, absMax) = ClipDurationEstimator.ResolveBoundsForModel("fal-ai/wan-2.1");
+        Assert.Equal(5, min);
+        Assert.Equal(6, max);
+        Assert.Equal(6, absMax);
     }
 
     [Theory]
@@ -136,9 +148,30 @@ public class ClipDurationEstimatorTests
     [Fact]
     public void ResolveActualDurationForModel_FallsBackToPlainClampWithoutDiscreteSet()
     {
-        // grok-imagine-video has no AllowedDurationsSeconds — behaves like a plain min/max clamp.
+        // grok-imagine-video has no AllowedDurationsSeconds — behaves like a plain min/max clamp
+        // against its real 1-15s range.
         var actual = ClipDurationEstimator.ResolveActualDurationForModel("grok-imagine-video", 25);
-        Assert.Equal(10, actual);
+        Assert.Equal(15, actual);
+    }
+
+    [Fact]
+    public void ResolveActualDurationForModel_ExtensionModeAppliesTighterCapForGrok()
+    {
+        // Fresh generation allows up to 15s, but the "new portion" of a reference/continue call is
+        // tighter (maxExtensionSeconds = 10) — isExtensionMode must apply that extra ceiling.
+        var fresh = ClipDurationEstimator.ResolveActualDurationForModel("grok-imagine-video", 12);
+        var extension = ClipDurationEstimator.ResolveActualDurationForModel(
+            "grok-imagine-video", 12, isExtensionMode: true);
+        Assert.Equal(12, fresh);
+        Assert.Equal(10, extension);
+    }
+
+    [Fact]
+    public void ResolveActualDurationForModel_ExtensionModeIsNoOpWhenRequestAlreadyUnderCap()
+    {
+        var actual = ClipDurationEstimator.ResolveActualDurationForModel(
+            "grok-imagine-video", 6, isExtensionMode: true);
+        Assert.Equal(6, actual);
     }
 
     [Fact]

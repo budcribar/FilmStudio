@@ -4898,7 +4898,7 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialo
 
 /// <summary>Upload local client clip MP4 file to server assets/video directory.</summary>
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/upload", async (
-    string id, int scene, int clip, HttpContext httpContext, ProjectStore store, CancellationToken ct) =>
+    string id, int scene, int clip, string? kind, HttpContext httpContext, ProjectStore store, CancellationToken ct) =>
 {
     if (!httpContext.Request.HasFormContentType)
         return Results.BadRequest(new { ok = false, error = "Form data expected." });
@@ -4911,9 +4911,14 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/upload", asy
     var projectDir = store.GetProjectDir(id);
     var destDir = Path.Combine(projectDir, "assets", "video");
     Directory.CreateDirectory(destDir);
-    var fileName = !string.IsNullOrWhiteSpace(file.FileName) && file.FileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
-        ? Path.GetFileName(file.FileName)
-        : $"scene_{scene:D2}_clip_{clip:D2}_take_01.mp4";
+    // "extend-source": the client's tail-trimmed continuation input for video-extend (see
+    // FilmJobService.GenerateOneClipAsync) — fixed name, ignores any client-supplied filename so
+    // the server always finds it at the exact path it expects.
+    var fileName = string.Equals(kind, "extend-source", StringComparison.OrdinalIgnoreCase)
+        ? $"_extend_src_s{scene:D2}c{clip:D2}.mp4"
+        : !string.IsNullOrWhiteSpace(file.FileName) && file.FileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
+            ? Path.GetFileName(file.FileName)
+            : $"scene_{scene:D2}_clip_{clip:D2}_take_01.mp4";
     var destPath = Path.Combine(destDir, fileName);
 
     using (var stream = File.Create(destPath))

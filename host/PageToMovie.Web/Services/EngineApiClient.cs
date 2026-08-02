@@ -2092,7 +2092,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("video/mp4");
             form.Add(byteContent, "video", $"scene_{scene:D2}_clip_{clip:D2}.mp4");
 
-            var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/upload";
+            var url = ClipUploadUrl(projectId, scene, clip);
             using var resp = await _http.PostAsync(url, form, ct);
             return resp.IsSuccessStatusCode;
         }
@@ -2101,6 +2101,14 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             return false;
         }
     }
+
+    /// <summary>Relative upload URL for a clip slot. Pass <paramref name="kind"/>="extend-source"
+    /// for the video-extend continuation-source upload (see
+    /// ClientMediaFolderService.PrepareExtendSourceAsync) — the server writes that to a distinct,
+    /// single-use path instead of replacing the clip's own official video.</summary>
+    public string ClipUploadUrl(string projectId, int scene, int clip, string? kind = null) =>
+        $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/upload" +
+        (string.IsNullOrEmpty(kind) ? "" : $"?kind={Uri.EscapeDataString(kind)}");
 
     /// <summary>Queues background-music generation for a scene (job-tracked, client saves the
     /// resulting audio segment(s) — same pattern as clip/credits generation). Returns the queued

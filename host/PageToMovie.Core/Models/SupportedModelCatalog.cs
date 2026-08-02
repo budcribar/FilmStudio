@@ -98,6 +98,20 @@ public sealed class SupportedModelEntry
     /// </summary>
     public IReadOnlyDictionary<string, double>? VideoCostPerSecondByResolution { get; init; }
 
+    /// <summary>
+    /// USD charged once per video regardless of length, by resolution (Video only) — same key
+    /// convention as <see cref="VideoCostPerSecondByResolution"/>. Total cost is
+    /// <c>base + perSecond * durationSeconds</c>, so a provider that bills a flat fee per clip
+    /// (e.g. Fal's Hunyuan/Wan, which price per generation, not per second, since they're
+    /// frame-count-based) sets this and leaves the per-second rate at 0 — a genuinely
+    /// duration-priced provider (Grok, Veo) leaves this null/0 and only sets the per-second rate,
+    /// so existing behavior is unchanged for them. Modeling flat fees as a fake per-second rate
+    /// (dividing by an assumed "typical" duration) silently produces the wrong number the moment a
+    /// clip's actual duration differs from that assumption — this field avoids the whole problem
+    /// by representing the real billing shape directly.
+    /// </summary>
+    public IReadOnlyDictionary<string, double>? VideoBaseCostByResolution { get; init; }
+
     /// <summary>USD per generated image (Image only). Null when not applicable.</summary>
     public double? ImageCostPerImage { get; init; }
 
@@ -165,6 +179,14 @@ public sealed class SupportedModelEntry
     /// [MinClipDurationSeconds, MaxClipDurationSeconds] (or the global defaults).
     /// </summary>
     public IReadOnlyList<int>? AllowedDurationsSeconds { get; init; }
+
+    /// <summary>
+    /// Tighter max duration specifically for image-to-video / reference-conditioned / video-extend
+    /// generation (Video only) — some providers (Grok) allow a longer fresh text-to-video clip than
+    /// they do for the "new portion" of a reference/continue call. Null means image/ref/continue
+    /// modes use the same <see cref="MaxClipDurationSeconds"/> as fresh generation.
+    /// </summary>
+    public int? MaxExtensionSeconds { get; init; }
 
     /// <summary>
     /// Longest single-call duration this audio model will accept, in seconds (Audio only) — the
@@ -716,6 +738,9 @@ public static class SupportedModelCatalog
         VideoCostPerSecondByResolution = e.VideoCostPerSecondByResolution is { } v
             ? new Dictionary<string, double>(v)
             : null,
+        VideoBaseCostByResolution = e.VideoBaseCostByResolution is { } vb
+            ? new Dictionary<string, double>(vb)
+            : null,
         ImageCostPerImage = e.ImageCostPerImage,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
@@ -728,6 +753,7 @@ public static class SupportedModelCatalog
         MaxClipDurationSeconds = e.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = e.AbsMaxClipDurationSeconds,
         AllowedDurationsSeconds = e.AllowedDurationsSeconds is { } ad ? new List<int>(ad) : null,
+        MaxExtensionSeconds = e.MaxExtensionSeconds,
         MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
     };
 
@@ -746,6 +772,7 @@ public static class SupportedModelCatalog
         InputCostPerMillionTokens = d.InputCostPerMillionTokens,
         OutputCostPerMillionTokens = d.OutputCostPerMillionTokens,
         VideoCostPerSecondByResolution = d.VideoCostPerSecondByResolution,
+        VideoBaseCostByResolution = d.VideoBaseCostByResolution,
         ImageCostPerImage = d.ImageCostPerImage,
         Notes = d.Notes,
         FeatureRequestUrl = d.FeatureRequestUrl,
@@ -757,6 +784,7 @@ public static class SupportedModelCatalog
         MaxClipDurationSeconds = d.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = d.AbsMaxClipDurationSeconds,
         AllowedDurationsSeconds = d.AllowedDurationsSeconds,
+        MaxExtensionSeconds = d.MaxExtensionSeconds,
         MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
     };
 }
@@ -775,6 +803,7 @@ public sealed class SupportedModelDto
     public double? InputCostPerMillionTokens { get; set; }
     public double? OutputCostPerMillionTokens { get; set; }
     public Dictionary<string, double>? VideoCostPerSecondByResolution { get; set; }
+    public Dictionary<string, double>? VideoBaseCostByResolution { get; set; }
     public double? ImageCostPerImage { get; set; }
     public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
@@ -787,6 +816,7 @@ public sealed class SupportedModelDto
     public int? MaxClipDurationSeconds { get; set; }
     public int? AbsMaxClipDurationSeconds { get; set; }
     public List<int>? AllowedDurationsSeconds { get; set; }
+    public int? MaxExtensionSeconds { get; set; }
     public int? MaxAudioDurationSeconds { get; set; }
 }
 
