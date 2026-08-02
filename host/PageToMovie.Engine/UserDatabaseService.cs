@@ -25,6 +25,7 @@ public class UserDatabaseService
     private readonly string _dbPath;
     private readonly IDataProtector? _protector;
     private readonly ILogger<UserDatabaseService> _logger;
+    private readonly BillingOptions _billing;
     private readonly object _initLock = new();
     private bool _initialized;
 
@@ -35,6 +36,7 @@ public class UserDatabaseService
     {
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<UserDatabaseService>.Instance;
         _protector = dataProtection?.CreateProtector("PageToMovie.UserApiKeys");
+        _billing = options?.Value?.Billing ?? new BillingOptions();
 
         var workspace = options?.Value?.WorkspaceRoot;
         var dataDir = ResolveDataDirectory(workspace);
@@ -409,6 +411,29 @@ public class UserDatabaseService
                     cmd.ExecuteNonQuery();
                 }
 
+                // v5: attribute orphaned cost rows (no user / no project) to Bud Cribar + development.
+                // Also backfill charge_usd. Detects old DBs via PRAGMA user_version < 5 (Railway).
+                using (var vCmd5 = conn.CreateCommand())
+                {
+                    vCmd5.CommandText = "PRAGMA user_version;";
+                    var verAfterTables = Convert.ToInt32(vCmd5.ExecuteScalar() ?? 0);
+                    if (verAfterTables < 5)
+                    {
+                        MigrateLegacyCostAttributionV5(conn, _billing);
+                        using var setVer5 = conn.CreateCommand();
+                        setVer5.CommandText = "PRAGMA user_version = 5;";
+                        setVer5.ExecuteNonQuery();
+                        _logger.LogInformation(
+                            "Migrated SQLite schema to user_version 5 (legacy cost attribution → {User}/{Project})",
+                            string.IsNullOrWhiteSpace(_billing.LegacyCostOwnerUserId)
+                                ? "budcribar"
+                                : _billing.LegacyCostOwnerUserId.Trim(),
+                            string.IsNullOrWhiteSpace(_billing.LegacyCostProjectId)
+                                ? "development"
+                                : _billing.LegacyCostProjectId.Trim());
+                    }
+                }
+
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
@@ -433,6 +458,153 @@ public class UserDatabaseService
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    /// One-shot migration for Railway / old DBs: rows with missing user and/or project
+    /// are assigned to the legacy owner (Bud Cribar / <c>budcribar</c>) and project <c>development</c>.
+    /// Also backfills <c>charge_usd</c> from list rate × current charge multiplier when null.
+    /// </summary>
+    private void MigrateLegacyCostAttributionV5(SqliteConnection conn, BillingOptions billing)
+    {
+        var ownerId = string.IsNullOrWhiteSpace(billing.LegacyCostOwnerUserId)
+            ? "budcribar"
+            : billing.LegacyCostOwnerUserId.Trim();
+        var ownerName = string.IsNullOrWhiteSpace(billing.LegacyCostOwnerUsername)
+            ? "Bud Cribar"
+            : billing.LegacyCostOwnerUsername.Trim();
+        var projectId = string.IsNullOrWhiteSpace(billing.LegacyCostProjectId)
+            ? "development"
+            : billing.LegacyCostProjectId.Trim();
+        var mult = PageToMovie.Core.Billing.ChargePricing.ClampMultiplier(billing.ChargeMultiplier);
+
+        // Ensure owner user exists so spend summaries resolve a real account.
+        using (var ensureUser = conn.CreateCommand())
+        {
+            ensureUser.CommandText = @"
+                INSERT INTO users (user_id, username, password_hash, role, created_at, email_confirmed_at)
+                VALUES (@id, @name, '', 'User', @created, @created)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    username = CASE
+                        WHEN users.username IS NULL OR TRIM(users.username) = '' OR LOWER(users.username) = LOWER(users.user_id)
+                        THEN @name
+                        ELSE users.username
+                    END;";
+            ensureUser.Parameters.AddWithValue("@id", ownerId);
+            ensureUser.Parameters.AddWithValue("@name", ownerName);
+            ensureUser.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
+            ensureUser.ExecuteNonQuery();
+        }
+
+        // Placeholders used before real BYOK attribution (empty, local default, unknown).
+        // Does NOT reassign costs already owned by real signed-in users.
+        const string orphanUserSql = @"
+            user_id IS NULL
+            OR TRIM(user_id) = ''
+            OR LOWER(TRIM(user_id)) IN ('local', 'unknown', 'none', 'system', 'anonymous')";
+
+        int apiUser = 0, apiProj = 0, apiCharge = 0, genUser = 0, genProj = 0, creditUser = 0, creditProj = 0;
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $@"
+                UPDATE user_api_calls
+                SET user_id = @owner
+                WHERE {orphanUserSql};";
+            cmd.Parameters.AddWithValue("@owner", ownerId);
+            apiUser = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE user_api_calls
+                SET project_id = @project
+                WHERE project_id IS NULL OR TRIM(project_id) = '';";
+            cmd.Parameters.AddWithValue("@project", projectId);
+            apiProj = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE user_api_calls
+                SET charge_usd = ROUND(estimated_usd * @mult, 6),
+                    charge_multiplier = @mult
+                WHERE estimated_usd IS NOT NULL
+                  AND estimated_usd > 0
+                  AND (charge_usd IS NULL OR charge_usd <= 0);";
+            cmd.Parameters.AddWithValue("@mult", mult);
+            apiCharge = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $@"
+                UPDATE generation_errors
+                SET user_id = @owner
+                WHERE {orphanUserSql};";
+            cmd.Parameters.AddWithValue("@owner", ownerId);
+            genUser = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE generation_errors
+                SET project_id = @project
+                WHERE project_id IS NULL OR TRIM(project_id) = '';";
+            cmd.Parameters.AddWithValue("@project", projectId);
+            genProj = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $@"
+                UPDATE credit_ledger
+                SET user_id = @owner
+                WHERE {orphanUserSql};";
+            cmd.Parameters.AddWithValue("@owner", ownerId);
+            creditUser = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE credit_ledger
+                SET project_id = @project
+                WHERE project_id IS NULL OR TRIM(project_id) = '';";
+            cmd.Parameters.AddWithValue("@project", projectId);
+            creditProj = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                INSERT INTO credit_ledger (user_id, ts, kind, amount_usd, balance_after_usd, project_id, note, meta_kind)
+                VALUES (
+                    @owner,
+                    @ts,
+                    'adjust',
+                    0,
+                    COALESCE((SELECT credits_balance_usd FROM users WHERE user_id = @owner), 0),
+                    @project,
+                    @note,
+                    'legacy_cost_attribution_v5');";
+            cmd.Parameters.AddWithValue("@owner", ownerId);
+            cmd.Parameters.AddWithValue("@ts", DateTime.UtcNow.ToString("o"));
+            cmd.Parameters.AddWithValue("@project", projectId);
+            cmd.Parameters.AddWithValue("@note",
+                $"v5 migrate: api_user={apiUser} api_project={apiProj} api_charge={apiCharge} " +
+                $"gen_user={genUser} gen_project={genProj} credit_user={creditUser} credit_project={creditProj}");
+            cmd.ExecuteNonQuery();
+        }
+
+        _logger.LogInformation(
+            "Legacy cost attribution v5: owner={Owner} project={Project} mult={Mult} " +
+            "api_user={ApiUser} api_project={ApiProj} api_charge={ApiCharge} " +
+            "gen_user={GenUser} gen_project={GenProj} credit_user={CreditUser} credit_project={CreditProj}",
+            ownerId, projectId, mult, apiUser, apiProj, apiCharge, genUser, genProj, creditUser, creditProj);
     }
 
     private static void EnsureColumn(SqliteConnection conn, string table, string column, string typeSql)

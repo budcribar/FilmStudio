@@ -474,4 +474,19 @@ public sealed class BillingOptions
     /// and credit debits. List rates remain available as <c>list_usd</c> on events.
     /// </summary>
     public double ChargeMultiplier { get; set; } = 1.0;
+
+    /// <summary>
+    /// User id that receives orphaned pre-attribution cost rows on DB migrate (Railway old DBs).
+    /// Default: <c>budcribar</c> (Bud Cribar).
+    /// </summary>
+    public string LegacyCostOwnerUserId { get; set; } = "budcribar";
+
+    /// <summary>Display username created if the legacy owner user does not exist yet.</summary>
+    public string LegacyCostOwnerUsername { get; set; } = "Bud Cribar";
+
+    /// <summary>
+    /// Project id stamped on cost rows that had no project (pre-attribution era).
+    /// Default: <c>development</c>.
+    /// </summary>
+    public string LegacyCostProjectId { get; set; } = "development";
 }
