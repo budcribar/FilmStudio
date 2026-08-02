@@ -407,12 +407,13 @@
       ],
       "enabled": true,
       "maxInputTokens": 1000000,
+      "maxOutputTokens": 128000,
       "inputCostPerMillionTokens": 2.0,
       "outputCostPerMillionTokens": 10.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Wired via AnthropicChatClient."
+      "notes": "Wired via AnthropicChatClient. maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Sonnet 5 max output: 128k tokens)."
     },
     {
       "id": "claude-opus-5",
@@ -426,12 +427,13 @@
       ],
       "enabled": true,
       "maxInputTokens": 1000000,
+      "maxOutputTokens": 128000,
       "inputCostPerMillionTokens": 2.0,
       "outputCostPerMillionTokens": 10.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 \u2014 update when a real source is available."
+      "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 \u2014 update when a real source is available. maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Opus 5 max output: 128k tokens)."
     },
     {
       "id": "gemini-2.5-flash",
@@ -521,12 +523,13 @@
       ],
       "enabled": true,
       "maxInputTokens": 1000000,
+      "maxOutputTokens": 128000,
       "inputCostPerMillionTokens": 2.0,
       "outputCostPerMillionTokens": 10.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Wired for clip/frame review via MultiProviderVisionClient (OCR/cast-classify stay Grok-only)."
+      "notes": "Wired for clip/frame review via MultiProviderVisionClient (OCR/cast-classify stay Grok-only). maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Sonnet 5 max output: 128k tokens)."
     },
     {
       "id": "gemini-2.5-flash",

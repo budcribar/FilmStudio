@@ -27,6 +27,16 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     // past the old cap; 16K leaves real headroom without guessing per-model.
     public const int DefaultMaxTokens = 16_000;
 
+    /// <summary>
+    /// Resolves the <c>max_tokens</c> request field from the model catalog's confirmed
+    /// per-model ceiling (<see cref="SupportedModelEntry.MaxOutputTokens"/>), falling back to
+    /// <see cref="DefaultMaxTokens"/> when the catalog has no entry or hasn't confirmed a real
+    /// number for this model. Never guesses a per-model max — an unconfirmed catalog entry means
+    /// "use the safe default", not "make one up".
+    /// </summary>
+    private static int ResolveMaxTokens(string model) =>
+        SupportedModelCatalog.Find(model, ModelCapability.Chat)?.MaxOutputTokens ?? DefaultMaxTokens;
+
     private readonly HttpClient _http;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<AnthropicChatClient> _log;
@@ -69,7 +79,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
-            ["max_tokens"] = DefaultMaxTokens,
+            ["max_tokens"] = ResolveMaxTokens(model),
             ["system"] = systemPrompt,
             ["messages"] = new object[]
             {
@@ -128,7 +138,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
-            ["max_tokens"] = DefaultMaxTokens,
+            ["max_tokens"] = ResolveMaxTokens(model),
             ["messages"] = new object[]
             {
                 new Dictionary<string, object?> { ["role"] = "user", ["content"] = content },
