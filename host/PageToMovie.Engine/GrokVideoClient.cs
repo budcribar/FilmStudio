@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -263,7 +264,7 @@ public sealed class GrokVideoClient : IVideoClient
             ["model"] = model,
             ["prompt"] = prompt,
             ["duration"] = durationSeconds,
-            ["aspect_ratio"] = "16:9",
+            ["aspect_ratio"] = ResolveAspectRatio(model),
             ["resolution"] = resolution,
         };
 
@@ -301,6 +302,15 @@ public sealed class GrokVideoClient : IVideoClient
         }
         return id;
     }
+
+    /// <summary>
+    /// Fresh-generation aspect ratio: catalog's <c>DefaultAspectRatio</c> for the requested model,
+    /// falling back to the historical hardcoded "16:9" for models the catalog doesn't cover yet.
+    /// (Not used for video-extend — xAI docs say aspect_ratio isn't accepted there; the extension
+    /// always inherits the source clip's ratio.)
+    /// </summary>
+    private static string ResolveAspectRatio(string model) =>
+        SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).DefaultAspectRatio ?? "16:9";
 
     private static async Task<string> FileToDataUriAsync(string path, CancellationToken ct)
     {

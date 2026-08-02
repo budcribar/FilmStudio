@@ -189,7 +189,17 @@
         "720p": 0.07,
         "1080p": 0.25
       },
-      "notes": "Also uses videos/extensions for clip continue."
+      "supportedAspectRatios": [
+        "1:1",
+        "16:9",
+        "9:16",
+        "4:3",
+        "3:4",
+        "3:2",
+        "2:3"
+      ],
+      "defaultAspectRatio": "16:9",
+      "notes": "Also uses videos/extensions for clip continue. aspect_ratio/resolution are NOT accepted on videos/extensions -- the extension output always matches the source clip's aspect ratio (docs.x.ai)."
     },
     {
       "id": "hunyuan-video",
@@ -210,6 +220,11 @@
         "720p": 0.005,
         "1080p": 0.005
       },
+      "supportedAspectRatios": [
+        "16:9",
+        "9:16"
+      ],
+      "defaultAspectRatio": "16:9",
       "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip)."
     },
     {
@@ -231,7 +246,14 @@
         "720p": 0.025,
         "1080p": 0.025
       },
-      "notes": "Alibaba Wan 2.1 open-weights 1080p image-to-video model hosted on Fal.ai serverless GPUs (~$0.12 per 5s clip)."
+      "supportedAspectRatios": [
+        "auto",
+        "16:9",
+        "9:16",
+        "1:1"
+      ],
+      "defaultAspectRatio": "auto",
+      "notes": "Alibaba Wan 2.1 open-weights 1080p image-to-video model hosted on Fal.ai serverless GPUs (~$0.12 per 5s clip). \"auto\" (default) infers aspect ratio from the input image (fal.ai/models/fal-ai/wan-i2v/api)."
     },
     {
       "id": "veo-3.1",
@@ -251,7 +273,12 @@
         "720p": 0.4,
         "1080p": 0.4
       },
-      "notes": "Wired via GeminiVideoClient (text/image-to-video only)."
+      "supportedAspectRatios": [
+        "16:9",
+        "9:16"
+      ],
+      "defaultAspectRatio": "16:9",
+      "notes": "Wired via GeminiVideoClient (text/image-to-video only). ai.google.dev/gemini-api/docs/veo: landscape 16:9 (default) or portrait 9:16."
     },
     {
       "id": "grok-imagine-image-quality",

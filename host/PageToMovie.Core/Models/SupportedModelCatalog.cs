@@ -168,6 +168,23 @@ public sealed class SupportedModelEntry
     /// </summary>
     public int? MaxReferenceImageDimension { get; init; }
 
+    /// <summary>
+    /// Discrete set of aspect-ratio strings (e.g. <c>"16:9"</c>, <c>"9:16"</c>) this model's API
+    /// actually accepts for generation (Video only), sourced from provider docs — mirrors
+    /// <see cref="MaxReferenceImageDimension"/>-style per-model capability data rather than a
+    /// continuous range, since providers document aspect ratio as a fixed enum. Null when not yet
+    /// confirmed for this model; callers should keep sending their historical fixed value in that
+    /// case rather than guessing.
+    /// </summary>
+    public IReadOnlyList<string>? SupportedAspectRatios { get; init; }
+
+    /// <summary>
+    /// Aspect ratio to request when the caller doesn't have a more specific one in mind (Video
+    /// only). Should be a member of <see cref="SupportedAspectRatios"/> when both are set. Null
+    /// falls back to the client's historical hardcoded default (<c>"16:9"</c>).
+    /// </summary>
+    public string? DefaultAspectRatio { get; init; }
+
     /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
     public string ProviderName { get; init; } = "";
 
@@ -707,6 +724,8 @@ public static class SupportedModelCatalog
         MaxClipDurationSeconds = e.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = e.AbsMaxClipDurationSeconds,
         MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
+        SupportedAspectRatios = e.SupportedAspectRatios is { } sar ? sar.ToList() : null,
+        DefaultAspectRatio = e.DefaultAspectRatio,
     };
 
     public static SupportedModelEntry FromDto(SupportedModelDto d) => new()
@@ -734,6 +753,8 @@ public static class SupportedModelCatalog
         MaxClipDurationSeconds = d.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = d.AbsMaxClipDurationSeconds,
         MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
+        SupportedAspectRatios = d.SupportedAspectRatios,
+        DefaultAspectRatio = d.DefaultAspectRatio,
     };
 }
 
@@ -762,6 +783,8 @@ public sealed class SupportedModelDto
     public int? MaxClipDurationSeconds { get; set; }
     public int? AbsMaxClipDurationSeconds { get; set; }
     public int? MaxAudioDurationSeconds { get; set; }
+    public List<string>? SupportedAspectRatios { get; set; }
+    public string? DefaultAspectRatio { get; set; }
 }
 
 public sealed class ModelCapabilityDefinition

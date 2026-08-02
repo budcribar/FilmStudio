@@ -72,7 +72,7 @@ public sealed class FalVideoClient : IVideoClient
         var payload = new Dictionary<string, object?>
         {
             ["prompt"] = prompt,
-            ["aspect_ratio"] = "16:9",
+            ["aspect_ratio"] = ResolveAspectRatio(model),
             ["num_frames"] = numFrames,
             ["num_inference_steps"] = 30,
         };
@@ -207,6 +207,13 @@ public sealed class FalVideoClient : IVideoClient
         await using var fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, useAsync: true);
         await stream.CopyToAsync(fs, ct).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Catalog's <c>DefaultAspectRatio</c> for the requested Fal.ai model, falling back to the
+    /// historical hardcoded "16:9" for models the catalog doesn't cover yet.
+    /// </summary>
+    private static string ResolveAspectRatio(string model) =>
+        SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).DefaultAspectRatio ?? "16:9";
 
     private static async Task<string> PrepareOptimizedImageDataUriAsync(string imagePath, int maxDim, CancellationToken ct)
     {
