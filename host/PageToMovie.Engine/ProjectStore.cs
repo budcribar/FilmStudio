@@ -1236,7 +1236,83 @@ public sealed class ProjectStore
         }
 
         InvalidateReadCaches(null); // projects list
+
+        // Copy studio model picks from another project the same owner already configured.
+        // New projects used to start with empty pipeline_config → "no model selected" on first import.
+        try
+        {
+            await SeedModelConfigFromOwnerAsync(id, ownerUserId, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Non-fatal — import page still blocks until Settings is filled.
+        }
+
         return await ActivateAsync(id, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Model selection keys that should travel with a new empty project from a sibling
+    /// project owned by the same user (Settings is per-project today).
+    /// </summary>
+    private static readonly string[] ModelConfigSeedKeys =
+    {
+        "planning_model_name", "chat_model_name",
+        "vision_model_name",
+        "quality_model_name", "video_review_model_name",
+        "model_name", "image_model_name",
+        "audio_model_name", "voice_model_name",
+        "planning_provider", "video_provider", "image_provider",
+        "vision_provider", "audio_provider", "voice_provider",
+        "providers", // nested map of capability → model id when present
+    };
+
+    private async Task SeedModelConfigFromOwnerAsync(
+        string newProjectId,
+        string? ownerUserId,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(ownerUserId))
+            return;
+
+        var all = await ListProjectsAsync(ct).ConfigureAwait(false);
+        var siblings = all
+            .Where(p =>
+                !string.Equals(p.Id, newProjectId, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(p.OwnerUserId, ownerUserId, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(p => string.Equals(p.Id, ActiveProjectId, StringComparison.OrdinalIgnoreCase))
+            .ThenBy(p => p.Id, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var sib in siblings)
+        {
+            Dictionary<string, JsonElement> src;
+            try { src = await GetConfigAsync(sib.Id, ct).ConfigureAwait(false); }
+            catch { continue; }
+            if (src.Count == 0) continue;
+
+            // Prefer a sibling that already has script/planning configured.
+            var hasPlanning =
+                ProjectModelSelection.TryGet(src, ProjectModelSelection.PlanningConfigKey, ProjectModelSelection.ChatConfigKey)
+                is { Length: > 0 };
+            if (!hasPlanning)
+                continue;
+
+            var seed = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in ModelConfigSeedKeys)
+            {
+                if (!src.TryGetValue(key, out var el)) continue;
+                if (el.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null) continue;
+                seed[key] = el.Deserialize<object>();
+            }
+            if (seed.Count == 0) continue;
+
+            var path = ConfigPath(newProjectId);
+            var json = JsonSerializer.Serialize(seed, JsonDefaults.Indented);
+            await File.WriteAllTextAsync(path, json + "\n", ct).ConfigureAwait(false);
+            InvalidateReadCaches(newProjectId);
+            return;
+        }
     }
 
     /// <summary>Video/audio binaries never copy into a fork — the new owner regenerates or syncs media separately.</summary>

@@ -10,13 +10,28 @@
 <AdaptationShell Host="this" Step="import">
     @if (Status is not null)
     {
-        @if (!Status.XaiConfigured)
+        @if (!ImportReady)
         {
-            <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+            <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4"
+                 data-testid="import-setup-required">
                 <div>
-                    <strong>⚠️ AI key not detected:</strong> Add a personal key under Settings (xAI/Grok, Gemini, OpenAI, etc.) or set a server env key.
+                    <strong>Setup required before import.</strong>
+                    @_importBlockedReason
                 </div>
-                <a class="btn btn-sm btn-warning fw-semibold" href="configuration">Open Settings →</a>
+                <a class="btn btn-sm btn-warning fw-semibold"
+                   href="configuration?focus=planning"
+                   data-testid="import-open-settings">Open Settings →</a>
+            </div>
+        }
+        else if (IsUsablePlanningModel(Status.PlanningModel))
+        {
+            <div class="alert alert-success py-2 small mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2"
+                 data-testid="import-planning-ready">
+                <span>
+                    <strong>Script & planning ready:</strong>
+                    <span class="text-body-secondary">@Status.PlanningModel</span>
+                </span>
+                <a class="small" href="configuration?focus=planning">Change in Settings</a>
             </div>
         }
 
@@ -89,7 +104,7 @@
                     <h5 class="card-title mb-1">Import source</h5>
                     <p class="text-muted small mb-3">PDF, text, or fountain — then the pipeline runs. You can edit after.</p>
 
-                    <label class="ptm-dropzone @(Busy || JobRunning || _importing ? "ptm-dropzone--disabled" : "") @(_dragOver ? "ptm-dropzone--active" : "")"
+                    <label class="ptm-dropzone @(Busy || JobRunning || _importing || !ImportReady ? "ptm-dropzone--disabled" : "") @(_dragOver && ImportReady ? "ptm-dropzone--active" : "")"
                            data-testid="import-dropzone"
                            @ondragenter="OnDragEnter"
                            @ondragenter:preventDefault
@@ -104,7 +119,7 @@
                                    class="ptm-dropzone__input"
                                    accept=".fountain,.spmd,.pdf,.txt,text/plain,application/pdf"
                                    data-testid="import-file-input"
-                                   disabled="@(Busy || JobRunning || _importing)" />
+                                   disabled="@(Busy || JobRunning || _importing || !ImportReady)" />
                         <div class="ptm-dropzone__inner" aria-hidden="true">
                             <div class="ptm-dropzone__icon">📖</div>
                             <div class="ptm-dropzone__title">Drop your book here</div>
@@ -146,6 +161,23 @@
     private bool _dragOver;
     /// <summary>Bumped after each selection so InputFile remounts cleanly.</summary>
     private int _inputFileKey;
+    private string _importBlockedReason = "Choose a Script & planning model in Settings for this project.";
+
+    /// <summary>True when this project has a planning model and a usable AI key.</summary>
+    private bool ImportReady =>
+        Status is not null
+        && Status.XaiConfigured
+        && IsUsablePlanningModel(Status.PlanningModel);
+
+    private static bool IsUsablePlanningModel(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return false;
+        var s = id.Trim();
+        if (s.Equals("none", StringComparison.OrdinalIgnoreCase)) return false;
+        if (s.Equals("disabled", StringComparison.OrdinalIgnoreCase)) return false;
+        if (s.Equals("auto", StringComparison.OrdinalIgnoreCase)) return false;
+        return true;
+    }
 
     private bool CanContinueToScreenplay =>
         Status is not null &&
@@ -160,18 +192,53 @@
         {
             Error = "Sign in required to import books.";
             Nav.NavigateTo("/login?returnUrl=/adaptation/import");
+            return;
         }
+        // Re-load status so PlanningModel reflects Settings saved just before navigating here.
+        try { await LoadAsync(); } catch { /* base already tried */ }
+        RefreshImportGate();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        RefreshImportGate();
+    }
+
+    private void RefreshImportGate()
+    {
+        if (Status is null)
+        {
+            _importBlockedReason = "Loading project…";
+            return;
+        }
+        if (!Status.XaiConfigured)
+        {
+            _importBlockedReason =
+                "No AI key on this account. Open Settings and add a key for Script & planning (xAI, OpenAI, Anthropic, Google, …).";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(Status.PlanningModel) || !IsUsablePlanningModel(Status.PlanningModel))
+        {
+            _importBlockedReason =
+                "Script & planning: no model selected for this project. Open Settings → Studio coverage → Script & planning, choose a model, then come back here.";
+            return;
+        }
+        _importBlockedReason = "";
+        // Keep base Model in sync so StartBookImportAsync sends the chosen id.
+        if (IsUsablePlanningModel(Status.PlanningModel))
+            Model = Status.PlanningModel;
     }
 
     private void OnDragEnter(DragEventArgs e)
     {
-        if (_importing || Busy || JobRunning) return;
+        if (_importing || Busy || JobRunning || !ImportReady) return;
         _dragOver = true;
     }
 
     private void OnDragOver(DragEventArgs e)
     {
-        if (_importing || Busy || JobRunning) return;
+        if (_importing || Busy || JobRunning || !ImportReady) return;
         _dragOver = true;
     }
 
@@ -187,7 +254,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        if (_importing || Busy || JobRunning) return;
+        if (_importing || Busy || JobRunning || !ImportReady) return;
         try
         {
             // Re-bind after each InputFile remount (@key) so drop keeps working.
@@ -207,6 +274,15 @@
         {
             Error = "Sign in required to import books.";
             Nav.NavigateTo("/login?returnUrl=/adaptation/import");
+            return;
+        }
+        // Fresh status (Settings may have just been saved)
+        try { await LoadAsync(); } catch { /* keep previous */ }
+        RefreshImportGate();
+        if (!ImportReady)
+        {
+            Error = _importBlockedReason;
+            _inputFileKey++;
             return;
         }
 
