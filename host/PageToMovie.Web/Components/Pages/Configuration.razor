@@ -193,7 +193,7 @@
                                                 data-testid="coverage-add-provider-@c.Id"
                                                 disabled="@_busy"
                                                 title="Add another provider key for this job"
-                                                @onclick="() => BeginAddKey(c.Id, null)">
+                                                @onclick="() => BeginAddProvider(c.Id)">
                                             Add provider
                                         </button>
                                         @if (!c.OptionalOff && !c.KeyReady && !string.IsNullOrWhiteSpace(c.ProviderId))
@@ -202,7 +202,7 @@
                                                     class="btn btn-sm btn-primary"
                                                     data-testid="coverage-add-key-@c.Id"
                                                     disabled="@_busy"
-                                                    @onclick="() => BeginAddKey(c.Id, c.ProviderId)">
+                                                    @onclick="() => BeginAddKeyForProvider(c.Id, c.ProviderId)">
                                                 Add key
                                             </button>
                                         }
@@ -212,7 +212,8 @@
                                                     class="btn btn-sm btn-outline-secondary"
                                                     data-testid="coverage-change-key-@c.Id"
                                                     disabled="@_busy"
-                                                    @onclick="() => BeginAddKey(c.Id, c.ProviderId)">
+                                                    title="Replace only the @FriendlyProviderLabel(c.ProviderId) key"
+                                                    @onclick="() => BeginReplaceKey(c.Id, c.ProviderId)">
                                                 Replace key
                                             </button>
                                             <button type="button"
@@ -246,17 +247,41 @@
                                         <div class="p-2">
                                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                                                 <div class="small fw-semibold">
-                                                    Add key for <span class="text-primary">@c.Label</span>
+                                                    @if (_coverageKeyMode == "replace")
+                                                    {
+                                                        <span>Replace key · <span class="text-primary">@FriendlyProviderLabel(_coverageKeyProviderId)</span></span>
+                                                    }
+                                                    else if (_coverageKeyMode == "add-key")
+                                                    {
+                                                        <span>Add key · <span class="text-primary">@FriendlyProviderLabel(_coverageKeyProviderId)</span></span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Add provider for <span class="text-primary">@c.Label</span></span>
+                                                    }
                                                 </div>
                                                 <button type="button" class="btn btn-sm btn-link" @onclick="CancelAddKey">Cancel</button>
                                             </div>
                                             <p class="small text-muted mb-2">
-                                                Providers that can run this job. Provider = who holds the key
-                                                (e.g. <strong>Suno API (sunoapi.org)</strong> vs <strong>AI Music API (aimusicapi.ai)</strong> —
-                                                Suno is the model family). If a card says <em>Has key</em>, click <strong>Use this key</strong>.
+                                                @if (_coverageKeyMode is "replace" or "add-key")
+                                                {
+                                                    <span>Only this provider — paste a new key or remove the saved one.</span>
+                                                }
+                                                else if (c.Id == "music")
+                                                {
+                                                    <span>
+                                                        Pick a provider for this job.
+                                                        <strong>Suno API (sunoapi.org)</strong> and <strong>AI Music API (aimusicapi.ai)</strong> are different keys
+                                                        (Suno is the model family).
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Pick a provider that can run this job, then paste its key (or use a saved one).</span>
+                                                }
                                             </p>
                                             <div class="row g-2">
-                                                @foreach (var p in ProvidersForCoverage(c.Id))
+                                                @foreach (var p in ProvidersForKeyPanel(c.Id))
                                                 {
                                                     var selected = string.Equals(_coverageKeyProviderId, p.ProviderId, StringComparison.OrdinalIgnoreCase);
                                                     <div class="col-md-6 col-lg-4">
@@ -341,7 +366,7 @@
                                                     </div>
                                                 }
                                             </div>
-                                            @if (!ProvidersForCoverage(c.Id).Any())
+                                            @if (!ProvidersForKeyPanel(c.Id).Any())
                                             {
                                                 <div class="alert alert-warning py-2 small mb-0">No providers available for this job in the catalog.</div>
                                             }
@@ -866,6 +891,8 @@
     /// <summary>Coverage row open for just-in-time key entry.</summary>
     private string? _coverageEditId;
     private string? _coverageKeyProviderId;
+    /// <summary>replace | add-key | add-provider</summary>
+    private string _coverageKeyMode = "add-provider";
 
     private sealed class CoverageRow
     {
@@ -1012,20 +1039,74 @@
 
     private void BeginAddKey(string coverageId, string? preferredProviderId = null)
     {
+        // Legacy entry — treat as add-provider unless a specific provider is required.
+        if (!string.IsNullOrWhiteSpace(preferredProviderId))
+            BeginAddKeyForProvider(coverageId, preferredProviderId);
+        else
+            BeginAddProvider(coverageId);
+    }
+
+    /// <summary>Replace key for one provider only (no multi-provider grid).</summary>
+    private void BeginReplaceKey(string coverageId, string providerId)
+    {
         _coverageEditId = coverageId;
+        _coverageKeyProviderId = SupportedModelCatalog.NormalizeProviderId(providerId);
+        _coverageKeyMode = "replace";
+        _apiKeyFeedback = null;
+        _keyInputs[_coverageKeyProviderId] = null;
+    }
+
+    /// <summary>Add/paste key for the provider currently on this coverage row only.</summary>
+    private void BeginAddKeyForProvider(string coverageId, string providerId)
+    {
+        _coverageEditId = coverageId;
+        _coverageKeyProviderId = SupportedModelCatalog.NormalizeProviderId(providerId);
+        _coverageKeyMode = "add-key";
+        _apiKeyFeedback = null;
+        _keyInputs[_coverageKeyProviderId] = null;
+    }
+
+    /// <summary>Choose among all providers that can run this job.</summary>
+    private void BeginAddProvider(string coverageId)
+    {
+        _coverageEditId = coverageId;
+        _coverageKeyMode = "add-provider";
         _apiKeyFeedback = null;
         var list = ProvidersForCoverage(coverageId).ToList();
-        if (!string.IsNullOrWhiteSpace(preferredProviderId) &&
-            list.Any(x => string.Equals(x.ProviderId, preferredProviderId, StringComparison.OrdinalIgnoreCase)))
-            _coverageKeyProviderId = preferredProviderId;
-        else
-            _coverageKeyProviderId = list.FirstOrDefault()?.ProviderId;
+        // Prefer first without a key so “Add provider” lands on something useful.
+        _coverageKeyProviderId = list.FirstOrDefault(p => !p.IsConfigured)?.ProviderId
+                                 ?? list.FirstOrDefault()?.ProviderId;
     }
 
     private void CancelAddKey()
     {
         _coverageEditId = null;
         _coverageKeyProviderId = null;
+        _coverageKeyMode = "add-provider";
+    }
+
+    /// <summary>
+    /// Providers shown in the open key panel.
+    /// Replace / Add key → only the target provider. Add provider → full list for the job.
+    /// </summary>
+    private IEnumerable<ProviderKeyStatusDto> ProvidersForKeyPanel(string coverageId)
+    {
+        var all = ProvidersForCoverage(coverageId);
+        if (_coverageKeyMode is "replace" or "add-key"
+            && !string.IsNullOrWhiteSpace(_coverageKeyProviderId))
+        {
+            var only = all.Where(p =>
+                string.Equals(p.ProviderId, _coverageKeyProviderId, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (only.Count > 0)
+                return only;
+            // Provider might not be in job list yet — synthesize a row from ProviderRows.
+            var row = ProviderRows.FirstOrDefault(p =>
+                string.Equals(p.ProviderId, _coverageKeyProviderId, StringComparison.OrdinalIgnoreCase));
+            if (row is not null)
+                return new[] { row };
+        }
+        return all;
     }
 
     private void SelectKeyProvider(string providerId) => _coverageKeyProviderId = providerId;
