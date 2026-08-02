@@ -103,7 +103,7 @@
                             var providers = ProvidersForCoverage(c.Id).ToList();
                             var providerModels = ModelsForCoverageProvider(c.Id, c.ProviderId).ToList();
                             var editing = string.Equals(_coverageEditId, c.Id, StringComparison.OrdinalIgnoreCase);
-                            <tr class="@(c.OptionalOff ? "opacity-75" : "")" data-testid="coverage-@c.Id">
+                            <tr @key="@($"cov-row-{c.Id}")" class="@(c.OptionalOff ? "opacity-75" : "")" data-testid="coverage-@c.Id">
                                 <td>
                                     <div class="fw-semibold small">@c.Label</div>
                                     <div class="text-muted" style="font-size:0.75rem;">@c.Hint</div>
@@ -116,23 +116,25 @@
                                     else if (providers.Count > 0)
                                     {
                                         var provSelected = SupportedModelCatalog.NormalizeProviderId(c.ProviderId);
+                                        @* Stable key per job only — do not include selection in @key (remount mid-diff
+                                           with keyed <option>s caused "return wrong pooled instance"). *@
                                         <select class="form-select form-select-sm"
-                                                @key="@($"cov-prov-{c.Id}-{provSelected}")"
+                                                @key="@($"cov-prov-{c.Id}")"
                                                 data-testid="coverage-provider-@c.Id"
                                                 disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
+                                                value="@provSelected"
                                                 @onchange="e => OnCoverageProviderChangedAsync(c.Id, e.Value?.ToString())">
                                             @if (string.IsNullOrWhiteSpace(provSelected)
                                                  || !providers.Any(pr => string.Equals(
                                                      SupportedModelCatalog.NormalizeProviderId(pr.ProviderId),
                                                      provSelected, StringComparison.OrdinalIgnoreCase)))
                                             {
-                                                <option value="" selected>Choose provider…</option>
+                                                <option value="">Choose provider…</option>
                                             }
                                             @foreach (var pr in providers)
                                             {
                                                 var pid = SupportedModelCatalog.NormalizeProviderId(pr.ProviderId);
-                                                var isSel = string.Equals(pid, provSelected, StringComparison.OrdinalIgnoreCase);
-                                                <option @key="@($"opt-{c.Id}-{pid}")" value="@pid" selected="@isSel">
+                                                <option value="@pid">
                                                     @FriendlyProviderLabel(pid)@(pr.IsConfigured ? "" : " · no key")
                                                 </option>
                                             }
@@ -151,15 +153,16 @@
                                     else if (providerModels.Count > 0)
                                     {
                                         var modelSelected = GetCoverageModelId(c.Id);
+                                        @* Remount model list only when the provider (option set) changes. *@
                                         <select class="form-select form-select-sm"
-                                                @key="@($"cov-model-{c.Id}-{c.ProviderId}-{modelSelected}")"
+                                                @key="@($"cov-model-{c.Id}-{SupportedModelCatalog.NormalizeProviderId(c.ProviderId)}")"
                                                 data-testid="coverage-model-@c.Id"
                                                 disabled="@(_busy || string.IsNullOrEmpty(_projectId) || string.IsNullOrWhiteSpace(c.ProviderId))"
+                                                value="@modelSelected"
                                                 @onchange="e => OnCoverageModelChangedAsync(c.Id, e.Value?.ToString())">
                                             @foreach (var m in providerModels)
                                             {
-                                                var isSel = string.Equals(m.Id, modelSelected, StringComparison.OrdinalIgnoreCase);
-                                                <option @key="@($"mopt-{c.Id}-{m.Id}")" value="@m.Id" selected="@isSel">
+                                                <option value="@m.Id">
                                                     @ModelOptionLabel(m)
                                                 </option>
                                             }
@@ -252,7 +255,7 @@
                             </tr>
                             @if (editing)
                             {
-                                <tr class="table-active" data-testid="coverage-key-panel-@c.Id">
+                                <tr @key="@($"cov-edit-{c.Id}")" class="table-active" data-testid="coverage-key-panel-@c.Id">
                                     <td colspan="5" class="bg-dark bg-opacity-25">
                                         <div class="p-2">
                                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
