@@ -85,8 +85,8 @@ public sealed class ProjectTelemetryService
         rec.UserId ??= UserApiCallScope.UserId;
         if (rec.Ts is null)
             rec.Ts = DateTimeOffset.UtcNow;
-        if (string.IsNullOrWhiteSpace(rec.Provider) && !string.IsNullOrWhiteSpace(rec.Model))
-            rec.Provider = TryProviderForModel(rec.Model, rec.Kind);
+        // Catalog is the single source of truth for model + provider identity on every log line.
+        ApplyCatalogIdentity(rec);
         rec.EstimatedUsd ??= EstimateListRateUsd(rec);
         // Always a user-facing cost bucket (same ids as Estimate & cost pie).
         rec.Category = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
@@ -139,33 +139,49 @@ public sealed class ProjectTelemetryService
         }
     }
 
+    /// <summary>
+    /// Force <see cref="ApiCallTelemetry.Model"/> / <see cref="ApiCallTelemetry.Provider"/> from
+    /// <c>models_catalog.json</c>. Never invents providers or keeps hard-coded caller strings when
+    /// the model is in the catalog. Unknown models keep their raw model id and clear a mismatched
+    /// hard-coded provider so we do not record fake catalog identities.
+    /// </summary>
+    public static void ApplyCatalogIdentity(ApiCallTelemetry rec)
+    {
+        if (rec is null) return;
+        var entry = SupportedModelCatalog.ResolveForLogging(rec.Model, rec.Kind);
+        if (entry is not null)
+        {
+            rec.Model = entry.Id;
+            if (!string.IsNullOrWhiteSpace(entry.ProviderId))
+                rec.Provider = entry.ProviderId;
+            return;
+        }
+
+        // Model not in catalog — do not invent a provider from string heuristics.
+        if (!string.IsNullOrWhiteSpace(rec.Provider)
+            && SupportedModelCatalog.IsKnownProviderId(rec.Provider))
+        {
+            // Keep only if it is a real catalog provider id (caller may have set it from catalog).
+            rec.Provider = SupportedModelCatalog.NormalizeProviderId(rec.Provider);
+        }
+        else if (!string.IsNullOrWhiteSpace(rec.Provider))
+        {
+            // Unknown free-text provider (legacy hardcodes like "XAI") — drop rather than store noise.
+            rec.Provider = null;
+        }
+    }
+
     private static bool IsLedgerEligibleKind(string? kind) => (kind ?? "").ToLowerInvariant() switch
     {
         "video" or "video_extend" or "video_poll" or "image" or "image_edit" => false,
         _ => true,
     };
 
-    private static string? TryProviderForModel(string model, string? kind)
-    {
-        try
-        {
-            var cap = kind?.ToLowerInvariant() switch
-            {
-                "image" or "image_edit" => ModelCapability.Image,
-                "video" or "video_extend" or "video_poll" => ModelCapability.Video,
-                "vision" => ModelCapability.Vision,
-                "audio" or "music" => ModelCapability.Audio,
-                "voice" or "tts" or "voice_clone" => ModelCapability.Voice,
-                "lip_sync" => ModelCapability.LipSync,
-                _ => ModelCapability.Chat,
-            };
-            return SupportedModelCatalog.Find(model, cap)?.ProviderId
-                   ?? SupportedModelCatalog.Find(model)?.ProviderId;
-        }
-        catch { return null; }
-    }
+    [Obsolete("Use SupportedModelCatalog.CatalogProviderId — catalog is SSoT.")]
+    private static string? TryProviderForModel(string model, string? kind) =>
+        SupportedModelCatalog.CatalogProviderId(model, kind);
 
-    /// <summary>Catalog list-rate estimate — not a provider invoice line.</summary>
+    /// <summary>Catalog list-rate estimate — not a provider invoice line. No invent / no synthetic models.</summary>
     public static double? EstimateListRateUsd(ApiCallTelemetry rec)
     {
         try
@@ -174,30 +190,58 @@ public sealed class ProjectTelemetryService
             var kind = (rec.Kind ?? "").ToLowerInvariant();
             if (kind is "image" or "image_edit")
             {
-                var entry = SupportedModelCatalog.Find(model, ModelCapability.Image)
-                            ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Image);
-                var unit = entry.ImageCostPerImage ?? 0.02;
+                var entry = SupportedModelCatalog.ResolveForLogging(model, kind);
+                if (entry?.ImageCostPerImage is not { } unit)
+                    return null;
                 var n = Math.Max(1, rec.ImageCount ?? 1);
                 return Math.Round(unit * n, 6);
             }
             if (kind is "video" or "video_extend")
             {
-                var entry = SupportedModelCatalog.Find(model, ModelCapability.Video)
-                            ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
+                var entry = SupportedModelCatalog.ResolveForLogging(model, kind);
+                if (entry is null) return null;
                 var res = rec.Resolution ?? "480p";
-                double rate = 0.05;
-                if (entry.VideoCostPerSecondByResolution is { } table)
+                double? rate = null;
+                if (entry.VideoCostPerSecondByResolution is { Count: > 0 } table)
                 {
-                    if (!table.TryGetValue(res, out rate))
-                        rate = table.Values.DefaultIfEmpty(0.05).First();
+                    if (table.TryGetValue(res, out var r))
+                        rate = r;
+                    else
+                        rate = table.Values.FirstOrDefault();
                 }
+                if (rate is null or <= 0)
+                    return null;
                 var sec = rec.DurationSec ?? 6;
-                return Math.Round(rate * sec, 6);
+                return Math.Round(rate.Value * sec, 6);
             }
-            // chat / vision / other text: token rates or char/4 proxy
-            var chat = SupportedModelCatalog.Find(model, ModelCapability.Chat)
-                       ?? SupportedModelCatalog.Find(model, ModelCapability.Vision)
-                       ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Chat);
+            if (kind is "voice" or "tts" or "voice_clone")
+            {
+                var entry = SupportedModelCatalog.ResolveForLogging(model, kind);
+                if (entry is null) return null;
+                if (kind is "voice_clone" && entry.CostPerCloneUsd is { } cloneUsd)
+                    return Math.Round(cloneUsd, 6);
+                if (kind is "tts" && entry.CostPerThousandCharsUsd is { } perK)
+                {
+                    var chars = Math.Max(0, rec.PromptChars ?? 0);
+                    return Math.Round((chars / 1000.0) * perK, 6);
+                }
+                if (entry.CostPerMinuteUsd is { } perMin && rec.DurationSec is { } sec)
+                    return Math.Round((sec / 60.0) * perMin, 6);
+                if (entry.CostPerCloneUsd is { } anyVoice)
+                    return Math.Round(anyVoice, 6);
+                return null;
+            }
+            if (kind is "audio" or "music")
+            {
+                // Music models price differently; without a catalog unit, leave null (ledger may set explicitly).
+                _ = SupportedModelCatalog.ResolveForLogging(model, kind);
+                return null;
+            }
+            // chat / vision / other text: token rates only from catalog entry (no invent).
+            var chat = SupportedModelCatalog.ResolveForLogging(model, kind)
+                       ?? SupportedModelCatalog.ResolveForLogging(model, "chat")
+                       ?? SupportedModelCatalog.ResolveForLogging(model, "vision");
+            if (chat is null) return null;
             var inPerM = chat.InputCostPerMillionTokens ?? 0;
             var outPerM = chat.OutputCostPerMillionTokens ?? 0;
             if (inPerM <= 0 && outPerM <= 0)
@@ -417,7 +461,11 @@ public sealed class ApiCallTelemetry
     public string? ProjectId { get; set; }
     /// <summary>Signed-in user who triggered the call (BYOK / cost attribution).</summary>
     public string? UserId { get; set; }
-    /// <summary>Provider id: grok, gemini, openai, anthropic, fal, …</summary>
+    /// <summary>
+    /// Provider id from <c>models_catalog.json</c> (<c>providers[].id</c> / model <c>providerId</c>),
+    /// e.g. grok, gemini, openai, anthropic, fal, suno, aimusicapi, elevenlabs.
+    /// Filled automatically by <see cref="ProjectTelemetryService.LogApiCallAsync"/> from the model id.
+    /// </summary>
     public string? Provider { get; set; }
     /// <summary>List-rate USD estimate at call time (catalog). Not a provider invoice.</summary>
     public double? EstimatedUsd { get; set; }

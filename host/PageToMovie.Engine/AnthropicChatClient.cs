@@ -180,7 +180,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                 await _errorLogger.LogAsync(new GenerationErrorRecord
                 {
                     Stage = "anthropic_chat_completion",
-                    Provider = "anthropic",
+                    Provider = SupportedModelCatalog.CatalogProviderId(model, "chat"),
                     Model = model,
                     ErrorType = httpStatus is not null ? "http_error" : "exception",
                     ErrorMessage = ex.Message,

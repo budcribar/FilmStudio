@@ -161,7 +161,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                 await _errorLogger.LogAsync(new GenerationErrorRecord
                 {
                     Stage = "gemini_chat_completion",
-                    Provider = "gemini",
+                    Provider = SupportedModelCatalog.CatalogProviderId(model, "chat"),
                     Model = model,
                     ErrorType = httpStatus is not null ? "http_error" : "exception",
                     ErrorMessage = ex.Message,

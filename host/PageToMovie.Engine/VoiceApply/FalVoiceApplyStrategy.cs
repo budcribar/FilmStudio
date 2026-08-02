@@ -27,7 +27,11 @@ public sealed class FalVoiceApplyStrategy : IVoiceApplyStrategy
         _telemetry = telemetry;
     }
 
-    public string ProviderId => "fal";
+    public string ProviderId =>
+        SupportedModelCatalog.Find("fal-ai/minimax/voice-clone", ModelCapability.Voice)?.ProviderId
+        ?? SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+            .FirstOrDefault(e => e.Provider == ModelProviderFamily.Fal)?.ProviderId
+        ?? "";
 
     public bool IsConfigured => _client.IsConfigured;
 
@@ -49,7 +53,12 @@ public sealed class FalVoiceApplyStrategy : IVoiceApplyStrategy
                 Error = "Connect Fal (FAL_API_KEY) in Settings for MiniMax voice clone, or switch the voice model to ElevenLabs.",
             };
 
-        var cloneModelId = ctx.CloneModel?.Id ?? "fal-ai/minimax/voice-clone";
+        var cloneModelId = ctx.CloneModel?.Id
+                           ?? SupportedModelCatalog.Find("fal-ai/minimax/voice-clone", ModelCapability.Voice)?.Id
+                           ?? "";
+        var providerId = ctx.CloneModel?.ProviderId
+                         ?? SupportedModelCatalog.CatalogProviderId(cloneModelId, "voice")
+                         ?? ProviderId;
         var voiceId = await _client.CloneVoiceAsync(ctx.SamplePath, cloneModelId, ct).ConfigureAwait(false);
         if (_telemetry is not null)
         {
@@ -59,7 +68,7 @@ public sealed class FalVoiceApplyStrategy : IVoiceApplyStrategy
                 Kind = "voice_clone",
                 Mode = "voice_clone",
                 Model = cloneModelId,
-                Provider = ProviderId,
+                Provider = providerId,
                 CharKey = ctx.CharKey,
                 EstimatedUsd = ctx.CloneModel?.CostPerCloneUsd,
                 Ok = !string.IsNullOrWhiteSpace(voiceId),
@@ -70,13 +79,18 @@ public sealed class FalVoiceApplyStrategy : IVoiceApplyStrategy
             return new VoiceApplyResult { Ok = false, Error = "Fal MiniMax voice clone failed — see server logs." };
 
         var label = string.IsNullOrWhiteSpace(ctx.VoiceLabel) ? "Personal clone" : ctx.VoiceLabel.Trim();
-        var profile = $"Provider voice ({ProviderId}:{voiceId}). MiniMax clone from operator sample.";
-        _previews.PersistSeed(ctx.ProjectId, ctx.CharKey, ProviderId, voiceId, label, profile);
+        var profile = $"Provider voice ({providerId}:{voiceId}). MiniMax clone from operator sample.";
+        _previews.PersistSeed(ctx.ProjectId, ctx.CharKey, providerId, voiceId, label, profile);
 
         string? previewRel = null;
         string? previewUrl = null;
         var ttsText = VoicePreviewStore.DefaultPreviewText(ctx.PreviewText);
-        var speakModelId = ctx.SpeakModel?.Id ?? "fal-ai/minimax/speech-02-hd";
+        var speakModelId = ctx.SpeakModel?.Id
+                           ?? SupportedModelCatalog.Find("fal-ai/minimax/speech-02-hd", ModelCapability.Voice)?.Id
+                           ?? "";
+        var speakProvider = ctx.SpeakModel?.ProviderId
+                            ?? SupportedModelCatalog.CatalogProviderId(speakModelId, "tts")
+                            ?? providerId;
         try
         {
             var audioUrl = await _client.SynthesizeSpeechAsync(ttsText, voiceId, speakModelId, ct)
@@ -92,7 +106,7 @@ public sealed class FalVoiceApplyStrategy : IVoiceApplyStrategy
                     Kind = "tts",
                     Mode = "dialogue_tts",
                     Model = speakModelId,
-                    Provider = ProviderId,
+                    Provider = speakProvider,
                     CharKey = ctx.CharKey,
                     PromptChars = ttsText.Length,
                     EstimatedUsd = estimatedUsd,
@@ -122,7 +136,7 @@ public sealed class FalVoiceApplyStrategy : IVoiceApplyStrategy
         return new VoiceApplyResult
         {
             Ok = true,
-            ProviderId = ProviderId,
+            ProviderId = providerId,
             ProviderVoiceId = voiceId,
             ModelId = cloneModelId,
             UsedMock = false,

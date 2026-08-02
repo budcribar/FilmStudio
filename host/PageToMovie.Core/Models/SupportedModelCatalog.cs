@@ -636,6 +636,51 @@ public static class SupportedModelCatalog
         return null;
     }
 
+    /// <summary>
+    /// Map an API-call kind (telemetry <c>kind</c>) to a catalog capability for lookup.
+    /// Null when the kind is unknown / not model-backed.
+    /// </summary>
+    public static ModelCapability? CapabilityFromApiKind(string? kind) =>
+        (kind ?? "").Trim().ToLowerInvariant() switch
+        {
+            "image" or "image_edit" => ModelCapability.Image,
+            "video" or "video_extend" or "video_poll" => ModelCapability.Video,
+            "vision" => ModelCapability.Vision,
+            "audio" or "music" => ModelCapability.Audio,
+            "voice" or "tts" or "voice_clone" => ModelCapability.Voice,
+            "lip_sync" or "lipsync" => ModelCapability.LipSync,
+            "chat" or "planning" or "video_review" or "video-review" => ModelCapability.Chat,
+            _ => null,
+        };
+
+    /// <summary>
+    /// Catalog-only resolution for logging / cost lines. Never invents models or providers.
+    /// Prefer capability from <paramref name="kind"/> when present; otherwise any capability match.
+    /// </summary>
+    public static SupportedModelEntry? ResolveForLogging(string? modelId, string? kind = null)
+    {
+        if (string.IsNullOrWhiteSpace(modelId)) return null;
+        var cap = CapabilityFromApiKind(kind);
+        if (cap is { } c)
+        {
+            var hit = Find(modelId, c);
+            if (hit is not null) return hit;
+        }
+        return Find(modelId);
+    }
+
+    /// <summary>
+    /// Catalog <c>providerId</c> for a model id, or null if the model is not in the catalog.
+    /// </summary>
+    public static string? CatalogProviderId(string? modelId, string? kind = null) =>
+        ResolveForLogging(modelId, kind)?.ProviderId;
+
+    /// <summary>
+    /// Canonical catalog model id (casing/id as stored), or null if unknown.
+    /// </summary>
+    public static string? CanonicalModelId(string? modelId, string? kind = null) =>
+        ResolveForLogging(modelId, kind)?.Id;
+
     public static SupportedModelEntry ResolveOrDefault(
         string? modelId,
         ModelCapability capability,
@@ -767,6 +812,33 @@ public static class SupportedModelCatalog
         }
         // Unknown: keep as lowercase token — do not invent a different provider.
         return raw.ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// True when <paramref name="providerId"/> matches a catalog <c>providers[]</c> id or alias,
+    /// or appears as <c>providerId</c> on any model row. False for free-text / invented names.
+    /// </summary>
+    public static bool IsKnownProviderId(string? providerId)
+    {
+        if (string.IsNullOrWhiteSpace(providerId)) return false;
+        try { EnsureLoaded(); } catch { /* catalog may be mid-load */ }
+        var raw = providerId.Trim();
+        if (_loadedProviders is { Count: > 0 })
+        {
+            foreach (var prov in _loadedProviders)
+            {
+                if (string.Equals(prov.Id, raw, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (prov.Aliases.Any(a => string.Equals(a, raw, StringComparison.OrdinalIgnoreCase)))
+                    return true;
+            }
+        }
+        if (_loadedEntries is { Count: > 0 })
+        {
+            return _loadedEntries.Any(e =>
+                string.Equals(e.ProviderId, raw, StringComparison.OrdinalIgnoreCase));
+        }
+        return false;
     }
 
     private static string DisplayNameForProvider(string pId, SupportedModelEntry sample)

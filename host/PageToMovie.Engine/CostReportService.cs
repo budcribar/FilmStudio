@@ -281,8 +281,9 @@ public sealed class CostReportService
             DraftResolution = draftRes,
             HeroResolution = heroRes,
             ModelName = videoModel,
-            VideoProvider = GetStr(cfg, "video_provider", "grok"),
+            VideoProvider = ResolveVideoProvider(cfg, videoModel),
             ImageModelName = imageModel,
+
             PlanningModelName = planningModel,
             VoiceModelName = voicePlan.Included ? voiceModel : null,
             EstimateBasis = estimateBasis,
@@ -541,16 +542,16 @@ public sealed class CostReportService
     {
         var n = Math.Max(0, nImages);
         var entry = SupportedModelCatalog.Find(model, ModelCapability.Image)
-                    ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Image);
-        var isEstimated = entry.ImageCostPerImage is null;
-        var unit = entry.ImageCostPerImage
+                    ?? SupportedModelCatalog.Find(model);
+        var isEstimated = entry?.ImageCostPerImage is null;
+        var unit = entry?.ImageCostPerImage
                    ?? (quality ? FallbackImageQualityCostPerImage : FallbackImageStandardCostPerImage);
         var usd = Math.Round(unit * n, 4);
         await AppendCostEventAsync(projectId, new Dictionary<string, object?>
         {
             ["kind"] = "image",
             ["category"] = CostCategories.Characters,
-            ["model"] = model,
+            ["model"] = entry?.Id ?? model,
             ["character"] = character ?? "",
             ["n_images"] = n,
             ["unit_usd"] = unit,
@@ -558,7 +559,7 @@ public sealed class CostReportService
             ["currency"] = "USD",
             ["source"] = "list_rate",
             ["pricing_source"] = isEstimated ? "estimated_fallback" : "model_catalog",
-            ["provider"] = entry.ProviderId,
+            ["provider"] = entry?.ProviderId ?? "",
             ["user_id"] = userId ?? "",
         }, save: true, ct).ConfigureAwait(false);
 
@@ -1146,14 +1147,34 @@ public sealed class CostReportService
         string? imageModelId,
         Dictionary<string, JsonElement>? cfgOverrides = null)
     {
-        var video = SupportedModelCatalog.ResolveOrDefault(
-            videoModelId, ModelCapability.Video, fallbackId: null);
+        // Catalog only — never invent synthetic models for rates/provider identity.
+        var video = SupportedModelCatalog.Find(videoModelId, ModelCapability.Video)
+                    ?? SupportedModelCatalog.Find(videoModelId);
         var imagePrimary = SupportedModelCatalog.Find(imageModelId, ModelCapability.Image)
-            ?? SupportedModelCatalog.ResolveOrDefault(
-                imageModelId, ModelCapability.Image, fallbackId: null);
+                           ?? SupportedModelCatalog.Find(imageModelId);
+
+        if (video is null && imagePrimary is null)
+        {
+            return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["currency"] = "USD",
+                ["source"] = "model_catalog",
+                ["video_model"] = videoModelId ?? "",
+                ["video_provider"] = "",
+                ["image_model"] = imageModelId ?? "",
+                ["image_provider"] = "",
+                ["video_pricing_source"] = "missing_catalog_entry",
+                ["image_pricing_source"] = "missing_catalog_entry",
+            };
+        }
+
+        // If only one side is missing, keep going with empty pricing for that side (no invent of provider).
+        video ??= PlaceholderEntry(videoModelId, ModelCapability.Video);
+        imagePrimary ??= PlaceholderEntry(imageModelId, ModelCapability.Image);
+
         // Prefer a cheaper "standard" sibling in the same family when the project uses a quality image model.
         var imageStandard = SupportedModelCatalog.ForCapability(ModelCapability.Image)
-            .Where(e => e.Provider == imagePrimary.Provider
+            .Where(e => string.Equals(e.ProviderId, imagePrimary.ProviderId, StringComparison.OrdinalIgnoreCase)
                         && e.ImageCostPerImage is not null
                         && !string.Equals(e.Id, imagePrimary.Id, StringComparison.OrdinalIgnoreCase))
             .OrderBy(e => e.ImageCostPerImage)
@@ -1353,10 +1374,44 @@ public sealed class CostReportService
         return 0;
     }
 
+    /// <summary>
+    /// Empty placeholder when a project references a model id not in the catalog.
+    /// ProviderId stays blank — never invents a provider (e.g. "grok").
+    /// </summary>
+    private static SupportedModelEntry PlaceholderEntry(string? modelId, ModelCapability capability) => new()
+    {
+        Id = string.IsNullOrWhiteSpace(modelId) ? "" : modelId.Trim(),
+        DisplayName = string.IsNullOrWhiteSpace(modelId) ? "" : modelId.Trim(),
+        Capability = capability,
+        Provider = ModelProviderFamily.Xai,
+        ProviderId = "",
+        ProviderLabel = "",
+        ApiBase = "",
+        EndpointPath = "",
+        RequiredEnvKeys = Array.Empty<string>(),
+        Enabled = false,
+        Notes = "Not in models_catalog.json",
+    };
+
     private static string GetStr(Dictionary<string, JsonElement> cfg, string key, string fallback) =>
         cfg.TryGetValue(key, out var el) && el.ValueKind == JsonValueKind.String
             ? el.GetString() ?? fallback
             : fallback;
+
+    /// <summary>
+    /// Video provider id for cost reports — catalog only (project cfg may store a stale value).
+    /// Never invents "grok" when the model is missing or not in the catalog.
+    /// </summary>
+    private static string ResolveVideoProvider(Dictionary<string, JsonElement> cfg, string? videoModel)
+    {
+        var fromModel = SupportedModelCatalog.CatalogProviderId(videoModel, "video");
+        if (!string.IsNullOrWhiteSpace(fromModel))
+            return fromModel;
+        var fromCfg = GetStr(cfg, "video_provider", "");
+        if (!string.IsNullOrWhiteSpace(fromCfg) && SupportedModelCatalog.IsKnownProviderId(fromCfg))
+            return SupportedModelCatalog.NormalizeProviderId(fromCfg);
+        return "";
+    }
 
     private static double GetDouble(Dictionary<string, JsonElement> cfg, string key, double fallback) =>
         cfg.TryGetValue(key, out var el) && el.TryGetDouble(out var v) ? v : fallback;

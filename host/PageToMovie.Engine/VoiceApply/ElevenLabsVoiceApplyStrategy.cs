@@ -24,7 +24,11 @@ public sealed class ElevenLabsVoiceApplyStrategy : IVoiceApplyStrategy
         _telemetry = telemetry;
     }
 
-    public string ProviderId => "elevenlabs";
+    public string ProviderId =>
+        SupportedModelCatalog.Find("eleven_voice_clone", ModelCapability.Voice)?.ProviderId
+        ?? SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+            .FirstOrDefault(e => e.Provider == ModelProviderFamily.ElevenLabs)?.ProviderId
+        ?? "";
 
     public bool IsConfigured => _client.IsConfigured;
 
@@ -45,7 +49,11 @@ public sealed class ElevenLabsVoiceApplyStrategy : IVoiceApplyStrategy
         if (!clone.Ok || string.IsNullOrWhiteSpace(clone.ProviderVoiceId))
             return new VoiceApplyResult { Ok = false, Error = clone.Error ?? "ElevenLabs clone failed" };
 
-        var modelId = ctx.CloneModel?.Id ?? "eleven_voice_clone";
+        var modelId = ctx.CloneModel?.Id
+                      ?? SupportedModelCatalog.Find("eleven_voice_clone", ModelCapability.Voice)?.Id;
+        var providerId = ctx.CloneModel?.ProviderId
+                         ?? SupportedModelCatalog.CatalogProviderId(modelId, "voice")
+                         ?? ProviderId;
         if (_telemetry is not null)
         {
             await _telemetry.LogApiCallAsync(new ApiCallTelemetry
@@ -54,7 +62,7 @@ public sealed class ElevenLabsVoiceApplyStrategy : IVoiceApplyStrategy
                 Kind = "voice_clone",
                 Mode = "voice_clone",
                 Model = modelId,
-                Provider = ProviderId,
+                Provider = providerId,
                 CharKey = ctx.CharKey,
                 EstimatedUsd = ctx.CloneModel?.CostPerCloneUsd,
                 Ok = true,
@@ -65,18 +73,23 @@ public sealed class ElevenLabsVoiceApplyStrategy : IVoiceApplyStrategy
             ? (clone.UsedMock ? "Personal clone (demo)" : "Personal clone")
             : ctx.VoiceLabel.Trim();
         var profile =
-            $"Provider voice ({ProviderId}:{clone.ProviderVoiceId}). " +
+            $"Provider voice ({providerId}:{clone.ProviderVoiceId}). " +
             (clone.UsedMock
                 ? "Mock clone — set ElevenLabs_API_KEY for live Instant Voice Cloning."
                 : "ElevenLabs instant clone from operator sample.");
 
-        _previews.PersistSeed(ctx.ProjectId, ctx.CharKey, ProviderId, clone.ProviderVoiceId, label, profile);
+        _previews.PersistSeed(ctx.ProjectId, ctx.CharKey, providerId, clone.ProviderVoiceId, label, profile);
 
         string? previewRel = null;
         string? previewUrl = null;
         var ttsText = VoicePreviewStore.DefaultPreviewText(ctx.PreviewText);
-        var ttsModel = ctx.SpeakModel?.Id ?? "eleven_multilingual_v2";
-        var tts = await _client.TextToSpeechAsync(clone.ProviderVoiceId, ttsText, ttsModel, ct)
+        var ttsModel = ctx.SpeakModel?.Id
+                       ?? SupportedModelCatalog.Find("eleven_multilingual_v2", ModelCapability.Voice)?.Id
+                       ?? modelId;
+        var ttsProvider = ctx.SpeakModel?.ProviderId
+                          ?? SupportedModelCatalog.CatalogProviderId(ttsModel, "tts")
+                          ?? providerId;
+        var tts = await _client.TextToSpeechAsync(clone.ProviderVoiceId, ttsText, ttsModel ?? "", ct)
             .ConfigureAwait(false);
         if (tts.Ok && tts.AudioBytes is { Length: > 0 })
         {
@@ -91,7 +104,7 @@ public sealed class ElevenLabsVoiceApplyStrategy : IVoiceApplyStrategy
                     Kind = "tts",
                     Mode = "dialogue_tts",
                     Model = ttsModel,
-                    Provider = ProviderId,
+                    Provider = ttsProvider,
                     CharKey = ctx.CharKey,
                     PromptChars = ttsText.Length,
                     Ok = true,
@@ -106,7 +119,7 @@ public sealed class ElevenLabsVoiceApplyStrategy : IVoiceApplyStrategy
         return new VoiceApplyResult
         {
             Ok = true,
-            ProviderId = ProviderId,
+            ProviderId = providerId,
             ProviderVoiceId = clone.ProviderVoiceId,
             ModelId = modelId,
             UsedMock = clone.UsedMock || tts.UsedMock,

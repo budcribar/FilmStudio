@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
 
 namespace PageToMovie.Engine;
@@ -70,12 +71,34 @@ public sealed class GenerationErrorLogger
             rec.Ts ??= DateTimeOffset.UtcNow;
             rec.ProjectId ??= _telemetry?.CurrentProjectId;
             rec.UserId ??= UserApiCallScope.UserId;
+            ApplyCatalogIdentity(rec);
             await _db.InsertGenerationErrorAsync(rec, ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "generation_errors log failed (stage={Stage}, type={ErrorType})", rec.Stage, rec.ErrorType);
         }
+    }
+
+    /// <summary>
+    /// Catalog is SSoT for model + provider on generation_errors rows — same rules as API usage logs.
+    /// </summary>
+    public static void ApplyCatalogIdentity(GenerationErrorRecord rec)
+    {
+        if (rec is null) return;
+        var entry = SupportedModelCatalog.ResolveForLogging(rec.Model);
+        if (entry is not null)
+        {
+            rec.Model = entry.Id;
+            if (!string.IsNullOrWhiteSpace(entry.ProviderId))
+                rec.Provider = entry.ProviderId;
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(rec.Provider) && SupportedModelCatalog.IsKnownProviderId(rec.Provider))
+            rec.Provider = SupportedModelCatalog.NormalizeProviderId(rec.Provider);
+        else if (!string.IsNullOrWhiteSpace(rec.Provider))
+            rec.Provider = null;
     }
 
     /// <summary>
@@ -101,10 +124,13 @@ public sealed class GenerationErrorLogger
                       (result.Missing.Count > 0 ? $"; missing: {missingPreview}" : "") +
                       (string.IsNullOrWhiteSpace(result.LastError) ? "" : $"; last error: {result.LastError}");
 
+        // Prefer catalog provider when model is known; ignore caller hardcodes that disagree.
+        var catalogProvider = SupportedModelCatalog.CatalogProviderId(model) ?? provider;
+
         return LogAsync(new GenerationErrorRecord
         {
             Stage = stage,
-            Provider = provider,
+            Provider = catalogProvider,
             Model = model,
             Scene = scene,
             ErrorType = result.ReturnedCount == 0 ? "empty_response" : "partial_coverage",
