@@ -164,12 +164,14 @@ public sealed class Stage2PlannerAutomationTests
 
     private static string ResolveTellTaleHeartFountainPath()
     {
+        // Portable fixture lookup (independent of machine/drive/username): mirrors the
+        // Fixtures\CastExtractGold pattern used elsewhere in this test project — check the
+        // build output's copied Fixtures folder first, then fall back to the source tree
+        // location relative to the test assembly when running from an IDE that hasn't copied it.
         var paths = new[]
         {
-            @"c:\Users\budcr\source\repos\gemini\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain",
-            @"c:\Users\budcr\source\repos\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain",
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "projects", "TellTaleHeartV7", "source", "screenplay.fountain"),
-            Path.Combine(Directory.GetCurrentDirectory(), "projects", "TellTaleHeartV7", "source", "screenplay.fountain")
+            Path.Combine(AppContext.BaseDirectory, "Fixtures", "TellTaleHeartV7", "screenplay.fountain"),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Fixtures", "TellTaleHeartV7", "screenplay.fountain")
         };
         foreach (var p in paths)
         {
