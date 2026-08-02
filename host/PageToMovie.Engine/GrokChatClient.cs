@@ -20,18 +20,21 @@ public sealed class GrokChatClient : IChatClient
     private readonly ProjectTelemetryService _telemetry;
     private readonly IUserApiKeyProvider? _keyProvider;
     private readonly ILogger<GrokChatClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public GrokChatClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
         ILogger<GrokChatClient> log,
-        IUserApiKeyProvider? keyProvider = null)
+        IUserApiKeyProvider? keyProvider = null,
+        GenerationErrorLogger? errorLogger = null)
     {
         _http = http;
         _telemetry = telemetry;
         _keyProvider = keyProvider;
         _log = log;
+        _errorLogger = errorLogger;
     }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
@@ -96,6 +99,39 @@ public sealed class GrokChatClient : IChatClient
         var sw = Stopwatch.StartNew();
         try
         {
+            // Transient-retry wraps the outside of the existing param-shape self-heal loop below
+            // (400 due to unsupported temperature/reasoning_effort) — that loop is unmodified;
+            // this only retries the whole call again on 429/5xx or a network/timeout failure,
+            // which previously propagated to the caller immediately with zero retries.
+            return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                _ => DoRequestAsync(),
+                isTransient: ex =>
+                    (ex is ChatHttpStatusException hse && AiRetryPolicy.IsTransientHttpStatus(hse.StatusCode))
+                    || AiRetryPolicy.IsTransientException(ex),
+                maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                onRetry: (attemptNum, ex) => LogTransientRetryAsync(attemptNum, ex),
+                ct: ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not InvalidOperationException)
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = "chat",
+                Mode = modeTag,
+                Endpoint = "chat/completions",
+                Model = model,
+                DurationMs = sw.ElapsedMilliseconds,
+                SystemPrompt = systemPrompt,
+                UserPrompt = userPrompt,
+                Error = ex.Message,
+                Ok = false,
+            });
+            throw;
+        }
+
+        async Task<string> DoRequestAsync()
+        {
             // Up to 3 attempts: models vary on whether they accept temperature, reasoning_effort,
             // both, or neither — rather than hardcoding a capability matrix per model id, self-heal
             // by stripping whichever param the API just told us is unsupported and retrying, same
@@ -135,21 +171,22 @@ public sealed class GrokChatClient : IChatClient
                 return await FinishAsync(resp, body);
             }
         }
-        catch (Exception ex) when (ex is not InvalidOperationException)
+
+        async Task LogTransientRetryAsync(int attemptNum, Exception ex)
         {
-            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            if (_errorLogger is null) return;
+            var httpStatus = ex is ChatHttpStatusException hse ? hse.StatusCode : (int?)null;
+            await _errorLogger.LogAsync(new GenerationErrorRecord
             {
-                Kind = "chat",
-                Mode = modeTag,
-                Endpoint = "chat/completions",
+                Stage = "grok_chat_completion",
                 Model = model,
-                DurationMs = sw.ElapsedMilliseconds,
-                SystemPrompt = systemPrompt,
-                UserPrompt = userPrompt,
-                Error = ex.Message,
-                Ok = false,
-            });
-            throw;
+                ErrorType = httpStatus is not null ? "http_error" : "exception",
+                ErrorMessage = ex.Message,
+                HttpStatus = httpStatus,
+                Attempt = attemptNum,
+                Resolved = false, // this row is the failed attempt; a later attempt may still succeed
+                RequestSummary = $"mode={modeTag}; promptChars={(systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0)}",
+            }, ct).ConfigureAwait(false);
         }
 
         async Task<string> FinishAsync(HttpResponseMessage resp, string body)
@@ -170,7 +207,7 @@ public sealed class GrokChatClient : IChatClient
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
+                throw new ChatHttpStatusException((int)resp.StatusCode,
                     $"Chat HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 
