@@ -39,25 +39,13 @@
             <p class="home-landing__lede mb-0">
                 Turn a story into a short film with your voice — or open the full studio to cast, estimate, and film every scene.
             </p>
-            <div class="home-landing__actions d-flex flex-wrap gap-2 mt-3">
-                @if (!Session.IsLoggedIn)
-                {
+            @* Actions live on the cards below — avoid duplicate Easy start / Full studio / Demos buttons here. *@
+            @if (!Session.IsLoggedIn)
+            {
+                <div class="home-landing__actions d-flex flex-wrap gap-2 mt-3">
                     <a href="login?returnUrl=/" class="btn btn-primary" data-testid="home-landing-signin">Sign in</a>
-                    <a href="login?returnUrl=/simple-voice" class="btn btn-outline-light" data-testid="home-landing-try">Try with your voice</a>
-                    <a href="/demo" class="btn btn-link text-decoration-none" data-testid="home-landing-demos">Watch demos</a>
-                }
-                else if (ShowEasyHome)
-                {
-                    <a href="simple-voice" class="btn btn-primary" data-testid="home-landing-easy">Easiest start →</a>
-                    <button type="button" class="btn btn-outline-secondary" data-testid="home-landing-studio" @onclick="EnterFullStudio">Full studio</button>
-                    <a href="/demo" class="btn btn-link text-decoration-none">Demos</a>
-                }
-                else
-                {
-                    <button type="button" class="btn btn-link btn-sm px-0" data-testid="home-landing-back-easy" @onclick="ExitFullStudio">← Easy start</button>
-                    <a href="/demo" class="btn btn-outline-secondary btn-sm">Demos</a>
-                }
-            </div>
+                </div>
+            }
         </div>
         <div class="home-landing__visual d-none d-md-flex" aria-hidden="true">
             <div class="home-pipeline">
@@ -100,7 +88,35 @@
 
 @if (!Session.IsLoggedIn)
 {
-    @* Hero CTAs cover sign-in; demos still below for guests *@
+    @* Same three cards as signed-in easy home; CTAs send guests to sign-in. *@
+    <div class="card mb-3 border-primary border-opacity-50" data-testid="home-simple-voice-card">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="min-w-0">
+                <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Easiest start</div>
+                <div class="fw-semibold">Read a library book in your voice</div>
+                <div class="small text-muted">
+                    Pick a story, record one sample — we put your voice on the narrator.
+                </div>
+            </div>
+            <a href="login?returnUrl=/simple-voice" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-simple-voice">
+                Sign in to try →
+            </a>
+        </div>
+    </div>
+    <div class="card mb-3" data-testid="home-full-studio-card">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="min-w-0">
+                <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing:0.06em;">Advanced</div>
+                <div class="fw-semibold">Full studio</div>
+                <div class="small text-muted">
+                    Cast, estimate, film, and review — full control.
+                </div>
+            </div>
+            <a href="login?returnUrl=/" class="btn btn-outline-secondary btn-sm flex-shrink-0" data-testid="home-open-full-studio-guest">
+                Sign in for studio →
+            </a>
+        </div>
+    </div>
 }
 else if (_projects is null)
 {
