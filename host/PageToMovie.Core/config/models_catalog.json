@@ -293,7 +293,8 @@
       "supportsReferenceImages": true,
       "supportsVideoReview": false,
       "imageCostPerImage": 0.05,
-      "notes": "Primary portrait engine for photoreal / studio character plates."
+      "maxReferenceImages": 3,
+      "notes": "Primary portrait engine for photoreal / studio character plates. Grok Imagine multi-image edit hard cap is 3 references."
     },
     {
       "id": "grok-imagine-image",
@@ -309,7 +310,9 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": true,
       "supportsVideoReview": false,
-      "imageCostPerImage": 0.02
+      "imageCostPerImage": 0.02,
+      "maxReferenceImages": 3,
+      "notes": "Grok Imagine multi-image edit hard cap is 3 references."
     },
     {
       "id": "gemini-2.5-pro-image",
@@ -326,7 +329,8 @@
       "supportsReferenceImages": true,
       "supportsVideoReview": false,
       "imageCostPerImage": 0.134,
-      "notes": "Wired via GeminiImageClient. Supports up to 14 reference images."
+      "maxReferenceImages": 14,
+      "notes": "Wired via GeminiImageClient. Supports up to 14 reference images (documented soft max; older Flash image paths may be lower)."
     },
     {
       "id": "fal-ai/flux/dev",

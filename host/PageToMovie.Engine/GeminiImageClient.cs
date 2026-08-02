@@ -100,9 +100,13 @@ public sealed class GeminiImageClient : IImageClient
         CancellationToken ct = default)
     {
         var modelName = NormalizeModelName(model);
+        // Model-aware, not a bare hardcoded 14 — falls back to the ImageApiLimits constant only
+        // when the catalog has no maxReferenceImages for this model id.
+        var catalogCap = SupportedModelCatalog.Find(modelName, ModelCapability.Image)?.MaxReferenceImages
+            ?? ImageApiLimits.GeminiMaxReferenceImages;
         var cap = maxRefs > 0
-            ? Math.Clamp(maxRefs, 1, ImageApiLimits.GeminiMaxReferenceImages)
-            : ImageApiLimits.GeminiMaxReferenceImages;
+            ? Math.Clamp(maxRefs, 1, catalogCap)
+            : catalogCap;
 
         var hasCostumeRef = !string.IsNullOrWhiteSpace(costumeRefPath) && File.Exists(costumeRefPath);
         var identityCap = hasCostumeRef ? Math.Max(1, cap - 1) : cap;

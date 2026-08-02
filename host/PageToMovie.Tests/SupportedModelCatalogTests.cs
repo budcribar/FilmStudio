@@ -42,6 +42,16 @@ public class SupportedModelCatalogTests
         Assert.Equal(expectedMax, entry.MaxReferenceImages);
     }
 
+    [Theory]
+    [InlineData("grok-imagine-image-quality", 3)]  // Grok Imagine multi-image edit hard cap
+    [InlineData("grok-imagine-image", 3)]          // Grok Imagine multi-image edit hard cap
+    [InlineData("gemini-2.5-pro-image", 14)]       // documented soft max for Gemini 3 image family
+    public void MaxReferenceImages_MatchesRealPerModelCapability_ForImageModels(string modelId, int expectedMax)
+    {
+        var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Image);
+        Assert.Equal(expectedMax, entry.MaxReferenceImages);
+    }
+
     [Fact]
     public void SaveCatalogJson_throws_and_does_not_touch_disk_on_invalid_structure()
     {
