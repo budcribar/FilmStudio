@@ -230,8 +230,30 @@ public static class AdaptationSessionPilot
             totalRequestBytes += result.RequestBytesSent;
             TrackUsage(tokensByModel, model, result.UsageJson);
             castLocationJson = ExtractJson(result.OutputText);
-            await File.WriteAllTextAsync(castLocationPath, PrettyJson(castLocationJson), ct).ConfigureAwait(false);
             lastResponseId = result.ResponseId;
+
+            // Corrective retry: a real Call of the Wild run showed the model can occasionally
+            // deviate from the instructed {"cast_seeds":{...},"location_bible":{...}} shape (e.g.
+            // a bare array of characters, no location_bible at all) — no exception, just missing
+            // data. ExtractJson/ParseCastAndLocationKeys were hardened to no longer corrupt what
+            // DOES come back, but a defensive parse can't recover data the model never produced;
+            // asking it to look at its own output and reformat can. One retry, same session (cheap
+            // follow-up, not a resend of the book), before accepting whatever's available.
+            for (var attempt = 1; attempt < CastLocationsMaxAttempts && !HasValidCastLocationsShape(castLocationJson); attempt++)
+            {
+                Console.WriteLine(
+                    $"   ⚠️  Response missing cast_seeds/location_bible — requesting a corrected reformat (attempt {attempt + 1}/{CastLocationsMaxAttempts})...");
+                var retryResult = await client.ContinueSessionAsync(
+                    model, lastResponseId, CastLocationsCorrectionInstruction, ct, temperature).ConfigureAwait(false);
+                totalRequestBytes += retryResult.RequestBytesSent;
+                TrackUsage(tokensByModel, model, retryResult.UsageJson);
+                castLocationJson = ExtractJson(retryResult.OutputText);
+                lastResponseId = retryResult.ResponseId;
+            }
+            if (!HasValidCastLocationsShape(castLocationJson))
+                Console.WriteLine("   ⚠️  Cast/locations still incomplete after retry — proceeding with what's available (validator will flag any gaps).");
+
+            await File.WriteAllTextAsync(castLocationPath, PrettyJson(castLocationJson), ct).ConfigureAwait(false);
             session.StageResponseIds["cast_locations"] = lastResponseId;
             SaveSession(sessionPath, session);
             Console.WriteLine($"   response_id={lastResponseId} request_bytes={result.RequestBytesSent} (book NOT resent)");
@@ -705,6 +727,23 @@ public static class AdaptationSessionPilot
             var result = await client.CompleteWithFilesAsync(model, new[] { session.FileId }, instruction, ct, temperature).ConfigureAwait(false);
             Track(result, model);
             castLocationJsonAlt = ExtractJson(result.OutputText);
+
+            // Corrective retry — see the chained Stage 2's comment for why. No response-id chain
+            // here (dual-attach is independent calls by design), so the correction note is appended
+            // to the original instruction each retry rather than sent as a bare follow-up.
+            for (var attempt = 1; attempt < CastLocationsMaxAttempts && !HasValidCastLocationsShape(castLocationJsonAlt); attempt++)
+            {
+                Console.WriteLine(
+                    $"   ⚠️  [full experiment] Response missing cast_seeds/location_bible — requesting a corrected reformat (attempt {attempt + 1}/{CastLocationsMaxAttempts})...");
+                var correctedInstruction = instruction + "\n\n" + CastLocationsCorrectionInstruction;
+                var retryResult = await client.CompleteWithFilesAsync(
+                    model, new[] { session.FileId }, correctedInstruction, ct, temperature).ConfigureAwait(false);
+                Track(retryResult, model);
+                castLocationJsonAlt = ExtractJson(retryResult.OutputText);
+            }
+            if (!HasValidCastLocationsShape(castLocationJsonAlt))
+                Console.WriteLine("   ⚠️  [full experiment] Cast/locations still incomplete after retry — proceeding with what's available.");
+
             await File.WriteAllTextAsync(castLocationPathAlt, PrettyJson(castLocationJsonAlt), ct).ConfigureAwait(false);
         }
 
@@ -1003,6 +1042,42 @@ public static class AdaptationSessionPilot
             APPROVED CAST, WARDROBE, AND LOCATIONS (established before this screenplay was written):
             """;
         return instructions + "\n" + castLocationJson + "\n\nAPPROVED FOUNTAIN SCREENPLAY:\n" + fountainText;
+    }
+
+    /// <summary>1 initial attempt + up to this many corrective retries for the cast/locations
+    /// stage's required-shape check.</summary>
+    private const int CastLocationsMaxAttempts = 2;
+
+    private const string CastLocationsCorrectionInstruction =
+        "Your previous response did not match the required shape. It must be a single JSON object " +
+        "with BOTH \"cast_seeds\": {\"characters\": [...]} (covering every character from the beat " +
+        "plan) AND \"location_bible\": {\"locations\": [...]} (covering every location) present and " +
+        "non-empty — not a bare array, not one or the other. Return the complete corrected JSON now, " +
+        "no markdown fences, no commentary.";
+
+    /// <summary>True when the cast/locations JSON has both required top-level sections with at
+    /// least one entry each — catches the exact malformed-shape regression (e.g. a bare array, or
+    /// one section present but the other entirely missing) before it reaches disk, so a corrective
+    /// retry can recover the missing data (a defensive parse alone cannot — it can only avoid
+    /// corrupting what's already there, not generate what the model never produced).</summary>
+    internal static bool HasValidCastLocationsShape(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var hasCast = root.TryGetProperty("cast_seeds", out var cs) &&
+                          cs.TryGetProperty("characters", out var chars) &&
+                          chars.ValueKind == JsonValueKind.Array && chars.GetArrayLength() > 0;
+            var hasLocations = root.TryGetProperty("location_bible", out var lb) &&
+                                lb.TryGetProperty("locations", out var locs) &&
+                                locs.ValueKind == JsonValueKind.Array && locs.GetArrayLength() > 0;
+            return hasCast && hasLocations;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string BuildCastLocationsInstruction(string beatPlanJson)
@@ -1903,19 +1978,39 @@ public static class AdaptationSessionPilot
         return closeIdx >= 0 ? withoutOpenFence[..closeIdx].Trim() : withoutOpenFence.Trim();
     }
 
-    /// <summary>Extracts the first balanced top-level JSON object from model output, tolerating
-    /// code fences and preamble/postamble commentary.</summary>
-    private static string ExtractJson(string text)
+    /// <summary>Extracts the first balanced top-level JSON value (object OR array) from model
+    /// output, tolerating code fences and preamble/postamble commentary.
+    ///
+    /// Originally only recognized <c>{</c> — a real bug this caused: when a cast/locations stage
+    /// response deviated from the instructed <c>{"cast_seeds":{"characters":[...]}}</c> shape and
+    /// came back as a bare top-level array (<c>[{char1},{char2},...]</c> with no wrapper object),
+    /// the old scan skipped past the array's opening <c>[</c> (not a <c>{</c>) and matched the
+    /// FIRST character's own object instead — silently returning just one character's data as if
+    /// it were the whole cast/locations payload, with no error anywhere (confirmed against a real
+    /// Call of the Wild pilot run: cast_and_locations.json ended up containing only Buck's raw
+    /// fields at the top level). Now recognizes whichever of <c>{</c>/<c>[</c> appears first and
+    /// bracket-matches that type specifically (tracking depth only for the matching close-bracket,
+    /// so nested mixed brackets inside don't confuse it), so a bare top-level array is returned
+    /// intact rather than drilled into. Callers that expect an object with a "scenes"/"characters"
+    /// property already have a tolerant fallback (treat the whole root as the array when the named
+    /// property is absent) — this only had to stop feeding them a corrupted inner fragment.
+    /// </summary>
+    internal static string ExtractJson(string text)
     {
         var stripped = StripFences(text);
         for (var i = 0; i < stripped.Length; i++)
         {
-            if (stripped[i] != '{') continue;
+            var openChar = stripped[i];
+            char closeChar;
+            if (openChar == '{') closeChar = '}';
+            else if (openChar == '[') closeChar = ']';
+            else continue;
+
             var depth = 0;
             for (var j = i; j < stripped.Length; j++)
             {
-                if (stripped[j] == '{') depth++;
-                else if (stripped[j] == '}')
+                if (stripped[j] == openChar) depth++;
+                else if (stripped[j] == closeChar)
                 {
                     depth--;
                     if (depth == 0)
@@ -1924,7 +2019,8 @@ public static class AdaptationSessionPilot
                         try
                         {
                             using var doc = JsonDocument.Parse(candidate);
-                            if (doc.RootElement.ValueKind == JsonValueKind.Object) return candidate;
+                            if (doc.RootElement.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                                return candidate;
                         }
                         catch { /* keep scanning */ }
                         break;
@@ -1932,7 +2028,7 @@ public static class AdaptationSessionPilot
                 }
             }
         }
-        throw new InvalidOperationException("No JSON object found in model output.");
+        throw new InvalidOperationException("No JSON object or array found in model output.");
     }
 
     private static string PrettyJson(string json)

@@ -276,13 +276,23 @@ public static class AdaptationPackageValidator
         return result;
     }
 
-    private static (List<string> CastKeys, List<string> LocationKeys) ParseCastAndLocationKeys(string json)
+    internal static (List<string> CastKeys, List<string> LocationKeys) ParseCastAndLocationKeys(string json)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
         var castKeys = new List<string>();
-        if (root.TryGetProperty("cast_seeds", out var cs) && cs.TryGetProperty("characters", out var chars) &&
-            chars.ValueKind == JsonValueKind.Array)
+        // Tolerate a bare top-level array of character objects (no {"cast_seeds":{"characters":[...]}}
+        // wrapper) — a real deviation seen from the model on at least one run, previously masked by
+        // ExtractJson silently returning only the array's first element instead of the whole array;
+        // now that the whole array reaches here intact, still recover the cast keys from it rather
+        // than reporting zero cast coverage just because the wrapper object is missing.
+        var chars = root.ValueKind == JsonValueKind.Array
+            ? root
+            : root.TryGetProperty("cast_seeds", out var cs) && cs.TryGetProperty("characters", out var charsProp) &&
+              charsProp.ValueKind == JsonValueKind.Array
+                ? charsProp
+                : default;
+        if (chars.ValueKind == JsonValueKind.Array)
         {
             foreach (var c in chars.EnumerateArray())
             {
@@ -302,7 +312,10 @@ public static class AdaptationPackageValidator
         }
 
         var locationKeys = new List<string>();
-        if (root.TryGetProperty("location_bible", out var lb) && lb.TryGetProperty("locations", out var locs) &&
+        // A bare top-level array (see the cast fallback above) has no location_bible at all — root
+        // isn't an object, so TryGetProperty would throw rather than just miss; guard explicitly.
+        if (root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("location_bible", out var lb) && lb.TryGetProperty("locations", out var locs) &&
             locs.ValueKind == JsonValueKind.Array)
         {
             foreach (var l in locs.EnumerateArray())

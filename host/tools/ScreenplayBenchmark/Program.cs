@@ -19,6 +19,9 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.Contains("--self-test", StringComparer.OrdinalIgnoreCase))
+            return SelfTest.Run();
+
         TryLoadDotEnv();
 
         Console.WriteLine("==========================================================================");
