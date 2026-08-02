@@ -1,5 +1,6 @@
 @namespace PageToMovie.Web.Components
-@* Shared product path: Setup (0, temporary) → Book → Cast & voice → Estimate → Film → Review *@
+@* Shared product path: Setup (0, temporary) → Book → Cast & voice → Estimate → Film → Review
+   SimpleMode: Book → Your voice → Film (bait path for library + narrator clone) *@
 @inject ActiveProjectState ActiveProject
 
 <nav class="ptm-step-strip ptm-step-strip--studio mb-3" aria-label="Studio process steps">
@@ -16,66 +17,119 @@
             </span>
         </a>
     }
-    <a class="ptm-step @(Active == "book" ? "is-active" : "") @(BookLocked ? "is-disabled" : "")"
-       href="@(BookLocked ? "javascript:void(0)" : "adaptation")"
-       title="@(BookLocked ? "Connect API keys in Setup first" : "Import book and write screenplay")"
-       data-testid="studio-step-book"
-       @onclick:preventDefault="@BookLocked">
-        <span class="ptm-step__num">1</span>
-        <span class="ptm-step__body">
-            <span class="ptm-step__label">Book</span>
-            <span class="ptm-step__hint">Import · screenplay</span>
-        </span>
-    </a>
-    <a class="ptm-step @(Active == "cast" ? "is-active" : "") @(!ActiveProject.CanCharacters && Active != "cast" ? "is-disabled" : "")"
-       href="@(ActiveProject.CanCharacters || Active == "cast" ? "characters" : "javascript:void(0)")"
-       title="@(ActiveProject.CanCharacters ? "Cast looks and optional voice clone" : ActiveProject.CharactersBlockedReason)"
-       data-testid="studio-step-cast"
-       @onclick:preventDefault="@(!ActiveProject.CanCharacters && Active != "cast")">
-        <span class="ptm-step__num">2</span>
-        <span class="ptm-step__body">
-            <span class="ptm-step__label">Cast & voice</span>
-            <span class="ptm-step__hint">Photos · clone sample</span>
-        </span>
-    </a>
-    <a class="ptm-step @(Active == "estimate" ? "is-active" : "") @(!ActiveProject.CanEstimate && Active != "estimate" ? "is-disabled" : "")"
-       href="@(ActiveProject.CanEstimate || Active == "estimate" ? "cost" : "javascript:void(0)")"
-       title="@(ActiveProject.CanEstimate ? "Quote before generate" : ActiveProject.EstimateBlockedReason)"
-       data-testid="studio-step-estimate"
-       @onclick:preventDefault="@(!ActiveProject.CanEstimate && Active != "estimate")">
-        <span class="ptm-step__num">3</span>
-        <span class="ptm-step__body">
-            <span class="ptm-step__label">Estimate</span>
-            <span class="ptm-step__hint">Quote · confirm</span>
-        </span>
-    </a>
-    <a class="ptm-step @(Active == "film" ? "is-active" : "") @(!ActiveProject.CanScenes && Active != "film" ? "is-disabled" : "")"
-       href="@(ActiveProject.CanScenes || Active == "film" ? "scenes" : "javascript:void(0)")"
-       title="@(ActiveProject.CanScenes ? "Generate clips" : ActiveProject.ScenesBlockedReason)"
-       data-testid="studio-step-film"
-       @onclick:preventDefault="@(!ActiveProject.CanScenes && Active != "film")">
-        <span class="ptm-step__num">4</span>
-        <span class="ptm-step__body">
-            <span class="ptm-step__label">Film</span>
-            <span class="ptm-step__hint">Clips · stitch</span>
-        </span>
-    </a>
-    <a class="ptm-step @(Active == "review" ? "is-active" : "") @(!ActiveProject.CanReview && Active != "review" ? "is-disabled" : "")"
-       href="@(ActiveProject.CanReview || Active == "review" ? "review" : "javascript:void(0)")"
-       title="@(ActiveProject.CanReview ? "Approve and publish" : ActiveProject.ReviewBlockedReason)"
-       data-testid="studio-step-review"
-       @onclick:preventDefault="@(!ActiveProject.CanReview && Active != "review")">
-        <span class="ptm-step__num">5</span>
-        <span class="ptm-step__body">
-            <span class="ptm-step__label">Review</span>
-            <span class="ptm-step__hint">Edit afterward</span>
-        </span>
-    </a>
+
+    @if (SimpleMode)
+    {
+        <a class="ptm-step @(Active == "book" ? "is-active" : "") @(BookLocked ? "is-disabled" : "")"
+           href="@(BookLocked ? "javascript:void(0)" : "adaptation")"
+           title="@(BookLocked ? "Connect API keys in Setup first" : "Library book / screenplay")"
+           data-testid="studio-step-book"
+           @onclick:preventDefault="@BookLocked">
+            <span class="ptm-step__num">1</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Book</span>
+                <span class="ptm-step__hint">Library story</span>
+            </span>
+        </a>
+        <a class="ptm-step @(Active == "cast" ? "is-active" : "") @(!ActiveProject.CanCharacters && Active != "cast" ? "is-disabled" : "")"
+           href="@(ActiveProject.CanCharacters || Active == "cast" ? "characters?simple=1&focus=narrator" : "javascript:void(0)")"
+           title="@(ActiveProject.CanCharacters ? "Record your narrator voice" : ActiveProject.CharactersBlockedReason)"
+           data-testid="studio-step-cast"
+           @onclick:preventDefault="@(!ActiveProject.CanCharacters && Active != "cast")">
+            <span class="ptm-step__num">2</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Your voice</span>
+                <span class="ptm-step__hint">One sample</span>
+            </span>
+        </a>
+        <a class="ptm-step @(Active == "film" ? "is-active" : "") @(!ActiveProject.CanScenes && Active != "film" ? "is-disabled" : "")"
+           href="@(ActiveProject.CanScenes || Active == "film" ? "scenes" : "javascript:void(0)")"
+           title="@(ActiveProject.CanScenes ? "Generate with your voice" : ActiveProject.ScenesBlockedReason)"
+           data-testid="studio-step-film"
+           @onclick:preventDefault="@(!ActiveProject.CanScenes && Active != "film")">
+            <span class="ptm-step__num">3</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Movie</span>
+                <span class="ptm-step__hint">Voice on library film</span>
+            </span>
+        </a>
+        <a class="ptm-step"
+           href="simple-voice"
+           title="Pick another library book"
+           data-testid="studio-step-library">
+            <span class="ptm-step__num">★</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Library</span>
+                <span class="ptm-step__hint">More books</span>
+            </span>
+        </a>
+    }
+    else
+    {
+        <a class="ptm-step @(Active == "book" ? "is-active" : "") @(BookLocked ? "is-disabled" : "")"
+           href="@(BookLocked ? "javascript:void(0)" : "adaptation")"
+           title="@(BookLocked ? "Connect API keys in Setup first" : "Import book and write screenplay")"
+           data-testid="studio-step-book"
+           @onclick:preventDefault="@BookLocked">
+            <span class="ptm-step__num">1</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Book</span>
+                <span class="ptm-step__hint">Import · screenplay</span>
+            </span>
+        </a>
+        <a class="ptm-step @(Active == "cast" ? "is-active" : "") @(!ActiveProject.CanCharacters && Active != "cast" ? "is-disabled" : "")"
+           href="@(ActiveProject.CanCharacters || Active == "cast" ? "characters" : "javascript:void(0)")"
+           title="@(ActiveProject.CanCharacters ? "Cast looks and optional voice clone" : ActiveProject.CharactersBlockedReason)"
+           data-testid="studio-step-cast"
+           @onclick:preventDefault="@(!ActiveProject.CanCharacters && Active != "cast")">
+            <span class="ptm-step__num">2</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Cast & voice</span>
+                <span class="ptm-step__hint">Photos · clone sample</span>
+            </span>
+        </a>
+        <a class="ptm-step @(Active == "estimate" ? "is-active" : "") @(!ActiveProject.CanEstimate && Active != "estimate" ? "is-disabled" : "")"
+           href="@(ActiveProject.CanEstimate || Active == "estimate" ? "cost" : "javascript:void(0)")"
+           title="@(ActiveProject.CanEstimate ? "Quote before generate" : ActiveProject.EstimateBlockedReason)"
+           data-testid="studio-step-estimate"
+           @onclick:preventDefault="@(!ActiveProject.CanEstimate && Active != "estimate")">
+            <span class="ptm-step__num">3</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Estimate</span>
+                <span class="ptm-step__hint">Quote · confirm</span>
+            </span>
+        </a>
+        <a class="ptm-step @(Active == "film" ? "is-active" : "") @(!ActiveProject.CanScenes && Active != "film" ? "is-disabled" : "")"
+           href="@(ActiveProject.CanScenes || Active == "film" ? "scenes" : "javascript:void(0)")"
+           title="@(ActiveProject.CanScenes ? "Generate clips" : ActiveProject.ScenesBlockedReason)"
+           data-testid="studio-step-film"
+           @onclick:preventDefault="@(!ActiveProject.CanScenes && Active != "film")">
+            <span class="ptm-step__num">4</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Film</span>
+                <span class="ptm-step__hint">Clips · stitch</span>
+            </span>
+        </a>
+        <a class="ptm-step @(Active == "review" ? "is-active" : "") @(!ActiveProject.CanReview && Active != "review" ? "is-disabled" : "")"
+           href="@(ActiveProject.CanReview || Active == "review" ? "review" : "javascript:void(0)")"
+           title="@(ActiveProject.CanReview ? "Approve and publish" : ActiveProject.ReviewBlockedReason)"
+           data-testid="studio-step-review"
+           @onclick:preventDefault="@(!ActiveProject.CanReview && Active != "review")">
+            <span class="ptm-step__num">5</span>
+            <span class="ptm-step__body">
+                <span class="ptm-step__label">Review</span>
+                <span class="ptm-step__hint">Edit afterward</span>
+            </span>
+        </a>
+    }
 </nav>
 
 @code {
     /// <summary>setup | book | cast | estimate | film | review</summary>
     [Parameter] public string Active { get; set; } = "book";
+
+    /// <summary>Bait path: library book + narrator voice only.</summary>
+    [Parameter] public bool SimpleMode { get; set; }
 
     /// <summary>Step 0 only while personal studio keys are missing (BYOK).</summary>
     private bool NeedsSetup =>

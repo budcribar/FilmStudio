@@ -1,0 +1,237 @@
+@page "/simple-voice"
+@inject EngineApiClient Engine
+@inject ActiveProjectState ActiveProject
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Read in your voice · PageToMovie</PageTitle>
+
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">Easiest start · bait path</span>
+    <h1 class="ptm-adapt-title mb-1">Read a library book in your voice</h1>
+    <p class="ptm-adapt-lede mb-0">
+        Pick a pre-made story, record one short sample, and we re-speak the narrator as you.
+        Pictures stay stock — cheap and quick. Perfect for a grandparent reading to the kids.
+        When you want faces of family in the frame, switch to full studio.
+    </p>
+</div>
+
+@if (!Session.IsLoggedIn)
+{
+    <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span>Sign in to open a library book and save your voice sample.</span>
+        <a class="btn btn-sm btn-primary" href="login?returnUrl=/simple-voice">Sign in</a>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="alert alert-success">@_message</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+            <div class="card border-primary border-opacity-50 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge text-bg-primary">Voice-only · low cost</span>
+                        <span class="badge text-bg-secondary">No re-film</span>
+                    </div>
+                    <h2 class="h5 mb-2">1 · Choose a library story</h2>
+                    <p class="small text-muted mb-3">
+                        We open a matching project when you already have one (e.g. Buster), or create a new film for your voice.
+                    </p>
+                    <div class="list-group">
+                        @foreach (var book in LibraryBooks)
+                        {
+                            var active = string.Equals(_pickedId, book.Id, StringComparison.OrdinalIgnoreCase);
+                            <button type="button"
+                                    class="list-group-item list-group-item-action @(active ? "active" : "")"
+                                    disabled="@_busy"
+                                    data-testid="@($"simple-voice-book-{book.Id}")"
+                                    @onclick="() => PickBookAsync(book)">
+                                <div class="d-flex justify-content-between gap-2">
+                                    <div class="min-w-0 text-start">
+                                        <div class="fw-semibold">@book.Title</div>
+                                        <div class="small @(active ? "text-white-50" : "text-muted")">@book.Blurb</div>
+                                    </div>
+                                    <span class="badge @(active ? "text-bg-light text-dark" : "text-bg-secondary") flex-shrink-0 align-self-center">
+                                        @book.Tag
+                                    </span>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h2 class="h5 mb-2">2 · Record your narrator voice</h2>
+                    <p class="small text-muted mb-2">
+                        Coach: big smile, high energy on the adventure lines; warm and slow on the bedtime ending.
+                        Soft — not a true whisper if the room is loud.
+                    </p>
+                    <div class="border rounded p-3 bg-dark bg-opacity-25 mb-3 flex-grow-1">
+                        <div class="small text-muted text-uppercase mb-1">Please read aloud (~25s)</div>
+                        <p class="mb-0" style="white-space: pre-wrap; line-height: 1.5;">@VoiceCloneScripts.KidsShort</p>
+                        <button type="button"
+                                class="btn btn-link btn-sm px-0 mt-2"
+                                @onclick="() => _showFullScript = !_showFullScript">
+                            @(_showFullScript ? "Hide longer script" : "Need a richer clone? Show longer kids script")
+                        </button>
+                        @if (_showFullScript)
+                        {
+                            <div class="small text-muted mt-2">
+                                <div class="fw-semibold text-body mb-1">Longer training (optional)</div>
+                                <p class="mb-0" style="white-space: pre-wrap;">@VoiceCloneScripts.KidsFull</p>
+                            </div>
+                        }
+                    </div>
+                    <ul class="small text-muted mb-3 ps-3">
+                        <li>Exaggerate a little — kids’ narration needs more range</li>
+                        <li>Stay close to the mic on soft lines</li>
+                        <li>One sample covers all narrator dialogue</li>
+                    </ul>
+                    <div class="d-grid gap-2">
+                        <button type="button"
+                                class="btn btn-primary"
+                                data-testid="simple-voice-open-cast"
+                                disabled="@_busy"
+                                @onclick="OpenNarratorVoiceAsync">
+                            @(_busy ? "Opening…" : "Open narrator voice capture →")
+                        </button>
+                        <a class="btn btn-outline-secondary btn-sm"
+                           href="characters?simple=1&focus=narrator"
+                           data-testid="simple-voice-characters">
+                            Current project · narrator voice
+                        </a>
+                        <a class="btn btn-link btn-sm" href="/" data-testid="simple-voice-home">
+                            Full studio instead (cast faces & more)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-8 small text-muted">
+                    <strong class="text-body">How it works:</strong>
+                    Library pictures stay as-is · your voice replaces narrator lines · cost stays low
+                    because we don’t re-film every clip with a new face.
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a class="btn btn-sm btn-outline-primary" href="cost">Estimate</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="scenes">Film</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private sealed record LibraryBook(string Id, string Title, string Blurb, string Tag, string? PreferSubstring);
+
+    private static readonly LibraryBook[] LibraryBooks =
+    {
+        new("buster", "Buster",
+            "Gentle bedtime story — ideal for grandparent voice.",
+            "Kids", "buster"),
+        new("telltale", "The Tell-Tale Heart",
+            "Classic short — put your voice on the narrator.",
+            "Classic", "telltale"),
+        new("new-kids", "New film for my voice",
+            "Create a fresh project, then import a book and record the narrator.",
+            "New", null),
+    };
+
+    private string _pickedId = "buster";
+    private bool _busy;
+    private bool _showFullScript;
+    private string? _error;
+    private string? _message;
+
+    private Task PickBookAsync(LibraryBook book)
+    {
+        _pickedId = book.Id;
+        _error = null;
+        _message = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task OpenNarratorVoiceAsync()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("login?returnUrl=/simple-voice");
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var book = LibraryBooks.FirstOrDefault(b => b.Id == _pickedId) ?? LibraryBooks[0];
+            var projects = await Engine.GetProjectsAsync();
+            string? projectId = null;
+            string? label = null;
+
+            if (!string.IsNullOrEmpty(book.PreferSubstring) && projects?.Projects is { Count: > 0 })
+            {
+                var match = projects.Projects.FirstOrDefault(p =>
+                    (p.Id?.Contains(book.PreferSubstring, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (p.Title?.Contains(book.PreferSubstring, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (p.Label?.Contains(book.PreferSubstring, StringComparison.OrdinalIgnoreCase) ?? false));
+                if (match?.Id is { Length: > 0 } mid)
+                {
+                    projectId = mid;
+                    label = match.Label ?? match.Title ?? mid;
+                }
+            }
+
+            if (string.IsNullOrEmpty(projectId))
+            {
+                var name = book.Id == "new-kids"
+                    ? $"My story {DateTime.Now:MMdd-HHmm}"
+                    : $"{book.Title} · my voice";
+                var result = await Engine.CreateProjectAsync(name, title: name);
+                projects = result ?? await Engine.GetProjectsAsync();
+                var created = projects?.Active;
+                projectId = created?.Id;
+                label = created?.Label ?? created?.Title ?? name;
+                if (string.IsNullOrEmpty(projectId))
+                    throw new InvalidOperationException("Could not create project.");
+                _message = $"Created “{label}”. If the book isn’t imported yet, finish Book first, then come back to voice.";
+            }
+            else
+            {
+                await Engine.ActivateProjectAsync(projectId);
+                projects = await Engine.GetProjectsAsync();
+                var a = projects?.Active;
+                label = a?.Label ?? a?.Title ?? label ?? projectId;
+            }
+
+            ActiveProject.Set(projectId, label);
+            await ActiveProject.RefreshReadinessAsync(Engine);
+            Nav.NavigateTo("characters?simple=1&focus=narrator");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

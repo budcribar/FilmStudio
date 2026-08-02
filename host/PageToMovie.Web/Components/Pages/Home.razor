@@ -34,7 +34,7 @@
             <div class="min-w-0 flex-grow-1">
                 <div class="small text-muted">Studio</div>
                 <div class="fw-semibold">Sign in to open your film</div>
-                <div class="small text-muted">Book · cast · optional voice · estimate · film</div>
+                <div class="small text-muted">Library book + your voice · or full studio</div>
             </div>
             <a href="login?returnUrl=/" class="btn btn-primary btn-sm">Sign in</a>
         </div>
@@ -252,7 +252,7 @@ else
                         <div class="min-w-0">
                             <div class="small text-muted">Studio</div>
                             <h1 class="home-top__title mb-0">Choose a film</h1>
-                            <div class="home-top__sub">Book · cast · optional voice · estimate · film</div>
+                            <div class="home-top__sub">Start simple: library book + your voice · or full cast studio</div>
                         </div>
                     </div>
                     <button class="btn btn-primary btn-sm"
@@ -337,7 +337,25 @@ else
 }
 
 <div class="card home-showcase-card mb-3">
-    <div class="card-body py-3">
+    
+@* Bait path: library book + narrator voice only *@
+<div class="card mb-3 border-primary border-opacity-50" data-testid="home-simple-voice-card">
+    <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="min-w-0">
+            <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Easiest start</div>
+            <div class="fw-semibold">Read a library book in your voice</div>
+            <div class="small text-muted">
+                Pick Buster (or another story), record one sample — grandkids hear you as the narrator.
+                No re-filming faces. Full cast studio when you want more.
+            </div>
+        </div>
+        <a href="simple-voice" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-simple-voice">
+            Try with your voice →
+        </a>
+    </div>
+</div>
+
+<div class="card-body py-3">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
             <div class="min-w-0">
                 <div class="ptm-adapt-kicker mb-1">Page to Movie channel</div>
