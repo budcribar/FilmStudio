@@ -2560,19 +2560,67 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             ct);
     }
 
-    /// <summary>Actual spend by provider (then category) for this project — for reconciling against a real vendor billing statement.</summary>
-    public async Task<CostByProviderDto?> GetCostByProviderAsync(string projectId, CancellationToken ct = default)
+    /// <summary>
+    /// Spend by provider for a project (default: signed-in user only).
+    /// Pass <paramref name="allUsers"/> true only as admin for full project totals.
+    /// </summary>
+    public async Task<CostByProviderDto?> GetCostByProviderAsync(
+        string projectId,
+        bool allUsers = false,
+        CancellationToken ct = default)
     {
+        SyncIdentityHeaders();
+        var qs = allUsers ? "?all=true" : "";
         return await _http.GetFromJsonAsync<CostByProviderDto>(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/by-provider",
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/by-provider{qs}",
             JsonOpts,
             ct);
+    }
+
+    /// <summary>Signed-in user's total / by-project / by-vendor spend.</summary>
+    public async Task<UserSpendSummaryDto?> GetMySpendAsync(
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var qs = string.IsNullOrWhiteSpace(projectId)
+            ? ""
+            : $"?projectId={Uri.EscapeDataString(projectId)}";
+        var dto = await _http.GetFromJsonAsync<MySpendDto>($"/api/me/spend{qs}", JsonOpts, ct);
+        return dto?.Summary;
+    }
+
+    public sealed class MySpendDto
+    {
+        public bool Ok { get; set; }
+        public UserSpendSummaryDto? Summary { get; set; }
+    }
+
+    public sealed class UserSpendSummaryDto
+    {
+        public string UserId { get; set; } = "";
+        public int TotalCalls { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
+        public List<ProjectSpendRowDto> ByProject { get; set; } = new();
+        public Dictionary<string, ProviderCostStatsDto> ByProvider { get; set; } = new();
+        public Dictionary<string, CategoryCostStatsDto> ByCategory { get; set; } = new();
+    }
+
+    public sealed class ProjectSpendRowDto
+    {
+        public string ProjectId { get; set; } = "";
+        public int Calls { get; set; }
+        public double ListUsd { get; set; }
+        public double ChargeUsd { get; set; }
     }
 
     public sealed class CostByProviderDto
     {
         public bool Ok { get; set; }
         public string? ProjectId { get; set; }
+        public string? UserId { get; set; }
+        public string? Scope { get; set; }
         public ApiCostByProviderStatsDto? Stats { get; set; }
     }
 
@@ -2580,6 +2628,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     {
         public int TotalCalls { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public Dictionary<string, ProviderCostStatsDto> ByProvider { get; set; } = new();
     }
 
@@ -2588,6 +2638,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public string Provider { get; set; } = "unknown";
         public int Count { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public Dictionary<string, CategoryCostStatsDto> ByCategory { get; set; } = new();
     }
 
@@ -2596,6 +2648,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public string Category { get; set; } = "other";
         public int Count { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public double AvgUsd { get; set; }
     }
 

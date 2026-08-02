@@ -5657,23 +5657,32 @@ app.MapGet("/api/projects/{id}/resolution-lock", async (
     }
 });
 
-/// <summary>Actual spend by provider (then category) for this project — reconcile against a real vendor billing statement.</summary>
+/// <summary>
+/// Actual spend by provider for this project.
+/// Default: <b>signed-in user's</b> spend on this project. Pass <c>?all=true</c> (admin) for every user.
+/// </summary>
 app.MapGet("/api/projects/{id}/cost/by-provider", async (
     string id,
     ProjectStore store,
     UserDatabaseService userDb,
+    IUserContext user,
+    bool? all,
     CancellationToken ct) =>
 {
     try
     {
         _ = await store.GetProjectAsync(id, ct)
             ?? throw new InvalidOperationException($"Unknown project: {id}");
-        var stats = await userDb.GetApiCostByProviderAsync(userId: null, projectId: id, ct);
+        var allUsers = all == true && user.IsAdmin;
+        var userId = allUsers ? null : (string.IsNullOrWhiteSpace(user.UserId) ? null : user.UserId);
+        var stats = await userDb.GetApiCostByProviderAsync(userId: userId, projectId: id, ct);
         return Results.Ok(new
         {
             ok = true,
             projectId = id,
-            notes = "List-rate estimates at call time (catalog), grouped by provider. Not a provider invoice — use as a sanity check against your actual billing statement, not an exact match.",
+            userId = userId,
+            scope = allUsers ? "all_users" : "current_user",
+            notes = "List vs charge: list_usd = vendor catalog; charge = list × admin multiplier. Grouped by provider (xAI, Google, ElevenLabs, …).",
             stats,
         });
     }
@@ -5681,6 +5690,31 @@ app.MapGet("/api/projects/{id}/cost/by-provider", async (
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+});
+
+/// <summary>
+/// Signed-in user's spend: grand total, by project, by vendor, by category.
+/// Optional <c>?projectId=</c> filters to one project.
+/// </summary>
+app.MapGet("/api/me/spend", async (
+    IUserContext user,
+    UserDatabaseService userDb,
+    IOptions<PageToMovieOptions> opts,
+    string? projectId,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var uid = user.UserId?.Trim() ?? "";
+    if (string.IsNullOrWhiteSpace(uid))
+        return Results.Unauthorized();
+    var summary = await userDb.GetUserSpendSummaryAsync(uid, projectId, ct);
+    return Results.Ok(new
+    {
+        ok = true,
+        summary,
+        notes = "Per-user tracking from user_api_calls. Charge = list × admin multiplier. Provider = catalog vendor id (xai, google, elevenlabs, …).",
+    });
 });
 
 app.MapPost("/api/projects/{id}/cost/backfill", async (

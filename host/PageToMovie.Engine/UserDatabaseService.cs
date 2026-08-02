@@ -749,10 +749,9 @@ public class UserDatabaseService
     }
 
     /// <summary>
-    /// Actual list-rate spend grouped by provider (then category) — for reconciling against a real
-    /// provider billing statement (e.g. xAI). Still a catalog estimate at call time, not an invoice
-    /// line; see <see cref="UserApiCallRow.EstimatedUsd"/>. <paramref name="userId"/> null = all
-    /// users (portfolio); <paramref name="projectId"/> null = all projects.
+    /// Actual spend grouped by provider (then category). Returns both list-rate (COGS) and
+    /// customer charge amounts. <paramref name="userId"/> null/empty = all users;
+    /// <paramref name="projectId"/> null/empty = all projects.
     /// </summary>
     public async Task<ApiCostByProviderStats> GetApiCostByProviderAsync(
         string? userId = null,
@@ -766,12 +765,14 @@ public class UserDatabaseService
             using var conn = new SqliteConnection(ConnectionString);
             await conn.OpenAsync(ct).ConfigureAwait(false);
             using var cmd = conn.CreateCommand();
+            // charge_usd may be null on legacy rows → fall back to estimated_usd (list rate).
             cmd.CommandText = """
                 SELECT
                     COALESCE(NULLIF(TRIM(provider), ''), 'unknown') AS prov,
                     COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
                     COUNT(*),
-                    COALESCE(SUM(estimated_usd), 0)
+                    COALESCE(SUM(estimated_usd), 0),
+                    COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
                 FROM user_api_calls
                 WHERE ok = 1
                   AND estimated_usd IS NOT NULL
@@ -788,7 +789,8 @@ public class UserDatabaseService
                 var provider = r.GetString(0);
                 var cat = CostCategories.Resolve(r.GetString(1), null, r.GetString(1));
                 var count = r.GetInt32(2);
-                var sum = r.GetDouble(3);
+                var listSum = r.GetDouble(3);
+                var chargeSum = r.GetDouble(4);
 
                 if (!stats.ByProvider.TryGetValue(provider, out var prow))
                 {
@@ -796,18 +798,24 @@ public class UserDatabaseService
                     stats.ByProvider[provider] = prow;
                 }
                 prow.Count += count;
-                prow.TotalUsd += sum;
+                prow.TotalListUsd += listSum;
+                prow.TotalChargeUsd += chargeSum;
+                prow.TotalUsd += chargeSum; // customer-facing default
                 if (!prow.ByCategory.TryGetValue(cat, out var crow))
                 {
                     crow = new CategoryCostStats { Category = cat };
                     prow.ByCategory[cat] = crow;
                 }
                 crow.Count += count;
-                crow.TotalUsd += sum;
-                crow.AvgUsd = crow.Count > 0 ? crow.TotalUsd / crow.Count : 0;
+                crow.TotalListUsd += listSum;
+                crow.TotalChargeUsd += chargeSum;
+                crow.TotalUsd += chargeSum;
+                crow.AvgUsd = crow.Count > 0 ? crow.TotalChargeUsd / crow.Count : 0;
 
                 stats.TotalCalls += count;
-                stats.TotalUsd += sum;
+                stats.TotalListUsd += listSum;
+                stats.TotalChargeUsd += chargeSum;
+                stats.TotalUsd += chargeSum;
             }
         }
         catch (Exception ex)
@@ -815,6 +823,123 @@ public class UserDatabaseService
             _logger.LogDebug(ex, "GetApiCostByProviderAsync failed");
         }
         return stats;
+    }
+
+    /// <summary>
+    /// Per-user spend: grand total, by project, by vendor (provider), by category.
+    /// Source of truth: <c>user_api_calls</c> (requires UserId on every API log).
+    /// </summary>
+    public async Task<UserSpendSummary> GetUserSpendSummaryAsync(
+        string userId,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var summary = new UserSpendSummary
+        {
+            UserId = string.IsNullOrWhiteSpace(userId) ? "" : userId.Trim(),
+        };
+        if (string.IsNullOrWhiteSpace(summary.UserId))
+            return summary;
+
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+
+            // Totals + by project
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT
+                        COALESCE(NULLIF(TRIM(project_id), ''), '(no project)') AS proj,
+                        COUNT(*),
+                        COALESCE(SUM(estimated_usd), 0),
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
+                    FROM user_api_calls
+                    WHERE ok = 1
+                      AND user_id = @userId
+                      AND estimated_usd IS NOT NULL
+                      AND estimated_usd > 0
+                      AND (@projectId = '' OR project_id = @projectId)
+                    GROUP BY proj
+                    ORDER BY 4 DESC
+                    """;
+                cmd.Parameters.AddWithValue("@userId", summary.UserId);
+                cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    var proj = r.GetString(0);
+                    var count = r.GetInt32(1);
+                    var listSum = r.GetDouble(2);
+                    var chargeSum = r.GetDouble(3);
+                    summary.ByProject.Add(new ProjectSpendRow
+                    {
+                        ProjectId = proj,
+                        Calls = count,
+                        ListUsd = Math.Round(listSum, 4),
+                        ChargeUsd = Math.Round(chargeSum, 4),
+                    });
+                    summary.TotalCalls += count;
+                    summary.TotalListUsd += listSum;
+                    summary.TotalChargeUsd += chargeSum;
+                }
+            }
+
+            summary.TotalListUsd = Math.Round(summary.TotalListUsd, 4);
+            summary.TotalChargeUsd = Math.Round(summary.TotalChargeUsd, 4);
+
+            // By provider (reuse filter)
+            var byProv = await GetApiCostByProviderAsync(summary.UserId, projectId, ct).ConfigureAwait(false);
+            summary.ByProvider = byProv.ByProvider
+                .OrderByDescending(kv => kv.Value.TotalChargeUsd)
+                .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+
+            // By category (user-facing buckets)
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT
+                        COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
+                        COUNT(*),
+                        COALESCE(SUM(estimated_usd), 0),
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
+                    FROM user_api_calls
+                    WHERE ok = 1
+                      AND user_id = @userId
+                      AND estimated_usd IS NOT NULL
+                      AND estimated_usd > 0
+                      AND (@projectId = '' OR project_id = @projectId)
+                    GROUP BY cat
+                    """;
+                cmd.Parameters.AddWithValue("@userId", summary.UserId);
+                cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    var cat = CostCategories.Resolve(r.GetString(0), null, r.GetString(0));
+                    var count = r.GetInt32(1);
+                    var listSum = r.GetDouble(2);
+                    var chargeSum = r.GetDouble(3);
+                    summary.ByCategory[cat] = new CategoryCostStats
+                    {
+                        Category = cat,
+                        Count = count,
+                        TotalListUsd = Math.Round(listSum, 4),
+                        TotalChargeUsd = Math.Round(chargeSum, 4),
+                        TotalUsd = Math.Round(chargeSum, 4),
+                        AvgUsd = count > 0 ? Math.Round(chargeSum / count, 4) : 0,
+                    };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "GetUserSpendSummaryAsync failed for {UserId}", summary.UserId);
+        }
+
+        return summary;
     }
 
     public async Task InsertUserApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
@@ -1971,10 +2096,11 @@ public sealed class GenerationErrorRow
 }
 
 
-/// <summary>Portfolio / user API spend aggregates for cost estimate refinement.</summary>
+/// <summary>Portfolio / user API spend aggregates for cost estimate refinement (list rates).</summary>
 public sealed class ApiCostHistoryStats
 {
     public int TotalCalls { get; set; }
+    /// <summary>List-rate sum (COGS / refinement). Not customer charge.</summary>
     public double TotalUsd { get; set; }
     public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);
@@ -1984,15 +2110,21 @@ public sealed class CategoryCostStats
 {
     public string Category { get; set; } = CostCategories.Other;
     public int Count { get; set; }
+    /// <summary>Customer charge (or list rate when charge not tracked). Prefer <see cref="TotalChargeUsd"/>.</summary>
     public double TotalUsd { get; set; }
+    public double TotalListUsd { get; set; }
+    public double TotalChargeUsd { get; set; }
     public double AvgUsd { get; set; }
 }
 
-/// <summary>Actual spend grouped by provider (then category) — for xAI/vendor billing reconciliation.</summary>
+/// <summary>Spend grouped by vendor/provider (xAI, Google, ElevenLabs, …).</summary>
 public sealed class ApiCostByProviderStats
 {
     public int TotalCalls { get; set; }
+    /// <summary>Customer charge total (default for UI).</summary>
     public double TotalUsd { get; set; }
+    public double TotalListUsd { get; set; }
+    public double TotalChargeUsd { get; set; }
     public Dictionary<string, ProviderCostStats> ByProvider { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);
 }
@@ -2002,6 +2134,30 @@ public sealed class ProviderCostStats
     public string Provider { get; set; } = "unknown";
     public int Count { get; set; }
     public double TotalUsd { get; set; }
+    public double TotalListUsd { get; set; }
+    public double TotalChargeUsd { get; set; }
     public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);
+}
+
+/// <summary>Signed-in user spend: total, per project, per vendor, per category.</summary>
+public sealed class UserSpendSummary
+{
+    public string UserId { get; set; } = "";
+    public int TotalCalls { get; set; }
+    public double TotalListUsd { get; set; }
+    public double TotalChargeUsd { get; set; }
+    public List<ProjectSpendRow> ByProject { get; set; } = new();
+    public Dictionary<string, ProviderCostStats> ByProvider { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class ProjectSpendRow
+{
+    public string ProjectId { get; set; } = "";
+    public int Calls { get; set; }
+    public double ListUsd { get; set; }
+    public double ChargeUsd { get; set; }
 }
