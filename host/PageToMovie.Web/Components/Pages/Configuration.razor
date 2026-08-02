@@ -71,8 +71,8 @@
         </div>
         <div class="card-body">
             <p class="small text-muted mb-3">
-                Pick the model for each studio job. Keys appear only when you need them —
-                change model, add a key for that provider, or remove a key you no longer use.
+                For each job: choose a <strong>provider</strong> (who holds the key), then a <strong>model</strong> from that provider.
+                Add a provider only when you need another key. Model lists only show what that provider can run.
             </p>
 
             @if (!string.IsNullOrEmpty(_apiKeyFeedback))
@@ -85,15 +85,18 @@
                     <thead>
                         <tr class="small text-muted">
                             <th style="min-width:9rem">Job</th>
+                            <th style="min-width:10rem">Provider</th>
                             <th style="min-width:12rem">Model</th>
-                            <th>Key</th>
-                            <th style="min-width:11rem">Actions</th>
+                            <th>Status</th>
+                            <th style="min-width:10rem">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var c in cov)
                         {
-                            var models = ModelsForCoverage(c.Id);
+                            var allModels = ModelsForCoverage(c.Id);
+                            var providers = ProvidersForCoverage(c.Id).ToList();
+                            var providerModels = ModelsForCoverageProvider(c.Id, c.ProviderId).ToList();
                             var editing = string.Equals(_coverageEditId, c.Id, StringComparison.OrdinalIgnoreCase);
                             <tr class="@(c.OptionalOff ? "opacity-75" : "")" data-testid="coverage-@c.Id">
                                 <td>
@@ -101,26 +104,63 @@
                                     <div class="text-muted" style="font-size:0.75rem;">@c.Hint</div>
                                 </td>
                                 <td>
-                                    @if (models.Count > 0)
+                                    @if (c.OptionalOff)
+                                    {
+                                        <span class="small text-muted">—</span>
+                                    }
+                                    else if (providers.Count > 0)
+                                    {
+                                        <select class="form-select form-select-sm"
+                                                data-testid="coverage-provider-@c.Id"
+                                                disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
+                                                value="@c.ProviderId"
+                                                @onchange="e => OnCoverageProviderChangedAsync(c.Id, e.Value?.ToString())">
+                                            @if (string.IsNullOrWhiteSpace(c.ProviderId))
+                                            {
+                                                <option value="">Choose provider…</option>
+                                            }
+                                            @foreach (var pr in providers)
+                                            {
+                                                <option value="@pr.ProviderId">
+                                                    @FriendlyProviderLabel(pr.ProviderId)@(pr.IsConfigured ? "" : " · no key")
+                                                </option>
+                                            }
+                                        </select>
+                                    }
+                                    else
+                                    {
+                                        <span class="small text-muted">@FriendlyProviderLabel(c.ProviderId)</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (c.OptionalOff)
+                                    {
+                                        <span class="small text-muted">Off</span>
+                                    }
+                                    else if (providerModels.Count > 0)
                                     {
                                         <select class="form-select form-select-sm"
                                                 data-testid="coverage-model-@c.Id"
-                                                disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
+                                                disabled="@(_busy || string.IsNullOrEmpty(_projectId) || string.IsNullOrWhiteSpace(c.ProviderId))"
                                                 value="@GetCoverageModelId(c.Id)"
                                                 @onchange="e => OnCoverageModelChangedAsync(c.Id, e.Value?.ToString())">
-                                            @foreach (var m in models)
+                                            @foreach (var m in providerModels)
                                             {
                                                 <option value="@m.Id">@ModelOptionLabel(m)</option>
                                             }
                                         </select>
                                         @if (string.IsNullOrEmpty(_projectId))
                                         {
-                                            <div class="form-text">Select a project to save model choice.</div>
+                                            <div class="form-text">Select a project to save.</div>
                                         }
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(c.ProviderId))
+                                    {
+                                        <span class="small text-muted">No models for this provider</span>
                                     }
                                     else
                                     {
-                                        <span class="small text-muted">@c.ModelId</span>
+                                        <span class="small text-muted">Pick a provider first</span>
                                     }
                                 </td>
                                 <td class="small">
@@ -131,10 +171,6 @@
                                     else if (c.KeyReady)
                                     {
                                         <span class="badge text-bg-success">Ready</span>
-                                        @if (!string.IsNullOrWhiteSpace(c.ProviderDisplay))
-                                        {
-                                            <div class="text-muted mt-1" style="font-size:0.75rem;">@c.ProviderDisplay</div>
-                                        }
                                     }
                                     else if (string.IsNullOrWhiteSpace(c.ProviderId))
                                     {
@@ -143,11 +179,18 @@
                                     else
                                     {
                                         <span class="badge text-bg-danger">Need key</span>
-                                        <div class="text-muted mt-1" style="font-size:0.75rem;">@c.ProviderDisplay</div>
                                     }
                                 </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary"
+                                                data-testid="coverage-add-provider-@c.Id"
+                                                disabled="@_busy"
+                                                title="Add another provider key for this job"
+                                                @onclick="() => BeginAddKey(c.Id, null)">
+                                            Add provider
+                                        </button>
                                         @if (!c.OptionalOff && !c.KeyReady && !string.IsNullOrWhiteSpace(c.ProviderId))
                                         {
                                             <button type="button"
@@ -194,7 +237,7 @@
                             @if (editing)
                             {
                                 <tr class="table-active" data-testid="coverage-key-panel-@c.Id">
-                                    <td colspan="4" class="bg-dark bg-opacity-25">
+                                    <td colspan="5" class="bg-dark bg-opacity-25">
                                         <div class="p-2">
                                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                                                 <div class="small fw-semibold">
@@ -203,9 +246,9 @@
                                                 <button type="button" class="btn btn-sm btn-link" @onclick="CancelAddKey">Cancel</button>
                                             </div>
                                             <p class="small text-muted mb-2">
-                                                Only providers that can run this job are listed.
-                                                <strong>Suno</strong> and <strong>AI Music API</strong> are different resellers — each needs its own key.
-                                                If a card already says <em>Has key</em>, click <strong>Use this key</strong> (we switch the model to match).
+                                                Providers that can run this job. Provider = who holds the key
+                                                (e.g. <strong>Suno API (sunoapi.org)</strong> vs <strong>AI Music API (aimusicapi.ai)</strong> —
+                                                Suno is the model family). If a card says <em>Has key</em>, click <strong>Use this key</strong>.
                                             </p>
                                             <div class="row g-2">
                                                 @foreach (var p in ProvidersForCoverage(c.Id))
@@ -215,7 +258,7 @@
                                                         <div class="border rounded p-2 h-100 @(selected ? "border-primary" : "")"
                                                              data-testid="coverage-provider-@p.ProviderId">
                                                             <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
-                                                                <div class="fw-semibold small">@p.DisplayName</div>
+                                                                <div class="fw-semibold small">@FriendlyProviderLabel(p.ProviderId)</div>
                                                                 @if (p.IsConfigured)
                                                                 {
                                                                     <span class="badge text-bg-success">Has key</span>
@@ -231,7 +274,7 @@
                                                                 </button>
                                                                 @if (p.IsConfigured)
                                                                 {
-                                                                    <div class="form-text">Uses your saved @p.DisplayName key and switches the model to match.</div>
+                                                                    <div class="form-text">Uses your saved @FriendlyProviderLabel(p.ProviderId) key and switches the model to match.</div>
                                                                 }
                                                             }
                                                             else if (p.IsConfigured)
@@ -1130,8 +1173,7 @@
 
         var providerRow = ProviderRows.FirstOrDefault(pr =>
             string.Equals(pr.ProviderId, providerId, StringComparison.OrdinalIgnoreCase));
-        var display = providerRow?.DisplayName
-                      ?? (string.IsNullOrWhiteSpace(providerId) ? "" : providerId);
+        var display = string.IsNullOrWhiteSpace(providerId) ? "" : FriendlyProviderLabel(providerId);
         var keyReady = off || string.IsNullOrWhiteSpace(providerId) || (providerRow?.IsConfigured ?? false);
 
         return new CoverageRow
@@ -1264,9 +1306,7 @@
     {
         _error = null;
         _apiKeyFeedback = null;
-        var label = ProviderRows.FirstOrDefault(pr =>
-            string.Equals(pr.ProviderId, providerId, StringComparison.OrdinalIgnoreCase))?.DisplayName
-            ?? providerId;
+        var label = FriendlyProviderLabel(providerId);
 
         if (string.Equals(coverageId, "music", StringComparison.OrdinalIgnoreCase))
             EnsureMusicModelForProvider(providerId);
@@ -1362,6 +1402,69 @@
         _ => Array.Empty<SupportedModelDto>(),
     };
 
+    private static string ModelProviderId(SupportedModelDto m)
+    {
+        if (!string.IsNullOrWhiteSpace(m.ProviderId))
+            return SupportedModelCatalog.NormalizeProviderId(m.ProviderId);
+        if (!string.IsNullOrWhiteSpace(m.Provider))
+            return SupportedModelCatalog.NormalizeProviderId(m.Provider);
+        return InferProviderIdFromModelId(m.Id);
+    }
+
+    /// <summary>Models for a coverage job limited to one provider (second-stage dropdown).</summary>
+    private IReadOnlyList<SupportedModelDto> ModelsForCoverageProvider(string coverageId, string? providerId)
+    {
+        var all = ModelsForCoverage(coverageId);
+        if (string.IsNullOrWhiteSpace(providerId))
+            return Array.Empty<SupportedModelDto>();
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        return all
+            .Where(m => !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase))
+            .Where(m => string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(m => m.IsVoiceCloneStep ? 0 : 1)
+            .ThenBy(m => ModelOptionLabel(m), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task OnCoverageProviderChangedAsync(string coverageId, string? providerId)
+    {
+        if (string.IsNullOrWhiteSpace(providerId))
+            return;
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var models = ModelsForCoverageProvider(coverageId, pid);
+        var current = GetCoverageModelId(coverageId);
+        var stillValid = models.Any(m => string.Equals(m.Id, current, StringComparison.OrdinalIgnoreCase));
+        if (!stillValid)
+        {
+            // Prefer clone-step for voice; otherwise first model for this provider.
+            var pick = models.FirstOrDefault(m => m.IsVoiceCloneStep) ?? models.FirstOrDefault();
+            if (pick is not null)
+                SetCoverageModelId(coverageId, pick.Id);
+            else if (coverageId is "music" or "voice")
+                SetCoverageModelId(coverageId, "none");
+        }
+
+        _coverageEditId = null;
+        _message = null;
+        if (!string.IsNullOrEmpty(_projectId) && _cfg is not null)
+        {
+            try
+            {
+                await SaveAsync();
+                _message = $"Provider set to {FriendlyProviderLabel(pid)}.";
+            }
+            catch (Exception ex)
+            {
+                _error = ex.Message;
+            }
+        }
+
+        var row = BuildCoverageRows().FirstOrDefault(c =>
+            string.Equals(c.Id, coverageId, StringComparison.OrdinalIgnoreCase));
+        if (row is { KeyReady: false, OptionalOff: false } && !string.IsNullOrWhiteSpace(row.ProviderId))
+            BeginAddKey(coverageId, row.ProviderId);
+    }
+
     private IEnumerable<ProviderKeyStatusDto> ProvidersForCoverage(string coverageId)
     {
         var models = ModelsForCoverage(coverageId);
@@ -1402,7 +1505,7 @@
 
         return ProviderRows.Where(pr => ids.Contains(pr.ProviderId))
             .OrderBy(pr => pr.IsConfigured ? 0 : 1)
-            .ThenBy(pr => pr.DisplayName);
+            .ThenBy(pr => FriendlyProviderLabel(pr.ProviderId));
     }
 
     private async Task OnCoverageModelChangedAsync(string coverageId, string? modelId)
@@ -1479,23 +1582,46 @@
     private void SetKeyInput(string providerId, string? value) =>
         _keyInputs[providerId] = value;
 
+    /// <summary>Company / API surface that holds the key (not the model product).</summary>
+    private static string FriendlyProviderLabel(string? providerId)
+    {
+        var p = SupportedModelCatalog.NormalizeProviderId(providerId);
+        return p switch
+        {
+            "grok" => "xAI",
+            "gemini" => "Google",
+            "anthropic" => "Anthropic",
+            "openai" => "OpenAI",
+            "fal" => "Fal.ai",
+            "suno" => "Suno API (sunoapi.org)",
+            "aimusicapi" => "AI Music API (aimusicapi.ai)",
+            "elevenlabs" => "ElevenLabs",
+            "" => "",
+            _ => p,
+        };
+    }
+
+    /// <summary>Model product name only — provider lives in the Provider column.</summary>
     private static string ModelOptionLabel(SupportedModelDto m)
     {
-        // Keep dropdowns readable — no raw env-key plumbing. Disambiguate lookalike names.
-        var name = string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName;
+        var name = string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName.Trim();
+        // Strip trailing provider parentheticals catalog sometimes appends.
+        name = System.Text.RegularExpressions.Regex.Replace(
+            name,
+            @"\s*\((?:Fal\.ai|sunoapi\.org|aimusicapi\.ai|ElevenLabs|Xai|xAI|Google|OpenAI|Anthropic)\)\s*$",
+            "",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         var pid = !string.IsNullOrWhiteSpace(m.ProviderId)
             ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
             : SupportedModelCatalog.NormalizeProviderId(m.Provider);
-        // Catalog already says "Suno (aimusicapi.ai)" vs "Suno v5.5 (sunoapi.org)" — append key hint if missing.
-        if (string.Equals(pid, "suno", StringComparison.OrdinalIgnoreCase)
-            && !name.Contains("sunoapi", StringComparison.OrdinalIgnoreCase)
-            && !name.Contains("key", StringComparison.OrdinalIgnoreCase))
-            return $"{name} · needs Suno key";
+        // AI Music API's Suno-compatible model: still "Suno" as the model family.
         if (string.Equals(pid, "aimusicapi", StringComparison.OrdinalIgnoreCase)
-            && !name.Contains("aimusic", StringComparison.OrdinalIgnoreCase)
-            && !name.Contains("key", StringComparison.OrdinalIgnoreCase))
-            return $"{name} · needs AI Music API key";
-        return name;
+            && name.Equals("Suno", StringComparison.OrdinalIgnoreCase))
+            return "Suno-compatible";
+        if (string.Equals(m.Id, "suno-v5-5", StringComparison.OrdinalIgnoreCase)
+            && !name.Contains("5.5", StringComparison.OrdinalIgnoreCase))
+            return "Suno v5.5";
+        return string.IsNullOrWhiteSpace(name) ? m.Id : name;
     }
 
     private string VendorLabel(string modelId, string capability)

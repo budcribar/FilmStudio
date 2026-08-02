@@ -767,14 +767,15 @@ public static class SupportedModelCatalog
 
     private static string DisplayNameForProvider(string pId, SupportedModelEntry sample) => pId switch
     {
-        "grok" => "xAI / Grok",
-        "gemini" => "Google Gemini",
-        "anthropic" => "Anthropic Claude",
+        // Provider = who holds the key (not the model product name).
+        "grok" => "xAI",
+        "gemini" => "Google",
+        "anthropic" => "Anthropic",
         "fal" => "Fal.ai",
         "openai" => "OpenAI",
-        "suno" => "Suno",
-        "aimusicapi" => "AI Music API",
-        "elevenlabs" => "Voice cloning",
+        "suno" => "Suno API (sunoapi.org)",
+        "aimusicapi" => "AI Music API (aimusicapi.ai)",
+        "elevenlabs" => "ElevenLabs",
         _ => !string.IsNullOrWhiteSpace(sample.ProviderName)
             ? sample.ProviderName
             : char.ToUpperInvariant(pId[0]) + pId[1..],
@@ -782,13 +783,14 @@ public static class SupportedModelCatalog
 
     private static string? ShortProviderBlurb(string pId) => pId switch
     {
-        "grok" => "Video, image, script, and vision for the main studio pipeline.",
-        "gemini" => "Video review (MP4), Veo video gen, image, and planning.",
-        "openai" => "Script & planning (chat). Not for video or image generation.",
-        "anthropic" => "Script & planning and image vision. Not for video or image gen.",
-        "fal" => "Open-source video/image (and some audio) via Fal serverless.",
-        "suno" or "aimusicapi" => "Background music generation.",
-        "elevenlabs" => "Record a short sample to personalize character dialogue.",
+        "grok" => "xAI — video, image, script, and vision for the main studio pipeline.",
+        "gemini" => "Google — video review (MP4), Veo video, image, and planning.",
+        "openai" => "OpenAI — script & planning (chat).",
+        "anthropic" => "Anthropic — script & planning and image vision.",
+        "fal" => "Fal.ai — open models for video, image, music, and voice.",
+        "suno" => "Suno API (sunoapi.org) — Suno music models.",
+        "aimusicapi" => "AI Music API (aimusicapi.ai) — Suno-compatible music models.",
+        "elevenlabs" => "ElevenLabs — voice clone and speech.",
         _ => null,
     };
 
