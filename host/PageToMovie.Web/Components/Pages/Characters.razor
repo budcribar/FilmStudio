@@ -281,12 +281,12 @@ else
                 @* Simple path: voice first — no picture routing required to reach Record. *@
                 <div class="card mb-3 border-primary border-opacity-50" data-testid="simple-voice-card">
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <span class="fw-semibold">@_selected.DisplayName</span>
+                        <span class="fw-semibold">@_selected.DisplayName · voice sample</span>
                         <span class="badge text-bg-primary">Simple · your voice</span>
                     </div>
                     <div class="card-body">
                         <p class="small text-muted mb-3">
-                            Record one sample. Library pictures stay as-is — we re-speak lines in your voice when you film.
+                            Record (or pick) one sample for this character. Library pictures stay as-is — we re-speak lines in your voice when you film.
                         </p>
                         @RenderVoiceEditor()
                     </div>
@@ -947,86 +947,91 @@ else
 
     private RenderFragment RenderVoiceEditor() => __builder =>
     {
-        <div class="mb-2">
-            <label class="form-label small mb-0">Voice label</label>
-            <input class="form-control form-control-sm"
-                   value="@_editVoiceLabel"
-                   @oninput="OnVoiceLabelInput"
-                   disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                   placeholder="e.g. Daddy" />
-        </div>
-        <div class="mb-2">
-            <label class="form-label small mb-0">Voice profile</label>
-            <textarea class="form-control form-control-sm" rows="4"
-                      value="@_editVoiceProfile"
-                      @oninput="OnVoiceProfileInput"
-                      disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                      placeholder="Adult male; low soft presence — used in film video prompts (voice style)"></textarea>
-            <div class="form-text">
-                Optional: describe the voice (or use a personal style label). Play previews a short sample clip with this profile + dialogue.
-            </div>
-        </div>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="small text-muted">@(_voiceSaveHint ?? "Profile saves automatically")</span>
-            <button type="button"
-                    class="btn btn-sm btn-outline-secondary"
-                    disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                    title="Play cached sample, or generate a short film clip if missing"
-                    @onclick="() => PlayVoicePreviewAsync(force: false)">
-                ▶ Play
-            </button>
-            <button type="button"
-                    class="btn btn-sm btn-outline-primary"
-                    disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                    title="Always regenerate after editing the profile"
-                    @onclick="() => PlayVoicePreviewAsync(force: true)">
-                Regenerate
-            </button>
-        </div>
-        @if (VoiceJobRunning && _job is not null)
+        @* Simple path (home → library book → your voice): only the clone card.
+           Full cast keeps label/profile + film voice preview for prompt style. *@
+        @if (!_simpleMode)
         {
-            var vpct = _job.Status == "queued" || _job.Total <= 0
-                ? 8
-                : (int)Math.Round(100.0 * Math.Clamp(_job.Index, 0, _job.Total) / Math.Max(1, _job.Total));
-            if (_job.Status == "running" && _job.Index <= 0)
-                vpct = 0;
-            <div class="mt-2">
-                <div class="d-flex justify-content-between small text-muted">
-                    <span>@(_job.Message ?? "Generating voice…")</span>
-                    @if (_job.Status == "running" && _job.Total == 100)
-                    {
-                        <span>@_job.Index%</span>
-                    }
-                </div>
-                <div class="progress mt-1" style="height: 0.5rem;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated"
-                         role="progressbar"
-                         style="width: @(vpct)%"
-                         aria-valuenow="@vpct"
-                         aria-valuemin="0"
-                         aria-valuemax="100"></div>
+            <div class="mb-2">
+                <label class="form-label small mb-0">Voice label</label>
+                <input class="form-control form-control-sm"
+                       value="@_editVoiceLabel"
+                       @oninput="OnVoiceLabelInput"
+                       disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                       placeholder="e.g. Daddy" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label small mb-0">Voice profile</label>
+                <textarea class="form-control form-control-sm" rows="4"
+                          value="@_editVoiceProfile"
+                          @oninput="OnVoiceProfileInput"
+                          disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                          placeholder="Adult male; low soft presence — used in film video prompts (voice style)"></textarea>
+                <div class="form-text">
+                    Optional: describe the voice (or use a personal style label). Play previews a short sample clip with this profile + dialogue.
                 </div>
             </div>
-        }
-        @if (!string.IsNullOrEmpty(_voicePreviewHint))
-        {
-            <div class="form-text mt-1">@_voicePreviewHint</div>
-        }
-        @if (_voicePreviewStale && !VoiceJobRunning)
-        {
-            <div class="form-text text-warning mt-1">Profile changed — Regenerate to hear the new voice.</div>
-        }
-        @if (!string.IsNullOrEmpty(_voicePreviewError))
-        {
-            <div class="alert alert-danger py-1 small mt-2 mb-0">@_voicePreviewError</div>
-        }
-        @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
-        {
-            <video class="mt-2 w-100 rounded border" style="max-height: 240px; background: #000;"
-                   controls autoplay playsinline src="@_voicePreviewUrl" @key="_voicePreviewUrl"></video>
-        }
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="small text-muted">@(_voiceSaveHint ?? "Profile saves automatically")</span>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                        title="Play cached sample, or generate a short film clip if missing"
+                        @onclick="() => PlayVoicePreviewAsync(force: false)">
+                    ▶ Play
+                </button>
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                        title="Always regenerate after editing the profile"
+                        @onclick="() => PlayVoicePreviewAsync(force: true)">
+                    Regenerate
+                </button>
+            </div>
+            @if (VoiceJobRunning && _job is not null)
+            {
+                var vpct = _job.Status == "queued" || _job.Total <= 0
+                    ? 8
+                    : (int)Math.Round(100.0 * Math.Clamp(_job.Index, 0, _job.Total) / Math.Max(1, _job.Total));
+                if (_job.Status == "running" && _job.Index <= 0)
+                    vpct = 0;
+                <div class="mt-2">
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>@(_job.Message ?? "Generating voice…")</span>
+                        @if (_job.Status == "running" && _job.Total == 100)
+                        {
+                            <span>@_job.Index%</span>
+                        }
+                    </div>
+                    <div class="progress mt-1" style="height: 0.5rem;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar"
+                             style="width: @(vpct)%"
+                             aria-valuenow="@vpct"
+                             aria-valuemin="0"
+                             aria-valuemax="100"></div>
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_voicePreviewHint))
+            {
+                <div class="form-text mt-1">@_voicePreviewHint</div>
+            }
+            @if (_voicePreviewStale && !VoiceJobRunning)
+            {
+                <div class="form-text text-warning mt-1">Profile changed — Regenerate to hear the new voice.</div>
+            }
+            @if (!string.IsNullOrEmpty(_voicePreviewError))
+            {
+                <div class="alert alert-danger py-1 small mt-2 mb-0">@_voicePreviewError</div>
+            }
+            @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
+            {
+                <video class="mt-2 w-100 rounded border" style="max-height: 240px; background: #000;"
+                       controls autoplay playsinline src="@_voicePreviewUrl" @key="_voicePreviewUrl"></video>
+            }
 
-        <hr class="my-3" />
+            <hr class="my-3" />
+        }
         @* Mic capture is always available (sample stays on the client).
            Provider key is only required later when applying the clone while filming. *@
         <div class="ptm-voice-clone" data-testid="voice-clone-gate">
