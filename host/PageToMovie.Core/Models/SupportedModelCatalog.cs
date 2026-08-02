@@ -10,8 +10,10 @@ public enum ModelCapability
     Chat,
     Vision,
     Audio,
-    /// <summary>Voice clone / TTS (e.g. ElevenLabs) — dialogue personalization, not BGM.</summary>
+    /// <summary>Voice clone / TTS (e.g. ElevenLabs, Fal.ai MiniMax) — dialogue personalization, not BGM. Covers both the clone step (see <see cref="SupportedModelEntry.IsVoiceCloneStep"/>) and the text-to-speech step.</summary>
     Voice,
+    /// <summary>Video lip-sync: resync a finished clip's mouth movement to a separate audio track (Fal.ai / Sync Labs). Input is video+audio, not a text prompt — kept distinct from <see cref="Video"/>.</summary>
+    LipSync,
 }
 
 /// <summary>
@@ -283,6 +285,27 @@ public sealed class SupportedModelEntry
     /// </summary>
     public string? DefaultAspectRatio { get; init; }
 
+    /// <summary>
+    /// True for a clone-shaped Voice model (takes a reference audio sample, returns a provider voice
+    /// id — e.g. Fal.ai <c>fal-ai/minimax/voice-clone</c>, ElevenLabs <c>eleven_voice_clone</c>).
+    /// False (default) means a speak-shaped Voice model (takes text + a voice id/name, returns
+    /// synthesized speech audio — e.g. <c>fal-ai/minimax/speech-02-hd</c>, <c>eleven_multilingual_v2</c>).
+    /// Both shapes share <see cref="ModelCapability.Voice"/> since a caller resolving "the voice
+    /// model" for a narration flow needs one clone-shaped and one speak-shaped entry, not two
+    /// separate capability buckets — this flag disambiguates which is which. Only meaningful when
+    /// <see cref="Capability"/> is <see cref="ModelCapability.Voice"/>.
+    /// </summary>
+    public bool IsVoiceCloneStep { get; init; }
+
+    /// <summary>USD per voice-clone call (Voice, clone-shaped models only — see <see cref="IsVoiceCloneStep"/>). Null when not applicable/unconfirmed.</summary>
+    public double? CostPerCloneUsd { get; init; }
+
+    /// <summary>USD per 1,000 characters of synthesized speech (Voice, speak-shaped models only). Null when not applicable/unconfirmed.</summary>
+    public double? CostPerThousandCharsUsd { get; init; }
+
+    /// <summary>USD per minute of output video (LipSync only, flat rate — Sync Labs-style lip-sync models aren't priced per resolution like <see cref="VideoCostPerSecondByResolution"/>). Null when not applicable/unconfirmed.</summary>
+    public double? CostPerMinuteUsd { get; init; }
+
     /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
     public string ProviderName { get; init; } = "";
 
@@ -354,6 +377,8 @@ public static class SupportedModelCatalog
         new() { Id = "vision", DisplayName = "Image Vision & OCR", Description = "Book page OCR, cast-on-image classification, and frame inspection.", Order = 4 },
         new() { Id = "video-review", DisplayName = "Video & Clip Review (Multimodal)", Description = "Evaluates dialogue, lip sync, and scene rhythm (Google Gemini natively analyzes MP4 video files).", Order = 5 },
         new() { Id = "audio", DisplayName = "Audio & Music Generation", Description = "Generates beat-aligned background music scores and sound effects.", Order = 6 },
+        new() { Id = "voice", DisplayName = "Voice Clone / TTS", Description = "Personal voice clone from a short sample, then spoken dialogue or narration for the film.", Order = 70 },
+        new() { Id = "lipsync", DisplayName = "Video Lip-Sync", Description = "Resyncs a generated clip's mouth movement to a separate dialogue or narration audio track.", Order = 80 },
     ];
 
     private static Dictionary<string, List<string>>? _loadedTaskRankings;
@@ -684,6 +709,7 @@ public static class SupportedModelCatalog
             var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
             var supportsAudio = group.Any(m => m.Capability == ModelCapability.Audio);
             var supportsVoice = group.Any(m => m.Capability == ModelCapability.Voice);
+            var supportsLipSync = group.Any(m => m.Capability == ModelCapability.LipSync);
 
             var caps = new List<string>();
             if (supportsVideoGen) caps.Add("Video Gen");
@@ -693,6 +719,7 @@ public static class SupportedModelCatalog
             if (supportsImageVision) caps.Add("Image Vision / OCR");
             if (supportsAudio) caps.Add("Audio / Music");
             if (supportsVoice) caps.Add("Voice clone / TTS");
+            if (supportsLipSync) caps.Add("Lip-sync");
 
             rows.Add(new ProviderKeyStatusDto
             {
@@ -836,6 +863,11 @@ public static class SupportedModelCatalog
         LongClipFrameCount = e.LongClipFrameCount,
         SupportedAspectRatios = e.SupportedAspectRatios is { } sar ? sar.ToList() : null,
         DefaultAspectRatio = e.DefaultAspectRatio,
+        MaxPromptLength = e.MaxPromptLength,
+        IsVoiceCloneStep = e.IsVoiceCloneStep,
+        CostPerCloneUsd = e.CostPerCloneUsd,
+        CostPerThousandCharsUsd = e.CostPerThousandCharsUsd,
+        CostPerMinuteUsd = e.CostPerMinuteUsd,
     };
 
     public static SupportedModelEntry FromDto(SupportedModelDto d) => new()
@@ -875,6 +907,11 @@ public static class SupportedModelCatalog
         LongClipFrameCount = d.LongClipFrameCount,
         SupportedAspectRatios = d.SupportedAspectRatios,
         DefaultAspectRatio = d.DefaultAspectRatio,
+        MaxPromptLength = d.MaxPromptLength,
+        IsVoiceCloneStep = d.IsVoiceCloneStep,
+        CostPerCloneUsd = d.CostPerCloneUsd,
+        CostPerThousandCharsUsd = d.CostPerThousandCharsUsd,
+        CostPerMinuteUsd = d.CostPerMinuteUsd,
     };
 }
 
@@ -915,6 +952,11 @@ public sealed class SupportedModelDto
     public int? LongClipFrameCount { get; set; }
     public List<string>? SupportedAspectRatios { get; set; }
     public string? DefaultAspectRatio { get; set; }
+    public int? MaxPromptLength { get; set; }
+    public bool IsVoiceCloneStep { get; set; }
+    public double? CostPerCloneUsd { get; set; }
+    public double? CostPerThousandCharsUsd { get; set; }
+    public double? CostPerMinuteUsd { get; set; }
 }
 
 public sealed class ModelCapabilityDefinition

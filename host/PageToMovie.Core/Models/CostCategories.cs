@@ -97,7 +97,7 @@ public static class CostCategories
             // Post-gen QA jobs often use these kinds (see FilmJobService).
             "clip-auto-review" or "clip-auto-review-batch" or "movie-auto-review"
                 or "video_review" or "dialogue_verification" or "auto_review" => Review,
-            "video" or "video_extend" or "video_poll" or "film" or "clip" => Video,
+            "video" or "video_extend" or "video_poll" or "film" or "clip" or "lip_sync" => Video,
             "image" or "image_edit" or "character" or "portrait" or "plates" => Characters,
             "music" or "bgm" or "score" => Music,
             "audio" or "voice" or "tts" or "voice-preview" or "voice_clone" or "speech" => Voice,
