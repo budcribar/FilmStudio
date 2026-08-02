@@ -82,6 +82,16 @@ public sealed class SupportedModelEntry
     /// </summary>
     public int? MaxInputTokens { get; init; }
 
+    /// <summary>
+    /// Maximum output tokens the model will generate in a single synchronous Messages API call
+    /// (Chat / Vision only), i.e. the real per-model ceiling for the <c>max_tokens</c> request
+    /// field. Null when not applicable or not yet confirmed against provider docs — callers must
+    /// fall back to their own hardcoded default rather than guess. Sourced from provider docs;
+    /// providers do raise these over time, so re-check before trusting an old number for a
+    /// cost/quality-sensitive decision.
+    /// </summary>
+    public int? MaxOutputTokens { get; init; }
+
     /// <summary>USD per 1,000,000 input tokens (Chat / Vision only). Null when not applicable.</summary>
     public double? InputCostPerMillionTokens { get; init; }
 
@@ -733,6 +743,7 @@ public static class SupportedModelCatalog
         RequiredEnvKeys = e.RequiredEnvKeys.ToList(),
         Enabled = e.Enabled,
         MaxInputTokens = e.MaxInputTokens,
+        MaxOutputTokens = e.MaxOutputTokens,
         InputCostPerMillionTokens = e.InputCostPerMillionTokens,
         OutputCostPerMillionTokens = e.OutputCostPerMillionTokens,
         VideoCostPerSecondByResolution = e.VideoCostPerSecondByResolution is { } v
@@ -769,6 +780,7 @@ public static class SupportedModelCatalog
         RequiredEnvKeys = d.RequiredEnvKeys ?? new List<string>(),
         Enabled = d.Enabled,
         MaxInputTokens = d.MaxInputTokens,
+        MaxOutputTokens = d.MaxOutputTokens,
         InputCostPerMillionTokens = d.InputCostPerMillionTokens,
         OutputCostPerMillionTokens = d.OutputCostPerMillionTokens,
         VideoCostPerSecondByResolution = d.VideoCostPerSecondByResolution,
@@ -800,6 +812,7 @@ public sealed class SupportedModelDto
     public List<string> RequiredEnvKeys { get; set; } = new();
     public bool Enabled { get; set; } = true;
     public int? MaxInputTokens { get; set; }
+    public int? MaxOutputTokens { get; set; }
     public double? InputCostPerMillionTokens { get; set; }
     public double? OutputCostPerMillionTokens { get; set; }
     public Dictionary<string, double>? VideoCostPerSecondByResolution { get; set; }

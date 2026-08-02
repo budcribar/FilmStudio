@@ -277,4 +277,61 @@ public class SupportedModelCatalogTests
             }
         }
     }
+
+    [Theory]
+    [InlineData("claude-sonnet-5", ModelCapability.Chat, 128_000)]
+    [InlineData("claude-opus-5", ModelCapability.Chat, 128_000)]
+    public void Claude_chat_models_carry_real_max_output_tokens(string id, ModelCapability cap, int expectedMaxOutputTokens)
+    {
+        // Provider-documented (platform.claude.com/docs/en/about-claude/models/overview, 2026-08):
+        // Claude Sonnet 5 and Claude Opus 5 both cap at 128k output tokens on the synchronous
+        // Messages API. AnthropicChatClient.ResolveMaxTokens reads this instead of always sending
+        // the DefaultMaxTokens fallback.
+        var e = SupportedModelCatalog.Find(id, cap);
+        Assert.NotNull(e);
+        Assert.Equal(expectedMaxOutputTokens, e!.MaxOutputTokens);
+    }
+
+    [Fact]
+    public void MaxOutputTokens_round_trips_through_ToDto_and_FromDto()
+    {
+        var entry = new SupportedModelEntry
+        {
+            Id = "test-max-output-tokens",
+            DisplayName = "Test Model",
+            Capability = ModelCapability.Chat,
+            Provider = ModelProviderFamily.Anthropic,
+            ApiBase = SupportedModelCatalog.AnthropicApiBase,
+            EndpointPath = "messages",
+            RequiredEnvKeys = new List<string> { SupportedModelCatalog.AnthropicApiKeyEnv },
+            MaxOutputTokens = 128_000,
+        };
+
+        var dto = SupportedModelCatalog.ToDto(entry);
+        Assert.Equal(128_000, dto.MaxOutputTokens);
+
+        var roundTripped = SupportedModelCatalog.FromDto(dto);
+        Assert.Equal(128_000, roundTripped.MaxOutputTokens);
+    }
+
+    [Fact]
+    public void MaxOutputTokens_defaults_to_null_when_unset()
+    {
+        var entry = new SupportedModelEntry
+        {
+            Id = "test-max-output-tokens-unset",
+            DisplayName = "Test Model",
+            Capability = ModelCapability.Chat,
+            Provider = ModelProviderFamily.Xai,
+            ApiBase = SupportedModelCatalog.XaiApiBase,
+            EndpointPath = "chat/completions",
+            RequiredEnvKeys = new List<string> { SupportedModelCatalog.XaiApiKeyEnv },
+        };
+
+        var dto = SupportedModelCatalog.ToDto(entry);
+        Assert.Null(dto.MaxOutputTokens);
+
+        var roundTripped = SupportedModelCatalog.FromDto(dto);
+        Assert.Null(roundTripped.MaxOutputTokens);
+    }
 }
