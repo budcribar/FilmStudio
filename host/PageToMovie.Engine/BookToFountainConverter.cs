@@ -117,7 +117,10 @@ public static class BookToFountainConverter
         PromptBudget? budgetOverride = null,
         Action<string>? onHeuristicFallback = null,
         string? reasoningEffort = null,
-        Action<ProjectVisionMeta.Document>? onVisionMeta = null)
+        Action<ProjectVisionMeta.Document>? onVisionMeta = null,
+        GenerationErrorLogger? errorLogger = null,
+        string? jobId = null,
+        string? projectId = null)
     {
         if (string.IsNullOrWhiteSpace(bookText))
             throw new InvalidOperationException("Book text is empty");
@@ -176,9 +179,34 @@ public static class BookToFountainConverter
 
             // Multi path: soft coverage failures still accept a structurally good draft
             var multiGate = EvaluateQuality(text, bookText, totalRuntimeMinutes, AdaptPath.Multi);
-            if (!multiGate.Ok && multiGate.HasHardFailure)
-                throw new InvalidOperationException(
-                    "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
+            if (!multiGate.Ok)
+            {
+                // Visibility only — no automatic retry here (re-running multi-chunk adapt is
+                // expensive, and we don't have real error-rate data yet to justify it). Hard
+                // failures (structure/excerpt_marker) still throw below same as before; soft
+                // failures (scene_count/missing_ending/suspiciously_short) previously shipped
+                // silently with no log anywhere — now recorded for the admin panel.
+                if (errorLogger is not null)
+                {
+                    await errorLogger.LogAsync(new GenerationErrorRecord
+                    {
+                        ProjectId = projectId,
+                        JobId = jobId,
+                        Stage = "book_to_fountain_chunk",
+                        Model = model,
+                        ErrorType = "structural_gate_failure",
+                        ErrorMessage = $"Multi-chunk quality gate failed: {multiGate.Reason} " +
+                                       $"(scenes={multiGate.SceneCount}, fountainChars={multiGate.FountainChars}, " +
+                                       $"hardFailure={multiGate.HasHardFailure})",
+                        Resolved = false,
+                        ResponseSummary = text.Length > 500 ? text[..500] : text,
+                    }, ct).ConfigureAwait(false);
+                }
+
+                if (multiGate.HasHardFailure)
+                    throw new InvalidOperationException(
+                        "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
+            }
         }
         catch (InvalidOperationException ex) when (LooksLikeGoodFountain(ConvertHeuristic(title, bookText, author)))
         {

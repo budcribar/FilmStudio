@@ -67,6 +67,7 @@ public sealed class FilmJobService
     private readonly IAudioClient _audio;
     private readonly SceneMusicScoringService _musicScoring;
     private readonly MusicSidecarService? _musicSidecars;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public FilmJobService(
         ProjectStore projects,
@@ -105,7 +106,8 @@ public sealed class FilmJobService
         GlobalTimingCalibrationService? timingCalibration = null,
         ActionCameraOverheadLedger? timingLedger = null,
         AiActionOverheadClassifier? timingClassifier = null,
-        MusicSidecarService? musicSidecars = null)
+        MusicSidecarService? musicSidecars = null,
+        GenerationErrorLogger? errorLogger = null)
     {
         _httpFactory = httpFactory;
         _projects = projects;
@@ -144,6 +146,7 @@ public sealed class FilmJobService
         _timingLedger = timingLedger;
         _timingClassifier = timingClassifier;
         _musicSidecars = musicSidecars;
+        _errorLogger = errorLogger;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -1061,7 +1064,9 @@ public sealed class FilmJobService
                             s.Index = Math.Max(s.Index, 6);
                     });
                 },
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                errorLogger: _errorLogger,
+                jobId: Snapshot.JobId).ConfigureAwait(false);
 
             if (!save.Ok)
             {

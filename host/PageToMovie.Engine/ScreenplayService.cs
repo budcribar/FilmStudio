@@ -482,7 +482,9 @@ public static string NormalizeText(string text)
         PageToMovie.Engine.Abstractions.IChatClient? chat = null,
         string model = "grok-4.5",
         Action<string>? onProgress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        GenerationErrorLogger? errorLogger = null,
+        string? jobId = null)
     {
         var projectDir = store.GetProjectDir(projectId);
         var bookPath = Path.Combine(projectDir, "source", "book_full.txt");
@@ -521,7 +523,10 @@ public static string NormalizeText(string text)
                 model: model,
                 onProgress: onProgress,
                 ct: ct,
-                onVisionMeta: v => visionFromScript = v).ConfigureAwait(false);
+                onVisionMeta: v => visionFromScript = v,
+                errorLogger: errorLogger,
+                jobId: jobId,
+                projectId: projectId).ConfigureAwait(false);
 
             fountain = BookToFountainConverter.FixDraftDate(fountain);
             var save = SaveDraft(store, projectId, fountain);
