@@ -173,6 +173,17 @@ public static class AiRetryPolicy
     };
 
     /// <summary>
+    /// Combined transient-failure predicate for chat clients: true for an HTTP status carried by
+    /// <see cref="ChatHttpStatusException"/> that <see cref="IsTransientHttpStatus"/> accepts, or
+    /// any exception <see cref="IsTransientException"/> accepts. Shared by
+    /// <c>GrokChatClient</c>/<c>AnthropicChatClient</c>/<c>GeminiChatClient</c> so the same
+    /// predicate isn't hand-copied at each call site.
+    /// </summary>
+    public static bool IsTransientChatFailure(Exception ex) =>
+        (ex is ChatHttpStatusException hse && IsTransientHttpStatus(hse.StatusCode))
+        || IsTransientException(ex);
+
+    /// <summary>
     /// Retries <paramref name="attempt"/> up to <paramref name="maxAttempts"/> times while
     /// <paramref name="isTransient"/> returns true for the thrown exception, with quadratic
     /// backoff between attempts. The final attempt's exception always propagates unmodified

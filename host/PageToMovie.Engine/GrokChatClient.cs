@@ -105,9 +105,7 @@ public sealed class GrokChatClient : IChatClient
             // which previously propagated to the caller immediately with zero retries.
             return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
                 _ => DoRequestAsync(),
-                isTransient: ex =>
-                    (ex is ChatHttpStatusException hse && AiRetryPolicy.IsTransientHttpStatus(hse.StatusCode))
-                    || AiRetryPolicy.IsTransientException(ex),
+                isTransient: AiRetryPolicy.IsTransientChatFailure,
                 maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
                 backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
                 onRetry: (attemptNum, ex) => LogTransientRetryAsync(attemptNum, ex),

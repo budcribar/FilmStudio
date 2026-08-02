@@ -170,9 +170,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     {
         return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
             _ => call(),
-            isTransient: ex =>
-                (ex is ChatHttpStatusException hse && AiRetryPolicy.IsTransientHttpStatus(hse.StatusCode))
-                || AiRetryPolicy.IsTransientException(ex),
+            isTransient: AiRetryPolicy.IsTransientChatFailure,
             maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
             backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
             onRetry: async (attemptNum, ex) =>
