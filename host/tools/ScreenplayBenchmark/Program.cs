@@ -47,7 +47,6 @@ public static class Program
         string? judgeModel = null;
         string? judgeModel2 = null;
         string? videoModel = null;
-        double adaptationTemperature = 0.2;
         double adaptationJudgeTemperature = 0.0;
         bool adaptationClipShotPlan = false;
         bool adaptationDualAttachClipPlan = false;
@@ -93,10 +92,6 @@ public static class Program
             else if (arg.Equals("--video-model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 videoModel = args[++i].Trim();
-            }
-            else if (arg.Equals("--temperature", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                if (double.TryParse(args[++i], out var t)) adaptationTemperature = t;
             }
             else if (arg.Equals("--judge-temperature", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
@@ -210,7 +205,7 @@ public static class Program
             }
             return await AdaptationSessionPilot.RunAsync(
                 bookPath, bookSlug, adaptationModel, targetRuntimeMinutes, workspaceRoot, CancellationToken.None,
-                judgeModel, adaptationTemperature, adaptationJudgeTemperature, adaptationClipShotPlan,
+                judgeModel, samplingTemperature, adaptationJudgeTemperature, adaptationClipShotPlan,
                 adaptationDualAttachClipPlan, adaptationDualAttachAll, judgeModel2, videoModel);
         }
 
@@ -308,7 +303,7 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature);
             }
 
             // Generate updated HTML Dashboard after suite execution
@@ -330,7 +325,7 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
@@ -356,7 +351,8 @@ public static class Program
         string promptRevision,
         string? reasoningEffort = null,
         double samplingTemperature = 0.2,
-        bool bypassCache = false)
+        bool bypassCache = false,
+        double judgeTemperature = 0.0)
     {
         var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
         Directory.CreateDirectory(screenplaysDir);
@@ -412,6 +408,10 @@ public static class Program
         // interchangeable and must never be compared or averaged as if they were.
         var effortSuffix = string.IsNullOrWhiteSpace(reasoningEffort) ? "" : $"_{SanitizeFileName(reasoningEffort)}";
         var temperatureKey = samplingTemperature.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture).Replace('.', '_');
+        // Judge temperature is deliberately decoupled from generation temperature — a repeatable
+        // (temp 0) judge is desirable even while experimenting with generation temperature, so the
+        // judge cache must not collide with or be invalidated by a generation-only temperature change.
+        var judgeTemperatureKey = judgeTemperature.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture).Replace('.', '_');
 
         // Phase 1 & 2: Generation & C# Audits
         foreach (var modelId in candidateModels)
@@ -540,7 +540,7 @@ public static class Program
             // at boosted reasoning effort is not interchangeable with one at default effort, even
             // when ScreenplaysHash matches (the candidates could be unchanged while only the
             // judge's own effort level changed).
-            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}_{promptRevision}_temp{temperatureKey}.json");
+            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}_{promptRevision}_temp{temperatureKey}_judgetemp{judgeTemperatureKey}.json");
             JudgeEvaluationPayload? cachedJudge = null;
 
             if (!bypassCache && File.Exists(judgeCacheFile))
@@ -584,7 +584,7 @@ public static class Program
                         systemPrompt: "Respond with ONLY the JSON object described in the instructions. No prose, no markdown code fences.",
                         userPrompt: userPrompt,
                         model: judgeModelId,
-                        temperature: samplingTemperature,
+                        temperature: judgeTemperature,
                         mode: "screenplay_benchmark_judge",
                         reasoningEffort: reasoningEffort);
                     evalPayload = ParseJudgePayload(raw, anonMapping.Keys);
@@ -621,6 +621,7 @@ public static class Program
             IsMockRun = isMockRun,
             ReasoningEffort = reasoningEffort ?? "",
             SamplingTemperature = samplingTemperature,
+            JudgeTemperature = judgeTemperature,
             PromptVersion = promptRevision,
             ModelScores = runData.Leaderboard,
             JudgeMatrix = runData.JudgeMatrix,

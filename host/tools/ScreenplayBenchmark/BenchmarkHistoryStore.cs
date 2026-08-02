@@ -24,8 +24,17 @@ public sealed class HistoricalBenchmarkRun
     /// </summary>
     public string ReasoningEffort { get; set; } = "";
 
-    /// <summary>Sampling temperature used for both generation and peer judging.</summary>
+    /// <summary>Sampling temperature used for screenplay generation.</summary>
     public double SamplingTemperature { get; set; } = 0.2;
+
+    /// <summary>
+    /// Sampling temperature used for peer judging — deliberately independent of
+    /// <see cref="SamplingTemperature"/>. Judge repeatability (temp 0 recommended) is a separate
+    /// question from what temperature best generates a screenplay; a v5 comparison found generation
+    /// results at temp 0 mixed (helped one model, hurt another on the same book), so the two must
+    /// never be forced to the same value.
+    /// </summary>
+    public double JudgeTemperature { get; set; } = 0.0;
 
     /// <summary>
     /// Short Git revision of the commit that last changed prompts/book_to_fountain.txt. Benchmark
