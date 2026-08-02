@@ -155,9 +155,24 @@ public sealed class ClientMediaFolderService
             if (r is { Success: true })
             {
                 FolderName = r.FolderName;
-                FullPath = null;
-                try { await _js.InvokeVoidAsync("PageToMovieMedia.setFullPath", (string?)null); } catch { /* ignore */ }
-                LastStatus = $"Media folder: {FolderName}";
+                // Prefer path returned from JS (or previously stored full path if still valid).
+                if (!string.IsNullOrWhiteSpace(r.FullPath))
+                    FullPath = r.FullPath.Trim();
+                else
+                    await RefreshFullPathAsync();
+                // Drop stale full path when its last segment no longer matches the folder name.
+                if (!string.IsNullOrWhiteSpace(FullPath) && !string.IsNullOrWhiteSpace(FolderName))
+                {
+                    var normalized = FullPath.Replace('/', '\\').TrimEnd('\\');
+                    var idx = normalized.LastIndexOf('\\');
+                    var last = idx >= 0 ? normalized[(idx + 1)..] : normalized;
+                    if (!string.Equals(last, FolderName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        FullPath = null;
+                        try { await _js.InvokeVoidAsync("PageToMovieMedia.setFullPath", (string?)null); } catch { /* ignore */ }
+                    }
+                }
+                LastStatus = $"Media folder: {FullPath ?? FolderName}";
                 LocalSaveWarning = null;
                 NeedsReconnect = false;
                 PendingReconnectFolderName = null;
@@ -820,6 +835,7 @@ public sealed class ClientMediaFolderService
     {
         public bool Success { get; set; }
         public string? FolderName { get; set; }
+        public string? FullPath { get; set; }
         public string? Error { get; set; }
     }
 

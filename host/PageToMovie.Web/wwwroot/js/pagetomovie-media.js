@@ -42,9 +42,27 @@ window.PageToMovieMedia = {
             this._root = await window.showDirectoryPicker({ mode: "readwrite" });
             if (window.PageToMovieExport)
                 window.PageToMovieExport._directoryHandle = this._root;
-            try { localStorage.removeItem("ptm-media-fullpath"); } catch (_) { /* ignore */ }
+            const name = this._root.name;
+            // Prefer any real path the host exposes (non-standard); else keep stored path if leaf matches.
+            let fullPath = null;
+            try {
+                if (typeof this._root.path === "string" && this._root.path)
+                    fullPath = this._root.path;
+                else if (typeof this._root.fullPath === "string" && this._root.fullPath)
+                    fullPath = this._root.fullPath;
+            } catch (_) { /* ignore */ }
+            const prev = this.getFullPath();
+            if (!fullPath && prev) {
+                const leaf = prev.replace(/[\\/]+$/, "").split(/[\\/]/).pop();
+                if (leaf && leaf.toLowerCase() === String(name).toLowerCase())
+                    fullPath = prev;
+                else
+                    try { localStorage.removeItem("ptm-media-fullpath"); } catch (_) { /* ignore */ }
+            }
+            if (fullPath)
+                this.setFullPath(fullPath);
             await this._saveHandleToDbAsync(this._root);
-            return { success: true, folderName: this._root.name };
+            return { success: true, folderName: name, fullPath: fullPath || this.getFullPath() || null };
         } catch (err) {
             if (err && err.name === "AbortError")
                 return { success: false, error: "Folder selection cancelled." };

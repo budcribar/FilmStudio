@@ -415,15 +415,12 @@
             <div class="row align-items-stretch g-3">
                 <div class="col-md-7">
                     <div class="fw-semibold mb-1">Local media folder</div>
-                    <p class="small text-muted mb-2">
-                        Clips and audio save on <strong>this computer</strong> via the Chrome/Edge folder picker.
-                        One button selects the folder — no typed paths.
-                    </p>
+                    <p class="small text-muted mb-2">Project media files are written here</p>
                     @if (MediaFolder.IsConnected)
                     {
                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                             <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1 text-break" data-testid="config-media-folder-name">
-                                @(MediaFolder.FolderName ?? MediaFolder.FullPath ?? "Selected folder")
+                                @(MediaFolder.FullPath ?? MediaFolder.FolderName ?? "Selected folder")
                             </div>
                             <button type="button"
                                     class="btn btn-sm btn-outline-primary flex-shrink-0"
@@ -432,9 +429,6 @@
                                     @onclick="ConnectMediaFolderAsync">
                                 Change folder
                             </button>
-                        </div>
-                        <div class="small text-muted">
-                            Media for <strong>@_projectId</strong> is written here.
                         </div>
                     }
                     else if (MediaFolder.NeedsReconnect)
