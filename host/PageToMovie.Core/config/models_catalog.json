@@ -39,9 +39,16 @@
     {
       "id": "voice",
       "displayName": "Voice Clone / TTS",
-      "description": "Personal voice clone from a short sample, then spoken dialogue for the film.",
+      "description": "Personal voice clone from a short sample, then spoken dialogue or narration for the film.",
       "defaultModelId": "eleven_multilingual_v2",
       "order": 70
+    },
+    {
+      "id": "lipsync",
+      "displayName": "Video Lip-Sync",
+      "description": "Resyncs a generated clip's mouth movement to a separate dialogue or narration audio track.",
+      "defaultModelId": "fal-ai/sync-lipsync/v2/pro",
+      "order": 80
     }
   ],
   "task_rankings": {
@@ -682,7 +689,81 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
+      "isVoiceCloneStep": true,
       "notes": "Creates a voice profile from a short mic/upload sample (Cast \u2192 Voice clone sample). Optional paid add-on path."
+    },
+    {
+      "id": "fal-ai/minimax/voice-clone",
+      "displayName": "MiniMax Voice Clone (Fal.ai)",
+      "capability": "Voice",
+      "provider": "Fal",
+      "apiBase": "https://queue.fal.run",
+      "endpointPath": "fal-ai/minimax/voice-clone",
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "isVoiceCloneStep": true,
+      "costPerCloneUsd": 1.5,
+      "notes": "Clones a voice from a reference sample (>=10s, reuses this project's existing assets/characters/{key}/voice_clone_sample.* upload) via Fal.ai's queue API (fal.ai/models/fal-ai/minimax/voice-clone). Input: audio_url (URL or data URI). Output: custom_voice_id, reused across many fal-ai/minimax/speech-02-hd calls so the clone cost is paid once. $1.50 per clone call \u2014 confirmed via fal.ai's own model/pricing page and openapi schema (2026-08). A preview-text option exists ($0.30/1000 chars) but this app's client never requests it. MiniMax retains the cloned voice only if used by a speech call at least once within 7 days of creation (provider-side retention, not enforced by this app)."
+    },
+    {
+      "id": "fal-ai/minimax/speech-02-hd",
+      "displayName": "MiniMax Speech-02 HD (Fal.ai)",
+      "capability": "Voice",
+      "provider": "Fal",
+      "apiBase": "https://queue.fal.run",
+      "endpointPath": "fal-ai/minimax/speech-02-hd",
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "costPerThousandCharsUsd": 0.1,
+      "maxPromptLength": 5000,
+      "notes": "Text-to-speech via Fal.ai's queue API (fal.ai/models/fal-ai/minimax/speech-02-hd) using a voice cloned by fal-ai/minimax/voice-clone (custom_voice_id passed as voice_setting.voice_id \u2014 confirmed against MiniMax's own platform.minimax.io voice-cloning docs, same convention). Input: text (max 5000 chars per call, this app does not auto-chunk longer narration), voice_setting {voice_id, speed 0.5-2.0, vol, pitch, emotion}. Output: audio.url + duration_ms. $0.10 per 1000 characters \u2014 confirmed via fal.ai's own model/pricing page (2026-08)."
+    },
+    {
+      "id": "fal-ai/sync-lipsync/v2/pro",
+      "displayName": "Sync Lipsync 2 Pro (Fal.ai)",
+      "capability": "LipSync",
+      "provider": "Fal",
+      "apiBase": "https://queue.fal.run",
+      "endpointPath": "fal-ai/sync-lipsync/v2/pro",
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "costPerMinuteUsd": 5.0,
+      "notes": "Sync Labs Lipsync 2 Pro via Fal.ai's queue API (fal.ai/models/fal-ai/sync-lipsync/v2/pro). Input: video_url, audio_url (both URL or data URI), optional sync_mode (cut_off default | loop | bounce | silence | remap) for when the two durations differ. Output: video.url. Zero-shot \u2014 no fine-tuning needed; preserves natural teeth/facial detail per Fal's own listing. ~$5/min of output video (~$0.083/s) \u2014 sourced via targeted search during research (fal.ai's own pricing page returned HTTP 429 rate-limiting when fetched directly; cross-checked against Sync Labs' own sync.so/pricing page, which lists the same figure for their Pro tier). Confirm against fal.ai's live pricing page before relying on this for a large narration/dub run."
+    },
+    {
+      "id": "fal-ai/sync-lipsync/v3",
+      "displayName": "Sync Lipsync 3 (Fal.ai)",
+      "capability": "LipSync",
+      "provider": "Fal",
+      "apiBase": "https://queue.fal.run",
+      "endpointPath": "fal-ai/sync-lipsync/v3",
+      "requiredEnvKeys": [
+        "FAL_API_KEY",
+        "FAL_KEY"
+      ],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "notes": "Newest Sync Labs model on Fal.ai (fal.ai/models/fal-ai/sync-lipsync/v3), same core video_url/audio_url/sync_mode input as v2 Pro plus an optional `options` object (model_mode: lips/face/head/lipsync/emotion/talking_head, prompt: emotion tag, temperature, active_speaker_detection, occlusion_detection_enabled) that this app's client does not yet expose. Pricing not confirmed \u2014 fal.ai's pricing page returned HTTP 429 during research and no third-party source for v3 specifically was found; left null rather than guessed. Not the capability default until pricing is confirmed."
     }
   ]
 }

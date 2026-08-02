@@ -129,8 +129,9 @@ public sealed class ProjectTelemetryService
                 "image" or "image_edit" => ModelCapability.Image,
                 "video" or "video_extend" or "video_poll" => ModelCapability.Video,
                 "vision" => ModelCapability.Vision,
-                "audio" or "tts" or "music" => ModelCapability.Audio,
-                "voice" => ModelCapability.Voice,
+                "audio" or "music" => ModelCapability.Audio,
+                "voice" or "tts" or "voice_clone" => ModelCapability.Voice,
+                "lip_sync" => ModelCapability.LipSync,
                 _ => ModelCapability.Chat,
             };
             return SupportedModelCatalog.Find(model, cap)?.ProviderId
