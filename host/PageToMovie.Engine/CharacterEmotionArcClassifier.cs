@@ -25,15 +25,18 @@ public sealed class CharacterEmotionArcClassifier
     private readonly IChatClient _chat;
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<CharacterEmotionArcClassifier> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public CharacterEmotionArcClassifier(
         IChatClient chat,
         IOptions<PageToMovieOptions> opts,
-        ILogger<CharacterEmotionArcClassifier> log)
+        ILogger<CharacterEmotionArcClassifier> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _chat = chat;
         _opts = opts.Value;
         _log = log;
+        _errorLogger = errorLogger;
     }
 
     public bool IsEnabled => _opts.ClassifyCharacterEmotionArcWithChat && _chat.IsConfigured;
@@ -78,16 +81,35 @@ public sealed class CharacterEmotionArcClassifier
         {
             var userPrompt = BuildUserPrompt(scene, beats);
             var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.CharacterEmotionArcClassifyModel;
-            var response = await _chat.CompleteAsync(
-                SystemPrompt(),
-                userPrompt,
-                effectiveModel,
-                // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                temperature: 0,
-                ct: ct,
-                mode: ChatCallModes.CharacterEmotionArcClassify).ConfigureAwait(false);
+            var requestedIds = beats
+                .Select(b => b.GetValueOrDefault("beat_id")?.ToString() ?? "")
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToList();
 
-            return ParseEmotionResponse(response);
+            var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
+                requestedIds,
+                () => _chat.CompleteAsync(
+                    SystemPrompt(),
+                    userPrompt,
+                    effectiveModel,
+                    // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
+                    temperature: 0,
+                    ct: ct,
+                    mode: ChatCallModes.CharacterEmotionArcClassify),
+                ParseEmotionResponse,
+                maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
+                ct: ct).ConfigureAwait(false);
+
+            if (_errorLogger is not null)
+            {
+                var sceneNum = ToIntOrNull(scene.GetValueOrDefault("scene_number"));
+                await _errorLogger.LogCoverageResultAsync(
+                    "character_emotion_arc_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
+                    requestedIds, retry, ct).ConfigureAwait(false);
+            }
+
+            return retry.Result;
         }
         catch (Exception ex)
         {
@@ -95,6 +117,18 @@ public sealed class CharacterEmotionArcClassifier
             return null;
         }
     }
+
+    private static int? ToIntOrNull(object? val) => val switch
+    {
+        int i => i,
+        long l => (int)l,
+        double d => (int)d,
+        string s when int.TryParse(s, out var p) => p,
+        _ => null,
+    };
+
+    private static string? ResolveProvider(string? model) =>
+        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
 
     private static string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
     {

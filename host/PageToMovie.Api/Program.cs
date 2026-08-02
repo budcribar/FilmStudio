@@ -165,6 +165,7 @@ catch
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir));
 builder.Services.AddSingleton<UserDatabaseService>();
+builder.Services.AddSingleton<GenerationErrorLogger>();
 builder.Services.AddHttpContextAccessor();
 
 // Blazor Web UI — Interactive WebAssembly (client DI lives in PageToMovie.Web Program.cs)
@@ -1235,6 +1236,23 @@ app.MapPost("/api/admin/timing-telemetry/seed", async (
         message = $"Seeded {count} empirical benchmark entries into SQLite database.",
         count
     });
+});
+
+/// <summary>Admin: recent generation_errors rows (partial-coverage / structural-gate / transient-retry events).</summary>
+app.MapGet("/api/admin/generation-errors", async (
+    IUserContext user,
+    UserDatabaseService userDb,
+    string? errorType,
+    string? projectId,
+    int? take,
+    CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    var rows = await userDb.ListGenerationErrorsAsync(errorType, projectId, take ?? 100, ct);
+    return Results.Ok(new { ok = true, rows });
 });
 
 /// <summary>Open a local folder on disk in Windows File Explorer (or OS file manager).</summary>

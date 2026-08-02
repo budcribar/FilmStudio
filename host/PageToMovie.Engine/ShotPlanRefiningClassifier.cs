@@ -21,15 +21,18 @@ public sealed class ShotPlanRefiningClassifier
     private readonly IChatClient _chat;
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<ShotPlanRefiningClassifier> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public ShotPlanRefiningClassifier(
         IChatClient chat,
         IOptions<PageToMovieOptions> opts,
-        ILogger<ShotPlanRefiningClassifier> log)
+        ILogger<ShotPlanRefiningClassifier> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _chat = chat;
         _opts = opts.Value;
         _log = log;
+        _errorLogger = errorLogger;
     }
 
     public bool IsEnabled => _opts.ClassifyShotPlanRefineWithChat && _chat.IsConfigured;
@@ -97,14 +100,22 @@ public sealed class ShotPlanRefiningClassifier
             var userPrompt = BuildUserPrompt(plannedScene, clips);
             var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.ShotPlanRefineClassifyModel;
             var cacheKey = $"{userPrompt}|m:{effectiveModel}";
-            string response;
-            if (Cache.TryGetValue(cacheKey, out var cached))
+            var requestedIds = clips
+                .Select(c => ToInt(c.GetValueOrDefault("clip_number")).ToString())
+                .ToList();
+
+            // Cache only the first attempt's call — a coverage retry needs a fresh response,
+            // not the same (possibly incomplete) cached text replayed again.
+            var firstAttempt = true;
+            async Task<string> CallChatAsync()
             {
-                response = cached;
-            }
-            else
-            {
-                response = await _chat.CompleteAsync(
+                if (firstAttempt)
+                {
+                    firstAttempt = false;
+                    if (Cache.TryGetValue(cacheKey, out var cachedResp))
+                        return cachedResp;
+                }
+                var raw = await _chat.CompleteAsync(
                     SystemPrompt(),
                     userPrompt,
                     effectiveModel,
@@ -112,11 +123,42 @@ public sealed class ShotPlanRefiningClassifier
                     temperature: 0,
                     ct: ct,
                     mode: ChatCallModes.ShotPlanRefineClassify).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(response))
-                    Cache[cacheKey] = response;
+                if (!string.IsNullOrWhiteSpace(raw))
+                    Cache[cacheKey] = raw;
+                return raw;
             }
 
-            return ApplyRefinements(plannedScene, clips, response);
+            var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
+                requestedIds,
+                CallChatAsync,
+                ParseRefinementsDict,
+                maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
+                ct: ct).ConfigureAwait(false);
+
+            if (_errorLogger is not null)
+            {
+                var sceneNum = ToIntOrNull(plannedScene.GetValueOrDefault("scene_number"));
+                await _errorLogger.LogCoverageResultAsync(
+                    "shot_plan_refining_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
+                    requestedIds, retry, ct).ConfigureAwait(false);
+            }
+
+            if (retry.Result is not { Count: > 0 } refDict) return false;
+
+            foreach (var clip in clips)
+            {
+                var key = ToInt(clip.GetValueOrDefault("clip_number")).ToString();
+                if (refDict.TryGetValue(key, out var refTuple))
+                {
+                    clip["visual_prompt"] = refTuple.VisualPrompt;
+                    clip["veo_continuation_source"] = refTuple.Continuation;
+                }
+            }
+
+            _log.LogInformation("AI Shot Refiner applied dynamic camera framings to {Count} clips in scene {Scene}",
+                refDict.Count, plannedScene.GetValueOrDefault("scene_number"));
+            return true;
         }
         catch (Exception ex)
         {
@@ -124,6 +166,18 @@ public sealed class ShotPlanRefiningClassifier
             return false;
         }
     }
+
+    private static int? ToIntOrNull(object? val) => val switch
+    {
+        int i => i,
+        long l => (int)l,
+        double d => (int)d,
+        string s when int.TryParse(s, out var p) => p,
+        _ => null,
+    };
+
+    private static string? ResolveProvider(string? model) =>
+        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
 
     private static string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> clips)
     {
@@ -151,10 +205,12 @@ public sealed class ShotPlanRefiningClassifier
         return sb.ToString();
     }
 
-    private bool ApplyRefinements(
-        Dictionary<string, object?> scene,
-        List<Dictionary<string, object?>> clips,
-        string rawJson)
+    /// <summary>
+    /// Pure parse: clip_number (as string, for <see cref="AiRetryPolicy.CheckCoverage"/>) → refinement.
+    /// Applying the result to <c>clips</c> is the caller's job (<see cref="RefinePlannedSceneAsync"/>) —
+    /// keeping parse/apply separate lets a coverage retry re-parse without re-mutating already-applied clips.
+    /// </summary>
+    private Dictionary<string, (string VisualPrompt, string Continuation)>? ParseRefinementsDict(string rawJson)
     {
         try
         {
@@ -163,10 +219,10 @@ public sealed class ShotPlanRefiningClassifier
             if (!doc.RootElement.TryGetProperty("refinements", out var refArray) ||
                 refArray.ValueKind != JsonValueKind.Array)
             {
-                return false;
+                return null;
             }
 
-            var refDict = new Dictionary<int, (string VisualPrompt, string Continuation)>();
+            var refDict = new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase);
             foreach (var item in refArray.EnumerateArray())
             {
                 if (item.TryGetProperty("clip_number", out var cn) &&
@@ -179,31 +235,17 @@ public sealed class ShotPlanRefiningClassifier
                         : "none";
                     if (!string.IsNullOrWhiteSpace(prompt))
                     {
-                        refDict[num] = (prompt, cont);
+                        refDict[num.ToString()] = (prompt, cont);
                     }
                 }
             }
 
-            if (refDict.Count == 0) return false;
-
-            foreach (var clip in clips)
-            {
-                var cNum = ToInt(clip.GetValueOrDefault("clip_number"));
-                if (refDict.TryGetValue(cNum, out var refTuple))
-                {
-                    clip["visual_prompt"] = refTuple.VisualPrompt;
-                    clip["veo_continuation_source"] = refTuple.Continuation;
-                }
-            }
-
-            _log.LogInformation("AI Shot Refiner applied dynamic camera framings to {Count} clips in scene {Scene}",
-                refDict.Count, scene.GetValueOrDefault("scene_number"));
-            return true;
+            return refDict.Count > 0 ? refDict : null;
         }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "Failed to parse AI shot plan refiner response JSON: {RawJson}", rawJson);
-            return false;
+            return null;
         }
     }
 

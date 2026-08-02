@@ -1153,6 +1153,50 @@ public sealed class EngineApiClient
         public double MeanAbsoluteErrorSec { get; set; }
     }
 
+    public async Task<GenerationErrorsDto?> GetAdminGenerationErrorsAsync(
+        string? errorType = null,
+        string? projectId = null,
+        int take = 100,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var qs = new List<string> { $"take={take}" };
+        if (!string.IsNullOrWhiteSpace(errorType)) qs.Add($"errorType={Uri.EscapeDataString(errorType)}");
+        if (!string.IsNullOrWhiteSpace(projectId)) qs.Add($"projectId={Uri.EscapeDataString(projectId)}");
+        var url = "/api/admin/generation-errors?" + string.Join("&", qs);
+        return await _http.GetFromJsonAsync<GenerationErrorsDto>(url, JsonOpts, ct);
+    }
+
+    public sealed class GenerationErrorsDto
+    {
+        public bool Ok { get; set; }
+        public List<GenerationErrorRowDto>? Rows { get; set; }
+    }
+
+    public sealed class GenerationErrorRowDto
+    {
+        public long Id { get; set; }
+        public string Ts { get; set; } = "";
+        public string? UserId { get; set; }
+        public string? ProjectId { get; set; }
+        public string? JobId { get; set; }
+        public int? Scene { get; set; }
+        public int? Clip { get; set; }
+        public string Stage { get; set; } = "";
+        public string? Provider { get; set; }
+        public string? Model { get; set; }
+        public string ErrorType { get; set; } = "";
+        public string? ErrorMessage { get; set; }
+        public int? HttpStatus { get; set; }
+        public int? RequestedCount { get; set; }
+        public int? ReturnedCount { get; set; }
+        public string? MissingIdsJson { get; set; }
+        public int Attempt { get; set; }
+        public bool Resolved { get; set; }
+        public string? RequestSummary { get; set; }
+        public string? ResponseSummary { get; set; }
+    }
+
     public async Task<LocksDto?> GetLocksAsync(CancellationToken ct = default)
     {
         SyncIdentityHeaders();
