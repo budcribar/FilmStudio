@@ -1429,6 +1429,23 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return res?.Job;
     }
 
+    /// <summary>
+    /// Server-side batch TTS for re-voice. Progress over SignalR (kind <c>speak-batch</c>);
+    /// each finished line sets <see cref="JobSnapshot.ClientMediaUrl"/> for client media save.
+    /// </summary>
+    public async Task<JobSnapshot?> StartSpeakBatchAsync(
+        StartSpeakBatchRequest request,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync("/api/jobs/speak-batch", request, JsonOpts, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(raw) ?? $"{(int)resp.StatusCode}");
+        var res = JsonSerializer.Deserialize<GenBatchJobResponseDto>(raw, JsonOpts);
+        return res?.Job;
+    }
+
     private class GenBatchJobResponseDto
     {
         public bool Ok { get; set; }

@@ -2303,6 +2303,41 @@ app.MapPost("/api/jobs/gen-batch", async (
 });
 
 /// <summary>
+/// Batch TTS for re-voice (keys stay on server). Progress + per-line audio handoff over SignalR
+/// (<c>Kind = speak-batch</c>, <c>ClientMediaUrl</c> / <c>ClientRelativePath</c>).
+/// </summary>
+app.MapPost("/api/jobs/speak-batch", async (
+    StartSpeakBatchRequest body,
+    FilmJobService jobService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb) =>
+{
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        if (string.IsNullOrWhiteSpace(body.CharKey))
+            body.CharKey = "Character_Narrator";
+        var job = await jobService.StartSpeakBatchAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = job.Status == "queued"
+                ? "Queued speak-batch (waiting for lock/worker)"
+                : "Started speak-batch",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
+
+/// <summary>
 /// Cancel active jobs. Non-admin: caller's jobs only.
 /// Admin: same unless <c>?all=true</c> (cancel every user's jobs).
 /// Prefer <c>POST /api/jobs/{jobId}/cancel</c> when a specific id is known.
@@ -6009,6 +6044,10 @@ app.MapGet("/api/projects/{id}/media/file", async (
             ".json" => "application/json",
             ".png" => "image/png",
             ".jpg" or ".jpeg" => "image/jpeg",
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".m4a" => "audio/mp4",
+            ".webm" => "audio/webm",
             _ => "application/octet-stream"
         };
 

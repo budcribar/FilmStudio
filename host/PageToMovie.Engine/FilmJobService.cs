@@ -68,6 +68,8 @@ public sealed class FilmJobService
     private readonly SceneMusicScoringService _musicScoring;
     private readonly MusicSidecarService? _musicSidecars;
     private readonly GenerationErrorLogger? _errorLogger;
+    private readonly IVoiceClient _voiceClient;
+    private readonly IVoiceCloneClient _voiceClone;
 
     public FilmJobService(
         ProjectStore projects,
@@ -101,6 +103,8 @@ public sealed class FilmJobService
         IHttpClientFactory httpFactory,
         IAudioClient audio,
         SceneMusicScoringService musicScoring,
+        IVoiceClient voiceClient,
+        IVoiceCloneClient voiceClone,
         ClipSidecarService? sidecars = null,
         ClipDialogueVerificationService? dialogueVerification = null,
         GlobalTimingCalibrationService? timingCalibration = null,
@@ -140,6 +144,8 @@ public sealed class FilmJobService
         _keys = keys;
         _audio = audio;
         _musicScoring = musicScoring;
+        _voiceClient = voiceClient;
+        _voiceClone = voiceClone;
         _sidecars = sidecars;
         _dialogueVerification = dialogueVerification;
         _timingCalibration = timingCalibration;
@@ -754,6 +760,48 @@ public sealed class FilmJobService
             },
             lockResources: locks,
             lockReason: "batch scene gen",
+            failIfLocked: req.FailIfLocked);
+    }
+
+    /// <summary>
+    /// Batch TTS for re-voice: synthesize dialogue with the character's stored clone voice id.
+    /// Writes <c>assets/audio/revoice/scene_XX_clip_YY.*</c> and hands each file to the client via
+    /// <see cref="JobSnapshot.ClientMediaUrl"/> (SignalR). Provider keys stay on the server.
+    /// </summary>
+    public Task<JobSnapshot> StartSpeakBatchAsync(StartSpeakBatchRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.ProjectId) && string.IsNullOrWhiteSpace(_projects.ActiveProjectId))
+            throw new InvalidOperationException("projectId required");
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId.Trim();
+        var charKey = string.IsNullOrWhiteSpace(req.CharKey) ? "Character_Narrator" : req.CharKey.Trim();
+
+        // Locks: character seed (voice) + any scenes we know up front; full scene set may expand
+        // after blueprint load inside the runner.
+        var locks = new List<string> { LockKeys.Character(projectId, charKey) };
+        if (req.Clips is { Count: > 0 })
+        {
+            foreach (var sn in req.Clips.Select(c => c.Scene).Where(s => s > 0).Distinct())
+                locks.Add(LockKeys.Scene(projectId, sn));
+        }
+
+        var n = req.Clips?.Count ?? 0;
+        var queuedMsg = n > 0
+            ? $"Queued speak-batch ({n} clip(s)) for {charKey}…"
+            : $"Queued speak-batch (auto lines) for {charKey}…";
+
+        return StartBackgroundJobAsync(
+            ct => RunSpeakBatchAsync(req, projectId, charKey, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "speak-batch",
+                ProjectId = projectId,
+                CharKey = charKey,
+                Message = queuedMsg,
+            },
+            lockResources: locks,
+            lockReason: $"speak-batch {charKey}",
             failIfLocked: req.FailIfLocked);
     }
 
@@ -2206,6 +2254,453 @@ public sealed class FilmJobService
             await AppendLogAsync($"❌ YouTube upload exception: {errMessage}");
             await FinishAsync("error", errMessage, errMessage);
         }
+    }
+
+    private async Task RunSpeakBatchAsync(
+        StartSpeakBatchRequest req,
+        string projectId,
+        string charKey,
+        CancellationToken ct)
+    {
+        await _projects.RequireProjectAsync(projectId, ct).ConfigureAwait(false);
+
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "speak-batch",
+            ProjectId = projectId,
+            CharKey = charKey,
+            Message = "Speak-batch: building work list…",
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync().ConfigureAwait(false);
+
+        try
+        {
+            var voiceId = _projects.GetVoiceCloneProviderId(projectId, charKey);
+            if (string.IsNullOrWhiteSpace(voiceId))
+            {
+                await FinishAsync(
+                    "error",
+                    "No cloned voice on this character — record and apply a sample first.",
+                    "No cloned voice").ConfigureAwait(false);
+                return;
+            }
+
+            var seedProvider = _projects.GetVoiceProviderId(projectId, charKey) ?? "";
+            string? model = req.Model;
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfg.TryGetValue("voice_model_name", out var vm) && vm.ValueKind == JsonValueKind.String)
+                    model = vm.GetString();
+            }
+
+            SupportedModelEntry? entry = null;
+            if (!string.IsNullOrWhiteSpace(model))
+                entry = SupportedModelCatalog.Find(model, ModelCapability.Voice)
+                        ?? SupportedModelCatalog.Find(model);
+            if (entry is { IsVoiceCloneStep: true })
+            {
+                entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                    .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Enabled &&
+                        string.Equals(m.ProviderId, entry.ProviderId, StringComparison.OrdinalIgnoreCase));
+                model = entry?.Id;
+            }
+            if (entry is null)
+            {
+                entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                    .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Enabled &&
+                        (string.IsNullOrWhiteSpace(seedProvider) ||
+                         string.Equals(m.ProviderId, seedProvider, StringComparison.OrdinalIgnoreCase)));
+                model = entry?.Id ?? model;
+            }
+
+            var providerId = entry?.ProviderId
+                             ?? (string.IsNullOrWhiteSpace(seedProvider) ? null : seedProvider)
+                             ?? "unknown";
+            var useEleven = providerId.Equals("elevenlabs", StringComparison.OrdinalIgnoreCase)
+                            || entry?.Provider == ModelProviderFamily.ElevenLabs
+                            || voiceId.StartsWith("mock_", StringComparison.OrdinalIgnoreCase);
+
+            if (useEleven && !_voiceClient.IsConfigured && !voiceId.StartsWith("mock_", StringComparison.OrdinalIgnoreCase))
+            {
+                await FinishAsync("error", "ElevenLabs key is not configured.", "ElevenLabs not configured")
+                    .ConfigureAwait(false);
+                return;
+            }
+            if (!useEleven && !_voiceClone.IsConfigured)
+            {
+                await FinishAsync("error", "Voice provider (Fal) is not configured.", "Fal not configured")
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            var work = await BuildSpeakBatchWorkAsync(req, projectId, charKey, ct).ConfigureAwait(false);
+            if (work.Count == 0)
+            {
+                await AppendLogAsync("Speak-batch: nothing to synthesize (only_missing or no dialogue).")
+                    .ConfigureAwait(false);
+                await FinishAsync("done", "No lines to speak").ConfigureAwait(false);
+                return;
+            }
+
+            var maxParallel = Math.Clamp(req.MaxParallel <= 0 ? 3 : req.MaxParallel, 1, 8);
+            var maxLen = entry?.MaxPromptLength ?? 5000;
+
+            await UpdateAsync(s =>
+            {
+                s.Total = work.Count;
+                s.Index = 0;
+                s.Message = $"Speak-batch: {work.Count} line(s) · parallel {maxParallel} · {providerId}";
+            }).ConfigureAwait(false);
+            await AppendLogAsync(Snapshot.Message!).ConfigureAwait(false);
+
+            var done = 0;
+            var failed = 0;
+            var handoffGate = new SemaphoreSlim(1, 1);
+            var gate = new SemaphoreSlim(maxParallel, maxParallel);
+
+            async Task ProcessOneAsync(SpeakWorkItem item)
+            {
+                await gate.WaitAsync(ct).ConfigureAwait(false);
+                try
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var text = item.Text.Trim();
+                    if (text.Length == 0)
+                    {
+                        Interlocked.Increment(ref done);
+                        return;
+                    }
+                    if (text.Length > maxLen)
+                    {
+                        await handoffGate.WaitAsync(ct).ConfigureAwait(false);
+                        try
+                        {
+                            await AppendLogAsync(
+                                    $"  S{item.Scene:D2}C{item.Clip:D2}: text {text.Length} chars exceeds model limit {maxLen} — skip")
+                                .ConfigureAwait(false);
+                        }
+                        finally { handoffGate.Release(); }
+                        Interlocked.Increment(ref failed);
+                        Interlocked.Increment(ref done);
+                        return;
+                    }
+
+                    byte[]? audioBytes = null;
+                    string ext = ".mp3";
+                    string? err = null;
+
+                    if (useEleven)
+                    {
+                        var speakModelId = entry?.Id
+                                           ?? SupportedModelCatalog.Find("eleven_multilingual_v2", ModelCapability.Voice)?.Id
+                                           ?? model
+                                           ?? "eleven_multilingual_v2";
+                        var tts = await _voiceClient.TextToSpeechAsync(voiceId!, text, speakModelId, ct)
+                            .ConfigureAwait(false);
+                        if (!tts.Ok || tts.AudioBytes is not { Length: > 0 })
+                            err = tts.Error ?? "TTS failed";
+                        else
+                        {
+                            audioBytes = tts.AudioBytes;
+                            ext = tts.FileExtension ?? ".mp3";
+                        }
+
+                        if (_telemetry is not null)
+                        {
+                            var estimatedUsd = entry?.CostPerThousandCharsUsd is { } rate
+                                ? Math.Round(rate * text.Length / 1000.0, 4)
+                                : (double?)null;
+                            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+                            {
+                                ProjectId = projectId,
+                                Kind = "tts",
+                                Mode = "speak_batch",
+                                Model = speakModelId,
+                                Provider = providerId,
+                                CharKey = charKey,
+                                PromptChars = text.Length,
+                                EstimatedUsd = estimatedUsd,
+                                Ok = audioBytes is { Length: > 0 },
+                                Error = err,
+                            }, ct).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        var speakModelId = entry?.Id
+                                           ?? SupportedModelCatalog.Find("fal-ai/minimax/speech-02-hd", ModelCapability.Voice)?.Id
+                                           ?? model;
+                        var audioUrl = await _voiceClone.SynthesizeSpeechAsync(text, voiceId!, speakModelId, ct)
+                            .ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(audioUrl))
+                            err = "Speech synthesis failed";
+                        else
+                        {
+                            try
+                            {
+                                var http = _httpFactory.CreateClient();
+                                using var resp = await http.GetAsync(audioUrl, ct).ConfigureAwait(false);
+                                if (resp.IsSuccessStatusCode)
+                                {
+                                    audioBytes = await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+                                    var ctHeader = resp.Content.Headers.ContentType?.MediaType ?? "";
+                                    if (ctHeader.Contains("wav", StringComparison.OrdinalIgnoreCase))
+                                        ext = ".wav";
+                                    else if (ctHeader.Contains("mp4", StringComparison.OrdinalIgnoreCase) ||
+                                             ctHeader.Contains("m4a", StringComparison.OrdinalIgnoreCase))
+                                        ext = ".m4a";
+                                    else
+                                        ext = ".mp3";
+                                }
+                                else
+                                    err = $"Download TTS failed ({(int)resp.StatusCode})";
+                            }
+                            catch (Exception ex)
+                            {
+                                err = ex.Message;
+                            }
+                        }
+
+                        if (_telemetry is not null)
+                        {
+                            var estimatedUsd = entry?.CostPerThousandCharsUsd is { } rate
+                                ? Math.Round(rate * text.Length / 1000.0, 4)
+                                : (double?)null;
+                            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+                            {
+                                ProjectId = projectId,
+                                Kind = "tts",
+                                Mode = "speak_batch",
+                                Model = speakModelId,
+                                Provider = providerId,
+                                CharKey = charKey,
+                                PromptChars = text.Length,
+                                EstimatedUsd = estimatedUsd,
+                                Ok = audioBytes is { Length: > 0 },
+                                Error = err,
+                            }, ct).ConfigureAwait(false);
+                        }
+                    }
+
+                    if (audioBytes is not { Length: > 0 })
+                    {
+                        await handoffGate.WaitAsync(ct).ConfigureAwait(false);
+                        try
+                        {
+                            await AppendLogAsync(
+                                    $"  S{item.Scene:D2}C{item.Clip:D2}: fail — {err ?? "no audio"}")
+                                .ConfigureAwait(false);
+                        }
+                        finally { handoffGate.Release(); }
+                        Interlocked.Increment(ref failed);
+                        Interlocked.Increment(ref done);
+                        return;
+                    }
+
+                    var relPath = MediaRegistryService.RevoiceAudioRelativePath(item.Scene, item.Clip, ext);
+                    var projectDir = _projects.GetProjectDir(projectId);
+                    var absPath = Path.Combine(
+                        projectDir,
+                        relPath.Replace('/', Path.DirectorySeparatorChar));
+                    Directory.CreateDirectory(Path.GetDirectoryName(absPath)!);
+                    await File.WriteAllBytesAsync(absPath, audioBytes, ct).ConfigureAwait(false);
+
+                    // Ticket form used by GET /api/projects/{id}/media/file
+                    var ticket = _mediaProxy.Issue($"{projectId}:{relPath}", TimeSpan.FromMinutes(45));
+                    var clientUrl =
+                        $"/api/projects/{Uri.EscapeDataString(projectId)}/media/file" +
+                        $"?path={Uri.EscapeDataString(relPath)}&ticket={ticket}";
+
+                    await handoffGate.WaitAsync(ct).ConfigureAwait(false);
+                    try
+                    {
+                        var idx = Interlocked.Increment(ref done);
+                        await UpdateAsync(s =>
+                        {
+                            s.Index = idx;
+                            s.Scene = item.Scene;
+                            s.Clip = item.Clip;
+                            s.ClientMediaUrl = clientUrl;
+                            s.ClientRelativePath = relPath;
+                            s.Message = $"Speak-batch: S{item.Scene:D2} C{item.Clip} ({idx}/{work.Count})…";
+                        }).ConfigureAwait(false);
+                        await AppendLogAsync(
+                                $"  S{item.Scene:D2}C{item.Clip:D2}: ready → {relPath} ({audioBytes.Length / 1024} KB)")
+                            .ConfigureAwait(false);
+                    }
+                    finally { handoffGate.Release(); }
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    await handoffGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+                    try
+                    {
+                        await AppendLogAsync($"  S{item.Scene:D2}C{item.Clip:D2}: exception — {ex.Message}")
+                            .ConfigureAwait(false);
+                    }
+                    finally { handoffGate.Release(); }
+                    Interlocked.Increment(ref failed);
+                    Interlocked.Increment(ref done);
+                }
+                finally
+                {
+                    gate.Release();
+                }
+            }
+
+            var tasks = work.Select(ProcessOneAsync).ToArray();
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            if (failed == 0)
+                await FinishAsync("done", $"Speak-batch complete — {work.Count} line(s)").ConfigureAwait(false);
+            else if (failed >= work.Count)
+                await FinishAsync("error", $"Speak-batch failed — all {failed} line(s) failed", "all failed")
+                    .ConfigureAwait(false);
+            else
+                await FinishAsync(
+                        "partial",
+                        $"Speak-batch partial — {work.Count - failed} ok, {failed} failed")
+                    .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Speak-batch cancelled").ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Speak-batch failed for {ProjectId}", projectId);
+            await FinishAsync("error", ex.Message, ex.Message).ConfigureAwait(false);
+        }
+    }
+
+    private sealed class SpeakWorkItem
+    {
+        public int Scene { get; init; }
+        public int Clip { get; init; }
+        public string Text { get; init; } = "";
+    }
+
+    private async Task<List<SpeakWorkItem>> BuildSpeakBatchWorkAsync(
+        StartSpeakBatchRequest req,
+        string projectId,
+        string charKey,
+        CancellationToken ct)
+    {
+        var list = new List<SpeakWorkItem>();
+        var projectDir = _projects.GetProjectDir(projectId);
+
+        // Explicit clips: text override or pull from blueprint
+        if (req.Clips is { Count: > 0 })
+        {
+            using var bp = await _projects.LoadBlueprintAsync(projectId, ct).ConfigureAwait(false);
+            foreach (var c in req.Clips.OrderBy(x => x.Scene).ThenBy(x => x.Clip))
+            {
+                if (c.Scene <= 0 || c.Clip <= 0) continue;
+                var text = (c.Text ?? "").Trim();
+                if (text.Length == 0 && bp is not null)
+                    text = FindClipDialogue(bp.RootElement, c.Scene, c.Clip);
+                text = ClipVideoPromptBuilder.SanitizeSpokenDialogue(text);
+                if (text.Length == 0) continue;
+
+                var rel = MediaRegistryService.RevoiceAudioRelativePath(c.Scene, c.Clip);
+                if (req.OnlyMissing && File.Exists(Path.Combine(projectDir, rel.Replace('/', Path.DirectorySeparatorChar))))
+                    continue;
+
+                list.Add(new SpeakWorkItem { Scene = c.Scene, Clip = c.Clip, Text = text });
+            }
+            return list;
+        }
+
+        // Auto: all blueprint clips (optionally narrator-only)
+        using var blueprint = await _projects.LoadBlueprintAsync(projectId, ct).ConfigureAwait(false);
+        if (blueprint is null)
+            throw new InvalidOperationException(
+                $"No Stage 2 blueprint for project {projectId}. Run Stage 2 first.");
+
+        if (!blueprint.RootElement.TryGetProperty("scenes", out var scenesEl) ||
+            scenesEl.ValueKind != JsonValueKind.Array)
+            return list;
+
+        foreach (var s in scenesEl.EnumerateArray())
+        {
+            var sn = s.TryGetProperty("scene_number", out var snEl) && snEl.TryGetInt32(out var n) ? n : 0;
+            if (sn <= 0) continue;
+            if (!s.TryGetProperty("veo_clips", out var clipsEl) || clipsEl.ValueKind != JsonValueKind.Array)
+                continue;
+            foreach (var c in clipsEl.EnumerateArray())
+            {
+                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var cv) ? cv : 0;
+                if (cn <= 0) continue;
+
+                string? speaker = null;
+                var dialogue = "";
+                if (c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object)
+                {
+                    if (ap.TryGetProperty("dialogue", out var d))
+                        dialogue = d.GetString() ?? "";
+                    if (ap.TryGetProperty("speaker", out var sp))
+                        speaker = sp.GetString();
+                }
+                if (string.IsNullOrWhiteSpace(dialogue) && c.TryGetProperty("dialogue", out var rootD))
+                    dialogue = rootD.GetString() ?? "";
+                if (string.IsNullOrWhiteSpace(speaker) && c.TryGetProperty("speaker", out var rootSp))
+                    speaker = rootSp.GetString();
+
+                dialogue = ClipVideoPromptBuilder.SanitizeSpokenDialogue(dialogue);
+                if (string.IsNullOrWhiteSpace(dialogue)) continue;
+
+                if (req.NarratorOnly && !IsNarratorSpeaker(speaker, charKey))
+                    continue;
+
+                var rel = MediaRegistryService.RevoiceAudioRelativePath(sn, cn);
+                if (req.OnlyMissing &&
+                    File.Exists(Path.Combine(projectDir, rel.Replace('/', Path.DirectorySeparatorChar))))
+                    continue;
+
+                list.Add(new SpeakWorkItem { Scene = sn, Clip = cn, Text = dialogue });
+            }
+        }
+
+        return list.OrderBy(x => x.Scene).ThenBy(x => x.Clip).ToList();
+    }
+
+    private static bool IsNarratorSpeaker(string? speaker, string narratorKey)
+    {
+        if (string.IsNullOrWhiteSpace(speaker)) return false;
+        if (!string.IsNullOrWhiteSpace(narratorKey) &&
+            string.Equals(speaker.Trim(), narratorKey.Trim(), StringComparison.OrdinalIgnoreCase))
+            return true;
+        return speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FindClipDialogue(JsonElement root, int scene, int clip)
+    {
+        if (!root.TryGetProperty("scenes", out var scenes) || scenes.ValueKind != JsonValueKind.Array)
+            return "";
+        foreach (var s in scenes.EnumerateArray())
+        {
+            var sn = s.TryGetProperty("scene_number", out var snEl) && snEl.TryGetInt32(out var n) ? n : 0;
+            if (sn != scene) continue;
+            if (!s.TryGetProperty("veo_clips", out var clips) || clips.ValueKind != JsonValueKind.Array)
+                return "";
+            foreach (var c in clips.EnumerateArray())
+            {
+                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var cv) ? cv : 0;
+                if (cn != clip) continue;
+                if (c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
+                    ap.TryGetProperty("dialogue", out var d))
+                    return d.GetString() ?? "";
+                if (c.TryGetProperty("dialogue", out var rootD))
+                    return rootD.GetString() ?? "";
+            }
+        }
+        return "";
     }
 
     private async Task RunBatchGenAsync(StartBatchGenRequest req, string projectId, CancellationToken ct)

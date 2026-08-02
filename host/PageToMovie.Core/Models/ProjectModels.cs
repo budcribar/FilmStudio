@@ -224,6 +224,44 @@ public sealed class StartBatchGenRequest
     public bool FailIfLocked { get; set; }
 }
 
+/// <summary>
+/// Server-side batch TTS for re-voice: synthesize each clip's dialogue with a stored clone voice id.
+/// Audio is written under the project and handed to the client via <see cref="JobSnapshot.ClientMediaUrl"/>
+/// (same mid-batch pattern as video/music). Keys never leave the server.
+/// </summary>
+public sealed class StartSpeakBatchRequest
+{
+    public string ProjectId { get; set; } = "";
+    /// <summary>Character seed that owns the clone (e.g. Character_Narrator).</summary>
+    public string CharKey { get; set; } = "Character_Narrator";
+    /// <summary>
+    /// Explicit (scene, clip[, text]) targets. When empty, the job loads the blueprint and selects
+    /// clips automatically (see <see cref="NarratorOnly"/>).
+    /// </summary>
+    public List<SpeakBatchClip>? Clips { get; set; }
+    /// <summary>
+    /// When <see cref="Clips"/> is empty: only clips whose speaker is the narrator (default true).
+    /// When false, every clip with non-empty dialogue is spoken with <see cref="CharKey"/>'s voice.
+    /// </summary>
+    public bool NarratorOnly { get; set; } = true;
+    /// <summary>Skip clips that already have revoice audio on the server project disk.</summary>
+    public bool OnlyMissing { get; set; } = true;
+    /// <summary>Max concurrent TTS provider calls (clamped 1–8). Default 3.</summary>
+    public int MaxParallel { get; set; } = 3;
+    /// <summary>Optional catalog speak-model id override; empty uses project voice_model_name / seed provider.</summary>
+    public string? Model { get; set; }
+    public bool FailIfLocked { get; set; }
+}
+
+/// <summary>One line to synthesize in a speak-batch job.</summary>
+public sealed class SpeakBatchClip
+{
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+    /// <summary>Dialogue text. When empty, the job reads dialogue from the Stage 2 blueprint.</summary>
+    public string? Text { get; set; }
+}
+
 /// <summary>One explicit clip target for a multi-select clip regen batch.</summary>
 public sealed class ClipTarget
 {
