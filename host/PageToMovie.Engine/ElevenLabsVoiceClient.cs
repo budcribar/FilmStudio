@@ -92,7 +92,7 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
             if (!resp.IsSuccessStatusCode)
             {
                 _log.LogWarning("ElevenLabs clone failed {Status}: {Body}", (int)resp.StatusCode, Trunc(body));
-                return new VoiceCloneResult { Ok = false, Error = $"ElevenLabs clone failed ({(int)resp.StatusCode}): {Trunc(body)}" };
+                return new VoiceCloneResult { Ok = false, Error = FormatCloneError((int)resp.StatusCode, body) };
             }
 
             using var doc = JsonDocument.Parse(body);
@@ -251,6 +251,52 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
             _log.LogError(ex, "ElevenLabs list voices exception");
             return Array.Empty<VoiceCatalogEntry>();
         }
+    }
+
+
+    /// <summary>Map provider JSON into a short, operator-facing message (no raw payload dump).</summary>
+    public static string FormatCloneError(int status, string body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("detail", out var detail))
+            {
+                var statusCode = detail.ValueKind == JsonValueKind.Object && detail.TryGetProperty("status", out var st)
+                    ? st.GetString()
+                    : null;
+                var msg = detail.ValueKind == JsonValueKind.Object && detail.TryGetProperty("message", out var m)
+                    ? m.GetString()
+                    : detail.ValueKind == JsonValueKind.String ? detail.GetString() : null;
+                var code = detail.ValueKind == JsonValueKind.Object && detail.TryGetProperty("code", out var c)
+                    ? c.GetString()
+                    : null;
+
+                if (string.Equals(statusCode, "missing_permissions", StringComparison.OrdinalIgnoreCase)
+                    || (msg?.Contains("create_instant_voice_clone", StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (msg?.Contains("instant_voice_clone", StringComparison.OrdinalIgnoreCase) ?? false))
+                {
+                    return "This ElevenLabs key cannot create Instant Voice Clones. "
+                           + "In ElevenLabs: use a key/plan with Instant Voice Cloning enabled, "
+                           + "or in Settings switch Voice to Fal MiniMax (needs a Fal key). "
+                           + "Your recording is saved — fix the key and apply again.";
+                }
+                if (status == 401 || string.Equals(statusCode, "authentication_error", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(code, "unauthorized", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "ElevenLabs rejected this API key (unauthorized). "
+                           + "Check the key in Settings, or switch Voice to another provider.";
+                }
+                if (!string.IsNullOrWhiteSpace(msg))
+                    return "ElevenLabs: " + msg.Trim();
+            }
+        }
+        catch
+        {
+            // fall through
+        }
+        return $"ElevenLabs clone failed ({status}). Check the key and Instant Voice Cloning permission in Settings.";
     }
 
     private static string GuessAudioMime(string fileName) =>

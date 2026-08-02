@@ -96,7 +96,75 @@ public sealed class VoiceCloneApplyService
             "Apply voice {Project}/{Char} via {Provider} model={Model}",
             projectId, charKey, strategy.ProviderId, cloneModel?.Id ?? "(default)");
 
-        return await strategy.ApplyAsync(ctx, ct).ConfigureAwait(false);
+        var result = await strategy.ApplyAsync(ctx, ct).ConfigureAwait(false);
+        if (result.Ok)
+            return result;
+
+        // Permission / plan failure on one provider → try another configured strategy (e.g. EL → Fal).
+        if (LooksLikeProviderCapabilityFailure(result.Error))
+        {
+            foreach (var alt in _strategies)
+            {
+                if (ReferenceEquals(alt, strategy) || !alt.IsConfigured)
+                    continue;
+                _log.LogWarning(
+                    "Voice apply via {Failed} failed ({Error}); retrying with {Alt}",
+                    strategy.ProviderId, result.Error, alt.ProviderId);
+                var altClone = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                    .FirstOrDefault(m => m.IsVoiceCloneStep &&
+                        (m.ProviderId.Equals(alt.ProviderId, StringComparison.OrdinalIgnoreCase)
+                         || (alt.ProviderId == "fal" && m.Provider == ModelProviderFamily.Fal)
+                         || (alt.ProviderId == "elevenlabs" && m.Provider == ModelProviderFamily.ElevenLabs)));
+                var altSpeak = altClone is null
+                    ? null
+                    : SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                        .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Provider == altClone.Provider);
+                var altCtx = new VoiceApplyContext
+                {
+                    ProjectId = projectId,
+                    CharKey = charKey,
+                    DisplayName = display,
+                    SamplePath = samplePath,
+                    CloneModel = altClone,
+                    SpeakModel = altSpeak,
+                    PreviewText = previewText,
+                    VoiceLabel = voiceLabel,
+                };
+                var retry = await alt.ApplyAsync(altCtx, ct).ConfigureAwait(false);
+                if (retry.Ok)
+                {
+                    return new VoiceApplyResult
+                    {
+                        Ok = true,
+                        ProviderId = retry.ProviderId,
+                        ProviderVoiceId = retry.ProviderVoiceId,
+                        ModelId = retry.ModelId,
+                        UsedMock = retry.UsedMock,
+                        PreviewRelativePath = retry.PreviewRelativePath,
+                        PreviewUrl = retry.PreviewUrl,
+                        VoiceLabel = retry.VoiceLabel,
+                        EstimatedCloneUsd = retry.EstimatedCloneUsd,
+                        Message = (retry.Message ?? "Voice applied.")
+                                  + $" (Used {alt.ProviderId} after {strategy.ProviderId} could not clone.)",
+                    };
+                }
+                // Prefer the friendlier / more recent error
+                result = retry;
+            }
+        }
+
+        return result;
+    }
+
+    private static bool LooksLikeProviderCapabilityFailure(string? error)
+    {
+        if (string.IsNullOrWhiteSpace(error)) return false;
+        return error.Contains("Instant Voice Clone", StringComparison.OrdinalIgnoreCase)
+               || error.Contains("create_instant_voice_clone", StringComparison.OrdinalIgnoreCase)
+               || error.Contains("missing_permissions", StringComparison.OrdinalIgnoreCase)
+               || error.Contains("unauthorized", StringComparison.OrdinalIgnoreCase)
+               || error.Contains("FAL_API_KEY", StringComparison.OrdinalIgnoreCase)
+               || error.Contains("not configured", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Attach a catalog/premade ElevenLabs voice id (no sample clone).</summary>

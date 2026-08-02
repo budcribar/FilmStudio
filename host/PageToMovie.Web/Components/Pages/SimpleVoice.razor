@@ -213,7 +213,16 @@ else
 
                 @if (!string.IsNullOrEmpty(_hint))
                 {
-                    <div class="form-text">@_hint</div>
+                    <div class="form-text" data-testid="simple-voice-hint">@_hint</div>
+                }
+                @if (_hasSample && !_applied && !_busy)
+                {
+                    <div class="alert alert-warning py-2 small mt-2 mb-0" data-testid="simple-voice-apply-fix">
+                        Sample is saved on this project. Voice apply needs a provider that can clone.
+                        <a href="configuration?focus=voice#models" class="alert-link">Open Settings → Voice</a>
+                        · then
+                        <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="RetryApplyAsync">try apply again</button>
+                    </div>
                 }
                 @if (!string.IsNullOrEmpty(_samplePlayUrl))
                 {
@@ -618,12 +627,14 @@ private async Task StartMicAsync()
             var apply = await Engine.ApplyVoiceCloneAsync(_projectId, _narratorKey);
             if (!apply.Ok)
             {
-                _hint = "Sample saved. " + (apply.Error ?? "Apply failed — you can still try Make my movie after fixing your voice key in Settings.");
                 _applied = false;
+                _hint = "Sample saved. " + FriendlyApplyError(apply.Error);
+                _message = "Open Settings → Voice (Instant Voice Cloning on ElevenLabs, or Fal MiniMax), then try apply again.";
                 return;
             }
             _applied = true;
             _phase = Phase.Done;
+            _error = null;
             _hint = apply.UsedMock
                 ? "Demo voice applied. You can make the movie."
                 : "Voice applied. You can make the movie.";
@@ -631,8 +642,41 @@ private async Task StartMicAsync()
         }
         catch (Exception ex)
         {
-            _hint = "Sample saved. Apply failed: " + ex.Message;
+            _hint = "Sample saved. " + FriendlyApplyError(ex.Message);
             _applied = false;
+        }
+    }
+
+    private async Task RetryApplyAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId) || !_hasSample) return;
+        _busy = true;
+        _error = null;
+        _hint = "Applying voice…";
+        try
+        {
+            var apply = await Engine.ApplyVoiceCloneAsync(_projectId, _narratorKey);
+            if (!apply.Ok)
+            {
+                _hint = FriendlyApplyError(apply.Error);
+                _applied = false;
+                return;
+            }
+            _applied = true;
+            _phase = Phase.Done;
+            _message = null;
+            _hint = apply.UsedMock
+                ? "Demo voice applied. You can make the movie."
+                : "Voice applied. You can make the movie.";
+        }
+        catch (Exception ex)
+        {
+            _hint = FriendlyApplyError(ex.Message);
+            _applied = false;
+        }
+        finally
+        {
+            _busy = false;
         }
     }
 
@@ -706,6 +750,20 @@ private async Task StartMicAsync()
         {
             try { await Js.InvokeVoidAsync("PageToMovieVoiceCapture.cancel"); } catch { }
         }
+    }
+
+    private static string FriendlyApplyError(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "Apply failed.";
+        if (raw.Contains("create_instant_voice_clone", StringComparison.OrdinalIgnoreCase)
+            || raw.Contains("Instant Voice Clone", StringComparison.OrdinalIgnoreCase)
+            || raw.Contains("missing_permissions", StringComparison.OrdinalIgnoreCase))
+        {
+            return "This ElevenLabs key cannot create Instant Voice Clones. "
+                   + "Enable that permission on the key, upgrade the plan, or switch Voice to Fal MiniMax in Settings. "
+                   + "Your recording is still saved.";
+        }
+        return raw;
     }
 
     private sealed class VoiceCaptureStartResult

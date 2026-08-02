@@ -398,3 +398,19 @@ public class VoiceApplyStrategyExamplesTests : IDisposable
         public HttpClient CreateClient(string name) => new();
     }
 }
+
+public class ElevenLabsErrorFormattingTests
+{
+    [Fact]
+    public void FormatCloneError_missing_instant_clone_permission_is_actionable()
+    {
+        var body =
+            "{\"detail\":{\"type\":\"authentication_error\",\"code\":\"unauthorized\"," +
+            "\"message\":\"The API key you used is missing the permission create_instant_voice_clone to execute this operation.\"," +
+            "\"status\":\"missing_permissions\",\"request_id\":\"abc\"}}";
+        var msg = ElevenLabsVoiceClient.FormatCloneError(401, body);
+        Assert.Contains("Instant Voice Clone", msg, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("request_id", msg, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Fal", msg, StringComparison.OrdinalIgnoreCase);
+    }
+}
