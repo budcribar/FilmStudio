@@ -18,7 +18,7 @@
         </a>
     }
 
-    @if (SimpleMode)
+    @if (UseSimple)
     {
         <a class="ptm-step @(Active == "book" ? "is-active" : "") @(BookLocked ? "is-disabled" : "")"
            href="@(BookLocked ? "javascript:void(0)" : "adaptation")"
@@ -32,7 +32,7 @@
             </span>
         </a>
         <a class="ptm-step @(Active == "cast" ? "is-active" : "") @(!ActiveProject.CanCharacters && Active != "cast" ? "is-disabled" : "")"
-           href="@(ActiveProject.CanCharacters || Active == "cast" ? "characters?simple=1&focus=narrator" : "javascript:void(0)")"
+           href="@(ActiveProject.CanCharacters || Active == "cast" ? "characters?focus=narrator" : "javascript:void(0)")"
            title="@(ActiveProject.CanCharacters ? "Record your narrator voice" : ActiveProject.CharactersBlockedReason)"
            data-testid="studio-step-cast"
            @onclick:preventDefault="@(!ActiveProject.CanCharacters && Active != "cast")">
@@ -128,7 +128,10 @@
     /// <summary>setup | book | cast | estimate | film | review</summary>
     [Parameter] public string Active { get; set; } = "book";
 
-    /// <summary>Bait path: library book + narrator voice only.</summary>
+    /// <summary>
+    /// Bait path: library book + narrator voice only.
+    /// When null/false and not forced, falls back to ActiveProject.IsSimpleVoice.
+    /// </summary>
     [Parameter] public bool SimpleMode { get; set; }
 
     /// <summary>Step 0 only while personal studio keys are missing (BYOK).</summary>
@@ -136,4 +139,6 @@
         ActiveProject.Status is { XaiConfigured: false };
 
     private bool BookLocked => NeedsSetup && Active != "book";
+
+    private bool UseSimple => SimpleMode || ActiveProject.IsSimpleVoice;
 }

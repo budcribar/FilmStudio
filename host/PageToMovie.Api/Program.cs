@@ -2077,7 +2077,8 @@ app.MapPost("/api/projects", async (
     {
         var name = body?.Name ?? body?.Id ?? body?.Title ?? "";
         var title = body?.Title;
-        var p = await store.CreateProjectAsync(name, title, ct, ownerUserId: user.UserId);
+        var p = await store.CreateProjectAsync(
+            name, title, ct, ownerUserId: user.UserId, studioPath: body?.StudioPath);
         var list = await store.ListProjectsAsync(ct);
         return Results.Ok(new
         {
@@ -3382,6 +3383,30 @@ app.MapPost("/api/projects/{id}/visibility", async (
 
     var proj = await store.SetProjectVisibilityModeAsync(id, req.VisibilityMode, ct);
     return Results.Ok(new { ok = true, projectId = proj.Id, visibilityMode = proj.VisibilityMode });
+});
+
+
+/// <summary>Persist product path: full | simple-voice (library book + narrator voice).</summary>
+app.MapPost("/api/projects/{id}/studio-path", async (
+    string id,
+    SetStudioPathRequest? body,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+    {
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can change studio path." },
+            statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    var proj = await store.SetProjectStudioPathAsync(id, body?.StudioPath, ct);
+    return Results.Ok(new { ok = true, projectId = proj.Id, studioPath = proj.StudioPath });
 });
 
 app.MapPost("/api/projects/{id}/rename", async (

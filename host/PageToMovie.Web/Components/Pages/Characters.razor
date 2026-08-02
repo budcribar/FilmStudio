@@ -37,13 +37,13 @@
         Pick the narrator (or lead), record the script below, then go to
         <a href="cost" class="alert-link">Estimate</a> or
         <a href="scenes" class="alert-link">Film</a>.
-        <a href="characters" class="alert-link ms-1">Exit simple → full cast</a>
+        <button type="button" class="btn btn-link btn-sm p-0 align-baseline alert-link" @onclick="ExitSimplePathAsync">Exit simple → full cast</button>
         ·
         <a href="simple-voice" class="alert-link">Library books</a>
     </div>
 }
 
-<StudioProcessStrip Active="cast" SimpleMode="@_simpleMode" />
+<StudioProcessStrip Active="cast" SimpleMode="@(_simpleMode || ActiveProject.IsSimpleVoice)" />
 
 @if (_gateChecked && !ActiveProject.CanCharacters)
 {
@@ -2318,25 +2318,47 @@ else
 
     private void ApplySimpleModeFromUri()
     {
+        var querySimple = false;
         try
         {
             var uri = Nav.ToAbsoluteUri(Nav.Uri);
             var q = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-            _simpleMode = q.TryGetValue("simple", out var sVals) &&
+            querySimple = q.TryGetValue("simple", out var sVals) &&
                           sVals.Any(v => v is "1" or "true" or "yes");
             if (q.TryGetValue("focus", out var fVals))
                 _focusHint = fVals.FirstOrDefault();
         }
         catch
         {
-            _simpleMode = false;
+            /* ignore */
         }
+
+        // project.json studioPath is source of truth; ?simple=1 still works as override entry
+        _simpleMode = ActiveProject.IsSimpleVoice || querySimple;
 
         _useKidsScript = _simpleMode ||
             VoiceCloneScripts.LooksLikeChildrensStory(
                 ActiveProject.Label,
                 genre: null,
                 projectId: _projectId);
+    }
+
+    private async Task ExitSimplePathAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId)) return;
+        try
+        {
+            await Engine.SetStudioPathAsync(_projectId, ProjectStudioPaths.Full);
+            ActiveProject.SetStudioPathLocal(ProjectStudioPaths.Full);
+            _simpleMode = false;
+            _useKidsScript = VoiceCloneScripts.LooksLikeChildrensStory(
+                ActiveProject.Label, null, _projectId);
+            Nav.NavigateTo("characters", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
     }
 
     private void FocusNarratorIfNeeded()

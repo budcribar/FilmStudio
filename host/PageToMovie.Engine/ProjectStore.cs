@@ -1050,6 +1050,7 @@ public sealed class ProjectStore
         string? ownerUserId = null;
         string? parentProjectId = null;
         string? visibilityMode = null;
+        string? studioPath = null;
         string? metaId = null;
         try
         {
@@ -1073,6 +1074,9 @@ public sealed class ProjectStore
                 else if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
                          string.Equals(p.Name, "owner_user_id", StringComparison.OrdinalIgnoreCase))
                     ownerUserId = p.Value.GetString();
+                else if (string.Equals(p.Name, "studioPath", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(p.Name, "studio_path", StringComparison.OrdinalIgnoreCase))
+                    studioPath = p.Value.GetString();
             }
         }
         catch
@@ -1097,6 +1101,7 @@ public sealed class ProjectStore
             OwnerUserId = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim(),
             ParentProjectId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim(),
             VisibilityMode = string.IsNullOrWhiteSpace(visibilityMode) ? "Private" : visibilityMode.Trim(),
+            StudioPath = ProjectStudioPaths.Normalize(studioPath),
         };
     }
 
@@ -1147,7 +1152,8 @@ public sealed class ProjectStore
         string idOrTitle,
         string? title = null,
         CancellationToken ct = default,
-        string? ownerUserId = null)
+        string? ownerUserId = null,
+        string? studioPath = null)
     {
         var raw = (idOrTitle ?? "").Trim();
         if (raw.Length == 0)
@@ -1207,6 +1213,7 @@ public sealed class ProjectStore
             ["description"] = "",
             ["ownerUserId"] = string.IsNullOrWhiteSpace(ownerUserId) ? owner : ownerUserId.Trim(),
             ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"),
+            ["studioPath"] = ProjectStudioPaths.Normalize(studioPath),
             // Format version for export/import converters (ProjectMigrationService).
             ["schema_version"] = ProjectFormatVersions.ProjectSchemaVersion,
         };
@@ -1415,6 +1422,49 @@ public sealed class ProjectStore
         await File.WriteAllTextAsync(metaPath, updatedJson, ct).ConfigureAwait(false);
 
         proj.VisibilityMode = mode;
+        InvalidateReadCaches(null);
+        return proj;
+    }
+
+    /// <summary>
+    /// Persist product path (full vs simple-voice) on project.json.
+    /// </summary>
+    public async Task<ProjectInfo> SetProjectStudioPathAsync(
+        string projectId,
+        string? studioPath,
+        CancellationToken ct = default)
+    {
+        var path = ProjectStudioPaths.Normalize(studioPath);
+        var proj = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
+        var metaPath = Path.Combine(proj.Path, "project.json");
+        Dictionary<string, object?> meta;
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
+                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
+                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        else
+        {
+            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        meta["studioPath"] = path;
+        meta["id"] = proj.Id;
+        if (!string.IsNullOrWhiteSpace(proj.Title)) meta["title"] = proj.Title;
+        if (!string.IsNullOrWhiteSpace(proj.OwnerUserId)) meta["ownerUserId"] = proj.OwnerUserId;
+        if (!string.IsNullOrWhiteSpace(proj.ParentProjectId)) meta["parentProjectId"] = proj.ParentProjectId;
+        if (!string.IsNullOrWhiteSpace(proj.VisibilityMode)) meta["visibilityMode"] = proj.VisibilityMode;
+
+        await File.WriteAllTextAsync(metaPath, JsonSerializer.Serialize(meta, JsonOpts) + "\n", ct).ConfigureAwait(false);
+        proj.StudioPath = path;
         InvalidateReadCaches(null);
         return proj;
     }

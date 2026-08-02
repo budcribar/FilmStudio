@@ -1185,14 +1185,33 @@ public sealed class EngineApiClient
     public async Task<ProjectsDto?> CreateProjectAsync(
         string name,
         string? title = null,
+        string? studioPath = null,
         CancellationToken ct = default)
     {
         SyncIdentityHeaders();
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/projects")
         {
-            Content = JsonContent.Create(new { name, title }, options: JsonOpts)
+            Content = JsonContent.Create(new { name, title, studioPath }, options: JsonOpts)
         };
         return await SendJsonAsync<ProjectsDto>(req, ct);
+    }
+
+    public async Task SetStudioPathAsync(
+        string projectId,
+        string studioPath,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/studio-path",
+            new SetStudioPathRequest { StudioPath = studioPath },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Studio path update failed");
+        }
     }
 
     

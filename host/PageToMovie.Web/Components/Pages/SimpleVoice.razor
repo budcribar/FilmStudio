@@ -108,7 +108,7 @@ else
                             @(_busy ? "Opening…" : "Open narrator voice capture →")
                         </button>
                         <a class="btn btn-outline-secondary btn-sm"
-                           href="characters?simple=1&focus=narrator"
+                           href="characters?focus=narrator"
                            data-testid="simple-voice-characters">
                             Current project · narrator voice
                         </a>
@@ -204,7 +204,8 @@ else
                 var name = book.Id == "new-kids"
                     ? $"My story {DateTime.Now:MMdd-HHmm}"
                     : $"{book.Title} · my voice";
-                var result = await Engine.CreateProjectAsync(name, title: name);
+                var result = await Engine.CreateProjectAsync(
+                    name, title: name, studioPath: ProjectStudioPaths.SimpleVoice);
                 projects = result ?? await Engine.GetProjectsAsync();
                 var created = projects?.Active;
                 projectId = created?.Id;
@@ -221,9 +222,19 @@ else
                 label = a?.Label ?? a?.Title ?? label ?? projectId;
             }
 
-            ActiveProject.Set(projectId, label);
+            // Persist simple-voice path (query string is optional fallback only)
+            try
+            {
+                await Engine.SetStudioPathAsync(projectId, ProjectStudioPaths.SimpleVoice);
+            }
+            catch
+            {
+                // Non-fatal if older API; still set local state
+            }
+
+            ActiveProject.Set(projectId, label, studioPath: ProjectStudioPaths.SimpleVoice);
             await ActiveProject.RefreshReadinessAsync(Engine);
-            Nav.NavigateTo("characters?simple=1&focus=narrator");
+            Nav.NavigateTo("characters?focus=narrator");
         }
         catch (Exception ex)
         {

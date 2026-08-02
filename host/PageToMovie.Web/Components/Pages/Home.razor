@@ -843,7 +843,7 @@ else
             var created = _projects?.Active;
             if (created?.Id is { Length: > 0 } cid)
             {
-                ActiveProject.Set(cid, created.Label ?? created.Title ?? cid);
+                ActiveProject.Set(cid, created.Label ?? created.Title ?? cid, created.ParentProjectId, created.StudioPath);
                 await ActiveProject.RefreshReadinessAsync(Engine);
             await RefreshProjectCostAsync();
             }
@@ -873,8 +873,9 @@ else
         {
             await Engine.ActivateProjectAsync(id);
             _projects = await Engine.GetProjectsAsync();
-            var a = _projects?.Active;
-            ActiveProject.Set(id, a?.Label ?? a?.Title ?? id);
+            var a = _projects?.Active ?? _projects?.Projects.FirstOrDefault(p =>
+                string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+            ActiveProject.Set(id, a?.Label ?? a?.Title ?? id, a?.ParentProjectId, a?.StudioPath);
             await ActiveProject.RefreshReadinessAsync(Engine);
             await RefreshProjectCostAsync();
         }

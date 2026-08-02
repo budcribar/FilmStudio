@@ -17,6 +17,26 @@ public sealed class ProjectInfo
     /// Git-aligned visibility mode: "Private" (owner/collaborators only), "Public" (Read-Only / listed on gallery), or "Open" (Public Forkable). Default: "Private".
     /// </summary>
     public string VisibilityMode { get; set; } = "Private";
+    /// <summary>
+    /// Product path: "full" (cast/faces/estimate) or "simple-voice" (library book + narrator re-voice).
+    /// Stored in project.json as studioPath.
+    /// </summary>
+    public string StudioPath { get; set; } = ProjectStudioPaths.Full;
+}
+
+/// <summary>Known values for <see cref="ProjectInfo.StudioPath"/>.</summary>
+public static class ProjectStudioPaths
+{
+    public const string Full = "full";
+    public const string SimpleVoice = "simple-voice";
+
+    public static string Normalize(string? value) =>
+        string.Equals(value?.Trim(), SimpleVoice, StringComparison.OrdinalIgnoreCase)
+            ? SimpleVoice
+            : Full;
+
+    public static bool IsSimpleVoice(string? value) =>
+        string.Equals(Normalize(value), SimpleVoice, StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class WorkspaceState
@@ -400,6 +420,14 @@ public sealed class CreateProjectRequest
     public string? Name { get; set; }
     public string? Id { get; set; }
     public string? Title { get; set; }
+    /// <summary>optional: full | simple-voice</summary>
+    public string? StudioPath { get; set; }
+}
+
+public sealed class SetStudioPathRequest
+{
+    /// <summary>full | simple-voice</summary>
+    public string? StudioPath { get; set; }
 }
 
 public sealed class LockCharacterRequest
