@@ -50,267 +50,266 @@
 {
     <div class="alert alert-success mb-3">@_message</div>
 }
-    <!-- ACCOUNT & API KEYS (ALWAYS ACCESSIBLE AT TOP) -->
-    <div class="card mb-4 border-secondary shadow-sm">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>🔑 Account &amp; API keys (Global Services)</span>
-            <div class="d-flex flex-wrap gap-1">
-                @foreach (var p in ProviderRows)
-                {
-                    @if (p.IsConfigured)
-                    {
-                        <span class="badge bg-success">@p.DisplayName: @(p.ActiveSource == "personal" ? "personal" : "server")</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">@p.DisplayName: none</span>
-                    }
-                }
-            </div>
+    <!-- STUDIO COVERAGE FIRST: change model, add/remove key just-in-time -->
+    <div class="card mb-4 border-primary border-opacity-50 shadow-sm" id="api-keys" data-testid="studio-coverage-card">
+        <div class="card-header bg-dark text-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>Studio coverage</span>
+            @{
+                var cov = BuildCoverageRows();
+                var needed = cov.Count(c => c.Required && !c.OptionalOff);
+                var ready = cov.Count(c => c.Required && !c.OptionalOff && c.KeyReady);
+                var missing = cov.Where(c => c.Required && !c.OptionalOff && !c.KeyReady).ToList();
+            }
+            @if (missing.Count == 0)
+            {
+                <span class="badge text-bg-success">@ready/@needed required ready</span>
+            }
+            else
+            {
+                <span class="badge text-bg-warning text-dark">@missing.Count missing · @ready/@needed ready</span>
+            }
         </div>
         <div class="card-body">
             <p class="small text-muted mb-3">
-                <strong>Bring your own key</strong> per provider (encrypted at rest).
-                Keys unlock providers; the <strong>Models</strong> section below picks which provider wins for each stage.
-                See <em>Studio coverage</em> for what’s still missing.
+                Pick the model for each studio job. Keys appear only when you need them —
+                change model, add a key for that provider, or remove a key you no longer use.
             </p>
-
-            @if (ProviderRows.Count == 0)
-            {
-                <div class="alert alert-warning py-2">
-                    No providers listed from the models catalog. Check that <code>models_catalog.json</code> loads, then reload this page.
-                </div>
-            }
-
-            <div class="row g-3" id="api-keys">
-                @foreach (var p in ProviderRows)
-                {
-                    <div class="col-lg-4" data-testid="provider-key-@p.ProviderId">
-                        <div class="border rounded p-3 h-100">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <div class="fw-semibold">@p.DisplayName</div>
-                                    @{
-                                        var usedFor = CoverageUsesForProvider(p.ProviderId);
-                                    }
-                                    @if (usedFor.Count > 0)
-                                    {
-                                        <div class="small text-success">In use: @string.Join(" · ", usedFor)</div>
-                                    }
-                                    else if (p.IsConfigured)
-                                    {
-                                        <div class="small text-muted">Key saved · not selected for any stage</div>
-                                    }
-                                </div>
-                                @if (p.IsConfigured && usedFor.Count > 0)
-                                {
-                                    <span class="badge bg-success">In use</span>
-                                }
-                                else if (p.IsConfigured)
-                                {
-                                    <span class="badge bg-secondary">Idle</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-warning text-dark">Not set</span>
-                                }
-                            </div>
-
-                            <div class="mb-2 d-flex flex-wrap gap-1">
-                                @if (p.SupportsVideoGen || (p.SupportsVideo && !p.SupportsVideoReview))
-                                {
-                                    <span class="badge text-bg-primary">Video Gen (Output)</span>
-                                }
-                                @if (p.SupportsVideoReview)
-                                {
-                                    <span class="badge text-bg-info text-dark fw-bold">Video Review (Multimodal Input)</span>
-                                }
-                                @if (p.SupportsImageGen || p.SupportsImage)
-                                {
-                                    <span class="badge text-bg-primary">Image Gen (Output)</span>
-                                }
-                                @if (p.SupportsScriptPlanning || p.SupportsChat)
-                                {
-                                    <span class="badge text-bg-secondary">Script &amp; Planning</span>
-                                }
-                                @if (p.SupportsImageVision || p.SupportsVision)
-                                {
-                                    <span class="badge text-bg-secondary">Image Vision / OCR</span>
-                                }
-                            </div>
-
-                            @if (!string.IsNullOrWhiteSpace(p.Notes) && p.Notes.Length <= 220)
-                            {
-                                <p class="small text-muted mb-2">@p.Notes</p>
-                            }
-
-
-                            @if (p.HasPersonalKey && !string.IsNullOrWhiteSpace(p.MaskedPersonalKey))
-                            {
-                                <div class="small mb-2">
-                                    <strong>Key:</strong> <code>@p.MaskedPersonalKey</code>
-                                </div>
-                            }
-
-                            <label class="form-label small mb-1">
-                                @(p.HasPersonalKey ? "Replace personal key" : "Paste API key")
-                            </label>
-                            <div class="input-group input-group-sm mb-2">
-                                <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
-                                       class="form-control font-monospace"
-                                       placeholder="@ProviderPlaceholder(p.ProviderId)"
-                                       value="@GetKeyInput(p.ProviderId)"
-                                       @oninput="e => SetKeyInput(p.ProviderId, e.Value?.ToString())"
-                                       disabled="@(_busy || _apiKeySaving)" />
-                                <button class="btn btn-outline-secondary"
-                                        type="button"
-                                        title="@(IsKeyVisible(p.ProviderId) ? "Hide key" : "Show key")"
-                                        @onclick="() => ToggleKeyVisible(p.ProviderId)">
-                                    @(IsKeyVisible(p.ProviderId) ? "🙈" : "👁️")
-                                </button>
-                                <button class="btn btn-primary"
-                                        type="button"
-                                        disabled="@(_busy || _apiKeySaving || string.IsNullOrWhiteSpace(GetKeyInput(p.ProviderId)))"
-                                        @onclick="() => SaveProviderKeyAsync(p.ProviderId)">
-                                    @if (_apiKeySaving && string.Equals(_savingProviderId, p.ProviderId, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    }
-                                    else
-                                    {
-                                        <span>Save</span>
-                                    }
-                                </button>
-                            </div>
-                            @if (p.HasPersonalKey)
-                            {
-                                <button class="btn btn-link btn-sm text-danger p-0"
-                                        type="button"
-                                        disabled="@(_busy || _apiKeySaving)"
-                                        @onclick="() => ClearProviderKeyAsync(p.ProviderId)">
-                                    Remove personal key
-                                </button>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
 
             @if (!string.IsNullOrEmpty(_apiKeyFeedback))
             {
-                <div class="alert alert-success py-2 px-3 mt-3 mb-0 small d-flex align-items-center gap-2">
-                    <span>@_apiKeyFeedback</span>
-                </div>
+                <div class="alert alert-success py-2 px-3 small">@_apiKeyFeedback</div>
             }
 
-            <!-- Capability coverage: which selected model uses which key -->
-            <div class="mt-4 pt-3 border-top" data-testid="capability-coverage">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                    <div>
-                        <div class="fw-semibold">Studio coverage</div>
-                        <div class="small text-muted mb-0">
-                            Each job uses the <strong>model you pick</strong> for that stage — not “any key that can do it.”
-                            If Grok and Gemini both have keys, video gen still follows the Video model dropdown; review follows Video review.
-                        </div>
-                    </div>
-                    @{
-                        var cov = BuildCoverageRows();
-                        var needed = cov.Count(c => c.Required && !c.OptionalOff);
-                        var ready = cov.Count(c => c.Required && !c.OptionalOff && c.KeyReady);
-                        var missing = cov.Where(c => c.Required && !c.OptionalOff && !c.KeyReady).ToList();
-                    }
-                    <div class="text-end">
-                        @if (missing.Count == 0)
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0" data-testid="capability-coverage">
+                    <thead>
+                        <tr class="small text-muted">
+                            <th style="min-width:9rem">Job</th>
+                            <th style="min-width:12rem">Model</th>
+                            <th>Key</th>
+                            <th style="min-width:11rem">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in cov)
                         {
-                            <span class="badge text-bg-success">All required keys ready · @ready/@needed</span>
-                        }
-                        else
-                        {
-                            <span class="badge text-bg-warning text-dark">Missing @missing.Count required · @ready/@needed ready</span>
-                        }
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-2">
-                        <thead>
-                            <tr class="small text-muted">
-                                <th>What you do</th>
-                                <th>Model in use</th>
-                                <th>Needs key for</th>
-                                <th>Status</th>
+                            var models = ModelsForCoverage(c.Id);
+                            var editing = string.Equals(_coverageEditId, c.Id, StringComparison.OrdinalIgnoreCase);
+                            <tr class="@(c.OptionalOff ? "opacity-75" : "")" data-testid="coverage-@c.Id">
+                                <td>
+                                    <div class="fw-semibold small">@c.Label</div>
+                                    <div class="text-muted" style="font-size:0.75rem;">@c.Hint</div>
+                                </td>
+                                <td>
+                                    @if (models.Count > 0)
+                                    {
+                                        <select class="form-select form-select-sm"
+                                                data-testid="coverage-model-@c.Id"
+                                                disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
+                                                value="@GetCoverageModelId(c.Id)"
+                                                @onchange="e => OnCoverageModelChangedAsync(c.Id, e.Value?.ToString())">
+                                            @foreach (var m in models)
+                                            {
+                                                <option value="@m.Id">@ModelOptionLabel(m)</option>
+                                            }
+                                        </select>
+                                        @if (string.IsNullOrEmpty(_projectId))
+                                        {
+                                            <div class="form-text">Select a project to save model choice.</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="small text-muted">@c.ModelId</span>
+                                    }
+                                </td>
+                                <td class="small">
+                                    @if (c.OptionalOff)
+                                    {
+                                        <span class="badge text-bg-secondary">Off</span>
+                                    }
+                                    else if (c.KeyReady)
+                                    {
+                                        <span class="badge text-bg-success">Ready</span>
+                                        @if (!string.IsNullOrWhiteSpace(c.ProviderDisplay))
+                                        {
+                                            <div class="text-muted mt-1" style="font-size:0.75rem;">@c.ProviderDisplay</div>
+                                        }
+                                    }
+                                    else if (string.IsNullOrWhiteSpace(c.ProviderId))
+                                    {
+                                        <span class="badge text-bg-secondary">—</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-danger">Need key</span>
+                                        <div class="text-muted mt-1" style="font-size:0.75rem;">@c.ProviderDisplay</div>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @if (!c.OptionalOff && !c.KeyReady && !string.IsNullOrWhiteSpace(c.ProviderId))
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-primary"
+                                                    data-testid="coverage-add-key-@c.Id"
+                                                    disabled="@_busy"
+                                                    @onclick="() => BeginAddKey(c.Id, c.ProviderId)">
+                                                Add key
+                                            </button>
+                                        }
+                                        else if (!c.OptionalOff && c.KeyReady && !string.IsNullOrWhiteSpace(c.ProviderId))
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    data-testid="coverage-change-key-@c.Id"
+                                                    disabled="@_busy"
+                                                    @onclick="() => BeginAddKey(c.Id, c.ProviderId)">
+                                                Replace key
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-testid="coverage-remove-key-@c.Id"
+                                                    disabled="@_busy"
+                                                    title="Remove personal key for this provider"
+                                                    @onclick="() => ClearProviderKeyAsync(c.ProviderId)">
+                                                Remove key
+                                            </button>
+                                        }
+                                        @if (c.Id is "music" or "voice")
+                                        {
+                                            @if (!c.OptionalOff)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm btn-link text-muted px-1"
+                                                        disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
+                                                        @onclick="() => TurnOffOptionalAsync(c.Id)">
+                                                    Turn off
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var c in cov)
+                            @if (editing)
                             {
-                                <tr class="@(c.OptionalOff ? "opacity-50" : "")" data-testid="coverage-@c.Id">
-                                    <td>
-                                        <div class="fw-semibold small">@c.Label</div>
-                                        @if (!string.IsNullOrWhiteSpace(c.Hint))
-                                        {
-                                            <div class="text-muted" style="font-size:0.75rem;">@c.Hint</div>
-                                        }
-                                    </td>
-                                    <td class="small">
-                                        @if (c.OptionalOff)
-                                        {
-                                            <span class="text-muted">Off</span>
-                                        }
-                                        else
-                                        {
-                                            <code>@c.ModelId</code>
-                                        }
-                                    </td>
-                                    <td class="small">
-                                        @if (c.OptionalOff || string.IsNullOrWhiteSpace(c.ProviderDisplay))
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                        else
-                                        {
-                                            <span>@c.ProviderDisplay</span>
-                                        }
-                                    </td>
-                                    <td class="small">
-                                        @if (c.OptionalOff)
-                                        {
-                                            <span class="badge text-bg-secondary">Optional</span>
-                                        }
-                                        else if (c.KeyReady)
-                                        {
-                                            <span class="badge text-bg-success">Ready</span>
-                                        }
-                                        else if (string.IsNullOrWhiteSpace(c.ProviderId))
-                                        {
-                                            <span class="badge text-bg-secondary">No key needed</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge text-bg-danger">Add @c.ProviderDisplay key</span>
-                                        }
+                                <tr class="table-active" data-testid="coverage-key-panel-@c.Id">
+                                    <td colspan="4" class="bg-dark bg-opacity-25">
+                                        <div class="p-2">
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                                <div class="small fw-semibold">
+                                                    Add key for <span class="text-primary">@c.Label</span>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-link" @onclick="CancelAddKey">Cancel</button>
+                                            </div>
+                                            <p class="small text-muted mb-2">
+                                                Only providers that can run this job are listed. Pick one, paste the key, save.
+                                            </p>
+                                            <div class="row g-2">
+                                                @foreach (var p in ProvidersForCoverage(c.Id))
+                                                {
+                                                    var selected = string.Equals(_coverageKeyProviderId, p.ProviderId, StringComparison.OrdinalIgnoreCase);
+                                                    <div class="col-md-6 col-lg-4">
+                                                        <div class="border rounded p-2 h-100 @(selected ? "border-primary" : "")"
+                                                             data-testid="coverage-provider-@p.ProviderId">
+                                                            <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+                                                                <div class="fw-semibold small">@p.DisplayName</div>
+                                                                @if (p.IsConfigured)
+                                                                {
+                                                                    <span class="badge text-bg-success">Has key</span>
+                                                                }
+                                                            </div>
+                                                            @if (!selected)
+                                                            {
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-outline-primary"
+                                                                        @onclick="() => SelectKeyProvider(p.ProviderId)">
+                                                                    @(p.IsConfigured ? "Use / replace" : "Select")
+                                                                </button>
+                                                            }
+                                                            else
+                                                            {
+                                                                <label class="form-label small mb-1">API key</label>
+                                                                <div class="input-group input-group-sm mb-1">
+                                                                    <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
+                                                                           class="form-control font-monospace"
+                                                                           placeholder="@ProviderPlaceholder(p.ProviderId)"
+                                                                           value="@GetKeyInput(p.ProviderId)"
+                                                                           @oninput="e => SetKeyInput(p.ProviderId, e.Value?.ToString())"
+                                                                           disabled="@(_busy || _apiKeySaving)" />
+                                                                    <button class="btn btn-outline-secondary" type="button"
+                                                                            @onclick="() => ToggleKeyVisible(p.ProviderId)">
+                                                                        @(IsKeyVisible(p.ProviderId) ? "Hide" : "Show")
+                                                                    </button>
+                                                                    <button class="btn btn-primary" type="button"
+                                                                            disabled="@(_busy || _apiKeySaving || string.IsNullOrWhiteSpace(GetKeyInput(p.ProviderId)))"
+                                                                            @onclick="() => SaveCoverageKeyAsync(p.ProviderId, c.Id)">
+                                                                        Save
+                                                                    </button>
+                                                                </div>
+                                                                @if (p.HasPersonalKey)
+                                                                {
+                                                                    <button type="button" class="btn btn-link btn-sm text-danger p-0"
+                                                                            disabled="@_busy"
+                                                                            @onclick="() => ClearProviderKeyAsync(p.ProviderId)">
+                                                                        Remove saved key
+                                                                    </button>
+                                                                }
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                            @if (!ProvidersForCoverage(c.Id).Any())
+                                            {
+                                                <div class="alert alert-warning py-2 small mb-0">No providers available for this job in the catalog.</div>
+                                            }
+                                        </div>
                                     </td>
                                 </tr>
                             }
-                        </tbody>
-                    </table>
-                </div>
-
-                @if (missing.Count > 0)
-                {
-                    <div class="alert alert-warning py-2 small mb-0">
-                        Still needed:
-                        @string.Join(", ", missing.Select(m => m.ProviderDisplay).Distinct())
-                        — paste those keys above. Extra providers (with keys but not in this table) are <strong>idle</strong> until you switch a model to them.
-                    </div>
-                }
-                else
-                {
-                    <p class="small text-muted mb-0">
-                        Extra keys you keep (e.g. Gemini when Grok does video gen) stay available for other stages or if you change a model later.
-                    </p>
-                }
+                        }
+                    </tbody>
+                </table>
             </div>
+
+            @{
+                var savedKeys = ProviderRows.Where(pr => pr.HasPersonalKey).ToList();
+            }
+            @if (savedKeys.Count > 0)
+            {
+                <details class="mt-3" data-testid="manage-saved-keys">
+                    <summary class="small text-muted" style="cursor:pointer">Manage saved keys (@savedKeys.Count)</summary>
+                    <div class="row g-2 mt-2">
+                        @foreach (var p in savedKeys)
+                        {
+                            var used = CoverageUsesForProvider(p.ProviderId);
+                            <div class="col-md-6 col-lg-4">
+                                <div class="border rounded p-2 small">
+                                    <div class="fw-semibold">@p.DisplayName</div>
+                                    @if (used.Count > 0)
+                                    {
+                                        <div class="text-success">In use: @string.Join(" · ", used)</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-muted">Not used by current models</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(p.MaskedPersonalKey))
+                                    {
+                                        <div class="text-muted"><code>@p.MaskedPersonalKey</code></div>
+                                    }
+                                    <button type="button" class="btn btn-link btn-sm text-danger p-0 mt-1"
+                                            disabled="@_busy"
+                                            @onclick="() => ClearProviderKeyAsync(p.ProviderId)">
+                                        Remove key
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </details>
+            }
         </div>
     </div>
 
@@ -830,6 +829,10 @@
 
             if (!string.IsNullOrEmpty(_projectId))
                 await LoadAsync();
+
+            // Deep-link ?focus=voice|music|… opens just-in-time key panel for that coverage row.
+            if (FocusActive)
+                BeginAddKey(_focusCapability!);
         }
         catch (Exception ex)
         {
@@ -1001,7 +1004,9 @@
     private bool _apiKeySaving;
     private string? _savingProviderId;
     private string? _apiKeyFeedback;
-
+    /// <summary>Coverage row open for just-in-time key entry.</summary>
+    private string? _coverageEditId;
+    private string? _coverageKeyProviderId;
 
     private sealed class CoverageRow
     {
@@ -1046,25 +1051,6 @@
                   || modelId.Equals("none", StringComparison.OrdinalIgnoreCase)
                   || modelId.Equals("disabled", StringComparison.OrdinalIgnoreCase);
 
-        // Voice clone is optional add-on: show provider status, not a model dropdown id.
-        if (id == "voice")
-        {
-            var voiceRow = ProviderRows.FirstOrDefault(p =>
-                string.Equals(p.ProviderId, "elevenlabs", StringComparison.OrdinalIgnoreCase));
-            var hasVoice = voiceRow?.IsConfigured == true;
-            return new CoverageRow
-            {
-                Id = id,
-                Label = label,
-                Hint = hint,
-                ModelId = hasVoice ? "Sample ready to clone" : "Not set up",
-                ProviderId = "elevenlabs",
-                ProviderDisplay = voiceRow?.DisplayName ?? "Voice cloning",
-                Required = false,
-                OptionalOff = !hasVoice,
-                KeyReady = hasVoice,
-            };
-        }
 
         string providerId;
         if (!string.IsNullOrWhiteSpace(forceProviderId))
@@ -1134,6 +1120,158 @@
             .Select(c => c.Label)
             .Distinct()
             .ToList();
+    }
+
+
+    private void BeginAddKey(string coverageId, string? preferredProviderId = null)
+    {
+        _coverageEditId = coverageId;
+        _apiKeyFeedback = null;
+        var list = ProvidersForCoverage(coverageId).ToList();
+        if (!string.IsNullOrWhiteSpace(preferredProviderId) &&
+            list.Any(x => string.Equals(x.ProviderId, preferredProviderId, StringComparison.OrdinalIgnoreCase)))
+            _coverageKeyProviderId = preferredProviderId;
+        else
+            _coverageKeyProviderId = list.FirstOrDefault()?.ProviderId;
+    }
+
+    private void CancelAddKey()
+    {
+        _coverageEditId = null;
+        _coverageKeyProviderId = null;
+    }
+
+    private void SelectKeyProvider(string providerId) => _coverageKeyProviderId = providerId;
+
+    private async Task SaveCoverageKeyAsync(string providerId, string coverageId)
+    {
+        await SaveProviderKeyAsync(providerId);
+        var row = BuildCoverageRows().FirstOrDefault(c => string.Equals(c.Id, coverageId, StringComparison.OrdinalIgnoreCase));
+        if (row?.KeyReady == true)
+            CancelAddKey();
+    }
+
+    private string GetCoverageModelId(string coverageId) => coverageId switch
+    {
+        "video" => _modelName,
+        "image" => _imageModel,
+        "planning" => _planningModel,
+        "vision" => _visionModel,
+        "review" => _qualityModel,
+        "music" => _audioModel,
+        "voice" => _voiceModel,
+        _ => "",
+    };
+
+    private void SetCoverageModelId(string coverageId, string modelId)
+    {
+        switch (coverageId)
+        {
+            case "video": _modelName = modelId; break;
+            case "image": _imageModel = modelId; break;
+            case "planning": _planningModel = modelId; break;
+            case "vision": _visionModel = modelId; break;
+            case "review": _qualityModel = modelId; break;
+            case "music": _audioModel = modelId; break;
+            case "voice": _voiceModel = modelId; break;
+        }
+    }
+
+    private IReadOnlyList<SupportedModelDto> ModelsForCoverage(string coverageId) => coverageId switch
+    {
+        "video" => _videoModels,
+        "image" => _imageModels,
+        "planning" => _planningModels,
+        "vision" => _visionModels,
+        "review" => _videoReviewModels,
+        "music" => _audioModels,
+        "voice" => _voiceModels,
+        _ => Array.Empty<SupportedModelDto>(),
+    };
+
+    private IEnumerable<ProviderKeyStatusDto> ProvidersForCoverage(string coverageId)
+    {
+        var models = ModelsForCoverage(coverageId);
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var m in models)
+        {
+            if (string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)) continue;
+            var pid = !string.IsNullOrWhiteSpace(m.ProviderId)
+                ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
+                : (!string.IsNullOrWhiteSpace(m.Provider)
+                    ? SupportedModelCatalog.NormalizeProviderId(m.Provider)
+                    : "");
+            if (!string.IsNullOrWhiteSpace(pid) && !pid.Equals("none", StringComparison.OrdinalIgnoreCase))
+                ids.Add(pid);
+        }
+
+        if (ids.Count == 0)
+        {
+            foreach (var pr in ProviderRows)
+            {
+                var ok = coverageId switch
+                {
+                    "video" => pr.SupportsVideoGen || pr.SupportsVideo,
+                    "image" => pr.SupportsImageGen || pr.SupportsImage,
+                    "planning" => pr.SupportsScriptPlanning || pr.SupportsChat,
+                    "vision" => pr.SupportsImageVision || pr.SupportsVision,
+                    "review" => pr.SupportsVideoReview || pr.SupportsChat,
+                    "music" => string.Equals(pr.ProviderId, "fal", StringComparison.OrdinalIgnoreCase)
+                               || string.Equals(pr.ProviderId, "suno", StringComparison.OrdinalIgnoreCase)
+                               || string.Equals(pr.ProviderId, "aimusicapi", StringComparison.OrdinalIgnoreCase),
+                    "voice" => string.Equals(pr.ProviderId, "elevenlabs", StringComparison.OrdinalIgnoreCase)
+                               || string.Equals(pr.ProviderId, "fal", StringComparison.OrdinalIgnoreCase),
+                    _ => false,
+                };
+                if (ok) ids.Add(pr.ProviderId);
+            }
+        }
+
+        return ProviderRows.Where(pr => ids.Contains(pr.ProviderId))
+            .OrderBy(pr => pr.IsConfigured ? 0 : 1)
+            .ThenBy(pr => pr.DisplayName);
+    }
+
+    private async Task OnCoverageModelChangedAsync(string coverageId, string? modelId)
+    {
+        if (string.IsNullOrWhiteSpace(modelId)) return;
+        SetCoverageModelId(coverageId, modelId);
+        _coverageEditId = null;
+        _message = null;
+        if (!string.IsNullOrEmpty(_projectId) && _cfg is not null)
+        {
+            try
+            {
+                await SaveAsync();
+                _message = "Model saved.";
+            }
+            catch (Exception ex)
+            {
+                _error = ex.Message;
+            }
+        }
+        var row = BuildCoverageRows().FirstOrDefault(c => string.Equals(c.Id, coverageId, StringComparison.OrdinalIgnoreCase));
+        if (row is { KeyReady: false, OptionalOff: false } && !string.IsNullOrWhiteSpace(row.ProviderId))
+            BeginAddKey(coverageId, row.ProviderId);
+    }
+
+    private async Task TurnOffOptionalAsync(string coverageId)
+    {
+        if (coverageId == "music")
+        {
+            _audioModel = "none";
+            _enableBackgroundMusic = false;
+        }
+        else if (coverageId == "voice")
+        {
+            _voiceModel = "none";
+        }
+        CancelAddKey();
+        if (!string.IsNullOrEmpty(_projectId) && _cfg is not null)
+        {
+            try { await SaveAsync(); }
+            catch (Exception ex) { _error = ex.Message; }
+        }
     }
 
     private IReadOnlyList<ProviderKeyStatusDto> ProviderRows
