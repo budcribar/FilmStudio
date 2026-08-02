@@ -753,11 +753,11 @@ public static class SupportedModelCatalog
         var p = providerId.Trim().ToLowerInvariant();
         return p switch
         {
-            "xai" or "grok" => "grok",
+            "xai" or "grok" or "x.ai" => "grok",
             "google" or "gemini" => "gemini",
             "claude" or "anthropic" => "anthropic",
-            "fal" or "fal.ai" => "fal",
-            "openai" or "oai" => "openai",
+            "fal" or "fal.ai" or "falai" => "fal",
+            "openai" or "oai" or "open ai" => "openai",
             "suno" => "suno",
             "aimusicapi" or "ai-music-api" => "aimusicapi",
             "elevenlabs" or "eleven" => "elevenlabs",

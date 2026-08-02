@@ -115,19 +115,25 @@
                                     }
                                     else if (providers.Count > 0)
                                     {
+                                        var provSelected = SupportedModelCatalog.NormalizeProviderId(c.ProviderId);
                                         <select class="form-select form-select-sm"
+                                                @key="@($"cov-prov-{c.Id}-{provSelected}")"
                                                 data-testid="coverage-provider-@c.Id"
                                                 disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
-                                                value="@c.ProviderId"
                                                 @onchange="e => OnCoverageProviderChangedAsync(c.Id, e.Value?.ToString())">
-                                            @if (string.IsNullOrWhiteSpace(c.ProviderId))
+                                            @if (string.IsNullOrWhiteSpace(provSelected)
+                                                 || !providers.Any(pr => string.Equals(
+                                                     SupportedModelCatalog.NormalizeProviderId(pr.ProviderId),
+                                                     provSelected, StringComparison.OrdinalIgnoreCase)))
                                             {
-                                                <option value="">Choose provider…</option>
+                                                <option value="" selected>Choose provider…</option>
                                             }
                                             @foreach (var pr in providers)
                                             {
-                                                <option value="@pr.ProviderId">
-                                                    @FriendlyProviderLabel(pr.ProviderId)@(pr.IsConfigured ? "" : " · no key")
+                                                var pid = SupportedModelCatalog.NormalizeProviderId(pr.ProviderId);
+                                                var isSel = string.Equals(pid, provSelected, StringComparison.OrdinalIgnoreCase);
+                                                <option @key="@($"opt-{c.Id}-{pid}")" value="@pid" selected="@isSel">
+                                                    @FriendlyProviderLabel(pid)@(pr.IsConfigured ? "" : " · no key")
                                                 </option>
                                             }
                                         </select>
@@ -144,14 +150,18 @@
                                     }
                                     else if (providerModels.Count > 0)
                                     {
+                                        var modelSelected = GetCoverageModelId(c.Id);
                                         <select class="form-select form-select-sm"
+                                                @key="@($"cov-model-{c.Id}-{c.ProviderId}-{modelSelected}")"
                                                 data-testid="coverage-model-@c.Id"
                                                 disabled="@(_busy || string.IsNullOrEmpty(_projectId) || string.IsNullOrWhiteSpace(c.ProviderId))"
-                                                value="@GetCoverageModelId(c.Id)"
                                                 @onchange="e => OnCoverageModelChangedAsync(c.Id, e.Value?.ToString())">
                                             @foreach (var m in providerModels)
                                             {
-                                                <option value="@m.Id">@ModelOptionLabel(m)</option>
+                                                var isSel = string.Equals(m.Id, modelSelected, StringComparison.OrdinalIgnoreCase);
+                                                <option @key="@($"mopt-{c.Id}-{m.Id}")" value="@m.Id" selected="@isSel">
+                                                    @ModelOptionLabel(m)
+                                                </option>
                                             }
                                         </select>
                                         @if (string.IsNullOrEmpty(_projectId))
@@ -947,7 +957,10 @@
             providerId = ResolveProviderIdForModel(modelId, capability, preferVideoReview);
 
         var providerRow = ProviderRows.FirstOrDefault(pr =>
-            string.Equals(pr.ProviderId, providerId, StringComparison.OrdinalIgnoreCase));
+            string.Equals(
+                SupportedModelCatalog.NormalizeProviderId(pr.ProviderId),
+                providerId,
+                StringComparison.OrdinalIgnoreCase));
         var display = string.IsNullOrWhiteSpace(providerId) ? "" : FriendlyProviderLabel(providerId);
         var keyReady = off || string.IsNullOrWhiteSpace(providerId) || (providerRow?.IsConfigured ?? false);
 
@@ -1233,10 +1246,21 @@
 
     private static string ModelProviderId(SupportedModelDto m)
     {
+        // Prefer explicit catalog provider id, then family string, then model-id heuristics.
+        // Map Xai→grok, Google→gemini (same as SupportedModelEntry.ProviderId).
         if (!string.IsNullOrWhiteSpace(m.ProviderId))
-            return SupportedModelCatalog.NormalizeProviderId(m.ProviderId);
+        {
+            var n = SupportedModelCatalog.NormalizeProviderId(m.ProviderId);
+            if (!string.IsNullOrWhiteSpace(n)) return n;
+        }
         if (!string.IsNullOrWhiteSpace(m.Provider))
-            return SupportedModelCatalog.NormalizeProviderId(m.Provider);
+        {
+            var n = SupportedModelCatalog.NormalizeProviderId(m.Provider);
+            // Enum-style leftovers that Normalize leaves alone
+            if (n is "xai") return "grok";
+            if (n is "google") return "gemini";
+            if (!string.IsNullOrWhiteSpace(n)) return n;
+        }
         return InferProviderIdFromModelId(m.Id);
     }
 
@@ -1247,12 +1271,13 @@
         if (string.IsNullOrWhiteSpace(providerId))
             return Array.Empty<SupportedModelDto>();
         var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
-        return all
+        var list = all
             .Where(m => !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase))
             .Where(m => string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase))
             .OrderBy(m => m.IsVoiceCloneStep ? 0 : 1)
             .ThenBy(m => ModelOptionLabel(m), StringComparer.OrdinalIgnoreCase)
             .ToList();
+        return list;
     }
 
     private async Task OnCoverageProviderChangedAsync(string coverageId, string? providerId)
@@ -1301,11 +1326,7 @@
         foreach (var m in models)
         {
             if (string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)) continue;
-            var pid = !string.IsNullOrWhiteSpace(m.ProviderId)
-                ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
-                : (!string.IsNullOrWhiteSpace(m.Provider)
-                    ? SupportedModelCatalog.NormalizeProviderId(m.Provider)
-                    : "");
+            var pid = ModelProviderId(m);
             if (!string.IsNullOrWhiteSpace(pid) && !pid.Equals("none", StringComparison.OrdinalIgnoreCase))
                 ids.Add(pid);
         }
@@ -1332,8 +1353,83 @@
             }
         }
 
-        return ProviderRows.Where(pr => ids.Contains(pr.ProviderId))
-            .OrderBy(pr => pr.IsConfigured ? 0 : 1)
+        // Include any provider id we discovered from models even if ProviderRows lacks it (e.g. OpenAI).
+        var rows = ProviderRows
+            .Select(pr => new ProviderKeyStatusDto
+            {
+                ProviderId = SupportedModelCatalog.NormalizeProviderId(pr.ProviderId),
+                DisplayName = pr.DisplayName,
+                Family = pr.Family,
+                HasPersonalKey = pr.HasPersonalKey,
+                MaskedPersonalKey = pr.MaskedPersonalKey,
+                HasServerKey = pr.HasServerKey,
+                ActiveSource = pr.ActiveSource,
+                CapabilitiesSummary = pr.CapabilitiesSummary,
+                SupportsVideo = pr.SupportsVideo,
+                SupportsImage = pr.SupportsImage,
+                SupportsChat = pr.SupportsChat,
+                SupportsVision = pr.SupportsVision,
+                SupportsVideoGen = pr.SupportsVideoGen,
+                SupportsVideoReview = pr.SupportsVideoReview,
+                SupportsImageGen = pr.SupportsImageGen,
+                SupportsScriptPlanning = pr.SupportsScriptPlanning,
+                SupportsImageVision = pr.SupportsImageVision,
+                RequiredEnvKeys = pr.RequiredEnvKeys,
+                Notes = pr.Notes,
+            })
+            .Where(pr => ids.Contains(pr.ProviderId))
+            .GroupBy(pr => pr.ProviderId, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+        foreach (var id in ids)
+        {
+            if (rows.Any(r => string.Equals(r.ProviderId, id, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            rows.Add(new ProviderKeyStatusDto
+            {
+                ProviderId = id,
+                DisplayName = FriendlyProviderLabel(id),
+                ActiveSource = "none",
+                CapabilitiesSummary = "—",
+                RequiredEnvKeys = new List<string>(),
+            });
+        }
+
+        // Selected provider (from model) first so the <select> cannot fall back to a random first option.
+        var currentModelId = GetCoverageModelId(coverageId);
+        var currentPid = "";
+        if (!string.IsNullOrWhiteSpace(currentModelId)
+            && !string.Equals(currentModelId, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            var cap = coverageId switch
+            {
+                "video" => "video",
+                "image" => "image",
+                "planning" => "chat",
+                "vision" => "vision",
+                "review" => "chat",
+                "music" => "audio",
+                "voice" => "voice",
+                _ => "chat",
+            };
+            currentPid = ResolveProviderIdForModel(currentModelId, cap, preferVideoReview: coverageId == "review");
+            if (!string.IsNullOrWhiteSpace(currentPid)
+                && !rows.Any(r => string.Equals(r.ProviderId, currentPid, StringComparison.OrdinalIgnoreCase)))
+            {
+                rows.Insert(0, new ProviderKeyStatusDto
+                {
+                    ProviderId = currentPid,
+                    DisplayName = FriendlyProviderLabel(currentPid),
+                    ActiveSource = "none",
+                    CapabilitiesSummary = "—",
+                    RequiredEnvKeys = new List<string>(),
+                });
+            }
+        }
+
+        return rows
+            .OrderBy(pr => string.Equals(pr.ProviderId, currentPid, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(pr => pr.IsConfigured ? 0 : 1)
             .ThenBy(pr => FriendlyProviderLabel(pr.ProviderId));
     }
 
