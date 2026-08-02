@@ -74,7 +74,7 @@ public class VoiceCloneApplyServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyFromSample_fal_model_without_key_falls_back_to_eleven_mock()
+    public async Task ApplyFromSample_fal_model_without_key_fails_without_auto_fallback()
     {
         var p = await _store.CreateProjectAsync("buster", title: "Buster");
         await _store.SaveConfigAsync(
@@ -87,9 +87,10 @@ public class VoiceCloneApplyServiceTests : IDisposable
             sampleOverride: sample,
             sampleFileName: "voice_clone_sample.wav");
 
-        Assert.True(result.Ok, result.Error);
-        Assert.Equal("elevenlabs", result.ProviderId);
-        Assert.True(result.UsedMock);
+        Assert.False(result.Ok);
+        Assert.Contains("No working API key", result.Error ?? "", StringComparison.OrdinalIgnoreCase);
+        // Sample still saved for a later retry after the user fixes key/model.
+        Assert.True(File.Exists(_store.GetVoiceCloneSamplePath(p.Id, "Character_Narrator")));
     }
 
     private sealed class SimpleFactory : IHttpClientFactory

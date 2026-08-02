@@ -59,25 +59,19 @@ public sealed class VoiceCloneApplyService
 
         var strategy = SelectStrategy(cloneModel);
         if (strategy is null)
-            return new VoiceApplyResult { Ok = false, Error = "No voice apply strategy available." };
+            return new VoiceApplyResult { Ok = false, Error = "No voice apply strategy available for this model." };
 
-        // If selected strategy isn't configured, try a configured fallback (e.g. Fal → ElevenLabs mock).
+        // Do not auto-switch providers. If this key/model cannot clone, surface the error and let
+        // the user pick another voice model in Settings.
         if (!strategy.IsConfigured)
         {
-            var fallback = _strategies.FirstOrDefault(s => s.IsConfigured);
-            if (fallback is not null && !ReferenceEquals(fallback, strategy))
+            return new VoiceApplyResult
             {
-                _log.LogInformation(
-                    "Voice strategy {Wanted} not configured — falling back to {Fallback}",
-                    strategy.ProviderId, fallback.ProviderId);
-                strategy = fallback;
-                // Remap models to fallback provider defaults when falling back.
-                if (string.Equals(fallback.ProviderId, "elevenlabs", StringComparison.OrdinalIgnoreCase))
-                {
-                    cloneModel = SupportedModelCatalog.Find("eleven_voice_clone", ModelCapability.Voice);
-                    speakModel = SupportedModelCatalog.Find("eleven_multilingual_v2", ModelCapability.Voice);
-                }
-            }
+                Ok = false,
+                ProviderId = strategy.ProviderId,
+                ModelId = cloneModel?.Id,
+                Error = NotConfiguredMessage(strategy.ProviderId, cloneModel?.Id),
+            };
         }
 
         var ctx = new VoiceApplyContext
@@ -99,72 +93,24 @@ public sealed class VoiceCloneApplyService
         var result = await strategy.ApplyAsync(ctx, ct).ConfigureAwait(false);
         if (result.Ok)
             return result;
-
-        // Permission / plan failure on one provider → try another configured strategy (e.g. EL → Fal).
-        if (LooksLikeProviderCapabilityFailure(result.Error))
+        if (!string.IsNullOrWhiteSpace(result.Error))
+            return result;
+        return new VoiceApplyResult
         {
-            foreach (var alt in _strategies)
-            {
-                if (ReferenceEquals(alt, strategy) || !alt.IsConfigured)
-                    continue;
-                _log.LogWarning(
-                    "Voice apply via {Failed} failed ({Error}); retrying with {Alt}",
-                    strategy.ProviderId, result.Error, alt.ProviderId);
-                var altClone = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-                    .FirstOrDefault(m => m.IsVoiceCloneStep &&
-                        (m.ProviderId.Equals(alt.ProviderId, StringComparison.OrdinalIgnoreCase)
-                         || (alt.ProviderId == "fal" && m.Provider == ModelProviderFamily.Fal)
-                         || (alt.ProviderId == "elevenlabs" && m.Provider == ModelProviderFamily.ElevenLabs)));
-                var altSpeak = altClone is null
-                    ? null
-                    : SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-                        .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Provider == altClone.Provider);
-                var altCtx = new VoiceApplyContext
-                {
-                    ProjectId = projectId,
-                    CharKey = charKey,
-                    DisplayName = display,
-                    SamplePath = samplePath,
-                    CloneModel = altClone,
-                    SpeakModel = altSpeak,
-                    PreviewText = previewText,
-                    VoiceLabel = voiceLabel,
-                };
-                var retry = await alt.ApplyAsync(altCtx, ct).ConfigureAwait(false);
-                if (retry.Ok)
-                {
-                    return new VoiceApplyResult
-                    {
-                        Ok = true,
-                        ProviderId = retry.ProviderId,
-                        ProviderVoiceId = retry.ProviderVoiceId,
-                        ModelId = retry.ModelId,
-                        UsedMock = retry.UsedMock,
-                        PreviewRelativePath = retry.PreviewRelativePath,
-                        PreviewUrl = retry.PreviewUrl,
-                        VoiceLabel = retry.VoiceLabel,
-                        EstimatedCloneUsd = retry.EstimatedCloneUsd,
-                        Message = (retry.Message ?? "Voice applied.")
-                                  + $" (Used {alt.ProviderId} after {strategy.ProviderId} could not clone.)",
-                    };
-                }
-                // Prefer the friendlier / more recent error
-                result = retry;
-            }
-        }
-
-        return result;
+            Ok = false,
+            ProviderId = result.ProviderId ?? strategy.ProviderId,
+            ModelId = result.ModelId ?? cloneModel?.Id,
+            Error = $"Voice clone failed with {strategy.ProviderId}. Check the key in Settings or choose another voice model yourself.",
+        };
     }
 
-    private static bool LooksLikeProviderCapabilityFailure(string? error)
+    private static string NotConfiguredMessage(string? providerId, string? modelId)
     {
-        if (string.IsNullOrWhiteSpace(error)) return false;
-        return error.Contains("Instant Voice Clone", StringComparison.OrdinalIgnoreCase)
-               || error.Contains("create_instant_voice_clone", StringComparison.OrdinalIgnoreCase)
-               || error.Contains("missing_permissions", StringComparison.OrdinalIgnoreCase)
-               || error.Contains("unauthorized", StringComparison.OrdinalIgnoreCase)
-               || error.Contains("FAL_API_KEY", StringComparison.OrdinalIgnoreCase)
-               || error.Contains("not configured", StringComparison.OrdinalIgnoreCase);
+        var p = string.IsNullOrWhiteSpace(providerId) ? "this provider" : providerId;
+        var m = string.IsNullOrWhiteSpace(modelId) ? "voice clone" : modelId;
+        return $"No working API key for {p} (model {m}). "
+               + "Add or fix that key in Settings, or pick a different voice model yourself — "
+               + "we do not switch providers automatically. Your recording is still saved.";
     }
 
     /// <summary>Attach a catalog/premade ElevenLabs voice id (no sample clone).</summary>
@@ -214,11 +160,10 @@ public sealed class VoiceCloneApplyService
 
     private IVoiceApplyStrategy? SelectStrategy(SupportedModelEntry? cloneModel)
     {
-        // Explicit CanHandle match first (Fal when fal model, Eleven when eleven model).
+        // Stick to the model the user (or project config) selected — no silent provider hop.
         var match = _strategies.FirstOrDefault(s => s.CanHandle(cloneModel));
         if (match is not null) return match;
-        // Last resort: any configured strategy.
-        return _strategies.FirstOrDefault(s => s.IsConfigured) ?? _strategies.FirstOrDefault();
+        return null;
     }
 
     private async Task<string> EnsureSampleAsync(

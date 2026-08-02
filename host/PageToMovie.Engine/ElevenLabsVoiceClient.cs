@@ -277,16 +277,16 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
                     || (msg?.Contains("create_instant_voice_clone", StringComparison.OrdinalIgnoreCase) ?? false)
                     || (msg?.Contains("instant_voice_clone", StringComparison.OrdinalIgnoreCase) ?? false))
                 {
-                    return "This ElevenLabs key cannot create Instant Voice Clones. "
-                           + "In ElevenLabs: use a key/plan with Instant Voice Cloning enabled, "
-                           + "or in Settings switch Voice to Fal MiniMax (needs a Fal key). "
-                           + "Your recording is saved — fix the key and apply again.";
+                    return "This ElevenLabs key cannot create Instant Voice Clones "
+                           + "(missing Instant Voice Cloning permission). "
+                           + "Fix the key/plan in ElevenLabs, or in Settings choose another voice model yourself. "
+                           + "Your recording is saved — we do not switch providers automatically.";
                 }
                 if (status == 401 || string.Equals(statusCode, "authentication_error", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(code, "unauthorized", StringComparison.OrdinalIgnoreCase))
                 {
                     return "ElevenLabs rejected this API key (unauthorized). "
-                           + "Check the key in Settings, or switch Voice to another provider.";
+                           + "Check the key in Settings, or pick a different voice model yourself.";
                 }
                 if (!string.IsNullOrWhiteSpace(msg))
                     return "ElevenLabs: " + msg.Trim();

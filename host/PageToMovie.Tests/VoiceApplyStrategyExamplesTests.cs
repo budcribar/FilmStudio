@@ -255,9 +255,9 @@ public class VoiceApplyStrategyExamplesTests : IDisposable
     }
 
     [Fact]
-    public async Task Orchestrator_falls_back_to_eleven_when_fal_unconfigured()
+    public async Task Orchestrator_does_not_auto_fallback_when_fal_unconfigured()
     {
-        var project = await _store.CreateProjectAsync("orch-fb", title: "Orch Fallback");
+        var project = await _store.CreateProjectAsync("orch-fb", title: "Orch No Fallback");
         await _store.SaveConfigAsync(
             project.Id,
             JsonSerializer.SerializeToElement(new { voice_model_name = "fal-ai/minimax/voice-clone" }));
@@ -286,11 +286,11 @@ public class VoiceApplyStrategyExamplesTests : IDisposable
             sampleOverride: MockToneWav.Sine(1.0, 190),
             sampleFileName: "voice_clone_sample.wav");
 
-        Assert.True(result.Ok, result.Error);
-        Assert.Equal("elevenlabs", result.ProviderId);
-        Assert.True(result.UsedMock);
+        Assert.False(result.Ok);
+        Assert.Contains("No working API key", result.Error ?? "", StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not switch providers", result.Error ?? "", StringComparison.OrdinalIgnoreCase);
         Assert.Equal(0, falClient.CloneCalls);
-        Assert.Equal(1, elClient.CloneCalls);
+        Assert.Equal(0, elClient.CloneCalls); // must not silently use ElevenLabs
     }
 
     // ── VoicePreviewStore example ────────────────────────────────────────
