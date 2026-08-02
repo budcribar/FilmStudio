@@ -33,12 +33,16 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey()) || _allowMock;
 
-    private static string? ResolveApiKey()
+        private static string? ResolveApiKey()
     {
+        // Canonical env name is ElevenLabs_API_KEY (catalog + user docs).
+        // Also accept all-caps ELEVENLABS_API_KEY for older shells/deploy scripts.
         var key = ApiKeyScope.CurrentElevenLabs
-                  ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.ElevenLabsApiKeyEnv);
+                  ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.ElevenLabsApiKeyEnv)
+                  ?? Environment.GetEnvironmentVariable("ELEVENLABS_API_KEY");
         if (string.IsNullOrWhiteSpace(key)) return null;
-        return key.Trim(' ', '"', '\'', '\r', '\n', '\t');
+        return key.Trim(' ', '"', ''', '', '
+', '	');
     }
 
     public async Task<VoiceCloneResult> CreateCloneAsync(
@@ -54,7 +58,7 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
         if (string.IsNullOrWhiteSpace(key))
         {
             if (!_allowMock)
-                return new VoiceCloneResult { Ok = false, Error = "ELEVENLABS_API_KEY not configured." };
+                return new VoiceCloneResult { Ok = false, Error = "ElevenLabs_API_KEY not configured." };
             var mockId = "mock_clone_" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(sampleAudio))[..12].ToLowerInvariant();
             _log.LogInformation("ElevenLabs key missing — mock clone {VoiceId} for {Name}", mockId, displayName);
             return new VoiceCloneResult
@@ -124,7 +128,7 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
         if (string.IsNullOrWhiteSpace(key) || isMockVoice)
         {
             if (!_allowMock && string.IsNullOrWhiteSpace(key))
-                return new VoiceTtsResult { Ok = false, Error = "ELEVENLABS_API_KEY not configured." };
+                return new VoiceTtsResult { Ok = false, Error = "ElevenLabs_API_KEY not configured." };
             var wav = MockToneWav.FromText(text);
             return new VoiceTtsResult
             {

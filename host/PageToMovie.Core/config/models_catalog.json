@@ -660,7 +660,7 @@
       "apiBase": "https://api.elevenlabs.io/v1",
       "endpointPath": "text-to-speech",
       "requiredEnvKeys": [
-        "ELEVENLABS_API_KEY"
+        "ElevenLabs_API_KEY"
       ],
       "enabled": true,
       "supportsVideoContinue": false,
@@ -676,7 +676,7 @@
       "apiBase": "https://api.elevenlabs.io/v1",
       "endpointPath": "voices/add",
       "requiredEnvKeys": [
-        "ELEVENLABS_API_KEY"
+        "ElevenLabs_API_KEY"
       ],
       "enabled": true,
       "supportsVideoContinue": false,

@@ -43,7 +43,7 @@ public enum ModelProviderFamily
     Suno = 4,
     /// <summary>Suno via aimusicapi.ai (<c>AIMUSICAPI_API_KEY</c>) — a different unofficial Suno reseller.</summary>
     AiMusicApi = 5,
-    /// <summary>ElevenLabs (<c>ELEVENLABS_API_KEY</c>) — voice clone + TTS for personal dialogue.</summary>
+    /// <summary>ElevenLabs (<c>ElevenLabs_API_KEY</c>) — voice clone + TTS for personal dialogue.</summary>
     ElevenLabs = 6,
 }
 
@@ -213,7 +213,7 @@ public static class SupportedModelCatalog
     /// <summary>A different unofficial Suno reseller (formerly reached via the sunoapi.com redirect).</summary>
     public const string AiMusicApiBase = "https://api.aimusicapi.ai/api/v1";
     public const string AiMusicApiKeyEnv = "AIMUSICAPI_API_KEY";
-    public const string ElevenLabsApiKeyEnv = "ELEVENLABS_API_KEY";
+    public const string ElevenLabsApiKeyEnv = "ElevenLabs_API_KEY";
     public const string ElevenLabsApiBase = "https://api.elevenlabs.io/v1";
 
     private static List<SupportedModelEntry>? _loadedEntries;

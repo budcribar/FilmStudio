@@ -75,7 +75,7 @@ public sealed class VoiceCloneApplyService
         var profile =
             $"Provider voice ({_voices.ProviderId}:{clone.ProviderVoiceId}). " +
             (clone.UsedMock
-                ? "Mock clone — set ELEVENLABS_API_KEY for live Instant Voice Cloning."
+                ? "Mock clone — set ElevenLabs_API_KEY for live Instant Voice Cloning."
                 : "ElevenLabs instant clone from operator sample.");
 
         _projects.UpdateCharacterSeedText(
