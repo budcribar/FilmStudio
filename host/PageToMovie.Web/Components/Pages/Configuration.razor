@@ -112,11 +112,12 @@
                                     <div class="text-muted" style="font-size:0.75rem;">@c.Hint</div>
                                 </td>
                                 <td>
-                                    @if (c.OptionalOff)
-                                    {
-                                        <span class="small text-muted">—</span>
+                                    @{
+                                        // Music / voice default to "none" (off). Still show provider picker so a key
+                                        // can be wired without a hidden empty dropdown.
+                                        var showProviderPicker = !c.OptionalOff || c.Id is "music" or "voice";
                                     }
-                                    else if (providers.Count > 0)
+                                    @if (showProviderPicker && providers.Count > 0)
                                     {
                                         var provSelected = SupportedModelCatalog.NormalizeProviderId(c.ProviderId);
                                         @* Stable key per job only — do not include selection in @key (remount mid-diff
@@ -138,10 +139,14 @@
                                             {
                                                 var pid = SupportedModelCatalog.NormalizeProviderId(pr.ProviderId);
                                                 <option value="@pid">
-                                                    @FriendlyProviderLabel(pid)@(pr.IsConfigured ? "" : " · no key")
+                                                    @FriendlyProviderLabel(pid)@(pr.IsConfigured ? " · key saved" : " · no key")
                                                 </option>
                                             }
                                         </select>
+                                    }
+                                    else if (c.OptionalOff)
+                                    {
+                                        <span class="small text-muted">—</span>
                                     }
                                     else
                                     {
@@ -149,35 +154,62 @@
                                     }
                                 </td>
                                 <td>
-                                    @if (c.OptionalOff)
-                                    {
-                                        <span class="small text-muted">Off</span>
+                                    @{
+                                        var showModelPicker = !c.OptionalOff || c.Id is "music" or "voice";
+                                        var modelChoices = providerModels.ToList();
+                                        // Always offer Off for optional jobs so users can enable then disable without a separate control.
+                                        if (c.Id is "music" or "voice"
+                                            && !modelChoices.Any(m => string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)))
+                                        {
+                                            modelChoices.Insert(0, new SupportedModelDto
+                                            {
+                                                Id = "none",
+                                                DisplayName = c.Id == "music" ? "Off (no background music)" : "Off (no voice clone)",
+                                                Provider = "None",
+                                                ProviderId = "none",
+                                            });
+                                        }
                                     }
-                                    else if (providerModels.Count > 0)
+                                    @if (showModelPicker && modelChoices.Count > 0 && (!string.IsNullOrWhiteSpace(c.ProviderId) || c.Id is "music" or "voice"))
                                     {
                                         var modelSelected = GetCoverageModelId(c.Id);
                                         @* Remount model list only when the provider (option set) changes. *@
                                         <select class="form-select form-select-sm"
                                                 @key="@($"cov-model-{c.Id}-{SupportedModelCatalog.NormalizeProviderId(c.ProviderId)}")"
                                                 data-testid="coverage-model-@c.Id"
-                                                disabled="@(_busy || string.IsNullOrEmpty(_projectId) || string.IsNullOrWhiteSpace(c.ProviderId))"
+                                                disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
                                                 value="@modelSelected"
                                                 @onchange="e => OnCoverageModelChangedAsync(c.Id, e.Value?.ToString())">
-                                            @foreach (var m in providerModels)
+                                            @if (string.IsNullOrWhiteSpace(c.ProviderId) && c.Id is "music" or "voice")
                                             {
-                                                <option value="@m.Id">
-                                                    @ModelOptionLabel(m)
-                                                </option>
+                                                <option value="none">Off — pick a provider to enable</option>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var m in modelChoices)
+                                                {
+                                                    <option value="@m.Id">
+                                                        @ModelOptionLabel(m)
+                                                    </option>
+                                                }
                                             }
                                         </select>
                                         @if (string.IsNullOrEmpty(_projectId))
                                         {
                                             <div class="form-text">Select a project to save.</div>
                                         }
+                                        else if (string.IsNullOrWhiteSpace(c.ProviderId) && c.Id is "music" or "voice")
+                                        {
+                                            <div class="form-text">Choose a provider (left), or Add provider if your key is not listed.</div>
+                                        }
+                                    }
+                                    else if (c.OptionalOff)
+                                    {
+                                        <span class="small text-muted">Off</span>
                                     }
                                     else if (!string.IsNullOrWhiteSpace(c.ProviderId))
                                     {
-                                        <span class="small text-muted">No models for this provider</span>
+                                        <span class="small text-muted">No models for this provider in the catalog</span>
                                     }
                                     else
                                     {
@@ -790,8 +822,25 @@
 
             var list = await Engine.GetSupportedModelsAsync();
             _allModels = list?.ToList() ?? new List<SupportedModelDto>();
-            bool Cap(SupportedModelDto m, string c) =>
-                string.Equals(m.Capability, c, StringComparison.OrdinalIgnoreCase);
+            // Hydrate from static catalog when the API list is empty/stale (WASM must still show music/voice).
+            if (_allModels.Count == 0)
+            {
+                try { _allModels = SupportedModelCatalog.ToDtoList(enabledOnly: true).ToList(); }
+                catch { /* catalog not loaded */ }
+            }
+            bool Cap(SupportedModelDto m, string c)
+            {
+                if (string.Equals(m.Capability, c, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                // Defensive: some payloads omit capability; resolve via catalog entry.
+                try
+                {
+                    var entry = SupportedModelCatalog.Find(m.Id);
+                    if (entry is null || !entry.Enabled) return false;
+                    return string.Equals(entry.Capability.ToString(), c, StringComparison.OrdinalIgnoreCase);
+                }
+                catch { return false; }
+            }
 
             _videoModels = _allModels.Where(m => Cap(m, "video")).ToList();
             _imageModels = _allModels.Where(m => Cap(m, "image")).ToList();
@@ -1155,7 +1204,9 @@
         {
             // Still not ready — open paste (key missing or model couldn't align).
             SelectKeyProvider(providerId);
-            _apiKeyFeedback = $"{label}: could not mark ready — paste a key for this provider or pick another model.";
+            _apiKeyFeedback =
+                $"{label}: key is on file, but no catalog model was selected for this job. " +
+                "Pick a provider/model in the dropdowns above (music & voice start as Off until you choose one).";
         }
     }
 
@@ -1646,6 +1697,29 @@
                 !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
                 && string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase));
 
+        if (pick is null)
+        {
+            try
+            {
+                var fromCatalog = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                    .Where(e =>
+                        e.Enabled &&
+                        string.Equals(
+                            SupportedModelCatalog.NormalizeProviderId(e.ProviderId),
+                            pid,
+                            StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(e => e.IsVoiceCloneStep)
+                    .FirstOrDefault();
+                if (fromCatalog is not null)
+                {
+                    pick = SupportedModelCatalog.ToDto(fromCatalog);
+                    if (!_voiceModels.Any(m => string.Equals(m.Id, pick.Id, StringComparison.OrdinalIgnoreCase)))
+                        _voiceModels.Add(pick);
+                }
+            }
+            catch { /* ignore */ }
+        }
+
         if (pick is not null)
             _voiceModel = pick.Id;
         // else leave as-is — no invented model id
@@ -1665,8 +1739,32 @@
         var pick = _audioModels.FirstOrDefault(m =>
             !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase));
+        if (pick is null)
+        {
+            // Last resort: catalog static (provider must still exist in models_catalog.json).
+            try
+            {
+                var fromCatalog = SupportedModelCatalog.ForCapability(ModelCapability.Audio)
+                    .FirstOrDefault(e =>
+                        e.Enabled &&
+                        string.Equals(
+                            SupportedModelCatalog.NormalizeProviderId(e.ProviderId),
+                            pid,
+                            StringComparison.OrdinalIgnoreCase));
+                if (fromCatalog is not null)
+                {
+                    pick = SupportedModelCatalog.ToDto(fromCatalog);
+                    if (!_audioModels.Any(m => string.Equals(m.Id, pick.Id, StringComparison.OrdinalIgnoreCase)))
+                        _audioModels.Add(pick);
+                }
+            }
+            catch { /* ignore */ }
+        }
         if (pick is not null)
+        {
             _audioModel = pick.Id;
+            _enableBackgroundMusic = true;
+        }
     }
 
     /// <summary>After attaching a provider key, set empty required slots to that provider's first catalog model.</summary>
