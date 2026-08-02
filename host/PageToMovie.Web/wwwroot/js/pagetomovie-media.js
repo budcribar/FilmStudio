@@ -346,6 +346,21 @@ window.PageToMovieMedia = {
         try { URL.revokeObjectURL(url); } catch (_) { /* */ }
     },
 
+    /** Build a blob: URL from base64 audio/video (TTS speak response). */
+    blobUrlFromBase64: function (base64, mime) {
+        if (!base64) return null;
+        try {
+            const bin = atob(base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const blob = new Blob([bytes], { type: mime || "audio/mpeg" });
+            return URL.createObjectURL(blob);
+        } catch (e) {
+            console.error("blobUrlFromBase64 failed", e);
+            return null;
+        }
+    },
+
     /**
      * Read a project-relative file as a blob: URL for &lt;video&gt; / stitch. Cached per path for
      * the session; pass forceRefresh=true (after a staleness check via statLocalFileAsync

@@ -3044,6 +3044,35 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return body;
     }
 
+    /// <summary>
+    /// TTS with the character's stored clone (or explicit voice id). Returns base64 audio and/or proxy URL.
+    /// </summary>
+    public async Task<SpeakVoiceDto> SpeakVoiceAsync(
+        string projectId,
+        string charKey,
+        string text,
+        string? voiceId = null,
+        string? model = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/speak",
+            new { text, voiceId, model },
+            JsonOpts,
+            ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        var body = JsonSerializer.Deserialize<SpeakVoiceDto>(raw, JsonOpts)
+                   ?? new SpeakVoiceDto { Ok = false, Error = "Empty response" };
+        if (!resp.IsSuccessStatusCode)
+        {
+            body.Ok = false;
+            if (string.IsNullOrWhiteSpace(body.Error))
+                body.Error = TryError(raw) ?? resp.ReasonPhrase ?? "Speech synthesis failed";
+        }
+        return body;
+    }
+
     public async Task<VoiceCatalogDto?> ListProviderVoicesAsync(CancellationToken ct = default)
     {
         SyncIdentityHeaders();
@@ -3403,6 +3432,21 @@ public sealed class VoiceApplyDto
     public string? PreviewUrl { get; set; }
     public string? VoiceLabel { get; set; }
     public double? EstimatedUsd { get; set; }
+}
+
+public sealed class SpeakVoiceDto
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public string? ClientUrl { get; set; }
+    public string? AudioBase64 { get; set; }
+    public string? ContentType { get; set; }
+    public string? FileExtension { get; set; }
+    public string? VoiceId { get; set; }
+    public int CharacterCount { get; set; }
+    public double? EstimatedUsd { get; set; }
+    public bool UsedMock { get; set; }
 }
 
 public sealed class VoiceCatalogDto

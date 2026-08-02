@@ -2363,6 +2363,28 @@ public sealed class ProjectStore
         }
     }
 
+    /// <summary>
+    /// Catalog provider id stored on the character seed after clone apply
+    /// (<c>voice_provider</c>, e.g. elevenlabs / fal). Null when never cloned.
+    /// </summary>
+    public string? GetVoiceProviderId(string projectId, string charKey)
+    {
+        try
+        {
+            var seed = GetCharacterSeed(projectId, charKey);
+            if (seed is not { } el) return null;
+            if (el.TryGetProperty("voice_provider", out var pEl) &&
+                pEl.ValueKind == JsonValueKind.String &&
+                pEl.GetString() is { Length: > 0 } p)
+                return p.Trim();
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     /// <summary>Absolute path for optional voice-clone template audio (mic or upload).</summary>
     public string GetVoiceCloneSamplePath(string projectId, string charKey)
     {
