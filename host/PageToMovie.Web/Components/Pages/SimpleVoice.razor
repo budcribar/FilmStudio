@@ -219,7 +219,7 @@ else
                 {
                     <div class="alert alert-warning py-2 small mt-2 mb-0" data-testid="simple-voice-apply-fix">
                         Sample is saved on this project. Voice apply needs a provider that can clone.
-                        <a href="configuration?focus=voice#models" class="alert-link">Open Settings → Voice</a>
+                        <a href="configuration?focus=voice#api-keys" class="alert-link">Open Settings → Voice clone</a>
                         · then
                         <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="RetryApplyAsync">try apply again</button>
                     </div>
@@ -629,7 +629,7 @@ private async Task StartMicAsync()
             {
                 _applied = false;
                 _hint = "Sample saved. " + FriendlyApplyError(apply.Error);
-                _message = "Open Settings → Voice (Instant Voice Cloning on ElevenLabs, or Fal MiniMax), then try apply again.";
+                _message = "Open Settings → Voice clone (Instant Voice Cloning on ElevenLabs, or Fal MiniMax), then try apply again.";
                 return;
             }
             _applied = true;

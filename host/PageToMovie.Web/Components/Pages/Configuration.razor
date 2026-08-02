@@ -508,179 +508,21 @@
         </div>
     </div>
 
-    <div class="card mb-3" id="models">
-        <div class="card-header fw-bold">Models</div>
+    <div class="card mb-3" id="background-music-options">
+        <div class="card-header">Background music options</div>
         <div class="card-body">
-            <p class="small text-muted mb-3">
-                Select models for each stage of production. These choices correspond directly to the 5 capabilities in <strong>Account &amp; API Keys</strong>.
-            </p>
-            @if (FocusActive)
-            {
-                <div class="alert alert-info py-2 small d-flex flex-wrap justify-content-between align-items-center gap-2" data-testid="models-focus-banner">
-                    <span>
-                        Showing models for <strong>@FocusLabel</strong> — pick one below, then save.
-                        @if (!string.IsNullOrWhiteSpace(FocusKeyHint))
-                        {
-                            <span class="text-muted">(@FocusKeyHint)</span>
-                        }
-                    </span>
-                    <a class="btn btn-sm btn-outline-secondary" href="/configuration#models">Show all models</a>
-                </div>
-            }
-
-            <div class="row g-3">
-                <div class="col-md-6 col-xl-4 @FocusSlotClass("video")" data-testid="model-slot-video" style="@FocusSlotStyle("video")">
-                    <label class="form-label fw-semibold">Video Generation</label>
-                    <select class="form-select" @bind="_modelName" disabled="@_busy">
-                        @foreach (var m in _videoModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_videoModels.All(m => !string.Equals(m.Id, _modelName, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_modelName">@_modelName (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_modelName, "video") is { } vh)
-                    {
-                        <div class="form-text">@vh</div>
-                    }
-                    <div class="form-text text-muted">Generates MP4 video clips from prompts and character plates.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4 @FocusSlotClass("image")" data-testid="model-slot-image" style="@FocusSlotStyle("image")">
-                    <label class="form-label fw-semibold">Portrait / Image Generation</label>
-                    <select class="form-select" @bind="_imageModel" disabled="@_busy">
-                        @foreach (var m in _imageModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_imageModels.All(m => !string.Equals(m.Id, _imageModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_imageModel">@_imageModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_imageModel, "image") is { } ih)
-                    {
-                        <div class="form-text">@ih</div>
-                    }
-                    <div class="form-text text-muted">Creates character reference portraits and book plate graphics.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4 @FocusSlotClass("planning")" data-testid="model-slot-planning" style="@FocusSlotStyle("planning")">
-                    <label class="form-label fw-semibold">Script &amp; Planning</label>
-                    <select class="form-select" @bind="_planningModel" disabled="@_busy">
-                        @foreach (var m in _planningModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_planningModels.All(m => !string.Equals(m.Id, _planningModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_planningModel">@_planningModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_planningModel, "chat") is { } ph)
-                    {
-                        <div class="form-text">@ph</div>
-                    }
-                    <div class="form-text text-muted">Screenplay reasoning, shot planning, and cast analysis.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4 @FocusSlotClass("vision")" data-testid="model-slot-vision" style="@FocusSlotStyle("vision")">
-                    <label class="form-label fw-semibold">Image Vision &amp; OCR</label>
-                    <select class="form-select" @bind="_visionModel" disabled="@_busy">
-                        @foreach (var m in _visionModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_visionModels.All(m => !string.Equals(m.Id, _visionModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_visionModel">@_visionModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_visionModel, "vision") is { } vish)
-                    {
-                        <div class="form-text">@vish</div>
-                    }
-                    <div class="form-text text-muted">Book page OCR, cast-on-image classification, and frame inspection.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4 @FocusSlotClass("review")" data-testid="model-slot-review" style="@FocusSlotStyle("review")">
-                    <label class="form-label fw-semibold">Video &amp; Clip Review (Multimodal)</label>
-                    <select class="form-select" @bind="_qualityModel" disabled="@_busy">
-                        @foreach (var m in _videoReviewModels)
-                        {
-                            var tag = m.SupportsVideoReview ? " [⭐ Native MP4 Video Review]" : " [Image Stills Only]";
-                            <option value="@m.Id">@ModelOptionLabel(m)@tag</option>
-                        }
-                        @if (_videoReviewModels.All(m => !string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_qualityModel">@_qualityModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_qualityModel, "chat") is { } qh)
-                    {
-                        <div class="form-text">@qh</div>
-                    }
-                    <div class="form-text text-muted">Evaluates dialogue &amp; lip sync (Google Gemini natively analyzes MP4 video files).</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4 @FocusSlotClass("music")" data-testid="model-slot-music" style="@FocusSlotStyle("music")">
-                    <label class="form-label fw-semibold">Audio &amp; Music Generation</label>
-                    <select class="form-select" @bind="_audioModel" disabled="@_busy">
-                        @foreach (var m in _audioModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_audioModels.All(m => !string.Equals(m.Id, _audioModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_audioModel">@_audioModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_audioModel, "audio") is { } ah)
-                    {
-                        <div class="form-text">@ah</div>
-                    }
-                    <div class="form-text text-muted">Generates beat-aligned background music scores and audio soundscapes.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4 @FocusSlotClass("voice")" data-testid="model-slot-voice" style="@FocusSlotStyle("voice")">
-                    <label class="form-label fw-semibold">Voice clone</label>
-                    <select class="form-select" @bind="_voiceModel" disabled="@_busy">
-                        @foreach (var m in _voiceModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_voiceModels.All(m => !string.Equals(m.Id, _voiceModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_voiceModel">@_voiceModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_voiceModel, "voice") is { } vch)
-                    {
-                        <div class="form-text">@vch</div>
-                    }
-                    <div class="form-text text-muted">
-                        Personal voice samples for characters. Choose a model and add the provider key above.
-                        Set to None to leave clone off.
+            <div class="row align-items-center g-3">
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="enableBgMusicSwitch" @bind="_enableBackgroundMusic" disabled="@_busy" />
+                        <label class="form-check-label fw-semibold" for="enableBgMusicSwitch">Enable background music generation</label>
                     </div>
+                    <div class="form-text text-muted">Score and remux music for completed scenes (provider/model above under Studio coverage).</div>
                 </div>
-            </div>
-
-            <div class="border-top pt-3 mt-3">
-                <div class="row align-items-center g-3">
-                    <div class="col-md-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="enableBgMusicSwitch" @bind="_enableBackgroundMusic" disabled="@_busy" />
-                            <label class="form-check-label fw-semibold" for="enableBgMusicSwitch">Enable Background Music Generation</label>
-                        </div>
-                        <div class="form-text text-muted">Automatically score and remux background music for completed scenes.</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold mb-1">Background Music Volume (@_backgroundMusicVolumePercent%)</label>
-                        <input type="range" class="form-range" min="5" max="100" step="5" @bind="_backgroundMusicVolumePercent" disabled="@(!_enableBackgroundMusic || _busy)" />
-                        <div class="form-text text-muted">Volume ratio under character dialogue (default 20%).</div>
-                    </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold mb-1">Background music volume (@_backgroundMusicVolumePercent%)</label>
+                    <input type="range" class="form-range" min="5" max="100" step="5" @bind="_backgroundMusicVolumePercent" disabled="@(!_enableBackgroundMusic || _busy)" />
+                    <div class="form-text text-muted">Under dialogue (default 20%).</div>
                 </div>
             </div>
         </div>
@@ -1070,29 +912,7 @@
         _ => null,
     };
 
-    private string FocusSlotClass(string slot) =>
-        FocusActive && string.Equals(_focusCapability, slot, StringComparison.OrdinalIgnoreCase)
-            ? "border border-info rounded p-2 bg-info bg-opacity-10"
-            : "";
 
-    private string FocusSlotStyle(string slot) =>
-        FocusActive && !string.Equals(_focusCapability, slot, StringComparison.OrdinalIgnoreCase)
-            ? "display:none"
-            : "";
-
-    private string? ModelHint(string modelId, string capability)
-    {
-        var m = _allModels.FirstOrDefault(x =>
-            string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(x.Capability, capability, StringComparison.OrdinalIgnoreCase))
-            ?? _allModels.FirstOrDefault(x =>
-                string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase));
-        if (m is null) return null;
-        // Product copy only — skip vendor/env key plumbing for end users.
-        if (!string.IsNullOrWhiteSpace(m.Notes))
-            return m.Notes;
-        return m.DisplayName;
-    }
 
     private UserSettingsDto? _userSettings;
     private readonly Dictionary<string, string?> _keyInputs = new(StringComparer.OrdinalIgnoreCase)
