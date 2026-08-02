@@ -28,8 +28,6 @@ public sealed class CostReportService
     private const double FallbackVideoCostPerSec480p = 0.05;
     private const double FallbackVideoCostPerSec720p = 0.07;
     private const double FallbackVideoCostPerSec1080p = 0.25;
-    private const double FallbackVideoRefImageCost = 0.002;
-    private const double FallbackVideoExtendCostPerSec = 0.01;
     private const double FallbackImageQualityCostPerImage = 0.05;
     private const double FallbackImageStandardCostPerImage = 0.02;
 
