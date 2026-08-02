@@ -125,6 +125,28 @@ public sealed class SupportedModelEntry
     /// <summary>USD per generated image (Image only). Null when not applicable.</summary>
     public double? ImageCostPerImage { get; init; }
 
+    /// <summary>
+    /// USD per reference/character image attached to a video generation call (Video only), when
+    /// the vendor publishes this as a distinct line item separate from the flat per-second output
+    /// rate. Null when not published/verified — <c>PageToMovie.Engine.CostReportService</c> then
+    /// applies a small estimated fallback constant instead. As of 2026-08 no enabled video provider
+    /// (including xAI's grok-imagine-video, checked against docs.x.ai/developers/pricing) itemizes
+    /// reference images separately, so this is null for every catalog entry today.
+    /// </summary>
+    public double? VideoReferenceImageCost { get; init; }
+
+    /// <summary>
+    /// USD per second billed for a video-extend/continuation call (Video only; only meaningful when
+    /// <see cref="SupportsVideoContinue"/> is true), when the vendor publishes an extend rate
+    /// distinct from its base per-second generation rate. Null when not published/verified —
+    /// <c>PageToMovie.Engine.CostReportService</c> then applies a small estimated fallback constant
+    /// instead. As of 2026-08 xAI (the only enabled provider with <see cref="SupportsVideoContinue"/>
+    /// true) has no published extend-specific rate on docs.x.ai/developers/pricing — grok-imagine-video
+    /// is a flat $0.050/sec with no separate extend line item — so this is null for every catalog
+    /// entry today.
+    /// </summary>
+    public double? VideoExtendCostPerSecond { get; init; }
+
     public string? Notes { get; init; }
 
     /// <summary>
@@ -777,6 +799,8 @@ public static class SupportedModelCatalog
             ? new Dictionary<string, double>(vb)
             : null,
         ImageCostPerImage = e.ImageCostPerImage,
+        VideoReferenceImageCost = e.VideoReferenceImageCost,
+        VideoExtendCostPerSecond = e.VideoExtendCostPerSecond,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
         ProviderId = e.ProviderId,
@@ -813,6 +837,8 @@ public static class SupportedModelCatalog
         VideoCostPerSecondByResolution = d.VideoCostPerSecondByResolution,
         VideoBaseCostByResolution = d.VideoBaseCostByResolution,
         ImageCostPerImage = d.ImageCostPerImage,
+        VideoReferenceImageCost = d.VideoReferenceImageCost,
+        VideoExtendCostPerSecond = d.VideoExtendCostPerSecond,
         Notes = d.Notes,
         FeatureRequestUrl = d.FeatureRequestUrl,
         SupportsVideoContinue = d.SupportsVideoContinue,
@@ -848,6 +874,8 @@ public sealed class SupportedModelDto
     public Dictionary<string, double>? VideoCostPerSecondByResolution { get; set; }
     public Dictionary<string, double>? VideoBaseCostByResolution { get; set; }
     public double? ImageCostPerImage { get; set; }
+    public double? VideoReferenceImageCost { get; set; }
+    public double? VideoExtendCostPerSecond { get; set; }
     public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
     public string? ProviderId { get; set; }
