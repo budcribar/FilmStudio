@@ -1,0 +1,142 @@
+{
+  "BookPath": "../books/The_Tell-Tale_Heart.txt",
+  "Timestamp": "2026-08-02 05:31:29 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 90.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 35,
+        "AvgWordsPerDialogue": 21.3,
+        "MaxWordsInSingleDialogue": 36,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 7.4,
+      "AvgAiVideoDirectibility": 8.1,
+      "AvgDramaticPacing": 8.4,
+      "AvgDialogueAuthenticity": 8.9,
+      "AvgSoundDesignMusic": 9.2,
+      "AvgOverallQualitative": 8.5,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: The required VISION_META sidecar is absent, leaving the production package incomplete for the stated downstream portrait and clip pipeline."
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 82.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 47,
+        "AvgWordsPerDialogue": 13.3,
+        "MaxWordsInSingleDialogue": 26,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "THE NARRATOR",
+          "MR. VALE",
+          "OFFICER HART"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": []
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 6.1,
+      "AvgAiVideoDirectibility": 7.4,
+      "AvgDramaticPacing": 7.4,
+      "AvgDialogueAuthenticity": 7.7,
+      "AvgSoundDesignMusic": 8.4,
+      "AvgOverallQualitative": 7.1,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: The screenplay invents the old man\u0027s personal name, MR. VALE, despite the source deliberately leaving him unnamed; this is a major invented character detail and materially fails strict source-fidelity requirements.",
+        "gpt-5.6-terra: The protagonist is referred to as THE NARRATOR in Action but speaks under the separate character cue NARRATOR, creating an unstable closed-cast identity token for downstream casting.",
+        "gpt-5.6-terra: The required VISION_META sidecar is absent, leaving the production package incomplete for the stated downstream portrait and clip pipeline."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 8.42,
+      "gpt-5.6-terra": 6.15
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 8,
+      "grok-4.5": 8.58
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 6.2/10 vs. a 8.0/10 average from 1 other judge(s) (-1.8) \u2014 notably harsher on itself than peers were."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "This is a highly faithful, well-shaped adaptation that preserves the full narrative spine: the eye fixation, seven nights of surveillance, eighth-night intrusion, murder, concealment, police search, auditory breakdown, and confession. Poe\u0027s language is retained with strong compression, and the escalating heart sound is exceptionally well staged through concrete visual and audio micro-beats. The principal weakness for clip production is that several action paragraphs package multiple consequential actions into one block, especially the concealment sequence and portions of the final breakdown; these should be atomized into explicit 5\u201310 second beats. Character continuity is generally sound for the Narrator and Old Man, but the three officers receive stable tokens without sufficiently distinct individual visual identifiers, and the Narrator\u0027s locked traits are not refreshed after lengthy intervening sequences. The officers\u0027 quoted search line is a minor invented dialogue addition, though it does not materially alter the source.",
+      "gpt-5.6-terra": "The draft covers the essential plot cleanly and has usable, concrete visual beats, strong sound beds, and a generally efficient progression from surveillance to confession. However, its source-fidelity score is severely constrained by inventing the old man\u0027s name as MR. VALE, a source character distinction Poe intentionally does not provide. It also breaks casting continuity by alternating between THE NARRATOR in Action and NARRATOR as the dialogue token, which can create duplicate character identities in a locked-reference workflow. The invented \u0022Well enough\u0022 response for the old man is a further unnecessary addition where the source supplies no spoken reply. Compared with A, the murder and escalation are less richly interleaved with physical micro-beats and the final police sequence resolves more abruptly, though its sound design remains consistently effective."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Strong closed-cast locking and consistent wardrobe/traits: THE NARRATOR (gaunt, slick black hair, hollow cheeks, black waistcoat) and MR. VALE (thin, gray robe, filmed pale-blue eye) stay visually stable, and the three officers are individually differentiated (broad/mustached, lean/clean-shaven, elderly/stiff-backed). Story spine and iconic lines are largely intact, with clear single-location scenes suited to short clips. Weaknesses: several peak stretches stack consecutive V.O. blocks over relatively static images with fewer micro-beats than the source\u2019s \u2018many minutes\u2019 density wants; a few invented spoken lines (MR. VALE\u2019s \u2018Well enough,\u2019 fuller officer briefing) slightly exceed the summarized-exchange cap; eighth-night and confession escalation are competent but less granular than B. Sound cues are present in every scene and functional at peaks, though not as densely interleaved as B.",
+      "grok-4.5": "Highest fidelity to Poe\u2019s diction and beat order: opening confession, seven-night stakeout, eighth-night slip, eye-ray, watch-in-cotton heartbeat, bed murder, dismemberment/tub, officers, and final shrieked admission all land with book wording preserved and minimal paraphrase. Directibility and pacing excel via short observable actions interleaved with V.O. and escalating diegetic heartbeat/sound beds; peak scenes carry multiple distinct SOUND/MUSIC cues. Dialogue stays performable and clip-length while keeping iconic lines intact; officer speech is kept to a brief necessary beat. Main weakness is cast-look locking: OLD MAN is thinly described beyond frailty/white hair/eye; OFFICER REYNOLDS/HAYES/BRIGGS share only generic \u2018police coats and hats\u2019 with no individual build/face/wardrobe traits, and re-entry restatements of locked traits are weaker than A\u2014risking portrait drift downstream."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-terra": "Strongest: Screenplay A because it most faithfully preserves Poe\u0027s complete escalation while pairing concrete visual actions with unusually effective, escalating diegetic sound design. Weakest: Screenplay B because it invents MR. VALE for the deliberately unnamed old man and splits the protagonist into inconsistent THE NARRATOR/NARRATOR casting tokens.",
+    "grok-4.5": "Strongest: Screenplay B because it best preserves Poe\u2019s voice, peak density, and clip-ready sound/visual interleaving with almost no invented plot. Weakest: Screenplay A because stacked V.O. over thinner micro-beats and slightly looser dialogue invention blunt pacing and directibility despite superior cast-look specificity."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "Add an atomic-clip rule: every Action paragraph must depict only one camera-observable event or reaction suitable for a single 5\u201310 second clip; split sequential actions, prop changes, and time-progressions into separate Action and sound beats.",
+      "gpt-5.6-terra": "Clarify that unnamed source characters must retain stable descriptive role tokens rather than fabricated personal names, and require every Action reference and dialogue cue for a character to use the exact same token throughout the script."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Require that any stretch of continuous NARRATOR/character V.O. longer than two short sentences must be broken by at least one concrete camera-observable Action or diegetic (SOUND:) micro-beat before the next V.O. block, especially at central violent or confession peaks.",
+      "grok-4.5": "Mandate that every named supporting speaker (officers, servants, neighbors, etc.) receive 2\u20133 distinct stable visual traits (build, facial hair/face shape, wardrobe color or cut) at first on-screen appearance, restated in the first Action line on any later re-entry after a gap."
+    }
+  }
+}

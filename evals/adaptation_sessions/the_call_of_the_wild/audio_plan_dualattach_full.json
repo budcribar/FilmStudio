@@ -1,0 +1,342 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "score_intent": "Warm pastoral Americana for sun-kissed Santa Clara estate, gentle acoustic guitar and soft strings with light woodwinds, leisurely 80\u201390 BPM, opens hushed and idyllic over lawns and veranda, brightens with playful cello and harp glints as Buck moves among the dogs, swells into a brief sunlit crest of full strings and sparkling percussion on the cement-tank plunge, then eases back to twilight warmth and a quiet fading pastoral cadence over stables and orchards",
+      "dynamics_arc": "Intensity rises gently from clip 1 through clip 2, peaks on the tank plunge at clip 3, then releases through the twilight escort and settles soft on the rear grounds in clips 4\u20135.",
+      "peak_clip_number": 3,
+      "timing": "Sparse opening 0\u20138s, gradual lift through mid-scene, crest around the plunge ~18\u201328s, warm decrescendo to end ~45s",
+      "diegetic_sound": "Birdsong, distant dogs yapping, water splash and spray shake, soft footfalls on path, faint stable and orchard ambience",
+      "silence_or_exclusions": "No percussion hits or dark motifs; avoid any tension stingers that foreshadow kidnapping",
+      "alternatives": [
+        "solo piano pastoral with light strings",
+        "chamber folk with mandolin and soft pad"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "score_intent": "Intimate nocturnal chamber cue, low warm strings and soft piano by the library fire, slow 60\u201370 BPM, contented aristocratic hush with a low sustained cello under Buck at the Judge\u2019s feet, slight outdoor-hardened color in muted horn halfway through without ever leaving the cozy hearth mood, ends on a held soft major chord",
+      "dynamics_arc": "Starts subdued on clip 1 and rises only slightly to a modest warm peak on clip 2 before holding steady.",
+      "peak_clip_number": 2,
+      "timing": "Continuous low bed across ~25s, tiny swell in second half",
+      "diegetic_sound": "Crackling fireplace, clock tick, soft breathing and fabric rustle",
+      "silence_or_exclusions": "No brass fanfares or rhythmic drive; keep score under dialogue and fire crackle",
+      "alternatives": [
+        "solo cello and sparse piano",
+        "soft harmonium and string quartet"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "score_intent": "Dark suspense underscore turning to violent struggle, low dissonant strings and muted pulse at 70 BPM opening in orchard night shadows, tension coils with dry percussion ticks and uneasy woodwinds as the rope doubles under the collar and money changes hands, tempo and density climb through the choke bargain lines, then erupts in the final third into frantic string tremolo, harsh brass stabs and pounding low drums as Buck springs in rage and the rope tightens mercilessly until a choking cut-down leaves ringing near-silence",
+      "dynamics_arc": "Builds from uneasy clip 1 through rope and bargain clips 2\u20134, peaks violently on the choke and rage at clip 5, then collapses.",
+      "peak_clip_number": 5,
+      "timing": "Slow dread 0\u201320s, tightening mid-scene, full eruption final ~12\u201315s of the 50s scene",
+      "diegetic_sound": "Night insects, rope rasp on collar, coin chink, Buck\u2019s growl and thrash, choked gasps, body thud",
+      "silence_or_exclusions": "Drop score almost to nothing after the choke so gasps and night air dominate the button",
+      "alternatives": [
+        "minimal heartbeat pulse into noise burst",
+        "solo low strings with sudden cluster hit"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "score_intent": "Urgent nocturnal industrial train cue, iron-heavy low brass and driving percussion at 110\u2013120 BPM, opens already hot as the unconscious Buck is thrown into the baggage car, locomotive shriek integrated as a screaming lead over gathering wheel rhythm, then propulsive ostinato carries the train into the night with a slight release as distance grows but never fully calm",
+      "dynamics_arc": "Peaks immediately on the throw into the car at clip 1, then rides a slightly lower but still driving intensity through the departing train on clip 2.",
+      "peak_clip_number": 1,
+      "timing": "Hard attack from frame one, sustained drive across ~15s with minor tail-off",
+      "diegetic_sound": "Body slam on wood floor, baggage-door slam, locomotive whistle shriek, crossing bell, wheels accelerating on rails",
+      "silence_or_exclusions": "No pastoral residue from earlier scenes; keep music subordinate to whistle and wheel roar at the shriek",
+      "alternatives": [
+        "percussion-only rail rhythm with whistle",
+        "dark synth pulse under pure train FX"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "score_intent": "Claustrophobic rage-to-simmer score for baggage car and crate prison, jagged strings and metallic percussion exploding at 100\u002B BPM as Buck\u2019s eyes open with unbridled fury and jaws close, then drops to wary sparse cues under the handlers\u2019 casual talk, rebuilds with grinding low brass and scraped textures as the brass collar is filed off, and climbs again into a brooding wounded-pride swell of angry cellos and distant drum hits as Buck nurses wrath in the crate, joyful bark twisting toward a savage growl without full release",
+      "dynamics_arc": "Opens at peak fury on clip 1, dips through dialogue clips 2\u20133, rises on collar filing clip 4, and surges again to a secondary high on crate wrath clip 5.",
+      "peak_clip_number": 1,
+      "timing": "Violent cold open 0\u201310s, thin underscore mid 10\u201330s, dark rebuild final 15s of ~45s",
+      "diegetic_sound": "Jolting car wheels, snarl and bite, cry of mangled hand, file on brass collar, crate wood slam, saloon murmur, tallow-candle hiss",
+      "silence_or_exclusions": "Pull music way down under spoken lines in clips 2\u20133 so dialogue reads clean",
+      "alternatives": [
+        "industrial drones with sudden sting hits",
+        "string quartet aggression into hollow crate reverb"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "score_intent": "Brutal primitive-law combat score evolving into hard-won stillness, dry war drums and snarling low strings at a heavy 90 BPM as the crate opens in the Seattle yard, tension ratchets on the red-eyed taunts, then detonates into full orchestral-percussion violence\u2014tom battery, brass shocks, and grinding ostinatos\u2014through Buck\u2019s mid-air launch, dozen smashed charges, and the deliberate frightful nose blow at the apex, collapses with a held dissonant chord as he crumples, stays thin and hollow under the breaker\u2019s genial talk and meat-and-water mercy, then settles into a cold resolved minor-pad lesson motif as other crated dogs arrive, beaten-but-not-broken dignity in sparse piano and low drone",
+      "dynamics_arc": "Rises from clips 1\u20133, hits maximum on the launch and nose-blow climax across clips 4\u20136, stays high through the knockout clip 7, then releases sharply through clips 8\u20139 and holds a subdued reflective plateau across clips 10\u201319.",
+      "peak_clip_number": 6,
+      "timing": "Build 0\u201315s, sustained combat peak ~15\u201340s of 70s scene, long subdued aftermath final half",
+      "diegetic_sound": "Hatchet on crate, Buck\u2019s charges and roars, club impacts, blood and slaver, body crumple, water pour, raw meat, crate arrivals, rope drag, coin pass, red-sweater man\u2019s calm voice",
+      "silence_or_exclusions": "After knockout, strip score to near silence under dialogue clips 8\u201316 so words and breathing dominate; no heroic triumph brass",
+      "alternatives": [
+        "taiko and distorted cello combat into empty wind",
+        "percussion-only fight then solo mournful horn"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "score_intent": "Transitional bargaining cue with northern frontier color, light accordion and plucked strings at easy 85 BPM, a brief bright exclamation on Sacredam praise of the bully dog, settles into practical deal-making underscore under the three-hundred price and government-money lines, then a clean forward-moving walk motif as Buck and Curly are led away from the red sweater toward the next chapter",
+      "dynamics_arc": "Highest on the opening bargain exclamation clip 1, eases through price talk clips 2\u20133, and softens further on the lead-away clip 4.",
+      "peak_clip_number": 1,
+      "timing": "Small accent at open, steady bed through ~30s, gentle lift into exit walk",
+      "diegetic_sound": "Yard ambience, dog tags and leash jingle, boot steps, faint distant harbor",
+      "silence_or_exclusions": "No combat residue; keep light under French-accented dialogue",
+      "alternatives": [
+        "spare fiddle and hand drum",
+        "quiet military snare brush with accordion"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "score_intent": "Maritime voyage score turning colder and stranger, rolling cello ostinato and ship-board woodwinds at 75 BPM over receding Seattle, denser tween-decks texture as Buck meets Spitz and Dave, sharp stinger and whip-crack accent when Spitz steals food and Buck springs, then long cold drone and thinning harmony as day and night the ship throbs north, atmosphere brightens with anticipatory high strings when the propeller stills, and ends on crystalline sparse piano and glass-harmonic shimmer as first snow falls and Buck licks the biting white stuff",
+      "dynamics_arc": "Moderate open clips 1\u20132, peaks on the food-steal spring clip 3, drops to cold endurance clip 4, lifts with arrival excitement clip 5, and settles curious-soft on first snow clip 6.",
+      "peak_clip_number": 3,
+      "timing": "Rolling bed 0\u201315s, sharp mid conflict accent, cold stretch, brightening final third of ~45s",
+      "diegetic_sound": "Hull creak, propeller throb, dog growls and whip sing, wind rising, propeller stilling, soft snow hush, Buck\u2019s sniff and lick, onlookers\u2019 laugh",
+      "silence_or_exclusions": "Leave space for whip crack and laughs; thin score under snow so flakes and lick read clearly",
+      "alternatives": [
+        "foghorn drone and sparse guitar",
+        "Nordic hardanger fiddle over ship pulse"
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "score_intent": "Primordial ecstasy and death-duel score, opening with moonlit chase energy\u2014racing strings, pack-cry choir, and leaping percussion at climbing tempo as Buck leads the rabbit hunt in flashing leaps; swells into transcendent full-orchestral ecstasy marking the summit of life, old wolf-cry vocalise soaring as he goes back into the womb of Time; snaps into brutal intimate fight music when Spitz cuts in\u2014shoulder-crash drums, fang-clash metallic hits, streaming blood string scrapes\u2014building through thrice-more attacks and the broken-foreleg crunch to a final catastrophic shoulder-to-shoulder impact and dark-circle frenzy that swallows Spitz, then cuts to a stark victorious silence broken only by a single low dominant-beast drone as Buck stands alone champion under the aurora",
+      "dynamics_arc": "High chase lift (clip 1) rising through pack-lead ecstasy (clips 2-5), sharp turn at rabbit kill (clip 6), absolute sustained peak across the death fight (clips 7-10), releases to solitary champion aftermath (clip 11).",
+      "peak_clip_number": 10,
+      "timing": "75s scene; ecstatic chase build first 40%, fight detonation and sustained brutal peak middle 40%, stark champion release final 20%",
+      "diegetic_sound": "Snowshoe rabbit dash, sixty-dog pack cry, leaping snow crunch, rabbit shriek, shoulder impacts, fang on fang, blood drip on snow, breaking bone, pack circle snarl, final heavy breath in moonlit quiet",
+      "silence_or_exclusions": "Hard cut to near-silence the instant Spitz vanishes under the circle so Buck\u0027s lone stance lands in emptiness; no triumphant brass victory theme\u2014keep it raw and primordial",
+      "alternatives": [
+        "tribal drum and throat-sing duel only",
+        "string-quartet violence morphing from ecstasy fugue to death stabs"
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "score_intent": "Northern frontier orchestral underscore with dry fiddle, low frame-drum and muted horns under camp dialogue at a steady ~90 BPM, sparse and watchful through the Spitz talk, then cellos and snare tighten as Buck drives Sol-leks from the lead; percussion and brass swell through the club-chase and curses, circling tension held just out of reach, until the club hits the snow and the cue breaks into a bright triumphant horn call and laughing sled-dog rhythm as Buck trots into the lead",
+      "dynamics_arc": "Holds moderate through dialogue clips 1\u20134, rises through the leadership revolt and club chase clips 5\u20138, dips at the thrown-down club clip 9, peaks in triumphant lead claim clip 10.",
+      "peak_clip_number": 10,
+      "timing": "~50s; stay under dialogue first third, surge with action mid-to-late, resolve on the lead takeover",
+      "diegetic_sound": "dog snarls and snaps, club whooshes, men\u2019s curses, harness jingle, paws on packed snow",
+      "silence_or_exclusions": "leave clear pockets under Francois/Perrault lines; no cartoon stings on every shove",
+      "alternatives": [
+        "percussion-and-breath tribal standoff bed",
+        "wind-heavy ambient with sparse drum hits only on charges"
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "score_intent": "Propulsive Yukon adventure score at brisk ~120 BPM built on sled-bell ostinato, driving strings and confident brass motifs for Buck\u2019s leadership, rhythmic punches as he shakes Pike and smothers Joe, team-unison surge as Teek and Koona are broken in, then full orchestral momentum and soaring horns cresting as the team flies the lakes with the running man towed behind into Skaguay",
+      "dynamics_arc": "Strong open clip 1, early peak on discipline clip 2, eases on new dogs clip 3, rebuilds through praise clip 4 to velocity peak on the lake run clip 5.",
+      "peak_clip_number": 5,
+      "timing": "~40s; continuous forward motion, lift into final third for the record-run payoff",
+      "diegetic_sound": "runners hissing, breath and pant of dogs, whip cracks, ice echo, distant trail shouts",
+      "silence_or_exclusions": "thin under Francois praise line so the spoken boast reads; avoid drowning tow-rope visuals",
+      "alternatives": [
+        "leaner snare-and-fiddle courier march",
+        "synth-pulse hybrid race cue with orchestral overlay"
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "score_intent": "Bittersweet farewell cue at slow ~70 BPM, warm mid strings and lonely harmonica over soft crowd bed, swelling emotional cello and hushed choir-like pads as Francois throws his arms around Buck and weeps openly, then thinning to spare woodwinds and a colder distant drum as official orders end their run and the Scotch half-breed takes the heavy mail load out",
+      "dynamics_arc": "Warm crowd open clip 1, peaks on Francois weeping embrace clip 2, releases through orders and new-driver departure clips 3\u20134.",
+      "peak_clip_number": 2,
+      "timing": "~30s; emotional crest mid-scene on the embrace, quick cool-down into mail departure",
+      "diegetic_sound": "street crowd murmur, dog-buster chatter, harness clink, boots on boardwalk, mail sacks thudding",
+      "silence_or_exclusions": "drop almost to silence under the weeping so sobs and fabric read; no heroic fanfare on the handoff",
+      "alternatives": [
+        "solo accordion lament with string pad",
+        "near-diegetic street band fading to wind"
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "score_intent": "Dark nocturnal mail-trail score opening with hypnotic low drone and machine-like muted percussion at ~75 BPM for monotonous toil, dissolving into eerie ethereal flutes, bone rattles and distant tribal pulse as the fire becomes the hairy-man vision and beast eyes gleam two by two, snapped by a sharp wake-up hit, then grim heavy strings and funeral-march timpani climb through Dave\u2019s pride-sickness and final harness run, cresting in a stark held chord that cuts to near silence around the offscreen mercy shot",
+      "dynamics_arc": "Low machine grind clips 1\u20132, rises through vision clips 3\u20134, resets at wake-up clip 5, climbs through Dave\u2019s decline clips 6\u20137 to peak at the mercy-shot aftermath clip 8.",
+      "peak_clip_number": 8,
+      "timing": "~60s; dream middle third floats free of tempo, tragedy final third slow and inevitable",
+      "diegetic_sound": "fire crackle, night wind, trace chains, Dave\u2019s falls and bites, distant revolver shot, team\u2019s knowing stillness",
+      "silence_or_exclusions": "hard near-silence after the shot; no melodic resolution\u2014let the gun and the knowing dogs land",
+      "alternatives": [
+        "pure ambient fire-and-drone dream without tribal colors",
+        "minimal piano tolls over wind for Dave\u2019s end only"
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "score_intent": "Weary arrival underscore turning ironic and faintly comic-ominous, thin tired strings at slow ~65 BPM for the wretched starved mail team tottering into Skaguay, dry woodblock and awkward banjo-tinged frontier colors as callow Hal, watery-eyed Charles and pretty soft Mercedes enter, skeptical light pizzicato under ignored neighbor advice and the top-heavy tent-and-dishes argument, unsettled foolish mood rather than heroic",
+      "dynamics_arc": "Flat moderate plateau across clips 1\u20136 with a slight dip on soft Mercedes intro clip 3; no true climax, steady uneasy tone.",
+      "peak_clip_number": 2,
+      "timing": "~40s; even bed under introductions and load debate, no big swell",
+      "diegetic_sound": "street noise, starved dog pants, crate and dish clatter, Mercedes\u2019 flutters, neighbors\u2019 grins and asides",
+      "silence_or_exclusions": "keep music thin under all spoken advice and Mercedes\u2019 undreamed-of tent line",
+      "alternatives": [
+        "almost silent practical bed with occasional wry clarinet",
+        "out-of-tune parlor piano for the greenhorns"
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "score_intent": "Chaotic slapstick-to-danger frontier cue at ~100 BPM, busy percussion and frantic fiddles as fourteen dogs tangle against frozen runners, lighter winds under Mercedes\u2019 poor-dears protests, then an explosive orchestral hit and chaotic brass as angry Buck breaks into a raging run, trips Hal and capsizes the top-heavy sled across the thoroughfare, settling into wry subdued strings while kind citizens catch dogs and advise half the load and twice the dogs",
+      "dynamics_arc": "Builds through overload and break-out struggle clips 1\u20133, peaks violently on the raging capsize clip 4, releases to calmer aftermath advice clip 5.",
+      "peak_clip_number": 4,
+      "timing": "~45s; ratchet mid-scene, hard accent on spill, quick deflate after",
+      "diegetic_sound": "whip wrenches, frozen runner scrapes, dog pile snarls, sled crash and scatter, citizen shouts",
+      "silence_or_exclusions": "duck under Mercedes\u2019 Oh Hal line and the citizens\u2019 half-load advice",
+      "alternatives": [
+        "cartoon-percussion spill then dry realism",
+        "tight rhythmic tension without comedy colors"
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "score_intent": "Bleak tragic trail dirge at dragging ~60 BPM, hollow winds and gaunt strings for slovenly half-night camps and poor mileage, sudden harsh brass and percussion stabs when Outside dogs are shot with the Colt and Billee is axed, grinding dissonant textures under the unending family quarrel and Mercedes riding, thinning to skeletal near-silent strings and a weak heartbeat drum as seven perambulating skeletons stagger with Buck blind-weak at the head keeping trail by loom and feel",
+      "dynamics_arc": "Low incompetent open clip 1, peaks on the dog-killings clip 2, settles through horse-hide and quarrel clips 3\u20134, rises again in weary despair on the skeleton team clip 5.",
+      "peak_clip_number": 2,
+      "timing": "~55s; brutal accents mid-early, long starved decay through final third",
+      "diegetic_sound": "ax and revolver, starving whines, sled creak, endless bickering voices, stumbling paws, wind over crust",
+      "silence_or_exclusions": "strip music almost bare on the final stagger so breath and limp legs dominate; no sentimental swell on deaths",
+      "alternatives": [
+        "solo bowed saw and wind only",
+        "low electronic pulse under naturalistic cruelty"
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "score_intent": "Spring-light pastoral open with gentle woodwinds and thawing-water textures at easy ~80 BPM over sap and birds, darkening as whip then club fall on unmoving Buck with brutal percussion hits and strained climbing strings, exploding into raw heroic brass and furious timpani on Thornton\u2019s animal cry and death-threat If you strike that dog again I\u2019ll kill you, holding knife-edge tension through Hal\u2019s protest and the cut traces, a cold suspended chord as the party pulls onto rotten ice and the section gives way into a yawning hole, resolving to tender solo cello and quiet guitar as Thornton says You poor devil and Buck licks his hand",
+      "dynamics_arc": "Gentle rise through arrival and warning clips 1\u20135, surges to peak on Thornton\u2019s kill-threat clip 7, stays high through Hal\u2019s defiance clip 8 and ice-collapse clip 9, releases into compassion on clip 10.",
+      "peak_clip_number": 7,
+      "timing": "~70s; pastoral first fifth, violence and standoff center, ice sting then long soft resolve",
+      "diegetic_sound": "spring birds and melt water, whip/club impacts, Thornton\u2019s cry, knife on club, traces cut, ice groan and splash, Buck\u2019s weak lick",
+      "silence_or_exclusions": "near silence under You poor devil and the hand-lick; do not score the ice hole with a horror sting\u2014cold suspension only",
+      "alternatives": [
+        "spare Copland-esque open fifths into sudden violence",
+        "minimal piano and breath, diegetic-led rescue"
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "score_intent": "Warm intimate acoustic wilderness-camp score, soft fingerpicked guitar and gentle strings opening hushed and sparse at a slow 70 BPM as Buck rests through long spring days and is tended by Skeet and Nig, gradually swelling with tender cello and light woodwinds as genuine passionate love awakens for the first time, tempo and warmth climbing through the middle into a heartfelt lyrical swell of full warm strings and soft brass at the head-between-hands love-name climax and Buck\u2019s laughing spring, then easing into quiet nocturnal intimacy with sparse piano and distant night air as he adores at a distance and creeps to the tent flap to listen",
+      "dynamics_arc": "Intensity rises gently from quiet convalescence (clips 1\u20133) through awakening love (clips 4\u20136), peaks at the rough affectionate head-hold and joyful spring (clips 7\u20138), then softens through hand-caress and distant adoration into hushed night vigil (clips 9\u201312).",
+      "peak_clip_number": 7,
+      "timing": "Sparse underscore first ~20s; steady emotional swell through mid-scene love beats; lyrical peak around clips 7\u20138; taper to near-minimal night bed over final clips",
+      "diegetic_sound": "Soft camp ambience, spring river hush, dog breathing and gentle washing sounds, low human murmurs, tent canvas and night insects under final beat",
+      "silence_or_exclusions": "No percussion hits, no suspense stingers, no tribal or hunting drums; keep score subordinate to intimate performance",
+      "alternatives": [
+        "solo piano and warm pad only",
+        "string quartet without guitar"
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "score_intent": "Tense frontier orchestral score opening with sly low percussion and muted strings for stealth meat-stealing and camp life, building into a sudden savage brass-and-drum roar neither bark nor yelp for the Circle City bar throat-attack, briefly settling into sparse tense underscore for the miners\u2019 restraint and verdict, then surging into relentless whitewater action with driving strings, pounding timpani and urgent horns as the poling-boat flips and Buck battles the Forty-Mile rapids through tail-grasp and repeated rope launches, exploding into a heroic full-orchestra battering-ram climax on the third launch under the master\u2019s electric voice, then collapsing into exhausted sparse piano and low strings over three broken ribs on the bank",
+      "dynamics_arc": "Rises from moderate tension (clips 1\u20132) to first peak at the bar-attack roar (clip 3), dips through meeting and poling setup (clips 4\u20135), climbs through rapids rescue (clips 6\u201310) to equal peak at the third rope launch (clip 11), then releases to quiet aftermath (clip 12).",
+      "peak_clip_number": 11,
+      "timing": "Low stealth into sudden hit by ~clip 3; brief reset; continuous escalating action bed through rapids third; hard drop to sparse coda on bank",
+      "diegetic_sound": "Bar crowd murmur and strike impact, river roar and snub-line creak, thrashing water, rope whip and gasp, shore gravel and labored breathing",
+      "silence_or_exclusions": "Mute heroic theme during miners\u2019 meeting dialogue; no music over final medical quiet except thinnest pad",
+      "alternatives": [
+        "percussion-forward survival score without full brass",
+        "synth-orchestral hybrid with submerged water textures"
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "score_intent": "Cold Dawson saloon tension building into epic heroic dog-sled triumph, sparse icy piano and low brass murmurs for sixty-below boastful wager talk at a measured 80 BPM, tightening with snare and held strings as the flour-loaded sled is revealed and Thornton kneels cheek-to-cheek whispering As you love me, then erupting into driving rhythmic strings and bold horns as Gee Haw Mush commands crack and Buck breaks the frozen runners free with crisp crackling, climbing relentlessly to a massive orchestral peak\u2014choir-tinged\u2014as muscles writhe and knot and he hauls the thousand-pound load a hundred yards, then releasing into warm triumphant brass and tender strings for the kneeling head-to-head embrace and quiet refusal of the richer offer",
+      "dynamics_arc": "Builds from saloon tension (clips 1\u20133) through the intimate love command (clips 4\u20136), rises sharply through Gee\u2013Haw\u2013Mush breakout (clips 7\u201310), peaks as Buck throws himself into the pull (clip 11), sustains high through the hundred yards and embrace (clips 12\u201313), then eases through refusal and final hand-seize (clips 14\u201315).",
+      "peak_clip_number": 11,
+      "timing": "Dialogue-led sparse bed first third; command cue lifts into continuous pull crescendo mid-to-late; warm release over final celebration beats",
+      "diegetic_sound": "Saloon crowd and gold-sack thump, frozen runner crackle, claw-on-ice scrape, sled groan, crowd roar hats-and-mittens, breath and fabric on embrace",
+      "silence_or_exclusions": "Leave clear pocket for whispered As you love me and the single Mush command; no score competing with final spoken refusal",
+      "alternatives": [
+        "northern folk fiddle and frame-drum build",
+        "minimalist pulse with late orchestral bloom only"
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "score_intent": "Expansive wilderness journey score with open acoustic guitar, soft French horn and airy strings at a moderate walking tempo around 90 BPM, pastoral and exploratory through Yukon-to-Stewart bends and Indian-fashion salt-and-rifle hunting, seasons wheeling with subtle color shifts from bright summer textures to colder naked-mountain and sparse lonely flute over the ancient blazed path that begins nowhere, gently brightening into warm hopeful major-key strings and light percussion as spring reveals not the Lost Cabin but a shallow placer of gold like yellow butter and moose-hide sacks heaped like firewood",
+      "dynamics_arc": "Steady moderate wandering energy (clips 1\u20132), dips into sparse lonely wonder on seasons and the ancient path (clips 3\u20134), rises to a gentle peak at the placer-gold discovery (clip 5).",
+      "peak_clip_number": 5,
+      "timing": "Even traveling bed across first ~30s; thin to near-solo colors on path beat; soft lift and resolve on final placer reveal",
+      "diegetic_sound": "River and pack-creak travel, rifle once, wind on peaks, insects or soft snow, shovel-gravel and sack settle on placer",
+      "silence_or_exclusions": "No action percussion, no dark dread drones; avoid overscoring quiet travel montages",
+      "alternatives": [
+        "solo horn and ambient nature bed",
+        "string orchestra without guitar"
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "score_intent": "Mystical nocturnal wilderness score opening with low drone and soft firelit strings as Buck muses idle days and hairy-man visions, the forest call entering as distant wordless choir and lonely horn that fills him with unrest, building with restless percussion and rising strings as he springs mane-bristling to the timber-wolf howl, chasing through urgent rhythmic strings and wild flute into a free soaring mid-tempo run, softening to intimate curious woodwinds at the nose-sniff and nervous half-friendly play by the stream, then a tender warm-cello pull of remembered Thornton that turns him home under a mournful fading howl, peaking again in joyful frantic affection as he plays the general tom-fool, settling to protective quiet underscore for two days never leaving camp",
+      "dynamics_arc": "Rises from idle musing (clips 1\u20132) through night howl and chase to a peak at the wild leapings pursuit (clip 5), eases through play and stream memory (clips 6\u20137), peaks again in affectionate frenzy (clip 8), then settles to watchful calm (clip 9).",
+      "peak_clip_number": 5,
+      "timing": "Hypnotic sparse open; call and chase carry mid-scene; brief intimate dip; second warm spike on tom-fool; soft hold to end",
+      "diegetic_sound": "Fire crackle, deep forest howl, paw-fall and brush, stream trickle, camp night quiet, playful scuffle on return",
+      "silence_or_exclusions": "No modern rhythmic traps; keep howl diegetic dominant over scored howls when on-screen",
+      "alternatives": [
+        "pure ambient choir and frame drum",
+        "chamber strings with solo clarinet call motif"
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "score_intent": "Primeval hunting score of raw power, deep drums and growling low brass under proud soaring strings as Buck in full flower\u2014glorious coat, wolf-like\u2014cuts a great bull from a band of twenty moose, patient tense ostinatos stretching through half-day multiplication and four-day siege with relentless quiet intensity never permitting browse or drink, a savage triumphant percussion crest when the bull falls, then shifting on the long easy lope home into ominous dissonant strings and hollow drums as calamity scent lifts neck hair, darkening through grief-struck sparse motifs over Nig arrow-dead and a sled-dog thrashing in death-struggle into a horrified rage-swelling climax of pounding brass as Hans lies feathered like a porcupine at the edge of the wrecked clearing",
+      "dynamics_arc": "Builds from proud power (clips 1\u20132) through patient hunt (clip 3) to a high peak at the four-day kill (clip 4), eases on the homeward lope (clip 5), then climbs through discoveries of the dead (clips 6\u20137) to equal peak of rage at Hans and the clearing (clip 8).",
+      "peak_clip_number": 8,
+      "timing": "Proud theme into stretched tense hunt bed; kill crest mid-scene; color shift to dread on return trail; continuous dark rise through body discoveries to final clearing hit",
+      "diegetic_sound": "Moose crash and breath, forest silence under patience, flies or leaves on corpses, arrow-shaft creak, distant unsettled camp hush",
+      "silence_or_exclusions": "Strip music to almost nothing on first sight of Nig\u2019s body so diegetic horror leads; no triumphant fanfare after kill",
+      "alternatives": [
+        "tribal drum and throat-drone only",
+        "string tremolo horror without brass"
+      ]
+    },
+    {
+      "scene_id": "S31",
+      "score_intent": "Brutal vengeful orchestral fury opening at full intensity with savage war drums, screaming brass and violent string ostinatos as Buck erupts upon Yeehats dancing about the wreckage of the spruce-bough lodge, sustaining maximum ferocity through chief throat-rip and plunging mid-midst tearing rending destruction with chaotic percussion and dissonant clusters, then fracturing into panicked fleeing motifs as the tribe scatters proclaiming the Evil Spirit, collapsing abruptly into hollow devastated silence and sparse mourning solo cello over the desolated camp and Pete killed in his blankets, deepening into cold empty grief with low sustained strings and distant wind as Buck finds Thornton by the pool head and forefeet in the water and broods the void all day with pride at having killed man",
+      "dynamics_arc": "Opens at maximum fury and sustains through the massacre (clips 1\u20133), slightly eases through panicked flight (clip 4), then drops sharply into devastated quiet over the dead and the pool (clips 5\u20136), holding low brooding intensity (clip 7).",
+      "peak_clip_number": 2,
+      "timing": "Immediate full-intensity attack through first ~half; fracture and scatter bridge; hard cut to near-silence and thin mourning bed for discovery and brood",
+      "diegetic_sound": "War-cries cut short, flesh and weapon clatter, fleeing shouts, lodge wreckage settle, water lap at pool, wind through empty camp",
+      "silence_or_exclusions": "After massacre, exclude drums and brass entirely; leave long unscoreable air around Thornton\u2019s body reveal",
+      "alternatives": [
+        "percussion-and-choir vengeance then solo voice lament",
+        "atonal cluster attack into pure ambient void"
+      ]
+    },
+    {
+      "scene_id": "S32",
+      "score_intent": "Moonlit mythic finale score opening with ethereal high strings and ghostly choir over full-moon stillness bathing the land in ghostly day, pack yelps entering as layered wolf-howl textures and low drums as the silvery flood pours into the clearing where Buck stands statue-still, exploding into fierce combat music with snapping percussion and aggressive brass as the boldest wolf leaps and Buck breaks its neck then holds the pell-mell crowded pack at bay from a gravel-bank angle, thinning to tense exhausted breathing space with sparse held tones as wolves draw back tongues lolling, warming into cautious friendly woodwinds as the long lean gray advances and the old gaunt battle-scarred wolf comes forward, rising into a solemn communal howl of acceptance with full choir and horns as Buck comes out and the pack crowds sniffing, then releasing into free running wild joy as he joins side by side with his wild brother under the moon\u2014last tie broken",
+      "dynamics_arc": "Builds from ghostly moonrise (clip 1) through pack arrival (clip 2) to combat peaks as Buck fights the boldest and the whole pack (clips 3\u20134), releases through discomfit and cautious approach (clips 5\u20136), rises again at the old-wolf howl and pack acceptance into the run (clips 7\u20138).",
+      "peak_clip_number": 3,
+      "timing": "Ethereal open ~first 10\u201315s; combat surge mid-scene; thinned standoff; acceptance howl and run carry final third to open ending",
+      "diegetic_sound": "Night wind and moonlit quiet, pack yelp chorus, snarl and body impact, gravel scramble, sniff and breath, communal howl, running paws into forest",
+      "silence_or_exclusions": "No human-instrument hero theme after acceptance; let diegetic howl lead the join; avoid unresolved dissonance on final run",
+      "alternatives": [
+        "voice-and-drum ritual pack score",
+        "orchestral with prominent solo horn wolf motif"
+      ]
+    },
+    {
+      "scene_id": "S33",
+      "score_intent": "Cinematic wilderness epilogue score, primal and mythic: opens hushed and sparse with low sustained strings, distant frame-drum pulse and cold night-wind textures around 60 BPM as moonlit valley and altered wolves appear; tension coils with darker cello ostinatos and muted horn stabs into a sudden predatory surge for the night-raid wolf-shape; eases into pale mournful solo horn and sparse piano over thin high strings for the snowy dead hunters and the forbidden valley; summer gold-stream passage stays intimate and elegiac with a single aching cello line and soft choir pad; then the Ghost Dog lifts his head and the score begins a long inexorable climb\u2014tempo rising toward 95\u2013100 BPM, full low brass, taiko and wolf-howl-blended choir entering\u2014as winter moonlight and borealis break open into a gigantic leaping pack anthem, great throat a-bellow, peaking on the final image of the Ghost Dog at the head of the pack under pale sky before a resonant held chord and fade into wind",
+      "dynamics_arc": "Quiet legend-building through clips 1\u20132 rises sharply to a predatory peak at clip 3, releases across aftermath and summer solitude (clips 4\u20137), then climbs from the howl at clip 8 through winter night (9) to the scene\u2019s highest intensity on the full-run and pack-leader finale (clips 10\u201311).",
+      "peak_clip_number": 11,
+      "timing": "Sparse atmospheric bed for first ~15s (clips 1\u20132); brief aggressive swell ~clips 3\u20134; mournful thin texture through mid-section summer beats; sustained build from clip 8 onward, full anthem in final third, resonant decay on last image",
+      "diegetic_sound": "Night wind over valley, distant wolf howls, snow crunch and camp-raid scuffles, trap-chain rattle, throat-slash silence then greater paw-prints in snow, soft summer stream trickle, single long mournful howl, winter pack howls blending into score, breath and snow under giant paws",
+      "silence_or_exclusions": "No jaunty or civilized instrumentation; avoid dense percussion under summer gold-stream solitude; leave clean air after the mournful howl before winter rise; no dialogue bed",
+      "alternatives": [
+        "leaner northern-folk approach with hardanger fiddle and jaw harp instead of full brass choir",
+        "almost-diegetic version driven only by layered wolf howls, wind, and sparse frame drum"
+      ]
+    }
+  ]
+}

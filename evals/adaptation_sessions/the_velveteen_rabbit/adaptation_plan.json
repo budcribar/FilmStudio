@@ -1,0 +1,280 @@
+{
+  "characters": [
+    {
+      "name": "Velveteen Rabbit",
+      "aka": [
+        "Bunny",
+        "old Bunny",
+        "little Rabbit",
+        "the Rabbit"
+      ],
+      "withheld_until": null,
+      "notes": "Protagonist stuffed toy; becomes Real through the Boy\u0027s love then fully alive via Fairy"
+    },
+    {
+      "name": "The Boy",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Child owner whose love makes the Rabbit Real; later has scarlet fever"
+    },
+    {
+      "name": "Skin Horse",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Wise old nursery toy who explains what Real means; made Real long ago by Boy\u0027s Uncle"
+    },
+    {
+      "name": "Nana",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Nursemaid who tidies toys and first puts Rabbit in Boy\u0027s bed"
+    },
+    {
+      "name": "Nursery Magic Fairy",
+      "aka": [
+        "the Fairy"
+      ],
+      "withheld_until": "B12",
+      "notes": "Appears from tear-grown flower; turns worn loved toys into Real living creatures"
+    },
+    {
+      "name": "Wild rabbits",
+      "aka": [
+        "furry rabbits",
+        "strange beings"
+      ],
+      "withheld_until": null,
+      "notes": "Living rabbits who reject then later accept the transformed Rabbit"
+    },
+    {
+      "name": "Doctor",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Orders infected toys burned after Boy\u0027s scarlet fever"
+    }
+  ],
+  "locations_mentioned": [
+    "nursery",
+    "toy cupboard",
+    "Boy\u0027s stocking",
+    "Boy\u0027s bed",
+    "garden",
+    "lawn",
+    "flower bed",
+    "raspberry canes",
+    "wood",
+    "bracken",
+    "balcony",
+    "end of the garden behind the fowl-house",
+    "seaside (spoken of only)"
+  ],
+  "timeline": [
+    "Christmas morning",
+    "long nursery cupboard days",
+    "first nights in Boy\u0027s bed",
+    "Spring garden play",
+    "wonderful Summer and wood evenings",
+    "Boy\u0027s scarlet fever illness and recovery",
+    "night in the sack behind fowl-house",
+    "Fairy transformation same night",
+    "Autumn and Winter pass",
+    "following Spring reunion glimpse"
+  ],
+  "withheld_name_or_twist_rules": [
+    "Do not introduce or name the Nursery Magic Fairy before beat B12 (tear and flower)",
+    "Do not show or confirm the Rabbit possesses real hind legs, brown fur, or independent movement before the Fairy\u0027s final kiss in B13",
+    "Do not let the Boy (or audience via Boy) definitively know the marked wild rabbit is his old Bunny; keep the final recognition as the Boy\u0027s private wondering only",
+    "Mechanical toys\u0027 superiority and Skin Horse\u0027s backstory may appear early; the magic of becoming Real must follow Skin Horse\u0027s explanation before any transformation"
+  ],
+  "essential_beats": [
+    {
+      "id": "B1",
+      "summary": "Christmas morning: splendid new Velveteen Rabbit arrives in Boy\u0027s stocking and is briefly loved then forgotten amid other presents",
+      "source_evidence": "Rabbit is fat and bunchy with thread whiskers and pink sateen ears; best of stocking gifts for two hours until aunts and uncles arrive",
+      "source_paragraphs": [
+        "P18",
+        "P19",
+        "P20"
+      ]
+    },
+    {
+      "id": "B2",
+      "summary": "Rabbit lives ignored in toy cupboard; mechanical toys and others snub him as commonplace sawdust; only Skin Horse is kind",
+      "source_evidence": "Expensive and clockwork toys look down on him; model boat and wooden lion Timothy put on airs; Skin Horse alone is friendly",
+      "source_paragraphs": [
+        "P21",
+        "P22"
+      ]
+    },
+    {
+      "id": "B3",
+      "summary": "Skin Horse teaches Rabbit what REAL means: it happens when a child truly loves you a long time; it can hurt and makes you shabby but lasting",
+      "source_evidence": "Real is not buzzers or handles; takes time; hair loved off and eyes drop out but once Real you cannot be ugly to those who understand; Boy\u0027s Uncle made Skin Horse Real forever",
+      "source_paragraphs": [
+        "P23",
+        "P24",
+        "P25",
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32"
+      ]
+    },
+    {
+      "id": "B4",
+      "summary": "Nana cannot find china dog at bedtime and stuffs Rabbit into Boy\u0027s arms; Rabbit begins sleeping with Boy every night",
+      "source_evidence": "Nana swoops to cupboard and says take your old Bunny; Rabbit endures tight hugs and pillow smothering then grows to love whispered games and tunnels",
+      "source_paragraphs": [
+        "P33",
+        "P34",
+        "P35",
+        "P36"
+      ]
+    },
+    {
+      "id": "B5",
+      "summary": "Time passes in constant companionship; Rabbit\u0027s fur wears shabby, tail unsewn, nose pink rubbed off from kisses, yet he is happy",
+      "source_evidence": "He never notices the wearing because he is so happy; Boy takes him everywhere",
+      "source_paragraphs": [
+        "P37"
+      ]
+    },
+    {
+      "id": "B6",
+      "summary": "Spring garden days of wheelbarrow rides and fairy huts; after being left out in dew Nana grumbles and Boy fiercely declares Bunny is REAL not a toy",
+      "source_evidence": "Nana calls him a toy; Boy sits up and says you mustn\u0027t say that he isn\u0027t a toy he\u0027s REAL; Rabbit knows nursery magic has happened",
+      "source_paragraphs": [
+        "P38",
+        "P39",
+        "P40",
+        "P41",
+        "P42",
+        "P43",
+        "P44"
+      ]
+    },
+    {
+      "id": "B7",
+      "summary": "Summer wood evenings: Rabbit left in bracken nest meets two wild furry rabbits who invite play then mock his missing hind legs and wrong smell and flee",
+      "source_evidence": "Wild rabbits change shape and hop; they laugh he has no hind legs and doesn\u0027t smell right so isn\u0027t real; Rabbit insists Boy said he is Real but they vanish",
+      "source_paragraphs": [
+        "P45",
+        "P46",
+        "P47",
+        "P48",
+        "P49",
+        "P50",
+        "P51",
+        "P52",
+        "P53",
+        "P54",
+        "P55",
+        "P56",
+        "P57",
+        "P58",
+        "P59",
+        "P60",
+        "P61",
+        "P62",
+        "P63",
+        "P64",
+        "P65",
+        "P66",
+        "P67",
+        "P68",
+        "P69",
+        "P70",
+        "P71"
+      ]
+    },
+    {
+      "id": "B8",
+      "summary": "Weeks more of hard love leave Rabbit very old and shapeless yet still beautiful only to the Boy; shabbiness no longer matters because he is Real",
+      "source_evidence": "Whiskers loved off, ear lining grey, spots faded; to the Boy he is always beautiful",
+      "source_paragraphs": [
+        "P72"
+      ]
+    },
+    {
+      "id": "B9",
+      "summary": "Boy falls dangerously ill with fever; Rabbit stays hidden under bedclothes afraid of being taken away while strange people come and go",
+      "source_evidence": "Boy\u0027s body burns the Rabbit; Rabbit never stirs because Boy needs him; plans future garden games while fever lasts",
+      "source_paragraphs": [
+        "P73",
+        "P74",
+        "P75"
+      ]
+    },
+    {
+      "id": "B10",
+      "summary": "Boy recovers and will go to seaside; doctor orders room disinfected and all bed toys including old Bunny burned as scarlet fever germs; Rabbit bagged with rubbish behind fowl-house",
+      "source_evidence": "Doctor says burn it at once get him a new one; gardener will burn the lot next morning; Boy gets splendid new plush bunny but thinks only of seaside",
+      "source_paragraphs": [
+        "P76",
+        "P77",
+        "P78",
+        "P79",
+        "P80",
+        "P81",
+        "P82",
+        "P83",
+        "P84"
+      ]
+    },
+    {
+      "id": "B11",
+      "summary": "Alone and shivering in open sack Rabbit remembers happy days and Skin Horse wisdom; questions use of becoming Real if it ends thus; sheds a real tear",
+      "source_evidence": "Great sadness; tear trickles down shabby velvet nose to the ground",
+      "source_paragraphs": [
+        "P85"
+      ]
+    },
+    {
+      "id": "B12",
+      "summary": "Where tear fell a mysterious emerald-leaved golden-cup flower grows and opens; lovely Nursery Magic Fairy steps out, kisses Rabbit, and explains she takes worn loved playthings and makes them Real to everyone",
+      "source_evidence": "Fairy says he was Real to the Boy because of love; now he shall be Real to every one; she flies him into the moonlit wood",
+      "source_paragraphs": [
+        "P86",
+        "P87",
+        "P88",
+        "P89",
+        "P90",
+        "P91",
+        "P92",
+        "P93",
+        "P94"
+      ]
+    },
+    {
+      "id": "B13",
+      "summary": "Fairy sets Rabbit among dancing wild rabbits and tells them to teach him; after last kiss he discovers real hind legs and soft brown fur and joyfully leaps and whirls until Fairy is gone",
+      "source_evidence": "He scratches nose with new hind toe then springs about; at last a Real Rabbit at home with the others",
+      "source_paragraphs": [
+        "P95",
+        "P96",
+        "P97",
+        "P98",
+        "P99",
+        "P100",
+        "P101",
+        "P102"
+      ]
+    },
+    {
+      "id": "B14",
+      "summary": "Next Spring Boy playing in same wood sees two rabbits; one has faint spotted markings and familiar soft nose and eyes; Boy wonders if it is his old Bunny lost in the fever but never knows for certain",
+      "source_evidence": "Boy thinks he looks just like my old Bunny that was lost; never knew it really was his own Bunny come back",
+      "source_paragraphs": [
+        "P103",
+        "P104",
+        "P105"
+      ]
+    }
+  ],
+  "target_runtime_minutes": 20,
+  "target_scene_count_min": 8,
+  "target_scene_count_max": 12
+}

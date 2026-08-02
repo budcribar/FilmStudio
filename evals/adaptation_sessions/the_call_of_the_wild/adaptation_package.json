@@ -1,0 +1,81 @@
+{
+  "schema_version": "adaptation_package.v1",
+  "pipeline_variant": "chained",
+  "book_slug": "the_call_of_the_wild",
+  "book_sha256": "7b3e855dbc4e9833b0281a0bc1d527379d85c14f8dfb389ef916022d6e4d888c",
+  "provider": "xai",
+  "model": "grok-4.5",
+  "judge_models": [
+    "grok-4",
+    "grok-4.20-reasoning"
+  ],
+  "temperature": 0.2,
+  "judge_temperature": 0,
+  "target_runtime_minutes": 80,
+  "generated_at_utc": "2026-08-02T02:40:28.6462975Z",
+  "validation_status": "fail",
+  "scene_count": 36,
+  "clip_count": null,
+  "artifacts": [
+    {
+      "key": "beat_plan",
+      "path": "adaptation_plan.json",
+      "exists": true,
+      "sha256": "79f7e2046ca721f38301f3eb78d3fa48d740591929bca60a1e0e60c14d23564d"
+    },
+    {
+      "key": "cast_and_locations",
+      "path": "cast_and_locations.json",
+      "exists": true,
+      "sha256": "092aa2b87cceb290d889d1472550d2f209ff7bd8ae7e8d59e4e27b7bce28930b"
+    },
+    {
+      "key": "screenplay",
+      "path": "screenplay.fountain",
+      "exists": true,
+      "sha256": "ffdfec20ae95f388dd178fda97664646cd7aafd45a4a37dce8262edf5ff530d0"
+    },
+    {
+      "key": "edit_decision_list",
+      "path": "edit_decision_list.json",
+      "exists": true,
+      "sha256": "025c5e61ddecddeb5c9cfa684eaeaaafcabd830162bafb48d70280847d0108d5"
+    },
+    {
+      "key": "audio_plan",
+      "path": "audio_plan.json",
+      "exists": true,
+      "sha256": "01f5ac24e1e18449c7262282e22f3aa953d335cc67ef18d5aaa8b31a89b19b7b"
+    },
+    {
+      "key": "source_book_indexed",
+      "path": "book_indexed.txt",
+      "exists": true,
+      "sha256": "165df12bf4852a0c07090ff59abf2c0c0d6b95d49e89780f4f5e50bf0e35fe3b"
+    },
+    {
+      "key": "source_book_annotated",
+      "path": "source_book_annotated.txt",
+      "exists": true,
+      "sha256": "881743e6e530649fc8b94a3add4c130b38d3630d6ebbc58d64c00841e8b9bd79"
+    },
+    {
+      "key": "validation_report",
+      "path": "validation_report.json",
+      "exists": true,
+      "sha256": "57bc3cba89f482e4f90050cac6c88ab11d20e962ebffa4f688906385568b67f1"
+    },
+    {
+      "key": "judge_review_grok-4",
+      "path": "judge_review.grok-4.json",
+      "exists": true,
+      "sha256": "55e0cef08b1a6be62c091abf85a9d4102a40083c33741dc1232f8937500b47bd"
+    },
+    {
+      "key": "judge_review_grok-4.20-reasoning",
+      "path": "judge_review.grok-4.20-reasoning.json",
+      "exists": true,
+      "sha256": "fc10bcab2c91103cff26c3e36034b5c15cc76e0e09d18e3b482ac6e0ea47cc52"
+    }
+  ]
+}

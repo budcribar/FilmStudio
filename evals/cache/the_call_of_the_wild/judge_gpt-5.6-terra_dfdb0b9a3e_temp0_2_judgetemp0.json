@@ -1,0 +1,47 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 6.5,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 6.25,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Drops the major Forty-Mile Creek rescue sequence, a central Thornton/Buck loyalty set piece, which is a severe source-coverage omission.",
+        "Uses inconsistent cast tokens for the same character: THE MAN IN THE RED SWEATER in action versus MAN IN RED SWEATER in dialogue.",
+        "Violates the one-location-per-heading rule with headings such as EXT. ELDORADO SALOON / STREET and uses the noncompliant DAY/NIGHT time construction.",
+        "Missing the required VISION_META sidecar."
+      ],
+      "rationale": "A captures the broad novel spine, its best-known quotations, Buck\u0027s progression from domestic king to wolf leader, and several potent visual set pieces. However, the omission of Thornton\u0027s river rescue removes a major source event that demonstrates Buck\u0027s devotion before the sled feat and final separation. The draft is highly compressed at several consequential points, particularly Hal\u0027s team collapse and Buck\u0027s post-Thornton wilderness development. Its action is generally concrete, but many scenes contain enough separate events for several clips and its compound headings undermine scheduling and clip segmentation. Dialogue is mostly faithful and concise. Sound beds are consistently present and specific, but music is almost entirely absent, and several major peaks receive only one audio cue rather than an evolving sound-and-score arc.",
+      "promptImprovementSuggestion": "Add a mandatory pre-draft set-piece checklist: for long novels, identify the indispensable turning-point sequences that establish each major relationship or transformation, and require every listed sequence to appear as at least one dedicated scene before compressing secondary material."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Missing the required VISION_META sidecar."
+      ],
+      "rationale": "B is the stronger adaptation because it retains the full central arc and includes the important Forty-Mile Creek rescue that materially earns Buck and Thornton\u0027s bond. It efficiently covers Buck\u0027s kidnapping, education under club and fang, rivalry with Spitz, leadership, exploitation by Hal\u0027s party, rescue, devotion to Thornton, final wild call, and wolf-pack ending. Buck is particularly well locked for downstream rendering through recurring coat, blaze, muzzle, size, and physical-condition descriptions; the principal human introductions are also clear. Most action is observable and cleanly divided into usable short-clip beats, although several scenes still bundle extended action passages that should be further split during shot planning. Dialogue is concise, source-faithful, and character-specific. The sound design is consistently useful and cinematic, but the nearly exclusive reliance on diegetic sound rather than deliberate music progression leaves some emotional peaks less fully scored than the prompt requests. The absent machine-readable sidecar prevents greenlight as an as-is production package.",
+      "promptImprovementSuggestion": "Add a hard scene-density rule: each scene may contain no more than three distinct clip-sized action turns, and any additional major reversal, stunt, or emotional beat must receive its own scene heading or explicitly numbered micro-beat."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it preserves the complete emotional spine, including Buck\u0027s essential river rescue of Thornton, while maintaining clearer recurring visual identity and more disciplined scene construction. Weakest: Screenplay A because its otherwise vivid adaptation drops that major source set piece and compounds the loss with an unstable cast token and noncompliant compound scene headings.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "2BCAC96C630AE75C2EE8046C4726AAE132E0031B95797F12A2E6CF6C19F935D7"
+}

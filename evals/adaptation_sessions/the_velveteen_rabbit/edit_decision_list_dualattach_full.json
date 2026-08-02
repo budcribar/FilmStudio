@@ -1,0 +1,418 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "EXT. BOY\u0027S STOCKING - CHRISTMAS MORNING",
+      "purpose": "Introduce the splendid new Velveteen Rabbit as the best Christmas gift and show him briefly loved then forgotten amid the holiday excitement.",
+      "location_key": "LOCATION_BOYS_STOCKING",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "THE_BOY"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_NEW_CHRISTMAS",
+        "BOY_CHRISTMAS_MORNING"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Plump Christmas stocking in bright festive light with splendid spotted rabbit wedged at top holding holly",
+        "Close details of intact velveteen coat, thread whiskers, pink sateen ears, boot-button eyes",
+        "Stocking gifts below: nuts, oranges, toy engine, chocolate almonds, clockwork mouse",
+        "Boy in flannel nightclothes loving the Rabbit for two hours",
+        "Aunts and Uncles arrive; tissue paper and parcels; Rabbit left forgotten on nursery floor"
+      ],
+      "source_paragraphs": [
+        "P18",
+        "P19"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. NURSERY - DAY",
+      "purpose": "Establish the Rabbit\u0027s lonely cupboard life among snobbish toys and the Skin Horse\u0027s wise teaching about what it means to become Real.",
+      "location_key": "LOCATION_NURSERY",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "SKIN_HORSE"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_CUPBOARD_DAYS",
+        "SKIN_HORSE_NURSERY"
+      ],
+      "estimated_duration_seconds": 95,
+      "visual_beats": [
+        "Warm nursery with toy cupboard, fender, wooden floors; Rabbit dusty and ignored among superior mechanical toys",
+        "Model boat and Timothy the wooden lion putting on airs; Rabbit feeling insignificant",
+        "Skin Horse bald in patches with sparse tail lying kindly beside Rabbit near the fender",
+        "Intimate toy-level dialogue on Real love, shabbiness, and lasting Real-ness",
+        "Rabbit sighing with longing and dread as Nana\u0027s footsteps approach"
+      ],
+      "source_paragraphs": [
+        "P21",
+        "P22",
+        "P23",
+        "P24",
+        "P25",
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P31",
+        "P32"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "INT. NURSERY - NIGHT",
+      "purpose": "Show Nana\u0027s brisk tidying swoop that accidentally promotes the Rabbit from cupboard to the Boy\u0027s bedtime companion.",
+      "location_key": "LOCATION_NURSERY",
+      "cast": [
+        "NANA",
+        "THE_BOY",
+        "VELVETEEN_RABBIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NANA_NURSEMAID",
+        "BOY_NURSERY_EVERYDAY",
+        "RABBIT_CUPBOARD_DAYS"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Nana in dark dress and white apron swooping toys into the open cupboard like a great wind",
+        "Boy in plain nightshirt unable to find his china dog at bedtime",
+        "Nana hurried, dragging Rabbit out by one ear and thrusting him into the Boy\u0027s arms"
+      ],
+      "source_paragraphs": [
+        "P33",
+        "P34",
+        "P35"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "INT. BOY\u0027S BED - NIGHT",
+      "purpose": "Depict the Rabbit\u0027s first nights as bed companion, growing comfort in whispered games and tunnels, and the unnoticed start of loving wear.",
+      "location_key": "LOCATION_BOYS_BED",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "THE_BOY"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_BOYS_BED_COMPANION",
+        "BOY_NURSERY_EVERYDAY"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Rabbit hugged tight, rolled on, pushed under pillow in the child\u0027s bed under night-light glow",
+        "Boy making tunnels under bedclothes like rabbit burrows; whispered splendid games",
+        "Rabbit snuggling under warm chin with Boy\u0027s hands clasped round him all night",
+        "Time-lapse wear: fur shabbier, tail unsewn, pink rubbed off nose from kisses while Rabbit remains happily unaware"
+      ],
+      "source_paragraphs": [
+        "P36",
+        "P37"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "EXT. GARDEN - DAY",
+      "purpose": "Show spring outdoor adventures together and the dewy night the Rabbit is left on the lawn, prompting Nana\u0027s grumbling rescue.",
+      "location_key": "LOCATION_GARDEN",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT",
+        "NANA"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_GARDEN_AND_WOOD",
+        "RABBIT_SUMMER_SHABBY",
+        "NANA_NURSEMAID"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Long spring garden days: wheelbarrow rides, grass picnics, fairy huts under raspberry canes",
+        "Rabbit earth-stained from flower-bed burrows; coat showing beginning wear",
+        "Rabbit left alone on lawn long after dusk, wet with dew",
+        "Nana approaching with candle, rubbing him dry with apron corner and grumbling about fuss for a toy"
+      ],
+      "source_paragraphs": [
+        "P38",
+        "P40"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "INT. BOY\u0027S BED - NIGHT",
+      "purpose": "Climax of nursery magic: the Boy fiercely declares Bunny is Real; Rabbit\u0027s joy and new knowing expression noticed by Nana.",
+      "location_key": "LOCATION_BOYS_BED",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT",
+        "NANA"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_NURSERY_EVERYDAY",
+        "RABBIT_SUMMER_SHABBY",
+        "NANA_NURSEMAID"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "Boy sitting up in bed stretching out hands for his Bunny",
+        "Boy\u0027s passionate defense: He isn\u0027t a toy. He\u0027s REAL!",
+        "Rabbit\u0027s sawdust heart nearly bursting; wisdom and beauty entering dull boot-button eyes",
+        "Next morning Nana picking him up and remarking on the knowing expression"
+      ],
+      "source_paragraphs": [
+        "P41",
+        "P42",
+        "P43",
+        "P44"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "EXT. WOOD - EVENING",
+      "purpose": "First encounter with living wild rabbits who mock the toy\u0027s missing hind legs and wrong smell, leaving the Real-but-still-toy Rabbit rejected and alone.",
+      "location_key": "LOCATION_WOOD",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT",
+        "WILD_RABBITS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_GARDEN_AND_WOOD",
+        "RABBIT_SUMMER_SHABBY",
+        "WILD_RABBITS_NATURAL"
+      ],
+      "estimated_duration_seconds": 100,
+      "visual_beats": [
+        "June evening wood; Boy nesting Rabbit in bracken then wandering off to play brigands",
+        "Loved-worn Rabbit watching ants between velvet paws",
+        "Two furry wild rabbits emerging, changing shape, hopping on hind legs, dancing",
+        "Mockery of pincushion back and lack of hind legs; whiskers brushing ear; rejection for wrong smell",
+        "Boy\u0027s footsteps scattering wild rabbits in white-tail flash; Rabbit calling after them in vain; carried home alone"
+      ],
+      "source_paragraphs": [
+        "P46",
+        "P47",
+        "P50",
+        "P51",
+        "P52",
+        "P53",
+        "P54",
+        "P55",
+        "P56",
+        "P57",
+        "P58",
+        "P59",
+        "P60",
+        "P61",
+        "P62",
+        "P63",
+        "P64",
+        "P65",
+        "P66",
+        "P67",
+        "P68",
+        "P69",
+        "P70",
+        "P71"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "INT. BOY\u0027S BED - NIGHT",
+      "purpose": "Show extreme shabbiness accepted because he is Real, then the long fever vigil as the Rabbit hides under bedclothes to stay with the burning-hot Boy.",
+      "location_key": "LOCATION_BOYS_BED",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "THE_BOY"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_FEVER_AND_SACK",
+        "BOY_ILLNESS"
+      ],
+      "estimated_duration_seconds": 65,
+      "visual_beats": [
+        "Very old shapeless Rabbit still beautiful only to the Boy; whiskers gone, spots faded, ear linings grey",
+        "Boy flushed and feverish, talking in sleep, body burning the Rabbit",
+        "Strange people coming and going; all-night sickroom light; Rabbit motionless under bedclothes",
+        "Patient snuggling and whispered plans of garden and raspberry thicket; fever turning; Boy sitting up with picture-books"
+      ],
+      "source_paragraphs": [
+        "P72",
+        "P73",
+        "P74",
+        "P75"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "INT. NURSERY - DAY",
+      "purpose": "Recovery morning on the balcony; doctor\u0027s order that the germ-laden old Bunny must be burnt and replaced before the seaside trip.",
+      "location_key": "LOCATION_NURSERY",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT",
+        "NANA",
+        "DOCTOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_ILLNESS",
+        "RABBIT_FEVER_AND_SACK",
+        "NANA_NURSEMAID",
+        "DOCTOR_ATTENDING"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Bright sunny morning; wide-open windows; Boy wrapped in shawl carried onto balcony",
+        "Rabbit tangled in bedclothes with only head peeping out, listening",
+        "Talk of seaside tomorrow, disinfection, and burning of bed toys",
+        "Nana asking about old Bunny; Doctor decisively ordering it burned as scarlet-fever germs and replaced"
+      ],
+      "source_paragraphs": [
+        "P76",
+        "P77",
+        "P78",
+        "P80",
+        "P81"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "heading": "EXT. END OF THE GARDEN BEHIND THE FOWL-HOUSE - DAY",
+      "purpose": "Dispose of the Rabbit into the rubbish sack at the bonfire site behind the fowl-house, deferred until morning by the busy gardener.",
+      "location_key": "LOCATION_END_OF_GARDEN_FOWL_HOUSE",
+      "cast": [
+        "VELVETEEN_RABBIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_FEVER_AND_SACK"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Threadbare Rabbit stuffed into sack with old picture-books and rubbish",
+        "Carried to end of garden behind fowl-house, a fine unlit bonfire place",
+        "Gardener busy with potatoes and peas; promise to burn the lot next morning"
+      ],
+      "source_paragraphs": [
+        "P83"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "heading": "INT. BOY\u0027S BED - NIGHT",
+      "purpose": "Contrast the Boy\u0027s excited seaside dreams beside a splendid new plush bunny while his old Real companion is abandoned outside.",
+      "location_key": "LOCATION_BOYS_BED",
+      "cast": [
+        "THE_BOY"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_ILLNESS"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "Boy sleeping in a different bedroom with new white plush bunny with glass eyes",
+        "Boy too excited about tomorrow\u0027s seaside to care much about the replacement toy"
+      ],
+      "source_paragraphs": [
+        "P84"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "heading": "EXT. END OF THE GARDEN BEHIND THE FOWL-HOUSE - NIGHT",
+      "purpose": "Rabbit\u0027s lonely night of memory and despair; real tear births the magical flower and the Nursery Magic Fairy who promises to make him Real to everyone.",
+      "location_key": "LOCATION_END_OF_GARDEN_FOWL_HOUSE",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "NURSERY_MAGIC_FAIRY"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_FEVER_AND_SACK",
+        "FAIRY_APPARITION"
+      ],
+      "estimated_duration_seconds": 75,
+      "visual_beats": [
+        "Shivering Rabbit wriggling head from untied sack among picture-books behind fowl-house",
+        "Threadbare coat no protection; view of raspberry thicket like a remembered jungle",
+        "Montage of happy memories; despairing question of love\u0027s worth; single real tear falling to earth",
+        "Mysterious emerald-leaved golden-cup flower growing and opening",
+        "Loveliest Fairy in pearl and dew-drop dress stepping out, kissing damp nose, explaining she turns loved worn toys Real to everyone",
+        "Fairy gathering Rabbit and flying with him into the wood"
+      ],
+      "source_paragraphs": [
+        "P85",
+        "P86",
+        "P87",
+        "P88",
+        "P89",
+        "P90",
+        "P91",
+        "P92"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "heading": "EXT. WOOD - NIGHT",
+      "purpose": "Fairy delivers the transformed Rabbit to the wild rabbits in the moonlit glade; he discovers living hind legs and joyfully joins Rabbit-land forever.",
+      "location_key": "LOCATION_WOOD",
+      "cast": [
+        "NURSERY_MAGIC_FAIRY",
+        "VELVETEEN_RABBIT",
+        "WILD_RABBITS"
+      ],
+      "wardrobe_or_age_variant": [
+        "FAIRY_APPARITION",
+        "RABBIT_REAL_LIVING",
+        "WILD_RABBITS_NATURAL"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "Moonlit wood; bracken fronds like frosted silver; wild rabbits dancing with shadows on velvet grass",
+        "Rabbits stopping in a ring to stare as Fairy presents the new playfellow for forever",
+        "Fairy\u0027s final kiss and command to run and play; Rabbit frozen by old shyness about missing legs",
+        "Nose tickle; automatic hind-toe scratch revealing real hind legs, soft shiny brown fur, twitching ears, long whiskers",
+        "Joyful leaping, sideways jumps, whirling; Fairy gone; at home as a Real Rabbit among the others"
+      ],
+      "source_paragraphs": [
+        "P94",
+        "P95",
+        "P96",
+        "P97",
+        "P98",
+        "P99",
+        "P100",
+        "P101"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "heading": "EXT. WOOD - DAY",
+      "purpose": "Spring reunion coda: the healthy Boy glimpses a familiar marked wild rabbit that was once his Bunny, without ever knowing the truth.",
+      "location_key": "LOCATION_WOOD",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT",
+        "WILD_RABBITS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_SPRING_REUNION",
+        "RABBIT_REAL_LIVING",
+        "WILD_RABBITS_NATURAL"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Warm sunny Spring wood behind the house; healthy Boy in outdoor play clothes",
+        "Two rabbits creeping from bracken to peep; one brown all over, the other with ghost spots under fur",
+        "Familiar soft nose and round black eyes; Boy\u0027s quiet recognition of resemblance to lost fever Bunny",
+        "Marked rabbit watching a moment then slipping back into bracken with companion; gentle resolving close"
+      ],
+      "source_paragraphs": [
+        "P103",
+        "P104",
+        "P105"
+      ]
+    }
+  ]
+}

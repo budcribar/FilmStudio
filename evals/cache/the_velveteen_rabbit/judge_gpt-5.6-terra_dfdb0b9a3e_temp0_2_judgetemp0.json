@@ -1,0 +1,40 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "A is the more complete and emotionally faithful adaptation, preserving every major turn: Christmas abandonment, the Skin Horse\u0027s explanation of Real, bedtime attachment, garden recognition, wild-rabbit rejection, illness and disposal, the Fairy\u0027s intervention, transformation, and spring reunion. Its character descriptions are unusually useful for image locking, especially the Rabbit\u0027s progressive wear, the Skin Horse, Nana, Fairy, and the Boy\u0027s final age progression. The principal limitation is clip granularity: several action blocks contain mini-montages or time shifts that need to become separate 5-10 second beats, notably the spring garden sequence, the fever-to-recovery passage, and portions of the final transformation. Dialogue is highly faithful and performable, while the recurring, specific sound and music motifs strongly support the emotional arc.",
+      "promptImprovementSuggestion": "Add a hard beat-level rule: each Action paragraph must describe only one continuous 5-10 second camera-observable event, with any time jump, montage progression, or distinct action separated into a new Action beat or scene."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.58,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "B retains the central plot and ending, but it is materially more compressed than A and loses texture from the toy-cupboard social world, the Skin Horse\u0027s fuller explanation, the Rabbit\u0027s post-recognition happiness, and the Fairy\u0027s full Rabbit-land instruction. It also incorrectly assigns the Doctor\u0027s \u0022Nonsense! Get him a new one\u0022 line to Nana, weakening source fidelity and character logic. Visual action is generally concrete, but dense time-lapse passages still need subdivision for clip production. Character continuity is less reliable because the protagonist is referred to as both THE BOY and BOY, which risks separate cast identities in an automated pipeline. Sound beds are consistently present and serviceable, though they are less musically shaped and emotionally varied than A\u0027s.",
+      "promptImprovementSuggestion": "Add a final source-dialogue attribution audit: for every retained or compressed quoted line, verify that the speaking character matches the source, and convert uncertain attribution into action or narration rather than assigning it to another character."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it delivers the fullest, most faithful emotional arc with superior visual identity locking and exceptionally purposeful sound-and-music coverage. Weakest: Screenplay B because its heavier compression, inconsistent BOY/THE BOY tokenization, and misattributed Doctor dialogue create more fidelity and production-continuity risk.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "A1BF11B464C3F7193D8CEDA676A5E22C4A710642C37B94D3FC3214F0C0920833"
+}

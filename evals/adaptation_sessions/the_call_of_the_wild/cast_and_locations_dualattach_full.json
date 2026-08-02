@@ -1,0 +1,1347 @@
+{
+  "cast_seeds": {
+    "characters": [
+      {
+        "key": "BUCK",
+        "display_name": "Buck",
+        "age_link": null,
+        "identity_anchors": "Large St. Bernard\u2013Scotch shepherd mix; 140 lb at start, massive chest and heavy forelegs, long wolf-like muzzle on a broader massive head, thick furry coat with stray brown on muzzle and above eyes and a splash of white hair midmost down the chest; later leaner, scarred, coat draggled then gloriously restored; eyes that can turn blood-shot with rage",
+        "source_evidence": "P20 weighs only one hundred and forty pounds, mother Shep Scotch shepherd, father Elmo huge St. Bernard; P47 one hundred and forty pounds of fury; P217 coat sprayed and flecked, muscles wasted to knotty strings; P281 one hundred and fifty pounds grit and virility, mane half bristled, furry coat sheen of silk; P322 stray brown on muzzle and above eyes, splash of white midmost down chest, long wolf muzzle larger than any wolf",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "deep resonant dog vocalizations; wolf-howl cadences later",
+        "wardrobe_variants": [
+          {
+            "key": "BUCK_ARISTOCRAT",
+            "description": "Full glossy heavy coat, well-fed bulk, no harness; brass collar later filed off",
+            "source_facts": [
+              "P20 fine pride, good living, hunting kept fat down and hardened muscles",
+              "P36 heavy brass collar filed from neck"
+            ],
+            "creative_direction": "Sunlit California estate dog; clean, regal bearing, slight egotistical carriage",
+            "beats": [
+              "B1",
+              "B2"
+            ]
+          },
+          {
+            "key": "BUCK_CRATED_RAGING",
+            "description": "Coat matted with saliva and blood from throat/tongue injury; blood-shot eyes; no collar; caged",
+            "source_facts": [
+              "P39 parched swollen throat and tongue, eyes blood-shot, metamorphosed into raging fiend",
+              "P40 rope off neck"
+            ],
+            "creative_direction": "Feverish, frothing, bristling; crate bars shadowing face",
+            "beats": [
+              "B3"
+            ]
+          },
+          {
+            "key": "BUCK_CLUBBED",
+            "description": "Beautiful coat sprayed and flecked with bloody slaver; blood from nose mouth ears; later accepts water and raw meat from breaker",
+            "source_facts": [
+              "P48 blood flowing from nose and mouth and ears, coat sprayed and flecked with bloody slaver",
+              "P54 drank eagerly, bolted raw meat"
+            ],
+            "creative_direction": "Beaten but unbroken; hair involuntarily bristling at touch",
+            "beats": [
+              "B4"
+            ]
+          },
+          {
+            "key": "BUCK_HARNESS_TRACE",
+            "description": "Working sled harness (straps and buckles); coat weathering to trail hardness; later moccasins on feet when soft; scars accumulating from fights",
+            "source_facts": [
+              "P70 arrangement of straps and buckles, harness",
+              "P109 Francois sacrificed moccasin tops to make four moccasins for Buck",
+              "P136 covered with wounds after Spitz fight"
+            ],
+            "creative_direction": "Practical northern working dog; frost on muzzle, ice between toes bitten out; progressive lean muscle definition",
+            "beats": [
+              "B5",
+              "B6",
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B11",
+              "B12",
+              "B13",
+              "B14",
+              "B15",
+              "B16"
+            ]
+          },
+          {
+            "key": "BUCK_STARVED_SKELETON",
+            "description": "Weight down to ~115 lb; coat limp draggled or matted with dried blood from club; ribs and every bone outlined through loose wrinkled hide; no spring in feet",
+            "source_facts": [
+              "P172 one hundred and forty pounds dwindled to one hundred and fifteen",
+              "P217 stiffness and gloss gone, hair hung limp and draggled or matted with dried blood, muscles wasted to knotty strings, flesh pads disappeared, each rib outlined"
+            ],
+            "creative_direction": "Perambulating skeleton; dull distant eyes; spark of life barely fluttering",
+            "beats": [
+              "B17",
+              "B18",
+              "B19",
+              "B20"
+            ]
+          },
+          {
+            "key": "BUCK_THORNTON_LOVED",
+            "description": "Restored bulk and glossy silk sheen coat; mane that lifts with movement; hard iron muscles; occasional pack on back in summer travel; scars remain but vitality overspills",
+            "source_facts": [
+              "P239 muscles swelled out, flesh came back",
+              "P281 perfect condition without superfluous flesh, coat sheen of silk, mane half bristled",
+              "P323 snapping crackling magnetism in coat, muscles surcharged like steel springs"
+            ],
+            "creative_direction": "Adoring yet wild-eyed; can seize hand in teeth as caress; later blood-smeared after Yeehat vengeance",
+            "beats": [
+              "B21",
+              "B22",
+              "B23",
+              "B24",
+              "B25",
+              "B26",
+              "B27"
+            ]
+          },
+          {
+            "key": "BUCK_GHOST_DOG",
+            "description": "Gigantic wolf-like form larger than pack; brown muzzle/eye splashes and white chest rift retained; glorious coat; runs at head of pack",
+            "source_facts": [
+              "P349 some timber wolves with splashes of brown on head and muzzle and rift of white centring down chest",
+              "P351 great gloriously coated wolf like yet unlike all other wolves",
+              "P352 leaping gigantic above fellows, great throat a-bellow"
+            ],
+            "creative_direction": "Legendary night silhouette under moon or borealis; lone summer visitor by gold stream",
+            "beats": [
+              "B28"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "JUDGE_MILLER",
+        "display_name": "Judge Miller",
+        "age_link": null,
+        "identity_anchors": "Prosperous Santa Clara Valley landowner; associated with big house, library fire, raisin growers; fatherly dignity",
+        "source_evidence": "P17 Judge Miller\u0027s place; P19 lay at the Judge\u0027s feet before roaring library fire; P21 Judge at meeting of Raisin Growers\u0027 Association",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "warm measured California gentleman",
+        "wardrobe_variants": [
+          {
+            "key": "JUDGE_ESTATE",
+            "description": "Late-1890s prosperous country gentleman attire suitable for veranda and library",
+            "source_facts": [
+              "P17 big house sun-kissed Santa Clara Valley, wide cool veranda",
+              "P19 roaring library fire"
+            ],
+            "creative_direction": "Dark wool suit or smoking jacket by fire; lighter day coat on grounds; gold watch chain implied by station",
+            "beats": [
+              "B1"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MANUEL",
+        "display_name": "Manuel",
+        "age_link": null,
+        "identity_anchors": "Gardener\u0027s helper; has wife and numerous progeny; Chinese-lottery gambler with faith in a system",
+        "source_evidence": "P21 one of the gardener\u0027s helpers, undesirable acquaintance, loved to play Chinese lottery, wages do not lap over needs of wife and numerous progeny",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "low furtive working-man English",
+        "wardrobe_variants": [
+          {
+            "key": "MANUEL_NIGHT_TREACHERY",
+            "description": "Work clothes of a gardener\u0027s helper; carries stout rope",
+            "source_facts": [
+              "P21 gardener\u0027s helpers",
+              "P23 doubled a piece of stout rope around Buck\u0027s neck under the collar"
+            ],
+            "creative_direction": "Dusty trousers, open collar, cap; nervous hands; night orchard shadows",
+            "beats": [
+              "B2"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MAN_IN_RED_SWEATER",
+        "display_name": "man in the red sweater",
+        "age_link": null,
+        "identity_anchors": "Stout man; red sweater sagging generously at the neck; calm professional dog-breaker; hatchet and club",
+        "source_evidence": "P41 stout man with a red sweater that sagged generously at the neck; P43 hatchet and a club; P53 genial voice after beating",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "calm gruff Pacific Northwest dog-man",
+        "wardrobe_variants": [
+          {
+            "key": "RED_SWEATER_BREAKER",
+            "description": "Sagging red sweater at neck; work trousers; wields club and hatchet",
+            "source_facts": [
+              "P41 red sweater that sagged generously at the neck",
+              "P46 dropped the hatchet and shifted the club to his right hand"
+            ],
+            "creative_direction": "Practical brutal competence; fearless enough to pat beaten dog\u0027s head; small high-walled back yard",
+            "beats": [
+              "B4",
+              "B5"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "PERRAULT",
+        "display_name": "Perrault",
+        "age_link": null,
+        "identity_anchors": "Little weazened French-Canadian; swarthy; government courier; spat broken English and uncouth exclamations; knows dogs",
+        "source_evidence": "P57 little weazened man who spat broken English and many strange and uncouth exclamations; P61 French-Canadian and swarthy; P58 Sacredam! Dat one dam bully dog",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "French-Canadian broken English, rapid and emphatic",
+        "wardrobe_variants": [
+          {
+            "key": "PERRAULT_COURIER",
+            "description": "Northern trail courier kit; cold-weather layers; handles government despatches and dog purchases",
+            "source_facts": [
+              "P59 government money",
+              "P61 French-Canadian",
+              "P84 knowledge of ice, webbed shoes packing snow"
+            ],
+            "creative_direction": "Fur-trimmed parka or mackinaw, mittens, small wiry frame; money pouch when buying dogs",
+            "beats": [
+              "B5",
+              "B6",
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B11",
+              "B12",
+              "B13",
+              "B14",
+              "B15"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "FRANCOIS",
+        "display_name": "Francois",
+        "age_link": null,
+        "identity_anchors": "French-Canadian half-breed; twice as swarthy as Perrault; black-faced giant; fair impartial dog-driver; whip master",
+        "source_evidence": "P61 black-faced giant called Francois, French-Canadian half-breed and twice as swarthy; P61 fair men calm and impartial; P70 stern demanding instant obedience by virtue of whip",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "French-Canadian half-breed English, deeper and more physical than Perrault",
+        "wardrobe_variants": [
+          {
+            "key": "FRANCOIS_DOG_DRIVER",
+            "description": "Trail dog-driver gear; whip always ready; axe when scattering huskies; later tears hair in rage at mutiny",
+            "source_facts": [
+              "P61 black-faced giant",
+              "P68 swinging an axe",
+              "P70 whip",
+              "P123 tore his hair"
+            ],
+            "creative_direction": "Heavy dark layers, mittens, practical northern working clothes; emotional when parting from Buck",
+            "beats": [
+              "B5",
+              "B6",
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B11",
+              "B12",
+              "B13",
+              "B14",
+              "B15"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "SPITZ",
+        "display_name": "Spitz",
+        "age_link": null,
+        "identity_anchors": "Big snow-white dog from Spitzbergen; friendly in a treacherous way; lead dog; practised fighter; scarlet tongue laugh",
+        "source_evidence": "P62 big snow-white fellow from Spitzbergen; smiling into one\u0027s face while meditating underhand trick; P69 ran out his scarlet tongue in a way he had of laughing; P130 practised fighter from Spitzbergen through Arctic",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "sharp husky snarls and treacherous quiet",
+        "wardrobe_variants": [
+          {
+            "key": "SPITZ_LEAD_WHITE",
+            "description": "Snow-white coat; lead position harness; battle-ready; later both forelegs broken before death",
+            "source_facts": [
+              "P62 big snow-white fellow",
+              "P81 leader position filled by Spitz",
+              "P133 crunch of breaking bone left then right fore leg"
+            ],
+            "creative_direction": "Cold calculating eyes; tongue-loll laugh after Curly\u0027s death; circle of waiting huskies at final fight",
+            "beats": [
+              "B5",
+              "B6",
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B11",
+              "B12",
+              "B13"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "CURLY",
+        "display_name": "Curly",
+        "age_link": null,
+        "identity_anchors": "Good-natured Newfoundland; friendly advances prove fatal",
+        "source_evidence": "P61 Curly a good-natured Newfoundland; P67 made advances to a husky dog; face ripped open from eye to jaw; buried screaming under bristling mass",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "friendly Newfoundland barks then agony screams",
+        "wardrobe_variants": [
+          {
+            "key": "CURLY_NEWFOUNDLAND",
+            "description": "Typical Newfoundland bulk and coat; no special gear beyond ship/deck then beach",
+            "source_facts": [
+              "P61 good-natured Newfoundland",
+              "P67 friendly way"
+            ],
+            "creative_direction": "Open trusting posture; later bloody trampled snow corpse",
+            "beats": [
+              "B5",
+              "B6"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "DAVE",
+        "display_name": "Dave",
+        "age_link": null,
+        "identity_anchors": "Gloomy morose experienced wheeler; asks nothing gives nothing; dies of internal injury still proud of traces",
+        "source_evidence": "P63 gloomy morose fellow Dave; P81 Dave was wheeler or sled dog; P164 something wrong inside; P165 pride of trace and trail; P170 revolver-shot behind timber",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "low morose husky sounds; pain cries in traces",
+        "wardrobe_variants": [
+          {
+            "key": "DAVE_WHEELER",
+            "description": "Working husky harness at wheel position; later too weak to travel, gasps in snow",
+            "source_facts": [
+              "P63 ate and slept or yawned",
+              "P81 wheeler",
+              "P169 wormed way forward hitching movement"
+            ],
+            "creative_direction": "Incurious glance; transformed to alert ambition only in harness; final howling lugubrious",
+            "beats": [
+              "B5",
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B11",
+              "B12",
+              "B14",
+              "B15",
+              "B16"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "SOL_LEKS",
+        "display_name": "Sol-leks",
+        "age_link": null,
+        "identity_anchors": "Old husky long lean gaunt; battle-scarred face; single eye; name means the Angry One; hates blind-side approach",
+        "source_evidence": "P73 old husky long and lean and gaunt battle-scarred face and a single eye; Sol-leks the Angry One; slashed Buck\u0027s shoulder for blind-side approach",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "warning growl; silent toil",
+        "wardrobe_variants": [
+          {
+            "key": "SOL_LEKS_ANGRY_ONE",
+            "description": "Gaunt one-eyed battle-scarred husky; harness; later limping from exhaustion",
+            "source_facts": [
+              "P73 single eye flashed warning of prowess",
+              "P172 Sol-leks was limping"
+            ],
+            "creative_direction": "Deliberate march into camp; left alone even by Spitz; faithful to toil to the end",
+            "beats": [
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B11",
+              "B12",
+              "B14",
+              "B15",
+              "B16",
+              "B17",
+              "B19",
+              "B20"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "BILLEE",
+        "display_name": "Billee",
+        "age_link": null,
+        "identity_anchors": "Good-natured husky; brother of Joe; excessive good nature; appeasing tail-wag; cries and whimpers",
+        "source_evidence": "P72 Billee and Joe two brothers true huskies; Billee\u0027s one fault excessive good nature; wagged tail appeasingly; P101 ear chewed and rent to ribbons cried and whimpered; P219 Hal knocked Billee on the head with axe",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "placating whines and cries",
+        "wardrobe_variants": [
+          {
+            "key": "BILLEE_GOOD_NATURED",
+            "description": "Husky brother; later ear ribbons; finally axed in traces",
+            "source_facts": [
+              "P72 excessive good nature",
+              "P101 ear chewed and rent to ribbons",
+              "P219 axe and knocked Billee on the head"
+            ],
+            "creative_direction": "Always trying to appease; snow-nest digger who teaches Buck",
+            "beats": [
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B12",
+              "B15",
+              "B16",
+              "B17",
+              "B19"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "JOE",
+        "display_name": "Joe",
+        "age_link": null,
+        "identity_anchors": "Sour introspective husky; brother of Billee; perpetual snarl malignant eye; incarnation of belligerent fear",
+        "source_evidence": "P72 Joe the very opposite sour and introspective perpetual snarl and malignant eye; mane bristling ears laid back lips writhing; P101 lost an eye; P151 Buck smothered him till he whined for mercy",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "continuous malignant snarl",
+        "wardrobe_variants": [
+          {
+            "key": "JOE_SOUR",
+            "description": "Sour husky; later one-eyed; still snapping when half-dead",
+            "source_facts": [
+              "P72 perpetual snarl malignant eye",
+              "P101 Joe had lost an eye",
+              "P219 Joe too far gone to be malignant"
+            ],
+            "creative_direction": "Whirls to face any threat; never fully broken until Buck\u0027s mastery",
+            "beats": [
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B12",
+              "B15",
+              "B16",
+              "B17",
+              "B19",
+              "B20"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "PIKE",
+        "display_name": "Pike",
+        "age_link": null,
+        "identity_anchors": "Clever malingerer and thief; new dog on team; hides under snow; later crippled limping half-conscious",
+        "source_evidence": "P86 Pike one of the new dogs a clever malingerer and thief slyly steal a slice of bacon; P116 securely hidden in nest under foot of snow; P219 Pike crippled and limping only half conscious",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "sly quiet husky",
+        "wardrobe_variants": [
+          {
+            "key": "PIKE_MALINGERER",
+            "description": "Working husky who loafs when possible; later earnest limp",
+            "source_facts": [
+              "P86 clever malingerer and thief",
+              "P172 Pike who in lifetime of deceit had often feigned hurt leg now limping in earnest"
+            ],
+            "creative_direction": "Eyes always calculating food or rest; thrives under Buck\u0027s mutiny protection",
+            "beats": [
+              "B9",
+              "B10",
+              "B12",
+              "B14",
+              "B15",
+              "B16",
+              "B17",
+              "B19",
+              "B20"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "DUB",
+        "display_name": "Dub",
+        "age_link": null,
+        "identity_anchors": "Awkward blunderer always getting caught; faithful worker; wrenched shoulder-blade; shot by Hal",
+        "source_evidence": "P86 Dub an awkward blunderer who was always getting caught; P101 Dub badly injured in a hind leg; P172 Dub suffering from wrenched shoulder-blade; P211 Hal shot him with big Colt\u0027s revolver",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "blundering husky yelps",
+        "wardrobe_variants": [
+          {
+            "key": "DUB_BLUNDERER",
+            "description": "Awkward husky; injured shoulder untreated; finally shot",
+            "source_facts": [
+              "P86 awkward blunderer",
+              "P211 Hal shot him with the big Colt\u0027s revolver"
+            ],
+            "creative_direction": "Well-meaning incompetence; first of original team to be executed by Hal",
+            "beats": [
+              "B9",
+              "B10",
+              "B12",
+              "B15",
+              "B16",
+              "B17",
+              "B19"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "HAL",
+        "display_name": "Hal",
+        "age_link": null,
+        "identity_anchors": "Youngster of nineteen or twenty; big Colt\u0027s revolver and hunting-knife on cartridge-bristling belt; callow; cruel incompetent",
+        "source_evidence": "P176 Hal youngster of nineteen or twenty with big Colt\u0027s revolver and hunting-knife strapped about him on a belt that fairly bristled with cartridges; callowness sheer and unutterable; P191 lazy brutes I\u0027ll show them",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "callow young American, freezing politeness then rage",
+        "wardrobe_variants": [
+          {
+            "key": "HAL_CALLOW_OUTFIT",
+            "description": "Belt bristling with cartridges; Colt revolver; hunting-knife; trail clothes he does not know how to use; later trades revolver for horse-hide",
+            "source_facts": [
+              "P176 big Colt\u0027s revolver and hunting-knife on belt bristling with cartridges",
+              "P216 traded off his revolver for frozen horse-hide"
+            ],
+            "creative_direction": "Over-armed tenderfoot; whip and club constantly in hand; beardless lips",
+            "beats": [
+              "B17",
+              "B18",
+              "B19",
+              "B20"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "CHARLES",
+        "display_name": "Charles",
+        "age_link": null,
+        "identity_anchors": "Middle-aged lightish-colored man; weak and watery eyes; mustache that twisted fiercely up giving lie to limply drooping lip",
+        "source_evidence": "P176 Charles middle-aged lightish-colored man with weak and watery eyes and a mustache that twisted fiercely and vigorously up giving the lie to the limply drooping lip it concealed",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "weak middle-aged American, quarrelsome",
+        "wardrobe_variants": [
+          {
+            "key": "CHARLES_INCOMPETENT",
+            "description": "Civilian States clothes inadequate for trail; grows stiff and aching; watery eyes",
+            "source_facts": [
+              "P176 weak and watery eyes",
+              "P212 muscles ached bones ached hearts ached",
+              "P222 sat down very slowly and painstakingly what of his great stiffness"
+            ],
+            "creative_direction": "Mustache the only fierce thing about him; always seconding Hal or wrangling",
+            "beats": [
+              "B17",
+              "B18",
+              "B19",
+              "B20"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MERCEDES",
+        "display_name": "Mercedes",
+        "age_link": null,
+        "identity_anchors": "Charles\u0027s wife and Hal\u0027s sister; pretty and soft; weeps constantly; insists on riding; 120 lb last straw",
+        "source_evidence": "P177 Mercedes the men called her Charles\u0027s wife and Hal\u0027s sister; P181 Undreamed of! dainty dismay; P214 pretty and soft weighed one hundred and twenty pounds; custom to be helpless; P215 legs go limp like spoiled child",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "soft weeping Southern/States woman, remonstrance and advice",
+        "wardrobe_variants": [
+          {
+            "key": "MERCEDES_SOFT_TRAIL",
+            "description": "Clothes-bags of apparel (many discarded); pretty soft appearance unsuited to trail; rides sled",
+            "source_facts": [
+              "P178 clothes-sack",
+              "P204 cried when clothes-bags dumped",
+              "P214 pretty and soft one hundred and twenty pounds"
+            ],
+            "creative_direction": "Fluttering in way of men; tears always ready; hysteria when knife drawn; never learns trail hardness",
+            "beats": [
+              "B17",
+              "B18",
+              "B19",
+              "B20"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "JOHN_THORNTON",
+        "display_name": "John Thornton",
+        "age_link": null,
+        "identity_anchors": "Ideal master; limping from frozen feet then healed; rough kindly hands; takes Buck\u0027s head between hands resting own head on Buck\u0027s; love-oaths; unafraid of wild",
+        "source_evidence": "P222 John Thornton whittling axe-handle; P231 If you strike that dog again I\u0027ll kill you; P237 You poor devil; P242 taking Buck\u0027s head roughly between his hands resting his own head upon Buck\u0027s shaking him calling ill names that were love names; P304 unafraid of the wild handful of salt and rifle",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "warm rough northern man; soft loving curses",
+        "wardrobe_variants": [
+          {
+            "key": "THORNTON_CAMP_RESCUE",
+            "description": "Trail-worn practical clothes; slight limp at first; whittling birch axe-handle; later summer and winter northern kit",
+            "source_facts": [
+              "P239 still limping slightly then limp left him",
+              "P222 whittling last touches on axe-handle from stick of birch"
+            ],
+            "creative_direction": "Large type living close to earth; eyes that shine heart at Buck; never forgets kindly greeting",
+            "beats": [
+              "B20",
+              "B21",
+              "B22",
+              "B23",
+              "B24",
+              "B25",
+              "B26"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "SKEET",
+        "display_name": "Skeet",
+        "age_link": null,
+        "identity_anchors": "Little Irish setter; doctor trait; washes Buck\u0027s wounds like mother cat; shoves nose under Thornton\u0027s hand",
+        "source_evidence": "P240 Skeet little Irish setter; doctor trait; washed and cleansed Buck\u0027s wounds as mother cat washes kittens; P244 wont to shove her nose under Thornton\u0027s hand and nudge till petted",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "soft setter sounds",
+        "wardrobe_variants": [
+          {
+            "key": "SKEET_SETTER",
+            "description": "Small Irish setter coat; no harness emphasis; faithful to last by pool",
+            "source_facts": [
+              "P240 little Irish setter",
+              "P341 by the edge head and fore feet in the water lay Skeet faithful to the last"
+            ],
+            "creative_direction": "Gentle nursing presence; good-natured no jealousy",
+            "beats": [
+              "B21",
+              "B22",
+              "B26"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "NIG",
+        "display_name": "Nig",
+        "age_link": null,
+        "identity_anchors": "Huge black dog; half bloodhound half deerhound; eyes that laughed; boundless good nature",
+        "source_evidence": "P240 Nig equally friendly though less demonstrative huge black dog half bloodhound and half deerhound with eyes that laughed and a boundless good nature; P338 Nig lying on side dead arrow protruding head and feathers from either side",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "deep good-natured hound",
+        "wardrobe_variants": [
+          {
+            "key": "NIG_FRIENDLY_BLACK",
+            "description": "Huge black mixed hound coat; rests great head on Thornton\u0027s knee",
+            "source_facts": [
+              "P240 huge black dog half bloodhound half deerhound",
+              "P244 stalk up and rest his great head on Thornton\u0027s knee"
+            ],
+            "creative_direction": "Laughing eyes; no jealousy toward Buck; arrow-killed on return trail",
+            "beats": [
+              "B21",
+              "B22",
+              "B26"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "HANS",
+        "display_name": "Hans",
+        "age_link": null,
+        "identity_anchors": "Thornton\u0027s partner; practical; snubs rope; Py Jingo accent; killed by Yeehat arrows",
+        "source_evidence": "P250 partners Hans and Pete; P255 Py Jingo!; P258 Hans and Pete moved along bank snubbing; P339 Hans lying on his face feathered with arrows like a porcupine",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "northern partner, light Scandinavian-tinged English (Py Jingo)",
+        "wardrobe_variants": [
+          {
+            "key": "HANS_PARTNER",
+            "description": "Practical trail miner/rafter clothes; works rope and raft",
+            "source_facts": [
+              "P250 Hans and Pete arrived on long-expected raft",
+              "P258 snubbing with thin Manila rope"
+            ],
+            "creative_direction": "Same large earth-close type as Thornton; dies face-down feathered",
+            "beats": [
+              "B22",
+              "B23",
+              "B24",
+              "B26"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "PETE",
+        "display_name": "Pete",
+        "age_link": null,
+        "identity_anchors": "Thornton\u0027s partner; practical; remarks uncanny on Buck\u0027s obedience; killed in blankets",
+        "source_evidence": "P250 partners Hans and Pete; P252 It\u0027s uncanny Pete said; P254 not hankering to be the man that lays hands on you while he\u0027s around; P341 Pete where he had been killed in his blankets",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "plain northern partner English",
+        "wardrobe_variants": [
+          {
+            "key": "PETE_PARTNER",
+            "description": "Practical trail miner clothes; blankets at death",
+            "source_facts": [
+              "P250 Hans and Pete",
+              "P341 killed in his blankets in the first moment of surprise"
+            ],
+            "creative_direction": "Cautious respect for Buck; dies in first surprise of massacre",
+            "beats": [
+              "B22",
+              "B23",
+              "B24",
+              "B26"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MATTHEWSON",
+        "display_name": "Matthewson",
+        "age_link": null,
+        "identity_anchors": "Bonanza King; boasts seven hundred pounds; slams sack of gold dust size of bologna sausage; lays odds against Buck",
+        "source_evidence": "P269 Matthewson a Bonanza King he of the seven hundred vaunt; P271 slammed a sack of gold dust of the size of a bologna sausage down upon the bar; P279 Three to one I\u0027ll lay you another thousand",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "boastful prosperous miner",
+        "wardrobe_variants": [
+          {
+            "key": "MATTHEWSON_BONANZA",
+            "description": "Prosperous Dawson saloon miner attire; gold-dust sack prop",
+            "source_facts": [
+              "P269 Bonanza King",
+              "P271 sack of gold dust size of bologna sausage"
+            ],
+            "creative_direction": "Confident until Buck wins; furred mittened crowd around him",
+            "beats": [
+              "B23"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "YEEHATS",
+        "display_name": "Yeehats",
+        "age_link": null,
+        "identity_anchors": "Indigenous hunters; arrows spears clubs; dance about wreckage; call Buck Evil Spirit; later fear Ghost Dog",
+        "source_evidence": "P340 Yeehats were dancing about the wreckage; arrows they discharged; young hunter hurling a spear; fled proclaiming advent of the Evil Spirit; P349 Yeehats noted change in breed; afraid of Ghost Dog",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "group chant and terror cries",
+        "wardrobe_variants": [
+          {
+            "key": "YEEHAT_HUNTERS",
+            "description": "Hunting party with arrows spears clubs; later survivors in lower valley",
+            "source_facts": [
+              "P340 arrows spears; chief of the Yeehats",
+              "P342 arrows and spears and clubs"
+            ],
+            "creative_direction": "Period-appropriate northern Indigenous hunting dress; panic scatter; never enter certain valley again",
+            "beats": [
+              "B26",
+              "B27",
+              "B28"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "WILD_BROTHER",
+        "display_name": "wild brother",
+        "age_link": null,
+        "identity_anchors": "Long lean timber wolf; nose pointed to sky howling; smaller than Buck (head to Buck\u0027s shoulder); becomes running companion",
+        "source_evidence": "P313 long lean timber wolf erect on haunches nose pointed to sky; P315 Buck made three of him in weight head barely reached Buck\u0027s shoulder; P316 sniffed noses played; P346 long and lean and gray wild brother whining softly",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "long-drawn timber-wolf howl",
+        "wardrobe_variants": [
+          {
+            "key": "WILD_BROTHER_WOLF",
+            "description": "Lean gray timber wolf; no human gear; later among pack leaders",
+            "source_facts": [
+              "P313 long lean timber wolf",
+              "P346 long and lean and gray"
+            ],
+            "creative_direction": "Nervous half-coy play; mournful howl when Buck turns back; sniffs noses again at pack joining",
+            "beats": [
+              "B25",
+              "B27"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "HAIRY_MAN",
+        "display_name": "hairy man",
+        "age_link": null,
+        "identity_anchors": "Ancestral vision; shorter of leg longer of arm; stringy knotty muscles; long matted hair; head slanted back; all but naked with fire-scorched skin and much body hair matted to thick fur in places; trunk inclined forward; catlike springiness; clutches stick with heavy stone; perpetual fear of darkness",
+        "source_evidence": "P160 shorter of leg and longer of arm muscles stringy and knotty hair long and matted head slanted back; strange sounds afraid of darkness clutching stick with heavy stone; all but naked ragged fire-scorched skin; much hair matted into thick fur; trunk inclined forward legs bent at knees; peculiar springiness catlike; P310 slept restlessly peered fearfully; could spring up into trees swinging by arms",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "pre-linguistic strange sounds",
+        "wardrobe_variants": [
+          {
+            "key": "HAIRY_MAN_VISION",
+            "description": "Ragged fire-scorched skin hanging part way down back; heavy body hair; stone-headed stick; sometimes squats hands clasped above head",
+            "source_facts": [
+              "P160 ragged and fire-scorched skin hanging part way down his back on his body much hair",
+              "P160 stick with a heavy stone made fast to the end",
+              "P310 hands clasped above his head as though to shed rain"
+            ],
+            "creative_direction": "Firelight vision only; never fully explained as literal; eyes of beasts two by two in circling darkness beyond fire",
+            "beats": [
+              "B16",
+              "B25"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "location_bible": {
+    "locations": [
+      {
+        "key": "LOCATION_JUDGE_MILLER_PLACE",
+        "canonical_name": "Judge Miller\u0027s place, Santa Clara Valley",
+        "source_evidence": "P17 big house in sun-kissed Santa Clara Valley stood back from road half hidden among trees wide cool veranda four sides gravelled driveways lawns tall poplars; rear great stables vine-clad servants\u0027 cottages outhouses grape arbors pastures orchards berry patches pumping plant artesian well big cement tank",
+        "layout_anchors": [
+          "main house with surrounding veranda",
+          "gravelled winding driveways under poplars",
+          "rear stables and servants\u0027 cottages",
+          "cement swimming tank",
+          "orchards and berry patches",
+          "library with fireplace"
+        ],
+        "lighting_states": [
+          "sun-kissed California day",
+          "wintry night library fire",
+          "twilight rambles"
+        ],
+        "persistent_props": [
+          "roaring library fire",
+          "cement tank",
+          "Judge\u0027s grandsons toys/paths",
+          "kennels for other dogs"
+        ],
+        "image_brief": "Expansive prosperous 1890s California estate; warm golden light; ordered greenery and water; Buck as king of demesne",
+        "beats": [
+          "B1",
+          "B2"
+        ]
+      },
+      {
+        "key": "LOCATION_COLLEGE_PARK_STATION",
+        "canonical_name": "College Park flag station",
+        "source_evidence": "P22 little flag station known as College Park; solitary man; money chinked; rope around Buck; train flagged; thrown into baggage car",
+        "layout_anchors": [
+          "small flag station platform",
+          "orchard approach path",
+          "baggage car access"
+        ],
+        "lighting_states": [
+          "memorable night darkness"
+        ],
+        "persistent_props": [
+          "stout rope",
+          "flag/train signals"
+        ],
+        "image_brief": "Isolated night flag stop; orchard edge; clandestine money and choking rope",
+        "beats": [
+          "B2"
+        ]
+      },
+      {
+        "key": "LOCATION_SF_WATERFRONT",
+        "canonical_name": "San Francisco water front",
+        "source_evidence": "P28 little shed back of a saloon on the San Francisco water front; bloody handkerchief; saloon-keeper; crate; four men morning",
+        "layout_anchors": [
+          "saloon",
+          "little shed behind",
+          "waterfront docks/ferry access"
+        ],
+        "lighting_states": [
+          "night tallow candle",
+          "morning"
+        ],
+        "persistent_props": [
+          "cagelike crate",
+          "bloody wrappings",
+          "file for collar",
+          "tallow candle"
+        ],
+        "image_brief": "Grimy 1890s SF waterfront saloon back-shed; crate prison; rough men",
+        "beats": [
+          "B3"
+        ]
+      },
+      {
+        "key": "LOCATION_SEATTLE_BACK_YARD",
+        "canonical_name": "Seattle back yard",
+        "source_evidence": "P41 small high-walled back yard; stout man red sweater signs book; hatchet club; four men on wall perches; other dogs in crates and ropes",
+        "layout_anchors": [
+          "small high-walled yard",
+          "crate entry from wagon",
+          "wall-top spectator perches"
+        ],
+        "lighting_states": [
+          "daylight breaking yard"
+        ],
+        "persistent_props": [
+          "hatchet",
+          "club",
+          "crates",
+          "raw meat and water bowl"
+        ],
+        "image_brief": "Enclosed brutal dog-breaking yard; club law; spectators safe on walls",
+        "beats": [
+          "B4",
+          "B5"
+        ]
+      },
+      {
+        "key": "LOCATION_NARWHAL",
+        "canonical_name": "Narwhal ship",
+        "source_evidence": "P61 deck of the Narwhal; \u0027tween-decks; propeller throb; Queen Charlotte Sound roll; cold growing; first snow on deck",
+        "layout_anchors": [
+          "\u0027tween-decks dog area",
+          "open deck",
+          "propeller pulse through hull"
+        ],
+        "lighting_states": [
+          "day and night voyage",
+          "colder northern light",
+          "first snow morning"
+        ],
+        "persistent_props": [
+          "leashes",
+          "dog food bones",
+          "ship rails"
+        ],
+        "image_brief": "Northbound steamer; dogs below then first snow mush under paws; excitement of landfall",
+        "beats": [
+          "B5"
+        ]
+      },
+      {
+        "key": "LOCATION_DYEA_BEACH",
+        "canonical_name": "Dyea beach",
+        "source_evidence": "P66 Buck\u0027s first day on the Dyea beach like a nightmare; camped near log store; huskies circle; bloody trampled snow; harness work to forest fringing valley",
+        "layout_anchors": [
+          "beach landing",
+          "log store",
+          "camp tents",
+          "forest fringe for firewood",
+          "many tents of great camp"
+        ],
+        "lighting_states": [
+          "harsh northern day",
+          "cold night wind"
+        ],
+        "persistent_props": [
+          "sled",
+          "harness straps buckles",
+          "axe",
+          "clubs",
+          "fish rations"
+        ],
+        "image_brief": "Chaotic gold-rush beach; savage dogs and men; no peace; Curly\u0027s death circle",
+        "beats": [
+          "B6",
+          "B7",
+          "B8"
+        ]
+      },
+      {
+        "key": "LOCATION_DYEA_CANON_CHILCOOT",
+        "canonical_name": "Dyea Canon / Chilcoot Divide",
+        "source_evidence": "P83 up the Canon through Sheep Camp past the Scales and timber line across glaciers and snowdrifts hundreds of feet deep over great Chilcoot Divide between salt water and fresh",
+        "layout_anchors": [
+          "canon trail",
+          "Sheep Camp",
+          "Scales",
+          "timber line",
+          "glaciers and deep drifts",
+          "Chilcoot summit divide"
+        ],
+        "lighting_states": [
+          "dark morning starts",
+          "gray dawn",
+          "after-dark camps"
+        ],
+        "persistent_props": [
+          "sled and traces",
+          "webbed snowshoes for packing",
+          "gee-pole"
+        ],
+        "image_brief": "Steep frozen climb from salt to fresh water; endless toil; thin air and ice",
+        "beats": [
+          "B9"
+        ]
+      },
+      {
+        "key": "LOCATION_LAKE_BENNETT",
+        "canonical_name": "Lake Bennett",
+        "source_evidence": "P83 huge camp at the head of Lake Bennett where thousands of goldseekers were building boats against break-up of ice in spring",
+        "layout_anchors": [
+          "head of lake",
+          "boat-building camp sprawl",
+          "chain of crater lakes approach"
+        ],
+        "lighting_states": [
+          "late night arrival",
+          "cold darkness harness-up"
+        ],
+        "persistent_props": [
+          "boats under construction",
+          "snow nests"
+        ],
+        "image_brief": "Vast frozen lake-head boomtown of boat builders; exhausted team arrival",
+        "beats": [
+          "B9"
+        ]
+      },
+      {
+        "key": "LOCATION_LAKE_LE_BARGE",
+        "canonical_name": "Lake Le Barge",
+        "source_evidence": "P94 bleak miserable camp on shore of Lake Le Barge; perpendicular wall of rock; fire and robes on ice of lake; tent discarded; driftwood fire thawed through ice; starving husky raid",
+        "layout_anchors": [
+          "lake ice shore",
+          "perpendicular rock wall shelter",
+          "disrupted dog nests",
+          "grub-box"
+        ],
+        "lighting_states": [
+          "driving snow darkness",
+          "fire thaw glow then dark supper",
+          "daybreak return"
+        ],
+        "persistent_props": [
+          "sleeping robes",
+          "grub-box",
+          "driftwood",
+          "clubs"
+        ],
+        "image_brief": "Exposed ice camp under rock wall; white-hot wind; sudden horde of skeleton huskies",
+        "beats": [
+          "B10"
+        ]
+      },
+      {
+        "key": "LOCATION_THIRTY_MILE_RIVER",
+        "canonical_name": "Thirty Mile River",
+        "source_evidence": "P104 Thirty Mile River wide open wild water defied frost; ice only in eddies; six days exhausting toil; ice bridges; rim ice; cliff hoist by rope; thermometer fifty below",
+        "layout_anchors": [
+          "open wild water stretches",
+          "thin ice bridges",
+          "rim ice shores",
+          "cliff face for rope hoist",
+          "eddies with holding ice"
+        ],
+        "lighting_states": [
+          "fifty-below cold snap",
+          "dim dawn to dark",
+          "fire-drying stops"
+        ],
+        "persistent_props": [
+          "long pole for ice safety",
+          "rope from thongs and lashings",
+          "fire-building kit"
+        ],
+        "image_brief": "Deadly thin-ice river corridor; repeated breakthroughs; dogs and men half-frozen",
+        "beats": [
+          "B11",
+          "B15"
+        ]
+      },
+      {
+        "key": "LOCATION_DAWSON",
+        "canonical_name": "Dawson",
+        "source_evidence": "P119 pulled into Dawson; many men countless dogs; main street long teams; cabin logs firewood freight to mines; Barracks bank to Yukon Trail; P267 winter at Dawson Eldorado context",
+        "layout_anchors": [
+          "main street with dog teams",
+          "Barracks steep bank",
+          "mines freight routes",
+          "saloons including Eldorado"
+        ],
+        "lighting_states": [
+          "dreary afternoon arrival",
+          "aurora and frost-dance stars",
+          "winter sixty-below street"
+        ],
+        "persistent_props": [
+          "jingling dog bells",
+          "sled freights",
+          "nine o\u0027clock twelve three husky song"
+        ],
+        "image_brief": "Klondike boom town; dogs as horses; nocturnal husky chorus under aurora",
+        "beats": [
+          "B12",
+          "B15",
+          "B16",
+          "B23"
+        ]
+      },
+      {
+        "key": "LOCATION_SKAGUAY",
+        "canonical_name": "Skaguay",
+        "source_evidence": "P155 lights of Skaguay and shipping at feet after White Pass; P156 main street worshipful crowd; P172 Salt Water Mail arrived Skaguay; P174 tottered down main street; P202 scattered outfit along chief thoroughfare",
+        "layout_anchors": [
+          "main street",
+          "sea slope from White Pass",
+          "shipping lights",
+          "government agent sale point"
+        ],
+        "lighting_states": [
+          "arrival night lights",
+          "day street chaos",
+          "spring departure"
+        ],
+        "persistent_props": [
+          "sleds",
+          "overloaded outfits",
+          "Hudson Bay fresh dogs"
+        ],
+        "image_brief": "End-of-trail port town; record-run celebration then wrecked-mail sale; top-heavy sled spill comedy",
+        "beats": [
+          "B15",
+          "B17",
+          "B18"
+        ]
+      },
+      {
+        "key": "LOCATION_WHITE_RIVER_MOUTH",
+        "canonical_name": "White River mouth (Thornton\u0027s camp)",
+        "source_evidence": "P222 staggered into John Thornton\u0027s camp at the mouth of White River; P224 rotten ice; P235 yawning hole ice give way; P239 lying by river bank long spring days running water bird songs",
+        "layout_anchors": [
+          "river mouth bank camp",
+          "rotten spring ice trail approach",
+          "tent",
+          "whittling log",
+          "later raft eddy"
+        ],
+        "lighting_states": [
+          "blazing spring sun",
+          "long spring days",
+          "ice-collapse moment"
+        ],
+        "persistent_props": [
+          "birch axe-handle",
+          "club and whip of Hal",
+          "traces cut",
+          "Skeet Nig presence"
+        ],
+        "image_brief": "Last safe bank before rotten ice; rescue and convalescence; love begins by running water",
+        "beats": [
+          "B20",
+          "B21",
+          "B22"
+        ]
+      },
+      {
+        "key": "LOCATION_CIRCLE_CITY",
+        "canonical_name": "Circle City",
+        "source_evidence": "P256 at Circle City ere the year was out; bar; Black Burton; tenderfoot; miners\u0027 meeting",
+        "layout_anchors": [
+          "saloon bar with rail",
+          "corner where Buck lies",
+          "street outside"
+        ],
+        "lighting_states": [
+          "interior bar light",
+          "crowd press"
+        ],
+        "persistent_props": [
+          "bar rail",
+          "clubs of crowd",
+          "surgeon kit implied"
+        ],
+        "image_brief": "Northern bar fight space; Buck\u0027s throat-attack reputation made",
+        "beats": [
+          "B22"
+        ]
+      },
+      {
+        "key": "LOCATION_FORTY_MILE_RAPIDS",
+        "canonical_name": "Forty-Mile Creek rapids",
+        "source_evidence": "P258 lining long narrow poling-boat down bad stretch of rapids on Forty-Mile Creek; ledge of barely submerged rocks; mill-race current; worst wild water no swimmer could live; drift log recovery",
+        "layout_anchors": [
+          "bank snubbing trees",
+          "rock ledge mid-stream",
+          "steep pitch wild water",
+          "downstream rocks like comb teeth"
+        ],
+        "lighting_states": [
+          "daylight roar of water"
+        ],
+        "persistent_props": [
+          "thin Manila rope",
+          "poling-boat",
+          "line on Buck\u0027s neck and shoulders"
+        ],
+        "image_brief": "Roaring white-water canyon; triple swim rescue; broken ribs aftermath camp",
+        "beats": [
+          "B22"
+        ]
+      },
+      {
+        "key": "LOCATION_ELDORADO_SALOON",
+        "canonical_name": "Eldorado Saloon, Dawson",
+        "source_evidence": "P267 conversation in the Eldorado Saloon; bar; sack of gold dust; street emptied for test; sled with twenty fifty-pound flour sacks frozen runners",
+        "layout_anchors": [
+          "saloon interior bar and tables",
+          "street immediately outside",
+          "measured hundred-yard course to firewood pile"
+        ],
+        "lighting_states": [
+          "saloon interior",
+          "sixty-below street cold intense"
+        ],
+        "persistent_props": [
+          "gold-dust sacks",
+          "flour-sack loaded sled",
+          "ten-dog team unhitched",
+          "gambling odds crowd"
+        ],
+        "image_brief": "Crowded boastful saloon then frozen street stage for thousand-pound pull; hats mittens flying",
+        "beats": [
+          "B23"
+        ]
+      },
+      {
+        "key": "LOCATION_STEWART_EASTERN_WILDERNESS",
+        "canonical_name": "Stewart River / eastern wilderness",
+        "source_evidence": "P303 seventy miles up Yukon swung left into Stewart River passed Mayo and McQuestion till Stewart streamlet among upstanding peaks backbone of continent; P305 indefinite wandering strange places; summer blizzards naked mountains timber line eternal snows; swarming gnats valleys; glacier shadows strawberries",
+        "layout_anchors": [
+          "Yukon then Stewart river corridors",
+          "upstanding continental backbone peaks",
+          "unknown rivers and blue mountain lakes",
+          "divides and timber line"
+        ],
+        "lighting_states": [
+          "midnight sun",
+          "summer blizzard whiteout",
+          "fall chill",
+          "another winter obliterated trails"
+        ],
+        "persistent_props": [
+          "sled then backpacks",
+          "rifle and salt",
+          "slender boats whipsawed from forest",
+          "moose-hide later"
+        ],
+        "image_brief": "Uncharted vastness; Indian-fashion travel; seasons wheel; call of forest growing",
+        "beats": [
+          "B24",
+          "B25"
+        ]
+      },
+      {
+        "key": "LOCATION_LOST_CABIN_PLACER",
+        "canonical_name": "Lost Cabin country / placer valley",
+        "source_evidence": "P302 fabled lost mine ancient ramshackle cabin; P308 not Lost Cabin but shallow placer in broad valley gold like yellow butter across washing-pan; gold sacked fifty pounds moose-hide bags piled like firewood outside spruce-bough lodge",
+        "layout_anchors": [
+          "broad valley placer",
+          "spruce-bough lodge",
+          "washing-pans",
+          "stacked moose-hide gold sacks",
+          "sluice implied"
+        ],
+        "lighting_states": [
+          "work days flashing like dreams",
+          "fire heat for pans"
+        ],
+        "persistent_props": [
+          "moose-hide bags fifty lb",
+          "washing-pans",
+          "spruce-bough lodge",
+          "tools"
+        ],
+        "image_brief": "Butter-yellow gold shallow diggings; treasure heaped; idle dog hours by fire",
+        "beats": [
+          "B24",
+          "B25",
+          "B26"
+        ]
+      },
+      {
+        "key": "LOCATION_SPRUCE_BOUGH_LODGE_CAMP",
+        "canonical_name": "spruce-bough lodge camp",
+        "source_evidence": "P308 spruce-bough lodge; P339 wreckage of the spruce-bough lodge; P341 Pete in blankets; pool muddy from sluice boxes; Skeet at edge; Thornton in water",
+        "layout_anchors": [
+          "spruce-bough lodge",
+          "clearing",
+          "sluice-box pool",
+          "dog resting places",
+          "trail approaches"
+        ],
+        "lighting_states": [
+          "working daylight",
+          "massacre aftermath day",
+          "full moon ghostly night"
+        ],
+        "persistent_props": [
+          "rotted later moose-hide sacks",
+          "arrows in bodies",
+          "blankets",
+          "sluice boxes"
+        ],
+        "image_brief": "Home camp destroyed; bodies and pool; Buck\u0027s vengeance ground then mourning",
+        "beats": [
+          "B24",
+          "B26",
+          "B27",
+          "B28"
+        ]
+      },
+      {
+        "key": "LOCATION_MOONLIT_CLEARING_WOLF_COUNTRY",
+        "canonical_name": "moonlit clearing and wolf country",
+        "source_evidence": "P313 open place among trees wolf howling; P316 sombre twilight creek bed gorge bleak divide; P317 level country great forest stretches streams; P343 full moon high lighting land ghostly day; P344 clearing moonlight silvery flood of pack; P345 creek bed high gravel bank angle; P351 open space among trees yellow stream from rotted sacks",
+        "layout_anchors": [
+          "forest open clearing",
+          "creek bed and timber jam",
+          "bleak divide",
+          "gravel bank mining angle",
+          "gold-stream valley with long grasses over sacks"
+        ],
+        "lighting_states": [
+          "wan white moonlight",
+          "summer midnight twilight",
+          "full moon ghostly day",
+          "pale moonlight or glimmering borealis",
+          "summer lone visit light"
+        ],
+        "persistent_props": [
+          "rotted moose-hide sacks yellow stream",
+          "long grasses vegetable mould",
+          "wolf pack living presence"
+        ],
+        "image_brief": "Wild brother first meeting; pack joining under moon; eternal Ghost Dog summer howl by gold stream then pack song",
+        "beats": [
+          "B25",
+          "B27",
+          "B28"
+        ]
+      }
+    ]
+  }
+}

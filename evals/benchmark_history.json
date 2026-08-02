@@ -8,7 +8,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -497,7 +500,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "o3-mini",
@@ -561,7 +567,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": true,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -630,7 +639,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -705,7 +717,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -780,7 +795,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -855,7 +873,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -929,7 +950,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "o3-mini",
@@ -993,7 +1017,10 @@
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "o3-mini",
@@ -1057,7 +1084,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -1519,7 +1549,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -1917,7 +1950,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -2329,7 +2365,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -2870,7 +2909,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "6e3449bbc4",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -3318,7 +3360,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "de860360c3",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -3774,7 +3819,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "de860360c3",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -4157,7 +4205,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "de860360c3",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -4577,7 +4628,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "de860360c3",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -5084,7 +5138,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "de860360c3",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -5534,7 +5591,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "de860360c3",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -6023,7 +6083,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "de860360c3",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-terra",
@@ -6676,7 +6739,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
       "IsMockRun": false,
       "ReasoningEffort": "",
-      "PromptVersion": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "de860360c3",
+      "PromptVersionInferred": true,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-terra",
@@ -7186,7 +7252,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "92890EA08C",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -7564,7 +7633,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "92890EA08C",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "claude-opus-5",
@@ -7933,7 +8005,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "92890EA08C",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -8309,7 +8384,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "92890EA08C",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -8792,7 +8870,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "92890EA08C",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -9155,7 +9236,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "15A6CCC456",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -9533,7 +9617,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "15A6CCC456",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "claude-opus-5",
@@ -9888,7 +9975,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "15A6CCC456",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -10279,7 +10369,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "15A6CCC456",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -10773,7 +10866,10 @@
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
       "IsMockRun": false,
       "ReasoningEffort": "max",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
       "PromptVersion": "15A6CCC456",
+      "PromptVersionInferred": false,
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-luna",
@@ -11148,6 +11244,2724 @@
           "gemini-3.6-flash": 8.1,
           "gpt-5.6-sol": 7.9,
           "gpt-5.6-luna": 8.6
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "c3124ad26f904424b83c07995eb553de",
+      "Timestamp": "2026-08-02 04:25:12 UTC",
+      "BookSlug": "a_christmas_carol",
+      "BookTitle": "A_Christmas_Carol",
+      "BookPath": "../books/A_Christmas_Carol.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 82.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 22,
+            "TotalDialogueBlocks": 181,
+            "AvgWordsPerDialogue": 9.5,
+            "MaxWordsInSingleDialogue": 23,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "MR. HARKER",
+              "BOB",
+              "MARLEY",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "YOUNG EBENEZER",
+              "FEZZIWIG",
+              "BELLE",
+              "BELLE\u0027S HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "YOUNG CRATCHIT",
+              "TINY TIM",
+              "MRS. CRATCHIT",
+              "LUCY",
+              "MR. BARKER",
+              "MR. SLOANE",
+              "NELL",
+              "MRS. DILBER",
+              "OLD JOE",
+              "PETER",
+              "TOM",
+              "NARRATOR"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG EBENEZER",
+              "YOUNG CRATCHIT",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 4 age-qualified character header(s) (e.g. YOUNG EBENEZER, YOUNG CRATCHIT, TINY TIM)."
+            ]
+          },
+          "AvgAdaptationFidelity": 4,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 7.2,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 7,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invents named characters absent from the source, including MR. HARKER, LUCY, TOM, and CHARWOMAN NELL; this is a severe source-fidelity violation.",
+            "gpt-5.6-terra: Uses MARLEY for the supernatural figure after establishing the source character as Jacob Marley, weakening recurring character-token consistency for the portrait/cast pipeline.",
+            "gpt-5.6-terra: Omits the required VISION_META sidecar.",
+            "gpt-5.6-terra: Contains fidelity errors or distortions in dialogue allocation, most notably assigning Tiny Tim the source line \u0022As good as gold, and better,\u0022 which Bob says about him.",
+            "gpt-5.6-terra: Omits the debtor-family future vision, a significant source beat that demonstrates relief at Scrooge\u0027s death and motivates Scrooge\u0027s request to see genuine grief."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 79.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 26,
+            "TotalDialogueBlocks": 178,
+            "AvgWordsPerDialogue": 18.1,
+            "MaxWordsInSingleDialogue": 74,
+            "LongMonologueCount": 28,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "MR. GRANTHAM",
+              "BOB CRATCHIT",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "BOY SCROOGE",
+              "FEZZIWIG",
+              "BELLE",
+              "YOUNG MAN SCROOGE",
+              "HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "NIECE",
+              "ALL",
+              "FAT MERCHANT",
+              "MR. BENTLEY",
+              "MR. CROSS",
+              "MR. WORTLEY",
+              "MR. PEEL",
+              "CHARWOMAN",
+              "OLD JOE",
+              "CAROLINE",
+              "PETER",
+              "BOY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY SCROOGE",
+              "YOUNG MAN SCROOGE",
+              "TINY TIM",
+              "OLD JOE",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "28 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 5 age-qualified character header(s) (e.g. BOY SCROOGE, YOUNG MAN SCROOGE, TINY TIM)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.8,
+          "AvgCharacterDisambiguation": 6,
+          "AvgAiVideoDirectibility": 5.5,
+          "AvgDramaticPacing": 6.8,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 6.7,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invents numerous named source characters, including MR. GRANTHAM, MR. BENTLEY, MR. CROSS, MR. WORTLEY, and MR. PEEL, rather than using stable neutral role tokens for unnamed source figures; this is a severe source-fidelity violation.",
+            "gpt-5.6-terra: Uses unstable or prohibited relational/generic dialogue cast cues, including NIECE and HUSBAND, rather than independently stable character tokens.",
+            "gpt-5.6-terra: Contains forbidden multi-location scene headings, including \u0022EXT. CITY STREET / INT. BELLE\u0027S PARLOUR\u0022 and headings joining distinct rooms such as \u0022INT. SCROOGE\u0027S BEDROOM AND SITTING-ROOM.\u0022",
+            "gpt-5.6-terra: Omits the required VISION_META sidecar.",
+            "gpt-5.6-terra: Several dialogue turns materially exceed the prompt\u0027s 35-word maximum, undermining short-clip performance timing.",
+            "grok-4.5: Multiple scene headings illegally join two places with AND or slash (e.g. EXT. CITY STREET / INT. BELLE\u0027S PARLOUR, INT. SCROOGE\u0027S BEDROOM AND SITTING-ROOM, EXT. COUNTRY ROAD AND SCHOOL, HALL AND STAIRS), breaking one-place-per-clip scheduling",
+            "grok-4.5: Closing EXT. LONDON - MONTAGE - DAY is a non-concrete multi-place slug unusable for single 5\u201310s clips"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 6,
+          "gpt-5.6-terra": 6.33
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 7.75,
+          "grok-4.5": 7.33
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 6.3/10 vs. a 7.8/10 average from 1 other judge(s) (-1.4) \u2014 notably harsher on itself than peers were.",
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.3/10 vs. a 6.0/10 average from 1 other judge(s) (\u002B1.3) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "f9e444674682491c8fdeceb8dc3a9481",
+      "Timestamp": "2026-08-02 04:31:15 UTC",
+      "BookSlug": "a_christmas_carol",
+      "BookTitle": "A_Christmas_Carol",
+      "BookPath": "../books/A_Christmas_Carol.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 85.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 25,
+            "TotalDialogueBlocks": 157,
+            "AvgWordsPerDialogue": 9.6,
+            "MaxWordsInSingleDialogue": 22,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "MR. HARKER",
+              "MR. WELLS",
+              "CAROL SINGER",
+              "MARLEY",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "YOUNG EBENEZER",
+              "FEZZIWIG",
+              "BELLE",
+              "YOUNG SCROOGE",
+              "BELLE\u0027S HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "BOB",
+              "THE CRATCHITS",
+              "TINY TIM",
+              "MRS. CRATCHIT",
+              "FRED\u0027S WIFE",
+              "MR. BLAKE",
+              "MR. PIPER",
+              "MR. GRANT",
+              "MRS. DILBER",
+              "LAUNDRESS",
+              "OLD JOE",
+              "PETER",
+              "BOY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG EBENEZER",
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "OLD JOE",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 5 age-qualified character header(s) (e.g. YOUNG EBENEZER, YOUNG SCROOGE, TINY TIM).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.2,
+          "AvgCharacterDisambiguation": 8.2,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 7.8,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 7.5,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invents several named source characters, including MR. HARKER, MR. WELLS, MR. BLAKE, MR. PIPER, and MR. GRANT, triggering the rubric\u0027s severe fidelity penalty.",
+            "gpt-5.6-terra: Drops the future debtors/Caroline sequence, a major source beat that demonstrates the relief caused by Scrooge\u0027s death.",
+            "gpt-5.6-terra: Uses unstable or noncompliant dialogue identities, including BELLE\u0027S HUSBAND and the collective cue THE CRATCHITS, rather than independent stable cast tokens.",
+            "gpt-5.6-terra: The screenplay does not follow the mandated Fountain element-spacing syntax, making downstream parsing unreliable.",
+            "gpt-5.6-terra: The required VISION_META sidecar is absent."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 79.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 25,
+            "TotalDialogueBlocks": 140,
+            "AvgWordsPerDialogue": 19.9,
+            "MaxWordsInSingleDialogue": 74,
+            "LongMonologueCount": 23,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "PORTLY GENTLEMAN",
+              "BOB CRATCHIT",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "LITTLE FAN",
+              "BOY SCROOGE",
+              "FEZZIWIG",
+              "BELLE",
+              "YOUNG SCROOGE",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "FAT MERCHANT",
+              "MERCHANT HALES",
+              "RED-FACED GENTLEMAN",
+              "MR. CHISWICK",
+              "MR. LUTTRIDGE",
+              "CHARWOMAN",
+              "HUSBAND",
+              "PETER",
+              "BOY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY SCROOGE",
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "23 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 4 age-qualified character header(s) (e.g. BOY SCROOGE, YOUNG SCROOGE, TINY TIM)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 5.2,
+          "AvgDramaticPacing": 6.2,
+          "AvgDialogueAuthenticity": 6.8,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 6.6,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invents named merchant characters not present in the source (MR. HALES, MR. CHISWICK, MR. LUTTRIDGE), triggering the rubric\u0027s severe fidelity penalty.",
+            "gpt-5.6-terra: The screenplay does not follow the mandated Fountain element-spacing syntax, making downstream parsing unreliable.",
+            "gpt-5.6-terra: The required VISION_META sidecar is absent.",
+            "gpt-5.6-terra: Several headings and beats are not clip-directable as written, especially the combined \u0022EXT. BLEAK MOOR / LIGHTHOUSE / SHIP - NIGHT\u0022 sequence, which contains multiple locations and events in one scene.",
+            "gpt-5.6-terra: Multiple dialogue turns substantially exceed the shared prompt\u0027s 35-word maximum.",
+            "grok-4.5: Scene headings that join multiple locations with slashes (EXT. BLEAK MOOR / LIGHTHOUSE / SHIP) and vague placeholders (INT. OPEN PLACE) violate the single-concrete-place HARD rule and make clip scheduling impossible",
+            "grok-4.5: Multiple dialogue turns exceed the 35-word hard limit without intervening action/sound micro-beats, breaking the short-clip constraint"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 5.92,
+          "gpt-5.6-terra": 6.5
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.58,
+          "grok-4.5": 7.33
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 6.5/10 vs. a 8.6/10 average from 1 other judge(s) (-2.1) \u2014 notably harsher on itself than peers were.",
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.3/10 vs. a 5.9/10 average from 1 other judge(s) (\u002B1.4) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "cb4bc16c72d6431c85d6689399163054",
+      "Timestamp": "2026-08-02 04:35:40 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "../books/Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 30,
+            "TotalDialogueBlocks": 59,
+            "AvgWordsPerDialogue": 12.5,
+            "MaxWordsInSingleDialogue": 42,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "NICK",
+              "PETER",
+              "SIONNA",
+              "MA",
+              "OFFICER DUPUIS",
+              "NURSE"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 7.5,
+          "AvgCharacterDisambiguation": 7,
+          "AvgAiVideoDirectibility": 5.2,
+          "AvgDramaticPacing": 6.8,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 7.8,
+          "AvgOverallQualitative": 6.9,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Missing the required ---VISION_META--- sidecar, despite it being mandated for downstream portrait and clip production.",
+            "gpt-5.6-terra: Prematurely names the first-person narrator PETER from the opening, although the source withholds his name until the closing line.",
+            "gpt-5.6-terra: Uses prohibited multi-location/slash scene headings and montage containers, including \u0022EXT. PARK / MONTAGE,\u0022 \u0022INT. NICK\u0027S APARTMENT / JOE\u0027S BAR,\u0022 \u0022INT. FUNERAL HOME / CEMETERY,\u0022 \u0022INT. HOSPITAL / MONTAGE,\u0022 and \u0022EXT. WISCONSIN HIGHWAY / AIRPORT,\u0022 which are not schedulable single-location scenes.",
+            "gpt-5.6-terra: The final prison speech is crammed into one oversized dialogue turn and is not viable as a single short AI-video beat.",
+            "grok-4.5: Illegal multi-location scene headings using \u0027/\u0027 (NICK\u2019S APARTMENT / JOE\u2019S BAR, FUNERAL HOME / CEMETERY, HOSPITAL / MONTAGE, HIGHWAY / AIRPORT) which violate the one-concrete-place rule and prevent clean clip breakdown",
+            "grok-4.5: Several montage scenes cram disparate actions and places into single headings, unusable for 5-10s AI clips"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 76.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 30,
+            "TotalDialogueBlocks": 145,
+            "AvgWordsPerDialogue": 7.9,
+            "MaxWordsInSingleDialogue": 21,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "NICK",
+              "KEVIN MCCLEARY",
+              "MRS. ENGEL",
+              "SIONNA",
+              "MA",
+              "LIBRARIAN ADA BELL",
+              "DAVID",
+              "OFFICER DUPUIS",
+              "NURSE OWENS",
+              "FATHER JOSEPH",
+              "INSTRUCTOR MAYA",
+              "GUARD HARRIS",
+              "PETER OLSEN"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "Detected 4 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 2,
+          "AvgCharacterDisambiguation": 7,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 4.5,
+          "AvgDialogueAuthenticity": 7.5,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 6.2,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Drops the source\u0027s central Nick-versus-Sionna stabbing scene entirely, then presents Sionna later with an unexplained healed scar and trauma-driven breakup.",
+            "gpt-5.6-terra: Introduces several invented named characters not named in the source, including LIBRARIAN ADA BELL, BOUNCER RAY, DAVID, INSTRUCTOR MAYA, and GUARD HARRIS.",
+            "gpt-5.6-terra: Missing the required ---VISION_META--- sidecar.",
+            "gpt-5.6-terra: Uses unstable protagonist identity tokens: THE NARRATOR through nearly the entire script, then PETER OLSEN in the closing scene. The source\u0027s final name is Peter Olson, creating both a late cast-token split and a surname inconsistency.",
+            "gpt-5.6-terra: The omitted stabbing creates a major causal hole between Nick\u0027s hospitalization and Sionna\u0027s PTSD, separation, and Peter\u0027s later resentment.",
+            "grok-4.5: Dropped the major climax of Nick stabbing Sionna (book\u0027s central violent peak); only a later scar is shown without the attack scene",
+            "grok-4.5: Narrative incomplete: separation, hatred, and Seattle arc lack causal depiction of the assault"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 6.33,
+          "gpt-5.6-terra": 5.83
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 6.5,
+          "grok-4.5": 7.42
+        }
+      },
+      "SelfBiasNotes": [
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.4/10 vs. a 6.3/10 average from 1 other judge(s) (\u002B1.1) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "b9abc181c228455bbb5787166373fd0d",
+      "Timestamp": "2026-08-02 04:39:46 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "../books/Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.5,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 31,
+            "TotalDialogueBlocks": 20,
+            "AvgWordsPerDialogue": 12.2,
+            "MaxWordsInSingleDialogue": 22,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR V.O.",
+              "OFFICER DUPUIS V.O.",
+              "PETER V.O."
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Detected 2 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.8,
+          "AvgCharacterDisambiguation": 5.5,
+          "AvgAiVideoDirectibility": 7.2,
+          "AvgDramaticPacing": 6.8,
+          "AvgDialogueAuthenticity": 7.2,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 6.9,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The protagonist identity is unstable and inaccurate: NARRATOR becomes PETER before the source\u0027s final-name reveal, and the screenplay uses PETER OLSEN / \u0022President Peter Olsen\u0022 even though the source\u0027s final name is Peter Olson.",
+            "gpt-5.6-terra: YOUNG NICK is not given a distinct cast token from adult NICK; the draft instead uses \u0022Twelve-year-old NICK,\u0022 risking one locked adult reference image across incompatible ages.",
+            "gpt-5.6-terra: GUARD is an unnamed generic supporting dialogue token, contrary to the required stable named-role convention.",
+            "gpt-5.6-terra: Mandatory Vision Meta sidecar is absent.",
+            "gpt-5.6-terra: A dream scene and real-world wake-up are combined under \u0022EXT. DREAM ROAD - DAY,\u0022 creating an impossible single-location scene for clip production."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 40,
+            "TotalDialogueBlocks": 83,
+            "AvgWordsPerDialogue": 11.4,
+            "MaxWordsInSingleDialogue": 47,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "NICK",
+              "PETER",
+              "SIONNA",
+              "MA",
+              "LIBRARIAN",
+              "DR. CARSON",
+              "YOUNG NICK",
+              "OFFICER DUPUIS",
+              "BOB",
+              "ATTENDANT"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG NICK"
+            ],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. YOUNG NICK).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.8,
+          "AvgCharacterDisambiguation": 6.5,
+          "AvgAiVideoDirectibility": 6.8,
+          "AvgDramaticPacing": 6.5,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 7.8,
+          "AvgOverallQualitative": 6.9,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The protagonist is called PETER throughout despite the source withholding his name until the final line, and the draft alternates between PETER and NARRATOR for the same character; this is a source-spoiler and unstable cast-identity defect.",
+            "gpt-5.6-terra: Mandatory Vision Meta sidecar is absent.",
+            "gpt-5.6-terra: Several slugs combine distinct locations or travel beats, including \u0022INT. FUNERAL HOME / CEMETERY\u0022 and \u0022EXT. WISCONSIN HIGHWAY / AIRPORT,\u0022 which is unusable as a single scheduled, generated clip location.",
+            "gpt-5.6-terra: The climactic prison speech is a long multi-idea monologue that exceeds the prompt\u0027s dialogue-length limit and is not viable as one 5-10 second clip."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 5.67,
+          "gpt-5.6-terra": 5.58
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.25,
+          "grok-4.5": 8.08
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 5.6/10 vs. a 8.2/10 average from 1 other judge(s) (-2.7) \u2014 notably harsher on itself than peers were.",
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.1/10 vs. a 5.7/10 average from 1 other judge(s) (\u002B2.4) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "3b1a31918117483eba214ce3b0d98e7f",
+      "Timestamp": "2026-08-02 04:44:02 UTC",
+      "BookSlug": "the_call_of_the_wild",
+      "BookTitle": "The_Call_of_the_Wild",
+      "BookPath": "../books/The_Call_of_the_Wild.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.3,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 34,
+            "AvgWordsPerDialogue": 8.2,
+            "MaxWordsInSingleDialogue": 22,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MANUEL",
+              "DOG BREAKER",
+              "FRANCOIS",
+              "PERREAULT",
+              "HAL",
+              "JOHN THORNTON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.2,
+          "AvgCharacterDisambiguation": 8.1,
+          "AvgAiVideoDirectibility": 8.6,
+          "AvgDramaticPacing": 8.3,
+          "AvgDialogueAuthenticity": 7.9,
+          "AvgSoundDesignMusic": 8.1,
+          "AvgOverallQualitative": 8.2,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.5,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 20,
+            "TotalDialogueBlocks": 33,
+            "AvgWordsPerDialogue": 13.1,
+            "MaxWordsInSingleDialogue": 29,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "STRANGER",
+              "MANUEL",
+              "MAN IN RED SWEATER",
+              "PERRAULT",
+              "FRANCOIS",
+              "NEIGHBOR MAN",
+              "HAL",
+              "JOHN THORNTON",
+              "THORNTON",
+              "SKOOKUM BENCH KING"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": []
+          },
+          "AvgAdaptationFidelity": 8.6,
+          "AvgCharacterDisambiguation": 6.9,
+          "AvgAiVideoDirectibility": 6.4,
+          "AvgDramaticPacing": 7.4,
+          "AvgDialogueAuthenticity": 8.6,
+          "AvgSoundDesignMusic": 8.6,
+          "AvgOverallQualitative": 7.8,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Closed-cast violation: STRANGER and NEIGHBOR MAN are generic dialogue speakers rather than stable named cast tokens.",
+            "gpt-5.6-terra: Character-token inconsistency: JOHN THORNTON is later cued as THORNTON, creating an unstable second identity for a core character.",
+            "gpt-5.6-terra: The final heading, \u0022EXT. THE VALLEY - SUMMER DAY / WINTER NIGHT,\u0022 combines separate times and visual locations/purposes into one slug, violating the one-place/one-time scene constraint."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 7.25,
+          "gpt-5.6-terra": 8.02
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.42,
+          "grok-4.5": 8.25
+        }
+      },
+      "SelfBiasNotes": [
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.2/10 vs. a 7.2/10 average from 1 other judge(s) (\u002B1.0) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "74191667f1e54ff3a920c34b4f6c4117",
+      "Timestamp": "2026-08-02 04:48:26 UTC",
+      "BookSlug": "the_call_of_the_wild",
+      "BookTitle": "The_Call_of_the_Wild",
+      "BookPath": "../books/The_Call_of_the_Wild.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 15,
+            "TotalDialogueBlocks": 36,
+            "AvgWordsPerDialogue": 8.8,
+            "MaxWordsInSingleDialogue": 24,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR V.O.",
+              "STRANGER",
+              "MANUEL",
+              "MAN IN THE RED SWEATER",
+              "FRANCOIS",
+              "PERREAULT",
+              "HAL",
+              "JOHN THORNTON",
+              "MATTHEWSON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": []
+          },
+          "AvgAdaptationFidelity": 7.4,
+          "AvgCharacterDisambiguation": 8.4,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 7.6,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 7.9,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The required VISION_META sidecar is absent, despite the shared prompt designating it HARD output.",
+            "gpt-5.6-terra: The repeated \u0022NARRATOR V.O.\u0022 cues are not valid Fountain character cues under the prompt\u0027s required NARRATOR (V.O.) format, risking narration being parsed incorrectly downstream.",
+            "gpt-5.6-terra: The script contains a concrete setting error, \u0022INT. SEATTLE BACK YARD - DAY,\u0022 for an exterior yard scene."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 95,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 26,
+            "TotalDialogueBlocks": 35,
+            "AvgWordsPerDialogue": 13.6,
+            "MaxWordsInSingleDialogue": 46,
+            "LongMonologueCount": 1,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "STRANGER",
+              "MANUEL",
+              "SALOON-KEEPER",
+              "MAN IN RED SWEATER",
+              "PERRAULT",
+              "FRANCOIS",
+              "JOHN THORNTON",
+              "HAL",
+              "PETE"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "1 monologue turn(s) exceed 35 words without action line splits."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.8,
+          "AvgCharacterDisambiguation": 8.2,
+          "AvgAiVideoDirectibility": 6.3,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 8.6,
+          "AvgSoundDesignMusic": 8.4,
+          "AvgOverallQualitative": 7.9,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The required VISION_META sidecar is absent, despite the shared prompt designating it HARD output.",
+            "gpt-5.6-terra: It violates the one-location-per-heading rule with \u0022EXT. SEATTLE DOCK / DECK OF THE NARWHAL - DAY.\u0022",
+            "gpt-5.6-terra: Several scenes combine too many separate plot turns, locations, and actions to function as discrete 5-10 second AI-video beats, especially the Seattle/Narwhal transition, the White River rescue-and-collapse sequence, and the final Yeehat attack through wolf-pack ending."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 7.32,
+          "gpt-5.6-terra": 7.6
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.25,
+          "grok-4.5": 8.42
+        }
+      },
+      "SelfBiasNotes": [
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.4/10 vs. a 7.3/10 average from 1 other judge(s) (\u002B1.1) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "5953db831b8042ab99306dec1062ff8b",
+      "Timestamp": "2026-08-02 04:51:12 UTC",
+      "BookSlug": "the_tell-tale_heart",
+      "BookTitle": "The_Tell-Tale_Heart",
+      "BookPath": "../books/The_Tell-Tale_Heart.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.5,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 34,
+            "AvgWordsPerDialogue": 16.1,
+            "MaxWordsInSingleDialogue": 26,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.2,
+          "AvgCharacterDisambiguation": 8.5,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 9,
+          "AvgOverallQualitative": 7.8,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Required VISION_META sidecar is absent, leaving the downstream portrait-and-clip pipeline without its mandated machine-readable style lock.",
+            "gpt-5.6-terra: The adaptation invents three specifically named police characters and gives them unquoted dialogue beyond the source\u0027s reported police visit; under the stated strict fidelity standard, invented named characters require a severe fidelity penalty."
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 84.5,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 10,
+            "TotalDialogueBlocks": 47,
+            "AvgWordsPerDialogue": 14.6,
+            "MaxWordsInSingleDialogue": 26,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR V.O.",
+              "NARRATOR",
+              "OLD MAN"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 6.2,
+          "AvgAiVideoDirectibility": 7.5,
+          "AvgDramaticPacing": 7.5,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 8.5,
+          "AvgOverallQualitative": 7.4,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Required VISION_META sidecar is absent, leaving the downstream portrait-and-clip pipeline without its mandated machine-readable style lock.",
+            "gpt-5.6-terra: The protagonist is called THE NARRATOR in Action but NARRATOR V.O. in dialogue cues, creating unstable cast-token identity and likely parser/cast-reference ambiguity.",
+            "gpt-5.6-terra: The adaptation invents three specifically named police characters; under the stated strict fidelity standard, invented named characters require a severe fidelity penalty."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 7.42,
+          "gpt-5.6-terra": 6.5
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.33,
+          "grok-4.5": 8.08
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 6.5/10 vs. a 8.3/10 average from 1 other judge(s) (-1.8) \u2014 notably harsher on itself than peers were."
+      ]
+    },
+    {
+      "RunId": "c961151c01634e19aabdd1ea13bde238",
+      "Timestamp": "2026-08-02 04:54:01 UTC",
+      "BookSlug": "the_tell-tale_heart",
+      "BookTitle": "The_Tell-Tale_Heart",
+      "BookPath": "../books/The_Tell-Tale_Heart.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 12,
+            "TotalDialogueBlocks": 37,
+            "AvgWordsPerDialogue": 19.5,
+            "MaxWordsInSingleDialogue": 31,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8.6,
+          "AvgDramaticPacing": 8.5,
+          "AvgDialogueAuthenticity": 8.4,
+          "AvgSoundDesignMusic": 9,
+          "AvgOverallQualitative": 8.2,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invents three individually named police characters\u2014OFFICER REYNOLDS, OFFICER HALE, and OFFICER BRIGGS\u2014despite the source identifying only three unnamed officers.",
+            "gpt-5.6-terra: Gives an invented spoken police line and individualized officer characterization where the source merely summarizes their arrival and conversation.",
+            "gpt-5.6-terra: Omits the required machine-readable VISION_META sidecar specified as a hard output requirement."
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 43,
+            "AvgWordsPerDialogue": 15.1,
+            "MaxWordsInSingleDialogue": 26,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.6,
+          "AvgCharacterDisambiguation": 5.2,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 7.8,
+          "AvgOverallQualitative": 7.7,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Omits the required machine-readable VISION_META sidecar specified as a hard output requirement.",
+            "grok-4.5: Protagonist NARRATOR never receives a locked full face/build/wardrobe description on first appearance or re-entry; only a pale hand is shown, so cast portrait generation cannot lock a stable identity"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 7.55,
+          "gpt-5.6-terra": 7.88
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 7.5,
+          "grok-4.5": 8.9
+        }
+      },
+      "SelfBiasNotes": [
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.9/10 vs. a 7.5/10 average from 1 other judge(s) (\u002B1.4) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "eef8848147b842eb815ab785bdab77d7",
+      "Timestamp": "2026-08-02 04:57:45 UTC",
+      "BookSlug": "the_velveteen_rabbit",
+      "BookTitle": "The_Velveteen_Rabbit",
+      "BookPath": "../books/The_Velveteen_Rabbit.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.5,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 52,
+            "AvgWordsPerDialogue": 14.1,
+            "MaxWordsInSingleDialogue": 27,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 6,
+          "AvgAiVideoDirectibility": 8.2,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 7.9,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The protagonist is introduced and described as THE BOY but speaks as BOY; this violates the required single stable character token.",
+            "gpt-5.6-terra: The NURSERY MAGIC FAIRY later speaks as FAIRY, creating a second cast identity for the same recurring character.",
+            "gpt-5.6-terra: Two separately acting wild rabbits share the singular WILD RABBIT cue, which is insufficiently disambiguated for cast locking and clip generation."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 82.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 16,
+            "TotalDialogueBlocks": 55,
+            "AvgWordsPerDialogue": 13.9,
+            "MaxWordsInSingleDialogue": 35,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "SKIN HORSE",
+              "VELVETEEN RABBIT",
+              "THE BOY",
+              "NANA",
+              "WILD RABBIT",
+              "THISTLE",
+              "DOCTOR",
+              "NURSERY MAGIC FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "Detected 2 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5,
+          "AvgCharacterDisambiguation": 6,
+          "AvgAiVideoDirectibility": 7.5,
+          "AvgDramaticPacing": 7.8,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 8.8,
+          "AvgOverallQualitative": 7.1,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invents the named wild rabbit THISTLE, a source-absent character; under the stated fidelity rule, this is a major invention.",
+            "gpt-5.6-terra: Uses WILD RABBIT as a shared dialogue token for distinct rabbits, then introduces THISTLE for one of them, creating unstable cast identity for downstream portrait and clip generation.",
+            "grok-4.5: Unintroduced character token THISTLE speaks mid-scene with no prior visual establishment or cast lock",
+            "grok-4.5: Location heading drift breaks place stability (NURSERY / BOY\u0027S NURSERY / BOY\u0027S BEDROOM / BOY\u0027S BED / DIFFERENT BEDROOM)"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 6.75,
+          "gpt-5.6-terra": 7.42
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.42,
+          "grok-4.5": 7.5
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 7.4/10 vs. a 8.4/10 average from 1 other judge(s) (-1.0) \u2014 notably harsher on itself than peers were."
+      ]
+    },
+    {
+      "RunId": "4434ab5375894c9b8d0bdba4375b637d",
+      "Timestamp": "2026-08-02 05:00:44 UTC",
+      "BookSlug": "the_velveteen_rabbit",
+      "BookTitle": "The_Velveteen_Rabbit",
+      "BookPath": "../books/The_Velveteen_Rabbit.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 92,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 16,
+            "TotalDialogueBlocks": 58,
+            "AvgWordsPerDialogue": 14.8,
+            "MaxWordsInSingleDialogue": 35,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "THE BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "NURSERY FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 8.2,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 9,
+          "AvgOverallQualitative": 8.7,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 82.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 13,
+            "TotalDialogueBlocks": 57,
+            "AvgWordsPerDialogue": 12.8,
+            "MaxWordsInSingleDialogue": 28,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "NURSERY MAGIC FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. BOY)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.2,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 6,
+          "AvgDialogueAuthenticity": 7.5,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 7.1,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The draft creates a major chronology and continuity contradiction by depicting the Boy as pale and thin after illness in the woodland scene, then immediately placing him back in bed contracting scarlet fever. This reverses the source\u0027s illness-and-recovery order and makes the dramatic progression unusable as-is.",
+            "grok-4.5: Chronological error: Boy is described as pale and thin after illness in a woodland scene that plays before the scarlet-fever bedroom sequence",
+            "grok-4.5: Invented on-camera Boy dialogue (\u0027Bunny goes to the seaside\u0027) not present in the source"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 8.4,
+          "gpt-5.6-terra": 6.8
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 7.42,
+          "grok-4.5": 8.92
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "ce4098df0d8f4a4dbff8c581ee629fc3",
+      "Timestamp": "2026-08-02 05:07:41 UTC",
+      "BookSlug": "a_christmas_carol",
+      "BookTitle": "A_Christmas_Carol",
+      "BookPath": "../books/A_Christmas_Carol.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 83.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 29,
+            "TotalDialogueBlocks": 178,
+            "AvgWordsPerDialogue": 9.5,
+            "MaxWordsInSingleDialogue": 22,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "MR. HARTLEY",
+              "CHILD CAROLER",
+              "BOB",
+              "MARLEY",
+              "CHRISTMAS PAST",
+              "FAN",
+              "YOUNG EBENEZER",
+              "FEZZIWIG",
+              "BELLE",
+              "BELLE\u0027S HUSBAND",
+              "CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "CRATCHIT CHILDREN",
+              "CLARA",
+              "ALL",
+              "MR. POOLE",
+              "MR. SNIPE",
+              "MRS. DILBER",
+              "OLD JOE",
+              "MRS. RIGGS",
+              "PETER",
+              "BOY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "CHILD CAROLER",
+              "YOUNG EBENEZER",
+              "TINY TIM",
+              "OLD JOE",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 5 age-qualified character header(s) (e.g. CHILD CAROLER, YOUNG EBENEZER, TINY TIM)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.2,
+          "AvgCharacterDisambiguation": 8.4,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 7.4,
+          "AvgDialogueAuthenticity": 8,
+          "AvgSoundDesignMusic": 8.7,
+          "AvgOverallQualitative": 7.2,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invented proper-name characters are pervasive, including MR. HARTLEY, CLARA, MR. POOLE, MR. SNIPE, MRS. RIGGS, and TOM BAXTER; these replace unnamed source roles and trigger the severe fidelity penalty.",
+            "gpt-5.6-terra: The major future vision in which a debtor family learns that Scrooge\u0027s death frees them from their merciless creditor is omitted.",
+            "gpt-5.6-terra: The Ghost of Christmas Present dialogue incorrectly has Scrooge say, \u0022I am the Ghost of Christmas Present?\u0022 rather than identifying the Spirit, creating a clear character/dialogue error.",
+            "gpt-5.6-terra: The required VISION_META sidecar is absent."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 80.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 30,
+            "TotalDialogueBlocks": 201,
+            "AvgWordsPerDialogue": 15.5,
+            "MaxWordsInSingleDialogue": 72,
+            "LongMonologueCount": 16,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "PORTLY GENTLEMAN",
+              "CAROL BOY",
+              "BOB CRATCHIT",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "BOY SCROOGE",
+              "FEZZIWIG",
+              "BELLE",
+              "YOUNG SCROOGE",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "ALL",
+              "TINY TIM",
+              "FRED\u0027S WIFE",
+              "FAT MERCHANT",
+              "MERCHANT HALES",
+              "MERCHANT GRAY",
+              "MR. CHAPMAN",
+              "MR. PELL",
+              "CHARWOMAN",
+              "OLD JOE",
+              "MRS. DILBER",
+              "STREET BOY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "CAROL BOY",
+              "BOY SCROOGE",
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "OLD JOE",
+              "STREET BOY"
+            ],
+            "DiagnosticWarnings": [
+              "16 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 6 age-qualified character header(s) (e.g. CAROL BOY, BOY SCROOGE, YOUNG SCROOGE)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 6.5,
+          "AvgAiVideoDirectibility": 5.5,
+          "AvgDramaticPacing": 6.2,
+          "AvgDialogueAuthenticity": 8.7,
+          "AvgSoundDesignMusic": 8.6,
+          "AvgOverallQualitative": 6.9,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invented proper-name supporting characters (including MR. CHAPMAN, MR. PELL, MERCHANT HALES, and MERCHANT GRAY) violate source fidelity; unnamed source roles should remain stable neutral role tokens.",
+            "gpt-5.6-terra: Multiple scene headings combine distinct locations, directly defeating scheduling and clip generation requirements: for example COUNTRY ROAD AND SCHOOL, CITY STREET / INT. BELLE\u0027S PARTING PLACE, BLEAK MOOR / LIGHTHOUSE / SHIP, and CITY / EXCHANGE.",
+            "gpt-5.6-terra: Several scenes and action blocks contain an unfilmably dense sequence of separate beats, locations, and dialogue exchanges for short 5\u201310 second clips.",
+            "gpt-5.6-terra: The required VISION_META sidecar is absent.",
+            "grok-4.5: Multiple scene headings join distinct places with / (e.g. EXT. CITY STREET / INT. BELLE\u0027S..., EXT. BLEAK MOOR / LIGHTHOUSE / SHIP) violating the single-place HARD rule",
+            "grok-4.5: Supporting speakers use unstable generic role cues (PORTLY GENTLEMAN, FAT MERCHANT, CHARWOMAN, UNDERTAKER\u0027S MAN, STREET BOY) instead of proper-name tokens required for closed cast"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 5.9,
+          "gpt-5.6-terra": 5.8
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.58,
+          "grok-4.5": 7.92
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 5.8/10 vs. a 8.6/10 average from 1 other judge(s) (-2.8) \u2014 notably harsher on itself than peers were.",
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.9/10 vs. a 5.9/10 average from 1 other judge(s) (\u002B2.0) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "8e1ecaeb648944df8c34a8f116a49657",
+      "Timestamp": "2026-08-02 05:12:58 UTC",
+      "BookSlug": "a_christmas_carol",
+      "BookTitle": "A_Christmas_Carol",
+      "BookPath": "../books/A_Christmas_Carol.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 85.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 27,
+            "TotalDialogueBlocks": 118,
+            "AvgWordsPerDialogue": 21,
+            "MaxWordsInSingleDialogue": 97,
+            "LongMonologueCount": 24,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "PORTLY GENTLEMAN",
+              "BOB CRATCHIT",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "LITTLE FAN",
+              "YOUNG SCROOGE",
+              "FEZZIWIG",
+              "BELLE",
+              "YOUNG MAN SCROOGE",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "FAT MAN",
+              "CHARWOMAN",
+              "HUSBAND",
+              "BOY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG SCROOGE",
+              "YOUNG MAN SCROOGE",
+              "TINY TIM",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "24 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 4 age-qualified character header(s) (e.g. YOUNG SCROOGE, YOUNG MAN SCROOGE, TINY TIM)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.8,
+          "AvgCharacterDisambiguation": 7.8,
+          "AvgAiVideoDirectibility": 5.8,
+          "AvgDramaticPacing": 7.2,
+          "AvgDialogueAuthenticity": 8,
+          "AvgSoundDesignMusic": 8.8,
+          "AvgOverallQualitative": 7.7,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The draft does not follow the required Fountain blank-line separation rules, so its scene, action, and dialogue elements are not reliably parseable by the stated downstream pipeline.",
+            "gpt-5.6-terra: The required VISION_META sidecar is absent.",
+            "gpt-5.6-terra: Several dialogue turns substantially exceed the prompt\u0027s 35-word maximum and cannot fit the intended 5-10 second clip format without further subdivision.",
+            "gpt-5.6-terra: The heading \u0022EXT. BLEAK MOOR / LIGHTHOUSE / SHIP - NIGHT\u0022 combines three distinct locations in direct violation of the one-location-per-heading rule.",
+            "grok-4.5: Invalid multi-location heading \u0027EXT. BLEAK MOOR / LIGHTHOUSE / SHIP - NIGHT\u0027 joins places with slashes",
+            "grok-4.5: Unstable supporting tokens CHARWOMAN, FAT MAN, UNDERTAKER\u0027S MAN instead of proper independent names"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 80.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 130,
+            "AvgWordsPerDialogue": 10,
+            "MaxWordsInSingleDialogue": 24,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "NARRATOR",
+              "BOB CRATCHIT",
+              "MARLEY",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "YOUNG SCROOGE",
+              "FEZZIWIG",
+              "BELLE",
+              "BELLE\u0027S HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "FRED\u0027S WIFE",
+              "MRS. DILBER",
+              "OLD JOE"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, OLD JOE)."
+            ]
+          },
+          "AvgAdaptationFidelity": 3.5,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 7.2,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 6.8,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The draft does not follow the required Fountain blank-line separation rules, so its screenplay elements will not reliably parse in the specified production pipeline.",
+            "gpt-5.6-terra: The required VISION_META sidecar is absent.",
+            "gpt-5.6-terra: It drops major source beats, including the Ghost of Christmas Present\u0027s revelation of Ignorance and Want and the debtor family\u0027s relieved response to Scrooge\u0027s death; under the stated rubric, these omissions are a severe adaptation-fidelity failure.",
+            "gpt-5.6-terra: Some scenes combine distinct locations and narrative turns under one heading, notably the Old Joe shop sequence shifting directly into the dead man\u0027s bedroom.",
+            "grok-4.5: Major source beats dropped (Marley knocker transformation, Ignorance and Want, debtors\u0027 family relief at the death)",
+            "grok-4.5: Relational/possessive character cues FRED\u0027S WIFE and BELLE\u0027S HUSBAND violate stable independent token rule"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 7.2,
+          "gpt-5.6-terra": 6.4
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 7.17,
+          "grok-4.5": 8.25
+        }
+      },
+      "SelfBiasNotes": [
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.2/10 vs. a 7.2/10 average from 1 other judge(s) (\u002B1.0) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "3bf47efa59b14b7ea5003c539d2cb867",
+      "Timestamp": "2026-08-02 05:16:45 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "../books/Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 84.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 95,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 27,
+            "TotalDialogueBlocks": 62,
+            "AvgWordsPerDialogue": 11.6,
+            "MaxWordsInSingleDialogue": 40,
+            "LongMonologueCount": 1,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "PETER",
+              "NICK",
+              "YOUNG NICK",
+              "SIONNA",
+              "MA",
+              "DR. CARSON",
+              "OFFICER DUPUIS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG NICK"
+            ],
+            "DiagnosticWarnings": [
+              "1 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. YOUNG NICK).",
+              "Detected 2 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.8,
+          "AvgCharacterDisambiguation": 7.8,
+          "AvgAiVideoDirectibility": 6.4,
+          "AvgDramaticPacing": 7.2,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 8.4,
+          "AvgOverallQualitative": 7.4,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The screenplay reveals the narrator as PETER from the opening despite the source withholding his name until the closing line, violating the source\u2019s reveal structure.",
+            "gpt-5.6-terra: Several headings combine distinct locations or major time/action changes in one scene, including \u0022DOCTOR\u2019S OFFICE / HOSPITAL CORRIDOR,\u0022 \u0022MILWAUKEE STREETS / INTERSECTION,\u0022 and \u0022WISCONSIN HIGHWAY / AIRPORT,\u0022 making the draft noncompliant with the one-location-per-scene production constraint.",
+            "gpt-5.6-terra: The draft omits the required VISION_META sidecar, a stated hard delivery requirement for downstream portrait and clip production.",
+            "grok-4.5: First-person protagonist locked as PETER from FADE IN though the book withholds the name until the final line\u2014violates NARRATOR-until-named rule",
+            "grok-4.5: Multiple illegal multi-place scene headings using slashes (e.g. DOCTOR\u0027S OFFICE / HOSPITAL CORRIDOR, MILWAUKEE STREET / PUBLIC LIBRARY, WISCONSIN HIGHWAY / AIRPORT)"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 78.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 25,
+            "TotalDialogueBlocks": 103,
+            "AvgWordsPerDialogue": 8,
+            "MaxWordsInSingleDialogue": 21,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "NICK",
+              "OLIVIA",
+              "LIBRARIAN EVELYN",
+              "SIONNA",
+              "LINDSEY",
+              "OFFICER DUPUIS",
+              "INSTRUCTOR MAYA"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "Detected 3 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 2.8,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 7.3,
+          "AvgDramaticPacing": 5.9,
+          "AvgDialogueAuthenticity": 7.7,
+          "AvgSoundDesignMusic": 8.4,
+          "AvgOverallQualitative": 6.6,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The screenplay drops the source\u2019s central irreversible stabbing sequence: Nick\u2019s confrontation with Sionna, Peter\u2019s arrival and intervention, Nick stabbing Sionna, Peter applying pressure to the wound, and the emergency response. It then presents Sionna already recovering from a stabbing, creating an unsupported major consequence.",
+            "gpt-5.6-terra: The omission breaks the causal arc behind Sionna\u2019s trauma, breakup with the narrator, Nick\u2019s attempted-murder conviction, and Peter\u2019s later resentment and forgiveness.",
+            "gpt-5.6-terra: The draft omits the required VISION_META sidecar, a stated hard delivery requirement for downstream portrait and clip production.",
+            "grok-4.5: Drops the source\u0027s central violent peak (Nick stabbing Sionna); only shows braced aftermath, which is a major omitted beat",
+            "grok-4.5: Invented named supporting cast not in source (LIBRARIAN EVELYN, BOUNCER MARTIN, INSTRUCTOR MAYA) without necessity"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 6.8,
+          "gpt-5.6-terra": 6.43
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 6.67,
+          "grok-4.5": 7.92
+        }
+      },
+      "SelfBiasNotes": [
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.9/10 vs. a 6.8/10 average from 1 other judge(s) (\u002B1.1) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "6d6f4f8f905c4381bea413d3e516231f",
+      "Timestamp": "2026-08-02 05:20:28 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "../books/Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 80.5,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 32,
+            "TotalDialogueBlocks": 88,
+            "AvgWordsPerDialogue": 10.7,
+            "MaxWordsInSingleDialogue": 32,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "NICK",
+              "PETER",
+              "SIONNA",
+              "MA",
+              "DR. CARSON",
+              "ANSWERING MACHINE",
+              "OFFICER DUPUIS",
+              "BOB",
+              "GUARD"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 7,
+          "AvgCharacterDisambiguation": 6.5,
+          "AvgAiVideoDirectibility": 5,
+          "AvgDramaticPacing": 6.8,
+          "AvgDialogueAuthenticity": 7.2,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 6.8,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The Fountain body is not production-parseable as delivered: dialogue cues are separated from their dialogue by blank lines, contrary to the required Fountain format.",
+            "gpt-5.6-terra: The required VISION_META sidecar is missing.",
+            "gpt-5.6-terra: The protagonist is inconsistently keyed as both NARRATOR and PETER, and Peter\u0027s name is revealed substantially earlier than the source reveals it.",
+            "gpt-5.6-terra: An unnamed GUARD has dialogue, violating the closed-cast/stable-token requirement.",
+            "gpt-5.6-terra: Several headings improperly combine separate locations, including CITY STREET / PUBLIC LIBRARY, DOCTOR\u0027S OFFICE / HOSPITAL CORRIDOR, FUNERAL HOME / CEMETERY, and WISCONSIN HIGHWAY / AIRPORT.",
+            "grok-4.5: Multiple scene headings illegally join distinct locations with / (DOCTOR\u2019S OFFICE / HOSPITAL CORRIDOR, FUNERAL HOME / CEMETERY, CITY STREET / PUBLIC LIBRARY), violating the hard single-place rule and breaking downstream scheduling/clip generation",
+            "grok-4.5: Narrator is named PETER from the opening scenes, revealing the given name long before the book does so at the close"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 80.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 25,
+            "TotalDialogueBlocks": 19,
+            "AvgWordsPerDialogue": 10.8,
+            "MaxWordsInSingleDialogue": 20,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR V.O.",
+              "OFFICER DUPUIS V.O.",
+              "PETER V.O."
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 5.5,
+          "AvgAiVideoDirectibility": 6.5,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 7.5,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 6.7,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The Fountain body is not production-parseable as delivered: dialogue cues are separated from their dialogue by blank lines, contrary to the required Fountain format.",
+            "gpt-5.6-terra: The required VISION_META sidecar is missing.",
+            "gpt-5.6-terra: It invents named supporting characters not named in the source, including CARLOS, BOUNCER HARRIS, and INSTRUCTOR MAYA; under the evaluation rubric, invented named characters are a severe fidelity failure.",
+            "gpt-5.6-terra: The protagonist is inconsistently keyed as NARRATOR and PETER, while MA is initially identified as OLIVIA OLSEN but later keyed only as MA.",
+            "gpt-5.6-terra: Young Nick and adult Nick use the same NICK token without explicit age disambiguation, despite the childhood flashback.",
+            "gpt-5.6-terra: DREAM is used as a scene heading without an INT./EXT. location, producing invalid/non-filmable scene structure."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 6.42,
+          "gpt-5.6-terra": 5.08
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.33,
+          "grok-4.5": 7.08
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 5.1/10 vs. a 8.3/10 average from 1 other judge(s) (-3.2) \u2014 notably harsher on itself than peers were."
+      ]
+    },
+    {
+      "RunId": "3a525576b3404dd7a11ff103db4ec229",
+      "Timestamp": "2026-08-02 05:24:28 UTC",
+      "BookSlug": "the_call_of_the_wild",
+      "BookTitle": "The_Call_of_the_Wild",
+      "BookPath": "../books/The_Call_of_the_Wild.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 88.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 20,
+            "TotalDialogueBlocks": 43,
+            "AvgWordsPerDialogue": 8.4,
+            "MaxWordsInSingleDialogue": 19,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "STRANGER",
+              "MANUEL",
+              "MAN IN THE RED SWEATER",
+              "FRANCOIS",
+              "PERRAULT",
+              "HAL",
+              "JOHN THORNTON",
+              "MATTHEWSON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": []
+          },
+          "AvgAdaptationFidelity": 8.1,
+          "AvgCharacterDisambiguation": 8.4,
+          "AvgAiVideoDirectibility": 7.9,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.3,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 8.1,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The required VISION_META sidecar is absent, so the screenplay does not supply the mandated machine-readable visual-medium and render-style lock.",
+            "gpt-5.6-terra: There are identity and location-token quality defects, including the malformed \u0022DYE A\u0022 location spelling and inconsistent \u0022FRANC OIS\u0022 rendering, which risk creating unstable production entities.",
+            "gpt-5.6-terra: Although much more clip-ready than Screenplay A, several action paragraphs still combine multiple independent beats that require further shot/clip splitting before generation."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 82,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 18,
+            "TotalDialogueBlocks": 22,
+            "AvgWordsPerDialogue": 12.6,
+            "MaxWordsInSingleDialogue": 29,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "STRANGER",
+              "MANUEL",
+              "KIDNAPPER",
+              "MAN IN RED SWEATER",
+              "PERRAULT",
+              "FRANCOIS",
+              "JOHN THORNTON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": []
+          },
+          "AvgAdaptationFidelity": 8.4,
+          "AvgCharacterDisambiguation": 6.2,
+          "AvgAiVideoDirectibility": 4.8,
+          "AvgDramaticPacing": 5.9,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 8.6,
+          "AvgOverallQualitative": 7,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The required VISION_META sidecar is absent, leaving no machine-readable final visual-medium/style lock for downstream portrait and clip production.",
+            "gpt-5.6-terra: Several scene headings combine separate physical locations, including \u0022INT. BAGGAGE CAR / SAN FRANCISCO SHED - NIGHT\u0022 and \u0022EXT. SKAGUAY STREET / TRAIL - DAY,\u0022 directly violating the one-location-per-scene requirement.",
+            "gpt-5.6-terra: Multiple scenes compress major sequences, location changes, and long spans of time into single action blocks, making them unusable as discrete 5-10 second AI-video beats without substantial breakdown.",
+            "grok-4.5: Multi-location scene headings joined with slashes (INT. BAGGAGE CAR / SAN FRANCISCO SHED; EXT. SKAGUAY STREET / TRAIL) violate one-place-per-heading and break schedule/clip parsing",
+            "grok-4.5: Iconic Thornton set pieces (cliff jump, Black Burton throat attack, Forty-Mile rapids rescue) collapsed into unfilmable prose summary inside one camp scene instead of directed, observable beats"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 6.83,
+          "gpt-5.6-terra": 7.97
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.25,
+          "grok-4.5": 7.17
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "ad36ecb884d8444cb3ee11fb8a029907",
+      "Timestamp": "2026-08-02 05:28:30 UTC",
+      "BookSlug": "the_call_of_the_wild",
+      "BookTitle": "The_Call_of_the_Wild",
+      "BookPath": "../books/The_Call_of_the_Wild.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 90,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 24,
+            "TotalDialogueBlocks": 49,
+            "AvgWordsPerDialogue": 9,
+            "MaxWordsInSingleDialogue": 19,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MANUEL",
+              "THE MAN IN THE RED SWEATER",
+              "PERRAULT",
+              "FRANCOIS",
+              "HAL",
+              "MERCEDES",
+              "JOHN THORNTON",
+              "MATTHEWSON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8.2,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 8.3,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Missing the required VISION_META sidecar."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 23,
+            "TotalDialogueBlocks": 31,
+            "AvgWordsPerDialogue": 15.6,
+            "MaxWordsInSingleDialogue": 48,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "STRANGER",
+              "MANUEL",
+              "MAN IN RED SWEATER",
+              "PERRAULT",
+              "FRANCOIS",
+              "HAL",
+              "JOHN THORNTON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.2,
+          "AvgCharacterDisambiguation": 7.5,
+          "AvgAiVideoDirectibility": 6.8,
+          "AvgDramaticPacing": 6.8,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 7.5,
+          "AvgOverallQualitative": 7,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Drops the major Forty-Mile Creek rescue sequence, a central Thornton/Buck loyalty set piece, which is a severe source-coverage omission.",
+            "gpt-5.6-terra: Uses inconsistent cast tokens for the same character: THE MAN IN THE RED SWEATER in action versus MAN IN RED SWEATER in dialogue.",
+            "gpt-5.6-terra: Violates the one-location-per-heading rule with headings such as EXT. ELDORADO SALOON / STREET and uses the noncompliant DAY/NIGHT time construction.",
+            "gpt-5.6-terra: Missing the required VISION_META sidecar."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 6.25,
+          "gpt-5.6-terra": 8.17
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.5,
+          "grok-4.5": 7.75
+        }
+      },
+      "SelfBiasNotes": [
+        "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.8/10 vs. a 6.2/10 average from 1 other judge(s) (\u002B1.5) \u2014 possible self-preference bias."
+      ]
+    },
+    {
+      "RunId": "ff632bfebb064387ac110dd9aeab1e4a",
+      "Timestamp": "2026-08-02 05:31:29 UTC",
+      "BookSlug": "the_tell-tale_heart",
+      "BookTitle": "The_Tell-Tale_Heart",
+      "BookPath": "../books/The_Tell-Tale_Heart.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 90.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 95,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 35,
+            "AvgWordsPerDialogue": 21.3,
+            "MaxWordsInSingleDialogue": 36,
+            "LongMonologueCount": 1,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "1 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 7.4,
+          "AvgAiVideoDirectibility": 8.1,
+          "AvgDramaticPacing": 8.4,
+          "AvgDialogueAuthenticity": 8.9,
+          "AvgSoundDesignMusic": 9.2,
+          "AvgOverallQualitative": 8.5,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The required VISION_META sidecar is absent, leaving the production package incomplete for the stated downstream portrait and clip pipeline."
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 82.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 47,
+            "AvgWordsPerDialogue": 13.3,
+            "MaxWordsInSingleDialogue": 26,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "THE NARRATOR",
+              "MR. VALE",
+              "OFFICER HART"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": []
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 6.1,
+          "AvgAiVideoDirectibility": 7.4,
+          "AvgDramaticPacing": 7.4,
+          "AvgDialogueAuthenticity": 7.7,
+          "AvgSoundDesignMusic": 8.4,
+          "AvgOverallQualitative": 7.1,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: The screenplay invents the old man\u0027s personal name, MR. VALE, despite the source deliberately leaving him unnamed; this is a major invented character detail and materially fails strict source-fidelity requirements.",
+            "gpt-5.6-terra: The protagonist is referred to as THE NARRATOR in Action but speaks under the separate character cue NARRATOR, creating an unstable closed-cast identity token for downstream casting.",
+            "gpt-5.6-terra: The required VISION_META sidecar is absent, leaving the production package incomplete for the stated downstream portrait and clip pipeline."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 8.42,
+          "gpt-5.6-terra": 6.15
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8,
+          "grok-4.5": 8.58
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 6.2/10 vs. a 8.0/10 average from 1 other judge(s) (-1.8) \u2014 notably harsher on itself than peers were."
+      ]
+    },
+    {
+      "RunId": "d20d17cbc0f6457bacbfad2669584581",
+      "Timestamp": "2026-08-02 05:34:28 UTC",
+      "BookSlug": "the_tell-tale_heart",
+      "BookTitle": "The_Tell-Tale_Heart",
+      "BookPath": "../books/The_Tell-Tale_Heart.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 88.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 13,
+            "TotalDialogueBlocks": 43,
+            "AvgWordsPerDialogue": 19.5,
+            "MaxWordsInSingleDialogue": 34,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.8,
+          "AvgCharacterDisambiguation": 8.6,
+          "AvgAiVideoDirectibility": 8.6,
+          "AvgDramaticPacing": 8.3,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 9,
+          "AvgOverallQualitative": 8,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Invents three specifically named police characters\u2014OFFICER REYNOLDS, OFFICER HALE, and OFFICER BRIGGS\u2014where the source provides only three unnamed officers; under the evaluation rule, invented named characters trigger a severe fidelity failure.",
+            "gpt-5.6-terra: Omits the required VISION_META sidecar, leaving the mandated downstream machine-readable visual lock incomplete."
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 82.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 52,
+            "AvgWordsPerDialogue": 13.3,
+            "MaxWordsInSingleDialogue": 26,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR V.O.",
+              "NARRATOR",
+              "MR. VALE",
+              "OFFICER REYNOLDS",
+              "OFFICER HART"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": []
+          },
+          "AvgAdaptationFidelity": 5.2,
+          "AvgCharacterDisambiguation": 6.2,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 7.7,
+          "AvgDialogueAuthenticity": 7.2,
+          "AvgSoundDesignMusic": 8.4,
+          "AvgOverallQualitative": 7.1,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Renames the source\u0027s unnamed old man as MR. VALE, an invented named principal character; this is a severe source-fidelity violation.",
+            "gpt-5.6-terra: Invents named police characters and gives officers and the old man dialogue not quoted as spoken in the source.",
+            "gpt-5.6-terra: Omits the required VISION_META sidecar, leaving the mandated downstream machine-readable visual lock incomplete."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 7.57,
+          "gpt-5.6-terra": 6.13
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8,
+          "grok-4.5": 8.5
+        }
+      },
+      "SelfBiasNotes": [
+        "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 6.1/10 vs. a 8.0/10 average from 1 other judge(s) (-1.9) \u2014 notably harsher on itself than peers were."
+      ]
+    },
+    {
+      "RunId": "b1c367a3a49a4aee9faac844892cad8d",
+      "Timestamp": "2026-08-02 05:37:36 UTC",
+      "BookSlug": "the_velveteen_rabbit",
+      "BookTitle": "The_Velveteen_Rabbit",
+      "BookPath": "../books/The_Velveteen_Rabbit.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 14,
+            "TotalDialogueBlocks": 59,
+            "AvgWordsPerDialogue": 13.2,
+            "MaxWordsInSingleDialogue": 28,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "NURSERY MAGIC FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.4,
+          "AvgCharacterDisambiguation": 7.8,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.5,
+          "AvgDialogueAuthenticity": 8.3,
+          "AvgSoundDesignMusic": 8.3,
+          "AvgOverallQualitative": 8.3,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Missing the required ---VISION_META--- sidecar, which the shared prompt designates as mandatory downstream source material for portrait generation and clip production."
+          ]
+        },
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.3,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 14,
+            "TotalDialogueBlocks": 54,
+            "AvgWordsPerDialogue": 14.8,
+            "MaxWordsInSingleDialogue": 35,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "THE BOY",
+              "WILD RABBIT",
+              "THE DOCTOR",
+              "NURSERY MAGIC FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 7.9,
+          "AvgAiVideoDirectibility": 7,
+          "AvgDramaticPacing": 7.6,
+          "AvgDialogueAuthenticity": 8.9,
+          "AvgSoundDesignMusic": 8.8,
+          "AvgOverallQualitative": 8.2,
+          "DisqualifyingFlags": [
+            "gpt-5.6-terra: Missing the required ---VISION_META--- sidecar, which the shared prompt designates as mandatory downstream source material for portrait generation and clip production."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 8.12,
+          "gpt-5.6-terra": 8.13
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 8.5,
+          "grok-4.5": 8.3
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "760619b046804940acf5cbbe2fd89c84",
+      "Timestamp": "2026-08-02 05:40:43 UTC",
+      "BookSlug": "the_velveteen_rabbit",
+      "BookTitle": "The_Velveteen_Rabbit",
+      "BookPath": "../books/The_Velveteen_Rabbit.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "",
+      "SamplingTemperature": 0.2,
+      "JudgeTemperature": 0,
+      "PromptVersion": "dfdb0b9a3e",
+      "PromptVersionInferred": false,
+      "ModelScores": [
+        {
+          "ModelId": "grok-4.5",
+          "AnonymousLabel": "",
+          "CompositeScore": 91.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 17,
+            "TotalDialogueBlocks": 61,
+            "AvgWordsPerDialogue": 14.6,
+            "MaxWordsInSingleDialogue": 33,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "THE BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "NURSERY MAGIC FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "Detected 2 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 8.5,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 9,
+          "AvgOverallQualitative": 8.6,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 100,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 53,
+            "AvgWordsPerDialogue": 12.8,
+            "MaxWordsInSingleDialogue": 26,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "NURSERY MAGIC FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8,
+          "AvgCharacterDisambiguation": 7.8,
+          "AvgAiVideoDirectibility": 7.5,
+          "AvgDramaticPacing": 7.5,
+          "AvgDialogueAuthenticity": 8,
+          "AvgSoundDesignMusic": 7.8,
+          "AvgOverallQualitative": 7.7,
+          "DisqualifyingFlags": []
+        }
+      ],
+      "JudgeMatrix": {
+        "gpt-5.6-terra": {
+          "grok-4.5": 8.5,
+          "gpt-5.6-terra": 7.58
+        },
+        "grok-4.5": {
+          "gpt-5.6-terra": 7.9,
+          "grok-4.5": 8.7
         }
       },
       "SelfBiasNotes": []

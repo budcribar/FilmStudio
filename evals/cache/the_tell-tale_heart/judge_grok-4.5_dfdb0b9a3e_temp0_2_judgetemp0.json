@@ -1,0 +1,40 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Solid, faithful short-film cut that hits the stalking week, eighth-night kill, concealment, and confession without inventing major plot. Book VO is largely preserved and iconic confession lines land cleanly. Weaknesses: Narrator\u2019s visual lock is thin (mostly \u201Cdark-clad\u201D/black coat) and not restated on re-entry; officers lack distinct individual looks; the old man\u2019s self-comfort lines (\u201Cwind in the chimney\u201D / \u201Cmouse\u201D) are staged as spoken dialogue rather than internal, a mild fidelity stretch; opening monologue is slightly compressed versus the source. Sound cues are consistent and the heartbeat arc is well staged for short clips. Structure and closed cast are production-usable as-is.",
+      "promptImprovementSuggestion": "Require that every speaking character\u2019s first on-screen Action line lock at least age/build/hair/wardrobe in one concrete phrase, and that any re-entry after a time skip or cutaway restates two of those locked traits in the opening Action of that scene."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strongest overall package: fuller retention of iconic opening and peak VO, clearer micro-beats for AI clip splitting, and the best cast locks (Narrator age/build/hair/wardrobe; Old Man eye; three officers each given distinct physical traits). Kill and confession peaks interleave Action, SOUND, and MUSIC at the density the short-clip format needs. Main deduction is dialogue authenticity in the officers beat\u2014invented small talk (\u201CMore tea?\u2014the weather\u2026\u201D, \u201CRest from your fatigues. You see? All is well.\u201D) violates the summarized-exchange cap when the book only says they chatted of familiar things. Still no major invented plot and fully closed cast; greenlight-ready after trimming those invented lines.",
+      "promptImprovementSuggestion": "Tighten the summarized-exchange rule to an explicit default of zero invented spoken lines when the source only reports that people talked or chatted: carry the beat with Action and book-voice V.O. only, and allow at most one generic period line total if Action alone cannot signal the social beat."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it locks cast looks hardest, keeps more complete source VO, and densifies peak Action/SOUND/MUSIC for short-clip directing. Weakest: Screenplay A because Narrator and officer visual locks are thinner and some internal old-man lines are incorrectly externalized as spoken dialogue.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "0D954E3AEABD81615707843299180C660F121338B2ADA14B756AF2A4A7F5D70B"
+}

@@ -1,0 +1,30 @@
+{
+  "generatedAtUtc": "2026-08-02T02:40:28.6289975Z",
+  "bookBytes": 198451,
+  "bookResentDuringRun": false,
+  "totalNewRequestBytesThisRun": 216344,
+  "totalCostUsd": 2.3913090000000006,
+  "perModel": [
+    {
+      "model": "grok-4.5",
+      "inputTokens": 882138,
+      "cachedInputTokens": 755328,
+      "outputTokens": 44104,
+      "costUsd": 2.0289
+    },
+    {
+      "model": "grok-4",
+      "inputTokens": 52687,
+      "cachedInputTokens": 128,
+      "outputTokens": 949,
+      "costUsd": 0.172296
+    },
+    {
+      "model": "grok-4.20-reasoning",
+      "inputTokens": 52681,
+      "cachedInputTokens": 128,
+      "outputTokens": 2138,
+      "costUsd": 0.19011299999999998
+    }
+  ]
+}

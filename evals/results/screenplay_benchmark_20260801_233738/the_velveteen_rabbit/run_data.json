@@ -1,0 +1,148 @@
+{
+  "BookPath": "../books/The_Velveteen_Rabbit.txt",
+  "Timestamp": "2026-08-02 05:40:43 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 91.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 17,
+        "TotalDialogueBlocks": 61,
+        "AvgWordsPerDialogue": 14.6,
+        "MaxWordsInSingleDialogue": 33,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "NURSERY MAGIC FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "Detected 2 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 9,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 53,
+        "AvgWordsPerDialogue": 12.8,
+        "MaxWordsInSingleDialogue": 26,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "NURSERY MAGIC FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8,
+      "AvgCharacterDisambiguation": 7.8,
+      "AvgAiVideoDirectibility": 7.5,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 7.8,
+      "AvgOverallQualitative": 7.7,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 8.5,
+      "gpt-5.6-terra": 7.58
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 7.9,
+      "grok-4.5": 8.7
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "A is the more complete and emotionally faithful adaptation, preserving every major turn: Christmas abandonment, the Skin Horse\u0027s explanation of Real, bedtime attachment, garden recognition, wild-rabbit rejection, illness and disposal, the Fairy\u0027s intervention, transformation, and spring reunion. Its character descriptions are unusually useful for image locking, especially the Rabbit\u0027s progressive wear, the Skin Horse, Nana, Fairy, and the Boy\u0027s final age progression. The principal limitation is clip granularity: several action blocks contain mini-montages or time shifts that need to become separate 5-10 second beats, notably the spring garden sequence, the fever-to-recovery passage, and portions of the final transformation. Dialogue is highly faithful and performable, while the recurring, specific sound and music motifs strongly support the emotional arc.",
+      "gpt-5.6-terra": "B retains the central plot and ending, but it is materially more compressed than A and loses texture from the toy-cupboard social world, the Skin Horse\u0027s fuller explanation, the Rabbit\u0027s post-recognition happiness, and the Fairy\u0027s full Rabbit-land instruction. It also incorrectly assigns the Doctor\u0027s \u0022Nonsense! Get him a new one\u0022 line to Nana, weakening source fidelity and character logic. Visual action is generally concrete, but dense time-lapse passages still need subdivision for clip production. Character continuity is less reliable because the protagonist is referred to as both THE BOY and BOY, which risks separate cast identities in an automated pipeline. Sound beds are consistently present and serviceable, though they are less musically shaped and emotionally varied than A\u0027s."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Solid, faithful short-film cut that hits the Christmas intro, Skin Horse lesson, Boy\u2019s REAL declaration, wild-rabbit rejection, scarlet-fever crisis, sack/tear/fairy transformation, and spring reunion. Medium lock and cast looks (spotted velveteen, bald Skin Horse, Nana apron, Fairy dew-drops) are clear and mostly restated on re-entry. Weaknesses: Doctor\u2019s \u201CNonsense! Get him a new one\u201D is wrongly given to Nana; Skin Horse speech is trimmed (loses the \u201Ccan\u2019t be ugly\u201D beat and Timothy); several headings pack multi-phase action (garden play \u002B dusk abandonment \u002B Nana candle search; full fever arc in one bedroom night) that fight 5\u201310s clip slicing; sound is present every scene but thinner at peaks than B.",
+      "grok-4.5": "Strongest overall package: fullest book coverage (Timothy, complete Skin Horse monologue including shabbiness/ugliness lines, Nana\u2019s \u201Cknowing expression,\u201D correct Doctor burn orders, wild-rabbit clockwork/hind-legs/smell beats, tear-flower-fairy, spring spotted-rabbit coda) with almost no invented plot. Scene breaks are cleaner for AI clips (separate bed-later shabbiness, nursery day/night illness, fowl-house evening). Dialogue stays close to Williams; only soft spot is the Fairy beat\u2019s ellipsis-only Rabbit line. Cast locks are consistent (fair-haired Boy restated taller in spring; Skin Horse bald patches/seams; Fairy pearl and dew-drops). Sound/music is the best of the two\u2014diegetic beds plus distinct MUSIC cues at Real declaration, loneliness, tear, and transformation peaks."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-terra": "Strongest: Screenplay A because it delivers the fullest, most faithful emotional arc with superior visual identity locking and exceptionally purposeful sound-and-music coverage. Weakest: Screenplay B because its heavier compression, inconsistent BOY/THE BOY tokenization, and misattributed Doctor dialogue create more fidelity and production-continuity risk.",
+    "grok-4.5": "Strongest: Screenplay B because it delivers the most complete, correctly attributed book spine with cleaner single-purpose scenes and richer peak music/sound interleaving. Weakest: Screenplay A because it reassigns Doctor dialogue to Nana and packs multi-phase time jumps into single headings that hurt clip-level directibility."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "Add a hard beat-level rule: each Action paragraph must describe only one continuous 5-10 second camera-observable event, with any time jump, montage progression, or distinct action separated into a new Action beat or scene.",
+      "gpt-5.6-terra": "Add a final source-dialogue attribution audit: for every retained or compressed quoted line, verify that the speaking character matches the source, and convert uncertain attribution into action or narration rather than assigning it to another character."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Add a hard rule that a single scene heading may cover only one continuous time-of-day and dramatic purpose; any elapsed-time jump (night after night, dusk then later bedroom, fever then recovery) must become a new heading or an explicit Action time-card, never a multi-phase montage under one slug.",
+      "grok-4.5": "Prohibit ellipsis-only or blank dialogue lines; if the book gives no spoken words for that beat, carry reaction in Action alone or quote the nearest source line rather than emitting a non-performable placeholder cue."
+    }
+  }
+}

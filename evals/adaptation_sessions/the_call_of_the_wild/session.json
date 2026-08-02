@@ -1,0 +1,23 @@
+{
+  "Provider": "xai",
+  "Model": "grok-4.5",
+  "BookSha256": "7b3e855dbc4e9833b0281a0bc1d527379d85c14f8dfb389ef916022d6e4d888c",
+  "FileId": "file_e93f9e59-84bc-4156-8f89-505d437c1640",
+  "ExpiresAtUnixSeconds": 1788228105,
+  "CreatedAtUtc": "2026-08-02T02:01:46.4962703Z",
+  "StageResponseIds": {
+    "beat_plan": "b7b7ecdf-187e-9e1d-ad3d-f8c8886d3cbd",
+    "cast_locations": "bade537e-ed9d-90ea-9a20-7f3b91b46533",
+    "fountain": "bbd792ac-946b-9dfd-97fd-15172bf3fe78",
+    "edl": "b4d99732-c489-9186-b55e-525c1d70b5e5",
+    "audio_plan": "8cf145c4-d7b9-92d7-90fc-fd946428e4c7"
+  },
+  "Temperature": 0.2,
+  "JudgeTemperature": 0,
+  "TargetRuntimeMinutes": 80,
+  "UploadFormatVersion": 2,
+  "FountainFileId": null,
+  "FountainFileSha256": null,
+  "FountainFileIdAlt": "file_c270c2a7-7a8f-4f09-9aac-cb1e48d58ae8",
+  "FountainFileShaAlt": "b6c46a33a34789c4b9306a8f52d3bf7aeeb83c086a2365dfd1a4d950add94602"
+}
