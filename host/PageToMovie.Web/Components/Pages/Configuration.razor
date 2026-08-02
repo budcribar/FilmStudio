@@ -892,25 +892,7 @@
 
     private bool FocusActive => !string.IsNullOrWhiteSpace(_focusCapability);
 
-    private string FocusLabel => _focusCapability switch
-    {
-        "music" => "Background music",
-        "voice" => "Voice clone",
-        "review" => "Video review (QA)",
-        "video" => "Video generation",
-        "image" => "Character portraits",
-        "planning" => "Script & planning",
-        "vision" => "Image vision / OCR",
-        _ => _focusCapability ?? "Models",
-    };
 
-    private string? FocusKeyHint => _focusCapability switch
-    {
-        "music" => "needs music model + provider key",
-        "voice" => "needs voice model + Voice cloning key",
-        "review" => "often Gemini for native video review",
-        _ => null,
-    };
 
 
 
