@@ -26,19 +26,81 @@
     </div>
 }
 
-@if (!Session.IsLoggedIn)
-{
-    <div class="card mb-3 home-active-card">
-        <div class="card-body py-3 d-flex flex-wrap align-items-center gap-3">
-            <img src="/favicon.png" alt="" width="36" height="36" class="rounded-2 shadow-sm flex-shrink-0" />
-            <div class="min-w-0 flex-grow-1">
-                <div class="small text-muted">Studio</div>
-                <div class="fw-semibold">Sign in to open your film</div>
-                <div class="small text-muted">Library book + your voice · or full studio</div>
+
+@* Landing-style header — brand + promise above the action cards *@
+<header class="home-landing mb-4" data-testid="home-landing-header">
+    <div class="home-landing__inner">
+        <div class="home-landing__copy">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <img src="/favicon.png" alt="" width="40" height="40" class="rounded-2 shadow-sm flex-shrink-0" />
+                <span class="home-landing__brand">PageToMovie</span>
             </div>
-            <a href="login?returnUrl=/" class="btn btn-primary btn-sm">Sign in</a>
+            <h1 class="home-landing__title">Drop a book. Get a movie.</h1>
+            <p class="home-landing__lede mb-0">
+                Turn a story into a short film with your voice — or open the full studio to cast, estimate, and film every scene.
+            </p>
+            <div class="home-landing__actions d-flex flex-wrap gap-2 mt-3">
+                @if (!Session.IsLoggedIn)
+                {
+                    <a href="login?returnUrl=/" class="btn btn-primary" data-testid="home-landing-signin">Sign in</a>
+                    <a href="login?returnUrl=/simple-voice" class="btn btn-outline-light" data-testid="home-landing-try">Try with your voice</a>
+                    <a href="/demo" class="btn btn-link text-decoration-none" data-testid="home-landing-demos">Watch demos</a>
+                }
+                else if (ShowEasyHome)
+                {
+                    <a href="simple-voice" class="btn btn-primary" data-testid="home-landing-easy">Easiest start →</a>
+                    <button type="button" class="btn btn-outline-secondary" data-testid="home-landing-studio" @onclick="EnterFullStudio">Full studio</button>
+                    <a href="/demo" class="btn btn-link text-decoration-none">Demos</a>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-link btn-sm px-0" data-testid="home-landing-back-easy" @onclick="ExitFullStudio">← Easy start</button>
+                    <a href="/demo" class="btn btn-outline-secondary btn-sm">Demos</a>
+                }
+            </div>
+        </div>
+        <div class="home-landing__visual d-none d-md-flex" aria-hidden="true">
+            <div class="home-pipeline">
+                <div class="home-pipeline__stage">
+                    <div class="home-pipeline__icon home-pipeline__pages">
+                        <span class="home-pipeline__sheet s1"></span>
+                        <span class="home-pipeline__sheet s2"></span>
+                        <span class="home-pipeline__sheet s3"></span>
+                    </div>
+                    <span class="home-pipeline__label">Book</span>
+                </div>
+                <div class="home-pipeline__arrows" aria-hidden="true">
+                    <span class="home-pipeline__chev c1">›</span>
+                    <span class="home-pipeline__chev c2">›</span>
+                    <span class="home-pipeline__chev c3">›</span>
+                </div>
+                <div class="home-pipeline__stage">
+                    <div class="home-pipeline__icon home-pipeline__ai">
+                        <span class="home-pipeline__brain"></span>
+                    </div>
+                    <span class="home-pipeline__label">Studio</span>
+                </div>
+                <div class="home-pipeline__arrows" aria-hidden="true">
+                    <span class="home-pipeline__chev c1">›</span>
+                    <span class="home-pipeline__chev c2">›</span>
+                    <span class="home-pipeline__chev c3">›</span>
+                </div>
+                <div class="home-pipeline__stage">
+                    <div class="home-pipeline__icon home-pipeline__movie">
+                        <span class="home-pipeline__clapper">
+                            <span class="home-pipeline__clapper-body"></span>
+                        </span>
+                    </div>
+                    <span class="home-pipeline__label">Film</span>
+                </div>
+            </div>
         </div>
     </div>
+</header>
+
+@if (!Session.IsLoggedIn)
+{
+    @* Hero CTAs cover sign-in; demos still below for guests *@
 }
 else if (_projects is null)
 {
@@ -383,53 +445,54 @@ else
             </div>
         </div>
     }
-
-    @* Demo films always visible under either mode *@
-    <div class="card home-showcase-card mb-3" data-testid="home-demo-films-card">
-        <div class="card-body py-3">
-            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
-                <div class="min-w-0">
-                    <div class="ptm-adapt-kicker mb-1">Page to Movie channel</div>
-                    <div class="fw-semibold fs-5 mb-0">Demo films</div>
-                    <div class="small text-muted text-truncate" title="@_demoShowcaseHint">@_demoShowcaseHint</div>
-                </div>
-                <a href="/demo" class="btn btn-sm btn-primary flex-shrink-0" data-testid="home-open-demo-gallery">
-                    Open gallery →
-                </a>
-            </div>
-            @if (_publicDemos.Count > 0)
-            {
-                <div class="home-showcase-thumbs" aria-label="Recent demo films">
-                    @foreach (var d in _publicDemos.Take(4))
-                    {
-                        var yt = !string.IsNullOrWhiteSpace(d.YoutubeId) ? d.YoutubeId : null;
-                        var href = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
-                            ? d.YoutubeUrl!
-                            : (yt is not null ? $"https://www.youtube.com/watch?v={yt}" : "/demo");
-                        var thumb = yt is not null
-                            ? $"https://img.youtube.com/vi/{yt}/mqdefault.jpg"
-                            : null;
-                        <a class="home-showcase-thumb"
-                           href="@href"
-                           target="@(yt is not null ? "_blank" : null)"
-                           rel="@(yt is not null ? "noopener" : null)"
-                           title="@d.Title">
-                            @if (thumb is not null)
-                            {
-                                <img src="@thumb" alt="" loading="lazy" />
-                            }
-                            else
-                            {
-                                <span class="home-showcase-thumb__ph" aria-hidden="true">▶</span>
-                            }
-                            <span class="home-showcase-thumb__label">@d.Title</span>
-                        </a>
-                    }
-                </div>
-            }
-        </div>
-    </div>
 }
+
+@* Demo films always visible under either mode *@
+<div class="card home-showcase-card mb-3" data-testid="home-demo-films-card">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+            <div class="min-w-0">
+                <div class="ptm-adapt-kicker mb-1">Page to Movie channel</div>
+                <div class="fw-semibold fs-5 mb-0">Demo films</div>
+                <div class="small text-muted text-truncate" title="@_demoShowcaseHint">@_demoShowcaseHint</div>
+            </div>
+            <a href="/demo" class="btn btn-sm btn-primary flex-shrink-0" data-testid="home-open-demo-gallery">
+                Open gallery →
+            </a>
+        </div>
+        @if (_publicDemos.Count > 0)
+        {
+            <div class="home-showcase-thumbs" aria-label="Recent demo films">
+                @foreach (var d in _publicDemos.Take(4))
+                {
+                    var yt = !string.IsNullOrWhiteSpace(d.YoutubeId) ? d.YoutubeId : null;
+                    var href = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+                        ? d.YoutubeUrl!
+                        : (yt is not null ? $"https://www.youtube.com/watch?v={yt}" : "/demo");
+                    var thumb = yt is not null
+                        ? $"https://img.youtube.com/vi/{yt}/mqdefault.jpg"
+                        : null;
+                    <a class="home-showcase-thumb"
+                       href="@href"
+                       target="@(yt is not null ? "_blank" : null)"
+                       rel="@(yt is not null ? "noopener" : null)"
+                       title="@d.Title">
+                        @if (thumb is not null)
+                        {
+                            <img src="@thumb" alt="" loading="lazy" />
+                        }
+                        else
+                        {
+                            <span class="home-showcase-thumb__ph" aria-hidden="true">▶</span>
+                        }
+                        <span class="home-showcase-thumb__label">@d.Title</span>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
 
 <ProjectCollaboratorsModal IsOpen="_showCollaboratorsModal" ProjectId="_collaboratorsProjectId" OnClose="CloseCollaboratorsModal" />
 
