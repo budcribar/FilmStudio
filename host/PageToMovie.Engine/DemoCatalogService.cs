@@ -902,53 +902,9 @@ public sealed class DemoCatalogService
     }
 
     /// <summary>Parse watch / youtu.be / embed / raw 11-char ids.</summary>
-    public static string? ExtractYouTubeVideoId(string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return null;
-        var s = input.Trim();
-        // bare id
-        if (s.Length is >= 10 and <= 12 && s.All(c => char.IsLetterOrDigit(c) || c is '-' or '_'))
-            return s.Length == 11 ? s : null;
+    public static string? ExtractYouTubeVideoId(string? input) =>
+        PageToMovie.Core.Util.YouTubeVideoId.Extract(input);
 
-        if (!Uri.TryCreate(s, UriKind.Absolute, out var uri))
-        {
-            // try with https
-            if (!Uri.TryCreate("https://" + s, UriKind.Absolute, out uri))
-                return null;
-        }
-
-        var host = uri.Host.Replace("www.", "", StringComparison.OrdinalIgnoreCase);
-        if (host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase))
-        {
-            var id = uri.AbsolutePath.Trim('/').Split('/')[0];
-            return id.Length == 11 ? id : null;
-        }
-        if (host.Contains("youtube", StringComparison.OrdinalIgnoreCase))
-        {
-            string? v = null;
-            foreach (var pair in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var kv = pair.Split('=', 2);
-                if (kv.Length == 2 && kv[0].Equals("v", StringComparison.OrdinalIgnoreCase))
-                {
-                    v = Uri.UnescapeDataString(kv[1]);
-                    break;
-                }
-            }
-            if (!string.IsNullOrWhiteSpace(v) && v.Length == 11) return v;
-            // /embed/ID or /shorts/ID
-            var parts = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            for (var i = 0; i < parts.Length - 1; i++)
-            {
-                if (parts[i] is "embed" or "shorts" or "v" or "live")
-                {
-                    var id = parts[i + 1];
-                    if (id.Length == 11) return id;
-                }
-            }
-        }
-        return null;
-    }
 
     private List<DemoEntry> LoadAllUnlocked()
     {

@@ -3,6 +3,7 @@
 @inject AdminSessionService Session
 @inject NavigationManager Nav
 @using PageToMovie.Core.Models
+@using PageToMovie.Core.Util
 
 <PageTitle>Demo gallery — PageToMovie</PageTitle>
 
@@ -79,44 +80,73 @@
             {
                 var about = AboutText(d);
                 var isHighlight = _highlightId == d.Id;
-                var ytWatchUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
-                    ? d.YoutubeUrl
-                    : (!string.IsNullOrWhiteSpace(d.YoutubeId)
-                        ? $"https://www.youtube.com/watch?v={d.YoutubeId}"
-                        : null);
-                var embedUrl = !string.IsNullOrWhiteSpace(d.YoutubeId)
-                    ? $"https://www.youtube.com/embed/{d.YoutubeId}?rel=0"
+                // Prefer parsed id (handles raw id, watch URL, or embed URL stored in either field).
+                // Use thumbnail + external link — embeds fail for private / restricted channel videos.
+                var ytId = ResolveYoutubeId(d);
+                var ytWatchUrl = ytId is not null
+                    ? YouTubeVideoId.WatchUrl(ytId)
+                    : AbsoluteYoutubeUrl(d.YoutubeUrl);
+                var thumbUrl = ytId is not null
+                    ? YouTubeVideoId.ThumbnailUrl(ytId, "hqdefault")
                     : null;
                 <div class="col d-flex" @key="d.Id">
                 <article class="demo-card w-100 @(isHighlight ? "is-highlight" : "")"
                          id="@d.Id"
                          data-testid="demo-card">
                     <div class="demo-card-media">
-                        @if (embedUrl is not null)
+                        @if (ytWatchUrl is not null)
                         {
-                            <div class="demo-yt-frame">
-                                <iframe src="@embedUrl"
-                                        title="@d.Title"
-                                        loading="lazy"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        allowfullscreen
-                                        referrerpolicy="strict-origin-when-cross-origin"></iframe>
-                            </div>
+                            <a class="demo-yt-frame demo-yt-thumb-link"
+                               href="@ytWatchUrl"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               title="Watch @d.Title on YouTube"
+                               data-testid="demo-watch-link">
+                                @if (thumbUrl is not null)
+                                {
+                                    <img class="demo-yt-thumb"
+                                         src="@thumbUrl"
+                                         alt=""
+                                         loading="lazy"
+                                         decoding="async" />
+                                }
+                                else
+                                {
+                                    <span class="demo-yt-thumb-fallback" aria-hidden="true"></span>
+                                }
+                                <span class="demo-yt-play" aria-hidden="true">▶</span>
+                                <span class="visually-hidden">Watch on YouTube</span>
+                            </a>
                         }
                         else
                         {
                             <div class="demo-yt-frame demo-yt-frame--empty">
-                                <span class="small text-secondary">Uploading to YouTube…</span>
+                                <span class="small text-secondary">Video not available yet</span>
                             </div>
                         }
                     </div>
                     <div class="demo-card-body">
                         <header class="demo-card-header">
                             <div class="d-flex justify-content-between align-items-start gap-2">
-                                <h2 class="demo-card-title mb-0">@d.Title</h2>
+                                <h2 class="demo-card-title mb-0">
+                                    @if (ytWatchUrl is not null)
+                                    {
+                                        <a href="@ytWatchUrl"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="demo-card-title-link">@d.Title</a>
+                                    }
+                                    else
+                                    {
+                                        @d.Title
+                                    }
+                                </h2>
                                 @if (ytWatchUrl is not null)
                                 {
-                                    <a href="@ytWatchUrl" target="_blank" rel="noopener" class="demo-yt-open-link flex-shrink-0">YouTube ↗</a>
+                                    <a href="@ytWatchUrl"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       class="demo-yt-open-link flex-shrink-0">Watch on YouTube ↗</a>
                                 }
                             </div>
                             <div class="demo-card-chips mt-2">
@@ -472,6 +502,30 @@
         if (bytes < 1024 * 1024) return $"{bytes / 1024.0:0.#} KB";
         if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):0.#} MB";
         return $"{bytes / (1024.0 * 1024 * 1024):0.##} GB";
+    }
+
+
+    private static string? ResolveYoutubeId(DemoListItem d)
+    {
+        var fromId = YouTubeVideoId.Extract(d.YoutubeId);
+        if (!string.IsNullOrWhiteSpace(fromId)) return fromId;
+        return YouTubeVideoId.Extract(d.YoutubeUrl);
+    }
+
+    /// <summary>Only absolute http(s) watch URLs — never relative paths that break in the SPA.</summary>
+    private static string? AbsoluteYoutubeUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        var s = url.Trim();
+        if (s.StartsWith("//", StringComparison.Ordinal))
+            s = "https:" + s;
+        if (!Uri.TryCreate(s, UriKind.Absolute, out var uri))
+            return null;
+        if (uri.Scheme is not ("http" or "https"))
+            return null;
+        // Prefer canonical watch URL when we can extract an id.
+        var id = YouTubeVideoId.Extract(s);
+        return id is not null ? YouTubeVideoId.WatchUrl(id) : uri.AbsoluteUri;
     }
 
     private static string RelativeDate(DateTimeOffset when)

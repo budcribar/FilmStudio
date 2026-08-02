@@ -7,6 +7,7 @@
 @inject AdminSessionService Session
 @inject IJSRuntime Js
 @using PageToMovie.Core.Models
+@using PageToMovie.Core.Util
 
 <PageTitle>PageToMovie</PageTitle>
 
@@ -481,17 +482,19 @@ else
             <div class="home-showcase-thumbs" aria-label="Recent demo films">
                 @foreach (var d in _publicDemos.Take(4))
                 {
-                    var yt = !string.IsNullOrWhiteSpace(d.YoutubeId) ? d.YoutubeId : null;
-                    var href = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
-                        ? d.YoutubeUrl!
-                        : (yt is not null ? $"https://www.youtube.com/watch?v={yt}" : "/demo");
+                    var yt = YouTubeVideoId.Extract(d.YoutubeId) ?? YouTubeVideoId.Extract(d.YoutubeUrl);
+                    var href = yt is not null
+                        ? YouTubeVideoId.WatchUrl(yt)
+                        : (!string.IsNullOrWhiteSpace(d.YoutubeUrl) && Uri.TryCreate(d.YoutubeUrl.Trim(), UriKind.Absolute, out _)
+                            ? d.YoutubeUrl!.Trim()
+                            : "/demo");
                     var thumb = yt is not null
-                        ? $"https://img.youtube.com/vi/{yt}/mqdefault.jpg"
+                        ? YouTubeVideoId.ThumbnailUrl(yt, "mqdefault")
                         : null;
                     <a class="home-showcase-thumb"
                        href="@href"
-                       target="@(yt is not null ? "_blank" : null)"
-                       rel="@(yt is not null ? "noopener" : null)"
+                       target="@(yt is not null || href.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? "_blank" : null)"
+                       rel="@(yt is not null || href.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? "noopener noreferrer" : null)"
                        title="@d.Title">
                         @if (thumb is not null)
                         {
