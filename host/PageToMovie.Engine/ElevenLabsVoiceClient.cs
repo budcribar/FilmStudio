@@ -33,7 +33,7 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey()) || _allowMock;
 
-        private static string? ResolveApiKey()
+    private static string? ResolveApiKey()
     {
         // Canonical env name is ElevenLabs_API_KEY (catalog + user docs).
         // Also accept all-caps ELEVENLABS_API_KEY for older shells/deploy scripts.
@@ -41,8 +41,11 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
                   ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.ElevenLabsApiKeyEnv)
                   ?? Environment.GetEnvironmentVariable("ELEVENLABS_API_KEY");
         if (string.IsNullOrWhiteSpace(key)) return null;
-        return key.Trim(' ', '"', ''', '', '
-', '	');
+        key = key.Trim();
+        // Strip a single pair of surrounding double-quotes if the user pasted one.
+        if (key.Length >= 2 && key[0] == '"' && key[^1] == '"')
+            key = key[1..^1].Trim();
+        return key;
     }
 
     public async Task<VoiceCloneResult> CreateCloneAsync(
