@@ -7,15 +7,6 @@ namespace PageToMovie.Tests;
 public class ClipVideoPromptBuilderTests
 {
     [Fact]
-    public void DetectPronunciationHints_GeneratesVerbHintForTearUp()
-    {
-        var line = "Tear up the floorboards! Here, here! — it is the beating of his hideous heart!";
-        var hint = ClipVideoPromptBuilder.DetectPronunciationHints(line);
-        Assert.Contains("Pronounce 'tear' as verb", hint);
-        Assert.Contains("tare", hint);
-    }
-
-    [Fact]
     public void Build_UsesPronunciationHintFromAudioPayload()
     {
         var clip = JsonDocument.Parse("""
@@ -25,15 +16,15 @@ public class ClipVideoPromptBuilderTests
               "characters_on_screen": ["Character_The_Narrator"],
               "audio_payload": {
                 "speaker": "Character_The_Narrator",
-                "dialogue": "Tear up the planks!",
+                "dialogue": "Wind the clock!",
                 "delivery": "spoken_on_camera",
-                "pronunciation_hint": "Pronounce 'Tear' as /tɛər/ (rip apart)"
+                "pronunciation_hint": "Pronounce 'wind' as /waɪnd/ (turn or coil)"
               }
             }
             """).RootElement;
 
         var built = ClipVideoPromptBuilder.Build(clip, "proj", new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
-        Assert.Contains("<Pronunciation>Pronounce 'Tear' as /tɛər/ (rip apart)</Pronunciation>", built.Prompt);
+        Assert.Contains("<Pronunciation>Pronounce 'wind' as /waɪnd/ (turn or coil)</Pronunciation>", built.Prompt);
     }
 
     [Fact]

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Utils;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.Deterministic;
 
 namespace PageToMovie.Engine;
 
@@ -440,41 +441,21 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
         if (string.IsNullOrWhiteSpace(expected) && string.IsNullOrWhiteSpace(actual)) return 1.0;
         if (string.IsNullOrWhiteSpace(expected) || string.IsNullOrWhiteSpace(actual)) return 0.0;
 
-        var expWords = Regex.Matches(expected.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToList();
-        var actWords = Regex.Matches(actual.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToList();
+        var expWords = DialogueComparisonNormalizer.Normalize(expected).Tokens;
+        var actWords = DialogueComparisonNormalizer.Normalize(actual).Tokens;
 
         if (expWords.Count == 0) return 1.0;
-
-        var normActWords = actWords.Select(NormalizeSpellingWord).ToList();
 
         int matches = 0;
         foreach (var ew in expWords)
         {
-            var normEw = NormalizeSpellingWord(ew);
-            if (normActWords.Any(aw => IsWordEquivalent(ew, normEw, aw)))
+            if (actWords.Any(aw => IsWordEquivalent(ew, ew, aw)))
             {
                 matches++;
             }
         }
 
         return (double)matches / expWords.Count;
-    }
-
-    private static string NormalizeSpellingWord(string w)
-    {
-        if (string.IsNullOrWhiteSpace(w)) return "";
-        var s = w.ToLowerInvariant();
-        if (s.EndsWith("our") && s.Length > 4) s = s[..^3] + "or";
-        if (s.EndsWith("ours") && s.Length > 5) s = s[..^4] + "ors";
-        if (s.EndsWith("ise") && s.Length > 4) s = s[..^3] + "ize";
-        if (s.EndsWith("ises") && s.Length > 5) s = s[..^4] + "izes";
-        if (s.EndsWith("ised") && s.Length > 5) s = s[..^4] + "ized";
-        if (s.EndsWith("ising") && s.Length > 6) s = s[..^5] + "izing";
-        if (s.EndsWith("re") && s.Length > 4 && !s.EndsWith("here") && !s.EndsWith("there") && !s.EndsWith("where")) s = s[..^2] + "er";
-        if (s.EndsWith("lling") && s.Length > 6) s = s[..^5] + "ling";
-        if (s.EndsWith("lled") && s.Length > 5) s = s[..^4] + "led";
-        if (s.EndsWith("ence") && s.Length > 5) s = s[..^4] + "ense";
-        return s;
     }
 
     private static bool IsWordEquivalent(string rawExp, string normExp, string normAct)

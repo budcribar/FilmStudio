@@ -3,6 +3,7 @@ using System.Text.Json;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.ModelBacked;
 using Google.Apis.Upload;
 using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;

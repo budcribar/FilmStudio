@@ -6,7 +6,7 @@ using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace PageToMovie.Engine;
+namespace PageToMovie.Engine.ModelBacked;
 
 /// <summary>
 /// AI Classifier that generates rich, atmospheric lighting and mood color palettes

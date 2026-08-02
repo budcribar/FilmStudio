@@ -508,8 +508,7 @@ public static string NormalizeText(string text)
 
         try
         {
-            ProjectVisionMeta.Document? visionFromScript = null;
-            var fountain = await BookToFountainConverter.ConvertAsync(
+            var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
                 workspaceRoot: store.WorkspaceRoot,
                 title: title,
                 bookText: book,
@@ -519,10 +518,11 @@ public static string NormalizeText(string text)
                 model: model,
                 onProgress: onProgress,
                 ct: ct,
-                onVisionMeta: v => visionFromScript = v,
                 errorLogger: errorLogger,
                 jobId: jobId,
                 projectId: projectId).ConfigureAwait(false);
+            var fountain = conversion.Fountain;
+            var visionFromScript = conversion.VisionMeta;
 
             fountain = BookToFountainConverter.FixDraftDate(fountain);
             var save = SaveDraft(store, projectId, fountain);

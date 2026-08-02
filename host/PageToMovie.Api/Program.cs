@@ -10,6 +10,7 @@ using PageToMovie.Core.Auth;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using PageToMovie.Engine.ModelBacked;
 using PageToMovie.Engine.Abstractions;
 using PageToMovie.Fakes;
 using Microsoft.AspNetCore.DataProtection;
@@ -167,17 +168,21 @@ builder.Services.AddSingleton<MovieAutoReviewService>();
 builder.Services.AddSingleton<ProjectInviteService>();
 builder.Services.AddSingleton<CreatorProfileService>();
 builder.Services.AddSingleton<ProjectContributionService>();
-string dpKeysDir;
-try
+var configuredWorkspaceRoot = builder.Configuration
+    .GetSection(PageToMovieOptions.SectionName)
+    .GetValue<string>(nameof(PageToMovieOptions.WorkspaceRoot));
+var dataRoot = UserDatabaseService.ResolveDataDirectory(
+    string.IsNullOrWhiteSpace(configuredWorkspaceRoot) ? repoGuess : configuredWorkspaceRoot);
+var dpKeysDir = Path.Combine(dataRoot, "keys");
+var legacyDpKeysDir = Path.Combine(Path.GetTempPath(), "ptm-dp-keys");
+if (!Directory.Exists(dpKeysDir) && !string.Equals(dpKeysDir, legacyDpKeysDir, StringComparison.OrdinalIgnoreCase) &&
+    Directory.Exists(legacyDpKeysDir))
 {
-    dpKeysDir = "/data/keys";
     Directory.CreateDirectory(dpKeysDir);
+    foreach (var keyFile in Directory.EnumerateFiles(legacyDpKeysDir, "*", SearchOption.TopDirectoryOnly))
+        File.Copy(keyFile, Path.Combine(dpKeysDir, Path.GetFileName(keyFile)), overwrite: false);
 }
-catch
-{
-    dpKeysDir = Path.Combine(Path.GetTempPath(), "ptm-dp-keys");
-    Directory.CreateDirectory(dpKeysDir);
-}
+Directory.CreateDirectory(dpKeysDir);
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir));
 builder.Services.AddSingleton<UserDatabaseService>();
@@ -2687,8 +2692,12 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone-sample", async 
     string charKey,
     HttpRequest req,
     ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
+    if (await AuthGate.RequireProjectOwnerAsync(id, user, store, opts, ct) is { } denied)
+        return denied;
     try
     {
         if (string.IsNullOrWhiteSpace(charKey))
@@ -2722,8 +2731,10 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone-sample", async 
 });
 
 app.MapGet("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
-    (string id, string charKey, ProjectStore store) =>
+    async (string id, string charKey, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
 {
+    if (await AuthGate.RequireProjectOwnerAsync(id, user, store, opts, ct) is { } denied)
+        return denied;
     try
     {
         var path = store.GetVoiceCloneSamplePath(id, charKey);
@@ -2738,7 +2749,7 @@ app.MapGet("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
             ".ogg" => "audio/ogg",
             _ => "audio/webm",
         };
-        return Results.File(path, contentType, Path.GetFileName(path));
+        return Results.File(path, contentType, enableRangeProcessing: true);
     }
     catch (Exception ex)
     {
@@ -2747,8 +2758,10 @@ app.MapGet("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
 });
 
 app.MapDelete("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
-    (string id, string charKey, ProjectStore store) =>
+    async (string id, string charKey, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
 {
+    if (await AuthGate.RequireProjectOwnerAsync(id, user, store, opts, ct) is { } denied)
+        return denied;
     try
     {
         var removed = store.DeleteVoiceCloneSample(id, charKey);
@@ -2774,11 +2787,12 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone", async (
     string charKey,
     CloneVoiceApiRequest? body,
     VoiceCloneApplyService apply,
+    ProjectStore store,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
+    if (await AuthGate.RequireProjectOwnerAsync(id, user, store, opts, ct) is { } denied)
         return denied;
     try
     {
@@ -2823,7 +2837,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/speak", async (
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
+    if (await AuthGate.RequireProjectOwnerAsync(id, user, store, opts, ct) is { } denied)
         return denied;
     try
     {
@@ -3010,7 +3024,7 @@ app.MapPost("/api/projects/{id}/media/lip-sync", async (
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
+    if (await AuthGate.RequireProjectOwnerAsync(id, user, store, opts, ct) is { } denied)
         return denied;
     if (!req.HasFormContentType)
         return Results.BadRequest(new { ok = false, error = "multipart form required (fields: video, audio)" });

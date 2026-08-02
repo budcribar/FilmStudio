@@ -108,17 +108,7 @@ public sealed class ProjectArchiveService
                 using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
                 using (var zip = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: true))
                 {
-                    // Manifest for importers
-                    // Ensure project.json carries schema_version before packaging (for converters).
-                    try
-                    {
-                        EnsureProjectSchemaVersionOnDisk(projectDir);
-                    }
-                    catch (Exception ex)
-                    {
-                        _log.LogWarning(ex, "Export: could not stamp schema_version on {ProjectId}", id);
-                    }
-
+                    // Manifest for importers. Export must not modify a project's working files.
                     var projectSchema = ProjectFormatVersions.TryReadProjectSchemaVersion(projectDir)
                                         ?? ProjectFormatVersions.ProjectSchemaVersion;
                     var metaEntry = zip.CreateEntry($"{id}/_export_meta.json", CompressionLevel.Fastest);
@@ -508,24 +498,6 @@ public sealed class ProjectArchiveService
         }
     }
 
-    /// <summary>Stamp project.json schema_version when missing (export-time safety net).</summary>
-    static void EnsureProjectSchemaVersionOnDisk(string projectDir)
-    {
-        var path = Path.Combine(projectDir, "project.json");
-        if (!File.Exists(path)) return;
-        var text = File.ReadAllText(path);
-        using var doc = JsonDocument.Parse(text);
-        if (doc.RootElement.TryGetProperty("schema_version", out var existing) &&
-            existing.ValueKind == JsonValueKind.String &&
-            !string.IsNullOrWhiteSpace(existing.GetString()))
-            return;
-
-        var dict = JsonSerializer.Deserialize<Dictionary<string, object?>>(text, JsonOpts)
-                   ?? new Dictionary<string, object?>();
-        dict["schema_version"] = ProjectFormatVersions.ProjectSchemaVersion;
-        dict["schema_version_stamped_at_utc"] = DateTime.UtcNow.ToString("o");
-        File.WriteAllText(path, JsonSerializer.Serialize(dict, JsonOpts) + "\n");
-    }
 }
 
 public sealed class ProjectExportResult : IAsyncDisposable, IDisposable

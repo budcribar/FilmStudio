@@ -5,7 +5,7 @@ using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace PageToMovie.Engine;
+namespace PageToMovie.Engine.ModelBacked;
 
 /// <summary>
 /// Optional chat re-rank of candidate book image basenames for a character when vision is empty.

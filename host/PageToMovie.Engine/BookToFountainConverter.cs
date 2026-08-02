@@ -5,6 +5,27 @@ using PageToMovie.Engine.Abstractions;
 
 namespace PageToMovie.Engine;
 
+public enum VisionMetaStatus
+{
+    PrimaryResponse,
+    RepairResponse,
+    Missing,
+    Malformed,
+    InvalidValue,
+}
+
+/// <summary>
+/// Complete output of book adaptation. Fountain remains clean screenplay text while visual
+/// metadata is carried explicitly so callers cannot accidentally discard the sidecar.
+/// </summary>
+public sealed record AdaptationConversionResult
+{
+    public required string Fountain { get; init; }
+    public ProjectVisionMeta.Document? VisionMeta { get; init; }
+    public VisionMetaStatus VisionMetaStatus { get; init; }
+    public string? VisionMetaError { get; init; }
+}
+
 /// <summary>
 /// Book text → editable Fountain via chat (<c>prompts/book_to_fountain.txt</c>).
 /// Prefers a single full-book pass when input fits the model budget; multi-chunk
@@ -101,10 +122,11 @@ public static class BookToFountainConverter
     private static readonly Regex CharacterNameSpaceRegex = new(@"\s+", RegexOptions.Compiled);
 
     /// <summary>
-    /// Generate Fountain from prepared book text.
-    /// Single-shot first when the book fits the model budget; multi-chunk on budget miss or quality fail.
+    /// Generate Fountain from prepared book text and return its visual metadata as one explicit
+    /// result. Single-shot first when the book fits the model budget; multi-chunk on budget miss
+    /// or quality fail.
     /// </summary>
-    public static async Task<string> ConvertAsync(
+    public static async Task<AdaptationConversionResult> ConvertWithMetadataAsync(
         string workspaceRoot,
         string title,
         string bookText,
@@ -117,7 +139,6 @@ public static class BookToFountainConverter
         PromptBudget? budgetOverride = null,
         Action<string>? onHeuristicFallback = null,
         string? reasoningEffort = null,
-        Action<ProjectVisionMeta.Document>? onVisionMeta = null,
         GenerationErrorLogger? errorLogger = null,
         string? jobId = null,
         string? projectId = null,
@@ -221,6 +242,8 @@ public static class BookToFountainConverter
 
         // Pull production medium sidecar before repairs (trailer is not Fountain body).
         ProjectVisionMeta.Document? visionEarly = null;
+        var visionMarkerSeen = text.Contains("---VISION_META---", StringComparison.OrdinalIgnoreCase);
+        var visionEndMarkerSeen = text.Contains("---END_VISION_META---", StringComparison.OrdinalIgnoreCase);
         {
             var split = SplitVisionMetaTrailer(text);
             text = split.Fountain;
@@ -277,15 +300,36 @@ public static class BookToFountainConverter
 
         text = ScreenplayService.NormalizeText(text);
         // In case a repair path re-introduced a trailer (should not), strip again.
+        var lateMarkerSeen = text.Contains("---VISION_META---", StringComparison.OrdinalIgnoreCase);
+        var lateEndMarkerSeen = text.Contains("---END_VISION_META---", StringComparison.OrdinalIgnoreCase);
         var (fountainOnly, visionLate) = SplitVisionMetaTrailer(text);
         var vision = visionLate ?? visionEarly;
         if (vision is not null)
         {
             vision.DecidedBy = "adaptation";
-            onVisionMeta?.Invoke(vision);
             onProgress?.Invoke($"Visual medium from screenplay: {vision.VisualMedium}");
         }
-        return fountainOnly;
+
+        visionMarkerSeen |= lateMarkerSeen;
+        visionEndMarkerSeen |= lateEndMarkerSeen;
+        var status = vision is not null
+            ? VisionMetaStatus.PrimaryResponse
+            : visionMarkerSeen ? VisionMetaStatus.Malformed : VisionMetaStatus.Missing;
+        var error = vision is not null
+            ? null
+            : visionMarkerSeen && !visionEndMarkerSeen
+                ? "VISION_META end delimiter is missing or its JSON is invalid."
+                : visionMarkerSeen
+                    ? "VISION_META JSON is invalid."
+                    : "VISION_META trailer is missing.";
+
+        return new AdaptationConversionResult
+        {
+            Fountain = fountainOnly,
+            VisionMeta = vision,
+            VisionMetaStatus = status,
+            VisionMetaError = error,
+        };
     }
 
     /// <summary>

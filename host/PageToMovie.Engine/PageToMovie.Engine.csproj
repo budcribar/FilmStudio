@@ -20,6 +20,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Deterministic\Pronunciation\Resources\heteronyms.en-US.json"
+                      LogicalName="PageToMovie.Pronunciation.heteronyms.en-US.json"
+                      WithCulture="false" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.75.0.4207" />
     <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.10" />

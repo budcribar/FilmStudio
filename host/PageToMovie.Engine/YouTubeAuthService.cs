@@ -95,12 +95,9 @@ public sealed class YouTubeAuthService
             returnPath = entry.ReturnPath;
             return true;
         }
-        // Fallback: if in-memory dictionary was cleared (e.g. app restart), accept valid state token
-        if (state.Length >= 16)
-        {
-            returnPath = "/review";
-            return true;
-        }
+        // OAuth state is a CSRF token, not merely an opaque-looking string. If the process has
+        // restarted, require the operator to begin a new authorization request instead of
+        // accepting an attacker-supplied value.
         return false;
     }
 

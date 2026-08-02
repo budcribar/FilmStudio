@@ -5,7 +5,7 @@ using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace PageToMovie.Engine;
+namespace PageToMovie.Engine.ModelBacked;
 
 /// <summary>
 /// Batch-classify silent beats' <c>action_class</c> for duration budgeting via chat.

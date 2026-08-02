@@ -5,7 +5,7 @@ using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace PageToMovie.Engine;
+namespace PageToMovie.Engine.ModelBacked;
 
 /// <summary>
 /// AI Classifier that dynamically calculates dramatic clip durations (2s–12s)

@@ -5,7 +5,7 @@ using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace PageToMovie.Engine;
+namespace PageToMovie.Engine.ModelBacked;
 
 /// <summary>
 /// Chat refine of ambient bed vs SFX for beats. Heuristic: <see cref="FountainStage1Importer.InferAmbientAndSfx"/>.

@@ -14,6 +14,18 @@ namespace PageToMovie.Tests;
 public class UserDatabaseServiceTests
 {
     [Fact]
+    public void ResolveDataDirectory_uses_data_under_an_isolated_test_workspace()
+    {
+        var workspace = Path.Combine(
+            Path.GetTempPath(),
+            "ptm-user-db-resolve-" + Guid.NewGuid().ToString("N"));
+
+        var resolved = UserDatabaseService.ResolveDataDirectory(workspace);
+
+        Assert.Equal(Path.Combine(workspace, "data"), resolved);
+    }
+
+    [Fact]
     public async Task SaveXaiApiKeyAsync_encrypts_key_and_decrypts_per_user()
     {
         var tmp = Path.Combine(Path.GetTempPath(), "ptm-user-db-test-" + Guid.NewGuid().ToString("N"));

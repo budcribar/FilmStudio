@@ -55,7 +55,7 @@ public class UserDatabaseService
     /// <item>WorkspaceRoot/data, else temp PageToMovie/data</item>
     /// </list>
     /// </summary>
-    internal static string ResolveDataDirectory(string? workspace)
+    public static string ResolveDataDirectory(string? workspace)
     {
         var envDir = Environment.GetEnvironmentVariable("PageToMovie_USER_DB_DIR")
                      ?? Environment.GetEnvironmentVariable("PAGETOMOVIE_USER_DB_DIR");

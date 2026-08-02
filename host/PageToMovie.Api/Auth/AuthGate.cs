@@ -29,6 +29,38 @@ public static class AuthGate
     }
 
     /// <summary>
+    /// Requires the project owner (or an administrator) for mutations and paid operations.
+    /// Authentication-disabled test/load-simulation hosts retain their existing permissive behavior.
+    /// </summary>
+    public static async Task<IResult?> RequireProjectOwnerAsync(
+        string projectId,
+        IUserContext user,
+        ProjectStore projects,
+        IOptions<PageToMovieOptions> opts,
+        CancellationToken ct = default)
+    {
+        var auth = opts.Value.Auth ?? new AuthOptions();
+        if (!auth.RequireLogin)
+            return null;
+
+        var login = RequireLogin(user, opts);
+        if (login is not null)
+            return login;
+
+        if (await projects.CanUserPublishDemoAsync(projectId, user.UserId, user.IsAdmin, ct).ConfigureAwait(false))
+            return null;
+
+        return Results.Json(
+            new
+            {
+                ok = false,
+                error = "Only this project's owner or an administrator can perform that action.",
+                code = "project_access_denied",
+            },
+            statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    /// <summary>
     /// Login + personal (BYOK) key in the user DB. Server env keys do not count until
     /// <see cref="PageToMovieOptions.AllowServerApiKeyFallback"/> is enabled.
     /// Vision OCR needs personal Grok; screenplay may use personal Grok / OpenAI / Anthropic / Gemini.

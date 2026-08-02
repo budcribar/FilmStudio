@@ -67,6 +67,24 @@ internal static class SelfTest
             !AdaptationSessionPilot.HasValidCastLocationsShape(
                 """{"cast_seeds":{"characters":[{"key":"BUCK"}]}}"""));
 
+        // 6. Judges must receive the complete candidate package, not only the Fountain body.
+        var judgePackage = Program.BuildJudgeCandidatePackage(
+            "FADE IN:\n\nINT. ROOM - DAY\n\nFADE OUT.\n",
+            new PageToMovie.Engine.ProjectVisionMeta.Document
+            {
+                VisualMedium = PageToMovie.Engine.ProjectVisionMeta.MediumPhotoreal,
+                RenderStyleLock = "STYLE LOCK: photoreal continuity",
+            });
+        Check("Judge candidate package contains Fountain",
+            judgePackage.Contains("INT. ROOM - DAY", StringComparison.Ordinal));
+        Check("Judge candidate package contains VISION metadata",
+            judgePackage.Contains("visual_medium", StringComparison.Ordinal) &&
+            judgePackage.Contains("photoreal_live_action", StringComparison.Ordinal));
+
+        var missingMetadataPackage = Program.BuildJudgeCandidatePackage("FADE IN:\n", null);
+        Check("Judge candidate package explicitly reports missing metadata",
+            missingMetadataPackage.Contains("(missing)", StringComparison.Ordinal));
+
         Console.WriteLine();
         if (failures.Count > 0)
         {

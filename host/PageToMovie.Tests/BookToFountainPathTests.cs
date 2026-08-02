@@ -272,7 +272,7 @@ public class BookToFountainPathTests
                    + "--- PAGE 2 ---\nMorning comes and the dog stretches in the golden light of the kitchen.\n";
         var root = Path.GetTempPath();
 
-        var text = await BookToFountainConverter.ConvertAsync(
+        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
             workspaceRoot: root,
             title: "Short",
             bookText: book,
@@ -280,6 +280,7 @@ public class BookToFountainPathTests
             totalRuntimeMinutes: 6,
             chat: chat,
             model: "grok-4.5");
+        var text = conversion.Fountain;
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
         Assert.InRange(chat.Calls, 1, 2); // 1 pass, or structure retry only
@@ -295,13 +296,14 @@ public class BookToFountainPathTests
         var book = BuildChapteredBook(chapters: 14, bodyChars: 3_200);
         Assert.InRange(book.Length, BookToFountainConverter.SingleShotMaxChars + 1, BookToFountainConverter.DefaultSingleShotBookMaxChars);
 
-        var text = await BookToFountainConverter.ConvertAsync(
+        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
             workspaceRoot: Path.GetTempPath(),
             title: "Medium",
             bookText: book,
             totalRuntimeMinutes: 20,
             chat: chat,
             model: "grok-4.5");
+        var text = conversion.Fountain;
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
         // Single-shot success: no multi-chunk (would be ≥3 calls for 2+ chunks + possible merge)
@@ -341,7 +343,7 @@ public class BookToFountainPathTests
             book, BookToFountainConverter.ResolvePromptBudget("grok-4.5")));
 
         var progress = new List<string>();
-        var text = await BookToFountainConverter.ConvertAsync(
+        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
             workspaceRoot: Path.GetTempPath(),
             title: "Long",
             bookText: book,
@@ -349,6 +351,7 @@ public class BookToFountainPathTests
             chat: chat,
             model: "grok-4.5",
             onProgress: s => progress.Add(s));
+        var text = conversion.Fountain;
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
         Assert.True(chat.Calls >= 3, $"expected chunk fallback (≥3 calls), got {chat.Calls}");
@@ -372,7 +375,7 @@ public class BookToFountainPathTests
         Assert.False(BookToFountainConverter.FitsSingleShot(book, tinyBudget));
 
         var progress = new List<string>();
-        var text = await BookToFountainConverter.ConvertAsync(
+        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
             workspaceRoot: Path.GetTempPath(),
             title: "Over",
             bookText: book,
@@ -381,12 +384,55 @@ public class BookToFountainPathTests
             model: "grok-4.5",
             onProgress: s => progress.Add(s),
             budgetOverride: tinyBudget);
+        var text = conversion.Fountain;
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
         Assert.Contains(progress, p => p.Contains("exceeds model budget", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(progress, p => p.Contains("single pass", StringComparison.OrdinalIgnoreCase));
         // Multi path should mention chunks
         Assert.True(chat.Calls >= 2, $"expected multi-chunk calls, got {chat.Calls}");
+    }
+
+    [Fact]
+    public async Task ConvertWithMetadata_returns_clean_fountain_and_metadata()
+    {
+        var response = GoodFountain(scenes: 4, withEnding: true) + """
+
+            ---VISION_META---
+            {"visual_medium":"illustrated_picture_book","render_style_lock":"STYLE LOCK: painted storybook continuity","notes":"picture book"}
+            ---END_VISION_META---
+            """;
+        var chat = new RecordingChatClient(_ => response);
+
+        var result = await BookToFountainConverter.ConvertWithMetadataAsync(
+            workspaceRoot: Path.GetTempPath(),
+            title: "Metadata",
+            bookText: "A small rabbit explores a painted nursery and returns home.",
+            chat: chat,
+            model: "grok-4.5");
+
+        Assert.DoesNotContain("VISION_META", result.Fountain, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(result.VisionMeta);
+        Assert.Equal(ProjectVisionMeta.MediumIllustrated, result.VisionMeta!.VisualMedium);
+        Assert.Equal(VisionMetaStatus.PrimaryResponse, result.VisionMetaStatus);
+        Assert.Null(result.VisionMetaError);
+    }
+
+    [Fact]
+    public async Task ConvertWithMetadata_reports_missing_trailer()
+    {
+        var chat = new RecordingChatClient(_ => GoodFountain(scenes: 4, withEnding: true));
+
+        var result = await BookToFountainConverter.ConvertWithMetadataAsync(
+            workspaceRoot: Path.GetTempPath(),
+            title: "No metadata",
+            bookText: "A traveler enters a room and tells a short story before leaving.",
+            chat: chat,
+            model: "grok-4.5");
+
+        Assert.Null(result.VisionMeta);
+        Assert.Equal(VisionMetaStatus.Missing, result.VisionMetaStatus);
+        Assert.Contains("missing", result.VisionMetaError, StringComparison.OrdinalIgnoreCase);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.ModelBacked;
 
 namespace PageToMovie.Engine;
 

@@ -398,6 +398,7 @@ public static class Program
         Console.WriteLine($"⚖️  Judge Models ({judgeModels.Count}): {string.Join(", ", judgeModels)}");
         var bookText = await File.ReadAllTextAsync(bookPath);
         var generatedScreenplays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var generatedVisionMeta = new Dictionary<string, ProjectVisionMeta.Document?>(StringComparer.OrdinalIgnoreCase);
         var deterministicResults = new Dictionary<string, DeterministicSyntaxResult>(StringComparer.OrdinalIgnoreCase);
 
         // Canonical output of the non-AI, book-text-only fallback for THIS book. Every model that
@@ -424,30 +425,38 @@ public static class Program
         {
             Console.Write($"  [Adaptation] Model '{modelId}'... ");
             string screenplayText;
+            ProjectVisionMeta.Document? visionMeta;
 
             var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
+            var visionMetaFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.vision_meta.json");
             // A screenplay cache must be scoped to the committed prompt revision as well as the
             // model and reasoning effort. Otherwise a V4 benchmark could silently reuse a V3
             // draft and make the prompt comparison meaningless.
             var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}_temp{temperatureKey}.fountain");
+            var cacheVisionMetaFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}_temp{temperatureKey}.vision_meta.json");
 
             var diskCached = File.Exists(cacheFile) ? await File.ReadAllTextAsync(cacheFile) : null;
             var localCached = File.Exists(screenplayFile) ? await File.ReadAllTextAsync(screenplayFile) : null;
+            var diskVisionMeta = await ReadVisionMetaAsync(cacheVisionMetaFile);
+            var localVisionMeta = await ReadVisionMetaAsync(visionMetaFile);
 
-            if (!bypassCache && diskCached is not null && !string.Equals(diskCached, canonicalFallbackText, StringComparison.Ordinal))
+            if (!bypassCache && diskCached is not null && diskVisionMeta is not null && !string.Equals(diskCached, canonicalFallbackText, StringComparison.Ordinal))
             {
                 screenplayText = diskCached;
+                visionMeta = diskVisionMeta;
                 Console.WriteLine("(reused from disk cache)");
             }
-            else if (localCached is not null && !string.Equals(localCached, canonicalFallbackText, StringComparison.Ordinal))
+            else if (localCached is not null && localVisionMeta is not null && !string.Equals(localCached, canonicalFallbackText, StringComparison.Ordinal))
             {
                 screenplayText = localCached;
+                visionMeta = localVisionMeta;
                 Console.WriteLine("(reused from local run folder)");
             }
             else if (dryRun)
             {
                 if (diskCached is not null) Console.Write("(ignoring stale fallback-poisoned cache) ");
                 screenplayText = GenerateMockScreenplay(modelId);
+                visionMeta = null;
                 Console.WriteLine("(mock generated)");
             }
             else
@@ -456,7 +465,7 @@ public static class Program
                     Console.Write("(ignoring stale fallback-poisoned cache, retrying live) ");
                 try
                 {
-                    screenplayText = await BookToFountainConverter.ConvertAsync(
+                    var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
                         workspaceRoot: outDir,
                         title: Path.GetFileNameWithoutExtension(bookPath),
                         bookText: bookText,
@@ -466,7 +475,9 @@ public static class Program
                         onProgress: msg => Console.WriteLine($"    · {msg}"),
                         onHeuristicFallback: reason => generationFallbacks[modelId] = reason,
                         budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId),
-                reasoningEffort: reasoningEffort, temperature: samplingTemperature);
+                        reasoningEffort: reasoningEffort, temperature: samplingTemperature);
+                    screenplayText = conversion.Fountain;
+                    visionMeta = conversion.VisionMeta;
 
                     if (generationFallbacks.TryGetValue(modelId, out var fallbackReason))
                     {
@@ -476,21 +487,33 @@ public static class Program
                     {
                         Console.WriteLine("DONE");
 
-                        // Only genuine model output is ever persisted to the cross-run disk cache.
-                        Directory.CreateDirectory(Path.Combine(workspaceRoot, "evals", "cache", bookSlug));
-                        await File.WriteAllTextAsync(cacheFile, screenplayText);
+                        // A complete cache entry requires both genuine Fountain and its required
+                        // visual metadata. Fountain-only legacy entries are intentionally ignored.
+                        if (visionMeta is not null)
+                        {
+                            Directory.CreateDirectory(Path.Combine(workspaceRoot, "evals", "cache", bookSlug));
+                            await File.WriteAllTextAsync(cacheFile, screenplayText);
+                            await WriteVisionMetaAsync(cacheVisionMetaFile, visionMeta);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"    · {conversion.VisionMetaError} Candidate package will not be cached.");
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"FAILED: {ex.Message}");
                     screenplayText = $"FADE IN:\n\nINT. ERROR - DAY\n\n[Adaptation failed for {modelId}: {ex.Message}]\n\nFADE OUT.";
+                    visionMeta = null;
                     generationFallbacks[modelId] = ex.Message;
                 }
             }
 
             await File.WriteAllTextAsync(screenplayFile, screenplayText);
+            await WriteVisionMetaAsync(visionMetaFile, visionMeta);
             generatedScreenplays[modelId] = screenplayText;
+            generatedVisionMeta[modelId] = visionMeta;
 
             var syntaxAudit = DeterministicSyntaxScorer.Evaluate(screenplayText);
             deterministicResults[modelId] = syntaxAudit;
@@ -518,7 +541,10 @@ public static class Program
         // (e.g. a rate-limit message's exact numbers) even though judges never see it, and that
         // must not spuriously invalidate an otherwise-still-valid judge cache.
         var screenplaysHash = ComputeScreenplaysHash(
-            realCandidates.ToDictionary(m => m, m => generatedScreenplays[m], StringComparer.OrdinalIgnoreCase));
+            realCandidates.ToDictionary(
+                m => m,
+                m => BuildJudgeCandidatePackage(generatedScreenplays[m], generatedVisionMeta[m]),
+                StringComparer.OrdinalIgnoreCase));
 
         foreach (var judgeModelId in judgeModels)
         {
@@ -539,7 +565,8 @@ public static class Program
             {
                 var label = $"Screenplay {(char)('A' + i)}";
                 anonMapping[label] = keys[i];
-                anonScreenplays[label] = generatedScreenplays[keys[i]];
+                anonScreenplays[label] = BuildJudgeCandidatePackage(
+                    generatedScreenplays[keys[i]], generatedVisionMeta[keys[i]]);
             }
 
             // Same effort-suffix reasoning as the generation cache above: a judge verdict formed
@@ -955,12 +982,47 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
     private static string SanitizeFileName(string name) =>
         string.Concat(name.Split(Path.GetInvalidFileNameChars())).Replace(' ', '_').Replace('/', '_');
 
+    private static async Task<ProjectVisionMeta.Document?> ReadVisionMetaAsync(string path)
+    {
+        if (!File.Exists(path)) return null;
+        try
+        {
+            var json = await File.ReadAllTextAsync(path);
+            return JsonSerializer.Deserialize<ProjectVisionMeta.Document>(
+                json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static Task WriteVisionMetaAsync(string path, ProjectVisionMeta.Document? visionMeta)
+    {
+        var json = JsonSerializer.Serialize(
+            visionMeta,
+            new JsonSerializerOptions { WriteIndented = true });
+        return File.WriteAllTextAsync(path, json + Environment.NewLine);
+    }
+
+    internal static string BuildJudgeCandidatePackage(
+        string fountain,
+        ProjectVisionMeta.Document? visionMeta)
+    {
+        var metadata = visionMeta is null
+            ? "(missing)"
+            : JsonSerializer.Serialize(visionMeta, new JsonSerializerOptions { WriteIndented = true });
+        return $"=== FOUNTAIN SCREENPLAY ===\n{fountain.TrimEnd()}\n\n" +
+               $"=== VISION METADATA SIDECAR ===\n{metadata}\n";
+    }
+
     /// <summary>
     /// Per-model TPM caps confirmed live (e.g. gpt-4o: HTTP 429 "Limit 30000... tokens per min" on
     /// this account/org). These are account-tier rate limits, not the model's real context window —
     /// deliberately kept out of <c>models_catalog.json</c> (which drives the real product's book
     /// adaptation for all users) and scoped to this benchmark only. Forces
-    /// <see cref="BookToFountainConverter.ConvertAsync"/> onto the multi-chunk path so each
+    /// <see cref="BookToFountainConverter.ConvertWithMetadataAsync"/> onto the multi-chunk path so each
     /// individual adapt call stays comfortably under the cap instead of one big one-shot request
     /// that blows through it regardless of what the model can actually hold.
     /// </summary>

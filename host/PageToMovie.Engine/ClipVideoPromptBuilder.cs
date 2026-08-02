@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Engine.Deterministic.Pronunciation;
 using PageToMovie.Core.Models;
 
 namespace PageToMovie.Engine;
@@ -1199,7 +1200,7 @@ public static class ClipVideoPromptBuilder
                 audio.TryGetProperty("pronunciation_hint", out var ph) ? ph.GetString() : null);
             var pronHint = !string.IsNullOrWhiteSpace(pronHintInPayload)
                 ? (pronHintInPayload.StartsWith(" ") ? pronHintInPayload : $" {PromptTags.Wrap("Pronunciation", pronHintInPayload)}")
-                : DetectPronunciationHints(quote);
+                : BuildPronunciationHints(quote);
 
             if (isVoiceover)
             {
@@ -1214,7 +1215,7 @@ public static class ClipVideoPromptBuilder
             {
                 var who2 = secondarySpeaker.Trim();
                 var quote2 = PromptTags.SanitizeValue(SanitizeSpokenDialogue(secondaryDialogue));
-                var pronHint2 = DetectPronunciationHints(quote2);
+                var pronHint2 = BuildPronunciationHints(quote2);
                 return PromptTags.Wrap("Audio",
                     $"REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
                     $"exactly: \"{quote}\".{openCue} Then {who2} ON CAMERA lip-syncs " +
@@ -1238,53 +1239,10 @@ public static class ClipVideoPromptBuilder
         return "";
     }
 
-    /// <summary>
-    /// Detect common English heteronyms/homographs (e.g. 'tear' rip vs crying) in spoken dialogue
-    /// and generate an explicit pronunciation directive for AI video/audio generation.
-    /// </summary>
-    public static string DetectPronunciationHints(string text)
+    private static string BuildPronunciationHints(string text)
     {
-        if (string.IsNullOrWhiteSpace(text)) return "";
-        var hints = new List<string>();
-
-        // Heteronym: "tear" (rip / rend vs eye drop)
-        if (Regex.IsMatch(text, @"\btear\s+(up|down|open|off|the|a|out|away|apart|into|floorboards?|planks?|up\s+the)\b|\bto\s+tear\b|\bshall\s+tear\b", RegexOptions.IgnoreCase))
-        {
-            hints.Add("Pronounce 'tear' as verb /tɛər/ ('tare' / rip apart), NOT eye tear");
-        }
-        else if (Regex.IsMatch(text, @"\b(a|the|single|salty|in)\s+tears?\b|\btears?\s+(of|on|down|rolled|fell)\b", RegexOptions.IgnoreCase))
-        {
-            hints.Add("Pronounce 'tear' as noun /tɪər/ ('teer' / crying drop)");
-        }
-
-        // Heteronym: "lead" (metal vs guide)
-        if (Regex.IsMatch(text, @"\blead\s+(pipe|bullet|weights?|shield|heavy|gray|poisoning)\b|\bmade\s+of\s+lead\b", RegexOptions.IgnoreCase))
-        {
-            hints.Add("Pronounce 'lead' as heavy metal /lɛd/ ('led')");
-        }
-        else if (Regex.IsMatch(text, @"\blead\s+(us|me|him|her|them|the\s+way|to|on)\b|\bto\s+lead\b", RegexOptions.IgnoreCase))
-        {
-            hints.Add("Pronounce 'lead' as verb /liːd/ ('leed' / guide)");
-        }
-
-        // Heteronym: "bow" (gesture vs ribbon/weapon)
-        if (Regex.IsMatch(text, @"\bbow\s+(down|to|before|your|head|low)\b|\btake\s+a\s+bow\b", RegexOptions.IgnoreCase))
-        {
-            hints.Add("Pronounce 'bow' as verb /baʊ/ ('bough' / bend)");
-        }
-        else if (Regex.IsMatch(text, @"\bbow\s+(and\s+arrow|tie|tied)\b", RegexOptions.IgnoreCase))
-        {
-            hints.Add("Pronounce 'bow' as noun /boʊ/ ('boh' / ribbon or weapon)");
-        }
-
-        // Heteronym: "wind" (breeze vs turn/coil)
-        if (Regex.IsMatch(text, @"\bwind\s+(up|down|the\s+clock|around)\b|\bto\s+wind\b", RegexOptions.IgnoreCase))
-        {
-            hints.Add("Pronounce 'wind' as verb /waɪnd/ ('wynd' / turn or coil)");
-        }
-
-        if (hints.Count == 0) return "";
-        return " " + PromptTags.Wrap("Pronunciation", string.Join("; ", hints));
+        var hints = PronunciationResolver.RenderPromptHints(PronunciationResolver.Default.Resolve(text));
+        return hints.Length == 0 ? "" : " " + PromptTags.Wrap("Pronunciation", hints);
     }
 
     /// <summary>
