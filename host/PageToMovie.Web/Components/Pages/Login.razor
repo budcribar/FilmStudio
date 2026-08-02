@@ -383,12 +383,22 @@
     .auth-card .form-control::-webkit-input-placeholder,
     .auth-card .form-control::-moz-placeholder,
     .auth-card .form-control:-ms-input-placeholder {
-        /* Slate-200 on slate-800 — readable, still looks empty vs typed white text */
-        color: #e2e8f0 !important;
-        opacity: 1 !important;
+        /* Near-white — same brightness band as labels / typed text (user: still unreadable before) */
+        color: #f8fafc !important;
+        opacity: 0.92 !important;
         font-style: normal;
         font-weight: 500;
-        -webkit-text-fill-color: #e2e8f0;
+        -webkit-text-fill-color: #f8fafc !important;
+    }
+
+    /* Chrome/Edge autofill can paint dark-on-dark; force light text inside the group */
+    .auth-card .form-control:-webkit-autofill,
+    .auth-card .form-control:-webkit-autofill:hover,
+    .auth-card .form-control:-webkit-autofill:focus {
+        -webkit-text-fill-color: #f8fafc !important;
+        caret-color: #f8fafc;
+        transition: background-color 99999s ease-out 0s;
+        box-shadow: 0 0 0 1000px #1e293b inset !important;
     }
 
     .auth-card .form-control:focus {

@@ -14,6 +14,7 @@
     --fs-border-color: rgba(255, 255, 255, 0.08);
     --fs-border-hover: rgba(107, 140, 174, 0.45);
     --fs-text-primary: #f1f3f7;
+    --fs-text-secondary: #c8d0e0;
     --fs-text-muted: #9aa3b5;
     --fs-text-subtle: #6b7385;
     --fs-accent-indigo: #6b8cae;
@@ -70,6 +71,7 @@
     --fs-border-color: rgba(15, 23, 42, 0.12);
     --fs-border-hover: rgba(79, 70, 229, 0.4);
     --fs-text-primary: #191c24;
+    --fs-text-secondary: #5b6478;
     --fs-text-muted: #4b5565;
     --fs-text-subtle: #64748b;
     --fs-accent-indigo: #4f46e5;
@@ -235,9 +237,11 @@ label,
 .form-select::-webkit-input-placeholder,
 .form-control::-moz-placeholder,
 .form-select::-moz-placeholder {
-    color: var(--fs-text-secondary) !important;
+    /* Was --fs-text-secondary (undefined → unreadable). Keep clearly lighter than field bg. */
+    color: var(--fs-text-secondary, #c8d0e0) !important;
     opacity: 1 !important;
     font-style: normal;
+    -webkit-text-fill-color: var(--fs-text-secondary, #c8d0e0);
 }
 
 
