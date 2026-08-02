@@ -1,0 +1,188 @@
+{
+  "BookPath": "../books/A_Christmas_Carol.txt",
+  "Timestamp": "2026-08-02 05:12:58 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 27,
+        "TotalDialogueBlocks": 118,
+        "AvgWordsPerDialogue": 21,
+        "MaxWordsInSingleDialogue": 97,
+        "LongMonologueCount": 24,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "PORTLY GENTLEMAN",
+          "BOB CRATCHIT",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "LITTLE FAN",
+          "YOUNG SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG MAN SCROOGE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "MRS. CRATCHIT",
+          "TINY TIM",
+          "FAT MAN",
+          "CHARWOMAN",
+          "HUSBAND",
+          "BOY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SCROOGE",
+          "YOUNG MAN SCROOGE",
+          "TINY TIM",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "24 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 4 age-qualified character header(s) (e.g. YOUNG SCROOGE, YOUNG MAN SCROOGE, TINY TIM)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.8,
+      "AvgCharacterDisambiguation": 7.8,
+      "AvgAiVideoDirectibility": 5.8,
+      "AvgDramaticPacing": 7.2,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 8.8,
+      "AvgOverallQualitative": 7.7,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: The draft does not follow the required Fountain blank-line separation rules, so its scene, action, and dialogue elements are not reliably parseable by the stated downstream pipeline.",
+        "gpt-5.6-terra: The required VISION_META sidecar is absent.",
+        "gpt-5.6-terra: Several dialogue turns substantially exceed the prompt\u0027s 35-word maximum and cannot fit the intended 5-10 second clip format without further subdivision.",
+        "gpt-5.6-terra: The heading \u0022EXT. BLEAK MOOR / LIGHTHOUSE / SHIP - NIGHT\u0022 combines three distinct locations in direct violation of the one-location-per-heading rule.",
+        "grok-4.5: Invalid multi-location heading \u0027EXT. BLEAK MOOR / LIGHTHOUSE / SHIP - NIGHT\u0027 joins places with slashes",
+        "grok-4.5: Unstable supporting tokens CHARWOMAN, FAT MAN, UNDERTAKER\u0027S MAN instead of proper independent names"
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 80.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 19,
+        "TotalDialogueBlocks": 130,
+        "AvgWordsPerDialogue": 10,
+        "MaxWordsInSingleDialogue": 24,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "FRED",
+          "SCROOGE",
+          "NARRATOR",
+          "BOB CRATCHIT",
+          "MARLEY",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "YOUNG SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "BELLE\u0027S HUSBAND",
+          "GHOST OF CHRISTMAS PRESENT",
+          "MRS. CRATCHIT",
+          "TINY TIM",
+          "FRED\u0027S WIFE",
+          "MRS. DILBER",
+          "OLD JOE"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SCROOGE",
+          "TINY TIM",
+          "OLD JOE"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, OLD JOE)."
+        ]
+      },
+      "AvgAdaptationFidelity": 3.5,
+      "AvgCharacterDisambiguation": 7.2,
+      "AvgAiVideoDirectibility": 7.8,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 7.2,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 6.8,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: The draft does not follow the required Fountain blank-line separation rules, so its screenplay elements will not reliably parse in the specified production pipeline.",
+        "gpt-5.6-terra: The required VISION_META sidecar is absent.",
+        "gpt-5.6-terra: It drops major source beats, including the Ghost of Christmas Present\u0027s revelation of Ignorance and Want and the debtor family\u0027s relieved response to Scrooge\u0027s death; under the stated rubric, these omissions are a severe adaptation-fidelity failure.",
+        "gpt-5.6-terra: Some scenes combine distinct locations and narrative turns under one heading, notably the Old Joe shop sequence shifting directly into the dead man\u0027s bedroom.",
+        "grok-4.5: Major source beats dropped (Marley knocker transformation, Ignorance and Want, debtors\u0027 family relief at the death)",
+        "grok-4.5: Relational/possessive character cues FRED\u0027S WIFE and BELLE\u0027S HUSBAND violate stable independent token rule"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 7.2,
+      "gpt-5.6-terra": 6.4
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 7.17,
+      "grok-4.5": 8.25
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.2/10 vs. a 7.2/10 average from 1 other judge(s) (\u002B1.0) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "This is the stronger adaptation on story fidelity. It preserves nearly the entire dramatic spine: Scrooge\u0027s cruelty, Fred and the charity collectors, Marley, all three Spirits, Fan, Fezziwig, Belle, the Cratchits, Ignorance and Want, Old Joe, Caroline\u0027s debtor-family relief, Tiny Tim\u0027s death vision, the grave reveal, and the redemption. Character visual introductions are generally specific and useful, especially Scrooge, Marley, the three Spirits, Bob, Tiny Tim, and the young/adult Scrooge split. However, it is not operationally built for short AI clips: many scenes contain several locations, time shifts, reveals, and action units; the Fezziwig, Belle, Cratchit, and ending sequences are especially overpacked. Long blocks of Dickens dialogue are faithful but routinely unplayable in one short clip. Its sound cues are consistently concrete, emotionally apt, and stronger than B\u0027s, but formal Fountain noncompliance and the missing sidecar prevent greenlight as-is.",
+      "gpt-5.6-terra": "B is more concise and generally more shootable than A. It provides clear location grounding, concrete visual actions, stronger scene-to-scene economy, and dialogue that is usually short enough to stage in a single generated clip. Its casting descriptions are solid and mostly consistent, with clear age distinctions for Young Scrooge and recurring physical markers for Bob, Fred, Tiny Tim, and the Spirits. Sound beds are present in every scene and are functional, although several music cues remain generic rather than being developed as a deliberate thematic score. The central flaw is fidelity: it omits major moral and plot turns from the source, most notably Ignorance and Want and the debtor household\u0027s joy at the miser\u0027s death, which weakens the Present Spirit\u0027s social indictment and the Future Spirit\u0027s accumulating evidence of Scrooge\u0027s legacy. It also compresses some consequential transitions so aggressively that the final revelation has less investigative dread and emotional inevitability."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Fidelity is severely damaged by omission of multiple iconic beats required for a recognizable Carol (knocker face, Present\u0027s children, Caroline scene), even though the three-spirit spine remains; character looks are mostly locked on first appearance and Young Scrooge is visually aged, but relational cues and thin re-entry restatements weaken casting clarity. Directibility is strong\u2014single concrete locations, observable actions, short clip-friendly beats\u2014while pacing is tight for runtime yet feels rushed where cuts land. Dialogue keeps many book phrases but shortens speeches and routes some spoken lines through NARRATOR V.O. Sound cues are consistently present and useful. Not greenlight-ready due to the fidelity holes and cast-token violations.",
+      "grok-4.5": "Highest fidelity: nearly every essential beat and quotable line is present (knocker, full Marley, Fezziwig, Belle, Cratchits, Ignorance/Want, Old Joe, debtors, grave, turkey, salary raise) with only light runtime compression. Character introductions supply strong visual locks and clear YOUNG / YOUNG MAN SCROOGE splits, though a few supporting cues remain generic. Directibility suffers from the slash-joined heading and \u0027quick visions\u0027 summary that cram multiple locations and actions into non-clip-sized units. Pacing and dialogue are excellent\u2014book cadence preserved, short enough for clips, tension builds cleanly. Sound/music cues are dense and diegetic at peaks. Structure and cast-token defects prevent an immediate greenlight."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-terra": "Strongest: Screenplay A because it retains substantially more of Dickens\u0027s essential plot, character, and thematic architecture while providing exceptionally consistent scene-level sound cues. Weakest: Screenplay B because, despite its cleaner clip-oriented economy, it omits major source beats that are indispensable to the Present and Future visions, triggering the rubric\u0027s severe fidelity penalty.",
+    "grok-4.5": "Strongest: Screenplay B because it delivers near-complete source coverage, iconic dialogue, and superior emotional arc while still hitting runtime. Weakest: Screenplay A because severe omissions of major beats collapse fidelity and relational cast cues create downstream identity failures."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "Add a mandatory runtime-budget audit before output: cap the entire draft at a defined total dialogue/action word count for the target runtime, and require every dialogue turn and visual beat to be independently playable within one 5-10 second clip.",
+      "gpt-5.6-terra": "Add a mandatory source-coverage checklist step requiring the model to identify every major plot turn, thematic revelation, and final-act proof sequence before drafting, then verify that each is represented by at least one scene or explicit visual beat in the completed screenplay."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Add an explicit retention rule: iconic set-pieces and thematic reveals (prop transformations, ghost arrivals, pair-of-children or equivalent moral emblems) must appear as distinct filmed beats even under the 10-minute cap; compression may drop only pure connective or travel paragraphs.",
+      "grok-4.5": "Strengthen the single-place heading rule with a positive example: for brief multi-setting montages issue separate concrete headings per micro-location or confine Action to one continuous observable shot; never allow slash/AND joins or \u0027quick visions\u0027 summary language under one slug."
+    }
+  }
+}

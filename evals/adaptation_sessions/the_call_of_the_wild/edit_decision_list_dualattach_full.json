@@ -1,0 +1,1317 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "EXT. JUDGE MILLER\u0027S PLACE, SANTA CLARA VALLEY - DAY",
+      "purpose": "Establish Buck as king of the sun-kissed Santa Clara estate and foreshadow the Klondike demand for strong dogs.",
+      "location_key": "LOCATION_JUDGE_MILLER_PLACE",
+      "cast": [
+        "BUCK"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_ARISTOCRAT"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Sun-kissed lawns and veranda under poplars",
+        "Buck stalks among fox terriers",
+        "Buck plunges into cement tank and shakes spray",
+        "Escorts young women on twilight path",
+        "Rear stables, orchards, berry patches"
+      ],
+      "source_paragraphs": [
+        "P16",
+        "P17",
+        "P18",
+        "P19"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. JUDGE MILLER\u0027S LIBRARY - NIGHT",
+      "purpose": "Show Buck\u0027s aristocratic life at Judge Miller\u0027s feet by the library fire and hardened outdoor condition.",
+      "location_key": "LOCATION_JUDGE_MILLER_PLACE",
+      "cast": [
+        "BUCK",
+        "JUDGE_MILLER"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_ARISTOCRAT",
+        "JUDGE_ESTATE"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Roaring library fire",
+        "Judge in dark wool with Buck at his feet",
+        "Royal carriage of the sated aristocrat"
+      ],
+      "source_paragraphs": [
+        "P19",
+        "P20"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "EXT. JUDGE MILLER\u0027S PLACE, SANTA CLARA VALLEY - NIGHT",
+      "purpose": "Manuel\u0027s treachery: rope Buck, sell him, choke him unconscious, and deliver him to the flag station train.",
+      "location_key": "LOCATION_JUDGE_MILLER_PLACE",
+      "cast": [
+        "BUCK",
+        "MANUEL"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_ARISTOCRAT",
+        "MANUEL_NIGHT_TREACHERY"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Orchard night shadows",
+        "Rope doubled under collar",
+        "Money chinks with stranger",
+        "Buck springs and is thrown and choked",
+        "Eyes glaze as strength ebbs"
+      ],
+      "source_paragraphs": [
+        "P21",
+        "P22",
+        "P23",
+        "P24",
+        "P25"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "EXT. COLLEGE PARK FLAG STATION - NIGHT",
+      "purpose": "Buck is thrown into the baggage car as the train is flagged and departs.",
+      "location_key": "LOCATION_COLLEGE_PARK_STATION",
+      "cast": [
+        "BUCK",
+        "MANUEL"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_ARISTOCRAT",
+        "MANUEL_NIGHT_TREACHERY"
+      ],
+      "estimated_duration_seconds": 15,
+      "visual_beats": [
+        "Baggage car door slams",
+        "Locomotive shrieks a crossing",
+        "Wheels gather speed into night"
+      ],
+      "source_paragraphs": [
+        "P25",
+        "P26"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "INT. BAGGAGE CAR / EXT. SAN FRANCISCO WATER FRONT - NIGHT",
+      "purpose": "Kidnapped king bites the handler; collar filed off; crate prison behind the saloon; wrath and impending calamity.",
+      "location_key": "LOCATION_SF_WATERFRONT",
+      "cast": [
+        "BUCK"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_CRATED_RAGING"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Jaws close on mangled hand",
+        "Bloody handkerchief and ripped trouser",
+        "Brass collar filed off",
+        "Flung into cagelike crate",
+        "Saloon-keeper\u0027s face by tallow candle",
+        "Joyful bark twists to savage growl"
+      ],
+      "source_paragraphs": [
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "EXT. SEATTLE BACK YARD - DAY",
+      "purpose": "Man in the red sweater breaks Buck with the club; lesson of primitive law; beaten but not broken.",
+      "location_key": "LOCATION_SEATTLE_BACK_YARD",
+      "cast": [
+        "BUCK",
+        "MAN_IN_RED_SWEATER"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_CLUBBED",
+        "RED_SWEATER_BREAKER"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "Crate pried open with hatchet",
+        "Buck launches mid-air fury",
+        "Club checks and smashes dozen charges",
+        "Blood from nose mouth ears; coat flecked with slaver",
+        "Blow on nose; jaw wrench; final shrewd knockout",
+        "Genial pat and water and raw meat",
+        "Other crated dogs arrive; money passes; Buck glad not selected"
+      ],
+      "source_paragraphs": [
+        "P41",
+        "P42",
+        "P43",
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48",
+        "P49",
+        "P50",
+        "P51",
+        "P52",
+        "P53",
+        "P54",
+        "P55",
+        "P56"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "EXT. SEATTLE BACK YARD - DAY",
+      "purpose": "Perrault buys Buck and Curly with government money; departure from the breaker.",
+      "location_key": "LOCATION_SEATTLE_BACK_YARD",
+      "cast": [
+        "BUCK",
+        "MAN_IN_RED_SWEATER",
+        "PERRAULT",
+        "FRANCOIS",
+        "CURLY"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_CLUBBED",
+        "RED_SWEATER_BREAKER",
+        "PERRAULT_COURIER",
+        "FRANCOIS_DOG_DRIVER",
+        "CURLY_NEWFOUNDLAND"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Weazened Perrault eyes Buck",
+        "Sacredam bargain at three hundred",
+        "Buck and Curly led away from red sweater"
+      ],
+      "source_paragraphs": [
+        "P57",
+        "P58",
+        "P59",
+        "P60",
+        "P61"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "EXT. NARWHAL SHIP - DECK AND \u0027TWEEN-DECKS - DAY",
+      "purpose": "Voyage north; meet Spitz and Dave; first snow on deck.",
+      "location_key": "LOCATION_NARWHAL",
+      "cast": [
+        "BUCK",
+        "CURLY",
+        "PERRAULT",
+        "FRANCOIS",
+        "SPITZ",
+        "DAVE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "CURLY_NEWFOUNDLAND",
+        "PERRAULT_COURIER",
+        "FRANCOIS_DOG_DRIVER",
+        "SPITZ_LEAD_WHITE",
+        "DAVE_WHEELER"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Receding Seattle from deck",
+        "Tween-decks with Spitz and Dave",
+        "Spitz steals food; Francois whip sings first",
+        "Propeller throb growing colder",
+        "Feet sink in white mush; first snow lick bites like fire",
+        "Onlookers laugh"
+      ],
+      "source_paragraphs": [
+        "P61",
+        "P62",
+        "P63",
+        "P64"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "EXT. DYEA BEACH - DAY",
+      "purpose": "Nightmare primordial beach; Curly\u0027s death under husky circle; law of club and fang; Buck\u0027s deathless hatred of Spitz.",
+      "location_key": "LOCATION_DYEA_BEACH",
+      "cast": [
+        "BUCK",
+        "CURLY",
+        "SPITZ",
+        "FRANCOIS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "CURLY_NEWFOUNDLAND",
+        "SPITZ_LEAD_WHITE",
+        "FRANCOIS_DOG_DRIVER"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Chaos of Dyea beach near log store",
+        "Curly\u0027s friendly advance; face ripped eye to jaw",
+        "Silent intent husky circle licking chops",
+        "Buried screaming under bristling mass",
+        "Axe and clubs scatter; limp bloody corpse",
+        "Spitz scarlet tongue laugh"
+      ],
+      "source_paragraphs": [
+        "P66",
+        "P67",
+        "P68",
+        "P69"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "heading": "EXT. DYEA BEACH - DAY",
+      "purpose": "Harness training; meet Billee, Joe, Sol-leks; first lessons of trace and blind-side slash.",
+      "location_key": "LOCATION_DYEA_BEACH",
+      "cast": [
+        "BUCK",
+        "FRANCOIS",
+        "PERRAULT",
+        "SPITZ",
+        "DAVE",
+        "BILLEE",
+        "JOE",
+        "SOL_LEKS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "FRANCOIS_DOG_DRIVER",
+        "PERRAULT_COURIER",
+        "SPITZ_LEAD_WHITE",
+        "DAVE_WHEELER",
+        "BILLEE_GOOD_NATURED",
+        "JOE_SOUR",
+        "SOL_LEKS_ANGRY_ONE"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Straps and buckles harness on Buck",
+        "Haul firewood; Dave nips; Spitz jerks traces",
+        "Learn ho mush swing wide",
+        "Billee thrashed; Joe diabolical whirls",
+        "Sol-leks one-eyed arrival; blind-side shoulder slash"
+      ],
+      "source_paragraphs": [
+        "P70",
+        "P71",
+        "P72",
+        "P73"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "heading": "EXT. DYEA BEACH CAMP - NIGHT",
+      "purpose": "Learn to sleep under snow; morning trap-fear bound into blinding day; Francois praises quick learning.",
+      "location_key": "LOCATION_DYEA_BEACH",
+      "cast": [
+        "BUCK",
+        "PERRAULT",
+        "FRANCOIS",
+        "BILLEE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "PERRAULT_COURIER",
+        "FRANCOIS_DOG_DRIVER",
+        "BILLEE_GOOD_NATURED"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Driven from glowing tent with curses and utensils",
+        "Wander cold among tents; bristle off savages",
+        "Sink onto Billee in snug snow ball",
+        "Dig own hole; sleep growling dreams",
+        "Buried morning; fear of trap; bound up snow cloud",
+        "Francois hail of quick learner"
+      ],
+      "source_paragraphs": [
+        "P74",
+        "P75",
+        "P76",
+        "P77",
+        "P78",
+        "P79"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "heading": "EXT. DYEA CANON / CHILCOOT DIVIDE - DAY",
+      "purpose": "Hard trail toil; hunger and first theft; moral decay; instincts and wolf howl awaken.",
+      "location_key": "LOCATION_DYEA_CANON_CHILCOOT",
+      "cast": [
+        "BUCK",
+        "PERRAULT",
+        "FRANCOIS",
+        "SPITZ",
+        "DAVE",
+        "SOL_LEKS",
+        "PIKE",
+        "DUB"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "PERRAULT_COURIER",
+        "FRANCOIS_DOG_DRIVER",
+        "SPITZ_LEAD_WHITE",
+        "DAVE_WHEELER",
+        "SOL_LEKS_ANGRY_ONE",
+        "PIKE_MALINGERER",
+        "DUB_BLUNDERER"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Nine dogs swing up Canon past Scales over Chilcoot",
+        "Dark starts gray dawn camp after dark",
+        "Ravenous on pound-and-half salmon",
+        "Steal bacon; Dub punished for Buck",
+        "Bite ice from toes; break water scum",
+        "Nose to star long wolflike howl"
+      ],
+      "source_paragraphs": [
+        "P80",
+        "P81",
+        "P82",
+        "P83",
+        "P84",
+        "P85",
+        "P86",
+        "P87",
+        "P88",
+        "P89",
+        "P90",
+        "P91"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "heading": "EXT. LAKE LE BARGE - NIGHT",
+      "purpose": "Nest fight interrupted by starving husky horde raid; team wounded; half grub gone.",
+      "location_key": "LOCATION_LAKE_LE_BARGE",
+      "cast": [
+        "BUCK",
+        "SPITZ",
+        "PERRAULT",
+        "FRANCOIS",
+        "DAVE",
+        "SOL_LEKS",
+        "BILLEE",
+        "JOE",
+        "PIKE",
+        "DUB"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "SPITZ_LEAD_WHITE",
+        "PERRAULT_COURIER",
+        "FRANCOIS_DOG_DRIVER",
+        "DAVE_WHEELER",
+        "SOL_LEKS_ANGRY_ONE",
+        "BILLEE_GOOD_NATURED",
+        "JOE_SOUR",
+        "PIKE_MALINGERER",
+        "DUB_BLUNDERER"
+      ],
+      "estimated_duration_seconds": 60,
+      "visual_beats": [
+        "Bleak ice camp under rock wall; wind white-hot knife",
+        "Spitz in Buck\u0027s nest; beast roars; tangle fight",
+        "Score of skeleton huskies raid grub-box",
+        "Team set upon; blood and ripped flesh",
+        "Spitz side attack; flight onto lake",
+        "Forest shelter; every dog wounded; moccasins eaten"
+      ],
+      "source_paragraphs": [
+        "P94",
+        "P95",
+        "P96",
+        "P97",
+        "P98",
+        "P99",
+        "P100",
+        "P101",
+        "P102",
+        "P103"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "heading": "EXT. THIRTY MILE RIVER - DAY",
+      "purpose": "Deadly thin ice; soft feet and moccasins; Dolly mad chase; Spitz opportunist attack; war declared.",
+      "location_key": "LOCATION_THIRTY_MILE_RIVER",
+      "cast": [
+        "BUCK",
+        "PERRAULT",
+        "FRANCOIS",
+        "SPITZ",
+        "DAVE",
+        "SOL_LEKS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "PERRAULT_COURIER",
+        "FRANCOIS_DOG_DRIVER",
+        "SPITZ_LEAD_WHITE",
+        "DAVE_WHEELER",
+        "SOL_LEKS_ANGRY_ONE"
+      ],
+      "estimated_duration_seconds": 65,
+      "visual_beats": [
+        "Open wild water; ice bridges; fifty below fires",
+        "Sled breakthrough; ice-coated dogs run till singed",
+        "Cliff rope hoist of dogs",
+        "Soft feet limp; Francois moccasins; Buck waves feet",
+        "Dolly mad howl chase; axe on head",
+        "Spitz rips exhausted Buck; worst whipping yet",
+        "Perrault and Francois prophecy of two-devil fight"
+      ],
+      "source_paragraphs": [
+        "P104",
+        "P105",
+        "P106",
+        "P107",
+        "P108",
+        "P109",
+        "P110",
+        "P111",
+        "P112",
+        "P113",
+        "P114"
+      ]
+    },
+    {
+      "scene_id": "S15",
+      "heading": "EXT. YUKON TRAIL TOWARD DAWSON - DAY",
+      "purpose": "Covert mutiny against Spitz; arrival Dawson; husky nocturnal song under aurora; hark back to howling ages.",
+      "location_key": "LOCATION_DAWSON",
+      "cast": [
+        "BUCK",
+        "SPITZ",
+        "PERRAULT",
+        "FRANCOIS",
+        "PIKE",
+        "DAVE",
+        "SOL_LEKS",
+        "BILLEE",
+        "JOE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "SPITZ_LEAD_WHITE",
+        "PERRAULT_COURIER",
+        "FRANCOIS_DOG_DRIVER",
+        "PIKE_MALINGERER",
+        "DAVE_WHEELER",
+        "SOL_LEKS_ANGRY_ONE",
+        "BILLEE_GOOD_NATURED",
+        "JOE_SOUR"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Buck shields shirks; Pike under snow",
+        "General insubordination; Francois lash futile",
+        "Pull into Dawson main street long teams",
+        "Nightly nine twelve three eerie chant",
+        "Aurora flames; stars frost dance; Buck joins song"
+      ],
+      "source_paragraphs": [
+        "P115",
+        "P116",
+        "P117",
+        "P118",
+        "P119",
+        "P120"
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "heading": "EXT. FROZEN CREEK UNDER AURORA - NIGHT",
+      "purpose": "Rabbit chase ecstasy; final death fight with Spitz; Buck becomes dominant primordial beast.",
+      "location_key": "LOCATION_DAWSON",
+      "cast": [
+        "BUCK",
+        "SPITZ"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "SPITZ_LEAD_WHITE"
+      ],
+      "estimated_duration_seconds": 75,
+      "visual_beats": [
+        "Snowshoe rabbit; sixty-dog pack cry",
+        "Buck leads leap by leap in moonlight",
+        "Spitz cuts neck; rabbit back broken; hell chorus",
+        "Shoulder to shoulder death circle",
+        "Fang clash; imagination low sweep; left then right foreleg crunch",
+        "Shoulder meets shoulder; Spitz vanishes under dark circle",
+        "Buck stands champion over moon-flooded snow"
+      ],
+      "source_paragraphs": [
+        "P124",
+        "P125",
+        "P126",
+        "P127",
+        "P128",
+        "P129",
+        "P130",
+        "P131",
+        "P132",
+        "P133",
+        "P134"
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "heading": "EXT. CAMP ON TRAIL - DAY",
+      "purpose": "Buck claims leadership; open revolt until club thrown down; takes lead position triumphantly.",
+      "location_key": "LOCATION_DAWSON",
+      "cast": [
+        "BUCK",
+        "FRANCOIS",
+        "PERRAULT",
+        "SOL_LEKS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "FRANCOIS_DOG_DRIVER",
+        "PERRAULT_COURIER",
+        "SOL_LEKS_ANGRY_ONE"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Spitz missing; Buck covered with wounds",
+        "Sol-leks brought to lead; Buck drives him back",
+        "Club threat; Buck circles wise beyond range",
+        "Hour of chase and curses; desire advertised",
+        "Club thrown down; Buck trots in laughing to head"
+      ],
+      "source_paragraphs": [
+        "P136",
+        "P137",
+        "P138",
+        "P139",
+        "P140",
+        "P141",
+        "P142",
+        "P143",
+        "P144",
+        "P145",
+        "P146",
+        "P147",
+        "P148"
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "heading": "EXT. YUKON TRAIL - RECORD RUN - DAY",
+      "purpose": "Buck excels as leader; team solidarity restored; record fourteen-day run into Skaguay.",
+      "location_key": "LOCATION_SKAGUAY",
+      "cast": [
+        "BUCK",
+        "FRANCOIS",
+        "PERRAULT",
+        "DAVE",
+        "SOL_LEKS",
+        "PIKE",
+        "JOE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "FRANCOIS_DOG_DRIVER",
+        "PERRAULT_COURIER",
+        "DAVE_WHEELER",
+        "SOL_LEKS_ANGRY_ONE",
+        "PIKE_MALINGERER",
+        "JOE_SOUR"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Judgment and quick acting superior to Spitz",
+        "Pike shaken; Joe smothered to mercy",
+        "Dogs leap as one; Teek Koona broken in",
+        "Forty-mile days; Thirty Mile in one; lakes tow rope",
+        "White Pass; lights of Skaguay and shipping"
+      ],
+      "source_paragraphs": [
+        "P149",
+        "P150",
+        "P151",
+        "P152",
+        "P153",
+        "P154",
+        "P155"
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "heading": "EXT. SKAGUAY MAIN STREET - DAY",
+      "purpose": "Record celebration; Francois weeps farewell; Scotch half-breed takes mail-train charge.",
+      "location_key": "LOCATION_SKAGUAY",
+      "cast": [
+        "BUCK",
+        "FRANCOIS",
+        "PERRAULT"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "FRANCOIS_DOG_DRIVER",
+        "PERRAULT_COURIER"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Worshipful dog-buster crowd",
+        "Francois arms around Buck weeping",
+        "Official orders; last of Perrault and Francois",
+        "Scotch half-breed; heavy mail load begins"
+      ],
+      "source_paragraphs": [
+        "P156",
+        "P157"
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "heading": "EXT. MAIL TRAIL / CAMPFIRES - NIGHT",
+      "purpose": "Monotonous mail toil; fire dreams of hairy man; Dave\u0027s pride-death and revolver mercy shot.",
+      "location_key": "LOCATION_DAWSON",
+      "cast": [
+        "BUCK",
+        "DAVE",
+        "SOL_LEKS",
+        "HAIRY_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_HARNESS_TRACE",
+        "DAVE_WHEELER",
+        "SOL_LEKS_ANGRY_ONE",
+        "HAIRY_MAN_VISION"
+      ],
+      "estimated_duration_seconds": 60,
+      "visual_beats": [
+        "Machine-like camp routine; Buck masters camp dogs",
+        "Lie by fire blinking; flames become other fire",
+        "Hairy man with stone stick; beast eyes two by two",
+        "Cook shouts wake; vision vanishes",
+        "Dave internal hurt; bites traces; dies in harness pride",
+        "Revolver-shot behind river timber; team knows"
+      ],
+      "source_paragraphs": [
+        "P158",
+        "P159",
+        "P160",
+        "P161",
+        "P162",
+        "P163",
+        "P164",
+        "P165",
+        "P166",
+        "P167",
+        "P168",
+        "P169",
+        "P170"
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "heading": "EXT. SKAGUAY MAIN STREET - DAY",
+      "purpose": "Wretched mail arrival; sold to callow Hal, Charles, and soft Mercedes; slipshod overloaded camp.",
+      "location_key": "LOCATION_SKAGUAY",
+      "cast": [
+        "BUCK",
+        "HAL",
+        "CHARLES",
+        "MERCEDES",
+        "SOL_LEKS",
+        "PIKE",
+        "DUB"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_STARVED_SKELETON",
+        "HAL_CALLOW_OUTFIT",
+        "CHARLES_INCOMPETENT",
+        "MERCEDES_SOFT_TRAIL",
+        "SOL_LEKS_ANGRY_ONE",
+        "PIKE_MALINGERER",
+        "DUB_BLUNDERER"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Totter down main street; 140 to 115 pounds",
+        "Hal cartridge belt; Charles watery eyes fierce mustache",
+        "Mercedes pretty soft flutters",
+        "Tent half stretched dishes unwashed clothes-sack argued",
+        "Neighbors grin at top-heavy load advice ignored"
+      ],
+      "source_paragraphs": [
+        "P172",
+        "P173",
+        "P174",
+        "P175",
+        "P176",
+        "P177",
+        "P178",
+        "P179",
+        "P180",
+        "P181",
+        "P182",
+        "P183",
+        "P184",
+        "P185",
+        "P186",
+        "P187"
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "heading": "EXT. SKAGUAY MAIN STREET - DAY",
+      "purpose": "Fourteen-dog overload fails; frozen runners; top-heavy spill; outfit scatters; citizens advise half load twice dogs.",
+      "location_key": "LOCATION_SKAGUAY",
+      "cast": [
+        "BUCK",
+        "HAL",
+        "CHARLES",
+        "MERCEDES"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_STARVED_SKELETON",
+        "HAL_CALLOW_OUTFIT",
+        "CHARLES_INCOMPETENT",
+        "MERCEDES_SOFT_TRAIL"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Outside dogs added; unable to move sled",
+        "Mercedes wrenches whip; poor dears",
+        "Break out frozen runners",
+        "Turn spill half load; Buck raging run",
+        "Capsized sled grinds Hal; scatter thoroughfare",
+        "Kind citizens gather and advise"
+      ],
+      "source_paragraphs": [
+        "P188",
+        "P189",
+        "P190",
+        "P191",
+        "P192",
+        "P193",
+        "P194",
+        "P195",
+        "P196",
+        "P197",
+        "P198",
+        "P199",
+        "P200",
+        "P201",
+        "P202",
+        "P203",
+        "P204",
+        "P205",
+        "P206"
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "heading": "EXT. TRAIL FROM SKAGUAY TOWARD DAWSON - DAY",
+      "purpose": "Incompetent cruelty; over then underfeeding; dogs die; family quarrel; Mercedes rides; skeletons stagger.",
+      "location_key": "LOCATION_SKAGUAY",
+      "cast": [
+        "BUCK",
+        "HAL",
+        "CHARLES",
+        "MERCEDES",
+        "DUB",
+        "BILLEE",
+        "JOE",
+        "PIKE",
+        "SOL_LEKS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_STARVED_SKELETON",
+        "HAL_CALLOW_OUTFIT",
+        "CHARLES_INCOMPETENT",
+        "MERCEDES_SOFT_TRAIL",
+        "DUB_BLUNDERER",
+        "BILLEE_GOOD_NATURED",
+        "JOE_SOUR",
+        "PIKE_MALINGERER",
+        "SOL_LEKS_ANGRY_ONE"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Slovenly half-night camps; poor mileage",
+        "Outside dogs starve; Dub shot; Billee axed",
+        "Horse-hide strips for food",
+        "Unending family quarrel; Mercedes 120 lb rides",
+        "Legs limp spoiled child; seven perambulating skeletons",
+        "Buck blind weak keeps trail by loom and feel"
+      ],
+      "source_paragraphs": [
+        "P207",
+        "P208",
+        "P209",
+        "P210",
+        "P211",
+        "P212",
+        "P213",
+        "P214",
+        "P215",
+        "P216",
+        "P217",
+        "P218",
+        "P219",
+        "P220",
+        "P221"
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "heading": "EXT. WHITE RIVER MOUTH (THORNTON\u0027S CAMP) - DAY",
+      "purpose": "Thornton stops the clubbing; cuts traces; Hal party vanishes through rotten ice; Buck licks savior\u0027s hand.",
+      "location_key": "LOCATION_WHITE_RIVER_MOUTH",
+      "cast": [
+        "BUCK",
+        "HAL",
+        "CHARLES",
+        "MERCEDES",
+        "JOHN_THORNTON",
+        "SOL_LEKS",
+        "JOE",
+        "PIKE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_STARVED_SKELETON",
+        "HAL_CALLOW_OUTFIT",
+        "CHARLES_INCOMPETENT",
+        "MERCEDES_SOFT_TRAIL",
+        "THORNTON_CAMP_RESCUE",
+        "SOL_LEKS_ANGRY_ONE",
+        "JOE_SOUR",
+        "PIKE_MALINGERER"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "Spring blaze ignored; stagger into camp; dogs drop dead-like",
+        "Thornton whittles birch axe-handle",
+        "Whip then club on unmoving Buck; spark nearly out",
+        "Thornton animal cry; Hal hurled; knife rapped away",
+        "Traces cut two strokes",
+        "Party pulls out; ice section gives way; yawning hole",
+        "You poor devil; Buck licks hand"
+      ],
+      "source_paragraphs": [
+        "P222",
+        "P223",
+        "P224",
+        "P225",
+        "P226",
+        "P227",
+        "P228",
+        "P229",
+        "P230",
+        "P231",
+        "P232",
+        "P233",
+        "P234",
+        "P235",
+        "P236",
+        "P237"
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "heading": "EXT. WHITE RIVER MOUTH (THORNTON\u0027S CAMP) - DAY",
+      "purpose": "Convalescence with Skeet and Nig; first genuine passionate love for John Thornton; adoration and fear of loss.",
+      "location_key": "LOCATION_WHITE_RIVER_MOUTH",
+      "cast": [
+        "BUCK",
+        "JOHN_THORNTON",
+        "SKEET",
+        "NIG"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_THORNTON_LOVED",
+        "THORNTON_CAMP_RESCUE",
+        "SKEET_SETTER",
+        "NIG_FRIENDLY_BLACK"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Long spring days; strength returns",
+        "Skeet washes wounds like mother cat",
+        "Nig laughing eyes; no jealousy; ridiculous games",
+        "Head between hands; love-name shakes; God you can all but speak",
+        "Fierce teeth caress on hand",
+        "Adore at distance; gaze draws gaze",
+        "Night creep to tent flap listen breathing"
+      ],
+      "source_paragraphs": [
+        "P239",
+        "P240",
+        "P241",
+        "P242",
+        "P243",
+        "P244",
+        "P245"
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "heading": "EXT. WHITE RIVER CAMP / CIRCLE CITY BAR / FORTY-MILE CREEK RAPIDS - DAY",
+      "purpose": "Wild strain retained; Black Burton throat attack; triple swim rescue of Thornton in rapids; broken ribs.",
+      "location_key": "LOCATION_CIRCLE_CITY",
+      "cast": [
+        "BUCK",
+        "JOHN_THORNTON",
+        "HANS",
+        "PETE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_THORNTON_LOVED",
+        "THORNTON_CAMP_RESCUE",
+        "HANS_PARTNER",
+        "PETE_PARTNER"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "Steal from others never Thornton; kill or be killed",
+        "Circle City bar; Burton strikes; Buck roar to throat",
+        "Miners meeting discharges; reputation made",
+        "Forty-Mile poling-boat snub; boat flips; Thornton in wild water",
+        "Buck overhauls; tail grasp; Go Buck Go",
+        "Three rope launches; battering-ram strike; jagged bottom drag",
+        "Three broken ribs; camp till travel"
+      ],
+      "source_paragraphs": [
+        "P246",
+        "P247",
+        "P248",
+        "P249",
+        "P250",
+        "P251",
+        "P252",
+        "P253",
+        "P254",
+        "P255",
+        "P256",
+        "P257",
+        "P258",
+        "P259",
+        "P260",
+        "P261",
+        "P262",
+        "P263",
+        "P264",
+        "P265",
+        "P266"
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "heading": "EXT. ELDORADO SALOON, DAWSON - DAY",
+      "purpose": "Thousand-pound wager; As you love me; Buck breaks out and walks hundred yards; fortune for lost-mine journey.",
+      "location_key": "LOCATION_ELDORADO_SALOON",
+      "cast": [
+        "BUCK",
+        "JOHN_THORNTON",
+        "MATTHEWSON",
+        "HANS",
+        "PETE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_THORNTON_LOVED",
+        "THORNTON_CAMP_RESCUE",
+        "MATTHEWSON_BONANZA",
+        "HANS_PARTNER",
+        "PETE_PARTNER"
+      ],
+      "estimated_duration_seconds": 75,
+      "visual_beats": [
+        "Sixty-below saloon boasts; bologna gold-dust sack",
+        "O\u0027Brien lends thousand; three-to-one odds",
+        "Flour sled frozen; ten dogs unhitched; Buck silk mane",
+        "Kneel cheek on cheek whisper As you love me",
+        "Gee Haw break out crackling; Mush pistol command",
+        "Muscles knot; claws parallel grooves; steady hundred yards",
+        "Roar hats mittens; loving curses; refuse twelve hundred"
+      ],
+      "source_paragraphs": [
+        "P267",
+        "P268",
+        "P269",
+        "P270",
+        "P271",
+        "P272",
+        "P273",
+        "P274",
+        "P275",
+        "P276",
+        "P277",
+        "P278",
+        "P279",
+        "P280",
+        "P281",
+        "P282",
+        "P283",
+        "P284",
+        "P285",
+        "P286",
+        "P287",
+        "P288",
+        "P289",
+        "P290",
+        "P291",
+        "P292",
+        "P293",
+        "P294",
+        "P295",
+        "P296",
+        "P297",
+        "P298",
+        "P299",
+        "P300"
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "heading": "EXT. STEWART RIVER / EASTERN WILDERNESS - DAY",
+      "purpose": "East after lost mine; seasons of wandering; placer gold like butter; heaped moose-hide sacks.",
+      "location_key": "LOCATION_STEWART_EASTERN_WILDERNESS",
+      "cast": [
+        "BUCK",
+        "JOHN_THORNTON",
+        "HANS",
+        "PETE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_THORNTON_LOVED",
+        "THORNTON_CAMP_RESCUE",
+        "HANS_PARTNER",
+        "PETE_PARTNER"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Yukon to Stewart streamlet among backbone peaks",
+        "Salt rifle Indian fashion; straight meat",
+        "Summer blizzards naked mountains; gnats; glacier strawberries",
+        "Ancient blazed path nowhere; flint-lock lodge wreck",
+        "Shallow placer gold yellow butter; sacks piled like firewood"
+      ],
+      "source_paragraphs": [
+        "P302",
+        "P303",
+        "P304",
+        "P305",
+        "P306",
+        "P307",
+        "P308"
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "heading": "EXT. LOST CABIN COUNTRY / PLACER VALLEY - NIGHT",
+      "purpose": "Call sounds; first meeting and run with wild brother; love pulls Buck back to Thornton.",
+      "location_key": "LOCATION_LOST_CABIN_PLACER",
+      "cast": [
+        "BUCK",
+        "JOHN_THORNTON",
+        "WILD_BROTHER",
+        "HAIRY_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_THORNTON_LOVED",
+        "THORNTON_CAMP_RESCUE",
+        "WILD_BROTHER_WOLF",
+        "HAIRY_MAN_VISION"
+      ],
+      "estimated_duration_seconds": 60,
+      "visual_beats": [
+        "Idle fire musing; hairy-man visions frequent",
+        "Forest call lures; Thornton love draws back",
+        "Night howl; long lean timber wolf on haunches",
+        "Threat-friendly stalk; chase; timber-jam corner",
+        "Sniff noses; half-coy play; side-by-side lope over divide",
+        "Drink stop; remember Thornton; turn back; mournful howl fades",
+        "Frenzy affection tom-fool on Thornton; two days never leave"
+      ],
+      "source_paragraphs": [
+        "P309",
+        "P310",
+        "P311",
+        "P312",
+        "P313",
+        "P314",
+        "P315",
+        "P316",
+        "P317",
+        "P318",
+        "P319",
+        "P320"
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "heading": "EXT. DIVIDE AND FOREST - DAY",
+      "purpose": "Blood-longing killer prime; four-day moose pull-down; calamity scent; Nig and Hans arrow-dead; rage for Thornton.",
+      "location_key": "LOCATION_STEWART_EASTERN_WILDERNESS",
+      "cast": [
+        "BUCK",
+        "NIG",
+        "HANS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_THORNTON_LOVED",
+        "NIG_FRIENDLY_BLACK",
+        "HANS_PARTNER"
+      ],
+      "estimated_duration_seconds": 65,
+      "visual_beats": [
+        "Glorious coat gigantic wolf-like pride",
+        "Cut great bull from twenty moose; patience of wild",
+        "Four days no rest no drink; pull moose down",
+        "Sense calamity; fresh trail neck hair",
+        "Nig arrow dead; sled-dog death thrash",
+        "Hans feathered like porcupine; lodge wreckage",
+        "Overpowering rage; passion usurps cunning for love"
+      ],
+      "source_paragraphs": [
+        "P321",
+        "P322",
+        "P323",
+        "P324",
+        "P325",
+        "P326",
+        "P327",
+        "P328",
+        "P329",
+        "P330",
+        "P331",
+        "P332",
+        "P333",
+        "P334",
+        "P335",
+        "P336",
+        "P337",
+        "P338",
+        "P339"
+      ]
+    },
+    {
+      "scene_id": "S31",
+      "heading": "EXT. SPRUCE-BOUGH LODGE CAMP - DAY",
+      "purpose": "Yeehat massacre vengeance; find Thornton dead in pool; brood void and pride of killing man.",
+      "location_key": "LOCATION_SPRUCE_BOUGH_LODGE_CAMP",
+      "cast": [
+        "BUCK",
+        "YEEHATS",
+        "PETE",
+        "SKEET"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_THORNTON_LOVED",
+        "YEEHAT_HUNTERS",
+        "PETE_PARTNER",
+        "SKEET_SETTER"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Yeehats dance wreckage; Buck hurricane fury",
+        "Chief throat rip; second throat; mid-midst tear",
+        "Arrows hit each other; spear through hunter; panic Evil Spirit",
+        "Drag down fleeing like deer",
+        "Pete dead in blankets; struggle trace to pool",
+        "Skeet faithful head in water; no trace from pool",
+        "Brood void; pride killed noblest game; unafraid save weapons"
+      ],
+      "source_paragraphs": [
+        "P340",
+        "P341",
+        "P342"
+      ]
+    },
+    {
+      "scene_id": "S32",
+      "heading": "EXT. MOONLIT CLEARING AND WOLF COUNTRY - NIGHT",
+      "purpose": "Wolf pack arrives; Buck holds bay then howls and joins; runs with wild brother as last tie broken.",
+      "location_key": "LOCATION_MOONLIT_CLEARING_WOLF_COUNTRY",
+      "cast": [
+        "BUCK",
+        "WILD_BROTHER"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_GHOST_DOG",
+        "WILD_BROTHER_WOLF"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Full moon ghostly day; pack yelp chorus",
+        "Silvery flood into clearing; Buck statue center",
+        "Boldest neck break; three more streaming blood",
+        "Pell-mell pack; pivot snap gash; gravel bank angle",
+        "Half hour discomfit; wild brother nose touch",
+        "Old wolf moon howl; Buck howls; pack accepts",
+        "Leaders yelp; Buck runs side by side wild brother"
+      ],
+      "source_paragraphs": [
+        "P343",
+        "P344",
+        "P345",
+        "P346",
+        "P347"
+      ]
+    },
+    {
+      "scene_id": "S33",
+      "heading": "EXT. MOONLIT CLEARING AND WOLF COUNTRY / GOLD-STREAM VALLEY - NIGHT AND DAY",
+      "purpose": "Epilogue: Ghost Dog legend; summer mournful howl by rotted gold sacks; winter pack song of the younger world.",
+      "location_key": "LOCATION_MOONLIT_CLEARING_WOLF_COUNTRY",
+      "cast": [
+        "BUCK",
+        "YEEHATS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BUCK_GHOST_DOG",
+        "YEEHAT_HUNTERS"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Yeehats note brown muzzle white chest rift wolves",
+        "Ghost Dog steals camps robs traps slays dogs",
+        "Hunters throats slashed; greater wolf prints; forbidden valley",
+        "Summer lone glorious wolf by yellow stream from rotted sacks",
+        "Long mournful howl then departs",
+        "Winter head of pack leaping gigantic under moon or borealis",
+        "Great throat a-bellow song of the younger world"
+      ],
+      "source_paragraphs": [
+        "P349",
+        "P350",
+        "P351",
+        "P352"
+      ]
+    }
+  ]
+}

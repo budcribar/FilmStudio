@@ -1,0 +1,230 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "INT. THE OLD HOUSE - NIGHT",
+      "purpose": "Establish narrator\u0027s nervous insistence on sanity and acute hearing as he begins the confession",
+      "location_key": "LOCATION_OLD_HOUSE",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_POST_MURDER_HOST"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "cramped aged interior of worn wood and plaster",
+        "NARRATOR alone face taut eyes alert in rumpled day clothes",
+        "addresses unseen listener with forced calm",
+        "touches ear listening outward"
+      ],
+      "source_paragraphs": [
+        "P3"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Introduce the murder motive via the vulture eye while showing first stealth entry with dark lantern",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STEALTH",
+        "OLD_MAN_SLEEP"
+      ],
+      "estimated_duration_seconds": 85,
+      "visual_beats": [
+        "pitch-black room shutters fastened heavy bed",
+        "OLD MAN asleep in linen nightshirt",
+        "NARRATOR in dark clothes holds closed tin dark lantern",
+        "eases door open thrusts lantern then head with exaggerated caution"
+      ],
+      "source_paragraphs": [
+        "P4"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - DAY",
+      "purpose": "Show daytime kindness and dissimulation that conceals the nightly plot",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_DAY_KIND",
+        "OLD_MAN_SLEEP"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "morning light through ajar shutters",
+        "NARRATOR neat in waistcoat enters boldly smiling",
+        "OLD MAN sits up in heavy bed",
+        "NARRATOR clasps shoulder kindly after hearty inquiry"
+      ],
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Compress seven midnight visits proving cunning; eye always closed so work impossible",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STEALTH",
+        "OLD_MAN_SLEEP"
+      ],
+      "estimated_duration_seconds": 75,
+      "visual_beats": [
+        "montage of seven nights at latch",
+        "NARRATOR opens gap inserts closed lantern thrusts head slowly",
+        "single thin ray toward pillow",
+        "eye always closed then withdraws"
+      ],
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Eighth-night entry; triumph; thumb slip; old man wakes; hour of frozen stillness",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STEALTH",
+        "OLD_MAN_SLEEP"
+      ],
+      "estimated_duration_seconds": 100,
+      "visual_beats": [
+        "room black as pitch shutters fastened",
+        "NARRATOR hand on latch slower than watch minute hand chuckles",
+        "OLD MAN stirs; door pushed steadily; thumb slips on tin",
+        "OLD MAN sits up listening; NARRATOR frozen motionless full hour"
+      ],
+      "source_paragraphs": [
+        "P6",
+        "P7",
+        "P8"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Groan of terror; lantern crevice; ray on open vulture eye; heartbeat begins; murder and confirmation of death",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STEALTH",
+        "OLD_MAN_SLEEP"
+      ],
+      "estimated_duration_seconds": 140,
+      "visual_beats": [
+        "NARRATOR motionless in doorway gap",
+        "slight groan; private chuckle of pity",
+        "tiny crevice opens; spider-thread ray on pale blue filmed eye",
+        "NARRATOR holds ray steady as sound grows; yells throws lantern open leaps",
+        "drags OLD MAN down pulls heavy bed over him",
+        "smiles gaily; muffled beats cease; hand on chest confirms stone dead"
+      ],
+      "source_paragraphs": [
+        "P9",
+        "P10",
+        "P11",
+        "P12",
+        "P13"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Dismember corpse; hide parts under floorboards; tub catches blood; four o\u0027clock knock",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STEALTH"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "dim lantern; clinical dismemberment head arms legs",
+        "tub catches all; three planks lifted",
+        "parts deposited between scantlings; boards replaced flush no stain",
+        "bell strikes four; knocking heard from below"
+      ],
+      "source_paragraphs": [
+        "P14",
+        "P15",
+        "P16"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "INT. THE OLD HOUSE - STREET DOOR - NIGHT",
+      "purpose": "Police arrive; narrator greets with light heart and false explanation",
+      "location_key": "LOCATION_STREET_DOOR",
+      "cast": [
+        "NARRATOR",
+        "POLICE_OFFICERS"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_POST_MURDER_HOST",
+        "OFFICERS_DUTY"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "NARRATOR in rumpled day clothes opens heavy street door light of heart",
+        "three officers in dark frock coats caps removed enter suave",
+        "NARRATOR smiles welcomes; claims shriek was dream old man in country"
+      ],
+      "source_paragraphs": [
+        "P16",
+        "P17"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Officers sit above corpse; ringing becomes heartbeat; narrator\u0027s frenzy and final confession",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "POLICE_OFFICERS"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_POST_MURDER_HOST",
+        "OFFICERS_DUTY"
+      ],
+      "estimated_duration_seconds": 145,
+      "visual_beats": [
+        "NARRATOR shows treasures brings chairs sits directly on burial spot",
+        "officers satisfied chat pleasantly smile",
+        "NARRATOR grows pale rubs temple; ringing resolves to heartbeat",
+        "paces foams raves grates chair on boards",
+        "shrieks confession points at floorboards; officers\u0027 smiles vanish"
+      ],
+      "source_paragraphs": [
+        "P17",
+        "P18",
+        "P19",
+        "P20"
+      ]
+    }
+  ]
+}

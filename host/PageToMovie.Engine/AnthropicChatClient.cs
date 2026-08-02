@@ -27,20 +27,33 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     // past the old cap; 16K leaves real headroom without guessing per-model.
     public const int DefaultMaxTokens = 16_000;
 
+    /// <summary>
+    /// Resolves the <c>max_tokens</c> request field from the model catalog's confirmed
+    /// per-model ceiling (<see cref="SupportedModelEntry.MaxOutputTokens"/>), falling back to
+    /// <see cref="DefaultMaxTokens"/> when the catalog has no entry or hasn't confirmed a real
+    /// number for this model. Never guesses a per-model max — an unconfirmed catalog entry means
+    /// "use the safe default", not "make one up".
+    /// </summary>
+    private static int ResolveMaxTokens(string model) =>
+        SupportedModelCatalog.Find(model, ModelCapability.Chat)?.MaxOutputTokens ?? DefaultMaxTokens;
+
     private readonly HttpClient _http;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<AnthropicChatClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public AnthropicChatClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
-        ILogger<AnthropicChatClient> log)
+        ILogger<AnthropicChatClient> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _ = opts; // reserved — no Anthropic-specific options today
         _http = http;
         _telemetry = telemetry;
         _log = log;
+        _errorLogger = errorLogger;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
@@ -69,7 +82,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
-            ["max_tokens"] = DefaultMaxTokens,
+            ["max_tokens"] = ResolveMaxTokens(model),
             ["system"] = systemPrompt,
             ["messages"] = new object[]
             {
@@ -88,11 +101,13 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         {
             payload["temperature"] = temperature;
         }
-        return await SendAsync(
-            payload, model, "chat", "messages", mode,
-            systemPrompt, userPrompt,
-            (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
-            ct).ConfigureAwait(false);
+        return await SendWithTransientRetryAsync(
+            () => SendAsync(
+                payload, model, "chat", "messages", mode,
+                systemPrompt, userPrompt,
+                (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
+                ct),
+            model, mode, ct).ConfigureAwait(false);
     }
 
     private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -128,16 +143,54 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
-            ["max_tokens"] = DefaultMaxTokens,
+            ["max_tokens"] = ResolveMaxTokens(model),
             ["messages"] = new object[]
             {
                 new Dictionary<string, object?> { ["role"] = "user", ["content"] = content },
             },
         };
-        return await SendAsync(
-            payload, model, "vision", "messages", "clip_auto_review",
-            prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
-            prompt.Length, ct).ConfigureAwait(false);
+        return await SendWithTransientRetryAsync(
+            () => SendAsync(
+                payload, model, "vision", "messages", "clip_auto_review",
+                prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
+                prompt.Length, ct),
+            model, "clip_auto_review", ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Retries the whole <see cref="SendAsync"/> call (including its internal param-shape
+    /// self-heal recursion, untouched) on 429/5xx or a network/timeout failure. Logs each failed
+    /// attempt via <see cref="GenerationErrorLogger"/> before backing off.
+    /// </summary>
+    private async Task<string> SendWithTransientRetryAsync(
+        Func<Task<string>> call,
+        string model,
+        string? mode,
+        CancellationToken ct)
+    {
+        return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+            _ => call(),
+            isTransient: AiRetryPolicy.IsTransientChatFailure,
+            maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+            backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+            onRetry: async (attemptNum, ex) =>
+            {
+                if (_errorLogger is null) return;
+                var httpStatus = ex is ChatHttpStatusException hse2 ? hse2.StatusCode : (int?)null;
+                await _errorLogger.LogAsync(new GenerationErrorRecord
+                {
+                    Stage = "anthropic_chat_completion",
+                    Provider = "anthropic",
+                    Model = model,
+                    ErrorType = httpStatus is not null ? "http_error" : "exception",
+                    ErrorMessage = ex.Message,
+                    HttpStatus = httpStatus,
+                    Attempt = attemptNum,
+                    Resolved = false,
+                    RequestSummary = $"mode={mode}",
+                }, ct).ConfigureAwait(false);
+            },
+            ct: ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -235,7 +288,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
+                throw new ChatHttpStatusException((int)resp.StatusCode,
                     $"Anthropic {endpoint} HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 

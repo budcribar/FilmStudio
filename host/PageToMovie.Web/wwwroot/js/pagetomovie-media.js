@@ -278,6 +278,31 @@ window.PageToMovieMedia = {
     },
 
     /**
+     * Fetch a (typically blob:) URL and POST its bytes straight to a server upload endpoint via
+     * FormData — used for video-extend continuity uploads (see ClientMediaFolderService /
+     * trimTailAsync) so a locally-trimmed clip never has to round-trip through Blazor interop as
+     * a byte[] just to reach the server.
+     */
+    uploadUrlToServerAsync: async function (url, uploadUrl) {
+        try {
+            const res = await fetch(url, { credentials: "same-origin" });
+            if (!res.ok) return { success: false, error: "Fetch failed HTTP " + res.status };
+            const blob = await res.blob();
+            const form = new FormData();
+            form.append("video", blob, "upload.mp4");
+            const up = await fetch(uploadUrl, { method: "POST", body: form, credentials: "same-origin" });
+            if (!up.ok) {
+                let text = "";
+                try { text = await up.text(); } catch (_) { /* */ }
+                return { success: false, error: "Upload failed HTTP " + up.status + " " + text };
+            }
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+    /**
      * Save a generated asset through the browser's normal download mechanism. This remains a
      * fallback for cases where the File System Access folder is unavailable or a live job event
      * arrives after the page's media-folder listener was attached.

@@ -1,0 +1,173 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "score_intent": "Warm Edwardian Christmas chamber cue with soft celesta, muted strings, and gentle glockenspiel; opens bright and gift-like around 90 BPM with a brief tender swell on the hug, then thins as footsteps and chatter intrude so the final third feels lightly abandoned and unresolved rather than triumphant",
+      "dynamics_arc": "Rises through the stocking reveal and hug (clips 1-2), soft peak on the embrace (clip 2), then releases into busier thinner texture as the Rabbit is forgotten (clips 3-4).",
+      "peak_clip_number": 2,
+      "timing": "Sparse festive open 0-15s, warm swell 15-35s on hug, gradual thin-out 35-70s under arrivals",
+      "diegetic_sound": "Tissue paper rustle, distant cheerful voices, footsteps, parcels unwrapping, faint hearth crackle",
+      "silence_or_exclusions": "No full choir or loud brass; avoid comic slapstick hits; leave space under dialogue-free hug",
+      "alternatives": [
+        "solo piano with music-box ostinato",
+        "string quartet plus harp only"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "score_intent": "Quiet intimate nursery underscore with low woodwinds, soft piano, and sparse solo cello; slow 60-70 BPM contemplative tone that stays hushed through toy-room atmosphere then gently warms and deepens during the Skin Horse monologue on Real, ending on a held unresolved chord under the Rabbit\u0027s sigh",
+      "dynamics_arc": "Low bed under snubbing toys (clips 1-2), gradual emotional rise through the Real dialogue (clip 3), soft peak and release on the lasting-forever line and sigh (clip 4).",
+      "peak_clip_number": 3,
+      "timing": "Near-static sparse bed 0-40s, slow harmonic enrichment 40-110s through dialogue, long soft release 110-140s",
+      "diegetic_sound": "Clockwork whir, faint tin rattle of mechanical toys, soft fabric settle near fender, distant household creak",
+      "silence_or_exclusions": "No percussion drive; no magical sparkle yet; keep score under toy voices so dialogue stays clear",
+      "alternatives": [
+        "solo clarinet and piano",
+        "muted string trio without piano"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "score_intent": "Tender nocturnal lullaby texture with warm low strings, soft clarinet, and distant music-box figure at ~65 BPM; starts slightly hurried under Nana then settles into intimate breathing closeness for the bed tunnels and all-night clasp, with a slow bittersweet drift as fur wears in time-lapse",
+      "dynamics_arc": "Brief brisk edge on Nana\u0027s swoop (clip 2), settles and warms through hugs and tunnels (clip 3), gentle peak on all-night snuggle then soft bittersweet release on wearing time-lapse (clip 4).",
+      "peak_clip_number": 3,
+      "timing": "Practical night bustle 0-25s, intimate settle 25-70s, slow wearing coda 70-100s",
+      "diegetic_sound": "Cupboard door creak, bedclothes rustle, night-light hiss, soft child breathing, whispered fabric tunnels",
+      "silence_or_exclusions": "No scare stingers; no loud hits on ear-drag; leave air around breathing and whispers",
+      "alternatives": [
+        "solo cello and soft harp",
+        "celesta and muted strings only"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "score_intent": "Pastoral spring outdoor cue with light oboe, acoustic guitar or harp, and airy strings at easy 80-90 BPM; playful and sunlit through wheelbarrow and burrows, then cools and thins after the tea-call into dusk loneliness with a small anxious dip when Nana finds the dew-soaked Rabbit",
+      "dynamics_arc": "Bright playful rise through garden games (clips 1-2), drop into quieter dusk isolation (clip 3), mild tense peak on Nana\u0027s grumble and toy line (clip 4) then quick release.",
+      "peak_clip_number": 4,
+      "timing": "Sunlit play 0-50s, dusk thin-out 50-75s, short tense button 75-100s",
+      "diegetic_sound": "Birdsong, wheelbarrow wheel squeak, grass and earth, distant tea-call, evening insects, candle approach footsteps",
+      "silence_or_exclusions": "No heavy drama; keep score light so birds and wheel remain audible; avoid horror tones at dusk",
+      "alternatives": [
+        "flute and pizzicato strings",
+        "solo acoustic guitar with light pad"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "score_intent": "Intimate emotional swell for the REAL declaration: soft piano and rising strings from hushed 70 BPM into a clear warm crest when the Boy insists Bunny is REAL, then luminous held afterglow as the Rabbit\u0027s eyes gain wisdom and Nana notices next morning",
+      "dynamics_arc": "Quick build from Boy sitting up (clip 1) to peak on the REAL line (clip 2), sustained glow through knowing eyes (clip 3), gentle morning release (clip 4).",
+      "peak_clip_number": 2,
+      "timing": "Short setup 0-12s, crest 12-28s, afterglow 28-50s",
+      "diegetic_sound": "Bed creak, candle snuff, soft fabric of damp Rabbit, quiet room tone",
+      "silence_or_exclusions": "No comic sting on Nana; protect the Boy\u0027s line with brief score dip under dialogue then swell after",
+      "alternatives": [
+        "solo piano with string pad",
+        "choir aahs very soft under strings"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "score_intent": "Summer-evening wood underscore mixing natural ambient strings with curious light percussion and woodwinds at ~75 BPM; playful-teasing during wild-rabbit hops and mockery, sharp thin cut on rejection and flight, then lonely sparse held tones under the Rabbit\u0027s call and a resigned tender close as weeks of love-worn shabbiness pass",
+      "dynamics_arc": "Quiet nest open (clip 1), lively teasing rise through wild rabbits (clip 2), sharp peak and drop on mockery and flight (clip 3), lonely release into worn-but-loved coda (clip 4).",
+      "peak_clip_number": 3,
+      "timing": "Still bracken 0-30s, active encounter 30-100s, lonely aftermath and time-pass 100-160s",
+      "diegetic_sound": "Evening insects, soft wind in leaves, padded rabbit feet, bracken fronds, Boy footsteps, white-tail scatter, ants implied by stillness",
+      "silence_or_exclusions": "No cartoon boings; keep mockery musical not slapstick; leave space after they vanish for the call into quiet",
+      "alternatives": [
+        "solo English horn over string drones",
+        "light folk trio with soft frame drum"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "score_intent": "Fever-night sickroom score: low sustained strings, distant muted brass breath, and slow heartbeat-like pulse around 55-60 BPM; oppressive and close through burning sleep and visitors, barely moving under the hidden Rabbit, then a gradual clearing and warmer thinner texture as the fever turns and picture-books return",
+      "dynamics_arc": "Heavy oppressive bed through illness (clips 1-2), lowest tense hold while Rabbit stays hidden (clip 3), slow release and lightening as fever turns (clip 4).",
+      "peak_clip_number": 1,
+      "timing": "Dense fever open 0-35s, static hidden middle 35-65s, clearing recovery 65-90s",
+      "diegetic_sound": "Labored breathing, low adult murmurs, clock ticking, all-night light hum, bedclothes micro-movement",
+      "silence_or_exclusions": "No bright melodies until recovery; avoid jump scares; keep pulse subtle under breathing",
+      "alternatives": [
+        "solo low cello and room tone only",
+        "sparse piano clusters with string harmonics"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "score_intent": "Brief bright recovery transition: airy high strings and soft flute at gentle 80 BPM, sunny and open as windows and shawl appear, still slightly fragile and unresolved so it can lead into balcony talk without a full cadence",
+      "dynamics_arc": "Soft lift on open windows (clip 1), mild warm peak as Boy is carried in shawl (clip 2), quiet hold on Rabbit peeping in bedclothes (clip 3).",
+      "peak_clip_number": 2,
+      "timing": "Light open 0-12s, carry swell 12-25s, soft button 25-35s",
+      "diegetic_sound": "Window air, light breeze, soft footsteps carrying Boy, bedclothes settle, distant garden birds beginning",
+      "silence_or_exclusions": "No triumphant fanfare; keep short and transitional; leave headroom for next scene dialogue",
+      "alternatives": [
+        "solo flute and harp",
+        "high string harmonics only"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "score_intent": "Fragile recovery-day underscore with thin high strings and soft piano at ~70 BPM; opens airy and hopeful on the balcony then cools into clinical unease as disinfection and burning talk begin, tightening into a cold decisive hit under the doctor\u0027s burn order before a hollow held chord leaves the old Bunny condemned",
+      "dynamics_arc": "Light open on Boy looking out (clip 1), uneasy rise through seaside and burning talk (clip 2), sharper peak on Nana\u0027s question and doctor\u0027s burn order (clips 3-4), abrupt hollow release.",
+      "peak_clip_number": 4,
+      "timing": "Airy balcony 0-15s, cooling dialogue bed 15-45s, cold peak and hold 45-70s",
+      "diegetic_sound": "Light breeze, distant garden birds, muffled indoor voices, shawl fabric, soft room-to-balcony air",
+      "silence_or_exclusions": "No triumphant seaside fanfare; keep score under dialogue; avoid horror stingers\u2014cold clarity not jump scare",
+      "alternatives": [
+        "solo piano with sparse low cello",
+        "muted string quartet only"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "score_intent": "Somber practical outdoor cue with low woodwinds and dry strings at slow 60 BPM; resigned and procedural as the Rabbit is sacked and carried behind the fowl-house, thinning to near emptiness when the sack is left, then a brief distant lullaby fragment for the Boy with the new bunny that feels wrong and detached rather than comforting",
+      "dynamics_arc": "Heavy procedural bed through sack and carry (clips 1-2), lowest emptiness on abandoned sack (clip 3), faint ironic distant peak then fade on new bunny night (clip 4).",
+      "peak_clip_number": 3,
+      "timing": "Sack and carry 0-25s, abandoned quiet 25-40s, detached night button 40-50s",
+      "diegetic_sound": "Sack cloth rustle, footsteps on garden path, distant spade, hens, then quiet; later soft bedroom hush implied",
+      "silence_or_exclusions": "No comic gardener music; no warm lullaby payoff for the new bunny; leave real silence around the untied sack",
+      "alternatives": [
+        "solo bass clarinet and room tone",
+        "dry piano single notes only"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "score_intent": "Moonlit transformation score beginning as lonely sparse piano and cold night strings at 55 BPM under the shivering Rabbit and memories, deepening into a single real-tear cadence, then blooming into luminous harp, celesta, and rising warm strings as the emerald-gold flower opens and the Fairy appears, ending in a gentle flying lift toward the wood without full triumph yet",
+      "dynamics_arc": "Bleak sparse open on sack and memories (clips 1-2), emotional peak on the real tear (clip 2 into 3), magical bloom and sustained lift through Fairy kiss and flight (clips 3-4).",
+      "peak_clip_number": 3,
+      "timing": "Lonely night 0-40s, tear and flower bloom 40-85s, Fairy dialogue and flight 85-130s",
+      "diegetic_sound": "Night insects, faint cane rustle, soft shiver of threadbare cloth, tear drop implied silence, flower unfurling hush, light magical air on flight",
+      "silence_or_exclusions": "No choir until Fairy fully present; protect tear moment with near-silence before bloom; avoid cartoon sparkle\u2014luminous not cute",
+      "alternatives": [
+        "solo harp and wordless soprano",
+        "string orchestra with celesta only"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "score_intent": "Moonlit wood magic becoming joy: opens with silvery strings and soft woodwind dance figures at 80 BPM as wild rabbits circle the Fairy, holds tender and still for the final kiss and shy pause, then explodes into bright leaping full-ensemble energy with lively tempo climb toward 120 BPM as hind legs and living fur arrive, whirling joyful then settling into warm belonging as the Fairy vanishes",
+      "dynamics_arc": "Enchanted dance bed (clip 1), tender hold on set-down and kiss (clip 2), explosive peak on hind-leg discovery and first leaps (clip 3), joyous release into at-home close (clip 4).",
+      "peak_clip_number": 3,
+      "timing": "Glade dance 0-30s, tender delivery 30-55s, transformation leap climax 55-95s, belonging settle 95-120s",
+      "diegetic_sound": "Soft thumps of rabbit feet, night breeze, bracken silver fronds, grass brush of new whiskers, joyful turf thumps on leaps",
+      "silence_or_exclusions": "Brief near-silence on the nose-tickle scratch before the leap hit; no dark threat tones; keep Fairy exit gentle not tragic",
+      "alternatives": [
+        "folk fiddle and bodhran with strings",
+        "full children\u0027s orchestra without brass blasts"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "score_intent": "Gentle spring coda with pastoral oboe, warm strings, and soft piano at easy 75 BPM; sunlit and peaceful through Boy at play, then quiets into intimate recognition shimmer when the spotted rabbit peeps, holding a bittersweet unresolved tenderness on the Boy\u0027s wondering line before a soft fade as both rabbits slip back into bracken\u2014no final fanfare, only quiet closure",
+      "dynamics_arc": "Open warm play (clip 1), curious hush on peeping rabbits (clip 2), soft emotional peak on familiar face and Boy\u0027s wonder (clip 3), gentle release into bracken exit (clip 4).",
+      "peak_clip_number": 3,
+      "timing": "Spring play 0-20s, peep and recognition 20-55s, soft exit fade 55-75s",
+      "diegetic_sound": "Birdsong, soft undergrowth rustle, bracken fronds, light child footsteps, quiet breath of wonder",
+      "silence_or_exclusions": "No triumphant reunion swell; Boy must not sound certain\u2014keep score questioning and soft; leave final seconds nearly bare",
+      "alternatives": [
+        "solo piano theme reprise",
+        "string quartet with distant flute"
+      ]
+    }
+  ]
+}

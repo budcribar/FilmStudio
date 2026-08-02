@@ -1,0 +1,697 @@
+{
+  "cast_seeds": {
+    "characters": [
+      {
+        "key": "VELVETEEN_RABBIT",
+        "display_name": "Velveteen Rabbit",
+        "age_link": null,
+        "identity_anchors": "Small stuffed rabbit toy, fat and bunchy body; spotted brown-and-white velveteen coat; real thread whiskers; ears lined with pink sateen; boot-button eyes; back made all in one piece like a pincushion with no separate hind legs while a toy",
+        "source_evidence": "P18 fat and bunchy, spotted brown and white coat, real thread whiskers, ears lined with pink sateen; P36 boot-button eyes; P56 back made all in one piece like a pincushion, no hind legs; P37 fur getting shabbier, tail unsewn, pink rubbed off nose; P72 whiskers loved off, pink ear lining turned grey, brown spots faded, loses shape; P100 after Fairy: brown fur soft and shiny, hind legs, ears twitch by themselves, long whiskers",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "soft, shy, wondering child\u0027s toy voice that gains quiet confidence after becoming Real",
+        "wardrobe_variants": [
+          {
+            "key": "RABBIT_NEW_CHRISTMAS",
+            "description": "Brand-new splendid condition: plump firm stuffing, bright spotted brown-and-white velveteen pile fully intact, crisp pink sateen ear linings, neat thread whiskers, polished boot-button eyes, optional sprig of holly between paws",
+            "source_facts": [
+              "fat and bunchy as a rabbit should be",
+              "coat spotted brown and white",
+              "real thread whiskers",
+              "ears lined with pink sateen",
+              "sat wedged in stocking with sprig of holly between his paws",
+              "effect was charming"
+            ],
+            "creative_direction": "Rich Christmas-morning sheen on fabric; slight new-toy stiffness in pose; holly sprig only for stocking reveal",
+            "beats": [
+              "B1"
+            ]
+          },
+          {
+            "key": "RABBIT_CUPBOARD_DAYS",
+            "description": "Still mostly new but slightly dusty from cupboard and floor living; coat still full; whiskers and pink sateen intact; shy posture among superior toys",
+            "source_facts": [
+              "lived in the toy cupboard or on the nursery floor",
+              "naturally shy",
+              "only made of velveteen",
+              "made to feel insignificant and commonplace"
+            ],
+            "creative_direction": "Subtle dust on seams; slightly flattened from being sat upon; no major wear yet",
+            "beats": [
+              "B2",
+              "B3"
+            ]
+          },
+          {
+            "key": "RABBIT_BOYS_BED_COMPANION",
+            "description": "Beginning wear from tight hugs and bed use: coat starting to flatten and lose pile in places, pink nose rubbing thin from kisses, tail stitching loosening; still recognizably the same spotted rabbit",
+            "source_facts": [
+              "hugged very tight",
+              "rolled over on him",
+              "pushed under the pillow",
+              "beautiful velveteen fur getting shabbier and shabbier",
+              "tail becoming unsewn",
+              "all the pink rubbed off his nose where the Boy had kissed him"
+            ],
+            "creative_direction": "Soft bed-warmed look; faint crease marks from arms; nose dulled but still pinkish at first",
+            "beats": [
+              "B4",
+              "B5",
+              "B6"
+            ]
+          },
+          {
+            "key": "RABBIT_SUMMER_SHABBY",
+            "description": "Noticeably loved-worn: fur thinner and earth-stained from garden burrows and dew, spots beginning to fade, ear linings dulling, shape still rabbit-like but softer and looser",
+            "source_facts": [
+              "wet through with the dew and quite earthy from diving into the burrows",
+              "whiskers loved off",
+              "pink lining to his ears turned grey",
+              "brown spots faded",
+              "scarcely looked like a rabbit any more except to the Boy"
+            ],
+            "creative_direction": "Garden soil smudges on paws and belly; dewy dampness for left-out night; still held with pride by Boy",
+            "beats": [
+              "B6",
+              "B7",
+              "B8"
+            ]
+          },
+          {
+            "key": "RABBIT_FEVER_AND_SACK",
+            "description": "Extremely old and threadbare: coat thin and almost bald in hugged places, shapeless, whiskers gone, nose bare and shabby velvet, eyes dull; later cold and shivering in open sack among rubbish",
+            "source_facts": [
+              "very old and shabby",
+              "coat had worn so thin and threadbare from hugging that it was no longer any protection",
+              "little shabby velvet nose",
+              "mass of scarlet fever germs",
+              "put into a sack with the old picture-books and a lot of rubbish"
+            ],
+            "creative_direction": "Ashen dusty look under bedclothes then outdoor night chill; sack fabric framing head when he wriggles free; single real tear on nose",
+            "beats": [
+              "B9",
+              "B10",
+              "B11",
+              "B12"
+            ]
+          },
+          {
+            "key": "RABBIT_REAL_LIVING",
+            "description": "Fully living wild rabbit: soft shiny brown fur all over, working hind legs and twitching ears, long whiskers that brush the grass; faint ghost of former spotted markings still visible under the fur; round black eyes and soft nose carrying a familiar look",
+            "source_facts": [
+              "instead of dingy velveteen he had brown fur, soft and shiny",
+              "actually had hind legs",
+              "ears twitched by themselves",
+              "whiskers were so long that they brushed the grass",
+              "one of them was brown all over, but the other had strange markings under his fur, as though long ago he had been spotted",
+              "about his little soft nose and his round black eyes there was something familiar"
+            ],
+            "creative_direction": "Natural rabbit musculature and movement; subtle residual spot patterning only visible in certain light for the reunion; joyful springing gait",
+            "beats": [
+              "B13",
+              "B14"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "THE_BOY",
+        "display_name": "The Boy",
+        "age_link": null,
+        "identity_anchors": "Young child, kind-hearted little boy who talks to his toys, makes tunnels and burrows for the Rabbit, and fiercely defends that Bunny is Real; later flushed and feverish with scarlet fever then recovering and excited for the seaside",
+        "source_evidence": "P18 the Boy\u0027s stocking; P36 kind whispered games and tunnels like real rabbit burrows; P38 kind-hearted little boy; P42 You mustn\u0027t say that. He isn\u0027t a toy. He\u0027s REAL!; P73 face grew very flushed, talked in his sleep, little body so hot; P75 able to sit up and look at picture-books; P84 too excited about seaside to care much about new bunny; P103 playing in the wood in Spring",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "warm earnest child\u0027s voice, protective and imaginative, weaker and murmuring during fever",
+        "wardrobe_variants": [
+          {
+            "key": "BOY_CHRISTMAS_MORNING",
+            "description": "Period children\u0027s nightclothes or simple Christmas morning attire suitable for stocking opening; barefoot or soft slippers in nursery",
+            "source_facts": [
+              "Christmas morning",
+              "Boy\u0027s stocking",
+              "Aunts and Uncles came to dinner"
+            ],
+            "creative_direction": "Early-20th-century English nursery Christmas: soft flannel or cotton nightshirt/pyjamas, possible dressing gown; rosy healthy cheeks",
+            "beats": [
+              "B1"
+            ]
+          },
+          {
+            "key": "BOY_NURSERY_EVERYDAY",
+            "description": "Simple day clothes for nursery and indoor play; later nightclothes again for bedtime when Nana gives him the Rabbit",
+            "source_facts": [
+              "going to bed",
+              "couldn\u0027t find the china dog that always slept with him",
+              "Nana... put him into the Boy\u0027s arms"
+            ],
+            "creative_direction": "Edwardian/1920s child\u0027s smock, shorts or simple dress-play clothes by day; plain nightshirt for bed scenes",
+            "beats": [
+              "B4",
+              "B5"
+            ]
+          },
+          {
+            "key": "BOY_GARDEN_AND_WOOD",
+            "description": "Outdoor play clothes suitable for wheelbarrow rides, picnics, flower-picking and brigands among trees; may be lightly grass-stained",
+            "source_facts": [
+              "long days in the garden",
+              "rides in the wheelbarrow",
+              "picnics on the grass",
+              "go there after tea to play",
+              "pick flowers, or play at brigands among the trees"
+            ],
+            "creative_direction": "Light shirt, shorts or knickerbockers, sturdy shoes or barefoot on lawn; sun-touched skin; possible sunhat left aside",
+            "beats": [
+              "B6",
+              "B7",
+              "B8"
+            ]
+          },
+          {
+            "key": "BOY_ILLNESS",
+            "description": "Flushed feverish child in bedclothes; later wrapped in a shawl on the balcony during recovery",
+            "source_facts": [
+              "face grew very flushed",
+              "talked in his sleep",
+              "little body was so hot that it burned the Rabbit",
+              "carried the Boy out on to the balcony, wrapped in a shawl",
+              "able to sit up in bed and look at picture-books"
+            ],
+            "creative_direction": "Pale then high-color fever flush; damp hair; plain white or pale nightshirt; shawl for balcony; subdued weak movements",
+            "beats": [
+              "B9",
+              "B10"
+            ]
+          },
+          {
+            "key": "BOY_SPRING_REUNION",
+            "description": "Healthy outdoor play clothes again the following Spring in the wood",
+            "source_facts": [
+              "in the Spring, when the days grew warm and sunny, the Boy went out to play in the wood behind the house"
+            ],
+            "creative_direction": "Same period children\u0027s outdoor wear as garden days; healthy color restored; contemplative expression when noticing the marked rabbit",
+            "beats": [
+              "B14"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "SKIN_HORSE",
+        "display_name": "Skin Horse",
+        "age_link": null,
+        "identity_anchors": "Very old stuffed toy horse; brown coat bald in patches showing seams underneath; most tail hairs pulled out; wise gentle expression; has already become Real long ago",
+        "source_evidence": "P21 the only person who was kind to him at all was the Skin Horse; P22 so old that his brown coat was bald in patches and showed the seams underneath, and most of the hairs in his tail had been pulled out to string bead necklaces; he was wise; P28 generally by the time you are Real most of your hair has been loved off... once you are Real you can\u0027t be ugly; P31 The Boy\u0027s Uncle made me Real... once you are Real you can\u0027t become unreal again",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "low, calm, kindly old voice full of quiet certainty and patience",
+        "wardrobe_variants": [
+          {
+            "key": "SKIN_HORSE_NURSERY",
+            "description": "Threadbare brown skin-horse toy with bald patches, visible seams, sparse remaining tail hairs, soft worn leather or hide texture, gentle knowing eyes",
+            "source_facts": [
+              "brown coat was bald in patches and showed the seams underneath",
+              "most of the hairs in his tail had been pulled out to string bead necklaces",
+              "lived longer in the nursery than any of the others",
+              "wise and experienced"
+            ],
+            "creative_direction": "Warm aged leather/hide tones; no modern gloss; slight sag of long use; remains in this state throughout (already Real and unchanging)",
+            "beats": [
+              "B2",
+              "B3"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "NANA",
+        "display_name": "Nana",
+        "age_link": null,
+        "identity_anchors": "Adult nursemaid who rules the nursery, tidies toys with sudden swoops, and is practical rather than sentimental about playthings",
+        "source_evidence": "P33 a person called Nana who ruled the nursery; sometimes... went swooping about like a great wind and hustled them away in cupboards; she called this tidying up; P34 Nana was in a hurry... made a swoop; P35 Here, she said, take your old Bunny!; P38 Nana had to come and look for him with the candle; P40 Fancy all that fuss for a toy!; P44 even Nana noticed... I declare if that old Bunny hasn\u0027t got quite a knowing expression!; P80 How about his old Bunny?",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "brisk practical adult woman\u0027s voice, occasionally grumbling, not unkind but no-nonsense",
+        "wardrobe_variants": [
+          {
+            "key": "NANA_NURSEMAID",
+            "description": "Traditional early-20th-century nursemaid uniform: plain dark or grey dress, white apron, neat collar, practical hair; apron corner used to rub dew off Rabbit",
+            "source_facts": [
+              "ruled the nursery",
+              "tidying up",
+              "rubbed him off with a corner of her apron",
+              "came and look for him with the candle",
+              "How about his old Bunny?"
+            ],
+            "creative_direction": "Starched apron, sensible shoes, hair pinned up; candle in hand for night garden search; expression shifting from hurried to mildly exasperated to briefly surprised at Rabbit\u0027s look",
+            "beats": [
+              "B4",
+              "B6",
+              "B10"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "NURSERY_MAGIC_FAIRY",
+        "display_name": "Nursery Magic Fairy",
+        "age_link": null,
+        "identity_anchors": "Loveliest fairy; dress of pearl and dew-drops; flowers round her neck and in her hair; face like the most perfect flower; appears from a mysterious golden-cup blossom; can fly carrying the Rabbit",
+        "source_evidence": "P86 mysterious flower... slender green leaves the colour of emeralds, and in the centre of the leaves a blossom like a golden cup... out of it there stepped a fairy; P87 quite the loveliest fairy in the whole world. Her dress was of pearl and dew-drops, and there were flowers round her neck and in her hair, and her face was like the most perfect flower of all; P90 I am the nursery magic Fairy... I take care of all the playthings that the children have loved... turn them into Real; P94 flew with him into the wood",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "clear, gentle, luminous voice of quiet authority and kindness",
+        "wardrobe_variants": [
+          {
+            "key": "FAIRY_APPARITION",
+            "description": "Iridescent dress appearing made of pearl and dew-drops; living flowers at neck and in hair; barefoot or light ethereal footwear; soft glow; holds and kisses the shabby Rabbit then carries him in flight",
+            "source_facts": [
+              "dress was of pearl and dew-drops",
+              "flowers round her neck and in her hair",
+              "face was like the most perfect flower of all",
+              "gathered him up in her arms and kissed him on his velveteen nose",
+              "held the little Rabbit close in her arms and flew with him",
+              "kissed the little Rabbit again and put him down on the grass"
+            ],
+            "creative_direction": "Moonlit pearlescent fabrics with dew sparkle; no harsh glitter; warm compassionate expression; withheld from all beats before B12",
+            "beats": [
+              "B12",
+              "B13"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "WILD_RABBITS",
+        "display_name": "Wild rabbits",
+        "age_link": null,
+        "identity_anchors": "Living wild rabbits, fully furry with no visible seams; bodies change shape when they move (long and thin then fat and bunchy); soft padding feet; twitching noses; long whiskers; able to hop on hind legs and dance; sharp eyes and keen sense of smell",
+        "source_evidence": "P47 two strange beings... rabbits like himself, but quite furry and brand-new... seams didn\u0027t show at all, and they changed shape in a queer way when they moved; one minute they were long and thin and the next minute fat and bunchy... feet padded softly... twitching their noses; P52 gave a big hop sideways and stood on his hind legs; P59 He hasn\u0027t got any hind legs!; P64 long whiskers brushed the Velveteen Rabbit\u0027s ear... wrinkled his nose suddenly... He doesn\u0027t smell right!; P95 the wild rabbits danced with their shadows on the velvet grass; P96 teach him all he needs to know in Rabbit-land",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "quick, bright, slightly teasing natural rabbit voices; later welcoming",
+        "wardrobe_variants": [
+          {
+            "key": "WILD_RABBITS_NATURAL",
+            "description": "Natural living brown and agouti wild rabbits with full soft fur, expressive twitching noses, powerful hind legs, white flash of tails when fleeing; no clothing or toy seams",
+            "source_facts": [
+              "quite furry and brand-new",
+              "seams didn\u0027t show at all",
+              "changed shape in a queer way when they moved",
+              "feet padded softly on the ground",
+              "twitching their noses",
+              "hop on hind legs",
+              "flash of white tails",
+              "danced with their shadows on the velvet grass"
+            ],
+            "creative_direction": "Photoreal wild European rabbits; fluid real anatomy; curious then mocking then accepting attitudes across beats; at least two distinct individuals plus later companions in the glade",
+            "beats": [
+              "B7",
+              "B13",
+              "B14"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "DOCTOR",
+        "display_name": "Doctor",
+        "age_link": null,
+        "identity_anchors": "Adult physician who attends the Boy during scarlet fever and orders disinfection and burning of infected toys",
+        "source_evidence": "P74 Strange people came and went in the nursery; P77 the doctor\u0027s orders... room was to be disinfected, and all the books and toys that the Boy had played with in bed must be burnt; P81 That? said the doctor. Why, it\u0027s a mass of scarlet fever germs!\u2014Burn it at once. What? Nonsense! Get him a new one. He mustn\u0027t have that any more!",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "brisk authoritative professional adult male voice",
+        "wardrobe_variants": [
+          {
+            "key": "DOCTOR_ATTENDING",
+            "description": "Early-20th-century physician attire: dark suit or frock coat, possibly waistcoat, stiff collar; may carry medical bag; decisive manner at bedside and when ordering the Bunny burned",
+            "source_facts": [
+              "doctor\u0027s orders",
+              "room was to be disinfected",
+              "Burn it at once",
+              "Get him a new one"
+            ],
+            "creative_direction": "Period medical professional look without modern scrubs; calm clinical detachment toward the toy; brief presence only",
+            "beats": [
+              "B9",
+              "B10"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "location_bible": {
+    "locations": [
+      {
+        "key": "LOCATION_NURSERY",
+        "canonical_name": "nursery",
+        "source_evidence": "P21 toy cupboard or on the nursery floor; P23 lying side by side near the nursery fender, before Nana came to tidy the room; P33 Nana who ruled the nursery; P36 night-light burning on the mantelpiece; P74 strange people came and went in the nursery, and a light burned all night",
+        "layout_anchors": [
+          "toy cupboard with door that can stand open",
+          "nursery floor open play space",
+          "fender by the hearth",
+          "mantelpiece for night-light",
+          "Boy\u0027s bed within or adjoining the room",
+          "space for mechanical toys, model boat, wooden lion Timothy, china dog"
+        ],
+        "lighting_states": [
+          "daylight through nursery windows",
+          "firelight/fender glow for Skin Horse talk",
+          "night-light on mantelpiece for whispered bed games",
+          "all-night sickroom lamp during fever",
+          "bright morning light after recovery"
+        ],
+        "persistent_props": [
+          "assorted toys including mechanical toys, model boat, Timothy the jointed wooden lion, china dog",
+          "night-light",
+          "bedclothes and pillows",
+          "picture-books"
+        ],
+        "image_brief": "Warm early-20th-century English children\u0027s nursery: wooden floors, hearth with fender, toy cupboard, mantel with night-light, lived-in but orderly until Nana\u0027s swoops; intimate scale for toy-level and child-level framing",
+        "beats": [
+          "B1",
+          "B2",
+          "B3",
+          "B4",
+          "B5",
+          "B9",
+          "B10"
+        ]
+      },
+      {
+        "key": "LOCATION_TOY_CUPBOARD",
+        "canonical_name": "toy cupboard",
+        "source_evidence": "P21 lived in the toy cupboard or on the nursery floor; P34 seeing that the toy cupboard door stood open, she made a swoop; P35 dragged the Rabbit out by one ear",
+        "layout_anchors": [
+          "upright cupboard or closet with door that can stand ajar",
+          "shelves or floor space crowded with toys of varying status",
+          "darkish interior when closed"
+        ],
+        "lighting_states": [
+          "dim interior shadow when door mostly shut",
+          "spill of nursery light when door open for Nana\u0027s swoop"
+        ],
+        "persistent_props": [
+          "mechanical toys",
+          "model boat",
+          "other expensive toys that snub the Rabbit",
+          "Skin Horse nearby in nursery rather than shut away"
+        ],
+        "image_brief": "Slightly shadowy wooden toy cupboard interior, toys jumbled or ranked by status; door becomes important when Nana yanks Rabbit out by one ear",
+        "beats": [
+          "B2",
+          "B4"
+        ]
+      },
+      {
+        "key": "LOCATION_BOYS_STOCKING",
+        "canonical_name": "Boy\u0027s stocking",
+        "source_evidence": "P18 on Christmas morning, when he sat wedged in the top of the Boy\u0027s stocking, with a sprig of holly between his paws; P19 other things in the stocking, nuts and oranges and a toy engine, and chocolate almonds and a clockwork mouse",
+        "layout_anchors": [
+          "hanging Christmas stocking large enough to wedge a fat stuffed rabbit at the top",
+          "nearby hearth or bedpost implied",
+          "scatter of other stocking gifts"
+        ],
+        "lighting_states": [
+          "bright Christmas morning light",
+          "festive indoor glow"
+        ],
+        "persistent_props": [
+          "sprig of holly",
+          "nuts",
+          "oranges",
+          "toy engine",
+          "chocolate almonds",
+          "clockwork mouse",
+          "tissue paper and parcels when aunts and uncles arrive"
+        ],
+        "image_brief": "Close festive framing on a plump Christmas stocking with the splendid new spotted rabbit wedged at the top beside holly; surrounding small gifts establish he is the best of them",
+        "beats": [
+          "B1"
+        ]
+      },
+      {
+        "key": "LOCATION_BOYS_BED",
+        "canonical_name": "Boy\u0027s bed",
+        "source_evidence": "P36 That night, and for many nights after, the Velveteen Rabbit slept in the Boy\u0027s bed... hugged him very tight... rolled over on him... pushed him so far under the pillow... tunnels for him under the bedclothes... snuggle down close under his little warm chin... Boy\u0027s hands clasped close round him all night long; P74 lay there, hidden from sight under the bedclothes; P76 little Rabbit lay tangled up among the bedclothes; P77 just his head peeping out",
+        "layout_anchors": [
+          "child-sized bed with pillows and layered bedclothes",
+          "space for tunnels under covers",
+          "chin and arm positions for snuggling",
+          "later sickbed with people coming and going"
+        ],
+        "lighting_states": [
+          "night-light glow from mantel",
+          "dark under-pillow smother",
+          "all-night fever lamp",
+          "bright morning after fever turns",
+          "open-window sunny recovery light"
+        ],
+        "persistent_props": [
+          "pillows",
+          "bedclothes forming tunnels and burrows",
+          "china dog (missing the first night)",
+          "later picture-books",
+          "new white plush bunny after disposal"
+        ],
+        "image_brief": "Intimate child\u0027s bed that becomes the Rabbit\u0027s world: warm under-chin nest, whispered-game tunnels, then feverish hidden refuge under covers; scale favors toy POV and close child-toy contact",
+        "beats": [
+          "B4",
+          "B5",
+          "B9",
+          "B10"
+        ]
+      },
+      {
+        "key": "LOCATION_GARDEN",
+        "canonical_name": "garden",
+        "source_evidence": "P38 long days in the garden, for wherever the Boy went the Rabbit went too. He had rides in the wheelbarrow, and picnics on the grass, and lovely fairy huts built for him under the raspberry canes behind the flower border; P85 thicket of raspberry canes... fairy huts in the flower-bed",
+        "layout_anchors": [
+          "open grass for picnics",
+          "wheelbarrow path",
+          "flower border",
+          "raspberry canes thicket behind flower border",
+          "lawn area continuous with garden",
+          "house nearby so Nana can search with candle"
+        ],
+        "lighting_states": [
+          "long spring daylight",
+          "dusk and after-dusk dew",
+          "candlelight search after dark",
+          "bright sunny recovery morning elsewhere but garden remembered"
+        ],
+        "persistent_props": [
+          "wheelbarrow",
+          "picnic things",
+          "fairy huts of leaves/sticks under raspberry canes",
+          "flower-bed burrows dug by Boy",
+          "dew on grass"
+        ],
+        "image_brief": "Lush English garden with lawn, flower border, and tall raspberry canes; playful child scale with wheelbarrow and makeshift fairy huts; transitions from bright play to dewy dusk when Rabbit is forgotten outside",
+        "beats": [
+          "B6",
+          "B11"
+        ]
+      },
+      {
+        "key": "LOCATION_LAWN",
+        "canonical_name": "lawn",
+        "source_evidence": "P38 the Rabbit was left out on the lawn until long after dusk",
+        "layout_anchors": [
+          "open grass expanse adjoining garden and house",
+          "visible from nursery so absence is noticed at bedtime"
+        ],
+        "lighting_states": [
+          "afternoon sun",
+          "long after dusk with dew falling",
+          "candle approach of Nana"
+        ],
+        "persistent_props": [
+          "dew",
+          "grass"
+        ],
+        "image_brief": "Open dewy lawn at dusk with small abandoned stuffed rabbit waiting; house lights or candle approaching",
+        "beats": [
+          "B6"
+        ]
+      },
+      {
+        "key": "LOCATION_FLOWER_BED",
+        "canonical_name": "flower bed",
+        "source_evidence": "P38 diving into the burrows the Boy had made for him in the flower bed; P85 the fairy huts in the flower-bed",
+        "layout_anchors": [
+          "tilled or planted bed beside border",
+          "child-dug burrows sized for stuffed rabbit",
+          "near raspberry canes"
+        ],
+        "lighting_states": [
+          "bright spring day",
+          "memory soft-focus in Rabbit\u0027s sack recollection"
+        ],
+        "persistent_props": [
+          "loose earth",
+          "flowers",
+          "burrow holes",
+          "fairy hut materials"
+        ],
+        "image_brief": "Close garden flower bed with playful child-made burrows and tiny fairy huts; earthy textures that stain the Rabbit",
+        "beats": [
+          "B6",
+          "B11"
+        ]
+      },
+      {
+        "key": "LOCATION_RASPBERRY_CANES",
+        "canonical_name": "raspberry canes",
+        "source_evidence": "P38 lovely fairy huts built for him under the raspberry canes behind the flower border; P75 play splendid games in the raspberry thicket like they used to; P85 thicket of raspberry canes, growing tall and close like a tropical jungle, in whose shadow he had played with the Boy on bygone mornings",
+        "layout_anchors": [
+          "tall close-growing cane thicket behind flower border",
+          "shaded tunnels and hollows for fairy huts and play",
+          "visible from end of garden near fowl-house"
+        ],
+        "lighting_states": [
+          "dappled spring/summer daylight",
+          "shadowy jungle-like shade",
+          "memory light during sack night"
+        ],
+        "persistent_props": [
+          "raspberry canes and leaves",
+          "fairy huts",
+          "soft ground beneath"
+        ],
+        "image_brief": "Dense tall raspberry thicket like a child\u0027s jungle; secret shaded play space with fairy huts; later a poignant remembered silhouette from the sack",
+        "beats": [
+          "B6",
+          "B9",
+          "B11"
+        ]
+      },
+      {
+        "key": "LOCATION_WOOD",
+        "canonical_name": "wood",
+        "source_evidence": "P46 Near the house where they lived there was a wood, and in the long June evenings the Boy liked to go there after tea to play; P94 flew with him into the wood; P95 All the forest was beautiful, and the fronds of the bracken shone like frosted silver. In the open glade between the tree-trunks the wild rabbits danced; P103 the Boy went out to play in the wood behind the house",
+        "layout_anchors": [
+          "wood behind/near the house",
+          "open glade between tree-trunks",
+          "bracken understory",
+          "paths for Boy to wander picking flowers or playing brigands",
+          "place Fairy sets Rabbit down among wild rabbits"
+        ],
+        "lighting_states": [
+          "long June evening light",
+          "moon risen, bracken like frosted silver",
+          "warm sunny following Spring day"
+        ],
+        "persistent_props": [
+          "tree trunks",
+          "bracken fronds",
+          "velvet grass in glade",
+          "wild rabbits and their shadows"
+        ],
+        "image_brief": "English woodland with open grassy glade and silvered bracken; magical moonlit transformation space and later ordinary sunny Spring play space for the reunion glimpse",
+        "beats": [
+          "B7",
+          "B12",
+          "B13",
+          "B14"
+        ]
+      },
+      {
+        "key": "LOCATION_BRACKEN",
+        "canonical_name": "bracken",
+        "source_evidence": "P46 made the Rabbit a little nest somewhere among the bracken, where he would be quite cosy... lying there alone, watching the ants that ran to and fro between his velvet paws in the grass... two strange beings creep out of the tall bracken near him; P69 the bracken swayed gently where the two strangers had passed; P95 fronds of the bracken shone like frosted silver; P103 two rabbits crept out from the bracken and peeped at him",
+        "layout_anchors": [
+          "tall bracken stands forming nests and cover",
+          "grass between fronds where ants run",
+          "edges from which wild rabbits emerge and into which they vanish",
+          "continuous with wood glade"
+        ],
+        "lighting_states": [
+          "summer evening under-canopy light",
+          "moonlit frosted-silver fronds",
+          "bright Spring daylight for peeping rabbits"
+        ],
+        "persistent_props": [
+          "bracken fronds",
+          "ants",
+          "grass",
+          "little nest shaped by Boy"
+        ],
+        "image_brief": "Tall ferny bracken at toy and rabbit eye-level; cosy nest hollow; place of first encounter, rejection, later acceptance, and final peeping reunion",
+        "beats": [
+          "B7",
+          "B13",
+          "B14"
+        ]
+      },
+      {
+        "key": "LOCATION_BALCONY",
+        "canonical_name": "balcony",
+        "source_evidence": "P76 They had carried the Boy out on to the balcony, wrapped in a shawl, and the little Rabbit lay tangled up among the bedclothes, thinking... windows stood wide open",
+        "layout_anchors": [
+          "balcony outside nursery or sickroom windows",
+          "space for Boy in shawl to sit",
+          "open windows connecting to room where Rabbit remains in bedclothes"
+        ],
+        "lighting_states": [
+          "bright sunny morning after fever"
+        ],
+        "persistent_props": [
+          "shawl",
+          "open windows",
+          "view implying outdoors and coming journey"
+        ],
+        "image_brief": "Sunlit recovery balcony with convalescent Boy wrapped in shawl; open windows back to the bed where the doomed Rabbit still lies listening",
+        "beats": [
+          "B10"
+        ]
+      },
+      {
+        "key": "LOCATION_END_OF_GARDEN_FOWL_HOUSE",
+        "canonical_name": "end of the garden behind the fowl-house",
+        "source_evidence": "P83 carried out to the end of the garden behind the fowl-house. That was a fine place to make a bonfire... next morning he promised to come quite early and burn the whole lot; P85 lay among the old picture-books in the corner behind the fowl-house... sack had been left untied... Near by he could see the thicket of raspberry canes",
+        "layout_anchors": [
+          "far end of garden",
+          "fowl-house structure",
+          "corner where sack and rubbish are dumped",
+          "bonfire site not yet lit",
+          "line of sight to raspberry cane thicket",
+          "ground where tear falls and flower grows"
+        ],
+        "lighting_states": [
+          "night outdoor darkness while Boy sleeps",
+          "moonrise light as Fairy appears and flies to wood",
+          "implied next-morning gardener light never reached because transformation intervenes"
+        ],
+        "persistent_props": [
+          "open sack",
+          "old picture-books",
+          "lot of rubbish",
+          "fowl-house wall",
+          "mysterious emerald-leaved golden-cup flower that grows from the tear"
+        ],
+        "image_brief": "Lonely night corner behind a fowl-house at garden\u0027s end; discarded sack among rubbish and picture-books; raspberry thicket visible as memory; ground that births the magical flower; threshold between discard and transformation",
+        "beats": [
+          "B10",
+          "B11",
+          "B12"
+        ]
+      },
+      {
+        "key": "LOCATION_SEASIDE_SPOKEN",
+        "canonical_name": "seaside (spoken of only)",
+        "source_evidence": "P77 The Boy was going to the seaside to-morrow; P78 To-morrow we shall go to the seaside! For the boy had often talked of the seaside, and he wanted very much to see the big waves coming in, and the tiny crabs, and the sand castles; P84 For to-morrow he was going to the seaside, and that in itself was such a wonderful thing that he could think of nothing else",
+        "layout_anchors": [
+          "never shown on screen as a present location",
+          "exists only in Boy\u0027s excited talk and Rabbit\u0027s hopeful imagination: big waves, tiny crabs, sand castles"
+        ],
+        "lighting_states": [
+          "imagined bright coastal light only if briefly visualized in fantasy; otherwise remain off-screen"
+        ],
+        "persistent_props": [
+          "none on set; spoken references only"
+        ],
+        "image_brief": "Do not build as a physical set; if any mental image is needed keep it soft and brief (waves, crabs, sand castles) strictly as character imagination, never as arrived destination in this story",
+        "beats": [
+          "B10"
+        ]
+      }
+    ]
+  }
+}

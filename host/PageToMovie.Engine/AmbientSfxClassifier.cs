@@ -80,6 +80,7 @@ public sealed class AmbientSfxClassifier
         onProgress?.Invoke($"Classifying ambient/SFX for {targets.Count} beat(s)…");
         var byId = targets.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
         var labeled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var backoffBaseMs = Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs);
         var totalAttempts = 0;
 
         var chunks = new List<List<Target>>();
@@ -92,36 +93,46 @@ public sealed class AmbientSfxClassifier
             await sem.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                var missing = chunk.Select(t => t.Id).ToList();
-                for (var attempt = 1; attempt <= maxAttempts && missing.Count > 0; attempt++)
-                {
-                    Interlocked.Increment(ref totalAttempts);
-                    try
+                var chunkIds = chunk.Select(t => t.Id).ToList();
+                // Mutable: shrinks to only still-missing ids so each retry re-asks fewer beats —
+                // mirrors the pre-refactor hand-rolled loop exactly.
+                var currentIds = new List<string>(chunkIds);
+
+                var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<(string Ambient, string Sfx)>(
+                    chunkIds,
+                    callChat: async () =>
                     {
-                        var batch = missing.Select(id => byId[id]).ToList();
+                        var batch = currentIds.Select(id => byId[id]).ToList();
                         var raw = await CallAsync(batch, model, temp, ct).ConfigureAwait(false);
-                        var parsed = ParseLabels(raw);
-                        lock (labeled)
-                        {
-                            result.ChatCalls++;
-                            foreach (var id in missing.ToList())
-                            {
-                                if (!parsed.TryGetValue(id, out var pair)) continue;
-                                var t = byId[id];
-                                Apply(t.Beat, pair.Ambient, pair.Sfx);
-                                missing.Remove(id);
-                                labeled.Add(id);
-                            }
-                        }
-                        if (missing.Count > 0)
-                            await BackoffAsync(attempt, ct).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) { throw; }
-                    catch (Exception ex)
+                        lock (labeled) { result.ChatCalls++; }
+                        return raw;
+                    },
+                    parseResponse: raw =>
                     {
-                        _log.LogWarning(ex, "AmbientSfx classify attempt {A} failed", attempt);
-                        result.LastError = Trim(ex.Message, 200);
-                        await BackoffAsync(attempt, ct).ConfigureAwait(false);
+                        var parsed = ParseLabels(raw);
+                        currentIds.RemoveAll(id => parsed.ContainsKey(id));
+                        return parsed;
+                    },
+                    maxAttempts,
+                    backoffBaseMs,
+                    ct).ConfigureAwait(false);
+
+                Interlocked.Add(ref totalAttempts, retry.Attempts);
+                if (retry.LastError is not null)
+                {
+                    _log.LogWarning("AmbientSfx classify chunk failed: {Error}", retry.LastError);
+                    lock (labeled) { result.LastError = Trim(retry.LastError, 200); }
+                }
+                if (retry.Result is not null)
+                {
+                    lock (labeled)
+                    {
+                        foreach (var kv in retry.Result)
+                        {
+                            if (!byId.TryGetValue(kv.Key, out var t)) continue;
+                            Apply(t.Beat, kv.Value.Ambient, kv.Value.Sfx);
+                            labeled.Add(kv.Key);
+                        }
                     }
                 }
             }
@@ -281,13 +292,6 @@ JSON only:
             }
         }
         return list;
-    }
-
-    private async Task BackoffAsync(int attempt, CancellationToken ct)
-    {
-        var baseMs = Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs);
-        if (baseMs == 0) return;
-        await Task.Delay(Math.Min(4000, baseMs * attempt * attempt), ct).ConfigureAwait(false);
     }
 
     private static string NormalizeList(string s) =>

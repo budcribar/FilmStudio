@@ -1153,6 +1153,50 @@ public sealed class EngineApiClient
         public double MeanAbsoluteErrorSec { get; set; }
     }
 
+    public async Task<GenerationErrorsDto?> GetAdminGenerationErrorsAsync(
+        string? errorType = null,
+        string? projectId = null,
+        int take = 100,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var qs = new List<string> { $"take={take}" };
+        if (!string.IsNullOrWhiteSpace(errorType)) qs.Add($"errorType={Uri.EscapeDataString(errorType)}");
+        if (!string.IsNullOrWhiteSpace(projectId)) qs.Add($"projectId={Uri.EscapeDataString(projectId)}");
+        var url = "/api/admin/generation-errors?" + string.Join("&", qs);
+        return await _http.GetFromJsonAsync<GenerationErrorsDto>(url, JsonOpts, ct);
+    }
+
+    public sealed class GenerationErrorsDto
+    {
+        public bool Ok { get; set; }
+        public List<GenerationErrorRowDto>? Rows { get; set; }
+    }
+
+    public sealed class GenerationErrorRowDto
+    {
+        public long Id { get; set; }
+        public string Ts { get; set; } = "";
+        public string? UserId { get; set; }
+        public string? ProjectId { get; set; }
+        public string? JobId { get; set; }
+        public int? Scene { get; set; }
+        public int? Clip { get; set; }
+        public string Stage { get; set; } = "";
+        public string? Provider { get; set; }
+        public string? Model { get; set; }
+        public string ErrorType { get; set; } = "";
+        public string? ErrorMessage { get; set; }
+        public int? HttpStatus { get; set; }
+        public int? RequestedCount { get; set; }
+        public int? ReturnedCount { get; set; }
+        public string? MissingIdsJson { get; set; }
+        public int Attempt { get; set; }
+        public bool Resolved { get; set; }
+        public string? RequestSummary { get; set; }
+        public string? ResponseSummary { get; set; }
+    }
+
     public async Task<LocksDto?> GetLocksAsync(CancellationToken ct = default)
     {
         SyncIdentityHeaders();
@@ -2111,7 +2155,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("video/mp4");
             form.Add(byteContent, "video", $"scene_{scene:D2}_clip_{clip:D2}.mp4");
 
-            var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/upload";
+            var url = ClipUploadUrl(projectId, scene, clip);
             using var resp = await _http.PostAsync(url, form, ct);
             return resp.IsSuccessStatusCode;
         }
@@ -2120,6 +2164,14 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             return false;
         }
     }
+
+    /// <summary>Relative upload URL for a clip slot. Pass <paramref name="kind"/>="extend-source"
+    /// for the video-extend continuation-source upload (see
+    /// ClientMediaFolderService.PrepareExtendSourceAsync) — the server writes that to a distinct,
+    /// single-use path instead of replacing the clip's own official video.</summary>
+    public string ClipUploadUrl(string projectId, int scene, int clip, string? kind = null) =>
+        $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/upload" +
+        (string.IsNullOrEmpty(kind) ? "" : $"?kind={Uri.EscapeDataString(kind)}");
 
     /// <summary>Queues background-music generation for a scene (job-tracked, client saves the
     /// resulting audio segment(s) — same pattern as clip/credits generation). Returns the queued
@@ -2489,6 +2541,45 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/cost{qs}",
             JsonOpts,
             ct);
+    }
+
+    /// <summary>Actual spend by provider (then category) for this project — for reconciling against a real vendor billing statement.</summary>
+    public async Task<CostByProviderDto?> GetCostByProviderAsync(string projectId, CancellationToken ct = default)
+    {
+        return await _http.GetFromJsonAsync<CostByProviderDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/by-provider",
+            JsonOpts,
+            ct);
+    }
+
+    public sealed class CostByProviderDto
+    {
+        public bool Ok { get; set; }
+        public string? ProjectId { get; set; }
+        public ApiCostByProviderStatsDto? Stats { get; set; }
+    }
+
+    public sealed class ApiCostByProviderStatsDto
+    {
+        public int TotalCalls { get; set; }
+        public double TotalUsd { get; set; }
+        public Dictionary<string, ProviderCostStatsDto> ByProvider { get; set; } = new();
+    }
+
+    public sealed class ProviderCostStatsDto
+    {
+        public string Provider { get; set; } = "unknown";
+        public int Count { get; set; }
+        public double TotalUsd { get; set; }
+        public Dictionary<string, CategoryCostStatsDto> ByCategory { get; set; } = new();
+    }
+
+    public sealed class CategoryCostStatsDto
+    {
+        public string Category { get; set; } = "other";
+        public int Count { get; set; }
+        public double TotalUsd { get; set; }
+        public double AvgUsd { get; set; }
     }
 
     /// <summary>Resolution already used by this project's on-disk clips, or null if none yet.</summary>

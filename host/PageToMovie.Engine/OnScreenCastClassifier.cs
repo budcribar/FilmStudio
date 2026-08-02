@@ -89,6 +89,7 @@ public sealed class OnScreenCastClassifier
 
         onProgress?.Invoke($"Classifying on-screen cast for {targets.Count} beat(s)…");
         var maxAttempts = Math.Clamp(_opts.SilentBeatClassifyMaxAttempts, 1, 5);
+        var backoffBaseMs = Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs);
         var labeled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         const int batchSize = 25;
 
@@ -102,13 +103,17 @@ public sealed class OnScreenCastClassifier
             await sem.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                var missing = chunk.Select(t => t.Id).ToList();
+                var chunkIds = chunk.Select(t => t.Id).ToList();
                 var byId = chunk.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
-                for (var attempt = 1; attempt <= maxAttempts && missing.Count > 0; attempt++)
-                {
-                    try
+                // Mutable: shrinks to only still-missing ids so each retry re-asks fewer beats —
+                // mirrors the pre-refactor hand-rolled loop exactly.
+                var currentIds = new List<string>(chunkIds);
+
+                var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<List<string>>(
+                    chunkIds,
+                    callChat: async () =>
                     {
-                        var payload = missing.Select(id =>
+                        var payload = currentIds.Select(id =>
                         {
                             var t = byId[id];
                             return new Dictionary<string, object?>
@@ -125,27 +130,34 @@ public sealed class OnScreenCastClassifier
                                    JsonSerializer.Serialize(new { cast_keys = castKeys, beats = payload });
                         var raw = await _chat.CompleteAsync(SystemPrompt(), user, effectiveModel, 0, ct, ChatCallModes.OnScreenCastClassify)
                             .ConfigureAwait(false);
-                        var parsed = ParseLabels(raw, castKeys);
-                        lock (labeled)
-                        {
-                            result.ChatCalls++;
-                            foreach (var id in missing.ToList())
-                            {
-                                if (!parsed.TryGetValue(id, out var keys)) continue;
-                                byId[id].Beat["characters_on_screen"] = keys.Cast<object?>().ToList();
-                                missing.Remove(id);
-                                labeled.Add(id);
-                            }
-                        }
-                        if (missing.Count > 0)
-                            await Task.Delay(Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs) * attempt, ct);
-                    }
-                    catch (OperationCanceledException) { throw; }
-                    catch (Exception ex)
+                        lock (labeled) { result.ChatCalls++; }
+                        return raw;
+                    },
+                    parseResponse: raw =>
                     {
-                        _log.LogWarning(ex, "OnScreenCast attempt {A}", attempt);
-                        result.LastError = ex.Message;
-                        await Task.Delay(Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs) * attempt, ct);
+                        var parsed = ParseLabels(raw, castKeys);
+                        currentIds.RemoveAll(id => parsed.ContainsKey(id));
+                        return parsed;
+                    },
+                    maxAttempts,
+                    backoffBaseMs,
+                    ct).ConfigureAwait(false);
+
+                if (retry.LastError is not null)
+                {
+                    _log.LogWarning("OnScreenCast chunk failed: {Error}", retry.LastError);
+                    lock (labeled) { result.LastError = retry.LastError; }
+                }
+                if (retry.Result is not null)
+                {
+                    lock (labeled)
+                    {
+                        foreach (var kv in retry.Result)
+                        {
+                            if (!byId.TryGetValue(kv.Key, out var t)) continue;
+                            t.Beat["characters_on_screen"] = kv.Value.Cast<object?>().ToList();
+                            labeled.Add(kv.Key);
+                        }
                     }
                 }
             }

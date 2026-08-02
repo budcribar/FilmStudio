@@ -441,12 +441,21 @@ public sealed class ClipAutoReviewService
                 profiles.TryGetValue(key, out var p);
                 var name = p?.DisplayName ?? key;
                 var look = p?.Description ?? "";
+                var vlock = p?.VisualLock ?? "";
                 var voice = p?.VoiceProfile ?? "";
                 // Token-accurate (was character-count Trim): this line becomes part of the
                 // vision-review prompt, unlike the other Trim(...) calls in this file (those
                 // trim audit-log diffs / stored response summaries, not outgoing prompt text).
+                // SIGNATURE surfaces visual_lock explicitly and separately from the general
+                // look — previously this line only used Description, so the reviewer never saw
+                // the one field the rest of the system treats as the must-never-drift identity
+                // trait (a specific eye/scar/mark), and had nothing to specifically cross-check
+                // a frame against.
+                var signaturePart = !string.IsNullOrWhiteSpace(vlock)
+                    ? $" SIGNATURE (must match exactly): {PromptTokenizer.TruncateToTokens(vlock, 50)}"
+                    : "";
                 sb.AppendLine(
-                    $"- {key} ({name}) look: {PromptTokenizer.TruncateToTokens(look, 50)} " +
+                    $"- {key} ({name}) look: {PromptTokenizer.TruncateToTokens(look, 50)}{signaturePart} " +
                     $"voice: {PromptTokenizer.TruncateToTokens(voice, 30)}");
             }
         }
@@ -472,7 +481,8 @@ public sealed class ClipAutoReviewService
         // Minimal fallback if embed/override missing (tests without resources).
         return """
             CHECKLIST (fail when confidence high; put the primary issue in category):
-            1) IDENTITY — faces match cast Character_*; no role swap/merge.
+            1) IDENTITY — faces match cast Character_*; no role swap/merge. If a character has a
+               SIGNATURE trait listed above, check that exact trait against the frame specifically.
             2) PROMPT COMPLETENESS — flag stub/truncated plan text; rewrite visual_prompt if needed.
             3) SILENCE vs EXPRESSION — no mid-shout / open-mouth yell when silent or no dialogue.
             4) ADDRESS / GAZE — honor PROJECT performance rules (confessional vs observational).

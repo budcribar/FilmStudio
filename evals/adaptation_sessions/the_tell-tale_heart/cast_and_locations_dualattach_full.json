@@ -1,0 +1,393 @@
+{
+  "cast_seeds": {
+    "characters": [
+      {
+        "key": "NARRATOR",
+        "display_name": "The Narrator",
+        "age_link": null,
+        "identity_anchors": "Adult male; exact age, height, build, hair, and facial features unspecified in the text. Defining stable traits are psychological and sensory: dreadfully nervous yet insisting he is not mad; disease-sharpened senses, above all acute hearing (hears things in heaven, earth, and hell). Moves with extreme caution and dissimulation; capable of hearty daytime manner and stealthy midnight motion.",
+        "source_evidence": "True!\u2014nervous\u2014very, very dreadfully nervous I had been and am; but why will you say that I am mad? The disease had sharpened my senses\u2014not destroyed\u2014not dulled them. Above all was the sense of hearing acute. I heard all things in the heaven and in the earth. I heard many things in hell. How, then, am I mad? Hearken! and observe how healthily\u2014how calmly I can tell you the whole story. (P3). I loved the old man. He had never wronged me... For his gold I had no desire. I think it was his eye! (P4). You should have seen how wisely I proceeded\u2014with what caution\u2014with what foresight\u2014with what dissimulation I went to work! I was never kinder to the old man than during the whole week before I killed him. (P5).",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "intimate tense confessional; controlled and persuasive at first, rising through agitation to foaming raving and final shriek",
+        "wardrobe_variants": [
+          {
+            "key": "NARRATOR_DAY_KIND",
+            "description": "Neat ordinary daytime house clothes of a modest mid-19th-century man; composed enough to speak heartily and unsuspiciously each morning.",
+            "source_facts": [
+              "I was never kinder to the old man than during the whole week before I killed him.",
+              "every morning, when the day broke, I went boldly into the chamber, and spoke courageously to him, calling him by name in a hearty tone, and inquiring how he has passed the night."
+            ],
+            "creative_direction": "Simple period shirt, waistcoat, and trousers in muted tones; tidy and unremarkable to support the performance of kindness. Book is silent on exact garments, colors, or fabrics\u2014choose restrained 1840s domestic dress with no blood or disorder.",
+            "beats": [
+              "B3",
+              "B5"
+            ]
+          },
+          {
+            "key": "NARRATOR_NIGHT_STALK",
+            "description": "Dark quiet night attire enabling extreme stealth with a closed dark lantern; soft movement, no light-catching detail.",
+            "source_facts": [
+              "every night, about midnight, I turned the latch of his door and opened it\u2014oh, so gently!",
+              "I put in a dark lantern, all closed, closed, that no light shone out, and then I thrust in my head.",
+              "I moved it slowly\u2014very, very slowly, so that I might not disturb the old man\u2019s sleep.",
+              "Upon the eighth night I was more than usually cautious in opening the door."
+            ],
+            "creative_direction": "Matte dark coat or robe over simple clothes; footwear implied soft for silence. Book does not describe night garments\u2014default to period-appropriate dark stealth clothing that reads cunning and careful, never theatrical.",
+            "beats": [
+              "B4",
+              "B6",
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B11",
+              "B12"
+            ]
+          },
+          {
+            "key": "NARRATOR_POST_MURDER",
+            "description": "Outwardly composed clothes when admitting police (light heart, smile, singular ease); progressive dishevelment as pallor, headache, pacing, foaming, and raving overtake him.",
+            "source_facts": [
+              "I went down to open it with a light heart,\u2014for what had I now to fear?",
+              "I smiled,\u2014for what had I to fear?",
+              "I was singularly at ease.",
+              "I felt myself getting pale and wished them gone. My head ached",
+              "I foamed\u2014I raved\u2014I swore! I swung the chair upon which I had been sitting, and grated it upon the boards",
+              "There was nothing to wash out\u2014no stain of any kind\u2014no blood-spot whatever. I had been too wary for that. A tub had caught all"
+            ],
+            "creative_direction": "Same night or hastily ordered day clothes; initially neat enough to welcome officers and sit in triumph above the corpse. Allow collar, hair, and posture to disorder with mounting terror. No visible bloodstains (book states tub caught all). Book silent on exact post-labor dress.",
+            "beats": [
+              "B13",
+              "B14",
+              "B15",
+              "B16",
+              "B17",
+              "B18"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "OLD_MAN",
+        "display_name": "The Old Man",
+        "age_link": null,
+        "identity_anchors": "Elderly man; the sole specified physical feature is his eye\u2014pale blue with a film over it, the eye of a vulture\u2014which makes the narrator\u2019s blood run cold. No canonical hair, build, height, or other facial detail. Harmless housemate who never wronged or insulted the narrator; possesses treasures/gold the narrator does not desire.",
+        "source_evidence": "I loved the old man. He had never wronged me. He had never given me insult. For his gold I had no desire. I think it was his eye! yes, it was this! He had the eye of a vulture\u2014a pale blue eye, with a film over it. Whenever it fell upon me, my blood ran cold (P4). for seven long nights... I found the eye always closed... it was not the old man who vexed me, but his Evil Eye (P5). It was open\u2014wide, wide open... all a dull blue, with a hideous veil over it that chilled the very marrow in my bones; but I could see nothing else of the old man\u2019s face or person (P11). Yes, he was stone, stone dead... His eye would trouble me no more (P13).",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "frail elderly; one startled cry \u201CWho\u2019s there?\u201D; one shriek only; low stifled groan of mortal terror; otherwise silent",
+        "wardrobe_variants": [
+          {
+            "key": "OLD_MAN_SLEEPING",
+            "description": "Simple sleeping clothes in bed; covers as he lies asleep or sits up listening in terror; later body dragged to floor and covered by the heavy bed.",
+            "source_facts": [
+              "he lay upon his bed",
+              "he moved on the bed suddenly, as if startled",
+              "the old man sprang up in bed, crying out\u2014\u201CWho\u2019s there?\u201D",
+              "he was still sitting up in the bed listening",
+              "I dragged him to the floor, and pulled the heavy bed over him",
+              "First of all I dismembered the corpse. I cut off the head and the arms and the legs."
+            ],
+            "creative_direction": "Plain period nightshirt (white or off-white); frail elderly frame. Book silent on exact garment. After death: clinical dismemberment only as stated\u2014no gore spectacle; parts deposited between scantlings, never lingered on. Eye remains the visual anchor while he lives.",
+            "beats": [
+              "B2",
+              "B4",
+              "B5",
+              "B6",
+              "B7",
+              "B8",
+              "B9",
+              "B10",
+              "B11",
+              "B12",
+              "B13"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "POLICE_OFFICERS",
+        "display_name": "Three Police Officers",
+        "age_link": null,
+        "identity_anchors": "Three adult men acting as a unit; no individual names, ranks, ages, or physical descriptions in the text. Introduced with perfect suavity; manner convinces them the narrator is at ease; they sit, chat of familiar things, smile pleasantly, and remain composed while the narrator breaks down.",
+        "source_evidence": "there came a knocking at the street door... There entered three men, who introduced themselves, with perfect suavity, as officers of the police. A shriek had been heard by a neighbour during the night; suspicion of foul play had been aroused; information had been lodged at the police office, and they (the officers) had been deputed to search the premises. (P16). The officers were satisfied. My manner had convinced them. I was singularly at ease. They sat, and while I answered cheerily, they chatted of familiar things. (P18). And still the men chatted pleasantly, and smiled. Was it possible they heard not? (P19).",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "calm official suavity; polite introductions and search; thereafter pleasant familiar chat and smiles; no accusation until after the confession",
+        "wardrobe_variants": [
+          {
+            "key": "POLICE_SUAVE_PERIOD",
+            "description": "Matching or similar mid-19th-century civic/police officer attire marking them as official searchers; neat and authoritative.",
+            "source_facts": [
+              "three men, who introduced themselves, with perfect suavity, as officers of the police",
+              "they (the officers) had been deputed to search the premises",
+              "The officers were satisfied.",
+              "they chatted of familiar things",
+              "the men chatted pleasantly, and smiled"
+            ],
+            "creative_direction": "Dark period coats, possible early police or watchman markers (hat, badge, or staff) appropriate to 1840s; restrained and uniform enough to read as three officers. Book gives zero uniform detail\u2014default to sober civic authority look. They remain outwardly pleasant and smiling through the narrator\u2019s agony.",
+            "beats": [
+              "B15",
+              "B16",
+              "B17",
+              "B18"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "NEIGHBOUR",
+        "display_name": "Neighbour",
+        "age_link": null,
+        "identity_anchors": "Off-screen only; no name, age, gender detail, or physical description whatever. Sole function: hears the shriek during the night and lodges information at the police office, prompting the officers\u2019 visit.",
+        "source_evidence": "A shriek had been heard by a neighbour during the night; suspicion of foul play had been aroused; information had been lodged at the police office (P16).",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "not heard on-screen; existence established only by the officers\u2019 report",
+        "wardrobe_variants": [
+          {
+            "key": "NEIGHBOUR_OFFSCREEN",
+            "description": "Never appears on screen; no visible wardrobe required.",
+            "source_facts": [
+              "A shriek had been heard by a neighbour during the night",
+              "information had been lodged at the police office"
+            ],
+            "creative_direction": "Fully off-screen per character notes and withheld_until B14. If any distant unidentifiable silhouette were ever implied, generic period nightclothes\u2014but default is report-only, no on-screen body.",
+            "beats": [
+              "B14",
+              "B15"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "location_bible": {
+    "locations": [
+      {
+        "key": "LOCATION_OLD_HOUSE",
+        "canonical_name": "the old house",
+        "source_evidence": "amid the dreadful silence of that old house (P13); I took my visitors all over the house (P17); His room was as black as pitch with the thick darkness, (for the shutters were close fastened, through fear of robbers,) (P6); As the bell sounded the hour, there came a knocking at the street door (P16).",
+        "layout_anchors": [
+          "multi-room old dwelling containing the old man\u2019s chamber, connecting spaces, and a street door",
+          "narrator can lead visitors all over the house before ending in the chamber",
+          "implies a way \u2018down\u2019 to the street door",
+          "shutters fastened on at least the chamber windows through fear of robbers",
+          "dreadful silence at the dead hour of night"
+        ],
+        "lighting_states": [
+          "night: thick interior darkness when shutters closed",
+          "four o\u2019clock still dark as midnight",
+          "morning daylight for the narrator\u2019s bold hearty visits",
+          "ordinary indoor light or lantern when officers are present and chatting"
+        ],
+        "persistent_props": [
+          "fastened shutters",
+          "street door",
+          "interior doors and latches",
+          "modest period furnishings throughout"
+        ],
+        "image_brief": "Oppressive mid-19th-century old house; weathered wood and plaster; quiet corridors; shuttered windows; modest domestic scale; no modern elements. Exterior needed mainly for the street-door threshold at the knock.",
+        "beats": [
+          "B1",
+          "B3",
+          "B5",
+          "B6",
+          "B12",
+          "B13",
+          "B14",
+          "B15",
+          "B16",
+          "B17",
+          "B18"
+        ]
+      },
+      {
+        "key": "LOCATION_OLD_MANS_CHAMBER",
+        "canonical_name": "the old man\u0027s chamber / bedroom",
+        "source_evidence": "I turned the latch of his door and opened it... thrust in my head... so far that I could see him as he lay upon his bed (P5); His room was as black as pitch with the thick darkness, (for the shutters were close fastened, through fear of robbers,) (P6); I led them, at length, to his chamber. I showed them his treasures, secure, undisturbed. In the enthusiasm of my confidence, I brought chairs into the room... placed my own seat upon the very spot beneath which reposed the corpse of the victim (P17).",
+        "layout_anchors": [
+          "single bedroom with a door and latch",
+          "heavy bed the old man lies and sits up in, later pulled over him",
+          "windows with shutters close fastened",
+          "wooden flooring of planks over scantlings",
+          "space enough to bring in chairs for three officers plus narrator",
+          "old man\u2019s treasures visible and undisturbed",
+          "the \u2018very spot\u2019 on the floor directly above the concealed body where narrator places his own seat"
+        ],
+        "lighting_states": [
+          "pitch-black thick darkness on the murder night until lantern use",
+          "single thin ray or dim spider-thread ray from dark-lantern crevice directed on the eye",
+          "sudden full lantern light when thrown open at the leap",
+          "morning daylight for hearty inquiries",
+          "ordinary chamber light while officers sit and chat"
+        ],
+        "persistent_props": [
+          "heavy bed",
+          "door with latch",
+          "fastened shutters",
+          "wooden floor planks",
+          "old man\u2019s treasures",
+          "chairs brought in for the officers",
+          "dark lantern (carried in by narrator)"
+        ],
+        "image_brief": "Claustrophobic period bedroom; heavy wooden bed; shuttered windows; dark plank floor; spare furnishings and visible \u2018treasures\u2019; atmosphere of silence and dread. Floor spot under narrator\u2019s chair becomes the unseen focus after concealment.",
+        "beats": [
+          "B4",
+          "B5",
+          "B6",
+          "B7",
+          "B8",
+          "B9",
+          "B10",
+          "B11",
+          "B12",
+          "B13",
+          "B14",
+          "B16",
+          "B17",
+          "B18"
+        ]
+      },
+      {
+        "key": "LOCATION_CHAMBER_DOOR_AND_LATCH",
+        "canonical_name": "the chamber door and latch",
+        "source_evidence": "every night, about midnight, I turned the latch of his door and opened it\u2014oh, so gently! And then, when I had made an opening sufficient for my head, I put in a dark lantern... and then I thrust in my head... It took me an hour to place my whole head within the opening (P5); Upon the eighth night I was more than usually cautious in opening the door. A watch\u2019s minute hand moves more quickly than did mine... I kept pushing it on steadily, steadily (P6).",
+        "layout_anchors": [
+          "door fitted with a turnable latch",
+          "can be opened with extreme slowness to a crack sufficient only for head plus closed dark lantern",
+          "opens into the pitch-black chamber",
+          "narrator remains able to keep the opening from being seen from inside in the thick darkness"
+        ],
+        "lighting_states": [
+          "hall or corridor side dim or dark",
+          "chamber side black until any lantern ray",
+          "no spill when lantern is fully closed"
+        ],
+        "persistent_props": [
+          "latch",
+          "door leaf",
+          "dark lantern passed through the opening"
+        ],
+        "image_brief": "Tight focus on aged wooden door and metal latch; narrow black vertical opening; tension of glacial movement; period hardware only.",
+        "beats": [
+          "B4",
+          "B6",
+          "B7"
+        ]
+      },
+      {
+        "key": "LOCATION_THE_BED",
+        "canonical_name": "the bed",
+        "source_evidence": "he lay upon his bed (P5); he moved on the bed suddenly, as if startled (P6); the old man sprang up in bed, crying out\u2014\u201CWho\u2019s there?\u201D (P7); he was still sitting up in the bed listening (P8); In an instant I dragged him to the floor, and pulled the heavy bed over him... for many minutes, the heart beat on with a muffled sound (P13).",
+        "layout_anchors": [
+          "heavy bed substantial enough to be pulled over a body and muffle the heart sound",
+          "allows the old man to lie asleep and later sit up listening",
+          "positioned so narrator can drag victim to the floor beside or under it"
+        ],
+        "lighting_states": [
+          "swallowed in pitch darkness except when the lantern ray or full beam strikes nearby",
+          "examined after death in narrator\u2019s working light"
+        ],
+        "persistent_props": [
+          "heavy frame",
+          "bedding and covers",
+          "mattress"
+        ],
+        "image_brief": "Heavy period wooden bed with plain linens; bulk that can become both resting place and muffling cover; oppressive presence in the dark chamber.",
+        "beats": [
+          "B4",
+          "B6",
+          "B7",
+          "B8",
+          "B9",
+          "B12",
+          "B13"
+        ]
+      },
+      {
+        "key": "LOCATION_FLOORBOARDS_SCANTLINGS",
+        "canonical_name": "the floorboards / scantlings under the chamber",
+        "source_evidence": "I then took up three planks from the flooring of the chamber, and deposited all between the scantlings. I then replaced the boards so cleverly, so cunningly, that no human eye\u2014not even his\u2014could have detected any thing wrong. There was nothing to wash out\u2014no stain of any kind\u2014no blood-spot whatever. I had been too wary for that. A tub had caught all\u2014ha! ha! (P15); placed my own seat upon the very spot beneath which reposed the corpse of the victim (P17); tear up the planks!\u2014here, here!\u2014It is the beating of his hideous heart! (P20).",
+        "layout_anchors": [
+          "wooden chamber floor from which three planks can be lifted",
+          "space between scantlings (joists) sufficient to deposit the dismembered parts",
+          "boards replaceable so flush and cunning that no human eye can detect wrong",
+          "the precise spot later occupied by the narrator\u2019s chair directly above the hidden remains",
+          "no surface stain or blood-spot remains"
+        ],
+        "lighting_states": [
+          "worked in the waning night / still dark as midnight at four o\u2019clock",
+          "later ordinary chamber light with officers present\u2014boards appear innocent"
+        ],
+        "persistent_props": [
+          "three liftable planks",
+          "scantlings/joists beneath",
+          "concealed body parts (not displayed in detail)",
+          "chair placed on the very spot",
+          "tub used off-spot to catch blood (mentioned, not necessarily shown in chamber)"
+        ],
+        "image_brief": "Aged floorboards and exposed joists; seamless innocent surface when replaced; the unmarked \u2018very spot\u2019 under the narrator\u2019s seat. No gore on the visible floor\u2014horror is concealment and sound.",
+        "beats": [
+          "B14",
+          "B16",
+          "B17",
+          "B18"
+        ]
+      },
+      {
+        "key": "LOCATION_STREET_DOOR",
+        "canonical_name": "the street door",
+        "source_evidence": "As the bell sounded the hour, there came a knocking at the street door. I went down to open it with a light heart,\u2014for what had I now to fear? There entered three men, who introduced themselves, with perfect suavity, as officers of the police. (P16).",
+        "layout_anchors": [
+          "street-facing entrance of the old house",
+          "reached by going down from the upper/chamber level",
+          "solid door that receives a knocking audible inside at four o\u2019clock",
+          "opens to admit three officers at once"
+        ],
+        "lighting_states": [
+          "four o\u2019clock still dark as midnight outside and within",
+          "possible candle or lantern light when narrator opens with light heart"
+        ],
+        "persistent_props": [
+          "door leaf and hardware for knocking",
+          "latch or lock the narrator opens"
+        ],
+        "image_brief": "Heavy period street door of an old house in pre-dawn darkness; threshold between black street and interior; moment of confident unsuspicious welcome.",
+        "beats": [
+          "B14",
+          "B15"
+        ]
+      },
+      {
+        "key": "LOCATION_DARK_LANTERN",
+        "canonical_name": "the dark lantern",
+        "source_evidence": "I put in a dark lantern, all closed, closed, that no light shone out (P5); I undid the lantern cautiously\u2014oh, so cautiously\u2014cautiously (for the hinges creaked)\u2014I undid it just so much that a single thin ray fell upon the vulture eye (P5); my thumb slipped upon the tin fastening, and the old man sprang up in bed (P7); I resolved to open a little\u2014a very, very little crevice in the lantern. So I opened it\u2014you cannot imagine how stealthily, stealthily\u2014until, at length a single dim ray, like the thread of the spider, shot from out the crevice and fell full upon the vulture eye (P10); With a loud yell, I threw open the lantern and leaped into the room (P13).",
+        "layout_anchors": [
+          "handheld tin dark lantern with hinged shutter and tin fastening",
+          "fully closable so no light shines out",
+          "can be opened to a tiny crevice producing a single thin or dim spider-thread ray",
+          "can be thrown fully open for sudden illumination",
+          "hinges capable of creaking; fastening that a thumb can slip on"
+        ],
+        "lighting_states": [
+          "fully closed: zero light",
+          "crevice open: single thin ray / dim spider-thread ray precisely directable onto the eye",
+          "thrown open: sudden full beam flooding the chamber at the yell and leap"
+        ],
+        "persistent_props": [
+          "tin body",
+          "hinged shutter",
+          "tin fastening",
+          "internal flame (candle or oil)"
+        ],
+        "image_brief": "Period tin dark lantern (shuttered/bull\u2019s-eye style); tactile hinges and fastening; controlled slit of light versus abrupt full open; the instrument of seven nights of stealth and the eighth night\u2019s violence.",
+        "beats": [
+          "B4",
+          "B6",
+          "B7",
+          "B10",
+          "B11",
+          "B12"
+        ]
+      }
+    ]
+  }
+}

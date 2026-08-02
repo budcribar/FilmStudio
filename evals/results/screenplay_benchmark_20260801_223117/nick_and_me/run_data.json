@@ -1,0 +1,166 @@
+{
+  "BookPath": "../books/Nick_and_Me.txt",
+  "Timestamp": "2026-08-02 04:35:40 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 81.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 30,
+        "TotalDialogueBlocks": 59,
+        "AvgWordsPerDialogue": 12.5,
+        "MaxWordsInSingleDialogue": 42,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "PETER",
+          "SIONNA",
+          "MA",
+          "OFFICER DUPUIS",
+          "NURSE"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.5,
+      "AvgCharacterDisambiguation": 7,
+      "AvgAiVideoDirectibility": 5.2,
+      "AvgDramaticPacing": 6.8,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 7.8,
+      "AvgOverallQualitative": 6.9,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: Missing the required ---VISION_META--- sidecar, despite it being mandated for downstream portrait and clip production.",
+        "gpt-5.6-terra: Prematurely names the first-person narrator PETER from the opening, although the source withholds his name until the closing line.",
+        "gpt-5.6-terra: Uses prohibited multi-location/slash scene headings and montage containers, including \u0022EXT. PARK / MONTAGE,\u0022 \u0022INT. NICK\u0027S APARTMENT / JOE\u0027S BAR,\u0022 \u0022INT. FUNERAL HOME / CEMETERY,\u0022 \u0022INT. HOSPITAL / MONTAGE,\u0022 and \u0022EXT. WISCONSIN HIGHWAY / AIRPORT,\u0022 which are not schedulable single-location scenes.",
+        "gpt-5.6-terra: The final prison speech is crammed into one oversized dialogue turn and is not viable as a single short AI-video beat.",
+        "grok-4.5: Illegal multi-location scene headings using \u0027/\u0027 (NICK\u2019S APARTMENT / JOE\u2019S BAR, FUNERAL HOME / CEMETERY, HOSPITAL / MONTAGE, HIGHWAY / AIRPORT) which violate the one-concrete-place rule and prevent clean clip breakdown",
+        "grok-4.5: Several montage scenes cram disparate actions and places into single headings, unusable for 5-10s AI clips"
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 76.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 30,
+        "TotalDialogueBlocks": 145,
+        "AvgWordsPerDialogue": 7.9,
+        "MaxWordsInSingleDialogue": 21,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "KEVIN MCCLEARY",
+          "MRS. ENGEL",
+          "SIONNA",
+          "MA",
+          "LIBRARIAN ADA BELL",
+          "DAVID",
+          "OFFICER DUPUIS",
+          "NURSE OWENS",
+          "FATHER JOSEPH",
+          "INSTRUCTOR MAYA",
+          "GUARD HARRIS",
+          "PETER OLSEN"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Detected 4 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 2,
+      "AvgCharacterDisambiguation": 7,
+      "AvgAiVideoDirectibility": 7.8,
+      "AvgDramaticPacing": 4.5,
+      "AvgDialogueAuthenticity": 7.5,
+      "AvgSoundDesignMusic": 8.2,
+      "AvgOverallQualitative": 6.2,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: Drops the source\u0027s central Nick-versus-Sionna stabbing scene entirely, then presents Sionna later with an unexplained healed scar and trauma-driven breakup.",
+        "gpt-5.6-terra: Introduces several invented named characters not named in the source, including LIBRARIAN ADA BELL, BOUNCER RAY, DAVID, INSTRUCTOR MAYA, and GUARD HARRIS.",
+        "gpt-5.6-terra: Missing the required ---VISION_META--- sidecar.",
+        "gpt-5.6-terra: Uses unstable protagonist identity tokens: THE NARRATOR through nearly the entire script, then PETER OLSEN in the closing scene. The source\u0027s final name is Peter Olson, creating both a late cast-token split and a surname inconsistency.",
+        "gpt-5.6-terra: The omitted stabbing creates a major causal hole between Nick\u0027s hospitalization and Sionna\u0027s PTSD, separation, and Peter\u0027s later resentment.",
+        "grok-4.5: Dropped the major climax of Nick stabbing Sionna (book\u0027s central violent peak); only a later scar is shown without the attack scene",
+        "grok-4.5: Narrative incomplete: separation, hatred, and Seattle arc lack causal depiction of the assault"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 6.33,
+      "gpt-5.6-terra": 5.83
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 6.5,
+      "grok-4.5": 7.42
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.4/10 vs. a 6.3/10 average from 1 other judge(s) (\u002B1.1) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "This is the stronger adaptation because it preserves the full central spine: Peter\u0027s dependence on Nick, Sionna\u0027s intellectual awakening, Ma\u0027s deterioration and death, Nick\u0027s assault on Sionna, the breakup, Peter\u0027s Seattle success, and the prison forgiveness scene. It also includes several useful source-specific motifs, including Wuthering Heights, yoga, Buddhism, the medication organizer, the hospital dream, and Sionna\u0027s confrontation with Nick. However, it compresses too aggressively in several places and treats montage as a substitute for playable scenes. The slash headings create multiple location changes inside nominally single scenes, which is especially damaging for a 5-10 second clip workflow. Peter, Nick, Ma, and Sionna receive solid initial looks, but re-entry descriptions are inconsistent and the childhood versions are not cleanly tokenized as YOUNG PETER/YOUNG NICK. Dialogue often retains the source\u0027s voice, but the climactic forgiveness speech is substantially overpacked and more literary than performable. Sound coverage is consistently present and generally useful, though some music directions remain broad rather than beat-specific.",
+      "gpt-5.6-terra": "The screenplay is better formatted for individual clips than A: it uses more concrete single locations, grounds scenes before dialogue, gives clean sound beds, and splits the prison confrontation into short playable exchanges. Its initial visual descriptions are also generally strong. However, it fails adaptation fidelity at a fundamental level by omitting the stabbing of Sionna, the story\u0027s defining violent escalation and the direct cause of her withdrawal from Peter. The later scar and dissociation do not repair that omission; they make the narrative feel abruptly incomplete. It also severely violates the no-invented-named-character requirement through multiple newly named supporting roles. The script retains a reasonable amount of source dialogue and captures Nick\u0027s and Peter\u0027s contrasting voices, but the invented dialogue and compressed causal logic reduce the emotional credibility of the middle and late acts. Sound design is its strongest category: nearly every scene has an apt, concrete sound environment, and major emotional scenes receive layered audio support."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Strong concrete action lines, consistent locked looks for Nick/Sionna/Ma, excellent per-scene sound/music cues, and clean single-location headings make individual clips highly directable. However, the complete omission of Nick\u0027s home-invasion stabbing of Sionna (the book\u0027s pivotal Part-3 crisis that motivates the scar, breakup, and lasting hatred) is a catastrophic fidelity failure that leaves later scenes unmotivated and the arc broken. Pacing collapses across the missing peak; name reveal as PETER only at the end is faithful but cannot rescue the dropped beat.",
+      "grok-4.5": "Covers the full book arc including the critical stabbing, Ma\u0027s death, breakup, Seattle success, and prison forgiveness with solid character locks (PETER consistent across ages, Young NICK flash, Sionna traits restated) and mostly authentic short dialogue. Sound cues are present and useful. Directibility and structure are badly damaged by repeated \u0027/\u0027 joined headings and montage slugs that pack multiple locations/actions into one unit, violating HARD rules and making short-clip scheduling impossible. Early naming of PETER is a minor fidelity slip but not fatal."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-terra": "Strongest: Screenplay A because it retains the complete emotional and causal spine, especially Nick\u0027s attack on Sionna and the eventual prison reconciliation, despite severe clip-structure and compliance problems. Weakest: Screenplay B because it omits the stabbing of Sionna\u2014a central source event\u2014and compounds that omission with invented named characters and a broken narrator/Peter identity token.",
+    "grok-4.5": "Strongest: Screenplay B because it alone dramatizes the full narrative spine including the stabbing climax that motivates everything after. Weakest: Screenplay A because it entirely omits Nick\u0027s attack on Sionna, leaving the scar, breakup, and hatred causally ungrounded."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "Add a clip-beat rule: every scene must contain no more than three filmable micro-beats and must be playable in one 5-10 second clip; prohibit montages and any scene heading containing a slash, with a required final lint pass that splits them into separate concrete locations.",
+      "gpt-5.6-terra": "Add a mandatory source-turn coverage audit before output: silently identify the story\u0027s setup, inciting event, central escalation, irreversible crisis, aftermath, and resolution, and require that each receives an explicit dramatized scene rather than being implied later through dialogue, scars, or narration."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Add a hard rule requiring that every major source crisis (death, assault, confession, reunion) must be rendered as its own dramatized scene with observable action, never elided to a later scar, mention, or time-jump summary.",
+      "grok-4.5": "Explicitly prohibit any scene heading containing \u0027/\u0027, \u0027AND\u0027, or \u0027MONTAGE\u0027 and mandate that multi-beat sequences be split into consecutive single-location scenes with time bridges in Action only."
+    }
+  }
+}

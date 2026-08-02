@@ -31,6 +31,69 @@ public class SupportedModelCatalogTests
         Assert.False(SupportedModelCatalog.IsUsableCatalogJson(json));
     }
 
+    [Theory]
+    [InlineData("grok-imagine-video", 7)]   // multi-plate identity conditioning
+    [InlineData("hunyuan-video", 1)]        // single init/reference image only (true i2v)
+    [InlineData("fal-ai/wan-2.1", 1)]       // single init/reference image only (true i2v)
+    [InlineData("veo-3.1", 0)]              // not implemented — fail loud, not silently ignored
+    public void MaxReferenceImages_MatchesRealPerModelCapability(string modelId, int expectedMax)
+    {
+        var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
+        Assert.Equal(expectedMax, entry.MaxReferenceImages);
+    }
+
+    [Theory]
+    [InlineData("grok-imagine-image-quality", 3)]  // Grok Imagine multi-image edit hard cap
+    [InlineData("grok-imagine-image", 3)]          // Grok Imagine multi-image edit hard cap
+    [InlineData("gemini-2.5-pro-image", 14)]       // documented soft max for Gemini 3 image family
+    public void MaxReferenceImages_MatchesRealPerModelCapability_ForImageModels(string modelId, int expectedMax)
+    {
+        var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Image);
+        Assert.Equal(expectedMax, entry.MaxReferenceImages);
+    }
+
+    [Theory]
+    [InlineData("hunyuan-video", 30)]
+    [InlineData("fal-ai/wan-2.1", 30)]
+    public void NumInferenceSteps_MatchesRealPerModelFalDefault(string modelId, int expectedSteps)
+    {
+        var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
+        Assert.Equal(expectedSteps, entry.NumInferenceSteps);
+    }
+
+    [Fact]
+    public void HunyuanVideo_HasRealFrameCountLadder()
+    {
+        // HunyuanVideo's real fal.ai num_frames parameter is a discrete enum: 85 or 129 (default 129).
+        var entry = SupportedModelCatalog.ResolveOrDefault("hunyuan-video", ModelCapability.Video);
+        Assert.Equal(85, entry.ShortClipFrameCount);
+        Assert.Equal(129, entry.LongClipFrameCount);
+    }
+
+    [Fact]
+    public void Wan21_IsDurationNative_NotFrameCountNative()
+    {
+        // Wan-2.1 stays duration-native (min/max/absMaxClipDurationSeconds) — it does not get a
+        // short/long frame-count ladder like Hunyuan since FalVideoClient doesn't send an explicit
+        // num_frames override for it today.
+        var entry = SupportedModelCatalog.ResolveOrDefault("fal-ai/wan-2.1", ModelCapability.Video);
+        Assert.Null(entry.ShortClipFrameCount);
+        Assert.Null(entry.LongClipFrameCount);
+        Assert.Equal(5, entry.MinClipDurationSeconds);
+        Assert.Equal(6, entry.MaxClipDurationSeconds);
+    }
+
+    [Fact]
+    public void NumInferenceSteps_And_FrameCount_FallBackToNull_ForUnknownModel()
+    {
+        // A model with no catalog entry (or one that predates these fields) must resolve to null
+        // so callers (FalVideoClient) know to fall back to their own hardcoded defaults.
+        var entry = SupportedModelCatalog.ResolveOrDefault("veo-3.1", ModelCapability.Video);
+        Assert.Null(entry.NumInferenceSteps);
+        Assert.Null(entry.ShortClipFrameCount);
+        Assert.Null(entry.LongClipFrameCount);
+    }
+
     [Fact]
     public void SaveCatalogJson_throws_and_does_not_touch_disk_on_invalid_structure()
     {
@@ -253,6 +316,127 @@ public class SupportedModelCatalogTests
             {
                 Assert.Null(e.InputCostPerMillionTokens);
                 Assert.Null(e.OutputCostPerMillionTokens);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("claude-sonnet-5", ModelCapability.Chat, 128_000)]
+    [InlineData("claude-opus-5", ModelCapability.Chat, 128_000)]
+    [InlineData("grok-4.5", ModelCapability.Chat, 128_000)]
+    [InlineData("grok-4", ModelCapability.Chat, 128_000)]
+    [InlineData("grok-4.20-reasoning", ModelCapability.Chat, 128_000)]
+    public void Chat_models_carry_real_max_output_tokens(string id, ModelCapability cap, int expectedMaxOutputTokens)
+    {
+        // Provider-documented (platform.claude.com/docs/en/about-claude/models/overview, 2026-08):
+        // Claude Sonnet 5 and Claude Opus 5 both cap at 128k output tokens on the synchronous
+        // Messages API. AnthropicChatClient.ResolveMaxTokens reads this instead of always sending
+        // the DefaultMaxTokens fallback.
+        //
+        // xAI Grok chat models (docs.x.ai/developers/rest-api-reference/inference/chat, 2026-08):
+        // xAI does not publish a distinct per-model output ceiling the way Anthropic does — its
+        // chat/completions `max_completion_tokens` parameter "Defaults to 128,000 when unset" as a
+        // single platform-wide figure that applies identically to grok-4, grok-4.5, and
+        // grok-4.20-reasoning (the doc explicitly notes it excludes reasoning/tool-call tokens, so it
+        // governs visible output even for the reasoning variant). Real and sourced, just not
+        // model-differentiated the way Claude's figures are.
+        var e = SupportedModelCatalog.Find(id, cap);
+        Assert.NotNull(e);
+        Assert.Equal(expectedMaxOutputTokens, e!.MaxOutputTokens);
+    }
+
+    [Fact]
+    public void MaxOutputTokens_round_trips_through_ToDto_and_FromDto()
+    {
+        var entry = new SupportedModelEntry
+        {
+            Id = "test-max-output-tokens",
+            DisplayName = "Test Model",
+            Capability = ModelCapability.Chat,
+            Provider = ModelProviderFamily.Anthropic,
+            ApiBase = SupportedModelCatalog.AnthropicApiBase,
+            EndpointPath = "messages",
+            RequiredEnvKeys = new List<string> { SupportedModelCatalog.AnthropicApiKeyEnv },
+            MaxOutputTokens = 128_000,
+        };
+
+        var dto = SupportedModelCatalog.ToDto(entry);
+        Assert.Equal(128_000, dto.MaxOutputTokens);
+
+        var roundTripped = SupportedModelCatalog.FromDto(dto);
+        Assert.Equal(128_000, roundTripped.MaxOutputTokens);
+    }
+
+    [Fact]
+    public void MaxOutputTokens_defaults_to_null_when_unset()
+    {
+        var entry = new SupportedModelEntry
+        {
+            Id = "test-max-output-tokens-unset",
+            DisplayName = "Test Model",
+            Capability = ModelCapability.Chat,
+            Provider = ModelProviderFamily.Xai,
+            ApiBase = SupportedModelCatalog.XaiApiBase,
+            EndpointPath = "chat/completions",
+            RequiredEnvKeys = new List<string> { SupportedModelCatalog.XaiApiKeyEnv },
+        };
+
+        var dto = SupportedModelCatalog.ToDto(entry);
+        Assert.Null(dto.MaxOutputTokens);
+
+        var roundTripped = SupportedModelCatalog.FromDto(dto);
+        Assert.Null(roundTripped.MaxOutputTokens);
+    }
+
+    [Theory]
+    // xAI Grok Imagine video generation (docs.x.ai/developers/model-capabilities/video/generation):
+    // aspect_ratio accepts 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, default 16:9.
+    [InlineData("grok-imagine-video", ModelCapability.Video,
+        new[] { "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3" }, "16:9")]
+    // Google Veo 3.1 via Gemini API (ai.google.dev/gemini-api/docs/veo): landscape 16:9 (default)
+    // or portrait 9:16 only.
+    [InlineData("veo-3.1", ModelCapability.Video, new[] { "16:9", "9:16" }, "16:9")]
+    // Fal.ai HunyuanVideo (fal.ai/models/fal-ai/hunyuan-video/api): aspect_ratio 16:9 or 9:16,
+    // default 16:9.
+    [InlineData("hunyuan-video", ModelCapability.Video, new[] { "16:9", "9:16" }, "16:9")]
+    // Fal.ai Wan 2.1 image-to-video (fal.ai/models/fal-ai/wan-i2v/api): auto (infer from input
+    // image, default), 16:9, 9:16, or 1:1.
+    [InlineData("fal-ai/wan-2.1", ModelCapability.Video,
+        new[] { "auto", "16:9", "9:16", "1:1" }, "auto")]
+    public void Video_models_carry_real_per_model_aspect_ratios(
+        string id, ModelCapability cap, string[] expectedSupported, string expectedDefault)
+    {
+        var e = SupportedModelCatalog.Find(id, cap);
+        Assert.NotNull(e);
+        Assert.NotNull(e!.SupportedAspectRatios);
+        Assert.Equal(expectedSupported, e.SupportedAspectRatios);
+        Assert.Equal(expectedDefault, e.DefaultAspectRatio);
+        // Default should always be a member of the model's own supported list.
+        Assert.Contains(e.DefaultAspectRatio, e.SupportedAspectRatios!);
+    }
+
+    [Fact]
+    public void Unknown_video_model_leaves_aspect_ratio_unset_so_callers_fall_back_to_16_9()
+    {
+        // Callers resolve `entry.DefaultAspectRatio ?? "16:9"` — an unresolvable/unknown model id
+        // must yield a null DefaultAspectRatio (not a guessed value) so that fallback kicks in.
+        var synthetic = SupportedModelCatalog.ResolveOrDefault("totally-unknown-video-model-xyz", ModelCapability.Video);
+        Assert.Null(synthetic.SupportedAspectRatios);
+        Assert.Null(synthetic.DefaultAspectRatio);
+        Assert.Equal("16:9", synthetic.DefaultAspectRatio ?? "16:9");
+    }
+
+    [Fact]
+    public void Chat_and_image_models_leave_aspect_ratio_catalog_fields_unset()
+    {
+        // SupportedAspectRatios/DefaultAspectRatio are Video-only concepts (image generation
+        // already has its own per-call aspectRatio parameter unrelated to this catalog field).
+        foreach (var cap in new[] { ModelCapability.Chat, ModelCapability.Image })
+        {
+            foreach (var e in SupportedModelCatalog.ForCapability(cap, enabledOnly: false))
+            {
+                Assert.Null(e.SupportedAspectRatios);
+                Assert.Null(e.DefaultAspectRatio);
             }
         }
     }

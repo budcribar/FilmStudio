@@ -2329,6 +2329,37 @@ public sealed class ProjectStore
         };
     }
 
+    /// <summary>
+    /// Provider voice id from a previous <see cref="PageToMovie.Engine.Abstractions.IVoiceCloneClient.CloneVoiceAsync"/>
+    /// call (e.g. MiniMax <c>custom_voice_id</c>), read straight from cast_seeds.json's
+    /// <c>voice_clone_provider_id</c> field. Null when no clone has been run yet (or the sample
+    /// changed since — callers should re-clone if the sample was replaced). <paramref name="charKey"/>
+    /// need not be an on-screen cast member — a narration flow can reuse this same per-character
+    /// storage under a caller-chosen pseudo-character key (e.g. "Narrator").
+    /// </summary>
+    public string? GetVoiceCloneProviderId(string projectId, string charKey)
+    {
+        try
+        {
+            var seed = GetCharacterSeed(projectId, charKey);
+            if (seed is not { } el) return null;
+            if (el.TryGetProperty("voice_clone_provider_id", out var idEl) &&
+                idEl.ValueKind == JsonValueKind.String &&
+                idEl.GetString() is { Length: > 0 } id)
+                return id;
+            // Interop with ElevenLabs apply-clone path (voice_provider_voice_id).
+            if (el.TryGetProperty("voice_provider_voice_id", out var altEl) &&
+                altEl.ValueKind == JsonValueKind.String &&
+                altEl.GetString() is { Length: > 0 } alt)
+                return alt;
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     /// <summary>Absolute path for optional voice-clone template audio (mic or upload).</summary>
     public string GetVoiceCloneSamplePath(string projectId, string charKey)
     {
@@ -2381,7 +2412,11 @@ public sealed class ProjectStore
         UpdateCharacterSeedText(
             projectId,
             charKey,
-            voiceCloneSample: Path.GetFileName(dest));
+            voiceCloneSample: Path.GetFileName(dest),
+            // A new sample invalidates any previously cloned provider voice id — clear it so
+            // narration/dialogue synthesis re-clones from the new sample instead of silently
+            // reusing a voice built from the old one.
+            voiceCloneProviderId: "");
         return dest;
     }
 
@@ -2397,7 +2432,7 @@ public sealed class ProjectStore
             }
         }
         if (removed)
-            UpdateCharacterSeedText(projectId, charKey, voiceCloneSample: "");
+            UpdateCharacterSeedText(projectId, charKey, voiceCloneSample: "", voiceCloneProviderId: "");
         return removed;
     }
 
@@ -2414,7 +2449,8 @@ public sealed class ProjectStore
         string? voiceLabel = null,
         string? voiceCloneSample = null,
         string? voiceProvider = null,
-        string? voiceProviderVoiceId = null)
+        string? voiceProviderVoiceId = null,
+        string? voiceCloneProviderId = null)
     {
         void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
         {
@@ -2465,6 +2501,13 @@ public sealed class ProjectStore
                 else
                     seed["voice_provider_voice_id"] = voiceProviderVoiceId.Trim();
             }
+            if (voiceCloneProviderId is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceCloneProviderId))
+                    seed.Remove("voice_clone_provider_id");
+                else
+                    seed["voice_clone_provider_id"] = voiceCloneProviderId.Trim();
+            }
             seeds[foundKey] = seed;
         }
 
@@ -2486,23 +2529,32 @@ public sealed class ProjectStore
                 else return;
 
                 System.Text.Json.Nodes.JsonObject? seeds;
+                System.Text.Json.Nodes.JsonObject? gpv = null;
                 if (root["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject direct)
                 {
                     seeds = direct;
                 }
                 else
                 {
-                    var gpv = root["global_production_variables"] as System.Text.Json.Nodes.JsonObject
-                              ?? new System.Text.Json.Nodes.JsonObject();
+                    gpv = root["global_production_variables"] as System.Text.Json.Nodes.JsonObject
+                          ?? new System.Text.Json.Nodes.JsonObject();
                     root["global_production_variables"] = gpv;
                     seeds = gpv["character_seed_tokens"] as System.Text.Json.Nodes.JsonObject
                             ?? new System.Text.Json.Nodes.JsonObject();
                     gpv["character_seed_tokens"] = seeds;
-                    if (createCastShape)
-                        root["character_seed_tokens"] = seeds;
                 }
 
                 PatchSeedsObject(seeds);
+                // Bug fix (pre-existing, hit by any brand-new cast_seeds.json write — e.g. the
+                // first voice/clone call for a narration pseudo-character on a project with no
+                // cast_seeds.json yet): a JsonNode instance can only have one parent, so the same
+                // `seeds` object can't be assigned directly to both root and global_production_
+                // variables. Mirror a separate parsed copy instead of the same reference — root[
+                // "character_seed_tokens"] previously threw "node already has a parent" here,
+                // which this method's catch-all silently swallowed, so the whole write was
+                // dropped with no visible error.
+                if (createCastShape && gpv is not null)
+                    root["character_seed_tokens"] = System.Text.Json.Nodes.JsonNode.Parse(seeds.ToJsonString());
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
             }

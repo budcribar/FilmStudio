@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -157,11 +158,22 @@ public sealed class GrokImageClient : IImageClient
         var modelName = string.IsNullOrWhiteSpace(model)
             ? _opts.DefaultImageModel
             : model;
-        // Grok Imagine multi-image edit hard cap is 3; never send more than provider allows
+        // Model-aware, not a bare hardcoded 3 — and no silent fallback: an image generation call
+        // costs real money, so an unverified reference-image limit must refuse to start rather
+        // than guess (same "fail loud" principle as Veo's MaxReferenceImages=0).
+        if (SupportedModelCatalog.Find(modelName, ModelCapability.Image)?.MaxReferenceImages is not { } catalogCap)
+        {
+            throw new InvalidOperationException(
+                $"No catalog maxReferenceImages for image model '{modelName}' — refusing to start " +
+                "a paid image generation call with an unverified reference-image limit. Populate " +
+                "models_catalog.json for this model before using it.");
+        }
         var cap = maxRefs > 0
-            ? Math.Clamp(maxRefs, 1, ImageApiLimits.GrokMaxReferenceImages)
-            : ImageApiLimits.MaxReferenceImages(_opts.ImageProvider, modelName);
-        // This client is Grok-only — always enforce Grok cap even if project says gemini
+            ? Math.Clamp(maxRefs, 1, catalogCap)
+            : catalogCap;
+        // This client is Grok-only — never exceed the Grok hard cap even if modelName/catalog
+        // somehow resolved to a non-Grok entry (e.g. misconfigured project ImageProvider). This is
+        // a deterministic architectural ceiling, not a guessed value, so it stays as a clamp here.
         cap = Math.Min(cap, ImageApiLimits.GrokMaxReferenceImages);
 
         var hasCostumeRef = !string.IsNullOrWhiteSpace(costumeRefPath) && File.Exists(costumeRefPath);

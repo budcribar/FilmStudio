@@ -67,6 +67,7 @@ public sealed class FilmJobService
     private readonly IAudioClient _audio;
     private readonly SceneMusicScoringService _musicScoring;
     private readonly MusicSidecarService? _musicSidecars;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public FilmJobService(
         ProjectStore projects,
@@ -105,7 +106,8 @@ public sealed class FilmJobService
         GlobalTimingCalibrationService? timingCalibration = null,
         ActionCameraOverheadLedger? timingLedger = null,
         AiActionOverheadClassifier? timingClassifier = null,
-        MusicSidecarService? musicSidecars = null)
+        MusicSidecarService? musicSidecars = null,
+        GenerationErrorLogger? errorLogger = null)
     {
         _httpFactory = httpFactory;
         _projects = projects;
@@ -144,6 +146,7 @@ public sealed class FilmJobService
         _timingLedger = timingLedger;
         _timingClassifier = timingClassifier;
         _musicSidecars = musicSidecars;
+        _errorLogger = errorLogger;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -1061,7 +1064,9 @@ public sealed class FilmJobService
                             s.Index = Math.Max(s.Index, 6);
                     });
                 },
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                errorLogger: _errorLogger,
+                jobId: Snapshot.JobId).ConfigureAwait(false);
 
             if (!save.Ok)
             {
@@ -2763,11 +2768,9 @@ public sealed class FilmJobService
         var overrunSec = 0.0;
 
         // Previous clip in this scene — Imagine /videos/extensions continues from that video.
-        // Clip 2+ requires previous on disk (no gaps). Cast-set changes reseed fresh+refs (PR2).
+        // Cast-set changes reseed fresh+refs (PR2).
         string? prevVisual = null;
         string? prevVideoPath = null;
-        // Disposable working copy of prev for silence-trim / extend — never rewrite clip N-1 on disk.
-        string? prevExtendWorkTemp = null;
         var reseedFresh = false;
         var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
             ? (ce.GetString() ?? "none")
@@ -2778,27 +2781,24 @@ public sealed class FilmJobService
 
         var model = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
         var modelEntry = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
-        string? prevOnDisk = null;
+
+        // Real video-extend: the browser client prepares and uploads this file — its own copy of
+        // the previous clip's display video, tail-trimmed to ≤ the model's max input length —
+        // before requesting this clip (server has no native ffmpeg to do that trim itself, and
+        // Grok's /videos/extensions rejects input video over its max). Presence is the only
+        // signal; a missing file (client didn't prepare one, an older/manual regenerate, or a
+        // model that doesn't support continue) always falls back to fresh gen + locked refs,
+        // exactly as before this feature existed — never blocks clip generation.
+        string? extendSourcePath = null;
         if (clip > 1 && modelEntry.SupportsVideoContinue)
         {
-            var resolvedPrevPath = _projects.ResolveClipVideoPath(projectId, scene, clip - 1);
-            if (!string.IsNullOrEmpty(resolvedPrevPath) && File.Exists(resolvedPrevPath) && new FileInfo(resolvedPrevPath).Length >= 1024)
-            {
-                prevOnDisk = resolvedPrevPath;
-                // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
-                // permanently shorten a finished clip when this job then failed/cancelled before C_N
-                // was written (no backup of N-1). Work on a throwaway copy instead.
-                prevExtendWorkTemp = Path.Combine(
-                    projectDir, "assets", "video", $"_prev_extend_s{scene:D2}c{clip:D2}.mp4");
-                File.Copy(prevOnDisk, prevExtendWorkTemp, overwrite: true);
-                prevVideoPath = prevExtendWorkTemp;
-            }
-            else
-            {
-                throw new InvalidOperationException(
-                    $"Generate Scene {scene:D2}, Clip {clip - 1:D2} first — Clip {clip:D2} requires the previous clip for video extension.");
-            }
+            var candidate = Path.Combine(
+                projectDir, "assets", "video", $"_extend_src_s{scene:D2}c{clip:D2}.mp4");
+            if (File.Exists(candidate) && new FileInfo(candidate).Length >= 1024)
+                extendSourcePath = candidate;
         }
+        if (extendSourcePath is not null)
+            prevVideoPath = extendSourcePath;
 
         if (previousClipEl is { } prevEl &&
             prevEl.TryGetProperty("visual_prompt", out var pvp))
@@ -2808,22 +2808,9 @@ public sealed class FilmJobService
             prevVisual = FindClipVisualInBlueprint(root, scene, clip - 1);
 
         // PR2: reseed with locked refs when on-screen cast set changes (API drops refs on extend).
-        // Imagine /videos/extensions rejects input video longer than 15s.
-        // Bad extension-tail trims (or re-extend chains) can leave a prev clip over that cap —
-        // clamp to the last ≤15s so continuity still uses the ending frames.
-        string? extendInputTemp = null;
+        string? extendInputTemp = extendSourcePath;
         try
         {
-            // No native ffmpeg: never video-extend (cannot split prev+new). Fresh gen + locked plates.
-            if (prevVideoPath is not null)
-            {
-                reseedFresh = true;
-                prevVideoPath = null;
-                await AppendLogAsync(
-                    $"  [Continuity] S{scene:D2}C{clip:D2} fresh gen with locked refs " +
-                    "(no server video-extend; browser stitch for play/export)");
-            }
-
             if (prevVideoPath is not null && _opts.IdentityReseedOnCastChange)
             {
                 var curKeys = ClipVideoPromptBuilder.ResolveOnScreenCharacterKeys(clipEl)
@@ -2874,7 +2861,7 @@ public sealed class FilmJobService
                     $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
                     $"({Path.GetFileName(prevVideoPath)})");
             }
-            else if (reseedFresh && prevOnDisk is not null)
+            else if (reseedFresh && extendSourcePath is not null)
             {
                 await AppendLogAsync(
                     $"  [Identity] Reseed S{scene:D2}C{clip:D2} after S{scene:D2}C{clip - 1:D2} " +
@@ -2902,9 +2889,11 @@ public sealed class FilmJobService
                 previousClipVisualPrompt: prevVisual,
                 previousClipVideoPath: prevVideoPath,
                 startFrameImagePath: null,
-                maxRefs: 5,
+                // Model-aware, not a hardcoded 5 — Grok's real max is 7; Wan/Hunyuan only take a
+                // single init/reference image; Veo doesn't implement reference conditioning at all.
+                maxRefs: modelEntry.MaxReferenceImages ?? 5,
                 styleHead: styleHead,
-                resolution: resolution);
+                videoModel: model);
 
             if (string.IsNullOrWhiteSpace(built.Prompt))
                 throw new InvalidOperationException("clip missing visual_prompt");
@@ -2978,9 +2967,11 @@ public sealed class FilmJobService
                 duration = padded;
             }
             await AppendLogAsync($"  [Duration] estimated {duration}s (dialogue-aware, max {durMax}s, model={model})");
-            // Extension / ref: new portion typically max 10s
+            // Reference-conditioned / continuation generation is bounded by the model's own
+            // tighter extension cap (catalog MaxExtensionSeconds), not a bare hardcoded 10 — keeps
+            // this correct if a future model's real ref-conditioned max differs from Grok's ~10s.
             if (prevVideoPath is not null || built.ReferenceImagePaths.Count > 0)
-                duration = Math.Min(duration, 10);
+                duration = ClipDurationEstimator.ResolveActualDurationForModel(model, duration, isExtensionMode: true);
 
             var modeLabel = prevVideoPath is not null ? "video-extend" : built.Mode;
             await AppendLogAsync(
@@ -3189,13 +3180,11 @@ public sealed class FilmJobService
         }
         finally
         {
+            // Single-use: consumed extend-source is deleted so a later plain regenerate (no fresh
+            // upload) falls back to fresh gen instead of silently reusing stale continuity data.
             if (extendInputTemp is not null)
             {
                 try { File.Delete(extendInputTemp); } catch { /* ignore */ }
-            }
-            if (prevExtendWorkTemp is not null)
-            {
-                try { File.Delete(prevExtendWorkTemp); } catch { /* ignore */ }
             }
         }
 

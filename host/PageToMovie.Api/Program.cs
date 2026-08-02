@@ -177,6 +177,7 @@ catch
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir));
 builder.Services.AddSingleton<UserDatabaseService>();
+builder.Services.AddSingleton<GenerationErrorLogger>();
 builder.Services.AddHttpContextAccessor();
 
 // Blazor Web UI — Interactive WebAssembly (client DI lives in PageToMovie.Web Program.cs)
@@ -304,6 +305,22 @@ else
         c.Timeout = TimeSpan.FromMinutes(2);
     }));
     builder.Services.AddSingleton<IAudioClient, MultiProviderAudioClient>();
+    // Lip-sync and voice-clone narration: explicit, human-triggered actions only (never wired
+    // into any automatic job/pipeline — see the lip-sync / voice/clone / voice/speak routes).
+    // Fal.ai is the only provider today, so these bind straight to the concrete client (no
+    // MultiProvider* dispatcher yet — same pattern as IGeminiVideoAnalysisClient below).
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalLipSyncClient>(c =>
+    {
+        c.BaseAddress = new Uri(FalLipSyncClient.ApiBase.TrimEnd('/') + "/");
+        c.Timeout = TimeSpan.FromMinutes(6);
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalVoiceCloneClient>(c =>
+    {
+        c.BaseAddress = new Uri(FalVoiceCloneClient.ApiBase.TrimEnd('/') + "/");
+        c.Timeout = TimeSpan.FromMinutes(4);
+    }));
+    builder.Services.AddSingleton<ILipSyncClient>(sp => sp.GetRequiredService<FalLipSyncClient>());
+    builder.Services.AddSingleton<IVoiceCloneClient>(sp => sp.GetRequiredService<FalVoiceCloneClient>());
 
     // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
     // IVideoClient / IVisionClient and is routed to the right concrete provider client
@@ -1231,6 +1248,23 @@ app.MapPost("/api/admin/timing-telemetry/seed", async (
         message = $"Seeded {count} empirical benchmark entries into SQLite database.",
         count
     });
+});
+
+/// <summary>Admin: recent generation_errors rows (partial-coverage / structural-gate / transient-retry events).</summary>
+app.MapGet("/api/admin/generation-errors", async (
+    IUserContext user,
+    UserDatabaseService userDb,
+    string? errorType,
+    string? projectId,
+    int? take,
+    CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    var rows = await userDb.ListGenerationErrorsAsync(errorType, projectId, take ?? 100, ct);
+    return Results.Ok(new { ok = true, rows });
 });
 
 /// <summary>Open a local folder on disk in Windows File Explorer (or OS file manager).</summary>
@@ -2680,6 +2714,256 @@ app.MapDelete("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
     }
 });
 
+/// <summary>
+/// Clone a voice from this character's saved voice-clone sample (reuses the same per-character
+/// storage as the /voice/clone-sample upload above — a narration flow can point charKey at a
+/// caller-chosen pseudo-character like "Narrator" rather than an on-screen cast member). Explicit,
+/// human-triggered only — spends real provider money ($1.50/clone as of 2026-08, see
+/// models_catalog.json) and is never called automatically from any job/pipeline. The returned
+/// provider voice id is cached on the character seed so repeat narration calls reuse it instead of
+/// re-cloning (and re-paying) every time.
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone", async (
+    string id,
+    string charKey,
+    CloneVoiceApiRequest? body,
+    ProjectStore store,
+    IVoiceCloneClient voiceClone,
+    ProjectTelemetryService telemetry,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        if (!voiceClone.IsConfigured)
+            return Results.BadRequest(new { ok = false, error = "Connect a voice-clone service (FAL_API_KEY) in Configuration." });
+
+        var samplePath = store.GetVoiceCloneSamplePath(id, charKey);
+        if (!File.Exists(samplePath))
+            return Results.BadRequest(new { ok = false, error = "No voice-clone sample saved for this character yet." });
+
+        var model = body?.Model;
+        var entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+            .FirstOrDefault(m => m.IsVoiceCloneStep &&
+                (string.IsNullOrWhiteSpace(model) || string.Equals(m.Id, model, StringComparison.OrdinalIgnoreCase)));
+
+        var voiceId = await voiceClone.CloneVoiceAsync(samplePath, model, ct);
+        await telemetry.LogApiCallAsync(new ApiCallTelemetry
+        {
+            ProjectId = id,
+            Kind = "voice_clone",
+            Mode = "voice_clone",
+            Model = entry?.Id ?? model,
+            Provider = entry?.ProviderId,
+            CharKey = charKey,
+            EstimatedUsd = entry?.CostPerCloneUsd,
+            Ok = !string.IsNullOrWhiteSpace(voiceId),
+            Error = string.IsNullOrWhiteSpace(voiceId) ? "Voice clone failed" : null,
+        }, ct);
+        if (string.IsNullOrWhiteSpace(voiceId))
+            return Results.BadRequest(new { ok = false, error = "Voice clone failed — see server logs." });
+
+        store.UpdateCharacterSeedText(id, charKey, voiceCloneProviderId: voiceId);
+
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            voiceId,
+            estimatedUsd = entry?.CostPerCloneUsd,
+            message = "Voice cloned — reused for narration until the sample is replaced.",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Synthesize narration/dialogue speech in a previously cloned voice
+/// (see POST .../voice/clone). Explicit, human-triggered only — spends real provider money
+/// ($0.10/1000 chars as of 2026-08) and is never called automatically. Returns a media-proxy URL
+/// (not the raw provider URL) so the Fal.ai key never reaches the browser — same pattern as
+/// generated clips/music.
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/speak", async (
+    string id,
+    string charKey,
+    SpeakVoiceApiRequest? body,
+    ProjectStore store,
+    IVoiceCloneClient voiceClone,
+    MediaProxyTicketStore tickets,
+    ProjectTelemetryService telemetry,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        var text = body?.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            return Results.BadRequest(new { ok = false, error = "text required" });
+        if (!voiceClone.IsConfigured)
+            return Results.BadRequest(new { ok = false, error = "Connect a voice-clone service (FAL_API_KEY) in Configuration." });
+
+        var voiceId = body?.VoiceId;
+        if (string.IsNullOrWhiteSpace(voiceId))
+            voiceId = store.GetVoiceCloneProviderId(id, charKey);
+        if (string.IsNullOrWhiteSpace(voiceId))
+            return Results.BadRequest(new { ok = false, error = "No cloned voice yet — call voice/clone first." });
+
+        var model = body?.Model;
+        var entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+            .FirstOrDefault(m => !m.IsVoiceCloneStep &&
+                (string.IsNullOrWhiteSpace(model) || string.Equals(m.Id, model, StringComparison.OrdinalIgnoreCase)));
+        var maxLen = entry?.MaxPromptLength ?? 5000;
+        if (text.Length > maxLen)
+            return Results.BadRequest(new { ok = false, error = $"Text is {text.Length} characters — this voice model's limit is {maxLen} per call. Split into multiple calls." });
+
+        var audioUrl = await voiceClone.SynthesizeSpeechAsync(text, voiceId!, model, ct);
+        var estimatedUsd = entry?.CostPerThousandCharsUsd is { } rate ? Math.Round(rate * text.Length / 1000.0, 4) : (double?)null;
+        await telemetry.LogApiCallAsync(new ApiCallTelemetry
+        {
+            ProjectId = id,
+            Kind = "tts",
+            Mode = "dialogue_tts",
+            Model = entry?.Id ?? model,
+            Provider = entry?.ProviderId,
+            CharKey = charKey,
+            PromptChars = text.Length,
+            EstimatedUsd = estimatedUsd,
+            Ok = !string.IsNullOrWhiteSpace(audioUrl),
+            Error = string.IsNullOrWhiteSpace(audioUrl) ? "Speech synthesis failed" : null,
+        }, ct);
+        if (string.IsNullOrWhiteSpace(audioUrl))
+            return Results.BadRequest(new { ok = false, error = "Speech synthesis failed — see server logs." });
+
+        var ticket = tickets.Issue(audioUrl, TimeSpan.FromMinutes(45));
+        var clientUrl = $"/api/media/proxy/{ticket}";
+
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            voiceId,
+            clientUrl,
+            characterCount = text.Length,
+            estimatedUsd,
+            message = "Narration audio ready.",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Video lip-sync: resync a video clip's mouth movement to a separate dialogue/narration audio
+/// track (multipart upload: fields "video" and "audio", both required; optional "model" and
+/// "syncMode" fields). Explicit, human-triggered per-clip action — spends real provider money
+/// (~$5/min of output video as of 2026-08, see models_catalog.json) and is never called
+/// automatically from any job/pipeline. Returns a media-proxy URL, not the raw provider URL.
+/// </summary>
+app.MapPost("/api/projects/{id}/media/lip-sync", async (
+    string id,
+    HttpRequest req,
+    ProjectStore store,
+    ILipSyncClient lipSync,
+    MediaProxyTicketStore tickets,
+    ProjectTelemetryService telemetry,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!req.HasFormContentType)
+        return Results.BadRequest(new { ok = false, error = "multipart form required (fields: video, audio)" });
+
+    string? videoTemp = null;
+    string? audioTemp = null;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!lipSync.IsConfigured)
+            return Results.BadRequest(new { ok = false, error = "Connect a lip-sync service (FAL_API_KEY) in Configuration." });
+
+        var form = await req.ReadFormAsync(ct);
+        var videoFile = form.Files.GetFile("video");
+        var audioFile = form.Files.GetFile("audio");
+        if (videoFile is null || videoFile.Length == 0)
+            return Results.BadRequest(new { ok = false, error = "No video file (field: video)" });
+        if (audioFile is null || audioFile.Length == 0)
+            return Results.BadRequest(new { ok = false, error = "No audio file (field: audio)" });
+
+        var model = form["model"].FirstOrDefault();
+        var syncMode = form["syncMode"].FirstOrDefault();
+        var entry = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.LipSync);
+
+        videoTemp = Path.Combine(Path.GetTempPath(), $"lipsync_video_{Guid.NewGuid():N}{Path.GetExtension(videoFile.FileName)}");
+        audioTemp = Path.Combine(Path.GetTempPath(), $"lipsync_audio_{Guid.NewGuid():N}{Path.GetExtension(audioFile.FileName)}");
+        await using (var vfs = File.Create(videoTemp))
+            await videoFile.CopyToAsync(vfs, ct);
+        await using (var afs = File.Create(audioTemp))
+            await audioFile.CopyToAsync(afs, ct);
+
+        var resultUrl = await lipSync.GenerateLipSyncAsync(
+            videoTemp, audioTemp, model,
+            string.IsNullOrWhiteSpace(syncMode) ? "cut_off" : syncMode!,
+            onProgress: null, ct);
+        await telemetry.LogApiCallAsync(new ApiCallTelemetry
+        {
+            ProjectId = id,
+            Kind = "lip_sync",
+            Model = entry.Id,
+            Provider = entry.ProviderId,
+            Ok = !string.IsNullOrWhiteSpace(resultUrl),
+            Error = string.IsNullOrWhiteSpace(resultUrl) ? "Lip-sync failed" : null,
+        }, ct);
+        if (string.IsNullOrWhiteSpace(resultUrl))
+            return Results.BadRequest(new { ok = false, error = "Lip-sync failed — see server logs." });
+
+        var ticket = tickets.Issue(resultUrl, TimeSpan.FromMinutes(45));
+        var clientUrl = $"/api/media/proxy/{ticket}";
+
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            clientUrl,
+            model = entry.Id,
+            costPerMinuteUsd = entry.CostPerMinuteUsd,
+            message = "Lip-synced clip ready.",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+    finally
+    {
+        foreach (var tmp in new[] { videoTemp, audioTemp })
+        {
+            if (tmp is null) continue;
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { /* best effort */ }
+        }
+    }
+});
+
+
 /// <summary>List provider voices (ElevenLabs premade + clones, or mock catalog).</summary>
 app.MapGet("/api/voices", async (IVoiceClient voices, CancellationToken ct) =>
 {
@@ -2703,6 +2987,7 @@ app.MapGet("/api/voices", async (IVoiceClient voices, CancellationToken ct) =>
 /// <summary>
 /// Create/apply a voice clone for a character from the saved sample (or generate a demo sample),
 /// store provider voice_id on the seed, and synthesize a short TTS preview.
+/// Complements POST .../voice/clone (Fal MiniMax) — this path uses IVoiceClient (ElevenLabs).
 /// </summary>
 app.MapPost("/api/projects/{id}/characters/{charKey}/voice/apply-clone", async (
     string id,
@@ -2728,6 +3013,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/apply-clone", async (
             charKey,
             providerId = result.ProviderId,
             providerVoiceId = result.ProviderVoiceId,
+            voiceId = result.ProviderVoiceId,
             usedMock = result.UsedMock,
             voiceLabel = result.VoiceLabel,
             previewUrl = result.PreviewUrl,
@@ -2771,6 +3057,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/apply-catalog", async
             charKey,
             providerId = result.ProviderId,
             providerVoiceId = result.ProviderVoiceId,
+            voiceId = result.ProviderVoiceId,
             usedMock = result.UsedMock,
             voiceLabel = result.VoiceLabel,
             previewUrl = result.PreviewUrl,
@@ -2807,6 +3094,7 @@ app.MapGet("/api/projects/{id}/characters/{charKey}/voice/tts-preview",
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
+
 
 app.MapGet("/api/users/{id}/terms", async (string id, UserDatabaseService userDb) =>
 {
@@ -5063,7 +5351,7 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialo
 
 /// <summary>Upload local client clip MP4 file to server assets/video directory.</summary>
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/upload", async (
-    string id, int scene, int clip, HttpContext httpContext, ProjectStore store, CancellationToken ct) =>
+    string id, int scene, int clip, string? kind, HttpContext httpContext, ProjectStore store, CancellationToken ct) =>
 {
     if (!httpContext.Request.HasFormContentType)
         return Results.BadRequest(new { ok = false, error = "Form data expected." });
@@ -5076,9 +5364,14 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/upload", asy
     var projectDir = store.GetProjectDir(id);
     var destDir = Path.Combine(projectDir, "assets", "video");
     Directory.CreateDirectory(destDir);
-    var fileName = !string.IsNullOrWhiteSpace(file.FileName) && file.FileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
-        ? Path.GetFileName(file.FileName)
-        : $"scene_{scene:D2}_clip_{clip:D2}_take_01.mp4";
+    // "extend-source": the client's tail-trimmed continuation input for video-extend (see
+    // FilmJobService.GenerateOneClipAsync) — fixed name, ignores any client-supplied filename so
+    // the server always finds it at the exact path it expects.
+    var fileName = string.Equals(kind, "extend-source", StringComparison.OrdinalIgnoreCase)
+        ? $"_extend_src_s{scene:D2}c{clip:D2}.mp4"
+        : !string.IsNullOrWhiteSpace(file.FileName) && file.FileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
+            ? Path.GetFileName(file.FileName)
+            : $"scene_{scene:D2}_clip_{clip:D2}_take_01.mp4";
     var destPath = Path.Combine(destDir, fileName);
 
     using (var stream = File.Create(destPath))
@@ -5229,6 +5522,32 @@ app.MapGet("/api/projects/{id}/resolution-lock", async (
     {
         var locked = await jobs.GetLockedResolutionAsync(id, ct);
         return Results.Ok(new { ok = true, projectId = id, locked });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Actual spend by provider (then category) for this project — reconcile against a real vendor billing statement.</summary>
+app.MapGet("/api/projects/{id}/cost/by-provider", async (
+    string id,
+    ProjectStore store,
+    UserDatabaseService userDb,
+    CancellationToken ct) =>
+{
+    try
+    {
+        _ = await store.GetProjectAsync(id, ct)
+            ?? throw new InvalidOperationException($"Unknown project: {id}");
+        var stats = await userDb.GetApiCostByProviderAsync(userId: null, projectId: id, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            notes = "List-rate estimates at call time (catalog), grouped by provider. Not a provider invoice — use as a sanity check against your actual billing statement, not an exact match.",
+            stats,
+        });
     }
     catch (Exception ex)
     {

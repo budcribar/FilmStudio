@@ -66,6 +66,7 @@ public sealed class ExtendCutClassifier
 
         onProgress?.Invoke($"Classifying extend vs hard-cut for {pairs.Count} beat(s)…");
         var maxAttempts = Math.Clamp(_opts.SilentBeatClassifyMaxAttempts, 1, 5);
+        var backoffBaseMs = Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs);
         var labeled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         const int batchSize = 25;
         var chunks = new List<List<Pair>>();
@@ -78,13 +79,17 @@ public sealed class ExtendCutClassifier
             await sem.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                var missing = chunk.Select(p => p.Id).ToList();
+                var chunkIds = chunk.Select(p => p.Id).ToList();
                 var byId = chunk.ToDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase);
-                for (var attempt = 1; attempt <= maxAttempts && missing.Count > 0; attempt++)
-                {
-                    try
+                // Mutable: shrinks to only still-missing ids so each retry re-asks fewer beats —
+                // mirrors the pre-refactor hand-rolled loop exactly.
+                var currentIds = new List<string>(chunkIds);
+
+                var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<string>(
+                    chunkIds,
+                    callChat: async () =>
                     {
-                        var payload = missing.Select(id =>
+                        var payload = currentIds.Select(id =>
                         {
                             var p = byId[id];
                             return new Dictionary<string, object?>
@@ -104,32 +109,35 @@ public sealed class ExtendCutClassifier
                                    JsonSerializer.Serialize(new { beats = payload });
                         var raw = await _chat.CompleteAsync(SystemPrompt(), user, effectiveModel, 0, ct, ChatCallModes.ExtendCutClassify)
                             .ConfigureAwait(false);
-                        var parsed = ParseLabels(raw);
-                        lock (labeled)
-                        {
-                            result.ChatCalls++;
-                            foreach (var id in missing.ToList())
-                            {
-                                if (!parsed.TryGetValue(id, out var dec)) continue;
-                                var p = byId[id];
-                                p.Beat["cut_decision"] = dec;
-                                if (dec == "hard_cut")
-                                    p.Beat["continuity"] = "new_setup";
-                                else
-                                    p.Beat["continuity"] = "continuous_from_previous_beat";
-                                missing.Remove(id);
-                                labeled.Add(id);
-                            }
-                        }
-                        if (missing.Count > 0)
-                            await Task.Delay(Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs) * attempt, ct);
-                    }
-                    catch (OperationCanceledException) { throw; }
-                    catch (Exception ex)
+                        lock (labeled) { result.ChatCalls++; }
+                        return raw;
+                    },
+                    parseResponse: raw =>
                     {
-                        _log.LogWarning(ex, "ExtendCut attempt {A}", attempt);
-                        result.LastError = ex.Message;
-                        await Task.Delay(Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs) * attempt, ct);
+                        var parsed = ParseLabels(raw);
+                        currentIds.RemoveAll(id => parsed.ContainsKey(id));
+                        return parsed;
+                    },
+                    maxAttempts,
+                    backoffBaseMs,
+                    ct).ConfigureAwait(false);
+
+                if (retry.LastError is not null)
+                {
+                    _log.LogWarning("ExtendCut chunk failed: {Error}", retry.LastError);
+                    lock (labeled) { result.LastError = retry.LastError; }
+                }
+                if (retry.Result is not null)
+                {
+                    lock (labeled)
+                    {
+                        foreach (var kv in retry.Result)
+                        {
+                            if (!byId.TryGetValue(kv.Key, out var p)) continue;
+                            p.Beat["cut_decision"] = kv.Value;
+                            p.Beat["continuity"] = kv.Value == "hard_cut" ? "new_setup" : "continuous_from_previous_beat";
+                            labeled.Add(kv.Key);
+                        }
                     }
                 }
             }

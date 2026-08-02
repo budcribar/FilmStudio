@@ -117,7 +117,11 @@ public static class BookToFountainConverter
         PromptBudget? budgetOverride = null,
         Action<string>? onHeuristicFallback = null,
         string? reasoningEffort = null,
-        Action<ProjectVisionMeta.Document>? onVisionMeta = null)
+        Action<ProjectVisionMeta.Document>? onVisionMeta = null,
+        GenerationErrorLogger? errorLogger = null,
+        string? jobId = null,
+        string? projectId = null,
+        double temperature = 0.2)
     {
         if (string.IsNullOrWhiteSpace(bookText))
             throw new InvalidOperationException("Book text is empty");
@@ -141,7 +145,7 @@ public static class BookToFountainConverter
                 onProgress?.Invoke("Adapting book → Fountain (single pass)…");
                 var single = await TrySingleShotWithGateAsync(
                     system, title, author, pageCount, totalRuntimeMinutes, bookText,
-                    chat, model, budget, onProgress, ct, reasoningEffort).ConfigureAwait(false);
+                    chat, model, budget, onProgress, ct, reasoningEffort, temperature).ConfigureAwait(false);
 
                 if (single is not null)
                 {
@@ -155,7 +159,7 @@ public static class BookToFountainConverter
                         chat, model, onProgress, ct,
                         softMaxChars: budget.ChunkSoftMaxChars,
                         maxChunks: ResolveMaxChunks(bookText, budget),
-                        reasoningEffort: reasoningEffort).ConfigureAwait(false);
+                        reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
                 }
                 else
                 {
@@ -171,14 +175,39 @@ public static class BookToFountainConverter
                     chat, model, onProgress, ct,
                     softMaxChars: budget.ChunkSoftMaxChars,
                     maxChunks: ResolveMaxChunks(bookText, budget),
-                    reasoningEffort: reasoningEffort).ConfigureAwait(false);
+                    reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
             }
 
             // Multi path: soft coverage failures still accept a structurally good draft
             var multiGate = EvaluateQuality(text, bookText, totalRuntimeMinutes, AdaptPath.Multi);
-            if (!multiGate.Ok && multiGate.HasHardFailure)
-                throw new InvalidOperationException(
-                    "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
+            if (!multiGate.Ok)
+            {
+                // Visibility only — no automatic retry here (re-running multi-chunk adapt is
+                // expensive, and we don't have real error-rate data yet to justify it). Hard
+                // failures (structure/excerpt_marker) still throw below same as before; soft
+                // failures (scene_count/missing_ending/suspiciously_short) previously shipped
+                // silently with no log anywhere — now recorded for the admin panel.
+                if (errorLogger is not null)
+                {
+                    await errorLogger.LogAsync(new GenerationErrorRecord
+                    {
+                        ProjectId = projectId,
+                        JobId = jobId,
+                        Stage = "book_to_fountain_chunk",
+                        Model = model,
+                        ErrorType = "structural_gate_failure",
+                        ErrorMessage = $"Multi-chunk quality gate failed: {multiGate.Reason} " +
+                                       $"(scenes={multiGate.SceneCount}, fountainChars={multiGate.FountainChars}, " +
+                                       $"hardFailure={multiGate.HasHardFailure})",
+                        Resolved = false,
+                        ResponseSummary = text.Length > 500 ? text[..500] : text,
+                    }, ct).ConfigureAwait(false);
+                }
+
+                if (multiGate.HasHardFailure)
+                    throw new InvalidOperationException(
+                        "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
+            }
         }
         catch (InvalidOperationException ex) when (LooksLikeGoodFountain(ConvertHeuristic(title, bookText, author)))
         {
@@ -372,7 +401,8 @@ public static class BookToFountainConverter
         string model,
         Action<string>? onProgress,
         CancellationToken ct,
-        string? reasoningEffort = null)
+        string? reasoningEffort = null,
+        double temperature = 0.2)
     {
         var bad = FindVagueLocationHeadings(fountain);
         if (bad.Count == 0 || !chat.IsConfigured)
@@ -1179,7 +1209,8 @@ public static class BookToFountainConverter
         PromptBudget budget,
         Action<string>? onProgress,
         CancellationToken ct,
-        string? reasoningEffort = null)
+        string? reasoningEffort = null,
+        double temperature = 0.2)
     {
         try
         {
@@ -1187,7 +1218,7 @@ public static class BookToFountainConverter
                 system, title, author, pageCount, totalMinutes, bookText,
                 chat, model, ct,
                 bookMaxChars: budget.SingleShotBookMaxChars,
-                reasoningEffort: reasoningEffort).ConfigureAwait(false);
+                reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
 
             var gate = EvaluateQuality(draft, bookText, totalMinutes, AdaptPath.Single);
             if (gate.Ok)
@@ -1199,7 +1230,7 @@ public static class BookToFountainConverter
                 chat, model, ct,
                 bookMaxChars: budget.SingleShotBookMaxChars,
                 extraUserSuffix: CoverageRetrySuffix(),
-                reasoningEffort: reasoningEffort).ConfigureAwait(false);
+                reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
 
             gate = EvaluateQuality(draft, bookText, totalMinutes, AdaptPath.Single);
             return gate.Ok ? draft : null;
@@ -1223,7 +1254,8 @@ public static class BookToFountainConverter
         CancellationToken ct,
         int bookMaxChars = DefaultSingleShotBookMaxChars,
         string? extraUserSuffix = null,
-        string? reasoningEffort = null)
+        string? reasoningEffort = null,
+        double temperature = 0.2)
     {
         // Happy path: full book. Trim only if somehow over the call budget (prefer multi-chunk instead).
         var bookForPrompt = bookText.Length <= bookMaxChars
@@ -1237,7 +1269,7 @@ public static class BookToFountainConverter
             ? ChatCallModes.BookToFountain
             : ChatCallModes.BookToFountainCoverage;
         var text = await CompleteWithOneRetryAsync(
-                chat, system, user, model, temperature: 0.2,
+                chat, system, user, model, temperature: temperature,
                 mode: firstMode,
                 retryLabel: "Book adapt",
                 onProgress: null,
@@ -1252,7 +1284,7 @@ public static class BookToFountainConverter
         {
             var retryUser = user + RetrySuffix(hasPageMarkers: false);
             var retryText = await CompleteWithOneRetryAsync(
-                    chat, system, retryUser, model, temperature: 0.15,
+                    chat, system, retryUser, model, temperature: Math.Min(temperature, 0.15),
                     mode: ChatCallModes.BookToFountainRetry,
                     retryLabel: "Book adapt structure",
                     onProgress: null,
@@ -1282,7 +1314,8 @@ public static class BookToFountainConverter
         CancellationToken ct,
         int softMaxChars = ChunkSoftMaxChars,
         int maxChunks = MaxAdaptChunks,
-        string? reasoningEffort = null)
+        string? reasoningEffort = null,
+        double temperature = 0.2)
     {
         var chunks = ChunkBookForAdaptation(bookText, maxChunks, softMaxChars);
         onProgress?.Invoke($"Book split into {chunks.Count} chunk(s) for adaptation…");
@@ -1301,7 +1334,7 @@ public static class BookToFountainConverter
 
             // One transport retry on timeout/cancel (chunk calls can exceed short proxies)
             var part = await CompleteWithOneRetryAsync(
-                    chat, system, user, model, temperature: 0.2,
+                    chat, system, user, model, temperature: temperature,
                     mode: ChatCallModes.BookToFountainChunk,
                     retryLabel: $"Chunk {i + 1}/{chunks.Count}",
                     onProgress, ct, reasoningEffort)
@@ -1314,7 +1347,7 @@ public static class BookToFountainConverter
             if (!LooksLikeGoodFountain(part) && part.Length < 80)
             {
                 var retryPart = await CompleteWithOneRetryAsync(
-                        chat, system, user + RetrySuffix(false), model, temperature: 0.15,
+                        chat, system, user + RetrySuffix(false), model, temperature: Math.Min(temperature, 0.15),
                         mode: ChatCallModes.BookToFountainChunkRetry,
                         retryLabel: $"Chunk {i + 1} structure",
                         onProgress, ct, reasoningEffort)

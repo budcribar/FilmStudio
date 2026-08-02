@@ -459,6 +459,21 @@ public sealed class UpdateCharacterVoiceRequest
     public string? VoiceProfile { get; set; }
 }
 
+/// <summary>POST .../voice/clone body — optional catalog model id override.</summary>
+public sealed class CloneVoiceApiRequest
+{
+    public string? Model { get; set; }
+}
+
+/// <summary>POST .../voice/speak body — narration/dialogue text (required) + optional voice id / model override.</summary>
+public sealed class SpeakVoiceApiRequest
+{
+    public string? Text { get; set; }
+    /// <summary>Provider voice id. When omitted, resolved from the character's stored voice/clone result.</summary>
+    public string? VoiceId { get; set; }
+    public string? Model { get; set; }
+}
+
 /// <summary>
 /// Film-pipeline voice sample: short video with voice style + dialogue (cached as MP4).
 /// </summary>

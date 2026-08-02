@@ -1,0 +1,1509 @@
+{
+  "cast_seeds": {
+    "characters": [
+      {
+        "key": "PETER_ADULT",
+        "display_name": "Peter",
+        "age_link": "PETER_CHILD",
+        "identity_anchors": "Younger Olson brother; average working-class build early on, later fills out with broader shoulders and arm muscle from work and yoga; Midwestern white male; hair and exact facial features largely undescribed in source so keep neutral everyman face; eyes capable of quiet intensity; carries exhaustion then later calm confidence",
+        "source_evidence": "First-person narrator; pizza maker who rides bike to work; too old in his own mind for college at start; later community-college student; applies direct pressure to Sionna\u0027s wound; seven-plus years later owns Tony\u0027s Boy\u0027s Pizza chain in Seattle; Bob notes big shoulders and arm muscles on return; name Peter Olson / President Olson revealed only at close",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Midwestern male, reflective, working-class cadence that grows more articulate after college and meditation",
+        "wardrobe_variants": [
+          {
+            "key": "PETER_PIZZA_WORK",
+            "description": "Practical pizza-parlor work clothes: plain t-shirt or polo, jeans or work pants, apron when on line, worn sneakers or work shoes; outdoor layers for bike commute in Milwaukee cold",
+            "source_facts": [
+              "Works pizza job",
+              "Rides bike to work",
+              "Later does deliveries in Tony\u0027s cold Chevy"
+            ],
+            "creative_direction": "Slight flour dust and grease stains acceptable; muted blues/grays; no logos that date the film beyond late 90s",
+            "beats": [
+              "B3",
+              "B4",
+              "B17",
+              "B21",
+              "B22"
+            ]
+          },
+          {
+            "key": "PETER_CASUAL_DATE",
+            "description": "Simple clean casual for coffee and walks: jeans, plain long-sleeve or t-shirt, light jacket; nothing flashy",
+            "source_facts": [
+              "Meets Sionna at Java Hut",
+              "Walks parks and museums",
+              "Feels underdressed among college crowd"
+            ],
+            "creative_direction": "Neat but inexpensive thrift/Target level; soft earth tones",
+            "beats": [
+              "B6",
+              "B8",
+              "B16"
+            ]
+          },
+          {
+            "key": "PETER_YOGA",
+            "description": "T-shirt and shorts; shirt tends to fall over face in inversions so he tucks it in",
+            "source_facts": [
+              "First yoga in t-shirt and shorts; shirt fell over face; had to tuck into pants"
+            ],
+            "creative_direction": "Worn athletic cotton; slightly self-conscious body language first class",
+            "beats": [
+              "B8"
+            ]
+          },
+          {
+            "key": "PETER_COLLEGE",
+            "description": "Same casual base plus backpack; layers for campus and library",
+            "source_facts": [
+              "Community college English and business; computer at home; little sleep between school work Ma Sionna"
+            ],
+            "creative_direction": "Slightly tidier shirts; notebook or used textbooks as props",
+            "beats": [
+              "B14",
+              "B17"
+            ]
+          },
+          {
+            "key": "PETER_GRIEF_FUNERAL",
+            "description": "Dark modest funeral clothes; later exhausted everyday layers for cemetery visits and night walking",
+            "source_facts": [
+              "Only son at Ma\u0027s funeral; throws dirt on maple casket; 4 hours sleep; walks duplex at night"
+            ],
+            "creative_direction": "Ill-fitting thrift suit or dark jacket and slacks; loosened tie after service",
+            "beats": [
+              "B18",
+              "B19",
+              "B20",
+              "B21"
+            ]
+          },
+          {
+            "key": "PETER_CRISIS_BLOODY",
+            "description": "Everyday home clothes soaked in Sionna\u0027s blood on shirt hands pants after applying pressure to stab wound",
+            "source_facts": [
+              "Blood covering front of shirt hands pants; ripped flannel off her; stacked hands on wound near left shoulder"
+            ],
+            "creative_direction": "Keep blood practical arterial not stylized; shock and focus in face",
+            "beats": [
+              "B26",
+              "B27"
+            ]
+          },
+          {
+            "key": "PETER_SEATTLE_SUCCESS",
+            "description": "Clean contemporary Pacific-Northwest casual: quality jeans or chinos, layered knits or field jacket, practical waterproof shoes; yoga-ready athletic wear for class",
+            "source_facts": [
+              "Owns pizza chain; walks Belltown and Pike Place; attends yoga meditation; lonely but put-together"
+            ],
+            "creative_direction": "Quiet success not flashy wealth; charcoal olive navy palette; cat hair optional on home layers",
+            "beats": [
+              "B29",
+              "B30",
+              "B31",
+              "B32",
+              "B33",
+              "B34",
+              "B35"
+            ]
+          },
+          {
+            "key": "PETER_PRISON_VISIT",
+            "description": "Travel-neat version of Seattle casual suitable for correctional facility visit",
+            "source_facts": [
+              "Flies Milwaukee; drives Green Bay; 15-minute plexiglass visit"
+            ],
+            "creative_direction": "No metal accessories; calm composed posture",
+            "beats": [
+              "B34"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "PETER_CHILD",
+        "display_name": "Peter (child)",
+        "age_link": "PETER_ADULT",
+        "identity_anchors": "Younger brother roughly age 9 near end of fourth grade; smaller than Nick; goofy expressive face that laughs until tears; can look terrified under dad or bullies",
+        "source_evidence": "Fourth-grade flashback with Bobby Swenson mocking Mrs Stark; Nick sixth-grader saves him; earlier dependent little brother Nick protects from John Johansson; dad belt incident is Nick\u0027s memory but Peter is the younger target of family violence climate",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Boy Midwestern, higher pitch, quick to laugh or cry",
+        "wardrobe_variants": [
+          {
+            "key": "PETER_GRADE_SCHOOL",
+            "description": "Late-70s/early-80s boy clothes: jeans, striped or plain tee, sneakers; outdoor recess layers",
+            "source_facts": [
+              "End of fourth grade; kickball alley earlier childhood; notes under desk pencil erasers up noses"
+            ],
+            "creative_direction": "Slightly rumpled; grass stains okay",
+            "beats": [
+              "B13",
+              "B1"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "NICK_ADULT",
+        "display_name": "Nick",
+        "age_link": "NICK_CHILD",
+        "identity_anchors": "Dominant older brother; tall heavily muscled modern Viking build; reddish-brown fire-colored hair usually uncombed helter-skelter; face like puzzle pieces glued\u2014scars on chin and over left eyebrow; pox-marked; rough brawler look not classically ugly; black eyes that go wild with rage; beet-red face when angry; large hands fists; later hospital then prison: sallow, bruised, then scrawny gray-thinning hair bags under watery eyes",
+        "source_evidence": "P2-P9 physical and gym dominance; reddish-brown hair; scars chin and left eyebrow; Trans Am; factory crane; pox-marked helter-skelter hair prison-break look P118; hospital bruises chest tube huge leg P406; prison old scrawny graying P559",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Deep Midwestern working-class male; cocky then gravelly weak in hospital; broken quieter in prison",
+        "wardrobe_variants": [
+          {
+            "key": "NICK_FACTORY_CASUAL",
+            "description": "Work-hardened casual: jeans, boots, plain tees or flannels, brown suede jacket; keys tossed in basket; can carry factory grit",
+            "source_facts": [
+              "Metal factory assembly and crane; big boots brown suede jacket P155; comes over to check Ma"
+            ],
+            "creative_direction": "Burnt-orange Trans Am association; masculine 80s-90s Midwest; slight metal-shop residue",
+            "beats": [
+              "B1",
+              "B2",
+              "B3",
+              "B9",
+              "B12",
+              "B14"
+            ]
+          },
+          {
+            "key": "NICK_BAR_NIGHT",
+            "description": "Same base amplified for Joe\u0027s: jacket, boots, ready-to-fight posture; Jack and Coke in hand",
+            "source_facts": [
+              "Joe\u0027s Bar Mondays football and Saturday brawl night; confronts Lindsey\u0027s boyfriend; almost punches brother"
+            ],
+            "creative_direction": "Slightly dressed up from factory still rough; veins and flush when raging",
+            "beats": [
+              "B15"
+            ]
+          },
+          {
+            "key": "NICK_HOSPITAL",
+            "description": "Hospital gown or open-back top; oxygen tube in nostrils; IV on hand; chest tube to plastic box; right leg immobilized huge under bedspread; black-purple-green facial bruises; fire-colored hair sticking up",
+            "source_facts": [
+              "P406-P408 five days post-crash; sallow yellow; weak voice; tears"
+            ],
+            "creative_direction": "Vulnerable contrast to prior bulk; machines and wires frame him",
+            "beats": [
+              "B20",
+              "B23"
+            ]
+          },
+          {
+            "key": "NICK_COURT_LAWYER",
+            "description": "Nicest black pinstripe suit; shoes that could use shine; attempt at respectability while impaired and bitter",
+            "source_facts": [
+              "Dresses nicest clothes black pinstripe for court P464; meets greasy Jowlish then sharper Dawson"
+            ],
+            "creative_direction": "Suit slightly tight or loose from weight change; restless hands",
+            "beats": [
+              "B23",
+              "B24"
+            ]
+          },
+          {
+            "key": "NICK_ATTACK_WINTER",
+            "description": "Heavy cold-weather coat with switchblade (Swiss Army) in pocket; street clothes underneath; blood on right hand and wiped on her shirt after",
+            "source_facts": [
+              "Bus in freezing gray; coat pocket knife; chokes Sionna; blade to collarbone then sinks in struggle; wipes blade; bloody hand in pocket on bus P489-P491"
+            ],
+            "creative_direction": "Menacing bulk in small duplex; gray winter Milwaukee light",
+            "beats": [
+              "B25",
+              "B26"
+            ]
+          },
+          {
+            "key": "NICK_PRISON",
+            "description": "Orange or institutional prison jumpsuit; scrawny reduced frame; graying thinning hair; lined forehead; baggy sad watery eyes; aged hard",
+            "source_facts": [
+              "Green Bay correctional; 8 years in; scrawny gray compared to former self P559; parole possible ~2 years"
+            ],
+            "creative_direction": "Photoreal prison lighting through plexiglass; no glamour",
+            "beats": [
+              "B34"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "NICK_CHILD",
+        "display_name": "Nick (child/teen)",
+        "age_link": "NICK_ADULT",
+        "identity_anchors": "Big bad-assed sixth-grader already tall and respected; devilish messy hair; later high-school football wide receiver; same reddish-brown hair lineage; can look terrifying to younger kids",
+        "source_evidence": "Sixth-grade saves brother from Mrs Stark P138-P149; junior-high threatens John Johansson with goalpost hanging P443-P447; dad belt-beating memory age ~second grade P475-P480; football star wide receiver",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Boy-to-teen Midwestern; commanding even young",
+        "wardrobe_variants": [
+          {
+            "key": "NICK_SIXTH_GRADE",
+            "description": "Late-70s school clothes; bigger than peers; outdoor recess jacket",
+            "source_facts": [
+              "Top of totem pole sixth grade; hair devilish mess"
+            ],
+            "creative_direction": "Alpha posture already",
+            "beats": [
+              "B13"
+            ]
+          },
+          {
+            "key": "NICK_JUNIOR_HIGH",
+            "description": "Early-80s casual school; can look intimidating in cafeteria doorway",
+            "source_facts": [
+              "Protects brother from curly-blonde John Johansson; flannel and jeans era peers"
+            ],
+            "creative_direction": "Same rough charisma seed",
+            "beats": [
+              "B24"
+            ]
+          },
+          {
+            "key": "NICK_CHILD_HOME_BEATING",
+            "description": "Winter kid layers: rubber boots, coat removed for belt punishment in bedroom",
+            "source_facts": [
+              "Dad blue polyester puffy coat era; Nick second grade; belt welts"
+            ],
+            "creative_direction": "Period-accurate working-class kid; fear then toughness",
+            "beats": [
+              "B24"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MA_OLIVIA",
+        "display_name": "Ma",
+        "age_link": null,
+        "identity_anchors": "Aging white woman; brown hair; tired brown saggy-puppy eyes; increasingly frail confused dementia patient; poor vision bumps furniture at night; quiet reasonable core under decline; full name Olivia Anne Olsen on marker",
+        "source_evidence": "P8 P13 janitor retirement back problems social security; glassy empty eyes P29; chest pressure dizziness P104; hospital hypertension dementia Nitro; afghan game shows; marker August 28 1933 \u2013 September 7 1998 2 Timothy 4:7 P414",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Soft elderly Midwestern female; confused loops; occasional clear affection",
+        "wardrobe_variants": [
+          {
+            "key": "MA_HOME_HOUSECOAT",
+            "description": "Simple house dresses or sweaters; slippers; afghan on lap in chair; pill-line routine clothes",
+            "source_facts": [
+              "Lives fifth-floor Kirk Street; game shows cooking channels; pill bottles in line then weekly box"
+            ],
+            "creative_direction": "Faded florals and cardigans; soft worn textures",
+            "beats": [
+              "B1",
+              "B2",
+              "B5",
+              "B9",
+              "B10",
+              "B12",
+              "B14",
+              "B17"
+            ]
+          },
+          {
+            "key": "MA_HOSPITAL",
+            "description": "Hospital gown; monitors; IV blood-pressure meds",
+            "source_facts": [
+              "Three-day stay; observation; ringing in ears"
+            ],
+            "creative_direction": "Small in large bed; vulnerable",
+            "beats": [
+              "B10",
+              "B11"
+            ]
+          },
+          {
+            "key": "MA_CHURCH_CRASH",
+            "description": "Modest church-going coat and dress for mass outing",
+            "source_facts": [
+              "Nick drives her to church after Jack and Cokes; dies on impact"
+            ],
+            "creative_direction": "Sunday best worn; seatbelt era practical",
+            "beats": [
+              "B18"
+            ]
+          },
+          {
+            "key": "MA_FUNERAL",
+            "description": "Prepared remains in moderately priced maple casket; not on-screen living wardrobe",
+            "source_facts": [
+              "Modest casket pink chiffon option declined; St Mary\u0027s plot; dirt handful"
+            ],
+            "creative_direction": "Closed or partial lid per taste; focus on mourners",
+            "beats": [
+              "B19"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "SIONNA",
+        "display_name": "Sionna",
+        "age_link": null,
+        "identity_anchors": "Young woman pale English-story skin; lightest watery blue eyes like pre-dawn sky or diamonds or ocean; brown hair short at first meeting then longer to mid-back; skinny not too skinny; pretty more than cute; smooth boneless wave-like movement; fish-symbol necklace; intense calm spiritual presence; later blank depressed post-trauma",
+        "source_evidence": "P18-P23 first meet short brown hair black V-neck fish necklace jeans blue tennis backpack; pale; light blue eyes; P50 green hooded top; dreams long brown hair; hippie sandals loose clothes bracelets per Nick P484-P485; surname McAllister at police P511; shoulder and punctured lung recovery foam pillow",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Calm intelligent female; measured spiritual cadence; later flat depressed affect",
+        "wardrobe_variants": [
+          {
+            "key": "SIONNA_FIRST_MEET",
+            "description": "Black short-sleeved V-neck cheap Target/Walmart shirt; jeans; blue tennis shoes; big backpack; necklace with fish symbol",
+            "source_facts": [
+              "P18-P20 exact"
+            ],
+            "creative_direction": "Natural minimal makeup; wind-tossed short brown hair",
+            "beats": [
+              "B4"
+            ]
+          },
+          {
+            "key": "SIONNA_JAVA_DATES",
+            "description": "Washed-out jeans; soft leather shoes; long-sleeved loose green top with hood; backpack; later varied casual intellectual layers for museums park yoga",
+            "source_facts": [
+              "P50 Java Hut description; yoga; philosophy class"
+            ],
+            "creative_direction": "Soft bohemian not costume-hippie; watery-eye catchlights",
+            "beats": [
+              "B6",
+              "B8",
+              "B10",
+              "B16",
+              "B17"
+            ]
+          },
+          {
+            "key": "SIONNA_HOME_INTIMATE",
+            "description": "Soft home clothes; later shared bed crisp sheets; green suede sofa scene",
+            "source_facts": [
+              "Stays night after bar; head in lap; three a.m. angel dream wake; climbs into her queen bed"
+            ],
+            "creative_direction": "Intimate modest; rose and warm-grass scent association in direction only",
+            "beats": [
+              "B16",
+              "B17"
+            ]
+          },
+          {
+            "key": "SIONNA_COOKING_CARE",
+            "description": "Practical kitchen casual while cooking butternut casserole reading to Ma helping pill box",
+            "source_facts": [
+              "Cooks for Ma; reads aloud; fills pill containers with Peter"
+            ],
+            "creative_direction": "Apron optional; warmth toward Ma",
+            "beats": [
+              "B17",
+              "B19",
+              "B21",
+              "B22"
+            ]
+          },
+          {
+            "key": "SIONNA_ATTACK",
+            "description": "Home loose hippie-leaning clothes sandals bracelets; dish rag in hand; then blood on camisole after flannel ripped; collarbone-to-shoulder wound",
+            "source_facts": [
+              "Nick POV hippie sandals loose clothes jewelry; brown camisole under flannel; knife between collarbone and breast; red flying P484-P490"
+            ],
+            "creative_direction": "Terror under forced calm then shock; bruising on neck from choke",
+            "beats": [
+              "B25",
+              "B26",
+              "B27"
+            ]
+          },
+          {
+            "key": "SIONNA_RECOVERY",
+            "description": "Loose recovery tops accommodating large foam pillow under left arm; narcotic flatness; blank stare clothes simple",
+            "source_facts": [
+              "ICU week; shoulder repair; foam pillow; zombie state February talk"
+            ],
+            "creative_direction": "Pale drained; eyes without former shine",
+            "beats": [
+              "B28"
+            ]
+          },
+          {
+            "key": "SIONNA_DREAM_MEDIEVAL",
+            "description": "Fine linen period gown or riding dress; long brown hair; fair heart-shaped face; on dappled mare; white fabric angel gown rising from lake in later dream",
+            "source_facts": [
+              "P57-P58 forest field kiss dream; P223-P224 lake angel white gown sleeves"
+            ],
+            "creative_direction": "Lyrical not camp; same blue eyes anchor identity",
+            "beats": [
+              "B7",
+              "B16"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "TONY",
+        "display_name": "Tony",
+        "age_link": null,
+        "identity_anchors": "Middle-aged to older pizza parlor owner; Italian-American vibe by business name though not required ethnically; no family left locally\u2014wife dead five years son bigwig Chicago; surrogate father warmth; practical boss",
+        "source_evidence": "P416-P420 owner; throws Chevy keys; sorry for Ma; worries Peter tired; substitute son dynamic",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Warm older male Midwestern with light Italian-American coloring optional",
+        "wardrobe_variants": [
+          {
+            "key": "TONY_PARLOR",
+            "description": "Work shirt or polo; apron optional; practical shoes; keys in pocket",
+            "source_facts": [
+              "Stops in regularly; runs parlor; promotes Peter to more deliveries"
+            ],
+            "creative_direction": "Lived-in small-business owner; kind eyes",
+            "beats": [
+              "B21",
+              "B22"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "BOB",
+        "display_name": "Bob",
+        "age_link": null,
+        "identity_anchors": "Nick\u0027s stoner bar friend; animated; later aged\u2014graying thinning hair forehead to crown; thicker waist; deeper face lines; still elfish twinkle when sober-ish; takes over Nick\u0027s apartment and factory job",
+        "source_evidence": "P184 pipe smoke; P427 parlor visit pupils huge; P544-P548 deli reunion aged proud bear hug stopped prison visits",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Loose Midwestern stoner male; man-man-oh-man cadence",
+        "wardrobe_variants": [
+          {
+            "key": "BOB_BAR_ERA",
+            "description": "90s casual bar clothes; can hold ceramic pipe or beer",
+            "source_facts": [
+              "Nick\u0027s apartment smoke session; Joe\u0027s follower"
+            ],
+            "creative_direction": "Slightly seedy not cartoon",
+            "beats": [
+              "B15",
+              "B22"
+            ]
+          },
+          {
+            "key": "BOB_AGED_DELI",
+            "description": "Working-class factory casual years later; thicker; graying",
+            "source_facts": [
+              "Factory job; Nick\u0027s old apartment; deli burger grease"
+            ],
+            "creative_direction": "Recognizable as same man aged hard",
+            "beats": [
+              "B32"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "SAMMY",
+        "display_name": "Sammy",
+        "age_link": null,
+        "identity_anchors": "Nick\u0027s bar/pool buddy; stoned dull watery eyes; crude about women; follower in almost-brawl",
+        "source_evidence": "P185 Bud; Tyra Banks joke; elbows Nick about waitress; follows into pool room P199",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Bro-ish Midwestern male",
+        "wardrobe_variants": [
+          {
+            "key": "SAMMY_BAR",
+            "description": "Casual bar night jeans tee jacket; beer in hand",
+            "source_facts": [
+              "Apartment then Joe\u0027s with Nick and Bob"
+            ],
+            "creative_direction": "Interchangeable working-class hanger-on",
+            "beats": [
+              "B15"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "DR_CARSON",
+        "display_name": "Dr. Carson",
+        "age_link": null,
+        "identity_anchors": "Ma\u0027s physician about ten years; serious straight-eye contact; professional clinical manner",
+        "source_evidence": "P105-P108 discusses dangerous blood pressure stroke risk admits ER; met younger son before",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Calm professional male clinical",
+        "wardrobe_variants": [
+          {
+            "key": "DR_CARSON_CLINIC",
+            "description": "White coat or dress shirt tie; stethoscope optional; notepad",
+            "source_facts": [
+              "Office then arranges hospital"
+            ],
+            "creative_direction": "Trusted neighborhood doctor not TV glamorous",
+            "beats": [
+              "B10"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "CHRIS_BARISTA",
+        "display_name": "Chris",
+        "age_link": null,
+        "identity_anchors": "Seattle coffee-shop woman; blonde hair in sloppy bun; hoop earrings; stained white apron; nice smile; interesting enough Peter finally asks out",
+        "source_evidence": "P505 barista near office; P534 name Chris; play date accepted; blonde sloppy bun hoops stained apron",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Friendly Pacific Northwest female",
+        "wardrobe_variants": [
+          {
+            "key": "CHRIS_WORK",
+            "description": "Stained white barista apron over casual top; hoop earrings; blonde sloppy bun",
+            "source_facts": [
+              "Exact P534"
+            ],
+            "creative_direction": "Approachable warm; not Sionna lookalike",
+            "beats": [
+              "B29",
+              "B30",
+              "B32"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "FATHER_JOSEPH",
+        "display_name": "Father Joseph",
+        "age_link": null,
+        "identity_anchors": "Catholic priest for Ma\u0027s funeral mass and talk with narrator; traditional clerical presence",
+        "source_evidence": "P401 wants to talk before mass; P403 short mass graveside Rosary Society luncheon",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Measured pastoral male",
+        "wardrobe_variants": [
+          {
+            "key": "FATHER_JOSEPH_MASS",
+            "description": "Clerical collar black suit or mass vestments as scene requires",
+            "source_facts": [
+              "Funeral mass and graveside"
+            ],
+            "creative_direction": "Warm but can carry mild institutional tone narrator fears",
+            "beats": [
+              "B19"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MARK_JOWLISH",
+        "display_name": "Mark Jowlish",
+        "age_link": null,
+        "identity_anchors": "DUI phone-book lawyer; greasy hair; shabby suit; desk piled with papers; disappointing presence; says he cannot handle full manslaughter",
+        "source_evidence": "P458-P460 sign Mark Jowlish Attorney; grease hair shabby suit; license revoked advice; needs different lawyer",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Weary low-rent attorney male",
+        "wardrobe_variants": [
+          {
+            "key": "JOWLISH_OFFICE",
+            "description": "Shabby suit; greasy hair; cluttered small office",
+            "source_facts": [
+              "Exact description P458-P459"
+            ],
+            "creative_direction": "Fluorescent bleak; not prestigious",
+            "beats": [
+              "B23"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "DANIEL_DAWSON",
+        "display_name": "Daniel Dawson",
+        "age_link": null,
+        "identity_anchors": "Manslaughter defense attorney; pretty smart; nice suit always-shined shoes; still-blond hair going on 60; experienced",
+        "source_evidence": "P463 Daniel Dawson nice suit shined shoes blond ~60; explains up to 10 years; court with fat lady judge",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "Polished experienced attorney male",
+        "wardrobe_variants": [
+          {
+            "key": "DAWSON_COURT",
+            "description": "Nice suit; shined shoes; professional courtroom presence",
+            "source_facts": [
+              "P463-P469"
+            ],
+            "creative_direction": "Competent contrast to Jowlish",
+            "beats": [
+              "B23",
+              "B24"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "location_bible": {
+    "locations": [
+      {
+        "key": "LOC_KIRK_STREET_APT",
+        "canonical_name": "Kirk Street fifth-floor apartment Milwaukee",
+        "source_evidence": "P2 fifth-floor walk-up big brick downtown Kirk Street; groceries haul; Ma\u0027s chair afghan TV; pill line on counter; bedroom; living room overstuffed brown chair footstool; after crash empty Ma chair",
+        "layout_anchors": [
+          "Fifth-floor walk-up no elevator",
+          "Small kitchen with counter for pill bottles/box",
+          "Living room with Ma\u0027s TV chair and afghan",
+          "Narrator bedroom later computer",
+          "Front door Nick slams",
+          "Windows to street/alley sense"
+        ],
+        "lighting_states": [
+          "Day gray Milwaukee through old windows",
+          "Night lamp TV glow",
+          "Harsh after-crash empty daylight"
+        ],
+        "persistent_props": [
+          "Afghan",
+          "Pill bottles then blue weekly organizer",
+          "CRT TV game shows",
+          "Overstuffed brown chair",
+          "Basket for Nick\u0027s keys"
+        ],
+        "image_brief": "Worn 1970s-90s Milwaukee brick walk-up interior; working-class clutter; dementia-care practicality; emotional center of family",
+        "beats": [
+          "B1",
+          "B2",
+          "B3",
+          "B5",
+          "B9",
+          "B12",
+          "B14",
+          "B17",
+          "B18"
+        ]
+      },
+      {
+        "key": "LOC_MOXIES_GYM",
+        "canonical_name": "Moxie\u0027s gym",
+        "source_evidence": "P3 gym down on the corner; preacher curls bench; guys yield equipment to Nick",
+        "layout_anchors": [
+          "Free-weight area",
+          "Curl bench",
+          "Open floor people move out of Nick\u0027s way"
+        ],
+        "lighting_states": [
+          "Fluorescent hard gym light"
+        ],
+        "persistent_props": [
+          "Weight bars 40-50 lb",
+          "Benches"
+        ],
+        "image_brief": "No-frills neighborhood muscle gym; chalk and iron; Nick dominates frame",
+        "beats": [
+          "B1"
+        ]
+      },
+      {
+        "key": "LOC_METAL_FACTORY",
+        "canonical_name": "metal factory",
+        "source_evidence": "P8 Nick runs assembly line separates metal pieces; big interior crane lifts to higher level; drill press near-miss story P155",
+        "layout_anchors": [
+          "Assembly line",
+          "Overhead crane bay",
+          "Loud industrial floor"
+        ],
+        "lighting_states": [
+          "Industrial sodium/fluorescent",
+          "Sparks optional"
+        ],
+        "persistent_props": [
+          "Metal pieces on line",
+          "Crane controls",
+          "Safety signage era-appropriate"
+        ],
+        "image_brief": "Heavy Midwest manufacturing floor; Nick competent and dangerous among machines",
+        "beats": [
+          "B2",
+          "B14"
+        ]
+      },
+      {
+        "key": "LOC_WERNER_NICK_APT",
+        "canonical_name": "Werner Street Nick apartment",
+        "source_evidence": "P8 cool apartment five blocks from Ma; P182-P183 couch smoke session friends; later Bob takes it over",
+        "layout_anchors": [
+          "Living room couch rocking chair",
+          "Bachelor mess",
+          "Door to street"
+        ],
+        "lighting_states": [
+          "Lamp night smoke haze",
+          "Day blinds"
+        ],
+        "persistent_props": [
+          "Couch",
+          "Ceramic pipe",
+          "Beer cans",
+          "TV optional"
+        ],
+        "image_brief": "Single-guy 90s apartment slightly nicer than Ma\u0027s; beer and bravado",
+        "beats": [
+          "B2",
+          "B15",
+          "B23"
+        ]
+      },
+      {
+        "key": "LOC_PIZZA_PARLOR",
+        "canonical_name": "pizza parlor",
+        "source_evidence": "P18 front door sidewalk cement trip; ovens; counter phone; window daydream grass; Tony owner; Tommy delivery; later deliveries; P543 becomes cosmetology school",
+        "layout_anchors": [
+          "Front glass door and sidewalk",
+          "Oven line",
+          "Counter phone orders",
+          "Window to street",
+          "Back for coats keys"
+        ],
+        "lighting_states": [
+          "Warm oven glow",
+          "Fluorescent work",
+          "Cold winter window"
+        ],
+        "persistent_props": [
+          "Pizza peels boxes",
+          "Phone order pad",
+          "Tony\u0027s Chevy keys",
+          "Menu board"
+        ],
+        "image_brief": "Small independent Milwaukee pizza joint; heat grease community; Peter\u0027s cage and ladder",
+        "beats": [
+          "B3",
+          "B4",
+          "B17",
+          "B21",
+          "B22"
+        ]
+      },
+      {
+        "key": "LOC_JAVA_HUT",
+        "canonical_name": "Java Hut coffee shop",
+        "source_evidence": "P49-P50 downtown; college backpack textbook crowd; small back wall table; glasses sliding on heads",
+        "layout_anchors": [
+          "Front entrance",
+          "Small tables along wall",
+          "Counter",
+          "Student-dense seating"
+        ],
+        "lighting_states": [
+          "Day interior warm cafe",
+          "Window street light"
+        ],
+        "persistent_props": [
+          "Coffee cups",
+          "Backpacks textbooks",
+          "Small table for two"
+        ],
+        "image_brief": "90s college coffeehouse slightly intimidating to non-student Peter; Sionna belongs",
+        "beats": [
+          "B6",
+          "B8"
+        ]
+      },
+      {
+        "key": "LOC_PUBLIC_LIBRARY",
+        "canonical_name": "public library",
+        "source_evidence": "P36-P40 open till 9; big windows wood floors old lights on chains; classic literature stacks Shakespeare Dickens Bronte; desk temporary card; later yoga Buddhism sections P87",
+        "layout_anchors": [
+          "Entrance desk",
+          "Reading tables newspapers",
+          "Stairs to another floor",
+          "Classic lit aisle",
+          "Long wood stacks"
+        ],
+        "lighting_states": [
+          "Warm hanging chain lamps",
+          "Night exterior cold contrast",
+          "Day dust motes big windows"
+        ],
+        "persistent_props": [
+          "Card catalog or early computers",
+          "Wuthering Heights copy",
+          "Wood tables"
+        ],
+        "image_brief": "Century-old public library cathedral of free education; Peter\u0027s secret door out",
+        "beats": [
+          "B5",
+          "B8",
+          "B14"
+        ]
+      },
+      {
+        "key": "LOC_JOES_BAR",
+        "canonical_name": "Joe\u0027s Bar and Grill",
+        "source_evidence": "P30 Mondays football; P190-P208 Saturday packed; left room pool tables quarters stacked; right bar packed; TV corner; waitresses jeans white blouses; AC/DC; bouncer Joe kitchen warning",
+        "layout_anchors": [
+          "Bar right",
+          "Pool room left",
+          "Connecting sightlines",
+          "Front door escape run",
+          "Kitchen back"
+        ],
+        "lighting_states": [
+          "Dim neon beer signs",
+          "Smoke haze",
+          "TV glow",
+          "Sudden focus on fight"
+        ],
+        "persistent_props": [
+          "Pool table cues quarters",
+          "Jack and Coke tumblers",
+          "Bud bottles",
+          "Jukebox/speakers"
+        ],
+        "image_brief": "Working-class Milwaukee bar; loud cramped status arena for Nick; Peter\u0027s almost-punch and flight",
+        "beats": [
+          "B5",
+          "B15"
+        ]
+      },
+      {
+        "key": "LOC_HOSPITAL",
+        "canonical_name": "hospital / ER / ICU",
+        "source_evidence": "P108-P113 Ma ER observation three days; P111 dream in Ma room chair; P404-P411 Nick ICU five days post-crash wires chest tube; P511-P512 Sionna trauma bay wait",
+        "layout_anchors": [
+          "ER intake",
+          "Ma patient room chair for sleeper",
+          "ICU glass/high windows Nick hair visible",
+          "Hall nurse station",
+          "Trauma curtains"
+        ],
+        "lighting_states": [
+          "Harsh fluorescent",
+          "Night monitor glow",
+          "Bleak daylight after sleep"
+        ],
+        "persistent_props": [
+          "IV poles monitors",
+          "Chest-tube box",
+          "Plastic oxygen cannula",
+          "Defibrillator box on arrival",
+          "Blue pill organizer later home but taught here"
+        ],
+        "image_brief": "Impersonal Midwestern hospital; life-death hinge for Ma Nick Sionna arcs",
+        "beats": [
+          "B10",
+          "B11",
+          "B20",
+          "B23",
+          "B27"
+        ]
+      },
+      {
+        "key": "LOC_SIONNA_DUPLEX",
+        "canonical_name": "Sionna duplex",
+        "source_evidence": "P209 runs to her house; green suede sofa; queen bed fragrant sheets; kitchen clock 3 a.m.; later shared move-in talk; P482-P491 attack: pots dead plants porch; flowered couch; brown lazy boy; hallway wall choke; gray cat; cooking smell beans greens; candle; front door thunk Peter enters",
+        "layout_anchors": [
+          "Front porch steps dead summer pots",
+          "Living room flowered couch lamp lazy boy",
+          "Hallway to kitchen choke/stab wall",
+          "Kitchen rear light",
+          "Bedroom queen",
+          "Door swings hard into wall"
+        ],
+        "lighting_states": [
+          "Warm lamp night intimacy",
+          "3 a.m. dark hallway",
+          "Gray cold day attack",
+          "Candle and cooking mix"
+        ],
+        "persistent_props": [
+          "Green suede sofa",
+          "Gray cat",
+          "Flower candle",
+          "Dish rag",
+          "Philosophy books optional",
+          "Smiley cat memory on later empty porch"
+        ],
+        "image_brief": "Modest duplex sanctuary turned crime scene; bohemian soft vs Nick violence",
+        "beats": [
+          "B15",
+          "B16",
+          "B17",
+          "B19",
+          "B22",
+          "B25",
+          "B26",
+          "B27",
+          "B28",
+          "B33"
+        ]
+      },
+      {
+        "key": "LOC_ST_MARYS_CEMETERY",
+        "canonical_name": "Catholic cemetery St. Mary\u0027s",
+        "source_evidence": "P400 plot Catholic cemetery; P403 graveside dirt on maple lid; P414 top of hill flat stone near trees golden mums inverted metal vase; marker Olivia Anne Olsen and 2 Timothy 4:7",
+        "layout_anchors": [
+          "Hilltop plot",
+          "Trees nearby",
+          "Flat marker",
+          "Path for bike visits",
+          "Graveside standing room"
+        ],
+        "lighting_states": [
+          "Late fall sun on new marker",
+          "Overcast funeral",
+          "Sparse winter"
+        ],
+        "persistent_props": [
+          "Flat stone marker",
+          "Metal vase mums",
+          "Maple casket at burial only"
+        ],
+        "image_brief": "Quiet Catholic hill cemetery; grief anchor and scripture close-up",
+        "beats": [
+          "B19",
+          "B21"
+        ]
+      },
+      {
+        "key": "LOC_COMMUNITY_COLLEGE",
+        "canonical_name": "community college",
+        "source_evidence": "P167 English class essay research; campus library reference; mixed-age students; computer lab for surfing",
+        "layout_anchors": [
+          "Classroom desks",
+          "Campus library reference",
+          "Computer lab",
+          "Hallways mixed ages"
+        ],
+        "lighting_states": [
+          "Fluorescent classrooms",
+          "Library stacks"
+        ],
+        "persistent_props": [
+          "Textbooks",
+          "Notebooks",
+          "Aging PCs"
+        ],
+        "image_brief": "Un//glamorous accessible campus; second-chance education",
+        "beats": [
+          "B14",
+          "B17"
+        ]
+      },
+      {
+        "key": "LOC_GREEN_BAY_PRISON",
+        "canonical_name": "Green Bay correctional institute",
+        "source_evidence": "P553-P570 Green Bay; metal detectors burly officers; waiting hour; double-locked doors; plexiglass phones; 15-minute limit; patrolling officer; yellow receiver; Nick shuffled hallway",
+        "layout_anchors": [
+          "Public entrance security",
+          "Waiting area magazines coffee",
+          "Double-locked transition",
+          "Visitation row cubicles plexiglass phones",
+          "Inmate-side corridor"
+        ],
+        "lighting_states": [
+          "Harsh institutional",
+          "Plexi reflections",
+          "Cool exterior gravel lot"
+        ],
+        "persistent_props": [
+          "Plexiglass partition",
+          "Wired handsets",
+          "Sign-in papers",
+          "Officer station"
+        ],
+        "image_brief": "Real Wisconsin correctional visitation; no romance; forgiveness under clock and guards",
+        "beats": [
+          "B34"
+        ]
+      },
+      {
+        "key": "LOC_SEATTLE_BELLTOWN_APT",
+        "canonical_name": "Seattle Belltown apartment",
+        "source_evidence": "P498-P499 near first store; P529 warm apt cat Bozo on couch; supper reading; notebook dream notes",
+        "layout_anchors": [
+          "Living room couch",
+          "Low lamp",
+          "Window gray Seattle",
+          "Small practical kitchen",
+          "Bed"
+        ],
+        "lighting_states": [
+          "Gray day windows",
+          "Warm lamp night",
+          "Candleless calm after yoga"
+        ],
+        "persistent_props": [
+          "Cat Bozo orange-white",
+          "Yoga mat storage",
+          "Laptop",
+          "Notebook"
+        ],
+        "image_brief": "Clean contemporary Belltown single success; lonely cat company; rain city beyond glass",
+        "beats": [
+          "B29",
+          "B30"
+        ]
+      },
+      {
+        "key": "LOC_TONYS_BOYS_PIZZA_SEATTLE",
+        "canonical_name": "Tony\u0027s Boy\u0027s Pizza chain Seattle",
+        "source_evidence": "P498-P499 chain; first store Belltown under medical office by movie theater; GPS delivery; meeting meat supplier",
+        "layout_anchors": [
+          "Storefront under office building",
+          "Open kitchen ovens",
+          "Counter",
+          "Delivery staging"
+        ],
+        "lighting_states": [
+          "Warm shop",
+          "Wet street neon night"
+        ],
+        "persistent_props": [
+          "Tony\u0027s Boy\u0027s signage",
+          "Modern POS",
+          "Delivery bags"
+        ],
+        "image_brief": "Successful rebrand honor to Tony; Northwest clean vs old Milwaukee grease nostalgia",
+        "beats": [
+          "B29"
+        ]
+      },
+      {
+        "key": "LOC_PIKE_PLACE_LOWELLS",
+        "canonical_name": "Pike Place Market / Lowell\u0027s",
+        "source_evidence": "P502-P507 Lowell\u0027s three levels Puget Sound views; blueberry French toast; tourists brick street flowers seafood Starbucks line; ferry and cruise ship views; cinnamon roll halo",
+        "layout_anchors": [
+          "Market brick street stalls",
+          "Lowell\u0027s multi-level seating windows",
+          "Sound and ferry vista",
+          "Starbucks queue nearby"
+        ],
+        "lighting_states": [
+          "Gray Sound light",
+          "Occasional sun break",
+          "Tourist midday"
+        ],
+        "persistent_props": [
+          "Window table",
+          "Coffee cups",
+          "Ferry traffic on water"
+        ],
+        "image_brief": "Iconic Seattle market energy; Peter\u0027s solitary meals and Sionna flashbacks in crowd",
+        "beats": [
+          "B29",
+          "B30"
+        ]
+      },
+      {
+        "key": "LOC_FERRY_PUGET",
+        "canonical_name": "ferry / Puget Sound",
+        "source_evidence": "P492-P494 opening ferry second floor coffee burrito; center opening banister child-fall dream; P507 ferry Bainbridge trips from Lowell\u0027s view",
+        "layout_anchors": [
+          "Metal stairs perforated treads",
+          "Second-floor cafe line",
+          "Center square banister opening to lower deck",
+          "Rail views of gray glass water"
+        ],
+        "lighting_states": [
+          "Overcast Sound flat light",
+          "Dream hyper-real then color surge in other dreams not ferry"
+        ],
+        "persistent_props": [
+          "Foil burrito",
+          "Coffee",
+          "Handrails cold round"
+        ],
+        "image_brief": "Working Puget ferry; liminal commute and subconscious child-self save dream",
+        "beats": [
+          "B29",
+          "B30"
+        ]
+      },
+      {
+        "key": "LOC_OLD_PARLOR_COSMETOLOGY",
+        "canonical_name": "old cosmetology school (former pizza parlor)",
+        "source_evidence": "P543 weeds neighborhood; parlor now Central Cosmetology sign pink scissors powder puff; dark inside; same lookout window",
+        "layout_anchors": [
+          "Same footprint as old parlor",
+          "New hanging sign",
+          "Dark glass",
+          "Sidewalk weeds"
+        ],
+        "lighting_states": [
+          "Day exterior gray",
+          "Interior dark closed"
+        ],
+        "persistent_props": [
+          "Cosmetology sign scissors powder puff",
+          "Familiar window pane"
+        ],
+        "image_brief": "Palimpsest of Peter\u0027s past job; bittersweet replacement; career-ceiling joke",
+        "beats": [
+          "B31"
+        ]
+      },
+      {
+        "key": "LOC_SIONNA_PARENTS_FARM",
+        "canonical_name": "Sionna parents farm (dream/memory)",
+        "source_evidence": "P421-P423 dream: sun chickens dogs; dad pot smoke singing; mom Tupperware pies casseroles deliveries; pregnant Sionna pizza-faced baby on car seat; also breakup plan go to Mom and Dad\u0027s P521",
+        "layout_anchors": [
+          "Farmyard chickens dogs",
+          "Farmhouse porch/kitchen",
+          "Country road driveways",
+          "Car interior with food stacks"
+        ],
+        "lighting_states": [
+          "Bright cloudless dream sun",
+          "Hyperreal colors"
+        ],
+        "persistent_props": [
+          "Tupperware foil pies",
+          "Pot smoke",
+          "Beach-ball pregnancy then pizza-face newborn gag"
+        ],
+        "image_brief": "Lyrical rural dream space; comic-surreal pizza baby; emotional truth of new ideas birth",
+        "beats": [
+          "B21",
+          "B28"
+        ]
+      },
+      {
+        "key": "LOC_ALLEY_KIRK",
+        "canonical_name": "alley behind Kirk Street building",
+        "source_evidence": "P4 kickball dented garbage can lid bases; ball through Mrs Engel kitchen; P541 return large green brown dumpsters replace tin cans; Hispanic couple stroller dark brown door",
+        "layout_anchors": [
+          "Brick walls fire escapes",
+          "Dumpsters/cans",
+          "Back doors",
+          "Open play stretch"
+        ],
+        "lighting_states": [
+          "Childhood bright memory",
+          "Adult gray revisit"
+        ],
+        "persistent_props": [
+          "Garbage lids or dumpsters",
+          "Kickball memory"
+        ],
+        "image_brief": "Urban play battlefield of childhood; Nick already protector-liar for broken window",
+        "beats": [
+          "B1",
+          "B31"
+        ]
+      },
+      {
+        "key": "LOC_SCHOOLYARD_MRS_STARK",
+        "canonical_name": "grade school yard / Mrs Stark era",
+        "source_evidence": "P133-P143 lilac bushes back edge school; end fourth grade; Mrs Stark big boobs beaded glasses necklace; principal Mr Pauls threat; Nick sixth-grade peers",
+        "layout_anchors": [
+          "School exterior doors",
+          "Yard near lilacs",
+          "Classroom implied",
+          "Goalpost later junior-high related memory separate"
+        ],
+        "lighting_states": [
+          "Bright late-spring school day"
+        ],
+        "persistent_props": [
+          "Lilacs",
+          "Mrs Stark glasses on beads"
+        ],
+        "image_brief": "Late-70s public schoolyard; hierarchy Nick rules; responsibility chant comedy",
+        "beats": [
+          "B13"
+        ]
+      },
+      {
+        "key": "LOC_JUNIOR_HIGH_CAFETERIA",
+        "canonical_name": "junior high cafeteria / goalpost",
+        "source_evidence": "P443-P447 cafeteria corner brother almost crying; John Johansson curly blonde table; doorway to goalpost threat hang upside down",
+        "layout_anchors": [
+          "Cafeteria tables",
+          "Doorway exit",
+          "Distant football goalpost view"
+        ],
+        "lighting_states": [
+          "Institutional lunch light"
+        ],
+        "persistent_props": [
+          "Lunch trays",
+          "Goalpost exterior"
+        ],
+        "image_brief": "Nick myth-making protector violence seed; kid terror comedy",
+        "beats": [
+          "B24"
+        ]
+      },
+      {
+        "key": "LOC_CHILDHOOD_SIDEWALK_APT_STAIRS",
+        "canonical_name": "childhood sidewalk and apartment stairs (dad beating)",
+        "source_evidence": "P475-P480 gray cold day dad pulls Nick hand vice-like; blue puffy polyester coat black cap; stairs push; bedroom belt snaps welts",
+        "layout_anchors": [
+          "Sidewalk to brick apartment",
+          "Stairwell up",
+          "Small bedroom mirror dresser"
+        ],
+        "lighting_states": [
+          "Cold gray day",
+          "Dim apartment interior"
+        ],
+        "persistent_props": [
+          "Dad belt",
+          "Small dresser mirror",
+          "Rubber boots"
+        ],
+        "image_brief": "Cycle-of-violence origin; period working-class Milwaukee winter",
+        "beats": [
+          "B24"
+        ]
+      },
+      {
+        "key": "LOC_DREAM_MEDIEVAL_FOREST",
+        "canonical_name": "medieval forest and field (dream)",
+        "source_evidence": "P57-P58 deciduous forest moss oak maple wood sorrel trillium bleeding hearts; brown/dappled mare; open grassy field; white ballooning sleeves red embroidered tunic brown hose; first kiss light blue eyes",
+        "layout_anchors": [
+          "Dense forest path",
+          "Emergence to open field center",
+          "Horse dismount space"
+        ],
+        "lighting_states": [
+          "Speckled forest sun",
+          "Uninterrupted warm field sun"
+        ],
+        "persistent_props": [
+          "Dappled mare",
+          "Period clothes on dream-Peter and dream-Sionna"
+        ],
+        "image_brief": "Lush past-life or literary bleed dream; romantic sublime; same blue eyes",
+        "beats": [
+          "B7"
+        ]
+      },
+      {
+        "key": "LOC_DREAM_BATTLEFIELD",
+        "canonical_name": "battlefield dream",
+        "source_evidence": "P111-P112 chaos blood steel; dying man Save her; Nick runs stabs longest knife into narrator chest",
+        "layout_anchors": [
+          "Open chaotic melee ground",
+          "Bodies",
+          "Space for Nick approach"
+        ],
+        "lighting_states": [
+          "Smoke murk",
+          "Harsh nightmare contrast"
+        ],
+        "persistent_props": [
+          "Blades",
+          "Blood ground",
+          "Outsized knife"
+        ],
+        "image_brief": "Betrayal nightmare foreshadow; brother as killer",
+        "beats": [
+          "B11"
+        ]
+      },
+      {
+        "key": "LOC_DREAM_LAKE_ANGEL",
+        "canonical_name": "lake angel dream",
+        "source_evidence": "P223-P224 black-white then color; reeds boots tunic mud; she rises middle lake white gown conductor arms; Nick giant mace fire eyes from woods; invisible force shrinks him away",
+        "layout_anchors": [
+          "Sandy reed lake edge",
+          "Water expanse",
+          "Woods right",
+          "Embrace shore"
+        ],
+        "lighting_states": [
+          "Begin monochrome",
+          "Surge to vibrant greens blues yellows",
+          "Still air fear beat"
+        ],
+        "persistent_props": [
+          "Mace and chain",
+          "White blowing gown",
+          "Leather boots"
+        ],
+        "image_brief": "Mythic protection dream; Sionna power vs giant Nick; love as force",
+        "beats": [
+          "B16"
+        ]
+      },
+      {
+        "key": "LOC_DREAM_SAGE_ROAD",
+        "canonical_name": "sage rolling-hills road dream",
+        "source_evidence": "P530-P532 winding dirt road bright green hills; Indian sage dark skin white wrap; dirty pizza box eyesore; instruction stop judging illusion quantum create reality; box and sage vanish joy",
+        "layout_anchors": [
+          "Dirt road",
+          "Rolling green hills few trees",
+          "Walking two-shot",
+          "Pizza box on path"
+        ],
+        "lighting_states": [
+          "Magnified clean color hallucinogen bright"
+        ],
+        "persistent_props": [
+          "Dirty pizza box",
+          "White flowing wrap"
+        ],
+        "image_brief": "Spiritual thesis dream; forgiveness key; comic pizza-box koan",
+        "beats": [
+          "B30"
+        ]
+      },
+      {
+        "key": "LOC_MILWAUKEE_STREETS_BUS",
+        "canonical_name": "Milwaukee streets and city bus",
+        "source_evidence": "P35 cold walk library; P209 panic run to Sionna; P439-P474 Nick bus route 10 Smith and 5th losers bag ladies green hair; freezing stops; gray leaves dead",
+        "layout_anchors": [
+          "Bus interior back seats",
+          "Frozen bus stop",
+          "Sidewalks to duplex",
+          "Arterial streets bike routes"
+        ],
+        "lighting_states": [
+          "Winter gray",
+          "Night sodium run",
+          "Rainy cloudy court walk home"
+        ],
+        "persistent_props": [
+          "City bus",
+          "Bike",
+          "Exhaust breath cold"
+        ],
+        "image_brief": "Working Milwaukee transit cold; class texture; Nick reduced to bus after Trans Am totaled",
+        "beats": [
+          "B5",
+          "B15",
+          "B23",
+          "B25",
+          "B26"
+        ]
+      },
+      {
+        "key": "LOC_AIRPORT_DEPARTURE",
+        "canonical_name": "airport departure (Milwaukee/Chicago path)",
+        "source_evidence": "P541 Chicago then Milwaukee landing earlier; P572-P574 return airport queue boarding pass President Olson whisper; mixed nuts tea; floating above throng",
+        "layout_anchors": [
+          "Security to gate flow",
+          "Boarding queue",
+          "Seat waiting area shops"
+        ],
+        "lighting_states": [
+          "Bright terminal",
+          "Generic fluorescent freedom"
+        ],
+        "persistent_props": [
+          "Boarding pass name",
+          "Carry-on",
+          "Tea nuts"
+        ],
+        "image_brief": "Liminal release; name reveal beat; weightless exit from thirty-year story",
+        "beats": [
+          "B31",
+          "B35"
+        ]
+      },
+      {
+        "key": "LOC_DELI_MILWAUKEE",
+        "canonical_name": "Milwaukee deli (Bob reunion)",
+        "source_evidence": "P544 Reuben fries iced tea; Bob at window burger grease; public cackle patrons turn",
+        "layout_anchors": [
+          "Counter or table service",
+          "Window two-top",
+          "Other patrons nearby"
+        ],
+        "lighting_states": [
+          "Day interior casual"
+        ],
+        "persistent_props": [
+          "Reuben plate",
+          "Burger fries",
+          "Napkins grease"
+        ],
+        "image_brief": "Chance working-class lunch reunion; time damage visible on Bob",
+        "beats": [
+          "B32"
+        ]
+      },
+      {
+        "key": "LOC_LAWYER_OFFICES",
+        "canonical_name": "lawyer offices (Jowlish / Dawson)",
+        "source_evidence": "P458-P460 Jowlish small office papers piled computer beehive secretary hallway no-smoking ignored; Dawson court-adjacent conference implied P469",
+        "layout_anchors": [
+          "Hall with ashtray rebellion",
+          "Cluttered Jowlish desk",
+          "Court hallway conference room Dawson"
+        ],
+        "lighting_states": [
+          "Bleak fluorescent"
+        ],
+        "persistent_props": [
+          "Paper stacks",
+          "Nameplate Mark Jowlish",
+          "No-smoking sign"
+        ],
+        "image_brief": "Two-tier legal grind; shabby then sharper; Nick trapped in system",
+        "beats": [
+          "B23"
+        ]
+      },
+      {
+        "key": "LOC_COURTROOM",
+        "canonical_name": "courtroom",
+        "source_evidence": "P464-P469 wait with drug dealers carjackers; fat lady judge brown hair big glasses; blood alcohol; involuntary manslaughter charge jury ahead",
+        "layout_anchors": [
+          "Gallery bench",
+          "Defense table",
+          "Judge bench",
+          "Side conference room"
+        ],
+        "lighting_states": [
+          "Formal harsh institutional"
+        ],
+        "persistent_props": [
+          "Wood bench rail",
+          "Case files"
+        ],
+        "image_brief": "Impersonal justice; Nick among scumballs he scorns; fate turning",
+        "beats": [
+          "B23",
+          "B24"
+        ]
+      },
+      {
+        "key": "LOC_FUNERAL_HOME_CHURCH",
+        "canonical_name": "funeral home and church mass",
+        "source_evidence": "P399 old guy bad suit casket package options vault chiffon; P401 Father Joseph; P403 few attendees coworkers apartment friends Bob; Rosary Society luncheon; short mass",
+        "layout_anchors": [
+          "Arrangement parlor",
+          "Church nave sparse",
+          "Luncheon hall",
+          "Then cemetery continuum"
+        ],
+        "lighting_states": [
+          "Muted carpeted funeral home",
+          "Church daylight stained optional"
+        ],
+        "persistent_props": [
+          "Casket catalog samples",
+          "Modest maple casket",
+          "Prayer cards"
+        ],
+        "image_brief": "Awkward American death commerce then thin Catholic rite; only-son isolation",
+        "beats": [
+          "B19"
+        ]
+      },
+      {
+        "key": "LOC_YOGA_STUDIO_SEATTLE",
+        "canonical_name": "Seattle yoga / meditation gym",
+        "source_evidence": "P526-P529 darkly lit candles citrus lavender; 10-12 people; gratefulness theme; communal chant bow; mat roll home",
+        "layout_anchors": [
+          "Open mat grid",
+          "Instructor front",
+          "Shoe cubby entry"
+        ],
+        "lighting_states": [
+          "Candle low light",
+          "Post-class brighter exit"
+        ],
+        "persistent_props": [
+          "Yoga mats",
+          "Candles",
+          "Optional bolster blocks"
+        ],
+        "image_brief": "Continuity of practice from Sionna years; gratefulness vs void; scent of missing women",
+        "beats": [
+          "B8",
+          "B29"
+        ]
+      }
+    ]
+  }
+}

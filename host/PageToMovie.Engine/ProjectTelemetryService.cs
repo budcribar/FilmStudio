@@ -35,16 +35,19 @@ public sealed class ProjectTelemetryService
 
     private readonly ProjectStore _projects;
     private readonly UserDatabaseService? _userDb;
+    private readonly CostReportService? _costs;
     private readonly ILogger<ProjectTelemetryService> _log;
 
     public ProjectTelemetryService(
         ProjectStore projects,
         ILogger<ProjectTelemetryService> log,
-        UserDatabaseService? userDb = null)
+        UserDatabaseService? userDb = null,
+        CostReportService? costs = null)
     {
         _projects = projects;
         _log = log;
         _userDb = userDb;
+        _costs = costs;
     }
 
     /// <summary>Bind telemetry writes to a project for the current async flow.</summary>
@@ -118,7 +121,29 @@ public sealed class ProjectTelemetryService
                 _log.LogWarning(ex, "user_api_calls insert failed for {UserId}", rec.UserId);
             }
         }
+
+        // Roll chat/vision/other non-video/image spend into the project's actual cost_ledger.
+        // Video/image already log their own richer event via CostReportService.RecordVideoGenerationAsync/
+        // RecordImageGenerationAsync (called from FilmJobService/CharacterDesignService) — skip those
+        // kinds here or spend double-counts.
+        if (_costs is not null && !string.IsNullOrWhiteSpace(projectId) && IsLedgerEligibleKind(rec.Kind))
+        {
+            try
+            {
+                await _costs.RecordApiCallSpendAsync(rec, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "cost_ledger append failed for {ProjectId}", projectId);
+            }
+        }
     }
+
+    private static bool IsLedgerEligibleKind(string? kind) => (kind ?? "").ToLowerInvariant() switch
+    {
+        "video" or "video_extend" or "video_poll" or "image" or "image_edit" => false,
+        _ => true,
+    };
 
     private static string? TryProviderForModel(string model, string? kind)
     {
@@ -129,8 +154,9 @@ public sealed class ProjectTelemetryService
                 "image" or "image_edit" => ModelCapability.Image,
                 "video" or "video_extend" or "video_poll" => ModelCapability.Video,
                 "vision" => ModelCapability.Vision,
-                "audio" or "tts" or "music" => ModelCapability.Audio,
-                "voice" => ModelCapability.Voice,
+                "audio" or "music" => ModelCapability.Audio,
+                "voice" or "tts" or "voice_clone" => ModelCapability.Voice,
+                "lip_sync" => ModelCapability.LipSync,
                 _ => ModelCapability.Chat,
             };
             return SupportedModelCatalog.Find(model, cap)?.ProviderId

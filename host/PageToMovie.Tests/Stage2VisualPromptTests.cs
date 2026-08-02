@@ -179,14 +179,14 @@ public class Stage2VisualPromptTests : IDisposable
         {
             ["Character_Hero"] = new() { Key = "Character_Hero", DisplayName = "Hero", Description = "tall" },
         };
-        var built = ClipVideoPromptBuilder.Build(
-            clip, Path.GetTempPath(), profiles, resolution: "720p");
+        var built = ClipVideoPromptBuilder.Build(clip, Path.GetTempPath(), profiles);
         Assert.Contains("<Negative>", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("no legible text", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("no crowd extras", built.Prompt, StringComparison.OrdinalIgnoreCase);
-        // Gen builder owns technical suffix (stripped from action if present, then re-appended)
-        Assert.Contains("/ 720p, 24fps", built.Prompt, StringComparison.OrdinalIgnoreCase);
-        Assert.Single(Regex.Matches(built.Prompt, @"/\s*\d+p\s*,\s*\d+fps", RegexOptions.IgnoreCase));
+        // Resolution/fps are real, separate API request fields (GrokVideoClient), not prompt text —
+        // the accidental "/ 480p, 24fps" in the input visual_prompt is stripped and nothing is
+        // re-appended in its place.
+        Assert.Empty(Regex.Matches(built.Prompt, @"/\s*\d+p\s*,\s*\d+fps", RegexOptions.IgnoreCase));
     }
 
     [Fact]

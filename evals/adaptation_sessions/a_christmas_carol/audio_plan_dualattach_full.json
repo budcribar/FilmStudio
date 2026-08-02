@@ -1,0 +1,394 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "score_intent": "Cold sparse Victorian chamber atmosphere: low drone of muted strings and distant harmonium, slow tempo around 60 BPM, brown-fog melancholy with faint street murmur under a thin minor-key motif that never resolves, establishing bitter Christmas Eve London without warmth or hope.",
+      "dynamics_arc": "Intensity creeps from hushed fog bed (clip 1) to a slight swell under the wheezing crowd (clip 2) then sinks back to near-stillness on the warehouse sign (clip 3).",
+      "peak_clip_number": 2,
+      "timing": "Continuous low bed across ~25s; gentle swell mid-scene under crowd movement, taper on sign reveal.",
+      "diegetic_sound": "Muffled footsteps, distant coughs and wheezes, faint cart wheels on wet stone, fog-dampened city hum.",
+      "silence_or_exclusions": "No bright brass, no carol melodies, no percussion hits; keep score under dialogue-free establishing picture.",
+      "alternatives": [
+        "solo bass clarinet fog motif",
+        "harmonium pedal tone only"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "score_intent": "Dry icy counting-house underscore in minor mode, pinched strings and solitary piano ticks like a mean clock at ~70 BPM; when Fred enters the texture briefly brightens with warmer cello and a half-smile of major color then is crushed by Scrooge\u2019s retorts as tempo stiffens and dissonant low winds stack; the argument climbs through clipped staccato strings and hardening brass stabs toward a cold fortissimo on the boiled-pudding curse, eases into brittle irony for the charity gentlemen, then spikes again on \u2018surplus population\u2019 with a stark orchestral cut to thin icy residual tone as Scrooge resumes work.",
+      "dynamics_arc": "Starts low in the freezing office (clip 1), rises with Fred\u2019s entrance (clips 2\u20138), builds hard through Scrooge\u2019s rant to peak fury (clips 9\u201314), cools through Bob\u2019s applause scare and dinner invitation refusals (clips 15\u201346), plateaus under the charity pitch (clips 47\u201366), surges again to a second peak on Nothing/left alone/surplus population (clips 67\u201374), then releases to cold industrious quiet (clips 75\u201380).",
+      "peak_clip_number": 74,
+      "timing": "Long ~180s arc; underscore continuous but duck hard under rapid dialogue; allow micro-gaps on Bah Humbug punchlines; full swell only on intensity 8\u20139 speeches.",
+      "diegetic_sound": "Tiny fire crackle, quill scratches, coal scuttle, door latch on Fred and gentlemen, Bob\u2019s timid clap, street seep under door.",
+      "silence_or_exclusions": "No lush romantic strings during Scrooge lines; no triumphant Christmas fanfares; mute score almost to nothing under whispered asides and the Tank applause guilt beat.",
+      "alternatives": [
+        "harpsichord and bassoon miserly tick",
+        "string quartet only, no brass until surplus line"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "score_intent": "Piercing night-cold continuation of the fog motif, thinner and sharper than S1, ~65 BPM; a fragile diegetic carol fragment (God bless you merry gentleman) begins on a lone boyish voice then is violently cut by a ruler-slash orchestral sting and scurrying retreat into bitter wind.",
+      "dynamics_arc": "Low biting bed (clip 1) rises with the carol (clip 2) then snaps off at the ruler threat.",
+      "peak_clip_number": 2,
+      "timing": "~20s; carol enters within first 8s, abrupt cutoff mid-phrase.",
+      "diegetic_sound": "Keyhole sniff, thin boy carol, ruler rap on wood, fleeing footsteps, wind whip.",
+      "silence_or_exclusions": "Kill all underscore the instant the ruler hits; no completed carol cadence.",
+      "alternatives": [
+        "unaccompanied boy voice only",
+        "music-box carol crushed by dissonant cluster"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "score_intent": "Tight irritable night office cue, clipped low strings and bassoon grumble ~75 BPM; tension tightens through Scrooge\u2019s unfairness lecture then releases into a sudden light scampering major-key flourish as Bob flees and slides home while Scrooge\u2019s growl lingers as a sour coda.",
+      "dynamics_arc": "Medium irritation from dismount (clip 1) through the day-off argument peaking on not convenient/not fair and pocket-picking lines (clips 4\u20135, 9\u201310), brief soft smile dip (clip 6), then release and lift as Scrooge growls out and office closes in a twinkling (clip 11).",
+      "peak_clip_number": 11,
+      "timing": "~45s; keep under dialogue; brighten only in final seconds on Bob\u2019s exit energy.",
+      "diegetic_sound": "Stool scrape, snuffed candle, hat, door, Bob\u2019s boots, distant Cornhill slide whoosh, key in lock.",
+      "silence_or_exclusions": "No full festive theme yet; Bob\u2019s joy is brief and small, not orchestral triumph.",
+      "alternatives": [
+        "pizzicato chase for Bob\u2019s slide",
+        "solo clarinet grumble for Scrooge"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "score_intent": "Solitary melancholy walking cue: slow descending minor piano and muted viola at ~55 BPM, empty tavern warmth denied, footsteps in fog as the only pulse, bridging toward chambers with growing unease but no scare yet.",
+      "dynamics_arc": "Flat low melancholy across dinner (clip 1) and fog walk (clip 2), slight darkening at end.",
+      "peak_clip_number": 1,
+      "timing": "~20s continuous sparse bed, no peaks.",
+      "diegetic_sound": "Cutlery on plain plate, chair, solitary boots on wet stone, distant muffled bells.",
+      "silence_or_exclusions": "No other patrons\u2019 cheer, no music-hall bleed; extreme sparseness.",
+      "alternatives": [
+        "solo cello footsteps motif",
+        "ambient fog drone only"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "score_intent": "Gloomy yard approach with low string clusters and irregular heartbeat timpani ~50 BPM; as the key nears the knocker the harmony freezes, then a sudden spectral brass-and-choir stab transforms the knocker into Marley\u2019s face, hanging in stunned silence before a dismissive pooh-pooh mutters over shaky residual strings.",
+      "dynamics_arc": "Uneasy creep (clip 1) detonates on knocker-to-Marley transformation (clip 2) then drops to rattled self-reassurance (clip 3).",
+      "peak_clip_number": 2,
+      "timing": "~40s; hold near-silence a beat before the face hit; short decay after.",
+      "diegetic_sound": "Fog drip, gate creak, key metal, heavy door bang, Scrooge\u2019s breath.",
+      "silence_or_exclusions": "No full ghost theme yet\u2014only a preview sting; leave room after face for pure reaction.",
+      "alternatives": [
+        "reversed piano knocker hit",
+        "solo distorted horn for Marley face"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "score_intent": "Extended supernatural chamber drama: opens with uneasy domestic quiet and thin gruel warmth, then disused bell begins a soft unnatural swing that cascades into a pealing house-wide bell swarm; deep chain clanks rise stair by stair through the door as low brass and bowed iron enter; Marley\u2019s presence brings cold choir clusters and grinding chain percussion; dialogue underscored by restless cellos; frightful cries trigger full orchestral horror hits with rattling chains and distorted winds; lament sections slow to dirge tempo ~50 BPM with tragic solo horn on \u2018mankind was my business\u2019; warning of three spirits tightens rhythm; finale opens the window on a wailing phantom chorus in the air then cuts to exhausted near-silence as bolts are checked.",
+      "dynamics_arc": "Quiet entry and stairs (clip 1), rising dread on swinging bell (clip 2) and chain ascent (clip 3), defiance dip (clip 4), major shock peak as ghost comes through door (clip 5), tense dialogue plateau (clips 6\u201323), absolute climax on first frightful cry and chain shake (clip 24), sustained high anguish through mercy and wander-doomed speeches (clips 25\u201340), secondary peaks on further cries and business lament (clips 55\u201364), warning stretch (clips 68\u201384), eerie release on window phantoms then drained quiet (clips 85\u201386).",
+      "peak_clip_number": 24,
+      "timing": "~240s through-composed; bells ~30\u201340s in; door breach mid-first third; multiple cry hits must bloom and decay without masking Marley\u2019s words; final phantom wash last 20s.",
+      "diegetic_sound": "Candle trim, gruel spoon, bell metal, heavy chain on casks and stairs, door, jaw drop cloth, window sash, phantom wind-wails, bolt clicks.",
+      "silence_or_exclusions": "Hard duck under every Marley speech syllable; no romantic resolution; exclude any bright Christmas carol until much later acts; leave true silence beats after each frightful cry.",
+      "alternatives": [
+        "chain-only percussion bed",
+        "male choir wordless lament without orchestra for business speech"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "score_intent": "Dark anticipatory night into uncanny arrival: sparse clock-tick percussion and held string harmonics as quarters are counted; at One a deep dull hollow strike blooms into a sudden light-flash of high shimmering strings, celesta, and soft choir as curtains part; Ghost of Christmas Past theme is ethereal, fluctuating, childlike yet ancient\u2014harp, glass harmonica, gentle tempo ~65 BPM\u2014warming slightly on \u2018your reclamation\u2019 as invitation to rise.",
+      "dynamics_arc": "Low dark waking (clips 1\u20136), explosive luminous peak on the One strike and curtain flash (clip 7), then gentle inquisitive plateau through identity dialogue (clips 8\u201316) with a firm lift on rise and walk (clip 17).",
+      "peak_clip_number": 7,
+      "timing": "~70s; clock counting occupies first half; One hit is the hard sync point; Past theme thereafter continuous and soft.",
+      "diegetic_sound": "Bedclothes, clock mechanism, deep bell One, curtain rings, faint frost window tick.",
+      "silence_or_exclusions": "No horror chains; Past must feel different from Marley\u2014light not dark; silence between quarter calls.",
+      "alternatives": [
+        "solo glass harmonica for Past",
+        "music-box over deep bell"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "score_intent": "Clear cold snow-country pastoral in brighter Dorian mode: open fifths, flute and light strings ~80 BPM as city vanishes; brief merry boys\u2019 shouts color with playful woodwinds then the score turns lonely and still as the Ghost points to the solitary neglected child at school, thinning to a single aching violin.",
+      "dynamics_arc": "Wondering lift on recognition (clips 1\u20133) peaks on the pointed reveal of the solitary child (clip 4).",
+      "peak_clip_number": 4,
+      "timing": "~45s; pastoral open, lonely taper on final image.",
+      "diegetic_sound": "Crunching snow, distant shouting boys, pony harness, winter birds, schoolyard emptiness.",
+      "silence_or_exclusions": "Strip ensemble bare on the neglected child; no dialogue mask.",
+      "alternatives": [
+        "solo piano snow motif",
+        "boys\u2019 wordless chorus fading to one voice"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "score_intent": "Melancholy boarding-school interior: thin cold piano and desolate strings over bare deal desks; imagination blooms with colorful storybook woodwind flourishes (Ali Baba, Valentine, Genii) that glitter then fade to poor-boy ache; Fan\u2019s entrance floods the cue with warm major strings, gentle harp, and a tender sibling theme ~70 BPM that carries through home-for-good dialogue and softens into bittersweet coda on delicate Fan and nephew reminder.",
+      "dynamics_arc": "Bleak open (clip 1), emotional swell on lonely boy and imaginary friends (clips 2\u20136), soft regret dip (clips 7\u20138), heartfelt peak on Fan\u2019s dear brother homecoming (clips 9\u201312), warm sustain through father\u2019s kindness (clips 13\u201317), gentle reflective close (clips 18\u201320).",
+      "peak_clip_number": 9,
+      "timing": "~90s; storybook colors mid-first half; Fan theme from her entrance to near end; leave air for God bless line.",
+      "diegetic_sound": "Feeble fire, page turns, Fan\u2019s quick steps and kiss, coach outside, trunk, light wine glasses.",
+      "silence_or_exclusions": "No heavy tragedy; keep childlike even in loneliness; duck under Fan\u2019s excited speech.",
+      "alternatives": [
+        "music-box Ali Baba then string Fan theme",
+        "solo oboe for boy Scrooge"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "score_intent": "Jovial Fezziwig warehouse Christmas Eve dance: bright fiddle-led English country dance (Sir Roger de Coverley flavor) at lively ~110 BPM with tambourine, laughter-friendly woodwinds, and warm acoustic bass; builds through shutters-up and clear-away into full dance floor joy; softens to sincere reflective strings when Scrooge defends Fezziwig\u2019s power to give happiness, ending on a quiet wishful cello as he thinks of his clerk.",
+      "dynamics_arc": "Recognition glow (clip 1), festive climb through Yo-ho and shutters (clips 2\u20137), dance peak on Well done (clip 8), thoughtful passionate plateau on happiness-costs-a-fortune speech (clips 9\u201314), tender dip on clerk wish (clips 15\u201316), brief urgency on time short (clip 17).",
+      "peak_clip_number": 8,
+      "timing": "~120s; dance groove dominates middle minute; pull back to underscore under Scrooge\u2019s defense speech; quick sting at end.",
+      "diegetic_sound": "Fiddler in-scene, shutter bangs, furniture scrape, dancing feet, claps, door Merry Christmas farewells.",
+      "silence_or_exclusions": "Diegetic fiddle should blend with score; reduce dance bed under serious dialogue so words lead.",
+      "alternatives": [
+        "pure diegetic fiddle and feet only",
+        "chamber orchestra country dance"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "score_intent": "Bittersweet breakup turned to torment: intimate minor piano and aching violin for Belle\u2019s release over the golden idol, tempo slow ~60 BPM; second movement shifts to warm domestic major with children\u2019s tumult and Christmas toy brightness that grows painfully ironic; final stretch darkens and presses as older Belle\u2019s husband describes solitary Scrooge, climbing to anguished full strings while Scrooge begs show no more, extinguisher struggle flares with harsh light-stream dissonance then collapse.",
+      "dynamics_arc": "Sad dignity through release dialogue (clips 1\u201318), desperation on show-no-more (clip 19), crushing peak across the later happy-home vision and solitary Scrooge report (clips 20\u201324).",
+      "peak_clip_number": 24,
+      "timing": "~110s; two clear chapters\u2014breakup then matron home\u2014with hard emotional gear shift; extinguisher chaos only in last seconds if pictured.",
+      "diegetic_sound": "Soft weeping, children\u2019s shouts and toys, porter, hearth, Scrooge\u2019s struggle breaths.",
+      "silence_or_exclusions": "No cheap melodrama swells over Belle\u2019s calm lines; save fortissimo for the torment vision end.",
+      "alternatives": [
+        "solo piano throughout breakup",
+        "lullaby twisted to dissonance for final vision"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "score_intent": "From snore-dark to abundant blaze: tense waiting ticks after the One bell, sudden bloom into rich holly-green orchestral warmth\u2014horns, cellos, glowing major key ~90 BPM\u2014revealing the Ghost of Christmas Present\u2019s jolly giant theme with torchlike brass and plentiful harp glissandi inviting \u2018Come in and know me better.\u2019",
+      "dynamics_arc": "Waking unease (clip 1), trembling build (clip 2), radiant peak on Come in (clip 3), genial sustained presence through robe touch (clips 4\u20138).",
+      "peak_clip_number": 3,
+      "timing": "~60s; darkness first 15\u201320s; full Present theme from reveal onward.",
+      "diegetic_sound": "Snore cut, bell One, fire roar, rustling holly, torch whoosh.",
+      "silence_or_exclusions": "No Marley horror colors; Present is generous not frightening.",
+      "alternatives": [
+        "organ and choir abundance",
+        "folk-rich Celtic Present theme"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "score_intent": "Snowy Christmas morning city bustle: cheerful bustling strings and bright woodwinds ~100 BPM with market percussion (wooden blocks, jingles), church-bell overtones, and torch-blessing shimmer when the Spirit sprinkles; gentle comic warmth on restored good humour after quarrels; thoughtful softer midsection under the Sunday-closing debate without losing overall festive glow.",
+      "dynamics_arc": "Bright street energy (clips 1\u20132), warm peak on shame-to-quarrel reconciliation (clips 3\u20134), conversational ease through flavour and poor-dinner talk (clips 5\u20137), mild tension then moral clarity on deprive/charge themselves (clips 8\u201313).",
+      "peak_clip_number": 3,
+      "timing": "~75s continuous festive bed; dip under Spirit\u2019s corrective speech.",
+      "diegetic_sound": "Snow scrapers, shop calls, chestnut sellers, church steeples, crowd jostle, dinner carriers.",
+      "silence_or_exclusions": "Avoid sanctimonious organ; keep human and busy; clear space for Spirit\u2019s rebuke lines.",
+      "alternatives": [
+        "street-band brass carol fragments",
+        "light pizzicato market groove"
+      ]
+    },
+    {
+      "scene_id": "S15",
+      "score_intent": "Intimate Cratchit Christmas: modest warm domestic strings and clarinet ~75 BPM, humble and loving not luxurious; playful scurrying for children\u2019s chaos; tender crutch-motif for Tiny Tim on solo oboe; goose and pudding moments add cheerful folk bounce; solemn hush then radiant resolve on \u2018God bless us every one\u2019; shadow of possible death darkens briefly with low held strings before family merriment carefully returns.",
+      "dynamics_arc": "Blessing warmth (clip 1), lively household climb (clips 2\u20134), affectionate Tim reports (clips 5\u20139), festive compounding peak into Tim\u2019s blessing (clips 10\u201311).",
+      "peak_clip_number": 11,
+      "timing": "~150s; long domestic arc; special bloom and brief hold under God bless us every one; any vacant-seat warning underscored sparsely.",
+      "diegetic_sound": "Pot lids, potatoes pop, crutch taps, goose carving, pudding blaze whoosh, clinking cups, children\u2019s voices.",
+      "silence_or_exclusions": "No grand orchestra crushing the small house; leave silence pocket before Tim\u2019s blessing so the line rings; duck under Bob\u2019s emotional reports.",
+      "alternatives": [
+        "music-box and string quartet domestic",
+        "solo piano Cratchit theme with clarinet Tim"
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "score_intent": "Bleak moor windscape opening with hollow low strings and lonely horn over frost, then a glowing hut-window modulation into rough hearty folk chorus and fiddle as miners keep Christmas against the gale, tempo solid ~85 BPM.",
+      "dynamics_arc": "Desolate open (clip 1) rises to cheerful peak inside the hut song (clip 2).",
+      "peak_clip_number": 2,
+      "timing": "~35s; stark contrast edit at window light.",
+      "diegetic_sound": "Moor wind, distant song, fire crackle, rough voices in chorus.",
+      "silence_or_exclusions": "Keep exterior almost score-empty but wind-full; song can be largely diegetic.",
+      "alternatives": [
+        "wordless male choir against wind",
+        "solo fiddle in hut"
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "score_intent": "Storm-reef isolation: roaring low brass and wave-timpani, then a sturdy two-voice Christmas song over grog warmth cuts through the gale with resolute major thirds ~70 BPM, lighthouse beam as slow oscillating harmonic pulse.",
+      "dynamics_arc": "Hostile sea bed (clip 1) warms to resolute song peak (clip 2).",
+      "peak_clip_number": 2,
+      "timing": "~25s; song enters quickly after establish.",
+      "diegetic_sound": "Heavy surf, wind scream, fire in loophole, can of grog, scarred men\u2019s singing.",
+      "silence_or_exclusions": "Do not overpower the two voices; score supports not replaces song.",
+      "alternatives": [
+        "drums and drone only under diegetic song",
+        "pipe organ distant through storm"
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "score_intent": "Black heaving sea nocturne: deep rolling strings and distant ship-bell tolls ~55 BPM; each crewman a private hummed carol fragment layered softly, kinder and lonelier than land, fading into dark water.",
+      "dynamics_arc": "Lonely seascape (clip 1) gently fills with hummed Christmas thoughts (clip 2).",
+      "peak_clip_number": 2,
+      "timing": "~25s; continuous roll, hummed entries staggered.",
+      "diegetic_sound": "Hull creak, wind in rigging, helm wheel, hummed tunes, muffled watch bells.",
+      "silence_or_exclusions": "No full chorus; keep fragments private and sparse.",
+      "alternatives": [
+        "solo harmonica over waves",
+        "string harmonics only"
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "score_intent": "Bright gleaming Fred party: sparkling strings, playful woodwinds, and laughter-friendly waltz and gallop cues ~120 BPM for blind-man\u2019s buff; harp simple air softens Scrooge; toast to Uncle Scrooge lifts into warm ensemble cheer; then sudden gear-shift as Present ages\u2014tempo drags, colors grey\u2014and Ignorance and Want emerge with terrifying low cluster chords, children\u2019s misery motif, and doom-laden brass; climactic horror on \u2018Beware\u2026 Doom\u2019 and the mocking echo \u2018Are there no prisons?\u2019 before midnight bell cuts the Spirit away into void.",
+      "dynamics_arc": "Hearty laugh open (clip 1), genial plateau through games and toast (clips 2\u201311), reflective dip on short lives (clips 12\u201313), absolute terrifying peak on Ignorance and Want reveal and Doom (clips 14\u201318).",
+      "peak_clip_number": 14,
+      "timing": "~150s; party groove majority; hard dramatic break for children under robe last third; midnight cutoff clean.",
+      "diegetic_sound": "Laughter, harp air, blind-man\u2019s buff thumps, glass of mulled wine, clock toward twelve, children\u2019s ragged breath.",
+      "silence_or_exclusions": "Silence beat before Oh Man look here; strip party music completely for Want/Ignorance; no underscoring that softens Doom.",
+      "alternatives": [
+        "diegetic parlor piano for party then orchestral horror",
+        "music-box toast twisted into dirge"
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "score_intent": "Solemn dread entrance of Yet to Come: near-silence then extremely slow black-garment chords, wordless low choir, and a single stretched horn tone at ~45 BPM; no melody of comfort\u2014only gravity\u2014as Scrooge kneels and vows to follow with a thankful heart; lead-on pulse is a slow heartbeat drum.",
+      "dynamics_arc": "Mounting awe from phantom approach (clips 1\u20135) through fear-and-resolve speeches (clips 6\u20139) peaking on lead-on commitment (clips 10\u201311).",
+      "peak_clip_number": 1,
+      "timing": "~40s; enter from silence; never rush; hold under every line.",
+      "diegetic_sound": "Robe drag almost inaudible, Scrooge\u2019s trembling breath, knee on ground.",
+      "silence_or_exclusions": "No chains like Marley, no light like Past, no jollity like Present\u2014pure void gravity; long rests between phrases.",
+      "alternatives": [
+        "organ pedals only",
+        "processed wind and distant choir"
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "score_intent": "Cold mercantile indifference: dry staccato strings and polite ironic woodwinds at businesslike ~85 BPM, emotionally flat; conversational lightness that feels wrong over death talk; no mourning theme\u2014only casual chink-of-money colors and a hollow open cadence when Scrooge\u2019s corner is occupied by another.",
+      "dynamics_arc": "Neutral city bed (clip 1), steady detached plateau through funeral jokes (clips 2\u20139), slight lift on Old Scratch greetings (clips 10\u201312).",
+      "peak_clip_number": 10,
+      "timing": "~55s; even level, almost muzak-cruel; no big hits.",
+      "diegetic_sound": "Exchange hubbub, money chink, shoes on stone, casual good-mornings.",
+      "silence_or_exclusions": "Absolutely no tragic strings on the dead man; the horror is the lack of care.",
+      "alternatives": [
+        "solo dry piano business motif",
+        "light jazz-less period dance band irony"
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "score_intent": "Foul alley and Old Joe\u2019s shop: grimy low accordion or concertina, scraped fiddle, and crooked waltz ~70 BPM that grins without kindness; laughter hits are sneering muted brass; appraisal of curtains blankets shirt ticks like a cash register; builds to nauseated full dissonance as Scrooge recognizes this end could be his, crying out to the Spirit.",
+      "dynamics_arc": "Seedy establish (clip 1), comic-grotesque climb through three scavengers (clips 2\u20138), hard peak on bed-curtains/blankets/shirt plunder boasts (clips 9\u201319), horrified climax on Scrooge\u2019s realization (clips 20\u201321).",
+      "peak_clip_number": 21,
+      "timing": "~100s; keep groove under banter; wrench tonality on final recognition.",
+      "diegetic_sound": "Narrow wet steps, door bell crude, pipe, bundles dropped, chalk on wall, coarse ha-ha.",
+      "silence_or_exclusions": "Leave air for Ha ha ha and final Spirit plea; no sentimental redemption yet.",
+      "alternatives": [
+        "percussion and bones only",
+        "detuned parlor piano"
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "score_intent": "Death-room void: almost no pulse, extreme sparse register\u2014low bowed metal, faint high sine-like strings, breath of rats\u2014tempo undefined; Phantom\u2019s pointing hand marked by a single frozen chord; Scrooge\u2019s powerless pleas ride swelling tragic lines that never cadence, only press and fail.",
+      "dynamics_arc": "Dread open on bare bed (clip 1), peak sustained through pointed corpse and fearful pleas (clips 2\u20137).",
+      "peak_clip_number": 2,
+      "timing": "~45s; minimal movement; dynamic swells only with Scrooge\u2019s voice peaks.",
+      "diegetic_sound": "Cloth shift, cat at door, rat scratch, Scrooge\u2019s choked breath, nothing else.",
+      "silence_or_exclusions": "Prefer silence over score if in doubt; no melody identifiable as theme; exclude any comfort.",
+      "alternatives": [
+        "complete score silence with only diegetic rats",
+        "single held organ cluster"
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "score_intent": "Anxious domestic daylight turning to guilty relief: restless pacing strings in minor, then a complicated exhale into softer major as death news means hope for debtors\u2014warmth edged with shame, never celebration, ~65 BPM.",
+      "dynamics_arc": "Anxious mother open (clip 1), emotional peak on good-or-bad ruined-or-hope exchange (clips 2\u20133), bittersweet settle on he is dead (clip 4).",
+      "peak_clip_number": 2,
+      "timing": "~40s; careful not to sound triumphant on relief.",
+      "diegetic_sound": "Clock, needle, footsteps pacing, door, children\u2019s distant stir.",
+      "silence_or_exclusions": "No comic relief sting; moral discomfort stays in the harmony.",
+      "alternatives": [
+        "solo clarinet anxious theme",
+        "muted string quartet"
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "score_intent": "Mourning Cratchit house: hushed hymn-like strings and soft choir pad in minor ~50 BPM; scripture reading colored with plainchant light; Bob\u2019s slower walk and breakdown swell into raw grief on \u2018my little little child\u2019; resolve theme\u2014gentle, vow-like\u2014carries the family\u2019s promise to remember Tim, ending in quiet major peace without erasing loss.",
+      "dynamics_arc": "Still quiet open (clip 1), soft scripture and waiting (clips 2\u20137), grief peak on Bob\u2019s little child (clips 8\u201311), loving sustained remembrance and I am very happy (clips 12\u201317).",
+      "peak_clip_number": 11,
+      "timing": "~90s; long patience in first half; full heart on Bob\u2019s return grief; do not rush the vow.",
+      "diegetic_sound": "Needle, page, tea things, door, muffled sob, kiss, quiet children.",
+      "silence_or_exclusions": "Hard silence before and after \u2018My little, little child!\u2019; no lush Hollywood ending.",
+      "alternatives": [
+        "solo piano hymn",
+        "unaccompanied choir under scripture"
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "score_intent": "Churchyard reckoning: cold open fifths, wind-swept low choir, and tolling distant bell ~45 BPM; tension coils as Scrooge begs whether shadows will be or may be; on reading his own name the orchestra erupts in desperate full-register plea\u2014racing heart strings, pounding timpani, climbing brass\u2014through every vow to honour Christmas and live in Past Present Future; final cry to sponge the writing hits maximum then the Phantom dwindles as texture collapses to a single bedpost-like wood tick and breath of morning hope.",
+      "dynamics_arc": "Graveyard dread (clip 1), rising pleas (clips 2\u20136), absolute peak cascade from Am I that man through all vows to sponge the writing (clips 7\u201317).",
+      "peak_clip_number": 7,
+      "timing": "~70s; slow approach first third; continuous crest through vow sequence; rapid dissolve at end.",
+      "diegetic_sound": "Iron gate, weeds underfoot, wind, Scrooge knees on earth, robe collapse.",
+      "silence_or_exclusions": "Leave a naked gap after the name is known before vows; end in near silence not triumph fanfare.",
+      "alternatives": [
+        "organ and choir only",
+        "string orchestra desperate passacaglia"
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "score_intent": "Explosive rebirth joy: brilliant major-key orchestral sunlight at buoyant ~130 BPM with laughing woodwinds, bright bells, and dancing strings; giddy tempo shifts mirror Scrooge\u2019s whoops; window opens on golden carol overtones; playful scherzo for boy-and-turkey errand; tender chuckle motif for the beloved knocker; continuous ecstatic energy that never returns to miserly colors.",
+      "dynamics_arc": "Immediate high joy from first vow reprise (clips 1\u201311), playful sustain through day discovery and turkey scheme (clips 12\u201336), warm delighted close on knocker and cab (clips 37\u201340).",
+      "peak_clip_number": 1,
+      "timing": "~90s; open already fortissimo happy; micro-dips only for breath and boy dialogue; no dark recall except fond ghost room tour colors.",
+      "diegetic_sound": "Bedpost laugh, window sash, church bells, street boy, running feet, poultry shop, cab wheels, knocker touch.",
+      "silence_or_exclusions": "No residual horror stings; keep dialogue clear in boy bargaining; joy can be big but not muddy.",
+      "alternatives": [
+        "full SATB carol underscoring laughs",
+        "light dance band Christmas swing"
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "score_intent": "Open-hearted street benevolence: warm walking strings and gentle brass chorale ~95 BPM, smiling and public; donation moment swells with grateful horns and soft choir lift on back-payments and Bless you, still elegant not syrupy.",
+      "dynamics_arc": "Confident delighted open (clip 1) through greetings and pardon (clips 2\u20135), peak warmth on munificent pledge and come-see-me (clips 6\u201310).",
+      "peak_clip_number": 6,
+      "timing": "~50s continuous glow; bloom under whispered donation.",
+      "diegetic_sound": "Street greetings, footsteps, coat cloth, handshake, distant merry crowds.",
+      "silence_or_exclusions": "No irony; clear space for the sum whisper if inaudible on purpose.",
+      "alternatives": [
+        "brass band soft carol walk",
+        "string quartet smiling allegro"
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "score_intent": "Shy approach turning to explosion of welcome: hesitant soft strings as Scrooge passes the door, then door-open bloom into full festive household orchestra and laughter theme at ~110 BPM, peaking as Fred shakes his arm off in wonderful happiness.",
+      "dynamics_arc": "Polite tentative entry (clips 1\u20134) detonates into peak joy on let-him-in mercy shake (clip 5).",
+      "peak_clip_number": 5,
+      "timing": "~40s; hold back until dining-room reveal then release everything.",
+      "diegetic_sound": "Door knocker, maid, dining-room hubbub, chair scrape, arm-shake laughter, party bleed.",
+      "silence_or_exclusions": "Quiet enough on \u2018Will you let me in?\u2019 for vulnerability; then no restraint.",
+      "alternatives": [
+        "solo piano shy then full tutti",
+        "diegetic party song swell"
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "score_intent": "Playful fake-stern office finale into pure Christmas moral: mischievous tiptoe strings while Scrooge waits early, mock-growl low bassoon on lateness scold, then radiant tempo jump to ~120 BPM full joyful orchestra on salary raise and merry Christmas Bob; smoking-bishop warmth in horns; coda broadens into noble hymn-like statement for Tiny Tim living and \u2018God bless Us, Every One!\u2019 with bells and full ensemble final cadence.",
+      "dynamics_arc": "Quiet early watch (clip 1), teasing tension through lateness scold (clips 2\u20135), joyous peak from I\u2019ll tell you what through raise and coal-scuttle (clips 6\u201312), crowning moral cadence on God bless Us Every One (clip 13).",
+      "peak_clip_number": 8,
+      "timing": "~70s; comedy restraint first half; continuous celebration after the raise reveal; final blessing gets full fermata ending.",
+      "diegetic_sound": "Clock tick, door, Bob\u2019s hurried boots, fire poke, coal-scuttle, possible distant Tim laugh, final air of street bells.",
+      "silence_or_exclusions": "Deadpan silence beat right before \u2018raise your salary\u2019; do not underscore over the final blessing words\u2014hit after or swell under held last line.",
+      "alternatives": [
+        "chamber end-credit carol into full choir",
+        "solo voice God bless over soft orchestra"
+      ]
+    }
+  ]
+}

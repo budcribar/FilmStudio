@@ -41,6 +41,10 @@ public class CreatorProfileServiceTests
                 stream, "Alice Movie", "Description", "proj1", "filmmaker_alice", acceptedGuidelines: true);
 
             demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, "admin", "Approved");
+            // CreatorProfileService counts demos via DemoCatalogService.ListPublic, which requires
+            // a YoutubeId (YouTube is the gallery source of truth) — simulate a completed upload
+            // so this demo is actually counted as "published".
+            demos.SetYouTubeUploadStatus(entry.Id, "done", youtubeId: "yt_" + Guid.NewGuid().ToString("N")[..8]);
 
             // Add an upvote
             upvotes.TryAdd(entry.Id, "user_bob");

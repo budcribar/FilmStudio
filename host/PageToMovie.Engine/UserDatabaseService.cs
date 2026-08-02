@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.DataProtection;
@@ -245,6 +246,17 @@ public class UserDatabaseService
                         setVer3.ExecuteNonQuery();
                         _logger.LogInformation("Migrated SQLite schema to user_version 3 (unified dynamic user_api_keys table)");
                     }
+
+                    if (curVer < 4)
+                    {
+                        // Migration v3 -> v4: generation_errors table created unconditionally below
+                        // (CREATE TABLE IF NOT EXISTS, same idempotent style as user_api_calls) —
+                        // this block only advances the version marker + logs the migration event.
+                        using var setVer4 = conn.CreateCommand();
+                        setVer4.CommandText = "PRAGMA user_version = 4;";
+                        setVer4.ExecuteNonQuery();
+                        _logger.LogInformation("Migrated SQLite schema to user_version 4 (added generation_errors table)");
+                    }
                 }
 
                 // User billing credits (list-rate USD; 1 credit = $0.01).
@@ -359,6 +371,40 @@ public class UserDatabaseService
                     idxCmd.ExecuteNonQuery();
                 }
                 catch { /* ignore */ }
+
+                // generation_errors (v4): partial-coverage / structural-gate / transient-retry
+                // events — a different concept from user_api_calls (which logs every call,
+                // success or failure). See GenerationErrorLogger.
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        CREATE TABLE IF NOT EXISTS generation_errors (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            ts TEXT NOT NULL,
+                            user_id TEXT,
+                            project_id TEXT,
+                            job_id TEXT,
+                            scene INTEGER,
+                            clip INTEGER,
+                            stage TEXT NOT NULL,
+                            provider TEXT,
+                            model TEXT,
+                            error_type TEXT NOT NULL,
+                            error_message TEXT,
+                            http_status INTEGER,
+                            requested_count INTEGER,
+                            returned_count INTEGER,
+                            missing_ids_json TEXT,
+                            attempt INTEGER NOT NULL DEFAULT 1,
+                            resolved INTEGER NOT NULL DEFAULT 0,
+                            request_summary TEXT,
+                            response_summary TEXT
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_generation_errors_project_ts ON generation_errors(project_id, ts);
+                        CREATE INDEX IF NOT EXISTS idx_generation_errors_type_ts ON generation_errors(error_type, ts);
+                    ";
+                    cmd.ExecuteNonQuery();
+                }
 
                 using (var cmd = conn.CreateCommand())
                 {
@@ -699,6 +745,75 @@ public class UserDatabaseService
         return stats;
     }
 
+    /// <summary>
+    /// Actual list-rate spend grouped by provider (then category) — for reconciling against a real
+    /// provider billing statement (e.g. xAI). Still a catalog estimate at call time, not an invoice
+    /// line; see <see cref="UserApiCallRow.EstimatedUsd"/>. <paramref name="userId"/> null = all
+    /// users (portfolio); <paramref name="projectId"/> null = all projects.
+    /// </summary>
+    public async Task<ApiCostByProviderStats> GetApiCostByProviderAsync(
+        string? userId = null,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var stats = new ApiCostByProviderStats();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT
+                    COALESCE(NULLIF(TRIM(provider), ''), 'unknown') AS prov,
+                    COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
+                    COUNT(*),
+                    COALESCE(SUM(estimated_usd), 0)
+                FROM user_api_calls
+                WHERE ok = 1
+                  AND estimated_usd IS NOT NULL
+                  AND estimated_usd > 0
+                  AND (@userId = '' OR user_id = @userId)
+                  AND (@projectId = '' OR project_id = @projectId)
+                GROUP BY prov, cat
+                """;
+            cmd.Parameters.AddWithValue("@userId", string.IsNullOrWhiteSpace(userId) ? "" : userId.Trim());
+            cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                var provider = r.GetString(0);
+                var cat = CostCategories.Resolve(r.GetString(1), null, r.GetString(1));
+                var count = r.GetInt32(2);
+                var sum = r.GetDouble(3);
+
+                if (!stats.ByProvider.TryGetValue(provider, out var prow))
+                {
+                    prow = new ProviderCostStats { Provider = provider };
+                    stats.ByProvider[provider] = prow;
+                }
+                prow.Count += count;
+                prow.TotalUsd += sum;
+                if (!prow.ByCategory.TryGetValue(cat, out var crow))
+                {
+                    crow = new CategoryCostStats { Category = cat };
+                    prow.ByCategory[cat] = crow;
+                }
+                crow.Count += count;
+                crow.TotalUsd += sum;
+                crow.AvgUsd = crow.Count > 0 ? crow.TotalUsd / crow.Count : 0;
+
+                stats.TotalCalls += count;
+                stats.TotalUsd += sum;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "GetApiCostByProviderAsync failed");
+        }
+        return stats;
+    }
+
     public async Task InsertUserApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
     {
         if (rec is null || string.IsNullOrWhiteSpace(rec.UserId))
@@ -762,6 +877,121 @@ public class UserDatabaseService
         {
             _logger.LogWarning(ex, "InsertUserApiCallAsync failed for {UserId}", rec.UserId);
         }
+    }
+
+    /// <summary>
+    /// Append one generation-error row (partial coverage / structural gate / transient retry).
+    /// Never throws to callers — same swallow-and-warn contract as <see cref="InsertUserApiCallAsync"/>.
+    /// Prefer <see cref="GenerationErrorLogger"/> over calling this directly.
+    /// </summary>
+    public async Task InsertGenerationErrorAsync(GenerationErrorRecord rec, CancellationToken ct = default)
+    {
+        if (rec is null) return;
+        EnsureDatabaseInitialized();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT INTO generation_errors (
+                    ts, user_id, project_id, job_id, scene, clip, stage, provider, model,
+                    error_type, error_message, http_status, requested_count, returned_count,
+                    missing_ids_json, attempt, resolved, request_summary, response_summary)
+                VALUES (
+                    @ts, @userId, @projectId, @jobId, @scene, @clip, @stage, @provider, @model,
+                    @errorType, @errorMessage, @httpStatus, @requestedCount, @returnedCount,
+                    @missingIdsJson, @attempt, @resolved, @requestSummary, @responseSummary)";
+            var ts = (rec.Ts ?? DateTimeOffset.UtcNow).ToString("o");
+            static string? Trunc500(string? s) => string.IsNullOrEmpty(s) ? s : (s.Length > 500 ? s[..500] : s);
+            cmd.Parameters.AddWithValue("@ts", ts);
+            cmd.Parameters.AddWithValue("@userId", (object?)rec.UserId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@projectId", (object?)rec.ProjectId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@jobId", (object?)rec.JobId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@scene", (object?)rec.Scene ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@clip", (object?)rec.Clip ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@stage", rec.Stage ?? "");
+            cmd.Parameters.AddWithValue("@provider", (object?)rec.Provider ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@model", (object?)rec.Model ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@errorType", rec.ErrorType ?? "");
+            cmd.Parameters.AddWithValue("@errorMessage", (object?)Trunc500(rec.ErrorMessage) ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@httpStatus", (object?)rec.HttpStatus ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@requestedCount", (object?)rec.RequestedCount ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@returnedCount", (object?)rec.ReturnedCount ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@missingIdsJson",
+                rec.MissingIds is { Count: > 0 } ids ? JsonSerializer.Serialize(ids) : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@attempt", rec.Attempt);
+            cmd.Parameters.AddWithValue("@resolved", rec.Resolved ? 1 : 0);
+            cmd.Parameters.AddWithValue("@requestSummary", (object?)Trunc500(rec.RequestSummary) ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@responseSummary", (object?)Trunc500(rec.ResponseSummary) ?? DBNull.Value);
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "InsertGenerationErrorAsync failed (stage={Stage})", rec.Stage);
+        }
+    }
+
+    /// <summary>Admin panel read: recent generation_errors rows, optionally filtered.</summary>
+    public async Task<List<GenerationErrorRow>> ListGenerationErrorsAsync(
+        string? errorType = null,
+        string? projectId = null,
+        int take = 100,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var list = new List<GenerationErrorRow>();
+        take = Math.Clamp(take, 1, 500);
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT id, ts, user_id, project_id, job_id, scene, clip, stage, provider, model,
+                       error_type, error_message, http_status, requested_count, returned_count,
+                       missing_ids_json, attempt, resolved, request_summary, response_summary
+                FROM generation_errors
+                WHERE (@errorType = '' OR error_type = @errorType)
+                  AND (@projectId = '' OR project_id = @projectId)
+                ORDER BY id DESC
+                LIMIT @take";
+            cmd.Parameters.AddWithValue("@errorType", string.IsNullOrWhiteSpace(errorType) ? "" : errorType.Trim());
+            cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            cmd.Parameters.AddWithValue("@take", take);
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                list.Add(new GenerationErrorRow
+                {
+                    Id = r.GetInt64(0),
+                    Ts = r.GetString(1),
+                    UserId = r.IsDBNull(2) ? null : r.GetString(2),
+                    ProjectId = r.IsDBNull(3) ? null : r.GetString(3),
+                    JobId = r.IsDBNull(4) ? null : r.GetString(4),
+                    Scene = r.IsDBNull(5) ? null : r.GetInt32(5),
+                    Clip = r.IsDBNull(6) ? null : r.GetInt32(6),
+                    Stage = r.GetString(7),
+                    Provider = r.IsDBNull(8) ? null : r.GetString(8),
+                    Model = r.IsDBNull(9) ? null : r.GetString(9),
+                    ErrorType = r.GetString(10),
+                    ErrorMessage = r.IsDBNull(11) ? null : r.GetString(11),
+                    HttpStatus = r.IsDBNull(12) ? null : r.GetInt32(12),
+                    RequestedCount = r.IsDBNull(13) ? null : r.GetInt32(13),
+                    ReturnedCount = r.IsDBNull(14) ? null : r.GetInt32(14),
+                    MissingIdsJson = r.IsDBNull(15) ? null : r.GetString(15),
+                    Attempt = r.GetInt32(16),
+                    Resolved = r.GetInt32(17) != 0,
+                    RequestSummary = r.IsDBNull(18) ? null : r.GetString(18),
+                    ResponseSummary = r.IsDBNull(19) ? null : r.GetString(19),
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "ListGenerationErrorsAsync failed");
+        }
+        return list;
     }
 
     public async Task<string?> GetDecryptedXaiApiKeyAsync(string userId, CancellationToken ct = default) =>
@@ -1710,6 +1940,31 @@ public sealed class UserApiCallRow
     public bool Fakes { get; set; }
 }
 
+/// <summary>One row from generation_errors (admin panel read model). See <see cref="GenerationErrorRecord"/> for the write side.</summary>
+public sealed class GenerationErrorRow
+{
+    public long Id { get; set; }
+    public string Ts { get; set; } = "";
+    public string? UserId { get; set; }
+    public string? ProjectId { get; set; }
+    public string? JobId { get; set; }
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public string Stage { get; set; } = "";
+    public string? Provider { get; set; }
+    public string? Model { get; set; }
+    public string ErrorType { get; set; } = "";
+    public string? ErrorMessage { get; set; }
+    public int? HttpStatus { get; set; }
+    public int? RequestedCount { get; set; }
+    public int? ReturnedCount { get; set; }
+    public string? MissingIdsJson { get; set; }
+    public int Attempt { get; set; }
+    public bool Resolved { get; set; }
+    public string? RequestSummary { get; set; }
+    public string? ResponseSummary { get; set; }
+}
+
 
 /// <summary>Portfolio / user API spend aggregates for cost estimate refinement.</summary>
 public sealed class ApiCostHistoryStats
@@ -1726,4 +1981,22 @@ public sealed class CategoryCostStats
     public int Count { get; set; }
     public double TotalUsd { get; set; }
     public double AvgUsd { get; set; }
+}
+
+/// <summary>Actual spend grouped by provider (then category) — for xAI/vendor billing reconciliation.</summary>
+public sealed class ApiCostByProviderStats
+{
+    public int TotalCalls { get; set; }
+    public double TotalUsd { get; set; }
+    public Dictionary<string, ProviderCostStats> ByProvider { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class ProviderCostStats
+{
+    public string Provider { get; set; } = "unknown";
+    public int Count { get; set; }
+    public double TotalUsd { get; set; }
+    public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
 }

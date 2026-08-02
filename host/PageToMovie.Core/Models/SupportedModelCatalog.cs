@@ -10,8 +10,10 @@ public enum ModelCapability
     Chat,
     Vision,
     Audio,
-    /// <summary>Voice clone / TTS (e.g. ElevenLabs) — dialogue personalization, not BGM.</summary>
+    /// <summary>Voice clone / TTS (e.g. ElevenLabs, Fal.ai MiniMax) — dialogue personalization, not BGM. Covers both the clone step (see <see cref="SupportedModelEntry.IsVoiceCloneStep"/>) and the text-to-speech step.</summary>
     Voice,
+    /// <summary>Video lip-sync: resync a finished clip's mouth movement to a separate audio track (Fal.ai / Sync Labs). Input is video+audio, not a text prompt — kept distinct from <see cref="Video"/>.</summary>
+    LipSync,
 }
 
 /// <summary>
@@ -82,6 +84,16 @@ public sealed class SupportedModelEntry
     /// </summary>
     public int? MaxInputTokens { get; init; }
 
+    /// <summary>
+    /// Maximum output tokens the model will generate in a single synchronous Messages API call
+    /// (Chat / Vision only), i.e. the real per-model ceiling for the <c>max_tokens</c> request
+    /// field. Null when not applicable or not yet confirmed against provider docs — callers must
+    /// fall back to their own hardcoded default rather than guess. Sourced from provider docs;
+    /// providers do raise these over time, so re-check before trusting an old number for a
+    /// cost/quality-sensitive decision.
+    /// </summary>
+    public int? MaxOutputTokens { get; init; }
+
     /// <summary>USD per 1,000,000 input tokens (Chat / Vision only). Null when not applicable.</summary>
     public double? InputCostPerMillionTokens { get; init; }
 
@@ -98,8 +110,44 @@ public sealed class SupportedModelEntry
     /// </summary>
     public IReadOnlyDictionary<string, double>? VideoCostPerSecondByResolution { get; init; }
 
+    /// <summary>
+    /// USD charged once per video regardless of length, by resolution (Video only) — same key
+    /// convention as <see cref="VideoCostPerSecondByResolution"/>. Total cost is
+    /// <c>base + perSecond * durationSeconds</c>, so a provider that bills a flat fee per clip
+    /// (e.g. Fal's Hunyuan/Wan, which price per generation, not per second, since they're
+    /// frame-count-based) sets this and leaves the per-second rate at 0 — a genuinely
+    /// duration-priced provider (Grok, Veo) leaves this null/0 and only sets the per-second rate,
+    /// so existing behavior is unchanged for them. Modeling flat fees as a fake per-second rate
+    /// (dividing by an assumed "typical" duration) silently produces the wrong number the moment a
+    /// clip's actual duration differs from that assumption — this field avoids the whole problem
+    /// by representing the real billing shape directly.
+    /// </summary>
+    public IReadOnlyDictionary<string, double>? VideoBaseCostByResolution { get; init; }
+
     /// <summary>USD per generated image (Image only). Null when not applicable.</summary>
     public double? ImageCostPerImage { get; init; }
+
+    /// <summary>
+    /// USD per reference/character image attached to a video generation call (Video only), when
+    /// the vendor publishes this as a distinct line item separate from the flat per-second output
+    /// rate. Null when not published/verified — <c>PageToMovie.Engine.CostReportService</c> then
+    /// applies a small estimated fallback constant instead. As of 2026-08 no enabled video provider
+    /// (including xAI's grok-imagine-video, checked against docs.x.ai/developers/pricing) itemizes
+    /// reference images separately, so this is null for every catalog entry today.
+    /// </summary>
+    public double? VideoReferenceImageCost { get; init; }
+
+    /// <summary>
+    /// USD per second billed for a video-extend/continuation call (Video only; only meaningful when
+    /// <see cref="SupportsVideoContinue"/> is true), when the vendor publishes an extend rate
+    /// distinct from its base per-second generation rate. Null when not published/verified —
+    /// <c>PageToMovie.Engine.CostReportService</c> then applies a small estimated fallback constant
+    /// instead. As of 2026-08 xAI (the only enabled provider with <see cref="SupportsVideoContinue"/>
+    /// true) has no published extend-specific rate on docs.x.ai/developers/pricing — grok-imagine-video
+    /// is a flat $0.050/sec with no separate extend line item — so this is null for every catalog
+    /// entry today.
+    /// </summary>
+    public double? VideoExtendCostPerSecond { get; init; }
 
     public string? Notes { get; init; }
 
@@ -120,6 +168,17 @@ public sealed class SupportedModelEntry
     /// False for backends that reject multi-image / reference conditioning.
     /// </summary>
     public bool SupportsReferenceImages { get; init; } = true;
+
+    /// <summary>
+    /// Real max reference images this model's API accepts (Video only) — a plain
+    /// <see cref="SupportsReferenceImages"/> boolean isn't precise enough: Fal's Wan/HunyuanVideo
+    /// accept exactly one init/reference image (true single-image i2v, not Grok-style multi-plate
+    /// identity conditioning), so treating "supports" as "accepts up to N" would silently attach
+    /// more images than the model can actually use. Null falls back to whatever the caller's own
+    /// historical default was (today 7 for Grok in <c>GrokVideoClient</c>, 5 at the
+    /// <c>FilmJobService</c> call site) until every model has a confirmed real number here.
+    /// </summary>
+    public int? MaxReferenceImages { get; init; }
 
     /// <summary>
     /// When true, accepts native MP4 video & audio files directly for clip/dialogue review (Google Gemini).
@@ -147,6 +206,23 @@ public sealed class SupportedModelEntry
     public int? AbsMaxClipDurationSeconds { get; init; }
 
     /// <summary>
+    /// Discrete set of durations this model accepts (Video only) — e.g. Veo 3.1 documents exactly
+    /// 4, 6, or 8 seconds, not an arbitrary continuous range. When set, generation-time duration
+    /// resolution must snap to the nearest value here rather than a plain min/max clamp (a clamped
+    /// "7" is still not an accepted Veo duration). Null means the model accepts any value in
+    /// [MinClipDurationSeconds, MaxClipDurationSeconds] (or the global defaults).
+    /// </summary>
+    public IReadOnlyList<int>? AllowedDurationsSeconds { get; init; }
+
+    /// <summary>
+    /// Tighter max duration specifically for image-to-video / reference-conditioned / video-extend
+    /// generation (Video only) — some providers (Grok) allow a longer fresh text-to-video clip than
+    /// they do for the "new portion" of a reference/continue call. Null means image/ref/continue
+    /// modes use the same <see cref="MaxClipDurationSeconds"/> as fresh generation.
+    /// </summary>
+    public int? MaxExtensionSeconds { get; init; }
+
+    /// <summary>
     /// Longest single-call duration this audio model will accept, in seconds (Audio only) — the
     /// generation-side counterpart to <see cref="MaxClipDurationSeconds"/> for video. Callers
     /// (FilmJobService's music job) generate this many seconds per segment and concatenate
@@ -167,6 +243,68 @@ public sealed class SupportedModelEntry
     /// Null defaults to 1280px (optimal for HunyuanVideo / Veo 720p latent dimensions).
     /// </summary>
     public int? MaxReferenceImageDimension { get; init; }
+
+    /// <summary>
+    /// Diffusion sampling steps (Video/Image only) — the quality/speed knob Fal-hosted diffusion
+    /// models expose as <c>num_inference_steps</c>. Null falls back to the calling client's own
+    /// hardcoded default (30 in <c>FalVideoClient</c>).
+    /// </summary>
+    public int? NumInferenceSteps { get; init; }
+
+    /// <summary>
+    /// For Fal video models whose real generation API takes a discrete <c>num_frames</c> value
+    /// rather than a continuous seconds-based duration (see the frame-count-native note on the
+    /// <c>hunyuan-video</c> catalog entry) — the frame count <c>FalVideoClient</c> requests for
+    /// clips at or under its short/long duration split (4s). Null falls back to the client's
+    /// hardcoded default (85). Duration-native Fal models (e.g. Wan-2.1, which instead populate
+    /// <see cref="MinClipDurationSeconds"/>/<see cref="MaxClipDurationSeconds"/>) leave this null.
+    /// </summary>
+    public int? ShortClipFrameCount { get; init; }
+
+    /// <summary>
+    /// Frame count <c>FalVideoClient</c> requests for clips over its short/long duration split
+    /// (4s) — the counterpart to <see cref="ShortClipFrameCount"/>. Null falls back to the
+    /// client's hardcoded default (129).
+    /// </summary>
+    public int? LongClipFrameCount { get; init; }
+
+    /// <summary>
+    /// Discrete set of aspect-ratio strings (e.g. <c>"16:9"</c>, <c>"9:16"</c>) this model's API
+    /// actually accepts for generation (Video only), sourced from provider docs — mirrors
+    /// <see cref="MaxReferenceImageDimension"/>-style per-model capability data rather than a
+    /// continuous range, since providers document aspect ratio as a fixed enum. Null when not yet
+    /// confirmed for this model; callers should keep sending their historical fixed value in that
+    /// case rather than guessing.
+    /// </summary>
+    public IReadOnlyList<string>? SupportedAspectRatios { get; init; }
+
+    /// <summary>
+    /// Aspect ratio to request when the caller doesn't have a more specific one in mind (Video
+    /// only). Should be a member of <see cref="SupportedAspectRatios"/> when both are set. Null
+    /// falls back to the client's historical hardcoded default (<c>"16:9"</c>).
+    /// </summary>
+    public string? DefaultAspectRatio { get; init; }
+
+    /// <summary>
+    /// True for a clone-shaped Voice model (takes a reference audio sample, returns a provider voice
+    /// id — e.g. Fal.ai <c>fal-ai/minimax/voice-clone</c>, ElevenLabs <c>eleven_voice_clone</c>).
+    /// False (default) means a speak-shaped Voice model (takes text + a voice id/name, returns
+    /// synthesized speech audio — e.g. <c>fal-ai/minimax/speech-02-hd</c>, <c>eleven_multilingual_v2</c>).
+    /// Both shapes share <see cref="ModelCapability.Voice"/> since a caller resolving "the voice
+    /// model" for a narration flow needs one clone-shaped and one speak-shaped entry, not two
+    /// separate capability buckets — this flag disambiguates which is which. Only meaningful when
+    /// <see cref="Capability"/> is <see cref="ModelCapability.Voice"/>.
+    /// </summary>
+    public bool IsVoiceCloneStep { get; init; }
+
+    /// <summary>USD per voice-clone call (Voice, clone-shaped models only — see <see cref="IsVoiceCloneStep"/>). Null when not applicable/unconfirmed.</summary>
+    public double? CostPerCloneUsd { get; init; }
+
+    /// <summary>USD per 1,000 characters of synthesized speech (Voice, speak-shaped models only). Null when not applicable/unconfirmed.</summary>
+    public double? CostPerThousandCharsUsd { get; init; }
+
+    /// <summary>USD per minute of output video (LipSync only, flat rate — Sync Labs-style lip-sync models aren't priced per resolution like <see cref="VideoCostPerSecondByResolution"/>). Null when not applicable/unconfirmed.</summary>
+    public double? CostPerMinuteUsd { get; init; }
 
     /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
     public string ProviderName { get; init; } = "";
@@ -241,6 +379,8 @@ public static class SupportedModelCatalog
         new() { Id = "vision", DisplayName = "Image Vision & OCR", Description = "Book page OCR, cast-on-image classification, and frame inspection.", Order = 4 },
         new() { Id = "video-review", DisplayName = "Video & Clip Review (Multimodal)", Description = "Evaluates dialogue, lip sync, and scene rhythm (Google Gemini natively analyzes MP4 video files).", Order = 5 },
         new() { Id = "audio", DisplayName = "Audio & Music Generation", Description = "Generates beat-aligned background music scores and sound effects.", Order = 6 },
+        new() { Id = "voice", DisplayName = "Voice Clone / TTS", Description = "Personal voice clone from a short sample, then spoken dialogue or narration for the film.", Order = 70 },
+        new() { Id = "lipsync", DisplayName = "Video Lip-Sync", Description = "Resyncs a generated clip's mouth movement to a separate dialogue or narration audio track.", Order = 80 },
     ];
 
     private static Dictionary<string, List<string>>? _loadedTaskRankings;
@@ -571,6 +711,7 @@ public static class SupportedModelCatalog
             var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
             var supportsAudio = group.Any(m => m.Capability == ModelCapability.Audio);
             var supportsVoice = group.Any(m => m.Capability == ModelCapability.Voice);
+            var supportsLipSync = group.Any(m => m.Capability == ModelCapability.LipSync);
 
             var caps = new List<string>();
             if (supportsVideoGen) caps.Add("Video Gen");
@@ -580,6 +721,7 @@ public static class SupportedModelCatalog
             if (supportsImageVision) caps.Add("Image Vision / OCR");
             if (supportsAudio) caps.Add("Audio / Music");
             if (supportsVoice) caps.Add("Voice clone / TTS");
+            if (supportsLipSync) caps.Add("Lip-sync");
 
             rows.Add(new ProviderKeyStatusDto
             {
@@ -693,22 +835,41 @@ public static class SupportedModelCatalog
         RequiredEnvKeys = e.RequiredEnvKeys.ToList(),
         Enabled = e.Enabled,
         MaxInputTokens = e.MaxInputTokens,
+        MaxOutputTokens = e.MaxOutputTokens,
         InputCostPerMillionTokens = e.InputCostPerMillionTokens,
         OutputCostPerMillionTokens = e.OutputCostPerMillionTokens,
         VideoCostPerSecondByResolution = e.VideoCostPerSecondByResolution is { } v
             ? new Dictionary<string, double>(v)
             : null,
+        VideoBaseCostByResolution = e.VideoBaseCostByResolution is { } vb
+            ? new Dictionary<string, double>(vb)
+            : null,
         ImageCostPerImage = e.ImageCostPerImage,
+        VideoReferenceImageCost = e.VideoReferenceImageCost,
+        VideoExtendCostPerSecond = e.VideoExtendCostPerSecond,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
         ProviderId = e.ProviderId,
         SupportsVideoContinue = e.SupportsVideoContinue,
         SupportsReferenceImages = e.SupportsReferenceImages,
+        MaxReferenceImages = e.MaxReferenceImages,
         SupportsVideoReview = e.SupportsVideoReview,
         MinClipDurationSeconds = e.MinClipDurationSeconds,
         MaxClipDurationSeconds = e.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = e.AbsMaxClipDurationSeconds,
+        AllowedDurationsSeconds = e.AllowedDurationsSeconds is { } ad ? new List<int>(ad) : null,
+        MaxExtensionSeconds = e.MaxExtensionSeconds,
         MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
+        NumInferenceSteps = e.NumInferenceSteps,
+        ShortClipFrameCount = e.ShortClipFrameCount,
+        LongClipFrameCount = e.LongClipFrameCount,
+        SupportedAspectRatios = e.SupportedAspectRatios is { } sar ? sar.ToList() : null,
+        DefaultAspectRatio = e.DefaultAspectRatio,
+        MaxPromptLength = e.MaxPromptLength,
+        IsVoiceCloneStep = e.IsVoiceCloneStep,
+        CostPerCloneUsd = e.CostPerCloneUsd,
+        CostPerThousandCharsUsd = e.CostPerThousandCharsUsd,
+        CostPerMinuteUsd = e.CostPerMinuteUsd,
     };
 
     public static SupportedModelEntry FromDto(SupportedModelDto d) => new()
@@ -723,19 +884,36 @@ public static class SupportedModelCatalog
         RequiredEnvKeys = d.RequiredEnvKeys ?? new List<string>(),
         Enabled = d.Enabled,
         MaxInputTokens = d.MaxInputTokens,
+        MaxOutputTokens = d.MaxOutputTokens,
         InputCostPerMillionTokens = d.InputCostPerMillionTokens,
         OutputCostPerMillionTokens = d.OutputCostPerMillionTokens,
         VideoCostPerSecondByResolution = d.VideoCostPerSecondByResolution,
+        VideoBaseCostByResolution = d.VideoBaseCostByResolution,
         ImageCostPerImage = d.ImageCostPerImage,
+        VideoReferenceImageCost = d.VideoReferenceImageCost,
+        VideoExtendCostPerSecond = d.VideoExtendCostPerSecond,
         Notes = d.Notes,
         FeatureRequestUrl = d.FeatureRequestUrl,
         SupportsVideoContinue = d.SupportsVideoContinue,
         SupportsReferenceImages = d.SupportsReferenceImages,
+        MaxReferenceImages = d.MaxReferenceImages,
         SupportsVideoReview = d.SupportsVideoReview,
         MinClipDurationSeconds = d.MinClipDurationSeconds,
         MaxClipDurationSeconds = d.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = d.AbsMaxClipDurationSeconds,
+        AllowedDurationsSeconds = d.AllowedDurationsSeconds,
+        MaxExtensionSeconds = d.MaxExtensionSeconds,
         MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
+        NumInferenceSteps = d.NumInferenceSteps,
+        ShortClipFrameCount = d.ShortClipFrameCount,
+        LongClipFrameCount = d.LongClipFrameCount,
+        SupportedAspectRatios = d.SupportedAspectRatios,
+        DefaultAspectRatio = d.DefaultAspectRatio,
+        MaxPromptLength = d.MaxPromptLength,
+        IsVoiceCloneStep = d.IsVoiceCloneStep,
+        CostPerCloneUsd = d.CostPerCloneUsd,
+        CostPerThousandCharsUsd = d.CostPerThousandCharsUsd,
+        CostPerMinuteUsd = d.CostPerMinuteUsd,
     };
 }
 
@@ -750,20 +928,37 @@ public sealed class SupportedModelDto
     public List<string> RequiredEnvKeys { get; set; } = new();
     public bool Enabled { get; set; } = true;
     public int? MaxInputTokens { get; set; }
+    public int? MaxOutputTokens { get; set; }
     public double? InputCostPerMillionTokens { get; set; }
     public double? OutputCostPerMillionTokens { get; set; }
     public Dictionary<string, double>? VideoCostPerSecondByResolution { get; set; }
+    public Dictionary<string, double>? VideoBaseCostByResolution { get; set; }
     public double? ImageCostPerImage { get; set; }
+    public double? VideoReferenceImageCost { get; set; }
+    public double? VideoExtendCostPerSecond { get; set; }
     public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
     public string? ProviderId { get; set; }
     public bool SupportsVideoContinue { get; set; } = true;
     public bool SupportsReferenceImages { get; set; } = true;
+    public int? MaxReferenceImages { get; set; }
     public bool SupportsVideoReview { get; set; }
     public int? MinClipDurationSeconds { get; set; }
     public int? MaxClipDurationSeconds { get; set; }
     public int? AbsMaxClipDurationSeconds { get; set; }
+    public List<int>? AllowedDurationsSeconds { get; set; }
+    public int? MaxExtensionSeconds { get; set; }
     public int? MaxAudioDurationSeconds { get; set; }
+    public int? NumInferenceSteps { get; set; }
+    public int? ShortClipFrameCount { get; set; }
+    public int? LongClipFrameCount { get; set; }
+    public List<string>? SupportedAspectRatios { get; set; }
+    public string? DefaultAspectRatio { get; set; }
+    public int? MaxPromptLength { get; set; }
+    public bool IsVoiceCloneStep { get; set; }
+    public double? CostPerCloneUsd { get; set; }
+    public double? CostPerThousandCharsUsd { get; set; }
+    public double? CostPerMinuteUsd { get; set; }
 }
 
 public sealed class ModelCapabilityDefinition

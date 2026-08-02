@@ -1,0 +1,11 @@
+{
+  "Status": "fail",
+  "SceneCount": 33,
+  "ClipCount": 261,
+  "Failures": [
+    "Audio plan is missing coverage for EDL scene(s): S9, S10, S11, S12, S13, S14, S15."
+  ],
+  "Warnings": [
+    "10 clip dialogue_or_vo fragment(s) don\u0027t appear verbatim in their scene\u0027s Fountain text \u2014 check for invented or paraphrased lines."
+  ]
+}

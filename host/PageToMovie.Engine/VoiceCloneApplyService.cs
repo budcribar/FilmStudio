@@ -84,7 +84,8 @@ public sealed class VoiceCloneApplyService
             voiceProfile: profile,
             voiceLabel: label,
             voiceProvider: _voices.ProviderId,
-            voiceProviderVoiceId: clone.ProviderVoiceId);
+            voiceProviderVoiceId: clone.ProviderVoiceId,
+            voiceCloneProviderId: clone.ProviderVoiceId);
 
         string? previewRel = null;
         string? previewUrl = null;
@@ -146,7 +147,8 @@ public sealed class VoiceCloneApplyService
             voiceProfile: profile,
             voiceLabel: label,
             voiceProvider: _voices.ProviderId,
-            voiceProviderVoiceId: providerVoiceId.Trim());
+            voiceProviderVoiceId: providerVoiceId.Trim(),
+            voiceCloneProviderId: providerVoiceId.Trim());
 
         string? previewRel = null;
         string? previewUrl = null;

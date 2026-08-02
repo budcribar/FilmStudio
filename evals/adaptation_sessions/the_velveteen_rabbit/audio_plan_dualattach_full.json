@@ -1,0 +1,82 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S9",
+      "score_intent": "Gentle early-20th-century chamber score for strings, soft piano and warm woodwinds in a bright but fragile major mode, opening hushed and pastoral around 70 BPM with sparse morning light textures as the recovering boy is carried out, gradually darkening with low cello and uneasy suspended harmonies as talk turns to disinfection and burning, tempo and density climbing through the middle toward a tense mid-tempo pulse near 95 BPM, cresting on a sharp decisive brass-and-string accent when the doctor condemns the old Bunny as scarlet-fever germs and orders it burned and replaced, then holding a cold unresolved chord rather than resolving fully",
+      "dynamics_arc": "Starts low and gentle on clips 1\u20132, rises through the empty-bed and seaside talk of clips 3\u20134, builds pressure across the disinfection and burning orders of clips 5\u20137, and peaks on the doctor\u2019s harsh condemnations in clips 8\u20139.",
+      "peak_clip_number": 8,
+      "timing": "Hit a clear accent on the doctor\u2019s burn order near the final third; keep the first half sparse so dialogue remains forward; allow a short held dissonance under the replacement line.",
+      "diegetic_sound": "Soft morning birdsong and light curtain/window breeze under the balcony; faint nursery room tone; footsteps and fabric rustle when the boy is carried; no heavy foley under dialogue.",
+      "silence_or_exclusions": "No triumphant or comic stings; avoid lush romantic swells; keep percussion minimal so spoken lines about burning stay intelligible.",
+      "alternatives": [
+        "Solo piano with distant string pads only",
+        "Muted string quartet without brass accents"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "score_intent": "Sparse mournful underscore of low solo cello and dry muted strings at a slow 60\u201365 BPM, opening with a single descending motif as the threadbare rabbit is stuffed into the sack, remaining thin and resigned while the sack is carried down the garden path, then thinning further into near-static open fifths and soft outdoor air as the sack is set behind the fowl-house among the rubbish, never rising above a quiet lament",
+      "dynamics_arc": "Highest at the stuffing of the sack on clip 1, then steadily declines through the garden carry of clip 2 into the quiet abandonment of clip 3.",
+      "peak_clip_number": 1,
+      "timing": "Front-load the emotional weight on the stuffing gesture; let the score almost dissolve by the time the sack is set down.",
+      "diegetic_sound": "Rough sack cloth and soft thumps of books/rubbish; footsteps on garden path; distant garden ambience, birds, light wind; faint fowl-house clucks far off.",
+      "silence_or_exclusions": "No melody that suggests hope or magic yet; no percussion hits; leave space around the final placement so the image feels abandoned.",
+      "alternatives": [
+        "Solo bass clarinet over garden bed of soft noise",
+        "Bare piano single-note ostinato fading to silence"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "score_intent": "Quiet nocturnal lullaby for soft piano and high transparent strings at a slow rocking 55\u201360 BPM, cool and slightly hollow major-key color suggesting a clean new bedroom and a pristine replacement toy, remaining gentle and emotionally distant so the boy\u2019s peaceful sleep and the new white plush bunny feel safe yet empty of the old rabbit\u2019s warmth, with no dramatic rise\u2014only a soft unresolved cadence at the end",
+      "dynamics_arc": "Low and still on the sleeping boy in clip 1, with a slight lift of cool sparkle on the close-up of the new plush bunny\u2019s glass eyes in clip 2.",
+      "peak_clip_number": 2,
+      "timing": "Keep level and lullaby-like throughout the short scene; tiny bright overtone shimmer only on the new bunny insert.",
+      "diegetic_sound": "Very soft night-room tone, distant clock or house creak optional; boy\u2019s light breathing; no outdoor night insects yet.",
+      "silence_or_exclusions": "No melancholy cello theme tied to the old rabbit; no fairy or magic colors; avoid any swell that implies the boy misses the old toy.",
+      "alternatives": [
+        "Music-box motif slowed and softened",
+        "Solo celesta with barely-there string pad"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "score_intent": "Cinematic storybook orchestral cue that opens cold and exposed with thin high strings and a lonely clarinet over night garden air at about 65 BPM as the shivering rabbit frees himself from the sack, deepens into aching memory swells with harp and low strings while he gazes toward the thicket, then contracts to near-silence for the single real tear; from that tear the music blooms\u2014tempo and harmony warming as an emerald-gold flower motif rises on celesta, harp and solo violin\u2014swelling into luminous mid-tempo wonder around 80\u201390 BPM when the Nursery Magic Fairy steps from the blossom, staying tender and reassuring through her explanation and gathering of the rabbit, and lifting into a gentle ascending flight figure as she carries him toward the wood",
+      "dynamics_arc": "Builds from lonely exposure on clips 1\u20132 through memory and despair on clip 3 to the emotional peak of the real tear on clip 4, releases into wonder on the flower and Fairy entrance of clips 5\u20136, holds warm intimacy through the dialogue of clips 7\u201313, and rises again on the lift-off embrace of clip 14.",
+      "peak_clip_number": 4,
+      "timing": "Leave a clear breath of near-silence or extremely thin texture under the tear forming and falling; bloom the flower motif immediately after the tear hits earth; keep Fairy dialogue supported but not covered; final flight figure begins as she rises with him.",
+      "diegetic_sound": "Night insects, soft wind in garden, sack cloth and dry leaves; tiny wet sound for the tear; magical but restrained shimmer (no cartoon sparkle) as flower opens and Fairy appears; fabric and wing-like air for the lift.",
+      "silence_or_exclusions": "No horror dissonance; no heavy percussion; exclude cheerful major fanfares before the Fairy appears; do not score the tear with a loud hit\u2014use hush then bloom.",
+      "alternatives": [
+        "Intimate piano-and-harp version with string pads only",
+        "Choir wordless hum entering only at Fairy reveal"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "score_intent": "Moonlit enchanted-wood score for full warm orchestra with dancing pizzicato strings, soft horns and sparkling harp at a graceful 90 BPM, opening in silvery wonder as bracken shines and wild rabbits circle, staying ceremonial and kind through the Fairy\u2019s presentation and final kiss, then pausing on a held breath of shyness; a tiny tickle gesture on high winds triggers a sudden bright accelerando as the rabbit discovers living hind legs, exploding into joyful leaping music\u2014tempo surging toward 120\u2013130 BPM with exuberant strings, woodwind runs and light percussion\u2014for the first real bounds, then easing back to a warm settled homecoming theme as he looks for the already-vanished Fairy and realizes he is Real among the others",
+      "dynamics_arc": "Steady enchanted presence through clips 1\u20137, sharp lift on the nose-tickle scratch of clip 8, absolute peak on the first joyful leap of clip 9, then gentle release through the search for the Fairy and quiet belonging of clips 10\u201311.",
+      "peak_clip_number": 9,
+      "timing": "Hold a brief suspension before the scratch; detonate the joy motif exactly on the first leap; let the final belonging phrase resolve fully without rushing off.",
+      "diegetic_sound": "Night wood ambience, soft rabbit thumps on grass, bracken rustle; light magical air under Fairy only; clear footfall and body whoosh on the leaps once he is Real.",
+      "silence_or_exclusions": "No tragic leftover motifs from the sack scene during the leap; avoid dense brass that would mask the leap foley; keep pre-leap section free of triumphant rhythms.",
+      "alternatives": [
+        "Folk-tinged acoustic ensemble with bodhran-light pulse for the run",
+        "String orchestra plus solo flute without full brass"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "score_intent": "Warm spring coda for gentle strings, solo oboe and soft piano in a sunlit major key at an easy 70\u201375 BPM, opening open and pastoral as the healthy boy walks the wood, adding a quiet curious color when two wild rabbits creep from the bracken, then focusing on a tender recognizable fragment of the old bunny\u2019s earlier motif\u2014softened and alive\u2014under the close-up of the marked rabbit\u2019s nose and eyes, easing into bittersweet recognition as the boy speaks, and finally thinning to a peaceful resolving cadence with light birdsong-friendly texture as the rabbits slip away and the wide sunlit wood holds",
+      "dynamics_arc": "Gentle rise from the sunny arrival of clip 1 through the rabbits\u2019 approach on clip 2, peaks softly on the marked rabbit close-up of clip 3, then gradually releases across the boy\u2019s recognition and the rabbits\u2019 departure through clips 4\u20136.",
+      "peak_clip_number": 3,
+      "timing": "Place the quiet thematic echo exactly on the marked-rabbit close-up; let the final wide shot breathe with a long resolving sustain into silence or natural wood ambience.",
+      "diegetic_sound": "Spring birdsong, light wind in leaves, soft footfalls on woodland ground, faint bracken rustle as rabbits appear and leave; no magical shimmer.",
+      "silence_or_exclusions": "No full Fairy theme reprise; no dramatic swell or tragedy sting; exclude anything that states the secret outright\u2014keep the recognition understated.",
+      "alternatives": [
+        "Solo piano epilogue with distant string harmonics",
+        "Oboe and harp only over natural wood bed"
+      ]
+    }
+  ]
+}

@@ -53,6 +53,10 @@ public class DemoGalleryForkApiTests : IClassFixture<PageToMovieApiFactory>
                     "gallery-owner",
                     acceptedGuidelines: true);
                 demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, "admin", "approve for fork test");
+                // Gallery/fork visibility is gated on YouTube being the source of truth
+                // (DemoCatalogService.IsPubliclyStreamable / ListPublic both require YoutubeId) —
+                // simulate a completed upload so this demo is actually gallery-visible.
+                demos.SetYouTubeUploadStatus(entry.Id, "done", youtubeId: "yt_" + Guid.NewGuid().ToString("N")[..8]);
                 demoId = entry.Id;
             }
             finally
@@ -110,6 +114,10 @@ public class DemoGalleryForkApiTests : IClassFixture<PageToMovieApiFactory>
                     tempMp4, "Orphan Film", null, projectId: null, createdBy: "someone",
                     acceptedGuidelines: true);
                 demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, "admin", null);
+                // Fork endpoint gates on IsPubliclyStreamable, which requires a YoutubeId
+                // (YouTube is the gallery source of truth) — without this the fork call 404s
+                // before ever reaching the "no source project" bad-request check under test.
+                demos.SetYouTubeUploadStatus(entry.Id, "done", youtubeId: "yt_" + Guid.NewGuid().ToString("N")[..8]);
                 demoId = entry.Id;
             }
             finally

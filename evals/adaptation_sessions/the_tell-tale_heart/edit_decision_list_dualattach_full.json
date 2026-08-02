@@ -1,0 +1,312 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "INT. THE OLD HOUSE - NIGHT",
+      "purpose": "Establish the narrator\u0027s confessional address, dreadfully nervous yet insisting he is sane, and his disease-sharpened acute hearing as the frame for the story.",
+      "location_key": "LOCATION_OLD_HOUSE",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_DAY_KIND"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Dim oppressive corridor of weathered wood and plaster with shuttered windows",
+        "Narrator stands composed yet taut addressing unseen listener",
+        "He touches his ear lightly, eyes sharp",
+        "He steadies himself into calm persuasive delivery"
+      ],
+      "source_paragraphs": [
+        "P3"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. THE OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Introduce the old man asleep and the origin of the murderous idea: not gold or insult but the vulture eye that makes the narrator\u0027s blood run cold.",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_DAY_KIND",
+        "OLD_MAN_SLEEPING"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Pitch-dark bedroom with heavy bed, fastened shutters, modest treasures",
+        "Old man frail in plain nightshirt lies asleep, filmy pale-blue vulture eye closed",
+        "Narrator in doorway staring toward the bed as blood runs cold at the thought of the eye",
+        "He does not approach the treasures"
+      ],
+      "source_paragraphs": [
+        "P4"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "INT. THE OLD MAN\u0027S CHAMBER - DAY",
+      "purpose": "Show the narrator\u0027s daytime performance of extreme kindness and hearty unsuspicious manner during the week before the murder.",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_DAY_KIND",
+        "OLD_MAN_SLEEPING"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Morning light through unshuttered gaps",
+        "Old man sits up in bed in neat nightshirt",
+        "Narrator enters boldly with hearty manner and kind smile",
+        "Old man answers with frail nod; narrator withdraws unsuspiciously"
+      ],
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "INT. THE CHAMBER DOOR AND LATCH - NIGHT",
+      "purpose": "Demonstrate the narrator\u0027s cunning stealth: turning the latch oh so gently and taking an hour to thrust head and closed dark lantern into the opening.",
+      "location_key": "LOCATION_CHAMBER_DOOR_AND_LATCH",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STALK"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "Aged wooden door and metal latch, corridor side dim",
+        "Narrator in dark night attire holds fully closed tin dark lantern",
+        "Latch turns with extreme softness; door opens only a crack",
+        "Closed lantern slides through then head thrusts in very very slowly"
+      ],
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "INT. THE OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Show the seven-night ritual of the single thin lantern ray falling on the always-closed Evil Eye, making the work impossible until the eye is open.",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STALK",
+        "OLD_MAN_SLEEPING"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "From the crack: old man asleep on heavy bed, eye closed",
+        "Narrator\u0027s head and closed lantern in the opening",
+        "Lantern undone cautiously; hinges creak; single thin ray on closed vulture eye",
+        "Eye stays shut; narrator withdraws lantern and closes door without sound"
+      ],
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "INT. THE OLD MAN\u0027S CHAMBER - DAY",
+      "purpose": "Reaffirm the morning bold hearty inquiries so the old man could never suspect the midnight visits.",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_DAY_KIND",
+        "OLD_MAN_SLEEPING"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Daybreak; narrator in neat daytime clothes enters boldly",
+        "Hearty inquiry how the night was passed",
+        "Old man answers without suspicion",
+        "Narrator\u0027s manner courageously kind"
+      ],
+      "source_paragraphs": [
+        "P5"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "INT. THE CHAMBER DOOR AND LATCH - NIGHT",
+      "purpose": "Eighth night: extreme caution slower than a watch hand, private triumph chuckle, steady push into pitch darkness, and the thumb slip on the tin fastening.",
+      "location_key": "LOCATION_CHAMBER_DOOR_AND_LATCH",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STALK"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Narrator in dark night attire works latch more slowly than a watch minute hand",
+        "He chuckles under his breath at his own sagacity",
+        "Door pushed on steadily into room black as pitch with shutters fastened",
+        "Thumb slips upon the tin fastening of the closed dark lantern"
+      ],
+      "source_paragraphs": [
+        "P6",
+        "P7"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "INT. THE OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Climax of the murder: old man\u0027s cry and hour of listening terror, spider-thread ray on the open Evil Eye, rising heartbeat tattoo, yell, leap, smothering under the heavy bed, and confirmation of stone death.",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "OLD_MAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_NIGHT_STALK",
+        "OLD_MAN_SLEEPING"
+      ],
+      "estimated_duration_seconds": 150,
+      "visual_beats": [
+        "Old man springs up in heavy bed, pale-blue filmy eye wide, crying Who\u0027s there?",
+        "Narrator freezes motionless in the opening for a whole hour",
+        "Old man sits up listening; low stifled groan of mortal terror",
+        "Death\u0027s black shadow seems to envelop the sitting figure",
+        "Single dim spider-thread ray falls full upon the wide-open vulture eye",
+        "Nothing else of the face lit; narrator\u0027s fury rises as he holds ray steady",
+        "Heartbeat tattoo quickens and loudens under dreadful house silence",
+        "Loud yell; lantern thrown fully open; sudden full beam; leap into room",
+        "Old man shrieks once only; dragged to floor; heavy bed pulled over him",
+        "Narrator smiles gaily; muffled heart beats many minutes then ceases",
+        "Bed removed; hand held on heart many minutes; stone stone dead; eye will trouble no more"
+      ],
+      "source_paragraphs": [
+        "P7",
+        "P8",
+        "P9",
+        "P10",
+        "P11",
+        "P12",
+        "P13"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "INT. THE OLD MAN\u0027S CHAMBER - NIGHT (LATER)",
+      "purpose": "Wise concealment: clinical dismemberment, body parts deposited between scantlings under three replaced planks with no stain, tub catching all, then four o\u0027clock bell and street-door knocking.",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_POST_MURDER"
+      ],
+      "estimated_duration_seconds": 60,
+      "visual_beats": [
+        "Night waning; lantern light; narrator slightly disordered from labor works hastily in silence",
+        "Dismemberment of corpse\u2014head arms legs\u2014clinical not lingered upon",
+        "Tub stands ready off main floor and catches all",
+        "Three planks taken up; parts deposited between scantlings",
+        "Boards replaced so cunningly no human eye could detect wrong; no blood-spot",
+        "Soft self-satisfied ha ha",
+        "Four o\u0027clock still dark as midnight; distant bell; firm knocking below"
+      ],
+      "source_paragraphs": [
+        "P14",
+        "P15",
+        "P16"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "heading": "INT. THE STREET DOOR - NIGHT",
+      "purpose": "Narrator opens with light heart to three suave police officers deputed after a neighbour heard a shriek; he smiles, explains the shriek as a dream, and invites full search.",
+      "location_key": "LOCATION_STREET_DOOR",
+      "cast": [
+        "NARRATOR",
+        "POLICE_OFFICERS"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_POST_MURDER",
+        "POLICE_SUAVE_PERIOD"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Heavy period street door in pre-dawn dark",
+        "Narrator comes down with light heart, clothes ordered, no visible stain",
+        "Three officers in matching dark civic coats enter with perfect suavity",
+        "Narrator smiles and bids them welcome and search well"
+      ],
+      "source_paragraphs": [
+        "P16"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "heading": "INT. THE OLD HOUSE - NIGHT",
+      "purpose": "Narrator leads the officers all over the house with singular ease; his confident manner convinces them; rooms appear undisturbed.",
+      "location_key": "LOCATION_OLD_HOUSE",
+      "cast": [
+        "NARRATOR",
+        "POLICE_OFFICERS"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_POST_MURDER",
+        "POLICE_SUAVE_PERIOD"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Narrator leads three officers through quiet corridors and modest rooms",
+        "Lantern or candle light moving with them",
+        "His manner singularly at ease",
+        "Officers remain composed and convinced by his confidence"
+      ],
+      "source_paragraphs": [
+        "P17"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "heading": "INT. THE OLD MAN\u0027S CHAMBER - NIGHT",
+      "purpose": "Triumphant seating of officers directly above the concealed corpse; rising auditory hallucination of the heartbeat; narrator\u0027s progressive breakdown from ease to pallor, pacing, foaming raving, and final shrieking confession.",
+      "location_key": "LOCATION_OLD_MANS_CHAMBER",
+      "cast": [
+        "NARRATOR",
+        "POLICE_OFFICERS"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR_POST_MURDER",
+        "POLICE_SUAVE_PERIOD"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "Chamber shown: treasures secure, heavy bed restored, floorboards innocent",
+        "Narrator brings chairs; seats officers; places own seat on the very spot above the corpse",
+        "Officers chat of familiar things; narrator answers cheerily at first",
+        "Narrator grows pale; head aches; ringing becomes distinct low dull quick tattoo",
+        "Officers hear it not; continue pleasant chat and smiles",
+        "Narrator talks more quickly and vehemently; rises; violent gesticulations",
+        "Paces with heavy strides; foams raves swears; swings and grates chair on boards",
+        "Noise louder louder louder over all; hypocritical smiles unbearable",
+        "Final shriek: Villains! dissemble no more! tear up the planks! beating of his hideous heart!",
+        "Points wildly at the spot; officers freeze, smiles gone, staring at floorboards and him"
+      ],
+      "source_paragraphs": [
+        "P17",
+        "P18",
+        "P19",
+        "P20"
+      ]
+    }
+  ]
+}

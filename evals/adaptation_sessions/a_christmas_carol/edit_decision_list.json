@@ -1,0 +1,1229 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "EXT. LONDON STREETS AND COURT - CHRISTMAS EVE AFTERNOON",
+      "purpose": "Establish foggy Christmas Eve London and that Marley is dead",
+      "location_key": "LOC_LONDON_STREETS_EVE",
+      "cast": [
+        "SCROOGE"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_COUNTING_HOUSE"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "dense brown fog in narrow court",
+        "people wheezing stamping beating hands",
+        "candles flaring like ruddy smears",
+        "NARRATOR VO on Marley dead as door-nail"
+      ],
+      "source_paragraphs": [
+        "P20",
+        "P21",
+        "P29"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. SCROOGE AND MARLEY\u0027S COUNTING-HOUSE - CONTINUOUS",
+      "purpose": "Introduce Scrooge at desk and Bob in the Tank; establish miserly character",
+      "location_key": "LOC_COUNTING_HOUSE",
+      "cast": [
+        "SCROOGE",
+        "BOB_CRATCHIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_COUNTING_HOUSE",
+        "BOB_OFFICE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "firm name SCROOGE AND MARLEY above door",
+        "Scrooge thin pointed nose frosty rime small fire",
+        "door open to Tank",
+        "Bob threadbare comforter one-coal fire warming at candle"
+      ],
+      "source_paragraphs": [
+        "P24",
+        "P25",
+        "P30"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "EXT. COURT OUTSIDE COUNTING-HOUSE - CONTINUOUS",
+      "purpose": "Show Scrooge shunned even by blind men\u0027s dogs",
+      "location_key": "LOC_LONDON_STREETS_EVE",
+      "cast": [
+        "SCROOGE"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_COUNTING_HOUSE"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "dogs tug owners into doorways",
+        "no one greets Scrooge"
+      ],
+      "source_paragraphs": [
+        "P27",
+        "P28"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "INT. SCROOGE AND MARLEY\u0027S COUNTING-HOUSE - CONTINUOUS",
+      "purpose": "Fred\u0027s visit and Christmas argument; charity gentlemen refused; surplus population line",
+      "location_key": "LOC_COUNTING_HOUSE",
+      "cast": [
+        "SCROOGE",
+        "FRED",
+        "BOB_CRATCHIT",
+        "PORTLY_GENTLEMEN"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_COUNTING_HOUSE",
+        "FRED_CHRISTMAS_EVE_VISIT",
+        "BOB_OFFICE",
+        "GENTLEMEN_CHARITY_EVE"
+      ],
+      "estimated_duration_seconds": 180,
+      "visual_beats": [
+        "Fred bursts in ruddy glowing",
+        "Bah Humbug exchange",
+        "Fred invites to dinner refused",
+        "Bob greets Fred warmly",
+        "two portly gentlemen with books",
+        "Are there no prisons",
+        "decrease the surplus population",
+        "gentlemen withdraw"
+      ],
+      "source_paragraphs": [
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P39",
+        "P47",
+        "P48",
+        "P50",
+        "P51",
+        "P52",
+        "P57",
+        "P58",
+        "P61",
+        "P62",
+        "P63",
+        "P64",
+        "P65",
+        "P68",
+        "P69",
+        "P70",
+        "P71",
+        "P73",
+        "P76",
+        "P77",
+        "P79",
+        "P80",
+        "P81",
+        "P83",
+        "P84"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "INT. SCROOGE AND MARLEY\u0027S COUNTING-HOUSE - LATER",
+      "purpose": "Closing time; Scrooge grudgingly gives Bob Christmas day off",
+      "location_key": "LOC_COUNTING_HOUSE",
+      "cast": [
+        "SCROOGE",
+        "BOB_CRATCHIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_COUNTING_HOUSE",
+        "BOB_OFFICE"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Scrooge dismounts stool ill will",
+        "Bob snuffs candle puts on hat",
+        "half-a-crown complaint",
+        "button great-coat to chin",
+        "growl exit"
+      ],
+      "source_paragraphs": [
+        "P89",
+        "P90",
+        "P91",
+        "P92",
+        "P94",
+        "P96"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "EXT. CORNHILL / LONDON STREETS - EVENING",
+      "purpose": "Bob slides on ice home; Scrooge melancholy dinner and walk home",
+      "location_key": "LOC_LONDON_STREETS_EVE",
+      "cast": [
+        "BOB_CRATCHIT",
+        "SCROOGE"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOB_OFFICE",
+        "SCROOGE_COUNTING_HOUSE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Bob comforter dangling no great-coat slides Cornhill twenty times",
+        "runs to Camden Town",
+        "Scrooge tavern dinner banker\u0027s-book",
+        "walk home fog frost"
+      ],
+      "source_paragraphs": [
+        "P97",
+        "P98"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "EXT. SCROOGE\u0027S CHAMBERS YARD - NIGHT",
+      "purpose": "Marley\u0027s face appears in the door knocker",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "cast": [
+        "SCROOGE",
+        "MARLEY_GHOST"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_COUNTING_HOUSE",
+        "MARLEY_GHOST_APPARITION"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "gloomy lowering pile dark yard",
+        "fog frost black gateway",
+        "key in lock",
+        "knocker becomes Marley\u0027s face spectacles livid",
+        "knocker again"
+      ],
+      "source_paragraphs": [
+        "P98",
+        "P99",
+        "P100",
+        "P101"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "INT. SCROOGE\u0027S GLOOMY CHAMBERS - CONTINUOUS",
+      "purpose": "Scrooge enters locks checks rooms; Marley\u0027s Ghost full apparition warning and three spirits prophecy",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "cast": [
+        "SCROOGE",
+        "MARLEY_GHOST"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "MARLEY_GHOST_APPARITION"
+      ],
+      "estimated_duration_seconds": 240,
+      "visual_beats": [
+        "double-lock",
+        "search sitting bedroom lumber",
+        "dressing-gown nightcap gruel",
+        "Dutch tiles Marley face",
+        "bells ring all house",
+        "chain clank up stairs",
+        "transparent Marley cash-box chain",
+        "jaw drops",
+        "forged chain in life",
+        "mankind was my business",
+        "three spirits warning",
+        "window opens phantoms fade",
+        "Scrooge to bed"
+      ],
+      "source_paragraphs": [
+        "P102",
+        "P103",
+        "P106",
+        "P107",
+        "P108",
+        "P109",
+        "P111",
+        "P112",
+        "P113",
+        "P114",
+        "P115",
+        "P116",
+        "P118",
+        "P119",
+        "P124",
+        "P134",
+        "P142",
+        "P144",
+        "P147",
+        "P150",
+        "P152",
+        "P155",
+        "P167",
+        "P175",
+        "P177",
+        "P182",
+        "P184",
+        "P186",
+        "P188",
+        "P190",
+        "P192"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "INT. SCROOGE\u0027S BEDROOM - NIGHT (LATER)",
+      "purpose": "Clock strikes One; Ghost of Christmas Past appears and takes Scrooge",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PAST"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PAST_APPARITION"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "awakes dark",
+        "church to twelve repeater twelve",
+        "quarters then ONE",
+        "curtains drawn by hand",
+        "Past child-old white tunic holly light jet extinguisher",
+        "touch heart pass through wall"
+      ],
+      "source_paragraphs": [
+        "P194",
+        "P195",
+        "P196",
+        "P211",
+        "P212",
+        "P213",
+        "P214",
+        "P219",
+        "P221",
+        "P229",
+        "P232"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "heading": "EXT. COUNTRY ROAD AND MARKET-TOWN - DAY (PAST)",
+      "purpose": "Boyhood country road and approach to school",
+      "location_key": "LOC_COUNTRY_ROAD_BOYHOOD",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PAST"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PAST_APPARITION"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "clear cold snow fields",
+        "market-town bridge church river",
+        "merry boys ponies carts",
+        "Scrooge recognises place weeps",
+        "shadows have no consciousness"
+      ],
+      "source_paragraphs": [
+        "P233",
+        "P234",
+        "P241",
+        "P242",
+        "P243"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "heading": "INT. DREARY BOARDING SCHOOL - DAY (PAST)",
+      "purpose": "Lonely boy Scrooge; Fan brings him home; schoolmaster",
+      "location_key": "LOC_BOARDING_SCHOOL",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PAST",
+        "FAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "SCROOGE_BOY",
+        "GHOST_PAST_APPARITION",
+        "FAN_CHILD"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "dull red brick decayed",
+        "lonely boy reading feeble fire",
+        "adult Scrooge weeps",
+        "Ali Baba vision",
+        "Fan darts in kisses",
+        "home for good",
+        "schoolmaster trunk coach",
+        "Fan large heart died mother of nephew"
+      ],
+      "source_paragraphs": [
+        "P246",
+        "P247",
+        "P244",
+        "P250",
+        "P253",
+        "P256",
+        "P260",
+        "P261",
+        "P263",
+        "P266",
+        "P267",
+        "P269",
+        "P271"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "heading": "EXT. BUSY CITY THOROUGHFARES - EVENING (PAST)",
+      "purpose": "Transition to Fezziwig warehouse door",
+      "location_key": "LOC_CITY_STREETS_MORNING",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PAST"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PAST_APPARITION"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "shadowy passengers carts coaches",
+        "Christmas lighted streets",
+        "warehouse door known"
+      ],
+      "source_paragraphs": [
+        "P273",
+        "P274",
+        "P275"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "heading": "INT. FEZZIWIG\u0027S WAREHOUSE - NIGHT (PAST)",
+      "purpose": "Fezziwig Christmas Eve ball; Scrooge defends Fezziwig\u0027s generosity",
+      "location_key": "LOC_FEZZIWIG_WAREHOUSE",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PAST",
+        "FEZZIWIG"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "SCROOGE_YOUNG_APPRENTICE",
+        "GHOST_PAST_APPARITION",
+        "FEZZIWIG_PARTY"
+      ],
+      "estimated_duration_seconds": 120,
+      "visual_beats": [
+        "Fezziwig Welsh wig high desk seven o\u0027clock",
+        "Yo ho shutters up",
+        "clear floor ball-room",
+        "fiddler Mrs Fezziwig dances",
+        "calves shine moons",
+        "eleven break up Merry Christmas",
+        "happiness as great as fortune",
+        "wish speak to clerk"
+      ],
+      "source_paragraphs": [
+        "P276",
+        "P277",
+        "P278",
+        "P279",
+        "P282",
+        "P284",
+        "P285",
+        "P286",
+        "P287",
+        "P288",
+        "P289",
+        "P294",
+        "P295",
+        "P300"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "heading": "INT. ANOTHER ROOM / OPEN AIR - NIGHT (PAST)",
+      "purpose": "Belle releases young Scrooge; golden idol",
+      "location_key": "LOC_BELLE_HOME",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PAST",
+        "BELLE"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "SCROOGE_YOUNG_APPRENTICE",
+        "GHOST_PAST_APPARITION",
+        "BELLE_BREAKUP"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "older Scrooge signs of avarice",
+        "Belle mourning-dress tears",
+        "another idol golden one",
+        "contract when poor",
+        "release you",
+        "may you be happy",
+        "Scrooge begs no more"
+      ],
+      "source_paragraphs": [
+        "P303",
+        "P304",
+        "P305",
+        "P307",
+        "P309",
+        "P313",
+        "P315",
+        "P321",
+        "P323",
+        "P324",
+        "P325"
+      ]
+    },
+    {
+      "scene_id": "S15",
+      "heading": "INT. BELLE\u0027S MODEST COMFORTABLE HOME - NIGHT (PAST)",
+      "purpose": "Belle happily married with children; husband saw solitary Scrooge; Past extinguished",
+      "location_key": "LOC_BELLE_HOME",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PAST",
+        "BELLE"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PAST_APPARITION",
+        "BELLE_MATRON"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "comely matron daughter tumultuous children",
+        "father toys presents",
+        "saw old friend Scrooge alone",
+        "Scrooge cannot bear",
+        "wrestles Past",
+        "extinguisher cap light streams",
+        "reels to bed"
+      ],
+      "source_paragraphs": [
+        "P329",
+        "P330",
+        "P331",
+        "P332",
+        "P335",
+        "P336",
+        "P337",
+        "P339",
+        "P340",
+        "P342",
+        "P343",
+        "P344"
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "heading": "INT. SCROOGE\u0027S BEDROOM - NIGHT (NEXT)",
+      "purpose": "Await second Spirit; ruddy light from next room",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "cast": [
+        "SCROOGE"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "tough snore awake",
+        "bell stroke One",
+        "curtains aside himself",
+        "wait nothing",
+        "blaze ruddy light adjoining",
+        "shuffle to door voice calls enter"
+      ],
+      "source_paragraphs": [
+        "P346",
+        "P348",
+        "P349"
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "heading": "INT. SCROOGE\u0027S SITTING-ROOM (TRANSFORMED) - CONTINUOUS",
+      "purpose": "Ghost of Christmas Present on throne of food; touch robe depart",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PRESENT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PRESENT_THRONE"
+      ],
+      "estimated_duration_seconds": 60,
+      "visual_beats": [
+        "living green holly berries mighty blaze",
+        "throne turkeys geese punch",
+        "jolly Giant green robe fur bare breast holly icicles torch",
+        "more than eighteen hundred brothers",
+        "touch robe all vanishes"
+      ],
+      "source_paragraphs": [
+        "P350",
+        "P351",
+        "P353",
+        "P354",
+        "P359",
+        "P362",
+        "P363",
+        "P364"
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "heading": "EXT. CITY STREETS ON CHRISTMAS MORNING - DAY",
+      "purpose": "Joyful snowy streets markets bakers; Spirit blesses poor dinners; Seventh Day exchange",
+      "location_key": "LOC_CITY_STREETS_MORNING",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PRESENT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PRESENT_THRONE"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "scrape snow housetops",
+        "poulterers fruiterers radiant",
+        "grocers glimpses",
+        "churchgoers",
+        "dinners to bakers",
+        "baker doorway torch incense",
+        "restore good humour",
+        "cramp enjoyment charge on themselves"
+      ],
+      "source_paragraphs": [
+        "P365",
+        "P366",
+        "P367",
+        "P368",
+        "P369",
+        "P371",
+        "P374",
+        "P376",
+        "P384"
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "heading": "INT. BOB CRATCHIT\u0027S FOUR-ROOMED HOUSE - DAY",
+      "purpose": "Cratchit Christmas dinner; Tiny Tim; vacant seat prophecy; toast Scrooge",
+      "location_key": "LOC_CRATCHIT_HOUSE",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PRESENT",
+        "BOB_CRATCHIT",
+        "MRS_CRATCHIT",
+        "TINY_TIM"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PRESENT_THRONE",
+        "BOB_CHRISTMAS_HOME",
+        "MRS_CRATCHIT_CHRISTMAS",
+        "TIM_CHRISTMAS"
+      ],
+      "estimated_duration_seconds": 180,
+      "visual_beats": [
+        "Spirit blesses threshold",
+        "Mrs Cratchit ribbons cloth",
+        "Martha hide",
+        "Bob Tim crutch iron frame shoulder",
+        "goose pudding blaze",
+        "God bless us every one",
+        "vacant seat crutch if unaltered",
+        "surplus population quoted back",
+        "Founder of the Feast toast reluctant",
+        "fade torch sprinklings eye on Tim"
+      ],
+      "source_paragraphs": [
+        "P386",
+        "P387",
+        "P395",
+        "P401",
+        "P404",
+        "P407",
+        "P411",
+        "P413",
+        "P415",
+        "P416",
+        "P418",
+        "P420",
+        "P422",
+        "P423",
+        "P427",
+        "P430"
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "heading": "EXT. BLEAK MOOR - DUSK",
+      "purpose": "Miners\u0027 hut Christmas song on desolate moor",
+      "location_key": "LOC_BLEAK_MOOR_MINERS",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PRESENT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PRESENT_THRONE"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "monstrous stone frost furze",
+        "setting sun red then gloom",
+        "hut firelight",
+        "generations gaily decked sing Christmas"
+      ],
+      "source_paragraphs": [
+        "P433",
+        "P435",
+        "P436"
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "heading": "EXT. SOLITARY LIGHTHOUSE ON REEF - NIGHT",
+      "purpose": "Lighthouse keepers share grog and song",
+      "location_key": "LOC_LIGHTHOUSE",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PRESENT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PRESENT_THRONE"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "dismal reef seaweed storm-birds",
+        "fire through loophole",
+        "two men horny hands grog sturdy song"
+      ],
+      "source_paragraphs": [
+        "P438",
+        "P439"
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "heading": "EXT. SHIP AT SEA - NIGHT",
+      "purpose": "Ship crew Christmas thoughts; cut to Fred\u0027s laugh",
+      "location_key": "LOC_SHIP_AT_SEA",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PRESENT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PRESENT_THRONE"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "helmsman look-out officers",
+        "hum Christmas tune kinder word",
+        "hearty laugh recognised as nephew"
+      ],
+      "source_paragraphs": [
+        "P440",
+        "P441"
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "heading": "INT. FRED\u0027S BRIGHT DINING-ROOM - NIGHT",
+      "purpose": "Fred\u0027s party mocks then pities Scrooge; games; Yes and No reveal; Ignorance and Want; Present ends",
+      "location_key": "LOC_FRED_DINING_ROOM",
+      "cast": [
+        "SCROOGE",
+        "GHOST_PRESENT",
+        "FRED"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_PRESENT_THRONE",
+        "FRED_PARTY"
+      ],
+      "estimated_duration_seconds": 150,
+      "visual_beats": [
+        "Fred holds sides laugh",
+        "niece pretty",
+        "wealth no use pity him",
+        "blind-man\u0027s buff Topper",
+        "harp air softens Scrooge",
+        "Yes No Uncle Scrooge",
+        "toast Uncle Scrooge",
+        "Ghost ages grey",
+        "Ignorance Want children",
+        "Are there no prisons",
+        "bell twelve Ghost gone"
+      ],
+      "source_paragraphs": [
+        "P442",
+        "P446",
+        "P449",
+        "P451",
+        "P453",
+        "P459",
+        "P462",
+        "P466",
+        "P469",
+        "P471",
+        "P473",
+        "P476",
+        "P478",
+        "P484",
+        "P486",
+        "P489",
+        "P491",
+        "P492"
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "heading": "EXT. OPEN PLACE / CITY EDGE - NIGHT",
+      "purpose": "Ghost of Christmas Yet to Come appears; Scrooge vows to follow",
+      "location_key": "LOC_LONDON_STREETS_EVE",
+      "cast": [
+        "SCROOGE",
+        "GHOST_YET_TO_COME"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_FUTURE_SHROUD"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "solemn Phantom draped hooded mist",
+        "only hand visible",
+        "Scrooge kneels dread",
+        "shadows of things that will be",
+        "Lead on thankful heart"
+      ],
+      "source_paragraphs": [
+        "P493",
+        "P495",
+        "P496",
+        "P498",
+        "P500",
+        "P504",
+        "P506"
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "heading": "EXT. THE EXCHANGE / CITY - DAY (FUTURE)",
+      "purpose": "Businessmen discuss dead man cheap funeral with indifference",
+      "location_key": "LOC_COUNTING_HOUSE",
+      "cast": [
+        "SCROOGE",
+        "GHOST_YET_TO_COME"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_FUTURE_SHROUD"
+      ],
+      "estimated_duration_seconds": 60,
+      "visual_beats": [
+        "merchants chink money",
+        "dead last night",
+        "cheap funeral lunch",
+        "Old Scratch got his own",
+        "no likeness of Scrooge in corner"
+      ],
+      "source_paragraphs": [
+        "P508",
+        "P510",
+        "P512",
+        "P515",
+        "P518",
+        "P519",
+        "P527",
+        "P533"
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "heading": "EXT. OBSCURE FOUL QUARTER / OLD JOE\u0027S SHOP - NIGHT (FUTURE)",
+      "purpose": "Scavengers sell dead man\u0027s bed-curtains blankets shirt at Old Joe\u0027s",
+      "location_key": "LOC_OLD_JOE_SHOP",
+      "cast": [
+        "SCROOGE",
+        "GHOST_YET_TO_COME",
+        "OLD_JOE",
+        "MRS_DILBER"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_FUTURE_SHROUD",
+        "OLD_JOE_SHOP",
+        "DILBER_SCAVENGER"
+      ],
+      "estimated_duration_seconds": 120,
+      "visual_beats": [
+        "foul narrow alleys beetling shop",
+        "Old Joe pipe tatters",
+        "charwoman Dilber undertaker laugh",
+        "bed-curtains rings and all",
+        "blankets shirt off corpse",
+        "Ha ha profit us when dead",
+        "Scrooge horror case might be my own"
+      ],
+      "source_paragraphs": [
+        "P535",
+        "P536",
+        "P537",
+        "P538",
+        "P542",
+        "P548",
+        "P557",
+        "P558",
+        "P560",
+        "P566",
+        "P568",
+        "P570",
+        "P571"
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "heading": "INT. DARK BARE ROOM WITH UNCURTAINED BED - NIGHT (FUTURE)",
+      "purpose": "Plundered corpse unwatched; Scrooge cannot lift cover; begs emotion",
+      "location_key": "LOC_DEAD_MAN_ROOM",
+      "cast": [
+        "SCROOGE",
+        "GHOST_YET_TO_COME"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_FUTURE_SHROUD"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "bare uncurtained bed ragged sheet",
+        "pale light on body",
+        "cat door rats hearth",
+        "hand points head",
+        "no power lift veil",
+        "show any emotion"
+      ],
+      "source_paragraphs": [
+        "P572",
+        "P573",
+        "P574",
+        "P577",
+        "P578",
+        "P580",
+        "P582"
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "heading": "INT. DEBTORS\u0027 MODEST HOME (CAROLINE) - DAY (FUTURE)",
+      "purpose": "Only emotion is relief that merciless creditor is dead",
+      "location_key": "LOC_CAROLINE_HOME",
+      "cast": [
+        "SCROOGE",
+        "GHOST_YET_TO_COME"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_FUTURE_SHROUD"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "mother anxious pace window clock",
+        "husband returns",
+        "he is dead",
+        "thankful then prays forgiveness",
+        "lighter hearts happier house"
+      ],
+      "source_paragraphs": [
+        "P583",
+        "P584",
+        "P585",
+        "P592",
+        "P593",
+        "P596",
+        "P597"
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "heading": "INT. BOB CRATCHIT\u0027S FOUR-ROOMED HOUSE - DAY (FUTURE)",
+      "purpose": "Cratchits mourn Tiny Tim; Bob\u0027s kindness from Fred; vow remember Tim",
+      "location_key": "LOC_CRATCHIT_HOUSE",
+      "cast": [
+        "SCROOGE",
+        "GHOST_YET_TO_COME",
+        "BOB_CRATCHIT",
+        "MRS_CRATCHIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_FUTURE_SHROUD",
+        "BOB_CHRISTMAS_HOME",
+        "MRS_CRATCHIT_CHRISTMAS"
+      ],
+      "estimated_duration_seconds": 100,
+      "visual_beats": [
+        "quiet still children",
+        "Peter reads scripture",
+        "colour hurts eyes poor Tim",
+        "Bob slower walk",
+        "kisses little face upstairs",
+        "nephew kind card",
+        "never forget Tiny Tim",
+        "I am very happy"
+      ],
+      "source_paragraphs": [
+        "P599",
+        "P600",
+        "P601",
+        "P604",
+        "P605",
+        "P607",
+        "P609",
+        "P616",
+        "P618",
+        "P619",
+        "P629",
+        "P631",
+        "P633"
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "heading": "EXT. CHURCHYARD WITH NEGLECTED GRAVE - DAY (FUTURE)",
+      "purpose": "Scrooge reads own name on grave; vows change; Spirit becomes bedpost",
+      "location_key": "LOC_CHURCHYARD",
+      "cast": [
+        "SCROOGE",
+        "GHOST_YET_TO_COME"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "GHOST_FUTURE_SHROUD"
+      ],
+      "estimated_duration_seconds": 80,
+      "visual_beats": [
+        "iron gate walled weeds choked",
+        "points to one grave",
+        "Will be or May be",
+        "EBENEZER SCROOGE",
+        "not the man I was",
+        "honour Christmas all year",
+        "sponge writing",
+        "Spirit dwindles to bedpost"
+      ],
+      "source_paragraphs": [
+        "P642",
+        "P643",
+        "P644",
+        "P645",
+        "P647",
+        "P649",
+        "P650",
+        "P654",
+        "P656",
+        "P658",
+        "P660"
+      ]
+    },
+    {
+      "scene_id": "S31",
+      "heading": "INT. SCROOGE\u0027S BEDROOM - CHRISTMAS MORNING",
+      "purpose": "Scrooge awakes reformed; learns it is Christmas Day; orders prize turkey",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "cast": [
+        "SCROOGE"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_NIGHT",
+        "SCROOGE_REFORMED_BEST"
+      ],
+      "estimated_duration_seconds": 120,
+      "visual_beats": [
+        "bedpost own Time own",
+        "curtains intact",
+        "laughs cries giddy",
+        "window clear bright bells",
+        "boy Sunday clothes Christmas Day",
+        "buy prize Turkey big as me",
+        "cab Camden Town",
+        "love knocker",
+        "dresses best shaves shaky",
+        "delighted smile streets"
+      ],
+      "source_paragraphs": [
+        "P662",
+        "P663",
+        "P665",
+        "P667",
+        "P672",
+        "P673",
+        "P677",
+        "P678",
+        "P682",
+        "P686",
+        "P688",
+        "P690",
+        "P692",
+        "P694",
+        "P697"
+      ]
+    },
+    {
+      "scene_id": "S32",
+      "heading": "EXT. LONDON STREET - DAY",
+      "purpose": "Scrooge finds charity gentleman and pledges large donation",
+      "location_key": "LOC_CITY_STREETS_MORNING",
+      "cast": [
+        "SCROOGE",
+        "PORTLY_GENTLEMEN"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_REFORMED_BEST",
+        "GENTLEMEN_CHARITY_EVE"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "meets portly gentleman",
+        "merry Christmas pardon",
+        "whispers sum back-payments",
+        "not a farthing less",
+        "come and see me"
+      ],
+      "source_paragraphs": [
+        "P698",
+        "P699",
+        "P701",
+        "P702",
+        "P703",
+        "P705",
+        "P707"
+      ]
+    },
+    {
+      "scene_id": "S33",
+      "heading": "EXT. FRED\u0027S HOUSE - AFTERNOON",
+      "purpose": "Scrooge arrives at Fred\u0027s for dinner; heartfelt welcome",
+      "location_key": "LOC_FRED_HOUSE_EXTERIOR",
+      "cast": [
+        "SCROOGE",
+        "FRED"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_REFORMED_BEST",
+        "FRED_PARTY"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "passes door dozen times",
+        "knocks",
+        "girl servant",
+        "sidles in Fred!",
+        "let him in shake arm off",
+        "wonderful party happiness"
+      ],
+      "source_paragraphs": [
+        "P708",
+        "P709",
+        "P710",
+        "P714",
+        "P716",
+        "P718",
+        "P719",
+        "P720"
+      ]
+    },
+    {
+      "scene_id": "S34",
+      "heading": "INT. SCROOGE AND MARLEY\u0027S COUNTING-HOUSE - NEXT MORNING",
+      "purpose": "Scrooge pretends anger then raises Bob\u0027s salary; second father to Tim",
+      "location_key": "LOC_OFFICE_NEXT_MORNING",
+      "cast": [
+        "SCROOGE",
+        "BOB_CRATCHIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_COUNTING_HOUSE",
+        "BOB_OFFICE"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "early door wide open",
+        "Bob eighteen minutes late",
+        "growl step this way",
+        "dig waistcoat raise salary",
+        "merry Christmas smoking bishop coal-scuttle",
+        "Tiny Tim did NOT die second father"
+      ],
+      "source_paragraphs": [
+        "P721",
+        "P722",
+        "P724",
+        "P726",
+        "P728",
+        "P730",
+        "P731"
+      ]
+    },
+    {
+      "scene_id": "S35",
+      "heading": "EXT. LONDON / VARIOUS - MONTAGE - DAY TO YEAR",
+      "purpose": "Epilogue: Scrooge keeps Christmas well; God bless Us Every One",
+      "location_key": "LOC_CITY_STREETS_MORNING",
+      "cast": [
+        "SCROOGE",
+        "TINY_TIM",
+        "BOB_CRATCHIT",
+        "FRED"
+      ],
+      "wardrobe_or_age_variant": [
+        "SCROOGE_REFORMED_BEST",
+        "TIM_CHRISTMAS",
+        "BOB_CHRISTMAS_HOME",
+        "FRED_PARTY"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "keeps Christmas all year",
+        "Tim strong crutch",
+        "Fred welcomes",
+        "Bob thrives",
+        "NARRATOR God bless Us Every One"
+      ],
+      "source_paragraphs": [
+        "P732"
+      ]
+    }
+  ]
+}

@@ -100,9 +100,19 @@ public sealed class GeminiImageClient : IImageClient
         CancellationToken ct = default)
     {
         var modelName = NormalizeModelName(model);
+        // Model-aware, not a bare hardcoded 14 — and no silent fallback: an image generation call
+        // costs real money, so an unverified reference-image limit must refuse to start rather
+        // than guess (same "fail loud" principle as Veo's MaxReferenceImages=0).
+        if (SupportedModelCatalog.Find(modelName, ModelCapability.Image)?.MaxReferenceImages is not { } catalogCap)
+        {
+            throw new InvalidOperationException(
+                $"No catalog maxReferenceImages for image model '{modelName}' — refusing to start " +
+                "a paid image generation call with an unverified reference-image limit. Populate " +
+                "models_catalog.json for this model before using it.");
+        }
         var cap = maxRefs > 0
-            ? Math.Clamp(maxRefs, 1, ImageApiLimits.GeminiMaxReferenceImages)
-            : ImageApiLimits.GeminiMaxReferenceImages;
+            ? Math.Clamp(maxRefs, 1, catalogCap)
+            : catalogCap;
 
         var hasCostumeRef = !string.IsNullOrWhiteSpace(costumeRefPath) && File.Exists(costumeRefPath);
         var identityCap = hasCostumeRef ? Math.Max(1, cap - 1) : cap;

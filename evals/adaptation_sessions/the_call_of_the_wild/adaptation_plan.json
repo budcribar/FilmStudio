@@ -1,0 +1,667 @@
+{
+  "characters": [
+    {
+      "name": "Buck",
+      "aka": [
+        "the dominant primordial beast",
+        "Ghost Dog"
+      ],
+      "withheld_until": null,
+      "notes": "St. Bernard-Scotch shepherd mix; protagonist whose arc is decivilization and answering the wild call"
+    },
+    {
+      "name": "Judge Miller",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Buck\u0027s original owner in Santa Clara Valley"
+    },
+    {
+      "name": "Manuel",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Gardener\u0027s helper who kidnaps Buck to fund gambling"
+    },
+    {
+      "name": "man in the red sweater",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Dog-breaker in Seattle who teaches Buck the law of the club"
+    },
+    {
+      "name": "Perrault",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "French-Canadian government courier; buys Buck"
+    },
+    {
+      "name": "Francois",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "French-Canadian half-breed dog-driver; fair and skilled"
+    },
+    {
+      "name": "Spitz",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Treacherous white lead dog; Buck\u0027s rival to the death"
+    },
+    {
+      "name": "Curly",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Good-natured Newfoundland; killed by huskies on Dyea beach"
+    },
+    {
+      "name": "Dave",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Experienced wheeler; dies in harness from internal injury"
+    },
+    {
+      "name": "Sol-leks",
+      "aka": [
+        "the Angry One"
+      ],
+      "withheld_until": null,
+      "notes": "One-eyed husky; blind-side sensitive"
+    },
+    {
+      "name": "Billee",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Good-natured husky brother of Joe"
+    },
+    {
+      "name": "Joe",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Sour, malignant husky brother of Billee"
+    },
+    {
+      "name": "Pike",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Clever malingerer and thief on the team"
+    },
+    {
+      "name": "Dub",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Awkward blunderer; later shot by Hal"
+    },
+    {
+      "name": "Hal",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Callow young man from the States; cruel incompetent owner"
+    },
+    {
+      "name": "Charles",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Middle-aged weak-eyed man; Mercedes\u0027s husband"
+    },
+    {
+      "name": "Mercedes",
+      "aka": [],
+      "withheld_until": null,
+      "notes": "Charles\u0027s wife and Hal\u0027s sister; soft, weeping, rides the sled"
+    },
+    {
+      "name": "John Thornton",
+      "aka": [],
+      "withheld_until": "B21",
+      "notes": "Ideal master who rescues and loves Buck; withheld as savior until White River"
+    },
+    {
+      "name": "Skeet",
+      "aka": [],
+      "withheld_until": "B21",
+      "notes": "Irish setter; nurses Buck\u0027s wounds"
+    },
+    {
+      "name": "Nig",
+      "aka": [],
+      "withheld_until": "B21",
+      "notes": "Huge friendly black dog half bloodhound half deerhound"
+    },
+    {
+      "name": "Hans",
+      "aka": [],
+      "withheld_until": "B22",
+      "notes": "Thornton\u0027s partner"
+    },
+    {
+      "name": "Pete",
+      "aka": [],
+      "withheld_until": "B22",
+      "notes": "Thornton\u0027s partner"
+    },
+    {
+      "name": "Matthewson",
+      "aka": [],
+      "withheld_until": "B23",
+      "notes": "Bonanza King who bets against Buck"
+    },
+    {
+      "name": "Yeehats",
+      "aka": [],
+      "withheld_until": "B26",
+      "notes": "Indigenous hunters who massacre Thornton\u0027s camp"
+    },
+    {
+      "name": "wild brother",
+      "aka": [
+        "timber wolf"
+      ],
+      "withheld_until": "B25",
+      "notes": "Lean wolf Buck befriends and later runs with"
+    },
+    {
+      "name": "hairy man",
+      "aka": [],
+      "withheld_until": "B17",
+      "notes": "Ancestral vision figure Buck sees by the fire"
+    }
+  ],
+  "locations_mentioned": [
+    "Judge Miller\u0027s place, Santa Clara Valley",
+    "College Park flag station",
+    "San Francisco water front",
+    "Seattle back yard",
+    "Narwhal ship",
+    "Dyea beach",
+    "Dyea Canon / Chilcoot Divide",
+    "Lake Bennett",
+    "Lake Le Barge",
+    "Thirty Mile River",
+    "Dawson",
+    "Skaguay",
+    "White River mouth (Thornton\u0027s camp)",
+    "Circle City",
+    "Forty-Mile Creek rapids",
+    "Eldorado Saloon, Dawson",
+    "Stewart River / eastern wilderness",
+    "Lost Cabin country / placer valley",
+    "spruce-bough lodge camp",
+    "moonlit clearing and wolf country"
+  ],
+  "timeline": [
+    "Fall 1897: Buck at Judge Miller\u0027s; Klondike strike begins",
+    "Night of Manuel\u0027s treachery; kidnapping to San Francisco then Seattle",
+    "Broken by man in red sweater; sold to Perrault",
+    "Voyage north on Narwhal; first snow at Dyea",
+    "First trail season: Curly killed; harness work; rivalry with Spitz builds",
+    "Starving husky attack at Lake Le Barge; hard ice travel",
+    "Buck kills Spitz; becomes lead dog; record run to Skaguay",
+    "Mail run back to Dawson; Dave dies in traces",
+    "Sold to Hal/Charles/Mercedes; disastrous overloaded trip",
+    "Spring: dogs collapse at White River; Thornton rescues Buck",
+    "Summer convalescence and love; river rescue; Burton fight",
+    "Winter Dawson: thousand-pound pull bet won",
+    "Journey east seeking Lost Cabin; find rich placer instead",
+    "Months of wandering; call intensifies; meets wild brother",
+    "Kills great bull moose; returns to find camp destroyed by Yeehats",
+    "Avenges Thornton; joins wolf pack; becomes Ghost Dog of legend"
+  ],
+  "withheld_name_or_twist_rules": [
+    "Do not name or show John Thornton before beat B21 (White River rescue); treat prior masters as temporary only",
+    "Do not reveal Buck will kill Spitz until the rabbit-chase fight in B14; keep rivalry as simmering threat",
+    "Do not show or name the Yeehats or camp massacre before B26; keep eastern journey as gold-seeking idyll until return",
+    "Do not confirm Buck fully answers the call and joins the pack until B27 after Thornton\u0027s death is established",
+    "Withhold the Ghost Dog / brown-splash wolf-pack epilogue until final beat B28",
+    "The hairy-man ancestral visions may appear from B17 onward but never be explained as literal flashback until Buck\u0027s full wild transformation"
+  ],
+  "essential_beats": [
+    {
+      "id": "B1",
+      "summary": "Establish Buck as pampered king of Judge Miller\u0027s sun-kissed Santa Clara estate; introduce gold-rush demand for strong dogs.",
+      "source_evidence": "Buck rules the great demesne, hunts and swims with the family, weighs 140 pounds, lives as sated aristocrat while men rush north for yellow metal.",
+      "source_paragraphs": [
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P20"
+      ]
+    },
+    {
+      "id": "B2",
+      "summary": "Manuel, needing lottery money, steals Buck at night and sells him at College Park station.",
+      "source_evidence": "On the night Judge is at a meeting, Manuel ropes Buck, delivers him to a stranger for money; Buck is choked and thrown into a baggage car.",
+      "source_paragraphs": [
+        "P21",
+        "P22",
+        "P23",
+        "P24",
+        "P25"
+      ]
+    },
+    {
+      "id": "B3",
+      "summary": "Brutal journey south then north: crate, thirst, teasing expressmen; arrives Seattle half-mad with rage.",
+      "source_evidence": "Buck rides two days without food or water, attacks handlers, is filed out of collar and crated; express messengers torment him until Seattle.",
+      "source_paragraphs": [
+        "P26",
+        "P36",
+        "P37",
+        "P38",
+        "P39",
+        "P40"
+      ]
+    },
+    {
+      "id": "B4",
+      "summary": "Man in red sweater clubs Buck into submission; Buck learns a man with a club is lawgiver.",
+      "source_evidence": "Buck charges repeatedly; club smashes him senseless; afterward he accepts water and meat but never forgets the lesson of primitive law.",
+      "source_paragraphs": [
+        "P41",
+        "P45",
+        "P46",
+        "P47",
+        "P48",
+        "P49",
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ]
+    },
+    {
+      "id": "B5",
+      "summary": "Perrault buys Buck and Curly; voyage on Narwhal; first snow and introduction to Francois, Spitz, Dave.",
+      "source_evidence": "Sold for three hundred; meets treacherous Spitz and morose Dave; ship grows colder; Buck tastes snow and is ashamed.",
+      "source_paragraphs": [
+        "P57",
+        "P58",
+        "P59",
+        "P60",
+        "P61",
+        "P62",
+        "P63",
+        "P64"
+      ]
+    },
+    {
+      "id": "B6",
+      "summary": "Dyea beach nightmare: Curly is torn apart by huskies the moment she goes down; Buck vows never to go down.",
+      "source_evidence": "Friendly Curly is ripped open then buried under thirty huskies; Francois axes them off too late; Spitz laughs; Buck learns no fair play.",
+      "source_paragraphs": [
+        "P66",
+        "P67",
+        "P68",
+        "P69"
+      ]
+    },
+    {
+      "id": "B7",
+      "summary": "Buck is harnessed for the first time; learns commands under Francois, Dave and Spitz; new huskies Billee, Joe, Sol-leks join.",
+      "source_evidence": "Dignity hurt but he pulls firewood; stops at \u0027ho\u0027, goes at \u0027mush\u0027; Spitz disciplines newcomers; Sol-leks slashes Buck for blind-side approach.",
+      "source_paragraphs": [
+        "P70",
+        "P71",
+        "P72",
+        "P73"
+      ]
+    },
+    {
+      "id": "B8",
+      "summary": "First night: Buck learns to dig a snow nest after being driven from the tent; wakes buried and panics like a wild thing.",
+      "source_evidence": "Driven out with curses; finds Billee under snow; digs own hole and sleeps; morning fear of trap then recognition of camp.",
+      "source_paragraphs": [
+        "P74",
+        "P75",
+        "P76",
+        "P77",
+        "P78"
+      ]
+    },
+    {
+      "id": "B9",
+      "summary": "Hard trail to Lake Bennett and beyond; Buck steals food, loses moral nature, instincts awaken; howls at stars.",
+      "source_evidence": "Ration too small; copies Pike\u0027s theft; becomes callous, keen-sensed; ancestral fight tricks and wolf howl return; decivilization complete.",
+      "source_paragraphs": [
+        "P83",
+        "P84",
+        "P85",
+        "P86",
+        "P87",
+        "P88",
+        "P89",
+        "P90",
+        "P91"
+      ]
+    },
+    {
+      "id": "B10",
+      "summary": "Dominant beast grows in Buck; Spitz bullies; nest fight interrupted by starving husky horde that guts the camp.",
+      "source_evidence": "Buck avoids open war until Spitz steals nest; they tangle; then scores of famished huskies raid grub and wound the team.",
+      "source_paragraphs": [
+        "P93",
+        "P94",
+        "P95",
+        "P96",
+        "P97",
+        "P98",
+        "P99",
+        "P100",
+        "P101"
+      ]
+    },
+    {
+      "id": "B11",
+      "summary": "Thirty Mile River hell; Buck\u0027s feet freeze; Dolly goes mad and is axed; Spitz savages exhausted Buck; open war declared.",
+      "source_evidence": "Six days of thin ice and drownings; Francois makes moccasins; mad Dolly chases Buck; Spitz tears him; Francois predicts Buck will kill Spitz.",
+      "source_paragraphs": [
+        "P104",
+        "P105",
+        "P106",
+        "P109",
+        "P110",
+        "P111",
+        "P112",
+        "P113"
+      ]
+    },
+    {
+      "id": "B12",
+      "summary": "Buck systematically undermines Spitz\u0027s authority; team solidarity collapses; continual bickering on the Dawson run.",
+      "source_evidence": "Buck shields shirkers; Pike steals under Buck\u0027s protection; Francois\u0027s whip cannot restore order; Spitz no longer feared.",
+      "source_paragraphs": [
+        "P114",
+        "P115",
+        "P116",
+        "P117",
+        "P118",
+        "P122",
+        "P123"
+      ]
+    },
+    {
+      "id": "B13",
+      "summary": "Snowshoe-rabbit chase under aurora; sixty dogs in full cry; Spitz cuts off rabbit; Buck and Spitz fight to the death.",
+      "source_evidence": "Ecstasy of the kill-run; Spitz takes rabbit; circle of wolves waits; Buck breaks both forelegs then finishes Spitz; stands dominant primordial beast.",
+      "source_paragraphs": [
+        "P124",
+        "P125",
+        "P126",
+        "P127",
+        "P128",
+        "P129",
+        "P130",
+        "P131",
+        "P132",
+        "P133",
+        "P134"
+      ]
+    },
+    {
+      "id": "B14",
+      "summary": "Next morning Buck demands lead position; refuses Sol-leks; after hour-long standoff Francois yields; Buck proves superb leader.",
+      "source_evidence": "Buck displaces Sol-leks twice; dodges clubs; men finally throw club down; Buck swings into lead and enforces discipline instantly.",
+      "source_paragraphs": [
+        "P136",
+        "P139",
+        "P140",
+        "P141",
+        "P142",
+        "P143",
+        "P144",
+        "P145",
+        "P146",
+        "P147",
+        "P148",
+        "P149",
+        "P150"
+      ]
+    },
+    {
+      "id": "B15",
+      "summary": "Record fourteen-day run to Skaguay; team leaps as one; Francois weeps farewell; Scotch half-breed takes mail train.",
+      "source_evidence": "Forty-mile days; Thirty Mile covered in one; Skaguay worship; official orders separate Buck from Perrault and Francois forever.",
+      "source_paragraphs": [
+        "P154",
+        "P155",
+        "P156",
+        "P157"
+      ]
+    },
+    {
+      "id": "B16",
+      "summary": "Heavy mail toil; Buck masters camp dogs; fire-side visions of hairy ancestral man; Dave sickens and dies in harness.",
+      "source_evidence": "Eighteen hundred miles tell; Dave cries in traces, bites free to reclaim place, is shot behind timber; Buck knows.",
+      "source_paragraphs": [
+        "P158",
+        "P159",
+        "P160",
+        "P161",
+        "P164",
+        "P165",
+        "P166",
+        "P167",
+        "P168",
+        "P169",
+        "P170"
+      ]
+    },
+    {
+      "id": "B17",
+      "summary": "Salt Water Mail arrives Skaguay wrecked; sold cheap to Hal, Charles and Mercedes; slipshod overloaded outfit.",
+      "source_evidence": "Dogs down to skeletons; three days rest then bought for a song; tent half-pitched, dishes unwashed, woman fluttering.",
+      "source_paragraphs": [
+        "P172",
+        "P173",
+        "P174",
+        "P175",
+        "P176",
+        "P177",
+        "P178"
+      ]
+    },
+    {
+      "id": "B18",
+      "summary": "First start fails; top-heavy sled capsizes in street; citizens advise half load twice dogs; outsiders added; food math doomed.",
+      "source_evidence": "Whip and tears; runners frozen; load spills; six Outside dogs bought; fourteen dogs cannot be fed by one sled.",
+      "source_paragraphs": [
+        "P189",
+        "P190",
+        "P191",
+        "P198",
+        "P201",
+        "P202",
+        "P203",
+        "P205",
+        "P206"
+      ]
+    },
+    {
+      "id": "B19",
+      "summary": "Incompetent trail: late starts, overfeeding then starvation; Dub shot; Outside dogs die; family quarrels; Mercedes rides.",
+      "source_evidence": "Never make computed distance; horse-hide substitute; Billee axed; seven skeletons left; woman 120-pound last straw.",
+      "source_paragraphs": [
+        "P208",
+        "P209",
+        "P210",
+        "P211",
+        "P212",
+        "P213",
+        "P214",
+        "P216",
+        "P217",
+        "P218",
+        "P219"
+      ]
+    },
+    {
+      "id": "B20",
+      "summary": "Spring thaw; stagger into John Thornton\u0027s camp; Hal clubs Buck who refuses to rise; Thornton intervenes, cuts traces.",
+      "source_evidence": "Rotten ice warning ignored; Buck beaten senseless; Thornton springs, knocks knife away, frees Buck; others drive onto ice and vanish.",
+      "source_paragraphs": [
+        "P220",
+        "P221",
+        "P222",
+        "P223",
+        "P224",
+        "P225",
+        "P227",
+        "P228",
+        "P229",
+        "P230",
+        "P231",
+        "P232",
+        "P233",
+        "P234",
+        "P235"
+      ]
+    },
+    {
+      "id": "B21",
+      "summary": "Thornton nurses Buck; Skeet and Nig befriend him; first true love; Buck will not let master out of sight.",
+      "source_evidence": "Long spring rest; doctoring by setter; rough embraces and love-oaths; Buck adores at distance yet fears Thornton will vanish like others.",
+      "source_paragraphs": [
+        "P237",
+        "P239",
+        "P240",
+        "P241",
+        "P242",
+        "P243",
+        "P244",
+        "P245"
+      ]
+    },
+    {
+      "id": "B22",
+      "summary": "Primitive strain remains; Buck steals from others but not Thornton; saves master from Burton\u0027s blow and from Forty-Mile rapids.",
+      "source_evidence": "Roars and tears Burton\u0027s throat; later swims thrice into mill-race, three broken ribs, camps till healed; partners Hans and Pete arrive.",
+      "source_paragraphs": [
+        "P246",
+        "P247",
+        "P248",
+        "P249",
+        "P250",
+        "P256",
+        "P257",
+        "P258",
+        "P259",
+        "P260",
+        "P261",
+        "P262",
+        "P263",
+        "P264",
+        "P265",
+        "P266"
+      ]
+    },
+    {
+      "id": "B23",
+      "summary": "Eldorado Saloon bet: Buck breaks out and pulls thousand-pound sled one hundred yards; wins sixteen hundred dollars.",
+      "source_evidence": "Thornton bluffs then borrows stake; frozen runners; \u0027As you love me\u0027; gee-haw-mush; crowd roars; Thornton refuses fortune for the dog.",
+      "source_paragraphs": [
+        "P267",
+        "P268",
+        "P269",
+        "P270",
+        "P271",
+        "P272",
+        "P277",
+        "P286",
+        "P287",
+        "P288",
+        "P289",
+        "P290",
+        "P291",
+        "P292",
+        "P293",
+        "P294",
+        "P295",
+        "P296",
+        "P297",
+        "P299"
+      ]
+    },
+    {
+      "id": "B24",
+      "summary": "Partners outfit and head east for fabled Lost Cabin; wander seasons; find rich shallow placer instead and heap gold.",
+      "source_evidence": "Seventy miles up Yukon then Stewart; Indian-fashion hunting; no cabin but butter-yellow gold; fifty-pound moose-hide sacks piled like firewood.",
+      "source_paragraphs": [
+        "P302",
+        "P303",
+        "P304",
+        "P305",
+        "P306",
+        "P307",
+        "P308"
+      ]
+    },
+    {
+      "id": "B25",
+      "summary": "Idle days; hairy-man visions intensify; forest call lures Buck; he runs with a timber wolf then returns to Thornton.",
+      "source_evidence": "Restlessness; long-drawn howl; stalks lean wolf, plays, runs side by side across divide; remembers master and turns back; wolf howls mournfully.",
+      "source_paragraphs": [
+        "P309",
+        "P310",
+        "P311",
+        "P312",
+        "P313",
+        "P314",
+        "P315",
+        "P316",
+        "P317",
+        "P318",
+        "P319",
+        "P320"
+      ]
+    },
+    {
+      "id": "B26",
+      "summary": "Blood-longing peaks; Buck pulls down great bull moose over four days; races home sensing calamity; finds Nig, Hans, Pete, Skeet dead; Thornton in pool.",
+      "source_evidence": "Cuts bull from herd, wears it to death; fresh Yeehat trail; arrow-killed dogs; feathered Hans; lodge wrecked; scents last struggle into water.",
+      "source_paragraphs": [
+        "P321",
+        "P322",
+        "P328",
+        "P329",
+        "P330",
+        "P331",
+        "P332",
+        "P333",
+        "P334",
+        "P335",
+        "P336",
+        "P337",
+        "P338",
+        "P339",
+        "P341"
+      ]
+    },
+    {
+      "id": "B27",
+      "summary": "Buck goes berserk among Yeehats, kills chief and many; mourns Thornton; wolf pack arrives; after fight he howls and runs with them.",
+      "source_evidence": "Hurricane of fury; throats ripped; Yeehats flee calling him Evil Spirit; night pack pours in; Buck breaks necks then sniffs noses with wild brother and old wolf; joins the song.",
+      "source_paragraphs": [
+        "P340",
+        "P341",
+        "P342",
+        "P343",
+        "P344",
+        "P345",
+        "P346",
+        "P347"
+      ]
+    },
+    {
+      "id": "B28",
+      "summary": "Epilogue: Yeehats fear Ghost Dog that leads the pack; each summer a great wolf visits the gold-stream valley and howls once for the man.",
+      "source_evidence": "Breed shows brown muzzle splashes; hunters found throat-slashed; valley never entered; lone wolf muses by rotted sacks then runs at head of pack singing the younger-world song.",
+      "source_paragraphs": [
+        "P349",
+        "P350",
+        "P351",
+        "P352"
+      ]
+    }
+  ],
+  "target_runtime_minutes": 80,
+  "target_scene_count_min": 20,
+  "target_scene_count_max": 36
+}

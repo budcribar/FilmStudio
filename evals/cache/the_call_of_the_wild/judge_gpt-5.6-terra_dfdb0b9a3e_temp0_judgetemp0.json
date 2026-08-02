@@ -1,0 +1,48 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 7.4,
+      "aiVideoDirectibility": 5.6,
+      "dramaticPacing": 5.9,
+      "dialogueAuthenticity": 8.3,
+      "soundDesignMusic": 8.2,
+      "overallQualitativeScore": 7.32,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The required VISION_META sidecar is absent, despite the shared prompt designating it HARD output.",
+        "It violates the one-location-per-heading rule with \u0022EXT. SEATTLE DOCK / DECK OF THE NARWHAL - DAY.\u0022",
+        "Several scenes combine too many separate plot turns, locations, and actions to function as discrete 5-10 second AI-video beats, especially the Seattle/Narwhal transition, the White River rescue-and-collapse sequence, and the final Yeehat attack through wolf-pack ending."
+      ],
+      "rationale": "This is the more faithful adaptation by a substantial margin: it tracks Buck\u0027s full transformation from Miller estate king to kidnapped dog, trained sled dog, Spitz\u0027s rival and successor, exhausted mail dog, Thornton\u0027s devoted companion, and finally wolf-pack leader. It also preserves important intermediate material that Screenplay B omits, including the red-sweater lesson, hunger and adaptation, Dave\u0027s death, the failed Hal/Charles/Mercedes expedition, and Buck\u0027s moose hunt. However, its compression is often achieved by stacking an entire sequence of separate visual turns into one action block. That produces strong literary coverage but weak clip-level scheduling, uneven emotional breathing room, and a likely runtime above the stated ten-minute target. Buck is visually well locked at the opening and ending, but several recurring humans receive little or no stable physical re-entry description, and broad role labels such as STRANGER and SALOON-KEEPER are only minimally useful portrait keys. The dialogue is generally source-faithful and concise, while its sound work is consistently concrete and especially effective in the Spitz fight, river collapse, and final wolf sequence.",
+      "promptImprovementSuggestion": "Add a hard clip-beat rule: every Action paragraph must be playable as one 5-10 second shot/clip and may contain only one irreversible story action; when a sequence has multiple reversals, injuries, decisions, or location changes, split it into separate ordered Action beats or scenes."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 6.7,
+      "characterDisambiguation": 8.2,
+      "aiVideoDirectibility": 7.6,
+      "dramaticPacing": 7.3,
+      "dialogueAuthenticity": 7.8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.6,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The required VISION_META sidecar is absent, despite the shared prompt designating it HARD output.",
+        "The repeated \u0022NARRATOR V.O.\u0022 cues are not valid Fountain character cues under the prompt\u0027s required NARRATOR (V.O.) format, risking narration being parsed incorrectly downstream.",
+        "The script contains a concrete setting error, \u0022INT. SEATTLE BACK YARD - DAY,\u0022 for an exterior yard scene."
+      ],
+      "rationale": "This is the stronger production draft because it is materially cleaner, more restrained, and more shootable in short AI-video clips. It gives Buck, Spitz, Thornton, Skeet, and Nig useful stable visual identifiers; uses clear, compact action; and maintains a strong visual/sound rhythm through the major set pieces. Its major flaw is source coverage. The draft jumps from initial training to the Lake Le Barge raid and then directly to the Spitz fight, dropping much of Buck\u0027s survival adaptation and the escalating team conflict. It also omits the mail-team/Dave material and compresses Hal, Charles, and Mercedes\u0027s long deterioration so heavily that Buck\u0027s near-death and Thornton\u0027s rescue lose cumulative force. The closing also removes Buck\u0027s prolonged moose hunt and reduces the wilderness evolution that makes his final choice feel earned. Dialogue remains mostly faithful to London, though some selected narration is functional rather than especially distinctive. The sound beds are concrete and well distributed, but the screenplay is not fully compliant Fountain because its narrator notation is malformed.",
+      "promptImprovementSuggestion": "Add a mandatory preflight source-coverage audit before output: identify the protagonist\u0027s required status changes, central rival conflict, lowest-point sequence, and final-choice causality, then ensure each has at least one dedicated on-screen beat rather than being skipped between set pieces."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because its leaner scene construction, clearer casting locks, and more clip-ready action make it the more practical production draft despite meaningful source omissions. Weakest: Screenplay A because, although it is considerably more faithful, it is overstuffed with multiple major actions per scene and contains a direct one-location-heading violation that undermines short-clip execution.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "7D061534CE5E799F3AC505E17C68A645242F1827440ACBAEAF03C120E1991ECE"
+}

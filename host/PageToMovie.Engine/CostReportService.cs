@@ -3,6 +3,11 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 
+// Lets tests exercise the internal rate-table/pricing math (BuildVideoRateTable,
+// BuildVideoBaseRateTable, RatesFromModels) directly, rather than only through the full
+// ProjectStore-backed public API — pure calculation logic is worth unit-testing in isolation.
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("PageToMovie.Tests")]
+
 namespace PageToMovie.Engine;
 
 /// <summary>
@@ -13,6 +18,19 @@ namespace PageToMovie.Engine;
 /// </summary>
 public sealed class CostReportService
 {
+    // Unverified last-resort guesses, used only when a model's catalog entry has no real published
+    // price for that field — consolidated here (was scattered as inline magic numbers at each call
+    // site) so every "we're guessing" number lives in exactly one place. Every event recorded using
+    // one of these also gets a "*_pricing_source": "estimated_fallback" flag (see RatesFromModels /
+    // the event dicts below) so the cost ledger itself — not just this file — visibly distinguishes
+    // verified vendor pricing from a guess. Real $ tracking should never silently look equally
+    // confident either way.
+    private const double FallbackVideoCostPerSec480p = 0.05;
+    private const double FallbackVideoCostPerSec720p = 0.07;
+    private const double FallbackVideoCostPerSec1080p = 0.25;
+    private const double FallbackImageQualityCostPerImage = 0.05;
+    private const double FallbackImageStandardCostPerImage = 0.02;
+
     private static readonly Regex TimestampDur = new(
         @"^\s*(\d+):(\d{2})\s*-\s*(\d+):(\d{2})\s*$",
         RegexOptions.Compiled);
@@ -24,6 +42,27 @@ public sealed class CostReportService
 
     private const int MinApiSamples = 8;
     private const int MinTimingSamples = 5;
+
+    /// <summary>
+    /// USD per reference image attached to a video generation call, used when no enabled video
+    /// model publishes this as a distinct catalog line item (see
+    /// <see cref="SupportedModelEntry.VideoReferenceImageCost"/>). As of 2026-08 no provider
+    /// (including xAI's grok-imagine-video, per docs.x.ai/developers/pricing) itemizes reference
+    /// images separately from its flat per-second output rate, so every catalog entry is null and
+    /// this small Grok-era estimate is applied uniformly. Not vendor-verified — replace with a real
+    /// catalog value the moment a provider publishes one.
+    /// </summary>
+    internal const double FallbackVideoRefImageCost = 0.002;
+
+    /// <summary>
+    /// USD per second billed for a video-extend/continuation call, used when no enabled video
+    /// model publishes an extend-specific rate (see
+    /// <see cref="SupportedModelEntry.VideoExtendCostPerSecond"/>). As of 2026-08 xAI — the only
+    /// enabled provider with <see cref="SupportedModelEntry.SupportsVideoContinue"/> true — has no
+    /// published extend rate distinct from its base per-second price on docs.x.ai/developers/pricing,
+    /// so this small Grok-era estimate is applied uniformly. Not vendor-verified.
+    /// </summary>
+    internal const double FallbackVideoExtendCostPerSec = 0.01;
 
     public CostReportService(
         ProjectStore projects,
@@ -369,6 +408,7 @@ public sealed class CostReportService
                     ["clip"] = clip.ClipNumber,
                     ["model"] = model,
                     ["provider"] = rates.TryGetValue("video_provider", out var vp) ? vp : null,
+                    ["pricing_source"] = rates.TryGetValue("video_pricing_source", out var vps) ? vps : null,
                     ["request_id"] = job is not null && job.TryGetValue("request_id", out var rid)
                         ? rid.GetString() ?? ""
                         : "",
@@ -437,6 +477,7 @@ public sealed class CostReportService
             ["clip"] = clip,
             ["model"] = model,
             ["provider"] = rates.TryGetValue("video_provider", out var vp) ? vp : null,
+            ["pricing_source"] = rates.TryGetValue("video_pricing_source", out var vps) ? vps : null,
             ["request_id"] = requestId ?? "",
             ["has_ref_image"] = hasRefImage,
             ["is_extend"] = isExtend,
@@ -501,8 +542,9 @@ public sealed class CostReportService
         var n = Math.Max(0, nImages);
         var entry = SupportedModelCatalog.Find(model, ModelCapability.Image)
                     ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Image);
+        var isEstimated = entry.ImageCostPerImage is null;
         var unit = entry.ImageCostPerImage
-                   ?? (quality ? 0.05 : 0.02);
+                   ?? (quality ? FallbackImageQualityCostPerImage : FallbackImageStandardCostPerImage);
         var usd = Math.Round(unit * n, 4);
         await AppendCostEventAsync(projectId, new Dictionary<string, object?>
         {
@@ -515,6 +557,7 @@ public sealed class CostReportService
             ["usd"] = usd,
             ["currency"] = "USD",
             ["source"] = "list_rate",
+            ["pricing_source"] = isEstimated ? "estimated_fallback" : "model_catalog",
             ["provider"] = entry.ProviderId,
             ["user_id"] = userId ?? "",
         }, save: true, ct).ConfigureAwait(false);
@@ -531,6 +574,43 @@ public sealed class CostReportService
                     : $"{n}× {model} ({character})",
                 ct: ct).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Rolls one already-priced API call's list-rate estimate into the project's <c>cost_ledger</c>,
+    /// so chat/vision spend (screenplay, cast, shot-plan classifiers, review) shows up in the same
+    /// "actual spend" total as video/image generation instead of always reading $0 for those
+    /// categories. Video/image already log their own richer event via
+    /// <see cref="RecordVideoGenerationAsync"/>/<see cref="RecordImageGenerationAsync"/> — callers
+    /// must not call this for those kinds, or spend double-counts (see
+    /// <c>ProjectTelemetryService.LogApiCallAsync</c>'s kind filter).
+    /// </summary>
+    public async Task RecordApiCallSpendAsync(ApiCallTelemetry rec, CancellationToken ct = default)
+    {
+        var projectId = rec.ProjectId;
+        var usd = rec.EstimatedUsd ?? 0;
+        if (string.IsNullOrWhiteSpace(projectId) || usd <= 0) return;
+
+        var evt = new Dictionary<string, object?>
+        {
+            ["kind"] = rec.Kind,
+            ["category"] = rec.Category ?? CostCategories.Resolve(rec.Kind, rec.Mode),
+            ["model"] = rec.Model,
+            ["provider"] = rec.Provider,
+            ["mode"] = rec.Mode,
+            ["request_id"] = rec.RequestId ?? "",
+            ["source"] = "list_rate",
+            ["usd"] = Math.Round(usd, 6),
+            ["currency"] = "USD",
+            ["user_id"] = rec.UserId ?? "",
+        };
+        // Only book-level classifiers with no single scene/clip/character omit these — keep the
+        // event dict free of literal nulls rather than writing "scene": null for every such call.
+        if (rec.Scene is { } scene) evt["scene"] = scene;
+        if (rec.Clip is { } clip) evt["clip"] = clip;
+        if (!string.IsNullOrWhiteSpace(rec.CharKey)) evt["char_key"] = rec.CharKey;
+
+        await AppendCostEventAsync(projectId, evt, save: true, ct).ConfigureAwait(false);
     }
 
     // ---- internals ----
@@ -592,17 +672,18 @@ public sealed class CostReportService
         var duration = clip.DurationSec > 0 ? clip.DurationSec : 8;
         var attempts = 1.0 + Math.Max(0, retries);
         var outRate = OutputRate(resolution, rates);
-        var videoOut = duration * outRate * attempts;
+        var baseRate = BaseRate(resolution, rates);
+        var videoOut = (duration * outRate + baseRate) * attempts;
         var refImg = 0.0;
         if (GetBool(rates, "assume_ref_image_per_clip", true))
-            refImg = GetDouble(rates, "video_input_image", 0.002) * attempts;
+            refImg = GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts;
         var extend = 0.0;
         if (string.Equals(clip.Continuation, "extend_previous", StringComparison.OrdinalIgnoreCase))
-            extend = duration * GetDouble(rates, "video_input_per_sec", 0.01) * attempts;
+            extend = duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts;
         return (videoOut + refImg + extend, duration);
     }
 
-    private static (double Usd, double DurationSec, double RatePerSec, double VideoOut, double RefImg, double ExtendIn)
+    internal static (double Usd, double DurationSec, double RatePerSec, double VideoOut, double RefImg, double ExtendIn)
         PriceVideo(
             double durationSec,
             string resolution,
@@ -614,10 +695,11 @@ public sealed class CostReportService
         var duration = Math.Max(0, durationSec);
         attempts = Math.Max(1, attempts);
         var outRate = OutputRate(resolution, rates);
-        var videoOut = duration * outRate * attempts;
-        var refImg = hasRef ? GetDouble(rates, "video_input_image", 0.002) * attempts : 0;
+        var baseRate = BaseRate(resolution, rates);
+        var videoOut = (duration * outRate + baseRate) * attempts;
+        var refImg = hasRef ? GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts : 0;
         var extend = isExtend
-            ? duration * GetDouble(rates, "video_input_per_sec", 0.01) * attempts
+            ? duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts
             : 0;
         var usd = Math.Round(videoOut + refImg + extend, 4);
         return (usd, duration, outRate, Math.Round(videoOut, 4), Math.Round(refImg, 4), Math.Round(extend, 4));
@@ -1079,8 +1161,40 @@ public sealed class CostReportService
             ?? imagePrimary;
 
         var videoTable = BuildVideoRateTable(video);
-        var qualityUnit = imagePrimary.ImageCostPerImage ?? 0.05;
-        var standardUnit = imageStandard.ImageCostPerImage ?? imagePrimary.ImageCostPerImage ?? 0.02;
+        var videoBaseTable = BuildVideoBaseRateTable(video);
+        // True whenever any part of the price had to fall back to a guess rather than this
+        // model's actual catalog data — flows into the recorded cost event below so the ledger
+        // itself shows which numbers are verified vendor pricing vs an unverified placeholder.
+        // A model priced entirely via a flat base fee (no per-second rate at all, e.g. Hunyuan/Wan)
+        // is NOT estimated as long as that base-fee data is real, so check both tables.
+        var videoPricingIsEstimated =
+            video.VideoCostPerSecondByResolution is not { Count: > 0 } &&
+            video.VideoBaseCostByResolution is not { Count: > 0 };
+        var qualityUnit = imagePrimary.ImageCostPerImage ?? FallbackImageQualityCostPerImage;
+        var standardUnit = imageStandard.ImageCostPerImage ?? imagePrimary.ImageCostPerImage ?? FallbackImageStandardCostPerImage;
+        var imagePricingIsEstimated = imagePrimary.ImageCostPerImage is null;
+
+        // Reference-image and extend-per-second add-ons: prefer a real per-model catalog value
+        // (published by the vendor) and only fall back to the small Grok-era estimate when the
+        // catalog has no verified number for this model. As of 2026-08 no enabled video provider
+        // publishes either as a distinct line item (checked against docs.x.ai/developers/pricing for
+        // xAI, the only model with SupportsVideoContinue=true), so these fields are null everywhere
+        // today and the fallback constants apply uniformly — but the catalog is checked first so a
+        // future vendor-verified number takes over automatically.
+        var refImageCostReal = video.VideoReferenceImageCost;
+        var extendCostReal = video.VideoExtendCostPerSecond;
+        var refImageSource = refImageCostReal is not null ? "model_catalog" : "estimated_fallback";
+        var extendSource = extendCostReal is not null ? "model_catalog" : "estimated_fallback";
+
+        // Overall video pricing is only "fully real" when the output pricing (per-second table OR
+        // a flat base fee — a model priced entirely via base fee with no per-second rate, e.g.
+        // Hunyuan/Wan, is real as long as that base-fee data is real, so this isn't per-second-only),
+        // the reference-image add-on, and (only if this model can extend) the extend add-on are all
+        // sourced from the catalog rather than a fallback estimate.
+        var videoOutputIsCatalog = !videoPricingIsEstimated;
+        var videoPricingFullyReal = videoOutputIsCatalog
+            && refImageCostReal is not null
+            && (!video.SupportsVideoContinue || extendCostReal is not null);
 
         var rates = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -1091,14 +1205,18 @@ public sealed class CostReportService
             ["image_model"] = imagePrimary.Id,
             ["image_provider"] = imagePrimary.ProviderId,
             ["video_output_per_sec"] = videoTable,
-            // Reference / extend add-ons — not published per-vendor in the catalog yet; keep small Grok-era defaults.
-            ["video_input_image"] = 0.002,
-            ["video_input_per_sec"] = 0.01,
+            ["video_base_per_video"] = videoBaseTable,
+            ["video_input_image"] = refImageCostReal ?? FallbackVideoRefImageCost,
+            ["video_input_image_source"] = refImageSource,
+            ["video_input_per_sec"] = extendCostReal ?? FallbackVideoExtendCostPerSec,
+            ["video_input_per_sec_source"] = extendSource,
             ["image_output_quality"] = qualityUnit,
             ["image_output_standard"] = standardUnit,
             ["assume_ref_image_per_clip"] = true,
             ["assume_extend_fraction"] = 0.0,
             ["assume_avg_retries"] = 0.0,
+            ["video_pricing_source"] = videoPricingFullyReal ? "model_catalog" : "estimated_fallback",
+            ["image_pricing_source"] = imagePricingIsEstimated ? "estimated_fallback" : "model_catalog",
         };
 
         // Planning knobs only — do not let old manual $/sec tables override vendor rates.
@@ -1151,14 +1269,41 @@ public sealed class CostReportService
         FillMissingRes(table, "480p", "720p", "1080p");
         FillMissingRes(table, "1080p", "720p", "480p");
 
-        // Absolute last resort (Grok-era defaults) if catalog has no video pricing at all.
+        // Absolute last resort if catalog has no video pricing at all for this model — see the
+        // Fallback* constants' doc comment; callers should check video_pricing_source before
+        // treating this as verified.
         if (table.Count == 0)
         {
-            table["480p"] = 0.05;
-            table["720p"] = 0.07;
-            table["1080p"] = 0.25;
+            table["480p"] = FallbackVideoCostPerSec480p;
+            table["720p"] = FallbackVideoCostPerSec720p;
+            table["1080p"] = FallbackVideoCostPerSec1080p;
         }
 
+        return table;
+    }
+
+    /// <summary>
+    /// Per-resolution flat $/video from the catalog entry — the counterpart to
+    /// <see cref="BuildVideoRateTable"/> for providers that bill a fixed fee per generation
+    /// regardless of length (Fal's Hunyuan/Wan, which are frame-count-based, not duration-based).
+    /// Unlike the per-second table, a model with no base-cost data gets an EMPTY table (base = 0
+    /// for every resolution) rather than falling back to some other provider's flat fee — there is
+    /// no sensible "generic" flat-fee guess the way there's a generic per-second one.
+    /// </summary>
+    internal static Dictionary<string, double> BuildVideoBaseRateTable(SupportedModelEntry video)
+    {
+        var table = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        if (video.VideoBaseCostByResolution is { Count: > 0 } src)
+        {
+            foreach (var kv in src)
+            {
+                if (!string.IsNullOrWhiteSpace(kv.Key) && kv.Value >= 0)
+                    table[kv.Key.Trim()] = kv.Value;
+            }
+            FillMissingRes(table, "720p", "1080p", "480p");
+            FillMissingRes(table, "480p", "720p", "1080p");
+            FillMissingRes(table, "1080p", "720p", "480p");
+        }
         return table;
     }
 
@@ -1190,7 +1335,22 @@ public sealed class CostReportService
             if (table.TryGetValue("720p", out var d)) return d;
             if (table.Count > 0) return table.Values.First();
         }
-        return 0.07;
+        return FallbackVideoCostPerSec720p;
+    }
+
+    /// <summary>Flat $/video for this resolution — 0 when the model has no base-cost data (a
+    /// genuinely per-second-only provider like Grok/Veo), never a nonzero guess.</summary>
+    private static double BaseRate(string resolution, Dictionary<string, object?> rates)
+    {
+        var res = (resolution ?? "720p").ToLowerInvariant().Trim();
+        if (rates.TryGetValue("video_base_per_video", out var t) &&
+            t is Dictionary<string, double> table)
+        {
+            if (table.TryGetValue(res, out var r)) return r;
+            if (table.TryGetValue("720p", out var d)) return d;
+            if (table.Count > 0) return table.Values.First();
+        }
+        return 0;
     }
 
     private static string GetStr(Dictionary<string, JsonElement> cfg, string key, string fallback) =>
@@ -1220,7 +1380,10 @@ public sealed class CostReportService
     {
         v = 0;
         if (!e.TryGetProperty(name, out var p)) return false;
-        if (p.TryGetInt32(out v)) return true;
+        // JsonElement.TryGetInt32 throws (not just returns false) when the token is present but not
+        // a Number — e.g. an explicit JSON null (a scene/clip on a book-level, not per-scene, event) —
+        // so gate on ValueKind first rather than treating "property exists" as "property is numeric".
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out v)) return true;
         if (p.ValueKind == JsonValueKind.String && int.TryParse(p.GetString(), out v)) return true;
         return false;
     }
@@ -1229,7 +1392,7 @@ public sealed class CostReportService
     {
         v = 0;
         if (!e.TryGetProperty(name, out var p)) return false;
-        if (p.TryGetDouble(out v)) return true;
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out v)) return true;
         if (p.ValueKind == JsonValueKind.String &&
             double.TryParse(p.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out v))
             return true;

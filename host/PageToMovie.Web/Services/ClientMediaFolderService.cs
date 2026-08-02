@@ -20,6 +20,11 @@ public sealed class ClientMediaFolderService
     /// <summary>Completed saves keyed by projectId|relativePath — a later notification for the same
     /// path (e.g. a single-clip job's "done" tick after its "running" tick already saved it) is a no-op.</summary>
     private readonly HashSet<string> _savedKeys = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Video-extend continuation-source duration (seconds), keyed by projectId|scene|clip,
+    /// set by <see cref="PrepareExtendSourceAsync"/> right before requesting that clip's generation
+    /// and consumed once by <see cref="SaveJobMediaAsync"/> to know where the new content starts
+    /// inside the combined video Grok returns for a real video-extend call.</summary>
+    private readonly Dictionary<string, double> _pendingExtendSourceSeconds = new(StringComparer.OrdinalIgnoreCase);
 
     public ClientMediaFolderService(IJSRuntime js, EngineApiClient api, JobHubClient hub, ActiveProjectState activeProject)
     {
@@ -299,6 +304,40 @@ public sealed class ClientMediaFolderService
 
             var url = snap.ClientMediaUrl!;
 
+            // Real video-extend (see FilmJobService.GenerateOneClipAsync + PrepareExtendSourceAsync
+            // above): this job's video is Grok's combined [continuation-input + new content]
+            // response, not a plain fresh generation. Slice out just the new tail before it ever
+            // becomes this clip's saved/registered file — shipping the raw combined video would
+            // reintroduce the exact "clip contains pieces of the previous clip" bug this feature
+            // exists to fix, so on ANY failure here we surface it and return without saving,
+            // rather than silently falling through to save the un-sliced video.
+            var extendKey = $"{snap.ProjectId}|{snap.Scene}|{snap.Clip}";
+            double? extendSourceSec = null;
+            lock (_pendingExtendSourceSeconds)
+            {
+                if (_pendingExtendSourceSeconds.Remove(extendKey, out var sec))
+                    extendSourceSec = sec;
+            }
+            string? extendSliceBlobUrl = null;
+            if (extendSourceSec is { } srcSec)
+            {
+                var probe = await _js.InvokeAsync<JsProbeResult>("PageToMovieFfmpeg.probeDurationAsync", url);
+                var combinedSec = probe is { Success: true, Seconds: > 0 } ? probe.Seconds : (double?)null;
+                var newDurationSec = combinedSec is { } c && c > srcSec + 0.1 ? c - srcSec : (double?)null;
+                var slice = newDurationSec is { } nd
+                    ? await _js.InvokeAsync<JsTrimTailResult>("PageToMovieFfmpeg.trimTailAsync", url, nd, null)
+                    : null;
+                if (slice is not { Success: true } || string.IsNullOrWhiteSpace(slice.Url))
+                {
+                    LastStatus = $"Video-extend slice failed for {snap.ClientRelativePath} " +
+                                 $"({slice?.Error ?? "duration probe failed"}) — retry the clip.";
+                    Changed?.Invoke();
+                    return;
+                }
+                extendSliceBlobUrl = slice.Url;
+                url = slice.Url;
+            }
+
             // Silence-trim in browser (ffmpeg.wasm) before write. Decision logic
             // (where to cut) lives once in ClipSilenceTrimmer (Core) — JS only does
             // the ffmpeg I/O. Longer breath tail for speech-style clips; lead trim on clip 2+.
@@ -315,7 +354,11 @@ public sealed class ClientMediaFolderService
             string? silenceMessage = null;
             string? trimmedBlobUrl = null;
             var urlToSave = url;
-            if (!isCredits && !isMusic) // credits plate and music tracks have no dialogue to trim silence around
+            // The extend slice is already tightly bounded to the requested new-content duration —
+            // silence-trimming it further risks cutting real content rather than dead air, so skip
+            // that pass entirely for this clip (unlike a plain fresh generation, which can be
+            // arbitrarily longer than its useful content).
+            if (!isCredits && !isMusic && extendSliceBlobUrl is null)
             {
                 var (trimmed, trimUrl, message) = await SilenceTrimAsync(
                     url,
@@ -381,6 +424,11 @@ public sealed class ClientMediaFolderService
                 if (trimmedBlobUrl is not null)
                 {
                     try { await _js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", trimmedBlobUrl); }
+                    catch { /* best effort */ }
+                }
+                if (extendSliceBlobUrl is not null)
+                {
+                    try { await _js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", extendSliceBlobUrl); }
                     catch { /* best effort */ }
                 }
             }
@@ -819,6 +867,27 @@ public sealed class ClientMediaFolderService
         public string? Error { get; set; }
     }
 
+    private sealed class JsTrimTailResult
+    {
+        public bool Success { get; set; }
+        public string? Url { get; set; }
+        public double SourceDurationSec { get; set; }
+        public double KeptSec { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class JsProbeResult
+    {
+        public bool Success { get; set; }
+        public double Seconds { get; set; }
+    }
+
+    private sealed class JsUploadResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+    }
+
     /// <summary>Local blob URLs for a scene's background-music segments (in order), stopping at
     /// the first missing segment. Segment relative paths mirror
     /// MediaRegistryService.MusicSegmentRelativePath in PageToMovie.Engine (Web doesn't reference
@@ -835,6 +904,56 @@ public sealed class ClientMediaFolderService
             urls.Add(url);
         }
         return urls;
+    }
+
+    /// <summary>
+    /// Client-side "prepare" step for real video-extend continuity (see FilmJobService.
+    /// GenerateOneClipAsync): trims the previous clip's current local video down to the model's
+    /// max input length and uploads it as the continuation source for the clip about to be
+    /// generated. Call this before starting generation for <paramref name="clip"/> when the shot
+    /// plan says it wants to extend from clip-1 and the active model supports real continue.
+    /// Never throws and never blocks generation — a false return just means the server won't find
+    /// an extend-source file and falls back to its default fresh-generation behavior, exactly as
+    /// if this feature didn't exist (no local folder connected, no local copy of the previous
+    /// clip yet, or a browser/codec hiccup are all treated the same way).
+    /// </summary>
+    public async Task<bool> PrepareExtendSourceAsync(
+        string projectId, int scene, int clip, double maxInputSeconds)
+    {
+        if (clip <= 1 || !IsConnected) return false;
+        string? trimUrl = null;
+        try
+        {
+            var prevRelPath = $"assets/video/scene_{scene:D2}_clip_{clip - 1:D2}.mp4";
+            var sourceUrl = await GetLocalBlobUrlAsync(projectId, prevRelPath);
+            if (string.IsNullOrWhiteSpace(sourceUrl)) return false;
+
+            var trim = await _js.InvokeAsync<JsTrimTailResult>(
+                "PageToMovieFfmpeg.trimTailAsync", sourceUrl, maxInputSeconds, null);
+            if (trim is not { Success: true } || string.IsNullOrWhiteSpace(trim.Url)) return false;
+            trimUrl = trim.Url;
+
+            var uploadUrl = _api.ClipUploadUrl(projectId, scene, clip, kind: "extend-source");
+            var up = await _js.InvokeAsync<JsUploadResult>(
+                "PageToMovieMedia.uploadUrlToServerAsync", trimUrl, uploadUrl);
+            if (up is not { Success: true }) return false;
+
+            lock (_pendingExtendSourceSeconds)
+                _pendingExtendSourceSeconds[$"{projectId}|{scene}|{clip}"] = trim.KeptSec;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (trimUrl is not null)
+            {
+                try { await _js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", trimUrl); }
+                catch { /* best effort */ }
+            }
+        }
     }
 
     /// <summary>

@@ -123,8 +123,7 @@ public class ClipVideoGenerationLiveTests : IDisposable
             clip, projectDir, chars,
             styleHead:
                 "STYLE LOCK: stylized 3D animated children's picture-book CG " +
-                "(same render family as animal hero) -- not photoreal, not live-action",
-            resolution: "480p");
+                "(same render family as animal hero) -- not photoreal, not live-action");
 
         // Bug 1: STYLE LOCK must be in the assembled prompt
         Assert.Contains("STYLE LOCK", built.Prompt, StringComparison.OrdinalIgnoreCase);

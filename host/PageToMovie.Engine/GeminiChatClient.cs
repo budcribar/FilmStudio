@@ -23,17 +23,20 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     private readonly HttpClient _http;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<GeminiChatClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public GeminiChatClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
-        ILogger<GeminiChatClient> log)
+        ILogger<GeminiChatClient> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _ = opts; // reserved — no Gemini-specific options today
         _http = http;
         _telemetry = telemetry;
         _log = log;
+        _errorLogger = errorLogger;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
         if (_http.Timeout < TimeSpan.FromSeconds(180))
@@ -94,11 +97,13 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
             },
             ["generationConfig"] = generationConfig,
         };
-        return await SendAsync(
-            payload, model, "chat", mode,
-            systemPrompt, userPrompt,
-            (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
-            ct).ConfigureAwait(false);
+        return await SendWithTransientRetryAsync(
+            () => SendAsync(
+                payload, model, "chat", mode,
+                systemPrompt, userPrompt,
+                (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
+                ct),
+            model, mode, ct).ConfigureAwait(false);
     }
 
     /// <summary>Multi-image completion for clip auto-review (prev tail + current frames).</summary>
@@ -127,10 +132,48 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                 new Dictionary<string, object?> { ["role"] = "user", ["parts"] = parts },
             },
         };
-        return await SendAsync(
-            payload, model, "vision", "clip_auto_review",
-            prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
-            prompt.Length, ct).ConfigureAwait(false);
+        return await SendWithTransientRetryAsync(
+            () => SendAsync(
+                payload, model, "vision", "clip_auto_review",
+                prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
+                prompt.Length, ct),
+            model, "clip_auto_review", ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Retries the whole <see cref="SendAsync"/> call (including its internal 404-model-fallback
+    /// and param-shape self-heal recursion, untouched) on 429/5xx or a network/timeout failure.
+    /// Logs each failed attempt via <see cref="GenerationErrorLogger"/> before backing off.
+    /// </summary>
+    private async Task<string> SendWithTransientRetryAsync(
+        Func<Task<string>> call,
+        string model,
+        string? mode,
+        CancellationToken ct)
+    {
+        return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+            _ => call(),
+            isTransient: AiRetryPolicy.IsTransientChatFailure,
+            maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+            backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+            onRetry: async (attemptNum, ex) =>
+            {
+                if (_errorLogger is null) return;
+                var httpStatus = ex is ChatHttpStatusException hse2 ? hse2.StatusCode : (int?)null;
+                await _errorLogger.LogAsync(new GenerationErrorRecord
+                {
+                    Stage = "gemini_chat_completion",
+                    Provider = "gemini",
+                    Model = model,
+                    ErrorType = httpStatus is not null ? "http_error" : "exception",
+                    ErrorMessage = ex.Message,
+                    HttpStatus = httpStatus,
+                    Attempt = attemptNum,
+                    Resolved = false,
+                    RequestSummary = $"mode={mode}",
+                }, ct).ConfigureAwait(false);
+            },
+            ct: ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -238,7 +281,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
+                throw new ChatHttpStatusException((int)resp.StatusCode,
                     $"Gemini {endpoint} HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 
