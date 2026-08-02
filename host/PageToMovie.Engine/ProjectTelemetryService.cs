@@ -90,6 +90,13 @@ public sealed class ProjectTelemetryService
         rec.EstimatedUsd ??= EstimateListRateUsd(rec);
         // Always a user-facing cost bucket (same ids as Estimate & cost pie).
         rec.Category = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
+        // Customer charge = list × admin multiplier (same as cost_ledger / credits).
+        if (rec.EstimatedUsd is > 0 && rec.ChargeUsd is null && _costs is not null)
+        {
+            var mult = _costs.GetChargeMultiplier();
+            rec.ChargeMultiplier = mult;
+            rec.ChargeUsd = PageToMovie.Core.Billing.ChargePricing.ToCharge(rec.EstimatedUsd.Value, mult);
+        }
 
         // Project jsonl (full prompts) when a project is in scope.
         if (!string.IsNullOrWhiteSpace(projectId))
@@ -469,6 +476,10 @@ public sealed class ApiCallTelemetry
     public string? Provider { get; set; }
     /// <summary>List-rate USD estimate at call time (catalog). Not a provider invoice.</summary>
     public double? EstimatedUsd { get; set; }
+    /// <summary>Customer charge USD (list × admin charge multiplier). Per-user tracking.</summary>
+    public double? ChargeUsd { get; set; }
+    /// <summary>Multiplier used when <see cref="ChargeUsd"/> was computed.</summary>
+    public double? ChargeMultiplier { get; set; }
     public int? InputTokens { get; set; }
     public int? OutputTokens { get; set; }
     /// <summary>

@@ -363,6 +363,9 @@ public class UserDatabaseService
 
                 // User-facing cost bucket (screenplay / characters / video / voice / music / other).
                 EnsureColumn(conn, "user_api_calls", "category", "TEXT");
+                // Customer charge (list × admin multiplier) — per-user actual charges.
+                EnsureColumn(conn, "user_api_calls", "charge_usd", "REAL");
+                EnsureColumn(conn, "user_api_calls", "charge_multiplier", "REAL");
                 try
                 {
                     using var idxCmd = conn.CreateCommand();
@@ -828,13 +831,13 @@ public class UserDatabaseService
             cmd.CommandText = @"
                 INSERT INTO user_api_calls (
                     user_id, ts, project_id, job_id, kind, mode, category, provider, model, endpoint,
-                    http_status, ok, duration_ms, estimated_usd, currency,
+                    http_status, ok, duration_ms, estimated_usd, charge_usd, charge_multiplier, currency,
                     scene, clip, char_key, resolution, duration_sec,
                     input_tokens, output_tokens, prompt_chars, response_chars,
                     request_id, error, purpose, fakes)
                 VALUES (
                     @userId, @ts, @projectId, @jobId, @kind, @mode, @category, @provider, @model, @endpoint,
-                    @httpStatus, @ok, @durationMs, @estimatedUsd, @currency,
+                    @httpStatus, @ok, @durationMs, @estimatedUsd, @chargeUsd, @chargeMultiplier, @currency,
                     @scene, @clip, @charKey, @resolution, @durationSec,
                     @inputTokens, @outputTokens, @promptChars, @responseChars,
                     @requestId, @error, @purpose, @fakes)";
@@ -857,6 +860,8 @@ public class UserDatabaseService
             cmd.Parameters.AddWithValue("@ok", rec.Ok ? 1 : 0);
             cmd.Parameters.AddWithValue("@durationMs", (object?)rec.DurationMs ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@estimatedUsd", (object?)rec.EstimatedUsd ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@chargeUsd", (object?)rec.ChargeUsd ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@chargeMultiplier", (object?)rec.ChargeMultiplier ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@currency", "USD");
             cmd.Parameters.AddWithValue("@scene", (object?)rec.Scene ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@clip", (object?)rec.Clip ?? DBNull.Value);

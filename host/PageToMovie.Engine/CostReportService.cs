@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
+using PageToMovie.Core.Billing;
 using PageToMovie.Core.Models;
+using PageToMovie.Core.Options;
 
 // Lets tests exercise the internal rate-table/pricing math (BuildVideoRateTable,
 // BuildVideoBaseRateTable, RatesFromModels) directly, rather than only through the full
@@ -13,8 +16,9 @@ namespace PageToMovie.Engine;
 /// <summary>
 /// Cost ledger (pipeline_state.cost_ledger) + planning estimates from blueprint + list rates.
 /// Rates come from <see cref="SupportedModelCatalog"/> for the project's selected video/image
-/// models (vendor list prices), not free-form config dollars. Ledger events are still estimates,
-/// not provider invoices.
+/// models (vendor list prices), not free-form config dollars. Customer-facing amounts apply the
+/// admin <see cref="BillingOptions.ChargeMultiplier"/>; events store both <c>list_usd</c> and
+/// charged <c>usd</c>.
 /// </summary>
 public sealed class CostReportService
 {
@@ -39,6 +43,7 @@ public sealed class CostReportService
     private readonly CreditService? _credits;
     private readonly UserDatabaseService? _userDb;
     private readonly ClipTimingTelemetryRepository? _timingDb;
+    private readonly IOptions<PageToMovieOptions>? _opts;
 
     private const int MinApiSamples = 8;
     private const int MinTimingSamples = 5;
@@ -68,13 +73,19 @@ public sealed class CostReportService
         ProjectStore projects,
         CreditService? credits = null,
         UserDatabaseService? userDb = null,
-        ClipTimingTelemetryRepository? timingDb = null)
+        ClipTimingTelemetryRepository? timingDb = null,
+        IOptions<PageToMovieOptions>? opts = null)
     {
         _projects = projects;
         _credits = credits;
         _userDb = userDb;
         _timingDb = timingDb;
+        _opts = opts;
     }
+
+    /// <summary>Current admin charge multiplier (hot-applied via runtime config onto options).</summary>
+    public double GetChargeMultiplier() =>
+        ChargePricing.ClampMultiplier(_opts?.Value.Billing?.ChargeMultiplier ?? 1.0);
 
     public async Task<CostReport> GetReportAsync(
         string projectId,
@@ -230,7 +241,7 @@ public sealed class CostReportService
         var audioModel = GetStr(cfg, "audio_model_name", "");
 
         var castPlan = EstimateCharacterGeneration(projectId, rates, cfg);
-        var voicePlan = EstimateVoiceGeneration(projectId, rates, cfg);
+        var voicePlan = EstimateVoiceGeneration(projectId, blueprintClips, rates, cfg);
         var musicPlan = EstimateMusicGeneration(blueprintClips, rates, cfg);
         var planningPlan = EstimatePlanningWork(blueprintClips, estimateBasis, rates, cfg);
         var reviewPlan = EstimateAutomatedReview(
@@ -275,6 +286,42 @@ public sealed class CostReportService
             _ => "Import a book to unlock a film estimate.",
         };
 
+        var mult = GetChargeMultiplier();
+        // Snapshot list-rate category totals before applying charge multiplier for customer display.
+        var estimateList = estimateByCategory.ToDictionary(
+            kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+        ApplyChargeMultiplierInPlace(estimateByCategory, mult);
+        spent = ChargePricing.ToCharge(spent, mult);
+        remainingDraft = ChargePricing.ToCharge(remainingDraft, mult);
+        remainingHero = ChargePricing.ToCharge(remainingHero, mult);
+        fullDraft = ChargePricing.ToCharge(fullDraft, mult);
+        fullHero = ChargePricing.ToCharge(fullHero, mult);
+        foreach (var row in rows)
+        {
+            row.SpentUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.SpentUsd, mult));
+            row.RemainingDraftUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.RemainingDraftUsd, mult));
+            row.HeroUpgradeUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.HeroUpgradeUsd, mult));
+            row.AllDraftUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.AllDraftUsd, mult));
+            row.AllHeroUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.AllHeroUsd, mult));
+            // ActualUsd on scene rows already charged when events store charge amounts.
+        }
+        foreach (var sc in scenarios)
+        {
+            sc.FullFilmUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(sc.FullFilmUsd, mult));
+            sc.RemainingMissingUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(sc.RemainingMissingUsd, mult));
+            sc.RegenOnDiskUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(sc.RegenOnDiskUsd, mult));
+        }
+
+        var listFullDraft = estimateList.Values.Sum();
+        var listFullHero = ChargePricing.RoundMoney(
+            catalogVideoHero * videoScale +
+            estimateList.GetValueOrDefault(CostCategories.Screenplay) +
+            estimateList.GetValueOrDefault(CostCategories.Characters) +
+            estimateList.GetValueOrDefault(CostCategories.Voice) +
+            estimateList.GetValueOrDefault(CostCategories.Music) +
+            estimateList.GetValueOrDefault(CostCategories.Review) +
+            estimateList.GetValueOrDefault(CostCategories.Other));
+
         return new CostReport
         {
             ProjectId = projectId,
@@ -288,6 +335,7 @@ public sealed class CostReportService
             VoiceModelName = voicePlan.Included ? voiceModel : null,
             EstimateBasis = estimateBasis,
             VoiceIncludedInEstimate = voicePlan.Included,
+            ChargeMultiplier = mult,
             OutputRateDraft = OutputRate(draftRes, draftRates),
             OutputRateHero = OutputRate(heroRes, heroRates),
             AssumeAvgRetries = retries,
@@ -310,12 +358,15 @@ public sealed class CostReportService
                 FinishFromActualUsd = Math.Round(actual.ActualUsd + remainingDraft, 2),
                 FullFilmAllDraftUsd = Math.Round(fullDraft, 2),
                 FullFilmAllHeroUsd = Math.Round(fullHero, 2),
+                FullFilmAllDraftListUsd = Math.Round(listFullDraft, 2),
+                FullFilmAllHeroListUsd = listFullHero,
                 ScenesWithMedia = rows.Count(r => r.ClipsOnDisk > 0),
                 ScenesHero = rows.Count(r => r.IsHero),
                 ScenesTotal = rows.Count,
             },
             Actual = actual,
             EstimateByCategory = estimateByCategory,
+            EstimateByCategoryListRate = estimateList,
             Refinement = refinement,
             Scenes = rows,
             Scenarios = scenarios,
@@ -327,12 +378,19 @@ public sealed class CostReportService
                 basisNote + " " +
                 $"Rates from selected models (video={videoModel}, image={imageModel}" +
                 (voicePlan.Included ? $", voice={voiceModel}" : "") + "). " +
+                $"Charge multiplier ×{mult:0.##} on estimates and new actual charges. " +
                 (qaRetryOnFail
                     ? $"Quality gate retry ON (admin auto-regen; video ×{qaVideoMultiplier:0.##}). "
                     : "Quality gate retry OFF. ") +
                 (string.IsNullOrWhiteSpace(refinement.Notes) ? "" : refinement.Notes + " ") +
-                "Actual = tracked spend at list rates when work completed.",
+                "Actual = charged amounts in cost_ledger (list_usd retained for COGS).",
         };
+    }
+
+    private static void ApplyChargeMultiplierInPlace(Dictionary<string, double> byCategory, double mult)
+    {
+        foreach (var key in byCategory.Keys.ToList())
+            byCategory[key] = ChargePricing.RoundMoney(ChargePricing.ToCharge(byCategory[key], mult));
     }
 
     public async Task<CostBackfillResult> BackfillFromDiskAsync(
@@ -470,6 +528,9 @@ public sealed class CostReportService
             imageModelId: GetStr(cfg, "image_model_name", ""),
             cfgOverrides: cfg);
         var priced = PriceVideo(durationSec, resolution, rates, hasRefImage, isExtend, 1);
+        var mult = GetChargeMultiplier();
+        var listUsd = priced.Usd;
+        var chargeUsd = ChargePricing.ToCharge(listUsd, mult);
         var evt = new Dictionary<string, object?>
         {
             ["kind"] = "video",
@@ -491,7 +552,9 @@ public sealed class CostReportService
             ["video_output_usd"] = priced.VideoOut,
             ["ref_image_usd"] = priced.RefImg,
             ["extend_input_usd"] = priced.ExtendIn,
-            ["usd"] = priced.Usd,
+            ["list_usd"] = listUsd,
+            ["charge_multiplier"] = mult,
+            ["usd"] = chargeUsd,
             ["currency"] = "USD",
             ["user_id"] = userId ?? "",
         };
@@ -508,14 +571,14 @@ public sealed class CostReportService
 
         await AppendCostEventAsync(projectId, evt, save: true, ct).ConfigureAwait(false);
 
-        if (_credits is not null && priced.Usd > 0)
+        if (_credits is not null && chargeUsd > 0)
         {
             await _credits.TryDebitUsageAsync(
                 userId,
-                priced.Usd,
+                chargeUsd,
                 projectId,
                 metaKind: "video",
-                note: $"S{scene:D2}C{clip} {model} {priced.DurationSec:F1}s",
+                note: $"S{scene:D2}C{clip} {model} {priced.DurationSec:F1}s ×{mult:0.##}",
                 ct: ct).ConfigureAwait(false);
         }
     }
@@ -546,7 +609,9 @@ public sealed class CostReportService
         var isEstimated = entry?.ImageCostPerImage is null;
         var unit = entry?.ImageCostPerImage
                    ?? (quality ? FallbackImageQualityCostPerImage : FallbackImageStandardCostPerImage);
-        var usd = Math.Round(unit * n, 4);
+        var listUsd = Math.Round(unit * n, 4);
+        var mult = GetChargeMultiplier();
+        var chargeUsd = ChargePricing.ToCharge(listUsd, mult);
         await AppendCostEventAsync(projectId, new Dictionary<string, object?>
         {
             ["kind"] = "image",
@@ -555,7 +620,9 @@ public sealed class CostReportService
             ["character"] = character ?? "",
             ["n_images"] = n,
             ["unit_usd"] = unit,
-            ["usd"] = usd,
+            ["list_usd"] = listUsd,
+            ["charge_multiplier"] = mult,
+            ["usd"] = chargeUsd,
             ["currency"] = "USD",
             ["source"] = "list_rate",
             ["pricing_source"] = isEstimated ? "estimated_fallback" : "model_catalog",
@@ -563,16 +630,16 @@ public sealed class CostReportService
             ["user_id"] = userId ?? "",
         }, save: true, ct).ConfigureAwait(false);
 
-        if (_credits is not null && usd > 0)
+        if (_credits is not null && chargeUsd > 0)
         {
             await _credits.TryDebitUsageAsync(
                 userId,
-                usd,
+                chargeUsd,
                 projectId,
                 metaKind: "image",
                 note: string.IsNullOrWhiteSpace(character)
-                    ? $"{n}× {model}"
-                    : $"{n}× {model} ({character})",
+                    ? $"{n}× {model} ×{mult:0.##}"
+                    : $"{n}× {model} ({character}) ×{mult:0.##}",
                 ct: ct).ConfigureAwait(false);
         }
     }
@@ -589,8 +656,11 @@ public sealed class CostReportService
     public async Task RecordApiCallSpendAsync(ApiCallTelemetry rec, CancellationToken ct = default)
     {
         var projectId = rec.ProjectId;
-        var usd = rec.EstimatedUsd ?? 0;
-        if (string.IsNullOrWhiteSpace(projectId) || usd <= 0) return;
+        var listUsd = rec.EstimatedUsd ?? 0;
+        if (string.IsNullOrWhiteSpace(projectId) || listUsd <= 0) return;
+
+        var mult = GetChargeMultiplier();
+        var chargeUsd = ChargePricing.ToCharge(listUsd, mult);
 
         var evt = new Dictionary<string, object?>
         {
@@ -601,7 +671,9 @@ public sealed class CostReportService
             ["mode"] = rec.Mode,
             ["request_id"] = rec.RequestId ?? "",
             ["source"] = "list_rate",
-            ["usd"] = Math.Round(usd, 6),
+            ["list_usd"] = Math.Round(listUsd, 6),
+            ["charge_multiplier"] = mult,
+            ["usd"] = chargeUsd,
             ["currency"] = "USD",
             ["user_id"] = rec.UserId ?? "",
         };
@@ -612,6 +684,18 @@ public sealed class CostReportService
         if (!string.IsNullOrWhiteSpace(rec.CharKey)) evt["char_key"] = rec.CharKey;
 
         await AppendCostEventAsync(projectId, evt, save: true, ct).ConfigureAwait(false);
+
+        // Debit customer charge for TTS/chat/review/etc. (video/image debit elsewhere).
+        if (_credits is not null && chargeUsd > 0 && !string.IsNullOrWhiteSpace(rec.UserId))
+        {
+            await _credits.TryDebitUsageAsync(
+                rec.UserId,
+                chargeUsd,
+                projectId,
+                metaKind: rec.Kind ?? "api",
+                note: $"{rec.Kind}/{rec.Mode} ×{mult:0.##}",
+                ct: ct).ConfigureAwait(false);
+        }
     }
 
     // ---- internals ----
@@ -708,7 +792,7 @@ public sealed class CostReportService
 
     private static CostLedgerSummary SummarizeLedger(IReadOnlyList<CostEvent> events)
     {
-        double total = 0, videoSec = 0;
+        double total = 0, listTotal = 0, videoSec = 0;
         var byKind = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var byScene = new Dictionary<string, double>(StringComparer.Ordinal);
         var byModel = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -717,6 +801,7 @@ public sealed class CostReportService
         foreach (var e in events)
         {
             total += e.Usd;
+            listTotal += e.ListUsd ?? e.Usd;
             var kind = string.IsNullOrEmpty(e.Kind) ? "other" : e.Kind;
             byKind[kind] = byKind.GetValueOrDefault(kind) + e.Usd;
             if (e.Scene is int sn)
@@ -740,6 +825,7 @@ public sealed class CostReportService
         return new CostLedgerSummary
         {
             ActualUsd = Math.Round(total, 2),
+            ListRateUsd = Math.Round(listTotal, 2),
             EventCount = events.Count,
             VideoJobs = videoJobs,
             ImageJobs = imageJobs,
@@ -768,6 +854,8 @@ public sealed class CostReportService
             Resolution = e.TryGetProperty("resolution", out var r) ? r.GetString() : null,
             DurationSec = TryGetDouble(e, "duration_sec", out var d) ? d : null,
             Usd = TryGetDouble(e, "usd", out var u) ? u : 0,
+            ListUsd = TryGetDouble(e, "list_usd", out var lu) ? lu : null,
+            ChargeMultiplier = TryGetDouble(e, "charge_multiplier", out var cm) ? cm : null,
             Currency = e.TryGetProperty("currency", out var c) ? c.GetString() ?? "USD" : "USD",
             Source = e.TryGetProperty("source", out var s) ? s.GetString() : null,
             Character = e.TryGetProperty("character", out var ch) ? ch.GetString() : null,
@@ -985,6 +1073,8 @@ public sealed class CostReportService
                         Continuation = c.TryGetProperty("veo_continuation_source", out var cont)
                             ? cont.GetString() ?? "none"
                             : "none",
+                        DialogueCharCount = CountClipDialogueChars(c),
+                        Speaker = ReadClipSpeaker(c),
                     });
                 }
             }
@@ -1566,17 +1656,19 @@ public sealed class CostReportService
     }
 
     /// <summary>
-    /// Personal voice only when the project has opted in (clone samples / profiles) or
-    /// cost_estimates.include_voice is true. Priced from voice model catalog when present.
+    /// Voice / re-voice estimate: clone fees + TTS from dialogue volume × catalog
+    /// <c>CostPerThousandCharsUsd</c> (aligned with speak-batch actuals).
     /// </summary>
     private ScopeEstimate EstimateVoiceGeneration(
         string projectId,
+        List<BlueprintSceneClips> scenes,
         Dictionary<string, object?> rates,
         Dictionary<string, JsonElement> cfg)
     {
         var include = false;
-        double cloneUsd = 0.0;
-        double ttsPerCharUsd = 0.0;
+        double cloneUsdOverride = -1;
+        double ttsPerCharOverride = -1; // flat $ per speaking character (legacy knob)
+        double ttsPerThousandOverride = -1;
 
         if (cfg.TryGetValue("cost_estimates", out var ce) && ce.ValueKind == JsonValueKind.Object)
         {
@@ -1584,44 +1676,122 @@ public sealed class CostReportService
                 iv.ValueKind is JsonValueKind.True or JsonValueKind.False)
                 include = iv.GetBoolean();
             if (ce.TryGetProperty("voice_clone_usd", out var vc) && vc.TryGetDouble(out var v1))
-                cloneUsd = v1;
+                cloneUsdOverride = v1;
             if (ce.TryGetProperty("voice_tts_per_character_usd", out var vt) && vt.TryGetDouble(out var v2))
-                ttsPerCharUsd = v2;
+                ttsPerCharOverride = v2;
+            if (ce.TryGetProperty("voice_tts_per_thousand_chars_usd", out var vt2) && vt2.TryGetDouble(out var v3))
+                ttsPerThousandOverride = v3;
         }
 
         var chars = _projects.ListCharacters(projectId);
         var withVoice = chars.Where(c =>
-            c.HasVoiceCloneSample || !string.IsNullOrWhiteSpace(c.VoiceProfile)).ToList();
+            c.HasVoiceCloneSample ||
+            !string.IsNullOrWhiteSpace(c.VoiceProfile) ||
+            !string.IsNullOrWhiteSpace(c.VoiceProviderVoiceId)).ToList();
         if (withVoice.Count > 0)
             include = true;
 
-        if (!include || chars.Count == 0)
+        // Shot plan with dialogue ⇒ speak-batch / re-voice is in scope even without a sample yet.
+        var dialogueChars = 0;
+        var dialogueClips = 0;
+        foreach (var s in scenes)
+        {
+            foreach (var c in s.Clips)
+            {
+                if (c.DialogueCharCount <= 0) continue;
+                dialogueChars += c.DialogueCharCount;
+                dialogueClips++;
+            }
+        }
+        if (dialogueChars > 0)
+            include = true;
+
+        if (!include || (chars.Count == 0 && dialogueChars == 0))
             return new ScopeEstimate(0, 0, Included: false);
 
-        // Prefer catalog voice entry if it ever gains unit prices; else planning knobs / defaults.
         var voiceId = GetStr(cfg, "voice_model_name", "");
-        var voiceEntry = SupportedModelCatalog.Find(voiceId, ModelCapability.Voice);
-        // Defaults: clone ~$0.00 when sample already on disk; TTS dialogue budget per speaking role.
-        if (cloneUsd <= 0) cloneUsd = 0.0; // clone API often free tier / included — keep 0 unless configured
-        if (ttsPerCharUsd <= 0) ttsPerCharUsd = 0.12; // rough list-rate stand-in per speaking character
+        var voiceEntry = SupportedModelCatalog.Find(voiceId, ModelCapability.Voice)
+                         ?? SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                             .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Enabled);
 
-        var targets = withVoice.Count > 0 ? withVoice : chars.Where(c => !c.VoiceOnly).ToList();
-        if (targets.Count == 0)
-            targets = chars.ToList();
-
-        double total = 0, remaining = 0;
-        foreach (var c in targets)
+        // Prefer speak model (not clone step) for TTS $/1k chars.
+        if (voiceEntry is { IsVoiceCloneStep: true })
         {
-            var line = ttsPerCharUsd + (c.HasVoiceCloneSample ? 0 : cloneUsd);
-            total += line;
-            // Still generating film dialogue for everyone in scope until video is done — keep remaining = total for now
-            // unless voice profile already approved and we only need TTS at film time (still unpaid).
-            remaining += line;
+            voiceEntry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Enabled &&
+                    string.Equals(m.ProviderId, voiceEntry.ProviderId, StringComparison.OrdinalIgnoreCase))
+                ?? voiceEntry;
         }
 
-        _ = voiceEntry;
+        var cloneEntry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+            .FirstOrDefault(m => m.IsVoiceCloneStep && m.Enabled &&
+                (voiceEntry is null ||
+                 string.Equals(m.ProviderId, voiceEntry.ProviderId, StringComparison.OrdinalIgnoreCase)));
+
+        var perThousand = ttsPerThousandOverride >= 0
+            ? ttsPerThousandOverride
+            : voiceEntry?.CostPerThousandCharsUsd ?? 0.10;
+        var cloneUsd = cloneUsdOverride >= 0
+            ? cloneUsdOverride
+            : cloneEntry?.CostPerCloneUsd ?? 0.0;
+
+        // Clone: once per character that still needs a sample (or one narrator slot if none listed).
+        double total = 0, remaining = 0;
+        var cloneTargets = withVoice.Count > 0
+            ? withVoice
+            : chars.Where(c =>
+                string.Equals(c.Key, "Character_Narrator", StringComparison.OrdinalIgnoreCase) ||
+                (c.Key?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        if (cloneTargets.Count == 0 && dialogueChars > 0)
+        {
+            // Narrator re-voice path without seeds loaded: one clone slot.
+            total += cloneUsd;
+            remaining += cloneUsd;
+        }
+        else
+        {
+            foreach (var c in cloneTargets)
+            {
+                if (c.HasVoiceCloneSample || !string.IsNullOrWhiteSpace(c.VoiceProviderVoiceId))
+                    continue;
+                total += cloneUsd;
+                remaining += cloneUsd;
+            }
+        }
+
+        // TTS: dialogue characters × catalog rate (speak-batch style).
+        if (dialogueChars > 0)
+        {
+            var tts = perThousand * dialogueChars / 1000.0;
+            total += tts;
+            remaining += tts;
+        }
+        else if (ttsPerCharOverride >= 0)
+        {
+            // Legacy flat per-character when no blueprint dialogue yet.
+            var targets = withVoice.Count > 0 ? withVoice : chars.ToList();
+            foreach (var _ in targets)
+            {
+                total += ttsPerCharOverride;
+                remaining += ttsPerCharOverride;
+            }
+        }
+        else if (scenes.Count > 0)
+        {
+            // Rough: ~12 chars/sec of clip duration for clips without dialogue text.
+            var sec = scenes.Sum(s => s.Clips.Sum(c => c.DurationSec));
+            var approxChars = (int)Math.Round(sec * 12);
+            if (approxChars > 0)
+            {
+                var tts = perThousand * approxChars / 1000.0;
+                total += tts;
+                remaining += tts;
+            }
+        }
+
         _ = rates;
-        return new ScopeEstimate(Math.Round(total, 4), Math.Round(remaining, 4), Included: true);
+        _ = dialogueClips;
+        return new ScopeEstimate(Math.Round(total, 4), Math.Round(remaining, 4), Included: total > 0 || include);
     }
 
     /// <summary>Background music: one track per scene with media plan, using audio model if priced.</summary>
@@ -1918,5 +2088,32 @@ public sealed class CostReportService
         public int ClipNumber { get; set; }
         public double DurationSec { get; set; }
         public string Continuation { get; set; } = "none";
+        public int DialogueCharCount { get; set; }
+        public string? Speaker { get; set; }
+    }
+
+    private static int CountClipDialogueChars(JsonElement c)
+    {
+        var dialogue = "";
+        if (c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
+            ap.TryGetProperty("dialogue", out var d))
+            dialogue = d.GetString() ?? "";
+        if (string.IsNullOrWhiteSpace(dialogue) && c.TryGetProperty("dialogue", out var rootD))
+            dialogue = rootD.GetString() ?? "";
+        dialogue = (dialogue ?? "").Trim();
+        return dialogue.Length;
+    }
+
+    private static string? ReadClipSpeaker(JsonElement c)
+    {
+        if (c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
+            ap.TryGetProperty("speaker", out var sp))
+        {
+            var s = sp.GetString();
+            if (!string.IsNullOrWhiteSpace(s)) return s;
+        }
+        if (c.TryGetProperty("speaker", out var rootSp))
+            return rootSp.GetString();
+        return null;
     }
 }

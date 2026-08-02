@@ -53,6 +53,18 @@
             </div>
 
             <div class="card mb-3">
+                <div class="card-header">Billing · customer charge</div>
+                <div class="card-body">
+                    <label class="form-label">Charge multiplier</label>
+                    <InputNumber class="form-control" @bind-Value="_chargeMultiplier" step="0.05" min="0" max="100" />
+                    <div class="form-text">
+                        Applied to estimates and actual charges (list rate × multiplier).
+                        1.0 = vendor list rate; 1.5 = 50% markup. Debits credits at the charged amount.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between">
                     <span>Fakes</span>
                     @if (_cfg.RestartRequired?.Contains("UseFakes") == true)
@@ -113,6 +125,7 @@
     private int _videoDelayMs = 200;
     private double _failRate;
     private int _rateLimitEveryN;
+    private double _chargeMultiplier = 1.0;
 
     private bool _started;
 
@@ -149,6 +162,7 @@
                 _videoDelayMs = _cfg.Fakes?.VideoDelayMs ?? 200;
                 _failRate = _cfg.Fakes?.FailRate ?? 0;
                 _rateLimitEveryN = _cfg.Fakes?.RateLimitEveryN ?? 0;
+                _chargeMultiplier = _cfg.ChargeMultiplier > 0 ? _cfg.ChargeMultiplier : 1.0;
             }
         }
         catch (Exception ex)
@@ -181,8 +195,9 @@
                     RateLimitEveryN = _rateLimitEveryN,
                 },
                 UseFakes = _useFakes,
+                ChargeMultiplier = _chargeMultiplier,
             });
-            _message = "Saved and applied (capacity hot; UseFakes may need restart for client DI).";
+            _message = "Saved and applied (capacity + charge multiplier hot; UseFakes may need restart for client DI).";
         }
         catch (Exception ex)
         {
