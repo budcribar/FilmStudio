@@ -438,7 +438,10 @@ public static class AdaptationSessionPilot
             await File.WriteAllTextAsync(dualAttachPath, PrettyJson(dualAttachJson), ct).ConfigureAwait(false);
 
             Console.WriteLine($"🧪 [experiment] Dual-attach bytes sent: {dualAttachBytes} (vs. chained clip-plan stage above)");
-            PrintCostSummary(workspaceRoot, dualAttachTokens);
+            PrintCostSummary(
+                workspaceRoot, dualAttachTokens, outDir, "_dualattach_clipplan",
+                dualAttachBytes, new FileInfo(indexedBookPath).Length,
+                bookResent: false); // re-attached by file_id, not resent as bytes — see PrintCostSummary doc
         }
 
         // ---- Stage 6: audio plan (batched — a 68-scene unbatched call was observed to silently
@@ -538,7 +541,9 @@ public static class AdaptationSessionPilot
         Console.WriteLine();
         Console.WriteLine($"📦 Package: {outDir}");
         Console.WriteLine($"📶 Total NEW bytes sent across all follow-up stages this run: {totalRequestBytes} (book resent: 0 times)");
-        PrintCostSummary(workspaceRoot, tokensByModel);
+        PrintCostSummary(
+            workspaceRoot, tokensByModel, outDir, "",
+            totalRequestBytes, new FileInfo(indexedBookPath).Length, bookResent: false);
         Console.WriteLine(report.Status == "pass"
             ? "✅ Validation: PASS"
             : $"❌ Validation: FAIL — {report.Failures.Count} failure(s), {report.Warnings.Count} warning(s)");
@@ -862,7 +867,10 @@ public static class AdaptationSessionPilot
         Console.WriteLine();
         Console.WriteLine($"📦 [full experiment] Package suffix: _dualattach_full");
         Console.WriteLine($"📶 [full experiment] Total NEW bytes sent: {totalBytesAlt} (independent calls, no chain)");
-        PrintCostSummary(workspaceRoot, tokensByModelAlt);
+        PrintCostSummary(
+            workspaceRoot, tokensByModelAlt, outDir, "_dualattach_full",
+            totalBytesAlt, new FileInfo(Path.Combine(outDir, "book_indexed.txt")).Length,
+            bookResent: false); // re-attached by file_id, not resent as bytes — see PrintCostSummary doc
         Console.WriteLine(reportAlt.Status == "pass"
             ? "✅ [full experiment] Validation: PASS"
             : $"❌ [full experiment] Validation: FAIL — {reportAlt.Failures.Count} failure(s), {reportAlt.Warnings.Count} warning(s)");
@@ -1683,20 +1691,38 @@ public static class AdaptationSessionPilot
         return null;
     }
 
-    private static void PrintCostSummary(string workspaceRoot, Dictionary<string, (long Input, long Output, long Cached)> tokensByModel)
+    /// <summary>
+    /// Prints the per-model token/cost breakdown (as before) and — new — persists it to
+    /// <c>cost_summary{suffix}.json</c> next to the other artifacts. Previously this data only ever
+    /// reached the console: real, accurate numbers (actual billed `usage.input_tokens`/
+    /// `output_tokens` from the API response, priced via the product's own models_catalog.json) were
+    /// computed correctly but thrown away the moment the process exited, so the pilot's core "prove
+    /// staged calls are much smaller than resending the whole book" claim had no durable evidence
+    /// beyond a scene-count validation report. This closes that gap for every future run.
+    /// </summary>
+    private static void PrintCostSummary(
+        string workspaceRoot,
+        Dictionary<string, (long Input, long Output, long Cached)> tokensByModel,
+        string? outDir = null,
+        string suffix = "",
+        long totalRequestBytes = 0,
+        long? bookBytes = null,
+        bool bookResent = false)
     {
         double totalCost = 0;
         var anyPricing = false;
+        var perModel = new List<Dictionary<string, object?>>();
         foreach (var (modelId, usage) in tokensByModel)
         {
             var pricing = LookupModelPricing(workspaceRoot, modelId);
             var inputM = usage.Input / 1_000_000.0;
             var outputM = usage.Output / 1_000_000.0;
+            double? cost = null;
             if (pricing is { } p)
             {
                 anyPricing = true;
-                var cost = inputM * p.InputPerM + outputM * p.OutputPerM;
-                totalCost += cost;
+                cost = inputM * p.InputPerM + outputM * p.OutputPerM;
+                totalCost += cost.Value;
                 Console.WriteLine(
                     $"   {modelId}: input={usage.Input} (cached={usage.Cached}) output={usage.Output} tokens — ${cost:F4}");
             }
@@ -1704,9 +1730,38 @@ public static class AdaptationSessionPilot
             {
                 Console.WriteLine($"   {modelId}: input={usage.Input} (cached={usage.Cached}) output={usage.Output} tokens — price unknown");
             }
+            perModel.Add(new Dictionary<string, object?>
+            {
+                ["model"] = modelId,
+                ["inputTokens"] = usage.Input,
+                ["cachedInputTokens"] = usage.Cached,
+                ["outputTokens"] = usage.Output,
+                ["costUsd"] = cost,
+            });
         }
         if (anyPricing)
             Console.WriteLine($"💵 Estimated real cost this run: ${totalCost:F4} (from actual billed token usage, not byte counts)");
+
+        if (outDir is null) return;
+        var summary = new Dictionary<string, object?>
+        {
+            ["generatedAtUtc"] = DateTime.UtcNow.ToString("O"),
+            ["bookBytes"] = bookBytes,
+            ["bookResentDuringRun"] = bookResent,
+            ["totalNewRequestBytesThisRun"] = totalRequestBytes,
+            ["totalCostUsd"] = anyPricing ? totalCost : (double?)null,
+            ["perModel"] = perModel,
+        };
+        try
+        {
+            var path = Path.Combine(outDir, $"cost_summary{suffix}.json");
+            File.WriteAllText(path, JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }));
+            Console.WriteLine($"💾 Cost summary saved: {path}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️  Could not save cost_summary{suffix}.json: {ex.Message}");
+        }
     }
 
     private static SessionRecord? LoadSession(string path)
