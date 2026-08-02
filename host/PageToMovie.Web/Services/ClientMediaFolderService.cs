@@ -155,9 +155,12 @@ public sealed class ClientMediaFolderService
             if (r is { Success: true })
             {
                 FolderName = r.FolderName;
-                await RefreshFullPathAsync();
-                LastStatus = $"Media folder: {FullPath ?? FolderName}";
-                LocalSaveWarning = null; // folder connected — clear fallback warning
+                FullPath = null;
+                try { await _js.InvokeVoidAsync("PageToMovieMedia.setFullPath", (string?)null); } catch { /* ignore */ }
+                LastStatus = $"Media folder: {FolderName}";
+                LocalSaveWarning = null;
+                NeedsReconnect = false;
+                PendingReconnectFolderName = null;
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
                 TriggerAutoSyncIfConnected();

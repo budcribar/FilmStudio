@@ -338,48 +338,57 @@
         <div class="card-body py-3">
             <div class="row align-items-stretch g-3">
                 <div class="col-md-7">
-                    <div class="fw-semibold mb-1">Local Computer Media Folder</div>
+                    <div class="fw-semibold mb-1">Local media folder</div>
+                    <p class="small text-muted mb-2">
+                        Clips and audio save on <strong>this computer</strong> via the Chrome/Edge folder picker.
+                        One button selects the folder — no typed paths.
+                    </p>
                     @if (MediaFolder.IsConnected)
                     {
-                        <div class="d-flex flex-column gap-2 mb-2">
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1 text-break" data-testid="config-media-full-path">
-                                    📁 <strong>Full Path:</strong> @(MediaFolder.FullPath ?? MediaFolder.FolderName ?? "Local Media Directory")
-                                </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1 text-break" data-testid="config-media-folder-name">
+                                @(MediaFolder.FolderName ?? MediaFolder.FullPath ?? "Selected folder")
                             </div>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <button type="button" class="btn btn-sm btn-outline-info" @onclick="OpenFileExplorerForMediaFolderAsync" title="Open this folder in Windows File Explorer" data-testid="config-open-media-explorer">
-                                    📂 Open in File Explorer
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PromptEditMediaFolderPathAsync">
-                                    ✏️ Edit Path
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ConnectMediaFolderAsync">
-                                    Change folder…
-                                </button>
-                            </div>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0"
+                                    data-testid="config-select-media-folder"
+                                    disabled="@_busy"
+                                    @onclick="ConnectMediaFolderAsync">
+                                Change folder
+                            </button>
                         </div>
                         <div class="small text-muted">
-                            All video clips for <strong>@_projectId</strong> are saved directly to this folder on your computer.
+                            Media for <strong>@_projectId</strong> is written here.
                         </div>
                     }
                     else if (MediaFolder.NeedsReconnect)
                     {
-                        <div class="alert alert-warning py-2 small mb-2 d-flex justify-content-between align-items-center gap-2">
-                            <span>Re-grant permission to reconnect <strong>@(MediaFolder.PendingReconnectFolderName ?? "local folder")</strong></span>
-                            <button type="button" class="btn btn-sm btn-warning" @onclick="ReconnectMediaFolderAsync">
-                                1-Click Reconnect
-                            </button>
+                        <div class="alert alert-warning py-2 small mb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <span>Browser needs permission again for <strong>@(MediaFolder.PendingReconnectFolderName ?? "your folder")</strong>.</span>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-warning" data-testid="config-reconnect-media-folder" @onclick="ReconnectMediaFolderAsync">
+                                    Reconnect
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-testid="config-select-media-folder" @onclick="ConnectMediaFolderAsync">
+                                    Choose different folder
+                                </button>
+                            </div>
                         </div>
                     }
                     else
                     {
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <button type="button" class="btn btn-sm btn-primary" @onclick="ConnectMediaFolderAsync">
-                                📁 Connect Local Media Folder
-                            </button>
-                            <span class="small text-muted">Select a folder on your computer to save MP4 video clips directly to disk.</span>
-                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-primary"
+                                data-testid="config-select-media-folder"
+                                disabled="@_busy"
+                                @onclick="ConnectMediaFolderAsync">
+                            Select folder
+                        </button>
+                        <div class="form-text">Opens your system folder picker.</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(MediaFolder.LastStatus))
+                    {
+                        <div class="small text-muted mt-2" data-testid="config-media-status">@MediaFolder.LastStatus</div>
                     }
                 </div>
                 <div class="col-md-5 border-start border-secondary ps-md-4">
@@ -1684,13 +1693,20 @@
 
     private async Task ConnectMediaFolderAsync()
     {
+        _error = null;
+        _message = null;
         try
         {
-            await MediaFolder.ConnectFolderAsync();
-            if (MediaFolder.IsConnected && !string.IsNullOrWhiteSpace(_projectId))
+            var ok = await MediaFolder.ConnectFolderAsync();
+            if (!ok)
             {
-                await MediaFolder.SyncProjectMediaToClientAsync(_projectId);
+                _error = MediaFolder.LastStatus
+                         ?? "Could not open the folder picker. Use Chrome or Edge and allow folder access.";
+                return;
             }
+            _message = $"Media folder set to “{MediaFolder.FolderName ?? "selected folder"}”.";
+            if (!string.IsNullOrWhiteSpace(_projectId))
+                await MediaFolder.SyncProjectMediaToClientAsync(_projectId);
         }
         catch (Exception ex)
         {
@@ -1700,54 +1716,24 @@
 
     private async Task ReconnectMediaFolderAsync()
     {
+        _error = null;
+        _message = null;
         try
         {
-            await MediaFolder.ReconnectAsync();
-            if (MediaFolder.IsConnected && !string.IsNullOrWhiteSpace(_projectId))
+            var ok = await MediaFolder.ReconnectAsync();
+            if (!ok)
             {
+                _error = MediaFolder.LastStatus
+                         ?? "Could not reconnect. Use Select folder to pick again.";
+                return;
+            }
+            _message = $"Reconnected “{MediaFolder.FolderName ?? "folder"}”.";
+            if (!string.IsNullOrWhiteSpace(_projectId))
                 await MediaFolder.SyncProjectMediaToClientAsync(_projectId);
-            }
         }
         catch (Exception ex)
         {
             _error = ex.Message;
         }
-    }
-
-    private async Task OpenFileExplorerForMediaFolderAsync()
-    {
-        var path = MediaFolder.FullPath ?? MediaFolder.FolderName;
-        if (string.IsNullOrWhiteSpace(path)) return;
-        try
-        {
-            var res = await Engine.OpenFolderAsync(path, _projectId);
-            if (res.Ok)
-            {
-                _message = $"📂 Opened “{res.Opened}” in File Explorer.";
-            }
-            else
-            {
-                _error = res.Error ?? "Could not open folder.";
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task PromptEditMediaFolderPathAsync()
-    {
-        try
-        {
-            var current = MediaFolder.FullPath ?? MediaFolder.FolderName ?? "";
-            var input = await Js.InvokeAsync<string?>("prompt", "Enter full computer path for your local media folder (e.g. C:\\Users\\Name\\Videos\\PageToMovie):", current);
-            if (input is not null)
-            {
-                await MediaFolder.SetFullPathAsync(input);
-                _message = "Local media folder full path updated.";
-            }
-        }
-        catch { /* prompt cancelled */ }
     }
 }

@@ -35,21 +35,20 @@ window.PageToMovieMedia = {
      */
     connectFolderAsync: async function () {
         if (!this.supportsDirectoryPicker()) {
-            return { success: false, error: "This browser does not support folder access (use Chrome/Edge)." };
+            return { success: false, error: "This browser does not support folder access (use Chrome or Edge)." };
         }
         try {
-            // Prefer reusing export folder if already connected
-            if (window.PageToMovieExport && window.PageToMovieExport._directoryHandle) {
-                this._root = window.PageToMovieExport._directoryHandle;
-            } else {
-                this._root = await window.showDirectoryPicker({ mode: "readwrite" });
-                if (window.PageToMovieExport)
-                    window.PageToMovieExport._directoryHandle = this._root;
-            }
+            // Always show the OS folder picker (Change/Select must open a chooser).
+            this._root = await window.showDirectoryPicker({ mode: "readwrite" });
+            if (window.PageToMovieExport)
+                window.PageToMovieExport._directoryHandle = this._root;
+            try { localStorage.removeItem("ptm-media-fullpath"); } catch (_) { /* ignore */ }
             await this._saveHandleToDbAsync(this._root);
             return { success: true, folderName: this._root.name };
         } catch (err) {
-            return { success: false, error: err.message || "Folder selection cancelled" };
+            if (err && err.name === "AbortError")
+                return { success: false, error: "Folder selection cancelled." };
+            return { success: false, error: (err && err.message) || "Folder selection failed." };
         }
     },
 
