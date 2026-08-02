@@ -3,6 +3,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("PageToMovie.Tests")]
+
 namespace PageToMovie.Engine;
 
 /// <summary>
@@ -24,6 +26,27 @@ public sealed class CostReportService
 
     private const int MinApiSamples = 8;
     private const int MinTimingSamples = 5;
+
+    /// <summary>
+    /// USD per reference image attached to a video generation call, used when no enabled video
+    /// model publishes this as a distinct catalog line item (see
+    /// <see cref="SupportedModelEntry.VideoReferenceImageCost"/>). As of 2026-08 no provider
+    /// (including xAI's grok-imagine-video, per docs.x.ai/developers/pricing) itemizes reference
+    /// images separately from its flat per-second output rate, so every catalog entry is null and
+    /// this small Grok-era estimate is applied uniformly. Not vendor-verified — replace with a real
+    /// catalog value the moment a provider publishes one.
+    /// </summary>
+    internal const double FallbackVideoRefImageCost = 0.002;
+
+    /// <summary>
+    /// USD per second billed for a video-extend/continuation call, used when no enabled video
+    /// model publishes an extend-specific rate (see
+    /// <see cref="SupportedModelEntry.VideoExtendCostPerSecond"/>). As of 2026-08 xAI — the only
+    /// enabled provider with <see cref="SupportedModelEntry.SupportsVideoContinue"/> true — has no
+    /// published extend rate distinct from its base per-second price on docs.x.ai/developers/pricing,
+    /// so this small Grok-era estimate is applied uniformly. Not vendor-verified.
+    /// </summary>
+    internal const double FallbackVideoExtendCostPerSec = 0.01;
 
     public CostReportService(
         ProjectStore projects,
@@ -595,14 +618,14 @@ public sealed class CostReportService
         var videoOut = duration * outRate * attempts;
         var refImg = 0.0;
         if (GetBool(rates, "assume_ref_image_per_clip", true))
-            refImg = GetDouble(rates, "video_input_image", 0.002) * attempts;
+            refImg = GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts;
         var extend = 0.0;
         if (string.Equals(clip.Continuation, "extend_previous", StringComparison.OrdinalIgnoreCase))
-            extend = duration * GetDouble(rates, "video_input_per_sec", 0.01) * attempts;
+            extend = duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts;
         return (videoOut + refImg + extend, duration);
     }
 
-    private static (double Usd, double DurationSec, double RatePerSec, double VideoOut, double RefImg, double ExtendIn)
+    internal static (double Usd, double DurationSec, double RatePerSec, double VideoOut, double RefImg, double ExtendIn)
         PriceVideo(
             double durationSec,
             string resolution,
@@ -615,9 +638,9 @@ public sealed class CostReportService
         attempts = Math.Max(1, attempts);
         var outRate = OutputRate(resolution, rates);
         var videoOut = duration * outRate * attempts;
-        var refImg = hasRef ? GetDouble(rates, "video_input_image", 0.002) * attempts : 0;
+        var refImg = hasRef ? GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts : 0;
         var extend = isExtend
-            ? duration * GetDouble(rates, "video_input_per_sec", 0.01) * attempts
+            ? duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts
             : 0;
         var usd = Math.Round(videoOut + refImg + extend, 4);
         return (usd, duration, outRate, Math.Round(videoOut, 4), Math.Round(refImg, 4), Math.Round(extend, 4));
@@ -1082,6 +1105,26 @@ public sealed class CostReportService
         var qualityUnit = imagePrimary.ImageCostPerImage ?? 0.05;
         var standardUnit = imageStandard.ImageCostPerImage ?? imagePrimary.ImageCostPerImage ?? 0.02;
 
+        // Reference-image and extend-per-second add-ons: prefer a real per-model catalog value
+        // (published by the vendor) and only fall back to the small Grok-era estimate when the
+        // catalog has no verified number for this model. As of 2026-08 no enabled video provider
+        // publishes either as a distinct line item (checked against docs.x.ai/developers/pricing for
+        // xAI, the only model with SupportsVideoContinue=true), so these fields are null everywhere
+        // today and the fallback constants apply uniformly — but the catalog is checked first so a
+        // future vendor-verified number takes over automatically.
+        var refImageCostReal = video.VideoReferenceImageCost;
+        var extendCostReal = video.VideoExtendCostPerSecond;
+        var refImageSource = refImageCostReal is not null ? "model_catalog" : "estimated_fallback";
+        var extendSource = extendCostReal is not null ? "model_catalog" : "estimated_fallback";
+
+        // Overall video pricing is only "fully real" when the per-resolution output table, the
+        // reference-image add-on, and (only if this model can extend) the extend add-on are all
+        // sourced from the catalog rather than a fallback estimate.
+        var videoOutputIsCatalog = video.VideoCostPerSecondByResolution is { Count: > 0 };
+        var videoPricingFullyReal = videoOutputIsCatalog
+            && refImageCostReal is not null
+            && (!video.SupportsVideoContinue || extendCostReal is not null);
+
         var rates = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["currency"] = "USD",
@@ -1091,9 +1134,11 @@ public sealed class CostReportService
             ["image_model"] = imagePrimary.Id,
             ["image_provider"] = imagePrimary.ProviderId,
             ["video_output_per_sec"] = videoTable,
-            // Reference / extend add-ons — not published per-vendor in the catalog yet; keep small Grok-era defaults.
-            ["video_input_image"] = 0.002,
-            ["video_input_per_sec"] = 0.01,
+            ["video_input_image"] = refImageCostReal ?? FallbackVideoRefImageCost,
+            ["video_input_image_source"] = refImageSource,
+            ["video_input_per_sec"] = extendCostReal ?? FallbackVideoExtendCostPerSec,
+            ["video_input_per_sec_source"] = extendSource,
+            ["video_pricing_source"] = videoPricingFullyReal ? "model_catalog" : "estimated_fallback",
             ["image_output_quality"] = qualityUnit,
             ["image_output_standard"] = standardUnit,
             ["assume_ref_image_per_clip"] = true,
