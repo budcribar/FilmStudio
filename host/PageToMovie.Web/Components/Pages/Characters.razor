@@ -239,7 +239,7 @@ else
                             class="list-group-item list-group-item-action char-list-item @(active ? "active" : "")"
                             disabled="@CastListLocked"
                             title="@(CastListLocked ? "Wait until the current action finishes" : null)"
-                            @onclick="() => Select(c.Key)">
+                            @onclick="() => SelectAsync(c.Key)">
                         @if (c.VoiceOnly)
                         {
                             <span class="char-list-thumb @(hasVoice ? "char-list-thumb--voice" : "char-list-thumb--voice-missing")"
@@ -364,24 +364,33 @@ else
                                     <div class="char-pick__grid" data-testid="char-pick-grid">
                                         @foreach (var c in _allCandidates)
                                         {
-                                            <div class="char-pick__card" data-testid="char-pick-card">
+                                            <div class="char-pick__card @(_chosenCandidateKey == CandidateKey(c) ? "is-chosen" : "")" data-testid="char-pick-card">
                                                 <button type="button"
                                                         class="char-pick__frame char-pick__frame--zoomable"
                                                         disabled="@(_busy || JobRunning)"
-                                                        title="Zoom — inspect detail"
-                                                        aria-label="Zoom @c.Label"
-                                                        @onclick="@(() => OpenLookZoom(c))">
+                                                        title="Click to save this look for @_selected?.DisplayName"
+                                                        aria-label="Use look @c.Label"
+                                                        @onclick="@(() => LockCandidateAsync(c))">
                                                     <img src="@c.Url" alt="@c.Label" loading="lazy" />
-                                                    <span class="char-pick__zoom-badge" aria-hidden="true">🔍 Zoom</span>
+                                                    <span class="char-pick__zoom-badge" aria-hidden="true">Save</span>
                                                 </button>
                                                 <span class="char-pick__label">@c.Label</span>
-                                                <button type="button"
-                                                        class="btn btn-sm btn-primary char-pick__use"
-                                                        disabled="@(_busy || JobRunning)"
-                                                        title="Save as preferred look for film"
-                                                        @onclick="@(() => LockCandidateAsync(c))">
-                                                    Use this look
-                                                </button>
+                                                <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-primary char-pick__use"
+                                                            disabled="@(_busy || JobRunning)"
+                                                            title="Save as preferred look for film"
+                                                            @onclick="@(() => LockCandidateAsync(c))">
+                                                        Use this look
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary"
+                                                            disabled="@(_busy || JobRunning)"
+                                                            title="Zoom — inspect detail"
+                                                            @onclick="@(() => OpenLookZoom(c))">
+                                                        Zoom
+                                                    </button>
+                                                </div>
                                             </div>
                                         }
                                     </div>
@@ -790,6 +799,9 @@ else
     private CharacterPlatesState? _plates;
     private string? _selectedKey;
     private CharacterSummary? _selected;
+    /// <summary>Look chosen in Compare mode, not yet confirmed locked (auto-flushed on cast switch).</summary>
+    private Candidate? _pendingLockCandidate;
+    private string? _chosenCandidateKey;
     private JobSnapshot? _job;
     private long _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
@@ -1474,7 +1486,7 @@ else
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             // Do not auto-open a character — user clicks the list to choose source.
             if (_selectedKey is not null && _chars.Any(c => c.Key == _selectedKey))
-                Select(_selectedKey, resetMode: false);
+                await SelectCoreAsync(_selectedKey, resetMode: false, flushPending: false);
             else
             {
                 _selectedKey = null;
@@ -1508,7 +1520,7 @@ else
             _imageSeedLimits = dto?.ImageSeedLimits;
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (_selectedKey is not null)
-                Select(_selectedKey, resetMode: false);
+                await SelectCoreAsync(_selectedKey, resetMode: false, flushPending: false);
         }
         catch { /* ignore */ }
     }
@@ -1536,16 +1548,40 @@ else
     /// </summary>
     private bool CastListLocked => _busy || _savingLook || JobRunning || _extractingCast;
 
-    private void Select(string key, bool resetMode = true)
+    private Task SelectAsync(string key) => SelectCoreAsync(key, resetMode: true, flushPending: true);
+
+    /// <summary>
+    /// Switch cast member. When the operator leaves a character with a pending chosen look
+    /// (or mid-compare selection), we lock it first so pictures do not vanish on switch.
+    /// </summary>
+    private async Task SelectCoreAsync(string key, bool resetMode, bool flushPending)
     {
         var switched = !string.Equals(_selectedKey, key, StringComparison.OrdinalIgnoreCase);
         // SoftReload re-selects the same key while _busy — allow that.
-        // Operator switching to a different cast member mid-flight is ignored.
+        if (switched && CastListLocked && !flushPending)
+            return;
+
+        if (switched && flushPending && _selected is not null && _pendingLockCandidate is not null)
+        {
+            try
+            {
+                await LockCandidateAsync(_pendingLockCandidate);
+            }
+            catch
+            {
+                // LockCandidateAsync already sets _error
+            }
+        }
+
+        // Block switch only while another action still runs after flush.
         if (switched && CastListLocked)
             return;
 
         _selectedKey = key;
-        _selected = _chars?.FirstOrDefault(c => c.Key == key);
+        _selected = _chars?.FirstOrDefault(c =>
+            string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase));
+        _pendingLockCandidate = null;
+        _chosenCandidateKey = null;
         if (_selected is not null)
         {
             _editDescription = _selected.Description ?? "";
@@ -1579,10 +1615,11 @@ else
             _error = null;
             _message = null;
             ResetSeedSelection();
-            // After a full select (list click), open the panel that still needs work
             ApplyPanelsForSelected();
         }
     }
+
+    private static string CandidateKey(Candidate c) => $"{c.Kind}:{c.Index}";
 
     /// <summary>
     /// Look & voice live on one card — keep it open so neither section is buried.
@@ -1990,22 +2027,33 @@ else
     private async Task LockCandidateAsync(Candidate c)
     {
         if (_selected is null) return;
+        // Remember choice so a cast-list switch can finish the save if this call is in flight.
+        _pendingLockCandidate = c;
+        _chosenCandidateKey = CandidateKey(c);
+        var charKey = _selected.Key;
+        var display = _selected.DisplayName;
         _busy = true;
         _error = null;
         try
         {
             if (c.Kind == "variant")
-                await Engine.LockCharacterVariantAsync(_projectId, _selected.Key, c.Index);
+                await Engine.LockCharacterVariantAsync(_projectId, charKey, c.Index);
             else if (c.Kind == "book")
-                await Engine.LockCharacterBookRefAsync(_projectId, _selected.Key, c.Index);
-            _message = $"Locked look for {_selected.DisplayName}";
-            await LoadAsync();
+                await Engine.LockCharacterBookRefAsync(_projectId, charKey, c.Index);
+            else
+                throw new InvalidOperationException($"Cannot lock look kind '{c.Kind}'.");
+
+            _message = $"Saved look for {display}";
+            _pendingLockCandidate = null;
+            _chosenCandidateKey = null;
+            _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            await SoftReloadAsync();
             await RefreshNavReadinessAsync();
+            // Stay on this character; show the preferred look (do not wipe list state for others).
             ResetCompare();
             _mode = Mode.PickSource;
             _pictureRoute = PictureRoute.Choose;
             ApplyPanelsForSelected();
-            // Include preferred + remaining generated options as seeds for next regen
             ResetSeedSelection();
             if (_selected is not null)
             {
@@ -2017,7 +2065,11 @@ else
                 }
             }
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            // Keep _pendingLockCandidate so switching cast can retry / flush once.
+        }
         finally { _busy = false; }
     }
 
@@ -2421,7 +2473,7 @@ else
                    ?? _chars[0];
         if (pick is null) return;
         if (!string.Equals(_selectedKey, pick.Key, StringComparison.OrdinalIgnoreCase))
-            Select(pick.Key, resetMode: true);
+            _ = SelectAsync(pick.Key);
     }
 
     private void RefreshVoiceClonePlayUrl()
@@ -2462,7 +2514,7 @@ else
                     : $"Voice applied ({result.ProviderId ?? "provider"}) — id saved on this character.");
             await LoadAsync();
             if (!string.IsNullOrEmpty(_selectedKey))
-                Select(_selectedKey, resetMode: false);
+                await SelectCoreAsync(_selectedKey, resetMode: false, flushPending: false);
         }
         catch (Exception ex)
         {
@@ -2760,17 +2812,40 @@ else
         var file = e.File;
         if (file is null) return;
 
+        // Capture identity before any re-render; buffer bytes while InputFile is still mounted.
+        var charKey = _selected.Key;
+        var display = _selected.DisplayName;
+        var fileName = file.Name;
+        byte[] bytes;
+        try
+        {
+            const long max = 25 * 1024 * 1024;
+            await using var stream = file.OpenReadStream(max);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            bytes = ms.ToArray();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            return;
+        }
+
+        if (bytes.Length < 64)
+        {
+            _error = "That image is empty or too small.";
+            return;
+        }
+
         _busy = true;
         _error = null;
         _message = null;
         try
         {
-            const long max = 25 * 1024 * 1024;
-            await using var stream = file.OpenReadStream(max);
-            await Engine.UploadCharacterRefAsync(_projectId, _selected.Key, stream, file.Name);
-            _message = $"Saved look for {_selected.DisplayName}.";
+            await using var stream = new MemoryStream(bytes, writable: false);
+            await Engine.UploadCharacterRefAsync(_projectId, charKey, stream, fileName);
+            _message = $"Saved look for {display}.";
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            await LoadAsync();
             await SoftReloadAsync();
             try { await ActiveProject.RefreshReadinessAsync(Engine); } catch { /* nav */ }
             ResetCompare();

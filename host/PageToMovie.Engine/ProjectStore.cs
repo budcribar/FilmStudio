@@ -2003,7 +2003,7 @@ public sealed class ProjectStore
                     : key.Replace("Character_", "").Replace("_", " "));
 
             var refName = CharacterRefFileName(key);
-            var resolvedRef = voiceOnly ? null : ResolveCharacterRefPath(projectId, key);
+            var resolvedRef = voiceOnly ? null : ResolveCharacterRefPath(projectId, key, allowNormalizedFallback: false);
             var hasRef = resolvedRef is not null;
             if (hasRef && resolvedRef is not null)
                 refName = Path.GetFileName(resolvedRef);
@@ -2139,7 +2139,7 @@ public sealed class ProjectStore
             .ToList();
     }
 
-    public string? ResolveCharacterRefPath(string projectId, string charKey)
+    public string? ResolveCharacterRefPath(string projectId, string charKey, bool allowNormalizedFallback = true)
     {
         var seeds = LoadCharacterSeeds(projectId);
         if (seeds.TryGetValue(charKey, out var info) && IsVoiceOnly(charKey, info))
@@ -2153,28 +2153,26 @@ public sealed class ProjectStore
                 return full;
         }
 
-        // Same class of bug as ClipVideoPromptBuilder.ResolveCharacterRefPathByNormalizedKey:
-        // Stage2 scene/clip data can reference a character under a naming/article variant
-        // (Character_The_Old_Man) that never matches cast_seeds.json's real key
-        // (Character_OldMan) by literal filename. Fall back to scanning actual *_ref.png
-        // files and matching the normalized key instead of returning null.
-        if (Directory.Exists(charDir))
+        // Normalized fallback is for video/gen when a clip key differs slightly from the seed key.
+        // Never use it for cast listing (allowNormalizedFallback: false) — Character_Narrator and
+        // Character_The_Narrator would share one *_ref.png and looks "steal" each other in the UI.
+        if (!allowNormalizedFallback || !Directory.Exists(charDir))
+            return null;
+
+        var targetNorm = Stage2PlannerService.NormalizeCharacterKey(charKey);
+        if (targetNorm.Length == 0)
+            return null;
+
+        foreach (var file in Directory.EnumerateFiles(charDir, "*_ref.png"))
         {
-            var targetNorm = Stage2PlannerService.NormalizeCharacterKey(charKey);
-            if (targetNorm.Length > 0)
-            {
-                foreach (var file in Directory.EnumerateFiles(charDir, "*_ref.png"))
-                {
-                    var stem = Path.GetFileNameWithoutExtension(file);
-                    if (stem.StartsWith("wardrobe_", StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    if (stem.EndsWith("_ref", StringComparison.OrdinalIgnoreCase))
-                        stem = stem[..^"_ref".Length];
-                    if (Stage2PlannerService.NormalizeCharacterKey(stem) == targetNorm &&
-                        new FileInfo(file).Length >= 64)
-                        return file;
-                }
-            }
+            var stem = Path.GetFileNameWithoutExtension(file);
+            if (stem.StartsWith("wardrobe_", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (stem.EndsWith("_ref", StringComparison.OrdinalIgnoreCase))
+                stem = stem[..^"_ref".Length];
+            if (Stage2PlannerService.NormalizeCharacterKey(stem) == targetNorm &&
+                new FileInfo(file).Length >= 64)
+                return file;
         }
         return null;
     }
