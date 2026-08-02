@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.VoiceApply;
 using Xunit;
 
 namespace PageToMovie.Tests;
@@ -19,14 +20,29 @@ public class VoiceCloneApplyServiceTests : IDisposable
         _root = Path.Combine(Path.GetTempPath(), "ptm-voice-apply-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(_root, "projects"));
         _store = new ProjectStore(Options.Create(new PageToMovieOptions { WorkspaceRoot = _root }));
-        var http = new HttpClient { BaseAddress = new Uri("https://api.elevenlabs.io/v1/") };
-        IVoiceClient eleven = new ElevenLabsVoiceClient(http, NullLogger<ElevenLabsVoiceClient>.Instance, allowMockFallback: true);
-        // Fal not configured → route falls back to ElevenLabs mock
+        var previews = new VoicePreviewStore(_store);
+
+        var elHttp = new HttpClient { BaseAddress = new Uri("https://api.elevenlabs.io/v1/") };
+        IVoiceClient eleven = new ElevenLabsVoiceClient(
+            elHttp, NullLogger<ElevenLabsVoiceClient>.Instance, allowMockFallback: true);
+
         var falHttp = new HttpClient { BaseAddress = new Uri("https://queue.fal.run/") };
         IVoiceCloneClient fal = new FalVoiceCloneClient(falHttp, NullLogger<FalVoiceCloneClient>.Instance);
-        var httpFactory = new SimpleFactory();
+
+        IVoiceApplyStrategy[] strategies =
+        [
+            new FalVoiceApplyStrategy(
+                fal, previews, new SimpleFactory(), NullLogger<FalVoiceApplyStrategy>.Instance),
+            new ElevenLabsVoiceApplyStrategy(
+                eleven, previews, NullLogger<ElevenLabsVoiceApplyStrategy>.Instance),
+        ];
+
         _apply = new VoiceCloneApplyService(
-            _store, eleven, fal, httpFactory, NullLogger<VoiceCloneApplyService>.Instance);
+            _store,
+            previews,
+            strategies,
+            eleven,
+            NullLogger<VoiceCloneApplyService>.Instance);
     }
 
     public void Dispose()
@@ -38,7 +54,8 @@ public class VoiceCloneApplyServiceTests : IDisposable
     public async Task ApplyFromSample_routes_to_eleven_mock_without_keys()
     {
         var p = await _store.CreateProjectAsync("tthv7", title: "Tell-Tale Heart V7");
-        await _store.SaveConfigAsync(p.Id, JsonSerializer.SerializeToElement(new { voice_model_name = "eleven_voice_clone" }));
+        await _store.SaveConfigAsync(
+            p.Id, JsonSerializer.SerializeToElement(new { voice_model_name = "eleven_voice_clone" }));
 
         var sample = MockToneWav.Sine(2.5, 195);
         var result = await _apply.ApplyFromSampleAsync(
@@ -53,15 +70,15 @@ public class VoiceCloneApplyServiceTests : IDisposable
         Assert.False(string.IsNullOrWhiteSpace(result.ProviderVoiceId));
         Assert.True(result.UsedMock);
         Assert.True(File.Exists(_store.GetVoiceCloneSamplePath(p.Id, "Character_Narrator")));
-        var preview = _apply.GetTtsPreviewPath(p.Id, "Character_Narrator");
-        Assert.True(File.Exists(preview));
+        Assert.True(File.Exists(_apply.GetTtsPreviewPath(p.Id, "Character_Narrator")));
     }
 
     [Fact]
     public async Task ApplyFromSample_fal_model_without_key_falls_back_to_eleven_mock()
     {
         var p = await _store.CreateProjectAsync("buster", title: "Buster");
-        await _store.SaveConfigAsync(p.Id, JsonSerializer.SerializeToElement(new { voice_model_name = "fal-ai/minimax/voice-clone" }));
+        await _store.SaveConfigAsync(
+            p.Id, JsonSerializer.SerializeToElement(new { voice_model_name = "fal-ai/minimax/voice-clone" }));
 
         var sample = MockToneWav.Sine(2.0, 180);
         var result = await _apply.ApplyFromSampleAsync(
@@ -70,7 +87,6 @@ public class VoiceCloneApplyServiceTests : IDisposable
             sampleOverride: sample,
             sampleFileName: "voice_clone_sample.wav");
 
-        // No FAL key → ElevenLabs mock fallback when eleven mock allowed
         Assert.True(result.Ok, result.Error);
         Assert.Equal("elevenlabs", result.ProviderId);
         Assert.True(result.UsedMock);

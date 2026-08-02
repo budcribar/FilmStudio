@@ -130,6 +130,10 @@ builder.Services.AddSingleton<IVoiceClient>(sp =>
     var log = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ElevenLabsVoiceClient>>();
     return new ElevenLabsVoiceClient(http, log, allowMockFallback: true);
 });
+builder.Services.AddSingleton<PageToMovie.Engine.VoiceApply.VoicePreviewStore>();
+// Strategy order: Fal first (specific CanHandle), ElevenLabs last (default / mock fallback).
+builder.Services.AddSingleton<IVoiceApplyStrategy, PageToMovie.Engine.VoiceApply.FalVoiceApplyStrategy>();
+builder.Services.AddSingleton<IVoiceApplyStrategy, PageToMovie.Engine.VoiceApply.ElevenLabsVoiceApplyStrategy>();
 builder.Services.AddSingleton<VoiceCloneApplyService>();
 builder.Services.AddSingleton<ReviewEventStore>();
 builder.Services.AddSingleton<ProjectRulesService>();
