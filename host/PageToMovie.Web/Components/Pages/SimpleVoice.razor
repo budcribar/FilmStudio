@@ -219,10 +219,19 @@ else
                 @if (_hasSample && !_applied && !_busy)
                 {
                     <div class="alert alert-warning py-2 small mt-2 mb-0" data-testid="simple-voice-apply-fix">
-                        Sample is saved on this project. Voice apply needs a provider that can clone.
-                        <a href="configuration?focus=voice#api-keys" class="alert-link">Open Settings → Voice clone</a>
-                        · then
-                        <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="RetryApplyAsync">try apply again</button>
+                        @if (!string.IsNullOrEmpty(_hint) && _hint.Contains("Sample", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span>@_hint</span>
+                        }
+                        else
+                        {
+                            <span>Sample is saved. @(string.IsNullOrEmpty(_hint) ? "Voice apply did not finish." : _hint)</span>
+                        }
+                        <span class="d-block mt-1">
+                            <a href="configuration?focus=voice#api-keys" class="alert-link">Open Settings → Voice clone</a>
+                            · then
+                            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="RetryApplyAsync">try apply again</button>
+                        </span>
                     </div>
                 }
                 @if (!string.IsNullOrEmpty(_samplePlayUrl))
@@ -632,8 +641,8 @@ private async Task StartMicAsync()
             if (!apply.Ok)
             {
                 _applied = false;
-                _hint = "Sample saved. " + FriendlyApplyError(apply.Error);
-                _message = "Open Settings → Voice clone (Instant Voice Cloning on ElevenLabs, or Fal MiniMax), then try apply again.";
+                _hint = "Sample saved. " + FriendlyApplyError(apply.Error ?? apply.Message);
+                _message = null;
                 return;
             }
             _applied = true;
@@ -648,6 +657,7 @@ private async Task StartMicAsync()
         {
             _hint = "Sample saved. " + FriendlyApplyError(ex.Message);
             _applied = false;
+            _message = null;
         }
     }
 

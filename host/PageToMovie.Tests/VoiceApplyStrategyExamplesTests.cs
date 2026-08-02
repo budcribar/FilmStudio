@@ -62,7 +62,7 @@ public class VoiceApplyStrategyExamplesTests : IDisposable
     }
 
     [Fact]
-    public void CanHandle_null_model_defaults_to_elevenlabs_not_fal()
+    public void CanHandle_null_model_claims_neither_provider()
     {
         var fal = new FalVoiceApplyStrategy(
             new FakeVoiceCloneClient(configured: true),
@@ -74,8 +74,9 @@ public class VoiceApplyStrategyExamplesTests : IDisposable
             _previews,
             NullLogger<ElevenLabsVoiceApplyStrategy>.Instance);
 
+        // No invent — Settings must select a clone model first.
         Assert.False(fal.CanHandle(null));
-        Assert.True(eleven.CanHandle(null));
+        Assert.False(eleven.CanHandle(null));
     }
 
     // ── ElevenLabs strategy ──────────────────────────────────────────────

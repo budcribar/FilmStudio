@@ -34,7 +34,8 @@ public sealed class ElevenLabsVoiceApplyStrategy : IVoiceApplyStrategy
 
     public bool CanHandle(SupportedModelEntry? cloneModel)
     {
-        if (cloneModel is null) return true; // default fallback
+        // Never claim "no model selected" — Settings must pick a voice clone model.
+        if (cloneModel is null) return false;
         if (cloneModel.Provider == ModelProviderFamily.ElevenLabs) return true;
         if (cloneModel.ProviderId.Equals("elevenlabs", StringComparison.OrdinalIgnoreCase)) return true;
         if (cloneModel.Id.StartsWith("eleven_", StringComparison.OrdinalIgnoreCase)) return true;

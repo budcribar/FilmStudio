@@ -505,6 +505,7 @@ app.Use(async (context, next) =>
     var fal = keyProvider?.GetKey(uid, "fal");
     var suno = keyProvider?.GetKey(uid, "suno");
     var aimusicapi = keyProvider?.GetKey(uid, "aimusicapi");
+    var elevenlabs = keyProvider?.GetKey(uid, "elevenlabs");
     using (ApiKeyScope.Push(new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
     {
         ["grok"] = xai,
@@ -513,6 +514,7 @@ app.Use(async (context, next) =>
         ["fal"] = fal,
         ["suno"] = suno,
         ["aimusicapi"] = aimusicapi,
+        ["elevenlabs"] = elevenlabs,
     }))
     using (UserApiCallScope.Push(uid))
     {

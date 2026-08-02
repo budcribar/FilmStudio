@@ -3033,10 +3033,15 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             JsonOpts,
             ct);
         var raw = await resp.Content.ReadAsStringAsync(ct);
+        var body = JsonSerializer.Deserialize<VoiceApplyDto>(raw, JsonOpts)
+                   ?? new VoiceApplyDto { Ok = false, Error = "Empty response" };
         if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(TryError(raw) ?? resp.ReasonPhrase ?? "Apply clone failed");
-        return JsonSerializer.Deserialize<VoiceApplyDto>(raw, JsonOpts)
-               ?? new VoiceApplyDto { Ok = false, Error = "Empty response" };
+        {
+            body.Ok = false;
+            if (string.IsNullOrWhiteSpace(body.Error))
+                body.Error = TryError(raw) ?? resp.ReasonPhrase ?? "Apply clone failed";
+        }
+        return body;
     }
 
     public async Task<VoiceCatalogDto?> ListProviderVoicesAsync(CancellationToken ct = default)

@@ -57,9 +57,28 @@ public sealed class VoiceCloneApplyService
         var (cloneModel, speakModel) = await ResolveVoiceModelsAsync(projectId, modelOverride, ct)
             .ConfigureAwait(false);
 
+        if (cloneModel is null)
+        {
+            return new VoiceApplyResult
+            {
+                Ok = false,
+                Error =
+                    "No voice clone model selected for this project. " +
+                    "Open Settings → Studio coverage → Voice clone, choose ElevenLabs Instant voice clone " +
+                    "or Fal MiniMax Voice Clone, save, then try again. Your recording is still saved.",
+            };
+        }
+
         var strategy = SelectStrategy(cloneModel);
         if (strategy is null)
-            return new VoiceApplyResult { Ok = false, Error = "No voice apply strategy available for this model." };
+            return new VoiceApplyResult
+            {
+                Ok = false,
+                ModelId = cloneModel.Id,
+                Error =
+                    $"No voice apply path for model '{cloneModel.Id}' (provider {cloneModel.ProviderId}). " +
+                    "Pick ElevenLabs Instant voice clone or Fal MiniMax Voice Clone in Settings.",
+            };
 
         // Do not auto-switch providers. If this key/model cannot clone, surface the error and let
         // the user pick another voice model in Settings.

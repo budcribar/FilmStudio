@@ -465,6 +465,7 @@ public sealed class FilmJobService
         var falKey = _keys.GetKey(userId, "fal");
         var sunoKey = _keys.GetKey(userId, "suno");
         var aiMusicApiKey = _keys.GetKey(userId, "aimusicapi");
+        var elevenLabsKey = _keys.GetKey(userId, "elevenlabs");
 
         var queuedAt = DateTimeOffset.UtcNow;
         var cts = new CancellationTokenSource();
@@ -492,6 +493,7 @@ public sealed class FilmJobService
             FalApiKey = falKey,
             SunoApiKey = sunoKey,
             AiMusicApiKey = aiMusicApiKey,
+            ElevenLabsApiKey = elevenLabsKey,
             QueuedAt = queuedAt,
             Cts = cts,
             ActiveJobId = rec.JobId,
@@ -515,6 +517,7 @@ public sealed class FilmJobService
                 ["fal"] = run.FalApiKey,
                 ["suno"] = run.SunoApiKey,
                 ["aimusicapi"] = run.AiMusicApiKey,
+                ["elevenlabs"] = run.ElevenLabsApiKey,
             }))
             using (UserApiCallScope.Push(run.UserId))
             {
@@ -841,6 +844,7 @@ public sealed class FilmJobService
         public string? FalApiKey { get; set; }
         public string? SunoApiKey { get; set; }
         public string? AiMusicApiKey { get; set; }
+        public string? ElevenLabsApiKey { get; set; }
         public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? StartedAt { get; set; }
         public List<string> HeldLocks { get; set; } = new();

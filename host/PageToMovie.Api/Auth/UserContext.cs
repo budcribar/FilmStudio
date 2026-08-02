@@ -175,11 +175,13 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
             "fal" => SupportedModelCatalog.FalApiKeyEnv,
             "suno" => SupportedModelCatalog.SunoApiKeyEnv,
             "aimusicapi" => SupportedModelCatalog.AiMusicApiKeyEnv,
+            "elevenlabs" => SupportedModelCatalog.ElevenLabsApiKeyEnv,
             _ => null,
         };
         if (processEnv is null) return null;
         var process = Environment.GetEnvironmentVariable(processEnv)
-            ?? (provider == "fal" ? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv) : null);
+            ?? (provider == "fal" ? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv) : null)
+            ?? (provider == "elevenlabs" ? Environment.GetEnvironmentVariable("ELEVENLABS_API_KEY") : null);
         return string.IsNullOrWhiteSpace(process) ? null : process.Trim(' ', '"', '\'', '\r', '\n', '\t');
     }
 

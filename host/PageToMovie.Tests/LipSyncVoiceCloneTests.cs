@@ -16,10 +16,13 @@ public class LipSyncVoiceCloneTests
     public LipSyncVoiceCloneTests() => SupportedModelCatalog.ReloadCatalog();
 
     [Fact]
-    public void LipSync_default_resolves_to_sync_lipsync_v2_pro()
+    public void LipSync_empty_model_throws_instead_of_inventing_default()
     {
-        var m = SupportedModelCatalog.ResolveOrDefault(null, ModelCapability.LipSync);
-        Assert.Equal("fal-ai/sync-lipsync/v2/pro", m.Id);
+        Assert.Throws<InvalidOperationException>(
+            () => SupportedModelCatalog.ResolveOrDefault(null, ModelCapability.LipSync));
+        var m = SupportedModelCatalog.Find("fal-ai/sync-lipsync/v2/pro", ModelCapability.LipSync);
+        Assert.NotNull(m);
+        Assert.Equal("fal-ai/sync-lipsync/v2/pro", m!.Id);
         Assert.Equal(ModelProviderFamily.Fal, m.Provider);
         Assert.Equal("fal", m.ProviderId);
         Assert.Contains(SupportedModelCatalog.FalApiKeyEnv, m.RequiredEnvKeys);
