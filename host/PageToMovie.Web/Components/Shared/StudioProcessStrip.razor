@@ -21,46 +21,35 @@
     @if (UseSimple)
     {
         <a class="ptm-step @(Active == "book" ? "is-active" : "") @(BookLocked ? "is-disabled" : "")"
-           href="@(BookLocked ? "javascript:void(0)" : "adaptation")"
-           title="@(BookLocked ? "Connect API keys in Setup first" : "Library book / screenplay")"
+           href="@(BookLocked ? "javascript:void(0)" : "simple-voice")"
+           title="@(BookLocked ? "Connect API keys in Setup first" : "Pick a library story")"
            data-testid="studio-step-book"
            @onclick:preventDefault="@BookLocked">
             <span class="ptm-step__num">1</span>
             <span class="ptm-step__body">
-                <span class="ptm-step__label">Book</span>
-                <span class="ptm-step__hint">Library story</span>
+                <span class="ptm-step__label">Story</span>
+                <span class="ptm-step__hint">Library book</span>
             </span>
         </a>
-        <a class="ptm-step @(Active == "cast" ? "is-active" : "") @(!ActiveProject.CanCharacters && Active != "cast" ? "is-disabled" : "")"
-           href="@(ActiveProject.CanCharacters || Active == "cast" ? "characters?focus=narrator" : "javascript:void(0)")"
-           title="@(ActiveProject.CanCharacters ? "Record your narrator voice" : ActiveProject.CharactersBlockedReason)"
-           data-testid="studio-step-cast"
-           @onclick:preventDefault="@(!ActiveProject.CanCharacters && Active != "cast")">
+        <a class="ptm-step @(Active == "cast" ? "is-active" : "")"
+           href="simple-voice"
+           title="Record your narrator voice — no cast list"
+           data-testid="studio-step-cast">
             <span class="ptm-step__num">2</span>
             <span class="ptm-step__body">
                 <span class="ptm-step__label">Your voice</span>
-                <span class="ptm-step__hint">One sample</span>
+                <span class="ptm-step__hint">Record · done</span>
             </span>
         </a>
         <a class="ptm-step @(Active == "film" ? "is-active" : "") @(!ActiveProject.CanScenes && Active != "film" ? "is-disabled" : "")"
-           href="@(ActiveProject.CanScenes || Active == "film" ? "scenes" : "javascript:void(0)")"
-           title="@(ActiveProject.CanScenes ? "Generate with your voice" : ActiveProject.ScenesBlockedReason)"
+           href="@(ActiveProject.CanScenes || Active == "film" ? "scenes?simple=1" : "javascript:void(0)")"
+           title="@(ActiveProject.CanScenes ? "Generate the movie" : ActiveProject.ScenesBlockedReason)"
            data-testid="studio-step-film"
            @onclick:preventDefault="@(!ActiveProject.CanScenes && Active != "film")">
             <span class="ptm-step__num">3</span>
             <span class="ptm-step__body">
                 <span class="ptm-step__label">Movie</span>
-                <span class="ptm-step__hint">Voice on library film</span>
-            </span>
-        </a>
-        <a class="ptm-step"
-           href="simple-voice"
-           title="Pick another library book"
-           data-testid="studio-step-library">
-            <span class="ptm-step__num">★</span>
-            <span class="ptm-step__body">
-                <span class="ptm-step__label">Library</span>
-                <span class="ptm-step__hint">More books</span>
+                <span class="ptm-step__hint">Generate all</span>
             </span>
         </a>
     }

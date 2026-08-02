@@ -1285,8 +1285,12 @@ else
                 await Caps.RefreshAsync(Engine, _projectId);
 
             ApplySimpleModeFromUri();
-            if (_simpleMode && !string.IsNullOrEmpty(_projectId))
-                await EnsureSimpleVoiceModelAsync();
+            // Easy-start lives entirely on /simple-voice (story + record). No cast list.
+            if (_simpleMode)
+            {
+                Nav.NavigateTo("simple-voice");
+                return;
+            }
 
 
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanCharacters)
