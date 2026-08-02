@@ -83,10 +83,18 @@ public sealed class MovieAutoReviewService
 
         onProgress?.Invoke(10, "Organizing scene keyframes for full movie review…");
 
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        var reviewModel = ProjectModelSelection.TryGet(
+            cfg,
+            ProjectModelSelection.QualityConfigKey,
+            ProjectModelSelection.VisionConfigKey,
+            ProjectModelSelection.PlanningConfigKey);
         var report = new MovieAutoReviewReport
         {
             ProjectId = projectId,
-            ProviderUsed = _vision.GetType().Name.Contains("Gemini", StringComparison.OrdinalIgnoreCase) ? "gemini" : "grok",
+            ProviderUsed = SupportedModelCatalog.CatalogProviderId(reviewModel, "vision")
+                           ?? SupportedModelCatalog.CatalogProviderId(reviewModel, "chat")
+                           ?? "",
             CreatedAtUtc = DateTime.UtcNow.ToString("o"),
         };
 

@@ -127,14 +127,32 @@ public sealed class VoiceCloneApplyService
             return new VoiceApplyResult { Ok = false, Error = "providerVoiceId required" };
 
         var label = string.IsNullOrWhiteSpace(displayName) ? "Catalog voice" : displayName.Trim();
-        var profile = $"Provider voice (elevenlabs:{providerVoiceId.Trim()}). Catalog/premade selection.";
+        var speakModel = SupportedModelCatalog.Find("eleven_multilingual_v2", ModelCapability.Voice)
+                         ?? SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                             .FirstOrDefault(m => !m.IsVoiceCloneStep
+                                                  && m.Provider == ModelProviderFamily.ElevenLabs);
+        var providerId = speakModel?.ProviderId
+                         ?? SupportedModelCatalog.CatalogProviderId(speakModel?.Id, "tts")
+                         ?? "";
+        var profile = string.IsNullOrWhiteSpace(providerId)
+            ? $"Provider voice ({providerVoiceId.Trim()}). Catalog/premade selection."
+            : $"Provider voice ({providerId}:{providerVoiceId.Trim()}). Catalog/premade selection.";
         _previews.PersistSeed(
-            projectId, charKey, "elevenlabs", providerVoiceId.Trim(), label, profile);
+            projectId, charKey, providerId, providerVoiceId.Trim(), label, profile);
 
         string? previewRel = null;
         string? previewUrl = null;
         var ttsText = VoicePreviewStore.DefaultPreviewText(previewText);
-        var tts = await _eleven.TextToSpeechAsync(providerVoiceId.Trim(), ttsText, ct: ct).ConfigureAwait(false);
+        if (speakModel is null)
+        {
+            return new VoiceApplyResult
+            {
+                Ok = false,
+                Error = "No TTS model in the catalog for catalog voices. Open Settings and pick a voice model.",
+            };
+        }
+        var tts = await _eleven.TextToSpeechAsync(
+            providerVoiceId.Trim(), ttsText, speakModel.Id, ct).ConfigureAwait(false);
         if (tts.Ok && tts.AudioBytes is { Length: > 0 })
         {
             (previewRel, previewUrl) = await _previews.WriteAsync(
@@ -144,9 +162,9 @@ public sealed class VoiceCloneApplyService
         return new VoiceApplyResult
         {
             Ok = true,
-            ProviderId = "elevenlabs",
+            ProviderId = providerId,
             ProviderVoiceId = providerVoiceId.Trim(),
-            ModelId = "eleven_multilingual_v2",
+            ModelId = speakModel.Id,
             UsedMock = tts.UsedMock || providerVoiceId.StartsWith("mock_", StringComparison.OrdinalIgnoreCase),
             PreviewRelativePath = previewRel,
             PreviewUrl = previewUrl,
@@ -221,19 +239,8 @@ public sealed class VoiceCloneApplyService
 
         if (clone is null)
         {
-            // Prefer a strategy that is actually configured.
-            foreach (var s in _strategies.Where(s => s.IsConfigured))
-            {
-                clone = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-                    .FirstOrDefault(m => m.IsVoiceCloneStep &&
-                        (m.ProviderId.Equals(s.ProviderId, StringComparison.OrdinalIgnoreCase) ||
-                         (s.ProviderId == "fal" && m.Provider == ModelProviderFamily.Fal) ||
-                         (s.ProviderId == "elevenlabs" && m.Provider == ModelProviderFamily.ElevenLabs)));
-                if (clone is not null) break;
-            }
-            clone ??= SupportedModelCatalog.Find("eleven_voice_clone", ModelCapability.Voice)
-                      ?? SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-                          .FirstOrDefault(m => m.IsVoiceCloneStep);
+            // No invent / no hop to first configured strategy — Settings must pick a voice model.
+            return (null, null);
         }
 
         SupportedModelEntry? speak = null;

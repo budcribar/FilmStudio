@@ -154,11 +154,17 @@ public class MultiProviderClientTests
     [InlineData("gemini-2.5-flash", ModelProviderFamily.Google)]
     [InlineData("grok-4.5", ModelProviderFamily.Xai)]
     [InlineData("grok-4", ModelProviderFamily.Xai)]
-    [InlineData("some-unknown-future-model", ModelProviderFamily.Xai)] // forward-compat default
     public void Chat_routing_resolves_expected_provider(string model, ModelProviderFamily expected)
     {
         var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Chat).Provider;
         Assert.Equal(expected, provider);
+    }
+
+    [Fact]
+    public void Chat_routing_unknown_model_throws()
+    {
+        Assert.Throws<InvalidOperationException>(
+            () => SupportedModelCatalog.ResolveOrDefault("some-unknown-future-model", ModelCapability.Chat));
     }
 
     [Theory]

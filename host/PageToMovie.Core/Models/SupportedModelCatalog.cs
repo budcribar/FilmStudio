@@ -387,15 +387,12 @@ public static class SupportedModelCatalog
         }
     }
 
-    public static readonly Dictionary<string, List<string>> DefaultTaskRankings = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["script_import"] = new() { "claude-sonnet-5", "grok-4.5", "gemini-2.5-flash" },
-        ["beat_pacing"] = new() { "grok-4.5", "gemini-2.0-flash", "claude-sonnet-5" },
-        ["camera_director"] = new() { "grok-4.5", "claude-sonnet-5" },
-        ["sound_design"] = new() { "grok-4.5", "gemini-2.5-flash" },
-        ["cast_analysis"] = new() { "grok-4.5", "claude-sonnet-5", "gemini-2.5-flash" },
-        ["video_review"] = new() { "gemini-2.5-flash", "grok-4.5" },
-    };
+    /// <summary>
+    /// Obsolete empty shell — rankings live only in <c>models_catalog.json</c>
+    /// (<c>task_rankings</c>). Prefer <see cref="TaskRankings"/>.
+    /// </summary>
+    [Obsolete("Use TaskRankings from models_catalog.json — no C# hardcoded rankings.")]
+    public static readonly Dictionary<string, List<string>> DefaultTaskRankings = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>All catalog rows, loaded from models_catalog.json (shipped copy or /data override —
     /// see GetCandidateCatalogPaths). Throws via EnsureLoaded if no usable catalog file exists.</summary>
@@ -521,9 +518,7 @@ public static class SupportedModelCatalog
                         _loadedCapabilities = new List<ModelCapabilityDefinition>();
                     }
 
-                    _loadedTaskRankings = container.TaskRankings is { Count: > 0 }
-                        ? new Dictionary<string, List<string>>(container.TaskRankings, StringComparer.OrdinalIgnoreCase)
-                        : new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+                    _loadedTaskRankings = LoadTaskRankings(container, doc.RootElement);
                     return true;
                 }
             }
@@ -548,6 +543,38 @@ public static class SupportedModelCatalog
             // leave unloaded
         }
         return false;
+    }
+
+    /// <summary>
+    /// Prefer DTO <c>taskRankings</c>; also accept snake_case <c>task_rankings</c> from models_catalog.json.
+    /// Never falls back to C# hard-coded rankings.
+    /// </summary>
+    private static Dictionary<string, List<string>> LoadTaskRankings(
+        ModelCatalogContainerDto container,
+        System.Text.Json.JsonElement root)
+    {
+        if (container.TaskRankings is { Count: > 0 })
+            return new Dictionary<string, List<string>>(container.TaskRankings, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var name in new[] { "task_rankings", "taskRankings", "TaskRankings" })
+        {
+            if (!root.TryGetProperty(name, out var el) || el.ValueKind != System.Text.Json.JsonValueKind.Object)
+                continue;
+            try
+            {
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, List<string>>>(
+                    el.GetRawText(),
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (parsed is { Count: > 0 })
+                    return new Dictionary<string, List<string>>(parsed, StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                // try next key
+            }
+        }
+
+        return new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>True when the browser (or any host) has successfully loaded a catalog into memory.</summary>
@@ -689,49 +716,37 @@ public static class SupportedModelCatalog
         var hit = Find(modelId, capability);
         if (hit is not null) return hit;
 
-        var knownUnderAnyCap = !string.IsNullOrWhiteSpace(modelId) && Find(modelId) is not null;
-        if (!string.IsNullOrWhiteSpace(modelId) && !knownUnderAnyCap)
+        // Same id under a compatible capability (chat/vision share many models).
+        if (!string.IsNullOrWhiteSpace(modelId))
         {
-            var id = modelId.Trim();
-            return MakeSynthetic(id, capability);
+            hit = Find(modelId);
+            if (hit is not null)
+            {
+                if (hit.Capability == capability) return hit;
+                if (capability is ModelCapability.Chat or ModelCapability.Vision
+                    && hit.Capability is ModelCapability.Chat or ModelCapability.Vision)
+                    return hit;
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(fallbackId))
         {
-            hit = Find(fallbackId, capability);
+            hit = Find(fallbackId, capability) ?? Find(fallbackId);
             if (hit is not null) return hit;
         }
 
-        var capDef = RegisteredCapabilities.FirstOrDefault(c => string.Equals(c.Id, capability.ToString(), StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(capDef?.DefaultModelId))
-        {
-            hit = Find(capDef.DefaultModelId, capability);
-            if (hit is not null) return hit;
-        }
-
-        hit = ForCapability(capability).FirstOrDefault();
-        if (hit is not null) return hit;
-
-        return MakeSynthetic(
-            string.IsNullOrWhiteSpace(modelId) ? "unknown" : modelId.Trim(),
-            capability);
+        // Catalog is SSoT — never invent synthetic models or pick an arbitrary "first" model.
+        var label = string.IsNullOrWhiteSpace(modelId) ? "(none)" : modelId.Trim();
+        throw new InvalidOperationException(
+            $"Model '{label}' is not in models_catalog.json for {capability}. " +
+            "Open Settings → Studio coverage and choose a catalog model for this job. " +
+            "Do not rely on code defaults.");
     }
 
-    private static SupportedModelEntry MakeSynthetic(string id, ModelCapability capability) => new()
-    {
-        Id = id,
-        DisplayName = id,
-        Capability = capability,
-        Provider = ModelProviderFamily.Xai,
-        ProviderName = "",
-        ProviderId = "",
-        ProviderLabel = "",
-        ApiBase = "",
-        EndpointPath = "",
-        RequiredEnvKeys = [],
-        Enabled = false,
-        Notes = "Not in master catalog — add to models_catalog.json. Not selectable in Settings.",
-    };
+    [Obsolete("Synthetic catalog entries are forbidden — add models to models_catalog.json.")]
+    private static SupportedModelEntry MakeSynthetic(string id, ModelCapability capability) =>
+        throw new InvalidOperationException(
+            $"Refusing synthetic model '{id}' ({capability}). Add it to models_catalog.json or select a catalog model in Settings.");
 
     /// <summary>
     /// Build Configuration "API keys" rows from the catalog (enabled models only).
@@ -881,7 +896,9 @@ public static class SupportedModelCatalog
     }
 
     public static string ProviderIdFor(string? modelId, ModelCapability capability) =>
-        ResolveOrDefault(modelId, capability).ProviderId;
+        Find(modelId, capability)?.ProviderId
+        ?? Find(modelId)?.ProviderId
+        ?? "";
 
     /// <summary>
     /// Default model id for a capability from catalog <c>capabilities[].defaultModelId</c>,

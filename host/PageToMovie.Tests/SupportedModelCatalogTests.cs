@@ -105,13 +105,16 @@ public class SupportedModelCatalogTests
     }
 
     [Fact]
-    public void Video_default_is_grok_imagine_video()
+    public void Video_empty_model_throws_instead_of_inventing_default()
     {
-        var m = SupportedModelCatalog.ResolveOrDefault(null, ModelCapability.Video);
-        Assert.Equal("grok-imagine-video", m.Id);
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => SupportedModelCatalog.ResolveOrDefault(null, ModelCapability.Video));
+        Assert.Contains("not in models_catalog.json", ex.Message);
+        // Explicit catalog id still resolves.
+        var m = SupportedModelCatalog.Find("grok-imagine-video", ModelCapability.Video);
+        Assert.NotNull(m);
+        Assert.Equal("grok-imagine-video", m!.Id);
         Assert.Equal(ModelProviderFamily.Xai, m.Provider);
-        Assert.Contains("XAI_API_KEY", m.RequiredEnvKeys);
-        Assert.Equal("videos/generations", m.EndpointPath);
     }
 
     [Fact]
@@ -416,14 +419,12 @@ public class SupportedModelCatalogTests
     }
 
     [Fact]
-    public void Unknown_video_model_leaves_aspect_ratio_unset_so_callers_fall_back_to_16_9()
+    public void Unknown_video_model_throws_instead_of_synthetic_entry()
     {
-        // Callers resolve `entry.DefaultAspectRatio ?? "16:9"` — an unresolvable/unknown model id
-        // must yield a null DefaultAspectRatio (not a guessed value) so that fallback kicks in.
-        var synthetic = SupportedModelCatalog.ResolveOrDefault("totally-unknown-video-model-xyz", ModelCapability.Video);
-        Assert.Null(synthetic.SupportedAspectRatios);
-        Assert.Null(synthetic.DefaultAspectRatio);
-        Assert.Equal("16:9", synthetic.DefaultAspectRatio ?? "16:9");
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => SupportedModelCatalog.ResolveOrDefault("totally-unknown-video-model-xyz", ModelCapability.Video));
+        Assert.Contains("totally-unknown-video-model-xyz", ex.Message);
+        Assert.Contains("models_catalog.json", ex.Message);
     }
 
     [Fact]
@@ -439,5 +440,19 @@ public class SupportedModelCatalogTests
                 Assert.Null(e.DefaultAspectRatio);
             }
         }
+    }
+
+    [Fact]
+    public void TaskRankings_load_from_models_catalog_json_not_csharp_defaults()
+    {
+        // snake_case task_rankings key in models_catalog.json must populate TaskRankings.
+        Assert.True(SupportedModelCatalog.TaskRankings.Count >= 6,
+            "expected task_rankings from models_catalog.json");
+        Assert.True(SupportedModelCatalog.TaskRankings.ContainsKey("script_import"));
+        Assert.True(SupportedModelCatalog.TaskRankings.ContainsKey("video_review"));
+        // C# DefaultTaskRankings is intentionally empty (obsolete).
+#pragma warning disable CS0618
+        Assert.Empty(SupportedModelCatalog.DefaultTaskRankings);
+#pragma warning restore CS0618
     }
 }

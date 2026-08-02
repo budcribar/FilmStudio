@@ -74,7 +74,7 @@ public sealed class FalAudioClient : IAudioClient
         if (isVocal)
             _log.LogWarning("Vocal generation requested but this Fal.ai model has no vocal capability — generating instrumental.");
 
-        model = string.IsNullOrWhiteSpace(model) ? SupportedModelCatalog.ResolveOrDefault(null, ModelCapability.Audio).Id : model;
+        model = ProjectModelSelection.RequireExplicit(model, ModelCapability.Audio, "Fal audio generation");
         // Real fal-ai/stable-audio hard limit (not an arbitrary choice — see
         // https://github.com/Stability-AI/stable-audio-tools/issues/154). Callers that need
         // longer coverage generate MaxSegmentDurationSeconds-sized segments and concatenate

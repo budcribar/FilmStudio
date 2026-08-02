@@ -343,7 +343,7 @@ public sealed class Stage2PlannerService
             ["schema_version"] = "stage2.v1",
             ["movie_title"] = stage1.TryGetValue("movie_title", out var mt) ? mt : null,
             ["source_book_title"] = stage1.TryGetValue("source_book_title", out var sbt) ? sbt : null,
-            ["video_provider_profile"] = "grok",
+            ["video_provider_profile"] = ResolveVideoProviderProfile(stage1),
             ["global_production_variables"] = gpv,
             ["scenes"] = planned.Cast<object?>().ToList(),
             ["stage2_meta"] = MakeMeta(stage1, planned, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta),
@@ -379,7 +379,7 @@ public sealed class Stage2PlannerService
             : existing.TryGetValue("movie_title", out var emt) ? emt : null;
         existing["source_book_title"] = stage1.TryGetValue("source_book_title", out var sbt) ? sbt
             : existing.TryGetValue("source_book_title", out var esbt) ? esbt : null;
-        existing["video_provider_profile"] = "grok";
+        existing["video_provider_profile"] = ResolveVideoProviderProfile(stage1);
         existing["global_production_variables"] = gpv;
         existing["scenes"] = all.Cast<object?>().ToList();
         existing["stage2_meta"] = MakeMeta(stage1, all, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta);
@@ -822,7 +822,7 @@ public sealed class Stage2PlannerService
         ["veo_clips"] = clips,
         ["stage1_scene_number"] = scene.TryGetValue("scene_number", out var s1) ? s1 : null,
         ["stage1_beat_map"] = beatMap,
-        ["video_provider_profile"] = "grok",
+        ["video_provider_profile"] = ResolveVideoProviderProfile(null),
         ["spoiler_constraints"] = scene.TryGetValue("spoiler_constraints", out var sp) ? sp : new List<object?>(),
         ["source_book_refs"] = scene.TryGetValue("source_book_refs", out var sbr) ? sbr : new List<object?>(),
     };
@@ -1961,6 +1961,32 @@ public sealed class Stage2PlannerService
     {
         null => null, string s => s, _ => v.ToString(),
     };
+
+    /// <summary>
+    /// Catalog provider id for the project's video model. Empty when not yet selected —
+    /// never invents "grok".
+    /// </summary>
+    private static string ResolveVideoProviderProfile(Dictionary<string, object?>? stage1)
+    {
+        // Prefer explicit stamp already on stage1 / plan if a prior step wrote a catalog id.
+        if (stage1 is not null
+            && stage1.TryGetValue("video_provider_profile", out var existing)
+            && CoerceString(existing) is { Length: > 0 } prior
+            && SupportedModelCatalog.IsKnownProviderId(prior))
+        {
+            return SupportedModelCatalog.NormalizeProviderId(prior);
+        }
+
+        if (stage1 is not null
+            && stage1.TryGetValue("video_model", out var vmObj)
+            && CoerceString(vmObj) is { Length: > 0 } videoModel)
+        {
+            var pid = SupportedModelCatalog.CatalogProviderId(videoModel, "video");
+            if (!string.IsNullOrWhiteSpace(pid)) return pid;
+        }
+
+        return "";
+    }
 }
 
 public sealed class Stage2PlanResult

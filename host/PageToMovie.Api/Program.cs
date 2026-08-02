@@ -4144,7 +4144,11 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/look", async (
                 charKey,
                 description: desc ?? "",
                 visualLock: vis ?? "",
-                model: string.IsNullOrWhiteSpace(body.Model) ? "grok-4.5" : body.Model,
+                model: string.IsNullOrWhiteSpace(body.Model)
+                    ? ProjectModelSelection.RequirePlanning(
+                        await store.GetConfigAsync(id, ct).ConfigureAwait(false),
+                        "Character look scrub")
+                    : ProjectModelSelection.RequireExplicit(body.Model, ModelCapability.Chat, "Character look scrub"),
                 ct: ct).ConfigureAwait(false);
             if (usedAi)
             {
@@ -4199,6 +4203,7 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
     string id,
     ExtractCastRequest? body,
     CastFromScreenplayService castService,
+    ProjectStore store,
     CancellationToken ct) =>
 {
     try
@@ -4207,9 +4212,13 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
         timeoutCts.CancelAfter(TimeSpan.FromSeconds(50));
 
         body ??= new ExtractCastRequest();
+        var cfg = await store.GetConfigAsync(id, timeoutCts.Token).ConfigureAwait(false);
+        var castModel = string.IsNullOrWhiteSpace(body.Model)
+            ? ProjectModelSelection.RequirePlanning(cfg, "Cast extract")
+            : ProjectModelSelection.RequireExplicit(body.Model, ModelCapability.Chat, "Cast extract");
         var result = await castService.ExtractAsync(
             id,
-            model: string.IsNullOrWhiteSpace(body.Model) ? "grok-4.5" : body.Model!,
+            model: castModel,
             force: body.Force,
             ct: timeoutCts.Token);
         return result.Ok

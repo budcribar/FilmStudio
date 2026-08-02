@@ -27,7 +27,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
 
     public int TotalMinutes = 15;
     public int ChunkPages = 10;
-    public string Model = "grok-4.5";
+    public string Model = "";
     public bool Resume;
 
 

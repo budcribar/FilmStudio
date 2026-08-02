@@ -145,7 +145,7 @@ public sealed class ElevenLabsVoiceClient : IVoiceClient
 
         try
         {
-            var model = string.IsNullOrWhiteSpace(modelId) ? "eleven_multilingual_v2" : modelId.Trim();
+            var model = ProjectModelSelection.RequireExplicit(modelId, ModelCapability.Voice, "ElevenLabs TTS");
             var payload = JsonSerializer.Serialize(new
             {
                 text = text.Trim(),

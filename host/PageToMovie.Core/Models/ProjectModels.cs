@@ -379,8 +379,8 @@ public sealed class CharacterPlatesState
 /// <summary>Active image backend seed limits for Characters UI.</summary>
 public sealed class ImageSeedLimits
 {
-    /// <summary>grok | gemini</summary>
-    public string Provider { get; set; } = "grok";
+    /// <summary>Catalog provider id (from models_catalog.json), e.g. grok | gemini | openai.</summary>
+    public string Provider { get; set; } = "";
     public string? ImageModel { get; set; }
     /// <summary>Max reference images the active image API accepts per edit.</summary>
     public int MaxReferenceImages { get; set; } = 3;
