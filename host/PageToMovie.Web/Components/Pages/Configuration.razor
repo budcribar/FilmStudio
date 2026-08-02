@@ -1,4 +1,5 @@
 @page "/configuration"
+@implements IAsyncDisposable
 @implements IDisposable
 @using System.Text.Json
 @using PageToMovie.Core.Models
@@ -21,6 +22,10 @@
             @if (!string.IsNullOrWhiteSpace(_projectId))
             {
                 <span>Settings for active project: <strong class="text-primary">@_projectId</strong></span>
+                @if (!string.IsNullOrWhiteSpace(_saveStatus))
+                {
+                    <span class="ms-2 small @(_saveStatus == "Saved" ? "text-success" : "text-muted")" data-testid="settings-autosave-status">· @_saveStatus</span>
+                }
             }
             else
             {
@@ -477,18 +482,18 @@
         <div class="card-body row g-3">
             <div class="col-md-4">
                 <label class="form-label">Theme</label>
-                <select class="form-select" data-testid="config-theme" @bind="_uiTheme" @bind:after="PreviewThemeAsync" disabled="@_busy">
+                <select class="form-select" data-testid="config-theme" @bind="_uiTheme" @bind:after="OnThemeChangedAsync" disabled="@_busy">
                     <option value="dark">Dark</option>
                     <option value="light">Light</option>
                     <option value="system">Use system</option>
                 </select>
                 <div class="form-text">
-                    Saved with this project's settings. Previews immediately; click Save to persist.
+                    Previews immediately and saves with this project.
                 </div>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Preferred External Video Editor</label>
-                <input type="text" class="form-control" list="video-editor-suggestions" @bind="_preferredVideoEditor" placeholder="ClipChamp" disabled="@_busy" />
+                <input type="text" class="form-control" list="video-editor-suggestions" @bind="_preferredVideoEditor" @bind:after="ScheduleAutoSaveAsync" placeholder="ClipChamp" disabled="@_busy" />
                 <datalist id="video-editor-suggestions">
                     <option value="ClipChamp" />
                     <option value="DaVinci Resolve" />
@@ -508,14 +513,14 @@
             <div class="row align-items-center g-3">
                 <div class="col-md-6">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="enableBgMusicSwitch" @bind="_enableBackgroundMusic" disabled="@_busy" />
+                        <input class="form-check-input" type="checkbox" id="enableBgMusicSwitch" @bind="_enableBackgroundMusic" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                         <label class="form-check-label fw-semibold" for="enableBgMusicSwitch">Enable background music generation</label>
                     </div>
                     <div class="form-text text-muted">Score and remux music for completed scenes (provider/model above under Studio coverage).</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold mb-1">Background music volume (@_backgroundMusicVolumePercent%)</label>
-                    <input type="range" class="form-range" min="5" max="100" step="5" @bind="_backgroundMusicVolumePercent" disabled="@(!_enableBackgroundMusic || _busy)" />
+                    <input type="range" class="form-range" min="5" max="100" step="5" @bind="_backgroundMusicVolumePercent" @bind:after="ScheduleAutoSaveAsync" disabled="@(!_enableBackgroundMusic || _busy)" />
                     <div class="form-text text-muted">Under dialogue (default 20%).</div>
                 </div>
             </div>
@@ -527,7 +532,7 @@
         <div class="card-body row g-2">
             <div class="col-md-4">
                 <label class="form-label">Aspect ratio</label>
-                <select class="form-select" @bind="_aspect" disabled="@_busy">
+                <select class="form-select" @bind="_aspect" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy">
                     <option value="16:9">16:9</option>
                     <option value="9:16">9:16</option>
                     <option value="1:1">1:1</option>
@@ -535,7 +540,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Resolution</label>
-                <select class="form-select" @bind="_resolution" disabled="@_busy">
+                <select class="form-select" @bind="_resolution" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy">
                     <option value="480p">480p</option>
                     <option value="720p">720p</option>
                     <option value="1080p">1080p</option>
@@ -543,7 +548,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Duration (seconds)</label>
-                <input type="number" class="form-control" min="1" max="15" @bind="_durationSeconds" disabled="@_busy" />
+                <input type="number" class="form-control" min="1" max="15" @bind="_durationSeconds" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
             </div>
         </div>
     </div>
@@ -552,24 +557,24 @@
         <div class="card-header">Pipeline Behavior</div>
         <div class="card-body row g-3">
             <div class="col-md-6 form-check">
-                <input class="form-check-input" type="checkbox" id="smart" @bind="_smartContinuation" disabled="@_busy" />
+                <input class="form-check-input" type="checkbox" id="smart" @bind="_smartContinuation" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="smart">Smart Continuation</label>
                 <div class="form-text">Seamlessly extend visual prompts across consecutive clips in a scene.</div>
             </div>
             <div class="col-md-6 form-check">
-                <input class="form-check-input" type="checkbox" id="qaRetry" @bind="_qaRetry" disabled="@_busy" />
+                <input class="form-check-input" type="checkbox" id="qaRetry" @bind="_qaRetry" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="qaRetry">Quality Gate Retry</label>
                 <div class="form-text">
-                    When dialogue QA fails, auto-regenerate the clip (admin mode). Cost estimate uses a ~1.3× video prior until we learn real retry rates from production data.
+                    When dialogue QA fails, auto-regenerate the clip (admin mode).
                 </div>
             </div>
             <div class="col-md-6 form-check">
-                <input class="form-check-input" type="checkbox" id="regenSilent" @bind="_regenSilent" disabled="@_busy" />
+                <input class="form-check-input" type="checkbox" id="regenSilent" @bind="_regenSilent" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="regenSilent">Regenerate Silent Beats</label>
                 <div class="form-text">Re-synthesize audio for silent action beats during scene updates.</div>
             </div>
             <div class="col-md-6 form-check">
-                <input class="form-check-input" type="checkbox" id="useDur" @bind="_useDurationDefaults" disabled="@_busy" />
+                <input class="form-check-input" type="checkbox" id="useDur" @bind="_useDurationDefaults" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="useDur">Use Default Clip Durations</label>
                 <div class="form-text">Fall back to standard duration budgeting when shot plan timing is unspecified.</div>
             </div>
@@ -580,93 +585,40 @@
                 <summary class="text-muted role-button py-1 fw-semibold" style="cursor: pointer;">⚙️ Advanced QA Tuning</summary>
                 <div class="row g-2 mt-2 pt-2 border-top">
                     <div class="col-md-6 form-check">
-                        <input class="form-check-input" type="checkbox" id="merge" @bind="_mergeAfterClip" disabled="@_busy" />
+                        <input class="form-check-input" type="checkbox" id="merge" @bind="_mergeAfterClip" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                         <label class="form-check-label" for="merge">Auto-merge scene after each clip</label>
                     </div>
                     <div class="col-md-6 form-check">
-                        <input class="form-check-input" type="checkbox" id="rebuildWip" @bind="_rebuildWip" disabled="@_busy" />
+                        <input class="form-check-input" type="checkbox" id="rebuildWip" @bind="_rebuildWip" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                         <label class="form-check-label" for="rebuildWip">Auto-rebuild WIP movie after scene</label>
                     </div>
                     <div class="col-md-4 mt-3">
                         <label class="form-label">QA Max Retries</label>
-                        <input type="number" class="form-control form-control-sm" min="0" max="5" @bind="_qaMaxRetries" disabled="@_busy" />
+                        <input type="number" class="form-control form-control-sm" min="0" max="5" @bind="_qaMaxRetries" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                     </div>
                     <div class="col-md-4 mt-3">
                         <label class="form-label">QA Sample Frames</label>
-                        <input type="number" class="form-control form-control-sm" min="1" max="8" @bind="_qaFrameCount" disabled="@_busy" />
+                        <input type="number" class="form-control form-control-sm" min="1" max="8" @bind="_qaFrameCount" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                     </div>
                     <div class="col-md-4 mt-3">
                         <label class="form-label">Composite Audio Gain (dB)</label>
-                        <input type="number" step="0.5" class="form-control form-control-sm" @bind="_audioGain" disabled="@_busy" />
+                        <input type="number" step="0.5" class="form-control form-control-sm" @bind="_audioGain" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                     </div>
                 </div>
             </details>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Cost estimates (vendor list rates)</div>
-        <div class="card-body">
-            <p class="small text-muted mb-3">
-                Planning rates come from the <strong>selected models</strong> above (supported-model catalog),
-                not free-form dollars. Change the video or portrait model to update these.
-                Ledger “actuals” use the same list rates — not provider invoices.
-            </p>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="fw-semibold mb-1">Video · @VendorLabel(_modelName, "video")</div>
-                    <div class="small text-muted mb-2"><code>@_modelName</code></div>
-                    <div class="row g-2">
-                        <div class="col-4">
-                            <div class="form-control-plaintext border rounded px-2 py-1">
-                                <span class="small text-muted">480p</span><br />
-                                <strong>@UsdRate(CatalogVideoRate("480p"))</strong><span class="small">/sec</span>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-control-plaintext border rounded px-2 py-1">
-                                <span class="small text-muted">720p</span><br />
-                                <strong>@UsdRate(CatalogVideoRate("720p"))</strong><span class="small">/sec</span>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-control-plaintext border rounded px-2 py-1">
-                                <span class="small text-muted">1080p</span><br />
-                                <strong>@UsdRate(CatalogVideoRate("1080p"))</strong><span class="small">/sec</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="fw-semibold mb-1">Image · @VendorLabel(_imageModel, "image")</div>
-                    <div class="small text-muted mb-2"><code>@_imageModel</code></div>
-                    <div class="form-control-plaintext border rounded px-2 py-1">
-                        <span class="small text-muted">Per image</span><br />
-                        <strong>@UsdRate(CatalogImageRate())</strong>
-                    </div>
-                    <div class="small text-muted mt-2">
-                        Planning / quality chat models also have per-token catalog rates used in telemetry;
-                        video spend dominates most film budgets.
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mt-3 mb-4 p-3 border rounded card">
-            <span class="text-muted small">Configuring active project: <strong>@_projectId</strong></span>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary" disabled="@(_busy || string.IsNullOrEmpty(_projectId))" @onclick="LoadAsync">Reload settings</button>
-                <button class="btn btn-primary" disabled="@(_busy || _cfg is null || string.IsNullOrEmpty(_projectId))" @onclick="SaveAsync">
-                    @(_busy ? "Saving…" : $"Save settings for {_projectId}")
-                </button>
-            </div>
-        </div>
-    </div>
 }
 
 @code {
     private bool _busy;
     private string? _error;
     private string? _message;
+    private string? _saveStatus;
+    private bool _dirty;
+    private CancellationTokenSource? _autoSaveCts;
+    private int _autoSaveEpoch;
     private string _projectId = "";
     private List<string> _projectIds = new();
     private Dictionary<string, JsonElement>? _cfg;
@@ -1886,9 +1838,90 @@
         _ = InvokeAsync(StateHasChanged);
     }
 
+    private async Task OnThemeChangedAsync()
+    {
+        await PreviewThemeAsync();
+        await ScheduleAutoSaveAsync();
+    }
+
+    /// <summary>Debounced project-settings save — no bottom Save button.</summary>
+    private async Task ScheduleAutoSaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_projectId) || _cfg is null)
+            return;
+
+        _dirty = true;
+        var epoch = ++_autoSaveEpoch;
+        _autoSaveCts?.Cancel();
+        _autoSaveCts?.Dispose();
+        _autoSaveCts = new CancellationTokenSource();
+        var token = _autoSaveCts.Token;
+
+        _saveStatus = "Saving…";
+        try { await InvokeAsync(StateHasChanged); } catch { /* ignore */ }
+
+        try
+        {
+            await Task.Delay(450, token);
+            if (token.IsCancellationRequested || epoch != _autoSaveEpoch)
+                return;
+
+            await PersistProjectConfigAsync();
+            if (token.IsCancellationRequested || epoch != _autoSaveEpoch)
+                return;
+
+            _dirty = false;
+            _saveStatus = "Saved";
+            try { await InvokeAsync(StateHasChanged); } catch { /* ignore */ }
+
+            // Fade the Saved label after a moment.
+            _ = ClearSaveStatusLaterAsync(epoch);
+        }
+        catch (TaskCanceledException)
+        {
+            // newer edit superseded this save
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _saveStatus = "Save failed";
+            try { await InvokeAsync(StateHasChanged); } catch { /* ignore */ }
+        }
+    }
+
+    private async Task ClearSaveStatusLaterAsync(int epoch)
+    {
+        try
+        {
+            await Task.Delay(2000);
+            if (epoch == _autoSaveEpoch && _saveStatus == "Saved")
+            {
+                _saveStatus = null;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch { /* ignore */ }
+    }
+
     public void Dispose()
     {
         MediaFolder.Changed -= OnMediaFolderChanged;
+        try { _autoSaveCts?.Cancel(); } catch { /* ignore */ }
+        _autoSaveCts?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        MediaFolder.Changed -= OnMediaFolderChanged;
+        try { _autoSaveCts?.Cancel(); } catch { /* ignore */ }
+        _autoSaveCts?.Dispose();
+        // Flush any pending edits when leaving the page.
+        if (_dirty && !string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
+        {
+            try { await PersistProjectConfigAsync(); }
+            catch { /* best-effort on navigate away */ }
+            _dirty = false;
+        }
     }
 
     private async Task ConnectMediaFolderAsync()
