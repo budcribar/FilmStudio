@@ -2493,9 +2493,10 @@ else
                 return;
             }
 
-            // Default Instant clone model. Routing still follows whatever is saved here —
-            // user can switch to fal-ai/minimax/voice-clone in Settings (Apply uses catalog).
-            var defaultClone = "eleven_voice_clone";
+            // First clone-step model from the catalog only (never invent an id).
+            var defaultClone = SupportedModelCatalog.FirstEnabledVoiceCloneModelId();
+            if (string.IsNullOrWhiteSpace(defaultClone))
+                return;
             await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?>
             {
                 ["voice_model_name"] = defaultClone,

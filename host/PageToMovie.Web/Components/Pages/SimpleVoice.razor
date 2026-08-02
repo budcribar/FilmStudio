@@ -1,5 +1,6 @@
 @page "/simple-voice"
 @implements IAsyncDisposable
+@using PageToMovie.Core.Models
 @inject EngineApiClient Engine
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
@@ -453,9 +454,12 @@ else
                 && !voice.Equals("none", StringComparison.OrdinalIgnoreCase)
                 && !voice.Equals("disabled", StringComparison.OrdinalIgnoreCase))
                 return;
+            var defaultClone = SupportedModelCatalog.FirstEnabledVoiceCloneModelId();
+            if (string.IsNullOrWhiteSpace(defaultClone))
+                return;
             await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?>
             {
-                ["voice_model_name"] = "eleven_voice_clone",
+                ["voice_model_name"] = defaultClone,
             });
         }
         catch { /* non-fatal */ }

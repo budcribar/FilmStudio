@@ -57,7 +57,9 @@ public sealed class StudioCapabilityState
 
             string audioModel = "none";
             string voiceModel = "none";
-            string qualityModel = "gemini-2.5-flash";
+            string qualityModel = SupportedModelCatalog.DefaultModelIdForCapability("video-review")
+                ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
+                ?? "";
             if (!string.IsNullOrWhiteSpace(ProjectId))
             {
                 try

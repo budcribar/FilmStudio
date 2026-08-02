@@ -47,6 +47,8 @@ public enum ModelProviderFamily
     AiMusicApi = 5,
     /// <summary>ElevenLabs (<c>ElevenLabs_API_KEY</c>) — voice clone + TTS for personal dialogue.</summary>
     ElevenLabs = 6,
+    /// <summary>OpenAI (<c>OPENAI_API_KEY</c>) — chat / planning models.</summary>
+    OpenAI = 7,
 }
 
 /// <summary>
@@ -306,28 +308,17 @@ public sealed class SupportedModelEntry
     /// <summary>USD per minute of output video (LipSync only, flat rate — Sync Labs-style lip-sync models aren't priced per resolution like <see cref="VideoCostPerSecondByResolution"/>). Null when not applicable/unconfirmed.</summary>
     public double? CostPerMinuteUsd { get; init; }
 
-    /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
+    /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, Xai, Google).</summary>
     public string ProviderName { get; init; } = "";
 
-    /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>, <c>anthropic</c>, <c>openai</c>).
-    /// Prefers <see cref="ProviderName"/> only when it doesn't match a known <see cref="ModelProviderFamily"/>
-    /// member (a genuinely custom/unrecognized provider, e.g. one hand-added via the catalog admin UI before a
-    /// matching enum value exists) — models_catalog.json's "provider" field is normally just the literal enum
-    /// name (e.g. "Xai", "Google"), which must still resolve to the friendly id below ("grok", "gemini") rather
-    /// than being echoed back verbatim.</summary>
-    public string ProviderId => !string.IsNullOrWhiteSpace(ProviderName) &&
-        !Enum.TryParse<ModelProviderFamily>(ProviderName, true, out _)
-        ? ProviderName.ToLowerInvariant()
-        : Provider switch
-        {
-            ModelProviderFamily.Google => "gemini",
-            ModelProviderFamily.Anthropic => "anthropic",
-            ModelProviderFamily.Fal => "fal",
-            ModelProviderFamily.Suno => "suno",
-            ModelProviderFamily.AiMusicApi => "aimusicapi",
-            ModelProviderFamily.ElevenLabs => "elevenlabs",
-            _ => "grok",
-        };
+    /// <summary>
+    /// Stable key-slot id from catalog <c>providers[].id</c> / model <c>providerId</c>
+    /// (e.g. <c>grok</c>, <c>gemini</c>, <c>suno</c>). Not invented at runtime.
+    /// </summary>
+    public string ProviderId { get; init; } = "";
+
+    /// <summary>UI label from catalog <c>providers[].label</c> / model <c>providerLabel</c> (e.g. xAI, Suno API).</summary>
+    public string ProviderLabel { get; init; } = "";
 }
 
 /// <summary>
@@ -355,6 +346,7 @@ public static class SupportedModelCatalog
     public const string ElevenLabsApiBase = "https://api.elevenlabs.io/v1";
 
     private static List<SupportedModelEntry>? _loadedEntries;
+    private static List<CatalogProviderDefinition>? _loadedProviders;
 
     private static IReadOnlyList<ModelCapabilityDefinition>? _loadedCapabilities;
 
@@ -367,7 +359,8 @@ public static class SupportedModelCatalog
             {
                 EnsureLoaded();
             }
-            return _loadedCapabilities ?? DefaultCapabilityDefinitions;
+            // Catalog JSON is SSoT — no hard-coded capability list when file had none.
+            return _loadedCapabilities ?? Array.Empty<ModelCapabilityDefinition>();
         }
     }
 
@@ -390,7 +383,7 @@ public static class SupportedModelCatalog
         get
         {
             EnsureLoaded();
-            return _loadedTaskRankings ?? DefaultTaskRankings;
+            return _loadedTaskRankings ?? new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         }
     }
 
@@ -486,6 +479,7 @@ public static class SupportedModelCatalog
     public static void ReloadCatalog(string? overrideJsonPath = null)
     {
         _loadedEntries = null;
+        _loadedProviders = null;
         _loadedCapabilities = null;
         _loadedTaskRankings = null;
         EnsureLoaded(overrideJsonPath);
@@ -504,6 +498,12 @@ public static class SupportedModelCatalog
                 var container = System.Text.Json.JsonSerializer.Deserialize<ModelCatalogContainerDto>(json, opts);
                 if (container?.Models is { Count: > 0 })
                 {
+                    _loadedProviders = (container.Providers is { Count: > 0 }
+                        ? container.Providers
+                        : InferProvidersFromModels(container.Models))
+                        .Select(NormalizeProviderDef)
+                        .Where(p => !string.IsNullOrWhiteSpace(p.Id))
+                        .ToList();
                     _loadedEntries = container.Models.Select(FromDto).ToList();
                     if (container.Capabilities is { Count: > 0 })
                     {
@@ -518,12 +518,12 @@ public static class SupportedModelCatalog
                     }
                     else
                     {
-                        _loadedCapabilities = DefaultCapabilityDefinitions;
+                        _loadedCapabilities = new List<ModelCapabilityDefinition>();
                     }
 
                     _loadedTaskRankings = container.TaskRankings is { Count: > 0 }
                         ? new Dictionary<string, List<string>>(container.TaskRankings, StringComparer.OrdinalIgnoreCase)
-                        : DefaultTaskRankings;
+                        : new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
                     return true;
                 }
             }
@@ -532,9 +532,13 @@ public static class SupportedModelCatalog
                 var dtos = System.Text.Json.JsonSerializer.Deserialize<List<SupportedModelDto>>(json, opts);
                 if (dtos is { Count: > 0 })
                 {
+                    _loadedProviders = InferProvidersFromModels(dtos)
+                        .Select(NormalizeProviderDef)
+                        .Where(p => !string.IsNullOrWhiteSpace(p.Id))
+                        .ToList();
                     _loadedEntries = dtos.Select(FromDto).ToList();
-                    _loadedCapabilities = DefaultCapabilityDefinitions;
-                    _loadedTaskRankings = DefaultTaskRankings;
+                    _loadedCapabilities = new List<ModelCapabilityDefinition>();
+                    _loadedTaskRankings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
                     return true;
                 }
             }
@@ -593,8 +597,9 @@ public static class SupportedModelCatalog
         if (OperatingSystem.IsBrowser())
         {
             _loadedEntries = new List<SupportedModelEntry>();
-            _loadedCapabilities = DefaultCapabilityDefinitions;
-            _loadedTaskRankings = DefaultTaskRankings;
+            _loadedProviders = new List<CatalogProviderDefinition>();
+            _loadedCapabilities = new List<ModelCapabilityDefinition>();
+            _loadedTaskRankings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             return;
         }
 
@@ -673,16 +678,14 @@ public static class SupportedModelCatalog
         DisplayName = id,
         Capability = capability,
         Provider = ModelProviderFamily.Xai,
-        ApiBase = XaiApiBase,
-        EndpointPath = capability switch
-        {
-            ModelCapability.Video => "videos/generations",
-            ModelCapability.Image => "images/generations",
-            _ => "chat/completions",
-        },
-        RequiredEnvKeys = [XaiApiKeyEnv],
+        ProviderName = "",
+        ProviderId = "",
+        ProviderLabel = "",
+        ApiBase = "",
+        EndpointPath = "",
+        RequiredEnvKeys = [],
         Enabled = false,
-        Notes = "Not in master catalog — add to models_catalog.json or track as feature request.",
+        Notes = "Not in master catalog — add to models_catalog.json. Not selectable in Settings.",
     };
 
     /// <summary>
@@ -750,65 +753,114 @@ public static class SupportedModelCatalog
     public static string NormalizeProviderId(string? providerId)
     {
         if (string.IsNullOrWhiteSpace(providerId)) return "";
-        var p = providerId.Trim().ToLowerInvariant();
-        return p switch
+        var raw = providerId.Trim();
+        // Prefer in-memory providers[] — safe during TryLoadFromJson (before Entries is set).
+        if (_loadedProviders is { Count: > 0 })
         {
-            "xai" or "grok" or "x.ai" => "grok",
-            "google" or "gemini" => "gemini",
-            "claude" or "anthropic" => "anthropic",
-            "fal" or "fal.ai" or "falai" => "fal",
-            "openai" or "oai" or "open ai" => "openai",
-            "suno" => "suno",
-            "aimusicapi" or "ai-music-api" => "aimusicapi",
-            "elevenlabs" or "eleven" => "elevenlabs",
-            _ => p,
-        };
+            foreach (var prov in _loadedProviders)
+            {
+                if (string.Equals(prov.Id, raw, StringComparison.OrdinalIgnoreCase))
+                    return prov.Id;
+                if (prov.Aliases.Any(a => string.Equals(a, raw, StringComparison.OrdinalIgnoreCase)))
+                    return prov.Id;
+            }
+        }
+        // Unknown: keep as lowercase token — do not invent a different provider.
+        return raw.ToLowerInvariant();
     }
 
-    private static string DisplayNameForProvider(string pId, SupportedModelEntry sample) => pId switch
+    private static string DisplayNameForProvider(string pId, SupportedModelEntry sample)
     {
-        // Provider = who holds the key (not the model product name).
-        "grok" => "xAI",
-        "gemini" => "Google",
-        "anthropic" => "Anthropic",
-        "fal" => "Fal.ai",
-        "openai" => "OpenAI",
-        "suno" => "Suno API (sunoapi.org)",
-        "aimusicapi" => "AI Music API (aimusicapi.ai)",
-        "elevenlabs" => "ElevenLabs",
-        _ => !string.IsNullOrWhiteSpace(sample.ProviderName)
-            ? sample.ProviderName
-            : char.ToUpperInvariant(pId[0]) + pId[1..],
-    };
+        if (!string.IsNullOrWhiteSpace(sample.ProviderLabel))
+            return sample.ProviderLabel;
+        return ProviderLabelFor(pId);
+    }
 
-    private static string? ShortProviderBlurb(string pId) => pId switch
+    /// <summary>UI label for a provider id — catalog <c>providers[]</c> only (no hardcoded map).</summary>
+    public static string ProviderLabelFor(string? providerId)
     {
-        "grok" => "xAI — video, image, script, and vision for the main studio pipeline.",
-        "gemini" => "Google — video review (MP4), Veo video, image, and planning.",
-        "openai" => "OpenAI — script & planning (chat).",
-        "anthropic" => "Anthropic — script & planning and image vision.",
-        "fal" => "Fal.ai — open models for video, image, music, and voice.",
-        "suno" => "Suno API (sunoapi.org) — Suno music models.",
-        "aimusicapi" => "AI Music API (aimusicapi.ai) — Suno-compatible music models.",
-        "elevenlabs" => "ElevenLabs — voice clone and speech.",
-        _ => null,
-    };
+        var id = NormalizeProviderId(providerId);
+        if (string.IsNullOrWhiteSpace(id)) return "";
+        var hit = _loadedProviders?.FirstOrDefault(p =>
+            string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+        if (hit is not null && !string.IsNullOrWhiteSpace(hit.Label))
+            return hit.Label;
+        if (_loadedEntries is { Count: > 0 })
+        {
+            var fromModel = _loadedEntries.FirstOrDefault(e =>
+                string.Equals(e.ProviderId, id, StringComparison.OrdinalIgnoreCase));
+            if (fromModel is not null && !string.IsNullOrWhiteSpace(fromModel.ProviderLabel))
+                return fromModel.ProviderLabel;
+        }
+        return id;
+    }
 
-    private static int DisplayOrder(string pId) => pId switch
+    private static string? ShortProviderBlurb(string pId)
     {
-        "grok" => 0,
-        "gemini" => 1,
-        "openai" => 2,
-        "anthropic" => 3,
-        "fal" => 4,
-        "suno" => 5,
-        "aimusicapi" => 6,
-        "elevenlabs" => 7,
-        _ => 50,
-    };
+        // Optional notes live on models; provider rows keep a short capability summary only.
+        return null;
+    }
+
+    private static int DisplayOrder(string pId)
+    {
+        var hit = _loadedProviders?.FirstOrDefault(p =>
+            string.Equals(p.Id, pId, StringComparison.OrdinalIgnoreCase));
+        return hit?.Order ?? 50;
+    }
 
     public static string ProviderIdFor(string? modelId, ModelCapability capability) =>
         ResolveOrDefault(modelId, capability).ProviderId;
+
+    /// <summary>
+    /// Default model id for a capability from catalog <c>capabilities[].defaultModelId</c>,
+    /// else first enabled model with that capability. Null if catalog has none.
+    /// </summary>
+    public static string? DefaultModelIdForCapability(string capabilityId)
+    {
+        if (string.IsNullOrWhiteSpace(capabilityId)) return null;
+        try { EnsureLoaded(); } catch { return null; }
+
+        var capDef = (_loadedCapabilities ?? Enumerable.Empty<ModelCapabilityDefinition>())
+            .FirstOrDefault(c => string.Equals(c.Id, capabilityId, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(capDef?.DefaultModelId))
+        {
+            var hit = Find(capDef.DefaultModelId);
+            if (hit is { Enabled: true })
+                return hit.Id;
+        }
+
+        if (!Enum.TryParse<ModelCapability>(capabilityId.Replace("-", ""), true, out var cap))
+        {
+            cap = capabilityId.ToLowerInvariant() switch
+            {
+                "video" => ModelCapability.Video,
+                "image" => ModelCapability.Image,
+                "chat" or "planning" => ModelCapability.Chat,
+                "vision" => ModelCapability.Vision,
+                "audio" or "music" => ModelCapability.Audio,
+                "voice" => ModelCapability.Voice,
+                "lipsync" or "lip-sync" => ModelCapability.LipSync,
+                "video-review" or "videoreview" => ModelCapability.Chat,
+                _ => ModelCapability.Chat,
+            };
+        }
+
+        if (string.Equals(capabilityId, "video-review", StringComparison.OrdinalIgnoreCase))
+        {
+            var review = Entries.FirstOrDefault(e => e.Enabled && e.SupportsVideoReview);
+            if (review is not null) return review.Id;
+        }
+
+        return ForCapability(cap).FirstOrDefault()?.Id;
+    }
+
+    /// <summary>First enabled catalog voice model marked <see cref="SupportedModelEntry.IsVoiceCloneStep"/>.</summary>
+    public static string? FirstEnabledVoiceCloneModelId()
+    {
+        try { EnsureLoaded(); } catch { return null; }
+        return Entries.FirstOrDefault(e => e.Enabled && e.Capability == ModelCapability.Voice && e.IsVoiceCloneStep)?.Id
+               ?? ForCapability(ModelCapability.Voice).FirstOrDefault()?.Id;
+    }
 
     public static IReadOnlyList<string> MissingEnvKeys(SupportedModelEntry model)
     {
@@ -852,6 +904,7 @@ public static class SupportedModelCatalog
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
         ProviderId = e.ProviderId,
+        ProviderLabel = e.ProviderLabel,
         SupportsVideoContinue = e.SupportsVideoContinue,
         SupportsReferenceImages = e.SupportsReferenceImages,
         MaxReferenceImages = e.MaxReferenceImages,
@@ -874,14 +927,22 @@ public static class SupportedModelCatalog
         CostPerMinuteUsd = e.CostPerMinuteUsd,
     };
 
-    public static SupportedModelEntry FromDto(SupportedModelDto d) => new()
+    public static SupportedModelEntry FromDto(SupportedModelDto d)
+    {
+        var (providerId, providerLabel) = ResolveProviderFromDto(d);
+        var providerFamily = Enum.TryParse<ModelProviderFamily>(d.Provider, true, out var prov)
+            ? prov
+            : ProviderFamilyFromId(providerId);
+        return new SupportedModelEntry
     {
         Id = d.Id,
         DisplayName = d.DisplayName,
         Capability = Enum.TryParse<ModelCapability>(d.Capability, true, out var cap) ? cap : ModelCapability.Chat,
         ProviderName = d.Provider ?? "",
-        Provider = Enum.TryParse<ModelProviderFamily>(d.Provider, true, out var prov) ? prov : ModelProviderFamily.Xai,
-        ApiBase = string.IsNullOrWhiteSpace(d.ApiBase) ? XaiApiBase : d.ApiBase,
+        Provider = providerFamily,
+        ProviderId = providerId,
+        ProviderLabel = providerLabel,
+        ApiBase = d.ApiBase ?? "",
         EndpointPath = d.EndpointPath ?? "",
         RequiredEnvKeys = d.RequiredEnvKeys ?? new List<string>(),
         Enabled = d.Enabled,
@@ -917,6 +978,83 @@ public static class SupportedModelCatalog
         CostPerThousandCharsUsd = d.CostPerThousandCharsUsd,
         CostPerMinuteUsd = d.CostPerMinuteUsd,
     };
+    }
+
+    /// <summary>Resolve provider id + label from model DTO using catalog providers[] only.</summary>
+    private static (string Id, string Label) ResolveProviderFromDto(SupportedModelDto d)
+    {
+        // Explicit providerId on the model wins.
+        if (!string.IsNullOrWhiteSpace(d.ProviderId))
+        {
+            var id = NormalizeProviderId(d.ProviderId);
+            var label = !string.IsNullOrWhiteSpace(d.ProviderLabel)
+                ? d.ProviderLabel.Trim()
+                : ProviderLabelFor(id);
+            return (id, label);
+        }
+        // provider field (enum-style name) resolved via providers[].aliases
+        if (!string.IsNullOrWhiteSpace(d.Provider))
+        {
+            var id = NormalizeProviderId(d.Provider);
+            var label = !string.IsNullOrWhiteSpace(d.ProviderLabel)
+                ? d.ProviderLabel.Trim()
+                : ProviderLabelFor(id);
+            return (id, label);
+        }
+        return ("", "");
+    }
+
+    private static ModelProviderFamily ProviderFamilyFromId(string providerId) =>
+        NormalizeProviderId(providerId) switch
+        {
+            "grok" => ModelProviderFamily.Xai,
+            "gemini" => ModelProviderFamily.Google,
+            "anthropic" => ModelProviderFamily.Anthropic,
+            "fal" => ModelProviderFamily.Fal,
+            "suno" => ModelProviderFamily.Suno,
+            "aimusicapi" => ModelProviderFamily.AiMusicApi,
+            "elevenlabs" => ModelProviderFamily.ElevenLabs,
+            "openai" => ModelProviderFamily.OpenAI,
+            _ => ModelProviderFamily.Xai,
+        };
+
+    private static CatalogProviderDefinition NormalizeProviderDef(CatalogProviderDto d) => new()
+    {
+        Id = (d.Id ?? "").Trim().ToLowerInvariant(),
+        Label = (d.Label ?? d.Id ?? "").Trim(),
+        Aliases = (d.Aliases ?? new List<string>())
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Select(a => a.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList(),
+        Order = d.Order,
+    };
+
+    /// <summary>
+    /// When catalog JSON has models but no providers[] array, derive provider rows from model fields only
+    /// (still data-driven — no invented providers).
+    /// </summary>
+    private static List<CatalogProviderDto> InferProvidersFromModels(IEnumerable<SupportedModelDto> models)
+    {
+        var list = new List<CatalogProviderDto>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var order = 0;
+        foreach (var m in models)
+        {
+            var id = !string.IsNullOrWhiteSpace(m.ProviderId)
+                ? m.ProviderId.Trim().ToLowerInvariant()
+                : (m.Provider ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(id) || !seen.Add(id)) continue;
+            list.Add(new CatalogProviderDto
+            {
+                Id = id,
+                Label = !string.IsNullOrWhiteSpace(m.ProviderLabel) ? m.ProviderLabel.Trim() : (m.Provider ?? id),
+                Aliases = string.IsNullOrWhiteSpace(m.Provider) ? new List<string>() : new List<string> { m.Provider },
+                Order = order++,
+            });
+        }
+        return list;
+    }
 }
 
 public sealed class SupportedModelDto
@@ -941,6 +1079,7 @@ public sealed class SupportedModelDto
     public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
     public string? ProviderId { get; set; }
+    public string? ProviderLabel { get; set; }
     public bool SupportsVideoContinue { get; set; } = true;
     public bool SupportsReferenceImages { get; set; } = true;
     public int? MaxReferenceImages { get; set; }
@@ -983,7 +1122,25 @@ public sealed class ModelCapabilityDto
 
 public sealed class ModelCatalogContainerDto
 {
+    public List<CatalogProviderDto>? Providers { get; set; }
     public List<ModelCapabilityDto>? Capabilities { get; set; }
     public Dictionary<string, List<string>>? TaskRankings { get; set; }
     public List<SupportedModelDto>? Models { get; set; }
+}
+
+/// <summary>One provider row in models_catalog.json <c>providers[]</c>.</summary>
+public sealed class CatalogProviderDto
+{
+    public string Id { get; set; } = "";
+    public string Label { get; set; } = "";
+    public List<string>? Aliases { get; set; }
+    public int Order { get; set; }
+}
+
+public sealed class CatalogProviderDefinition
+{
+    public string Id { get; init; } = "";
+    public string Label { get; init; } = "";
+    public List<string> Aliases { get; init; } = new();
+    public int Order { get; init; }
 }

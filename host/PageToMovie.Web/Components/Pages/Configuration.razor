@@ -662,12 +662,12 @@
     private string _uiTheme = "dark";
     private string _preferredVideoEditor = "ClipChamp";
     private string _blueprintFile = "blueprint.clips.grok.json";
-    private string _modelName = "grok-imagine-video";
-    private string _imageModel = "grok-imagine-image-quality";
-    private string _planningModel = "grok-4.5";
-    private string _visionModel = "grok-4.5";
-    private string _qualityModel = "gemini-2.5-flash";
-    private string _audioModel = "fal-ai/stable-audio-2.0";
+    private string _modelName = "";
+    private string _imageModel = "";
+    private string _planningModel = "";
+    private string _visionModel = "";
+    private string _qualityModel = "";
+    private string _audioModel = "none";
     private string _voiceModel = "none";
     /// <summary>Deep-link from gated features: music | voice | review | video | …</summary>
     private string? _focusCapability;
@@ -759,87 +759,83 @@
 
     private async Task LoadCatalogAsync()
     {
+        // Catalog is the only source of truth — never invent models in UI code.
+        _allModels = new();
+        _videoModels = new();
+        _imageModels = new();
+        _planningModels = new();
+        _visionModels = new();
+        _videoReviewModels = new();
+        _audioModels = new();
+        _voiceModels = new();
+
         try
         {
-            // WASM: hydrate SupportedModelCatalog from API (no local models_catalog.json).
             try
             {
                 var raw = await Engine.GetModelsCatalogJsonAsync();
                 if (!string.IsNullOrWhiteSpace(raw))
                     SupportedModelCatalog.TryLoadFromJson(raw);
             }
-            catch { /* rate UI uses defaults */ }
+            catch (Exception ex)
+            {
+                _error = $"Could not load models catalog: {ex.Message}";
+            }
 
             var list = await Engine.GetSupportedModelsAsync();
-            _allModels = list.ToList();
+            _allModels = list?.ToList() ?? new List<SupportedModelDto>();
             bool Cap(SupportedModelDto m, string c) =>
                 string.Equals(m.Capability, c, StringComparison.OrdinalIgnoreCase);
+
             _videoModels = _allModels.Where(m => Cap(m, "video")).ToList();
             _imageModels = _allModels.Where(m => Cap(m, "image")).ToList();
             _planningModels = _allModels.Where(m => Cap(m, "chat")).ToList();
             _visionModels = _allModels.Where(m => Cap(m, "vision")).ToList();
             _audioModels = _allModels.Where(m => Cap(m, "audio")).ToList();
             _voiceModels = _allModels.Where(m => Cap(m, "voice")).ToList();
-            // Prefer models that natively accept video files (e.g. Gemini 2.5 Flash)
+            // Review: only models the catalog marks SupportsVideoReview, else chat/vision from catalog.
             _videoReviewModels = _allModels.Where(m => m.SupportsVideoReview).ToList();
             if (_videoReviewModels.Count == 0)
                 _videoReviewModels = _allModels.Where(m => Cap(m, "chat") || Cap(m, "vision")).ToList();
-            _videoReviewModels = _videoReviewModels
-                .Concat(_allModels.Where(m => m.SupportsVideoReview || Cap(m, "chat") || Cap(m, "vision")))
-                .GroupBy(m => m.Id, StringComparer.OrdinalIgnoreCase)
-                .Select(g => g.First())
-                .ToList();
 
-            if (_videoModels.Count == 0)
-                _videoModels.Add(new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video", Provider = "Xai" });
-            if (_imageModels.Count == 0)
-                _imageModels.Add(new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image", Provider = "Xai" });
-            if (_planningModels.Count == 0)
-                _planningModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5", Provider = "Xai" });
-            if (_visionModels.Count == 0)
-                _visionModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" });
-            if (_videoReviewModels.Count == 0)
-                _videoReviewModels.Add(new SupportedModelDto { Id = "gemini-2.5-flash", DisplayName = "Gemini 2.5 Flash", Provider = "Google", SupportsVideoReview = true });
-            if (_audioModels.Count == 0)
-                _audioModels.Add(new SupportedModelDto { Id = "fal-ai/stable-audio-2.0", DisplayName = "Stable Audio 2.0 (Fal.ai)", Provider = "Fal", ProviderId = "fal" });
-
+            // Optional "off" rows are UI state, not providers — not catalog models.
             if (!_audioModels.Any(m => m.Id == "none"))
-                _audioModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" });
-            if (_voiceModels.Count == 0)
-            {
-                _voiceModels.Add(new SupportedModelDto { Id = "eleven_voice_clone", DisplayName = "Instant voice clone (ElevenLabs)", Provider = "ElevenLabs", ProviderId = "elevenlabs", IsVoiceCloneStep = true });
-                _voiceModels.Add(new SupportedModelDto { Id = "eleven_multilingual_v2", DisplayName = "Multilingual TTS (ElevenLabs)", Provider = "ElevenLabs", ProviderId = "elevenlabs" });
-                _voiceModels.Add(new SupportedModelDto { Id = "fal-ai/minimax/voice-clone", DisplayName = "MiniMax voice clone (Fal)", Provider = "Fal", ProviderId = "fal", IsVoiceCloneStep = true });
-                _voiceModels.Add(new SupportedModelDto { Id = "fal-ai/minimax/speech-02-hd", DisplayName = "MiniMax speech (Fal)", Provider = "Fal", ProviderId = "fal" });
-            }
-            // Clone models first so Settings / coverage pick the right step, not TTS-only ids.
+                _audioModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None", ProviderId = "none" });
             _voiceModels = _voiceModels
                 .OrderBy(m => string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                 .ThenBy(m => m.IsVoiceCloneStep ? 0 : 1)
                 .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             if (!_voiceModels.Any(m => m.Id == "none"))
-                _voiceModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (no voice clone)", Provider = "None" });
+                _voiceModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (no voice clone)", Provider = "None", ProviderId = "none" });
+
+            ApplyCatalogDefaultsIfEmpty();
         }
-        catch
+        catch (Exception ex)
         {
-            _videoModels = [new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video", Provider = "Xai" }];
-            _imageModels = [new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image", Provider = "Xai" }];
-            _planningModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5", Provider = "Xai" }];
-            _visionModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" }];
-            _videoReviewModels = [new SupportedModelDto { Id = "gemini-2.5-flash", DisplayName = "Gemini 2.5 Flash", Provider = "Google", SupportsVideoReview = true }];
-            _audioModels = [
-                new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" },
-                new SupportedModelDto { Id = "fal-ai/stable-audio-2.0", DisplayName = "Stable Audio 2.0 (Fal.ai)", Provider = "Fal", ProviderId = "fal" }
-            ];
-            _voiceModels = [
-                new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (no voice clone)", Provider = "None" },
-                new SupportedModelDto { Id = "eleven_voice_clone", DisplayName = "Instant voice clone (ElevenLabs)", Provider = "ElevenLabs", ProviderId = "elevenlabs", IsVoiceCloneStep = true },
-                new SupportedModelDto { Id = "eleven_multilingual_v2", DisplayName = "Multilingual TTS (ElevenLabs)", Provider = "ElevenLabs", ProviderId = "elevenlabs" },
-                new SupportedModelDto { Id = "fal-ai/minimax/voice-clone", DisplayName = "MiniMax voice clone (Fal)", Provider = "Fal", ProviderId = "fal", IsVoiceCloneStep = true },
-                new SupportedModelDto { Id = "fal-ai/minimax/speech-02-hd", DisplayName = "MiniMax speech (Fal)", Provider = "Fal", ProviderId = "fal" },
-            ];
+            _error = $"Models catalog unavailable: {ex.Message}";
         }
+    }
+
+    /// <summary>If project has not chosen models yet, use capability defaultModelId from the catalog only.</summary>
+    private void ApplyCatalogDefaultsIfEmpty()
+    {
+        if (string.IsNullOrWhiteSpace(_modelName))
+            _modelName = SupportedModelCatalog.DefaultModelIdForCapability("video") ?? "";
+        if (string.IsNullOrWhiteSpace(_imageModel))
+            _imageModel = SupportedModelCatalog.DefaultModelIdForCapability("image") ?? "";
+        if (string.IsNullOrWhiteSpace(_planningModel))
+            _planningModel = SupportedModelCatalog.DefaultModelIdForCapability("chat") ?? "";
+        if (string.IsNullOrWhiteSpace(_visionModel))
+            _visionModel = SupportedModelCatalog.DefaultModelIdForCapability("vision") ?? "";
+        if (string.IsNullOrWhiteSpace(_qualityModel))
+            _qualityModel = SupportedModelCatalog.DefaultModelIdForCapability("video-review")
+                            ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
+                            ?? "";
+        if (string.IsNullOrWhiteSpace(_audioModel))
+            _audioModel = "none";
+        if (string.IsNullOrWhiteSpace(_voiceModel))
+            _voiceModel = "none";
     }
 
 
@@ -981,10 +977,12 @@
 
     private string ResolveProviderIdForModel(string modelId, string capability, bool preferVideoReview)
     {
-        // Legacy music id still present in some project configs.
-        if (string.Equals(modelId, "fal-ai/stable-audio", StringComparison.OrdinalIgnoreCase))
-            modelId = "fal-ai/stable-audio-2.0";
+        if (string.IsNullOrWhiteSpace(modelId)
+            || modelId.Equals("none", StringComparison.OrdinalIgnoreCase)
+            || modelId.Equals("disabled", StringComparison.OrdinalIgnoreCase))
+            return "";
 
+        // Only models that exist in the loaded catalog (or catalog static after hydrate).
         var m = _allModels.FirstOrDefault(x =>
             string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase) &&
             (preferVideoReview
@@ -993,18 +991,9 @@
             ?? _allModels.FirstOrDefault(x => string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase));
 
         if (m is not null)
-        {
-            if (!string.IsNullOrWhiteSpace(m.ProviderId))
-                return SupportedModelCatalog.NormalizeProviderId(m.ProviderId);
-            if (!string.IsNullOrWhiteSpace(m.Provider))
-                return SupportedModelCatalog.NormalizeProviderId(m.Provider);
-        }
+            return ModelProviderId(m);
 
-        // Infer from model id before synthetic catalog fallback (which wrongly maps unknown audio → grok).
-        var inferred = InferProviderIdFromModelId(modelId);
-        if (!string.IsNullOrWhiteSpace(inferred))
-            return inferred;
-
+        // Server-side catalog (if WASM hydrated SupportedModelCatalog).
         var cap = capability.ToLowerInvariant() switch
         {
             "video" => ModelCapability.Video,
@@ -1014,28 +1003,10 @@
             "voice" => ModelCapability.Voice,
             _ => ModelCapability.Chat,
         };
-        var resolved = SupportedModelCatalog.NormalizeProviderId(
-            SupportedModelCatalog.ProviderIdFor(modelId, cap));
-        // Guard: ProviderIdFor synthesizes unknown audio as Xai/grok — never treat that as music.
-        if (cap == ModelCapability.Audio && string.Equals(resolved, "grok", StringComparison.OrdinalIgnoreCase))
-            return "fal";
-        return resolved;
-    }
-
-    private static string InferProviderIdFromModelId(string? modelId)
-    {
-        if (string.IsNullOrWhiteSpace(modelId)) return "";
-        var id = modelId.Trim().ToLowerInvariant();
-        if (id is "none" or "disabled") return "";
-        if (id.StartsWith("fal-ai/") || id.StartsWith("fal/")) return "fal";
-        if (id.StartsWith("suno")) return "suno";
-        if (id.StartsWith("aimusicapi") || id.Contains("aimusic")) return "aimusicapi";
-        if (id.StartsWith("eleven")) return "elevenlabs";
-        if (id.StartsWith("grok") || id.StartsWith("grok-")) return "grok";
-        if (id.StartsWith("gemini") || id.StartsWith("veo")) return "gemini";
-        if (id.StartsWith("gpt") || id.StartsWith("o1") || id.StartsWith("o3")) return "openai";
-        if (id.StartsWith("claude")) return "anthropic";
-        return "";
+        var entry = SupportedModelCatalog.Find(modelId, cap) ?? SupportedModelCatalog.Find(modelId);
+        if (entry is null || !entry.Enabled)
+            return ""; // not in catalog → not real
+        return SupportedModelCatalog.NormalizeProviderId(entry.ProviderId);
     }
 
     private List<string> CoverageUsesForProvider(string providerId)
@@ -1246,22 +1217,12 @@
 
     private static string ModelProviderId(SupportedModelDto m)
     {
-        // Prefer explicit catalog provider id, then family string, then model-id heuristics.
-        // Map Xai→grok, Google→gemini (same as SupportedModelEntry.ProviderId).
+        // Catalog fields only (providerId / provider). Never guess from model id.
         if (!string.IsNullOrWhiteSpace(m.ProviderId))
-        {
-            var n = SupportedModelCatalog.NormalizeProviderId(m.ProviderId);
-            if (!string.IsNullOrWhiteSpace(n)) return n;
-        }
+            return SupportedModelCatalog.NormalizeProviderId(m.ProviderId);
         if (!string.IsNullOrWhiteSpace(m.Provider))
-        {
-            var n = SupportedModelCatalog.NormalizeProviderId(m.Provider);
-            // Enum-style leftovers that Normalize leaves alone
-            if (n is "xai") return "grok";
-            if (n is "google") return "gemini";
-            if (!string.IsNullOrWhiteSpace(n)) return n;
-        }
-        return InferProviderIdFromModelId(m.Id);
+            return SupportedModelCatalog.NormalizeProviderId(m.Provider);
+        return "";
     }
 
     /// <summary>Models for a coverage job limited to one provider (second-stage dropdown).</summary>
@@ -1507,46 +1468,13 @@
     private void SetKeyInput(string providerId, string? value) =>
         _keyInputs[providerId] = value;
 
-    /// <summary>Company / API surface that holds the key (not the model product).</summary>
-    private static string FriendlyProviderLabel(string? providerId)
-    {
-        var p = SupportedModelCatalog.NormalizeProviderId(providerId);
-        return p switch
-        {
-            "grok" => "xAI",
-            "gemini" => "Google",
-            "anthropic" => "Anthropic",
-            "openai" => "OpenAI",
-            "fal" => "Fal.ai",
-            "suno" => "Suno API (sunoapi.org)",
-            "aimusicapi" => "AI Music API (aimusicapi.ai)",
-            "elevenlabs" => "ElevenLabs",
-            "" => "",
-            _ => p,
-        };
-    }
+    /// <summary>Provider UI label — catalog providers[] only.</summary>
+    private static string FriendlyProviderLabel(string? providerId) =>
+        SupportedModelCatalog.ProviderLabelFor(providerId);
 
-    /// <summary>Model product name only — provider lives in the Provider column.</summary>
-    private static string ModelOptionLabel(SupportedModelDto m)
-    {
-        var name = string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName.Trim();
-        // Strip trailing provider parentheticals catalog sometimes appends.
-        name = System.Text.RegularExpressions.Regex.Replace(
-            name,
-            @"\s*\((?:Fal\.ai|sunoapi\.org|aimusicapi\.ai|ElevenLabs|Xai|xAI|Google|OpenAI|Anthropic)\)\s*$",
-            "",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        var pid = !string.IsNullOrWhiteSpace(m.ProviderId)
-            ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
-            : SupportedModelCatalog.NormalizeProviderId(m.Provider);
-        // Model names only — provider (Suno API vs AI Music API vs Fal) is the other column.
-        if (string.Equals(m.Id, "suno-v5-5", StringComparison.OrdinalIgnoreCase)
-            && !name.Contains("5.5", StringComparison.OrdinalIgnoreCase))
-            return "Suno v5.5";
-        if (string.Equals(m.Id, "aimusicapi-suno", StringComparison.OrdinalIgnoreCase))
-            return "Suno";
-        return string.IsNullOrWhiteSpace(name) ? m.Id : name;
-    }
+    /// <summary>Model product name from catalog displayName only.</summary>
+    private static string ModelOptionLabel(SupportedModelDto m) =>
+        string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName.Trim();
 
     private string VendorLabel(string modelId, string capability)
     {
@@ -1590,12 +1518,7 @@
         {
             // Catalog not loaded (rare after embedded fallback) — use list defaults.
         }
-        return resolution switch
-        {
-            "480p" => 0.05,
-            "1080p" => 0.25,
-            _ => 0.07,
-        };
+        return 0;
     }
 
     private double CatalogImageRate()
@@ -1604,11 +1527,11 @@
         {
             var entry = SupportedModelCatalog.Find(_imageModel, ModelCapability.Image)
                         ?? SupportedModelCatalog.ResolveOrDefault(_imageModel, ModelCapability.Image);
-            return entry.ImageCostPerImage ?? 0.05;
+            return entry.ImageCostPerImage ?? 0;
         }
         catch (Exception)
         {
-            return 0.05;
+            return 0;
         }
     }
 
@@ -1651,14 +1574,11 @@
             else
             {
                 _apiKeyFeedback = $"{label}: personal key encrypted and saved.";
-                // When attaching a Grok key, default this project's models to Grok if a project is open.
-                if ((providerId is "grok" or "xai") &&
-                    !string.IsNullOrWhiteSpace(_projectId) &&
-                    _cfg is not null)
+                // Fill empty required slots with this provider's first catalog models (if any).
+                if (!string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
                 {
-                    ApplyGrokModelDefaults();
-                    await PersistProjectConfigAsync();
-                    _apiKeyFeedback += " Project models defaulted to Grok (video, image, planning, quality).";
+                    ApplyProviderModelDefaults(providerId);
+                    try { await PersistProjectConfigAsync(); } catch { /* optional */ }
                 }
                 // Music key: if coverage model is none/unknown, pick a model for this provider so Ready lights up.
                 if (providerId is "fal" or "suno" or "aimusicapi")
@@ -1695,91 +1615,72 @@
 
 
 
-    /// <summary>After saving a voice-provider key, pick a clone-step model so coverage matches catalog.</summary>
+    /// <summary>After saving a voice-provider key, pick a clone-step model from the catalog for that provider.</summary>
     private void EnsureVoiceModelForProvider(string providerId)
     {
         var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
         var currentProvider = ResolveProviderIdForModel(_voiceModel, "voice", preferVideoReview: false);
         var off = string.IsNullOrWhiteSpace(_voiceModel)
                   || _voiceModel.Equals("none", StringComparison.OrdinalIgnoreCase)
-                  || _voiceModel.Equals("disabled", StringComparison.OrdinalIgnoreCase)
-                  || string.Equals(_voiceModel, "eleven_multilingual_v2", StringComparison.OrdinalIgnoreCase)
-                  || string.Equals(_voiceModel, "fal-ai/minimax/speech-02-hd", StringComparison.OrdinalIgnoreCase);
+                  || _voiceModel.Equals("disabled", StringComparison.OrdinalIgnoreCase);
 
         if (!off && string.Equals(currentProvider, pid, StringComparison.OrdinalIgnoreCase))
         {
             var cur = _voiceModels.FirstOrDefault(m => string.Equals(m.Id, _voiceModel, StringComparison.OrdinalIgnoreCase));
             if (cur is { IsVoiceCloneStep: true })
                 return;
+            // Prefer clone-step over TTS-only when switching within same provider.
         }
-
-        static string PidOf(SupportedModelDto m) =>
-            !string.IsNullOrWhiteSpace(m.ProviderId)
-                ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
-                : SupportedModelCatalog.NormalizeProviderId(m.Provider);
 
         var pick = _voiceModels.FirstOrDefault(m =>
             !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
             && m.IsVoiceCloneStep
-            && string.Equals(PidOf(m), pid, StringComparison.OrdinalIgnoreCase))
+            && string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase))
             ?? _voiceModels.FirstOrDefault(m =>
                 !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
-                && string.Equals(PidOf(m), pid, StringComparison.OrdinalIgnoreCase));
+                && string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase));
 
-        if (pick is null)
-        {
-            _voiceModel = pid switch
-            {
-                "elevenlabs" => "eleven_voice_clone",
-                "fal" => "fal-ai/minimax/voice-clone",
-                _ => _voiceModel,
-            };
-            return;
-        }
-        _voiceModel = pick.Id;
+        if (pick is not null)
+            _voiceModel = pick.Id;
+        // else leave as-is — no invented model id
     }
 
-    /// <summary>After saving a music-provider key, pick a matching music model so coverage goes Ready.</summary>
+    /// <summary>After saving a music-provider key, pick a matching music model from the catalog.</summary>
     private void EnsureMusicModelForProvider(string providerId)
     {
         var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
         var currentProvider = ResolveProviderIdForModel(_audioModel, "audio", preferVideoReview: false);
         var off = string.IsNullOrWhiteSpace(_audioModel)
                   || _audioModel.Equals("none", StringComparison.OrdinalIgnoreCase)
-                  || _audioModel.Equals("disabled", StringComparison.OrdinalIgnoreCase)
-                  || string.Equals(_audioModel, "fal-ai/stable-audio", StringComparison.OrdinalIgnoreCase);
+                  || _audioModel.Equals("disabled", StringComparison.OrdinalIgnoreCase);
         if (!off && string.Equals(currentProvider, pid, StringComparison.OrdinalIgnoreCase))
             return;
 
         var pick = _audioModels.FirstOrDefault(m =>
             !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(
-                !string.IsNullOrWhiteSpace(m.ProviderId)
-                    ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
-                    : SupportedModelCatalog.NormalizeProviderId(m.Provider),
-                pid,
-                StringComparison.OrdinalIgnoreCase));
-        if (pick is null)
-        {
-            _audioModel = pid switch
-            {
-                "fal" => "fal-ai/stable-audio-2.0",
-                "suno" => "suno-v5-5",
-                "aimusicapi" => "aimusicapi-suno",
-                _ => _audioModel,
-            };
-            return;
-        }
-        _audioModel = pick.Id;
+            string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase));
+        if (pick is not null)
+            _audioModel = pick.Id;
     }
 
-    /// <summary>Set all model slots to the standard Grok defaults after attaching an xAI key.</summary>
-    private void ApplyGrokModelDefaults()
+    /// <summary>After attaching a provider key, set empty required slots to that provider's first catalog model.</summary>
+    private void ApplyProviderModelDefaults(string providerId)
     {
-        _modelName = "grok-imagine-video";
-        _imageModel = "grok-imagine-image-quality";
-        _planningModel = "grok-4.5";
-        _qualityModel = "grok-4.5";
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        void Prefer(ref string slot, IReadOnlyList<SupportedModelDto> models)
+        {
+            if (!string.IsNullOrWhiteSpace(slot) && !slot.Equals("none", StringComparison.OrdinalIgnoreCase))
+                return;
+            var hit = models.FirstOrDefault(m =>
+                !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase));
+            if (hit is not null) slot = hit.Id;
+        }
+        Prefer(ref _modelName, _videoModels);
+        Prefer(ref _imageModel, _imageModels);
+        Prefer(ref _planningModel, _planningModels);
+        Prefer(ref _visionModel, _visionModels);
+        Prefer(ref _qualityModel, _videoReviewModels);
     }
 
     private async Task LoadAsync()
@@ -1810,12 +1711,28 @@
             _visionModel = GetStr("vision_model_name", _visionModel);
             _qualityModel = GetStr("quality_model_name", _qualityModel);
             _audioModel = GetStr("audio_model_name", _audioModel);
-            if (string.Equals(_audioModel, "fal-ai/stable-audio", StringComparison.OrdinalIgnoreCase))
-                _audioModel = "fal-ai/stable-audio-2.0";
             _voiceModel = GetStr("voice_model_name", _voiceModel);
-            // Catalog default used to be TTS-only; clone step is the coverage model.
-            if (string.Equals(_voiceModel, "eleven_multilingual_v2", StringComparison.OrdinalIgnoreCase))
-                _voiceModel = "eleven_voice_clone";
+            // Drop ids that are not in the catalog (stale project config).
+            if (!string.IsNullOrWhiteSpace(_modelName) && !_videoModels.Any(m => string.Equals(m.Id, _modelName, StringComparison.OrdinalIgnoreCase)))
+                _modelName = SupportedModelCatalog.DefaultModelIdForCapability("video") ?? "";
+            if (!string.IsNullOrWhiteSpace(_imageModel) && !_imageModels.Any(m => string.Equals(m.Id, _imageModel, StringComparison.OrdinalIgnoreCase)))
+                _imageModel = SupportedModelCatalog.DefaultModelIdForCapability("image") ?? "";
+            if (!string.IsNullOrWhiteSpace(_planningModel) && !_planningModels.Any(m => string.Equals(m.Id, _planningModel, StringComparison.OrdinalIgnoreCase)))
+                _planningModel = SupportedModelCatalog.DefaultModelIdForCapability("chat") ?? "";
+            if (!string.IsNullOrWhiteSpace(_visionModel) && !_visionModels.Any(m => string.Equals(m.Id, _visionModel, StringComparison.OrdinalIgnoreCase)))
+                _visionModel = SupportedModelCatalog.DefaultModelIdForCapability("vision") ?? "";
+            if (!string.IsNullOrWhiteSpace(_qualityModel) && !_videoReviewModels.Any(m => string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))
+                _qualityModel = SupportedModelCatalog.DefaultModelIdForCapability("video-review")
+                                ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
+                                ?? "";
+            if (!string.IsNullOrWhiteSpace(_audioModel)
+                && !_audioModel.Equals("none", StringComparison.OrdinalIgnoreCase)
+                && !_audioModels.Any(m => string.Equals(m.Id, _audioModel, StringComparison.OrdinalIgnoreCase)))
+                _audioModel = "none";
+            if (!string.IsNullOrWhiteSpace(_voiceModel)
+                && !_voiceModel.Equals("none", StringComparison.OrdinalIgnoreCase)
+                && !_voiceModels.Any(m => string.Equals(m.Id, _voiceModel, StringComparison.OrdinalIgnoreCase)))
+                _voiceModel = "none";
             _enableBackgroundMusic = GetBool("enable_background_music", _enableBackgroundMusic);
             _backgroundMusicVolumePercent = GetInt("background_music_volume_percent", _backgroundMusicVolumePercent);
             _aspect = GetStr("aspect_ratio", _aspect);
@@ -1962,7 +1879,7 @@
             ["image_model"] = image.Id,
             ["image_provider"] = image.ProviderId,
             ["video_output_per_sec"] = table,
-            ["image_output_quality"] = image.ImageCostPerImage ?? 0.05,
+            ["image_output_quality"] = image.ImageCostPerImage ?? 0,
             ["assume_avg_retries"] = assumeRetries,
             ["assume_ref_image_per_clip"] = assumeRef,
             ["notes"] =
