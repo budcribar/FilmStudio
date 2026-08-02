@@ -125,41 +125,91 @@ else
                     }
                 </div>
 
-                <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-                    @if (!_recording)
-                    {
+                @* Mutually exclusive: Record OR Upload — never both, so “upload my recording” isn’t confusing. *@
+                @if (_captureMode == CaptureMode.Choose)
+                {
+                    <p class="small text-muted mb-2">How do you want to add your sample?</p>
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2" data-testid="simple-voice-capture-choose">
                         <button type="button" class="btn btn-primary"
                                 disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
-                                data-testid="simple-voice-mic-start"
-                                @onclick="StartMicAsync">
-                            Record
+                                data-testid="simple-voice-choose-record"
+                                @onclick="ChooseRecordAsync">
+                            Record with mic
                         </button>
-                    }
-                    else
-                    {
-                        <button type="button" class="btn btn-danger"
+                        <label class="btn btn-outline-primary mb-0 @(_busy || string.IsNullOrEmpty(_projectId) ? "disabled" : "")"
+                               data-testid="simple-voice-choose-upload">
+                            Upload audio file
+                            <InputFile OnChange="OnUploadChosenAsync" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg"
+                                       class="d-none" disabled="@(_busy || string.IsNullOrEmpty(_projectId))" />
+                        </label>
+                        @if (_hasSample)
+                        {
+                            <span class="badge text-bg-success" data-testid="simple-voice-sample-ready">Sample ready</span>
+                        }
+                    </div>
+                }
+                else if (_captureMode == CaptureMode.Record)
+                {
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2" data-testid="simple-voice-capture-record">
+                        @if (!_recording)
+                        {
+                            <button type="button" class="btn btn-primary"
+                                    disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
+                                    data-testid="simple-voice-mic-start"
+                                    @onclick="StartMicAsync">
+                                Record
+                            </button>
+                            <button type="button" class="btn btn-link btn-sm"
+                                    disabled="@_busy"
+                                    data-testid="simple-voice-switch-upload"
+                                    @onclick="BackToChoose">
+                                Use a file instead
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-danger"
+                                    disabled="@_busy"
+                                    data-testid="simple-voice-mic-stop"
+                                    @onclick="StopMicAsync">
+                                Done
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary"
+                                    disabled="@_busy"
+                                    @onclick="CancelMicAsync">
+                                Cancel
+                            </button>
+                            <span class="small text-danger">Recording…</span>
+                        }
+                        @if (_hasSample && !_recording)
+                        {
+                            <span class="badge text-bg-success" data-testid="simple-voice-sample-ready">Sample ready</span>
+                        }
+                    </div>
+                    @* Upload hidden while recording path is active *@
+                }
+                else @* Upload *@
+                {
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2" data-testid="simple-voice-capture-upload">
+                        <label class="btn btn-primary mb-0 @(_busy || string.IsNullOrEmpty(_projectId) ? "disabled" : "")"
+                               data-testid="simple-voice-upload">
+                            Choose audio file…
+                            <InputFile OnChange="OnUploadAsync" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg"
+                                       class="d-none" disabled="@(_busy || string.IsNullOrEmpty(_projectId))" />
+                        </label>
+                        <button type="button" class="btn btn-link btn-sm"
                                 disabled="@_busy"
-                                data-testid="simple-voice-mic-stop"
-                                @onclick="StopMicAsync">
-                            Done
+                                data-testid="simple-voice-switch-record"
+                                @onclick="BackToChoose">
+                            Record with mic instead
                         </button>
-                        <button type="button" class="btn btn-outline-secondary"
-                                disabled="@_busy"
-                                @onclick="CancelMicAsync">
-                            Cancel
-                        </button>
-                        <span class="small text-danger">Recording…</span>
-                    }
-                    <label class="btn btn-outline-secondary mb-0 @(_busy ? "disabled" : "")">
-                        Upload audio
-                        <InputFile OnChange="OnUploadAsync" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg"
-                                   class="d-none" disabled="@_busy" />
-                    </label>
-                    @if (_hasSample)
-                    {
-                        <span class="badge text-bg-success" data-testid="simple-voice-sample-ready">Sample ready</span>
-                    }
-                </div>
+                        @if (_hasSample)
+                        {
+                            <span class="badge text-bg-success" data-testid="simple-voice-sample-ready">Sample ready</span>
+                        }
+                    </div>
+                    @* Record hidden while upload path is active *@
+                }
 
                 @if (!string.IsNullOrEmpty(_hint))
                 {
@@ -204,6 +254,9 @@ else
 @code {
     private enum Phase { Pick, Record, Done }
 
+    /// <summary>Step-2 capture path: pick one so Record and Upload are never shown together.</summary>
+    private enum CaptureMode { Choose, Record, Upload }
+
     private sealed record LibraryBook(string Id, string Title, string Blurb, string Tag, string? PreferSubstring);
 
     private static readonly LibraryBook[] LibraryBooks =
@@ -225,6 +278,7 @@ else
     private string? _projectLabel;
     private string _narratorKey = "Character_Narrator";
     private bool _busy;
+    private CaptureMode _captureMode = CaptureMode.Choose;
     private bool _recording;
     private bool _hasSample;
     private bool _applied;
@@ -245,6 +299,7 @@ else
             _projectId = ActiveProject.ProjectId;
             _projectLabel = ActiveProject.Label;
             _phase = Phase.Record;
+            _captureMode = CaptureMode.Choose;
             await EnsureVoiceModelAsync();
             await ResolveNarratorKeyAsync();
             await RefreshSampleStateAsync();
@@ -262,6 +317,8 @@ else
     private void BackToPick()
     {
         _phase = Phase.Pick;
+        _captureMode = CaptureMode.Choose;
+        _recording = false;
         _error = null;
         _message = null;
         _hint = null;
@@ -421,7 +478,27 @@ else
         catch { /* ignore */ }
     }
 
-    private async Task StartMicAsync()
+        private async Task ChooseRecordAsync()
+    {
+        _captureMode = CaptureMode.Record;
+        _error = null;
+        await StartMicAsync();
+    }
+
+    private void BackToChoose()
+    {
+        if (_recording || _busy) return;
+        _captureMode = CaptureMode.Choose;
+        _hint = null;
+    }
+
+    private async Task OnUploadChosenAsync(InputFileChangeEventArgs e)
+    {
+        _captureMode = CaptureMode.Upload;
+        await OnUploadAsync(e);
+    }
+
+private async Task StartMicAsync()
     {
         _error = null;
         _hint = null;
