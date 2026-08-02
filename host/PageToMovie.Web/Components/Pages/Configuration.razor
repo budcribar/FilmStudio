@@ -203,7 +203,9 @@
                                                 <button type="button" class="btn btn-sm btn-link" @onclick="CancelAddKey">Cancel</button>
                                             </div>
                                             <p class="small text-muted mb-2">
-                                                Only providers that can run this job are listed. Pick one, paste the key, save.
+                                                Only providers that can run this job are listed.
+                                                <strong>Suno</strong> and <strong>AI Music API</strong> are different resellers — each needs its own key.
+                                                If a card already says <em>Has key</em>, click <strong>Use this key</strong> (we switch the model to match).
                                             </p>
                                             <div class="row g-2">
                                                 @foreach (var p in ProvidersForCoverage(c.Id))
@@ -222,9 +224,48 @@
                                                             @if (!selected)
                                                             {
                                                                 <button type="button"
-                                                                        class="btn btn-sm btn-outline-primary"
-                                                                        @onclick="() => SelectKeyProvider(p.ProviderId)">
-                                                                    @(p.IsConfigured ? "Use / replace" : "Select")
+                                                                        class="btn btn-sm @(p.IsConfigured ? "btn-primary" : "btn-outline-primary")"
+                                                                        data-testid="coverage-pick-@p.ProviderId"
+                                                                        @onclick="() => ChooseProviderForCoverageAsync(p.ProviderId, c.Id)">
+                                                                    @(p.IsConfigured ? "Use this key" : "Select")
+                                                                </button>
+                                                                @if (p.IsConfigured)
+                                                                {
+                                                                    <div class="form-text">Uses your saved @p.DisplayName key and switches the model to match.</div>
+                                                                }
+                                                            }
+                                                            else if (p.IsConfigured)
+                                                            {
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-primary mb-2"
+                                                                        data-testid="coverage-use-saved-@p.ProviderId"
+                                                                        disabled="@_busy"
+                                                                        @onclick="() => UseSavedProviderForCoverageAsync(p.ProviderId, c.Id)">
+                                                                    Use saved key
+                                                                </button>
+                                                                <div class="form-text mb-2">Already on file — no need to paste again unless you want to replace it.</div>
+                                                                <label class="form-label small mb-1">Replace API key (optional)</label>
+                                                                <div class="input-group input-group-sm mb-1">
+                                                                    <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
+                                                                           class="form-control font-monospace"
+                                                                           placeholder="@ProviderPlaceholder(p.ProviderId)"
+                                                                           value="@GetKeyInput(p.ProviderId)"
+                                                                           @oninput="e => SetKeyInput(p.ProviderId, e.Value?.ToString())"
+                                                                           disabled="@(_busy || _apiKeySaving)" />
+                                                                    <button class="btn btn-outline-secondary" type="button"
+                                                                            @onclick="() => ToggleKeyVisible(p.ProviderId)">
+                                                                        @(IsKeyVisible(p.ProviderId) ? "Hide" : "Show")
+                                                                    </button>
+                                                                    <button class="btn btn-outline-primary" type="button"
+                                                                            disabled="@(_busy || _apiKeySaving || string.IsNullOrWhiteSpace(GetKeyInput(p.ProviderId)))"
+                                                                            @onclick="() => SaveCoverageKeyAsync(p.ProviderId, c.Id)">
+                                                                        Replace
+                                                                    </button>
+                                                                </div>
+                                                                <button type="button" class="btn btn-link btn-sm text-danger p-0"
+                                                                        disabled="@_busy"
+                                                                        @onclick="() => ClearProviderKeyAsync(p.ProviderId)">
+                                                                    Remove saved key
                                                                 </button>
                                                             }
                                                             else
@@ -247,14 +288,6 @@
                                                                         Save
                                                                     </button>
                                                                 </div>
-                                                                @if (p.HasPersonalKey)
-                                                                {
-                                                                    <button type="button" class="btn btn-link btn-sm text-danger p-0"
-                                                                            disabled="@_busy"
-                                                                            @onclick="() => ClearProviderKeyAsync(p.ProviderId)">
-                                                                        Remove saved key
-                                                                    </button>
-                                                                }
                                                             }
                                                         </div>
                                                     </div>
@@ -1207,6 +1240,82 @@
 
     private void SelectKeyProvider(string providerId) => _coverageKeyProviderId = providerId;
 
+    /// <summary>
+    /// Click on a provider card. If a personal key is already saved, use it and align the model.
+    /// Otherwise open the paste form for that provider only.
+    /// </summary>
+    private async Task ChooseProviderForCoverageAsync(string providerId, string coverageId)
+    {
+        var row = ProviderRows.FirstOrDefault(pr =>
+            string.Equals(pr.ProviderId, providerId, StringComparison.OrdinalIgnoreCase));
+        if (row?.IsConfigured == true)
+        {
+            await UseSavedProviderForCoverageAsync(providerId, coverageId);
+            return;
+        }
+        SelectKeyProvider(providerId);
+    }
+
+    /// <summary>
+    /// User already saved this provider key — point the coverage model at it and close the panel.
+    /// Fixes: model is aimusicapi-suno but Suno (sunoapi) key exists → switch to suno-v5-5.
+    /// </summary>
+    private async Task UseSavedProviderForCoverageAsync(string providerId, string coverageId)
+    {
+        _error = null;
+        _apiKeyFeedback = null;
+        var label = ProviderRows.FirstOrDefault(pr =>
+            string.Equals(pr.ProviderId, providerId, StringComparison.OrdinalIgnoreCase))?.DisplayName
+            ?? providerId;
+
+        if (string.Equals(coverageId, "music", StringComparison.OrdinalIgnoreCase))
+            EnsureMusicModelForProvider(providerId);
+        else if (string.Equals(coverageId, "voice", StringComparison.OrdinalIgnoreCase))
+            EnsureVoiceModelForProvider(providerId);
+        else
+        {
+            // Required stages (video, image, …): switch selected model to one from this provider if possible.
+            AlignCoverageModelToProvider(coverageId, providerId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
+        {
+            try { await PersistProjectConfigAsync(); }
+            catch (Exception ex) { _error = ex.Message; return; }
+        }
+
+        var ready = BuildCoverageRows().FirstOrDefault(c =>
+            string.Equals(c.Id, coverageId, StringComparison.OrdinalIgnoreCase));
+        if (ready?.KeyReady == true)
+        {
+            _apiKeyFeedback = $"{label}: using your saved key · model set to match.";
+            _message = _apiKeyFeedback;
+            CancelAddKey();
+        }
+        else
+        {
+            // Still not ready — open paste (key missing or model couldn't align).
+            SelectKeyProvider(providerId);
+            _apiKeyFeedback = $"{label}: could not mark ready — paste a key for this provider or pick another model.";
+        }
+    }
+
+    private void AlignCoverageModelToProvider(string coverageId, string providerId)
+    {
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var models = ModelsForCoverage(coverageId);
+        static string PidOf(SupportedModelDto m) =>
+            !string.IsNullOrWhiteSpace(m.ProviderId)
+                ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
+                : SupportedModelCatalog.NormalizeProviderId(m.Provider);
+
+        var pick = models.FirstOrDefault(m =>
+            !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(PidOf(m), pid, StringComparison.OrdinalIgnoreCase));
+        if (pick is not null)
+            SetCoverageModelId(coverageId, pick.Id);
+    }
+
     private async Task SaveCoverageKeyAsync(string providerId, string coverageId)
     {
         await SaveProviderKeyAsync(providerId);
@@ -1372,8 +1481,21 @@
 
     private static string ModelOptionLabel(SupportedModelDto m)
     {
-        // Keep dropdowns readable — no raw provider ids or env-key plumbing.
-        return string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName;
+        // Keep dropdowns readable — no raw env-key plumbing. Disambiguate lookalike names.
+        var name = string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName;
+        var pid = !string.IsNullOrWhiteSpace(m.ProviderId)
+            ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
+            : SupportedModelCatalog.NormalizeProviderId(m.Provider);
+        // Catalog already says "Suno (aimusicapi.ai)" vs "Suno v5.5 (sunoapi.org)" — append key hint if missing.
+        if (string.Equals(pid, "suno", StringComparison.OrdinalIgnoreCase)
+            && !name.Contains("sunoapi", StringComparison.OrdinalIgnoreCase)
+            && !name.Contains("key", StringComparison.OrdinalIgnoreCase))
+            return $"{name} · needs Suno key";
+        if (string.Equals(pid, "aimusicapi", StringComparison.OrdinalIgnoreCase)
+            && !name.Contains("aimusic", StringComparison.OrdinalIgnoreCase)
+            && !name.Contains("key", StringComparison.OrdinalIgnoreCase))
+            return $"{name} · needs AI Music API key";
+        return name;
     }
 
     private string VendorLabel(string modelId, string capability)
