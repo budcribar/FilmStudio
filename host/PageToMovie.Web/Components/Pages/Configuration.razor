@@ -1539,13 +1539,12 @@
         var pid = !string.IsNullOrWhiteSpace(m.ProviderId)
             ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
             : SupportedModelCatalog.NormalizeProviderId(m.Provider);
-        // AI Music API's Suno-compatible model: still "Suno" as the model family.
-        if (string.Equals(pid, "aimusicapi", StringComparison.OrdinalIgnoreCase)
-            && name.Equals("Suno", StringComparison.OrdinalIgnoreCase))
-            return "Suno-compatible";
+        // Model names only — provider (Suno API vs AI Music API vs Fal) is the other column.
         if (string.Equals(m.Id, "suno-v5-5", StringComparison.OrdinalIgnoreCase)
             && !name.Contains("5.5", StringComparison.OrdinalIgnoreCase))
             return "Suno v5.5";
+        if (string.Equals(m.Id, "aimusicapi-suno", StringComparison.OrdinalIgnoreCase))
+            return "Suno";
         return string.IsNullOrWhiteSpace(name) ? m.Id : name;
     }
 
