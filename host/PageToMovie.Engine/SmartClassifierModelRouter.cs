@@ -30,12 +30,15 @@ public sealed class SmartClassifierModelRouter
             return userChoice;
         }
 
-        // 2. Resolve ranked benchmark models for taskKey
+        // 2. Resolve ranked benchmark models for taskKey (catalog taskRankings only).
         if (!SupportedModelCatalog.TaskRankings.TryGetValue(taskKey, out var rankedModels) || rankedModels.Count == 0)
         {
-            var fallback = "grok-4.5";
-            onLog?.Invoke($"[SmartRouter] Task '{taskKey}' -> No task rankings found. Using fallback '{fallback}'.");
-            return fallback;
+            if (!string.IsNullOrWhiteSpace(userConfiguredModel)
+                && !string.Equals(userConfiguredModel, "auto", StringComparison.OrdinalIgnoreCase))
+                return userConfiguredModel.Trim();
+            throw new InvalidOperationException(
+                $"Classifier task '{taskKey}': no model selected and no taskRankings in models_catalog.json. " +
+                "Open Settings and choose a Script & planning model.");
         }
 
         // 3. Find highest-ranked model whose required API key is active
@@ -64,9 +67,9 @@ public sealed class SmartClassifierModelRouter
             }
         }
 
-        // 4. Fallback if no specific candidate keys match
-        var defaultFallback = rankedModels[0];
-        onLog?.Invoke($"[SmartRouter] Task '{taskKey}' -> Using default fallback model '{defaultFallback}'.");
-        return defaultFallback;
+        // 4. No ranked candidate has a key — do not invent another model.
+        throw new InvalidOperationException(
+            $"Classifier task '{taskKey}': no ranked catalog model has an available API key. " +
+            "Add a key in Settings for one of: " + string.Join(", ", rankedModels) + ".");
     }
 }

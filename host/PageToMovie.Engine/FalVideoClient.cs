@@ -87,10 +87,17 @@ public sealed class FalVideoClient : IVideoClient
                 ? referenceImagePaths[0]
                 : null;
 
-        var endpoint = "fal-ai/hunyuan-video";
+        // Catalog endpointPath is SSoT (e.g. fal-ai/hunyuan-video). When an init image is present,
+        // hunyuan's i2v path is the text endpoint + "-image-to-video"; other fal models already list
+        // their full i2v path as endpointPath.
+        var endpoint = !string.IsNullOrWhiteSpace(catalogEntry.EndpointPath)
+            ? catalogEntry.EndpointPath.Trim().TrimStart('/')
+            : throw new InvalidOperationException(
+                $"Fal video: model '{catalogEntry.Id}' has no endpointPath in models_catalog.json.");
         if (!string.IsNullOrWhiteSpace(imagePath))
         {
-            endpoint = "fal-ai/hunyuan-video-image-to-video";
+            if (!endpoint.Contains("image-to-video", StringComparison.OrdinalIgnoreCase))
+                endpoint = endpoint.TrimEnd('/') + "-image-to-video";
             var maxDim = catalogEntry.MaxReferenceImageDimension ?? 1280;
             payload["image_url"] = await PrepareOptimizedImageDataUriAsync(imagePath, maxDim, ct).ConfigureAwait(false);
         }
@@ -126,8 +133,11 @@ public sealed class FalVideoClient : IVideoClient
             ?? throw new InvalidOperationException($"Fal.ai API key is missing ({SupportedModelCatalog.FalApiKeyEnv}).");
 
         var parts = requestId.Split(':', 2);
-        var endpoint = parts.Length == 2 ? parts[0] : "fal-ai/hunyuan-video-image-to-video";
-        var actualReqId = parts.Length == 2 ? parts[1] : requestId;
+        if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1]))
+            throw new InvalidOperationException(
+                $"Fal video poll: request id must be 'endpoint:requestId' (got '{requestId}').");
+        var endpoint = parts[0];
+        var actualReqId = parts[1];
 
         var statusUrl = $"{endpoint}/requests/{actualReqId}/status";
         var resultUrl = $"{endpoint}/requests/{actualReqId}";

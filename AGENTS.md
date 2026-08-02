@@ -42,9 +42,14 @@ When debugging or implementing against a sample project (e.g. Buster / Buster2 /
    - Prefer AI prompt scrubbing, style locks, and image refs over one-off string rules.
 4. **Comments and examples** in code should say “hero animal”, “supporting cast”, “text-only page” —
    not a specific character name — unless documenting a unit-test fixture.
-5. **No hardcoded model metadata or model lists in C# code.**
-   - All models, capabilities, endpoints, pricing, default model selections, and enablement flags must be **100% dynamically driven by `models_catalog.json`**.
-   - **Do not** modify C# source files (`SupportedModelCatalog.cs`, service classes, or default options strings) when adding, removing, or updating models. Adding or modifying models must be strictly 100% data-driven through `models_catalog.json` without requiring any C# code changes.
+5. **Models catalog is the single source of truth (no provider/model assumptions in code).**
+   - **Canonical file:** `host/PageToMovie.Core/config/models_catalog.json` (runtime may also serve it via `/api/models` / `/api/models/catalog-json`).
+   - **Must live in the JSON (not C#):** models (`id`, `displayName`, capability, endpoints, pricing, enablement), **providers** (`providers[]` with `id`, `label`, `aliases`), per-model `provider` / `providerId` / `providerLabel`, capability defaults (`capabilities[].defaultModelId`), task rankings, env key names.
+   - **Code must not invent providers or models.** No hard-coded lists of model ids (e.g. `grok-imagine-video`, `eleven_voice_clone`), no `InferProviderIdFromModelId` / `startsWith("grok")` heuristics, no hard-coded provider label maps (`"grok" => "xAI"`), no Settings “fallback” model cards when the catalog fails to load. If it is not in the catalog, it is not real — leave UI empty / surface an error.
+   - **Provider vs model:** *Provider* = who holds the key (e.g. **Suno API (sunoapi.org)**, **AI Music API (aimusicapi.ai)**, **xAI**). *Model* = product (e.g. **Suno v5.5**, **Suno**, **Grok Imagine Video**). Never treat “Suno” as a provider name in code or UI copy for key slots.
+   - **Resolve only through catalog APIs:** `SupportedModelCatalog` / `GET /api/models` — `Find`, `ForCapability`, `DefaultModelIdForCapability`, `FirstEnabledVoiceCloneModelId`, `ProviderLabelFor`, `NormalizeProviderId` (alias table from JSON). UI defaults = `capabilities[].defaultModelId` or first enabled catalog model for that capability/provider.
+   - **Adding or changing a model/provider:** edit **`models_catalog.json` only** (plus wire a client if the API shape is new). **Do not** add model/provider rows or default id strings in `Configuration.razor`, `PageToMovieOptions`, `ProjectModels`, or service classes to “make the UI work.”
+   - **Stale project config:** if a saved model id is not in the catalog, drop/reset to catalog default or `none` — do not keep serving dead ids.
 6. **Discussion-first workflow for questions.**
    - When the user asks questions or proposes architectural concepts, **always discuss and answer the questions first** before making code edits or triggering test runs.
    - Avoid running lengthy test suites or jumping straight to code modifications during exploratory discussions.
@@ -60,6 +65,32 @@ When debugging or implementing against a sample project (e.g. Buster / Buster2 /
    - Live API tests run **only** under explicit human operator command with `PAGETOMOVIE_LIVE_API_TESTS=1`.
 
 Buster (and other fixtures) are **eval / demo projects**, not product requirements.
+
+---
+
+## Models & providers — catalog SSoT (mandatory)
+
+**File:** [`host/PageToMovie.Core/config/models_catalog.json`](host/PageToMovie.Core/config/models_catalog.json)
+
+| JSON | Role |
+|------|------|
+| `providers[]` | Key-holders: `id` (e.g. `grok`, `suno`, `aimusicapi`), `label` (UI), `aliases` |
+| `models[]` | Selectable models: `id`, `displayName`, `capability`, `provider`, `providerId`, `providerLabel`, endpoints, costs, `requiredEnvKeys`, flags |
+| `capabilities[]` | Studio jobs + `defaultModelId` |
+| `taskRankings` | Optional ranking lists for planning tasks |
+
+**Rules for agents (non-negotiable):**
+
+1. **Do not hardcode model ids or provider names/labels in product code** for pickers, coverage, defaults, or “if catalog empty” UI. Read the catalog (or `/api/models`).
+2. **Do not infer provider from model id** (`startsWith("fal")`, etc.). Use `providerId` / `provider` from the model row + `providers[].aliases`.
+3. **Do not invent synthetic/fallback models** so the Settings page looks populated. Empty catalog → error or empty lists, not fake Grok/Fal rows.
+4. **Optional “None”** for music/voice is UI state (feature off), not a catalog provider.
+5. **New model?** Add/enable a row in JSON (and a client only if the HTTP API is new). **New reseller/provider?** Add `providers[]` + model rows with that `providerId` — do not special-case labels in Razor/C#.
+6. Engine defaults in options/DTOs that still contain literal model strings are **tech debt** — prefer `SupportedModelCatalog.DefaultModelIdForCapability(...)` / project config; do not add more literals.
+
+Loader: `SupportedModelCatalog.TryLoadFromJson` / `EnsureLoaded`. WASM hydrates via `GetModelsCatalogJsonAsync` before relying on static catalog APIs.
+
+See also: `host/docs/supported-models.md`.
 
 ---
 

@@ -55,7 +55,7 @@ public sealed class FalImageClient : IImageClient
         var apiKey = ResolveApiKey()
             ?? throw new InvalidOperationException($"Fal.ai API key is missing. Set {SupportedModelCatalog.FalApiKeyEnv} in environment or Configuration.");
 
-        model = string.IsNullOrWhiteSpace(model) ? "fal-ai/flux/dev" : model;
+        model = ProjectModelSelection.RequireExplicit(model, ModelCapability.Image, "Fal image generation");
 
         var imgSize = aspectRatio switch
         {

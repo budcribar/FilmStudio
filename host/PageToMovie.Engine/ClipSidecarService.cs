@@ -240,7 +240,7 @@ public sealed class ClipSidecarService
                     take: take,
                     prompt: promptText,
                     scriptText: "",
-                    model: "grok-imagine-video",
+                    model: "",
                     resolution: "480p",
                     durationSeconds: 6.0,
                     sha256: sha256,

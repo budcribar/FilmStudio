@@ -83,7 +83,7 @@ public interface IChatClient
     Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "grok-4.5",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
         string? mode = null,
@@ -136,14 +136,14 @@ public interface IVisionClient
     Task<string> TranscribePageAsync(
         string imagePath,
         int page,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default);
 
     Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(
         string imagePath,
         int page,
         IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default);
 
     /// <summary>
@@ -153,7 +153,7 @@ public interface IVisionClient
     Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "grok-4.5",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default);
 }
@@ -175,7 +175,7 @@ public interface IGeminiVideoAnalysisClient
     Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "gemini-2.5-flash",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default);
 }

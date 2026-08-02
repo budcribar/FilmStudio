@@ -86,7 +86,11 @@ public sealed class SceneMusicCompositionService
             sceneSummaries.Add(new { scene_number = sn, slugline = slug, summary = text });
         }
 
-        var model = string.IsNullOrWhiteSpace(userModel) ? "grok-4.5" : userModel.Trim();
+        var model = string.IsNullOrWhiteSpace(userModel)
+            ? throw new InvalidOperationException(
+                "Music composition: Script & planning model not set. Open Settings and choose a model.")
+            : userModel.Trim();
+        model = ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Music composition");
         var promptText =
             "You are an expert film music supervisor and AI audio score composer.\n" +
             "Analyze the screenplay context and scene list below and compose a cohesive, story-driven background music score direction for EVERY scene.\n" +

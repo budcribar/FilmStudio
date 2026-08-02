@@ -1,3 +1,4 @@
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -43,7 +44,7 @@ public sealed class Stage1Service
         string projectId,
         int chunkPages = 10,
         int? totalMinutes = null,
-        string model = "grok-4.5",
+        string? model = null,
         bool resume = false,
         int maxChunks = 0,
         double temperature = 0.2,
@@ -55,6 +56,13 @@ public sealed class Stage1Service
         if (!_chat.IsConfigured)
             throw new InvalidOperationException(
                 "Connect service (API key) to build a screenplay draft from the book.");
+
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            model = string.IsNullOrWhiteSpace(model)
+                ? ProjectModelSelection.RequirePlanning(cfg, "Screenplay draft")
+                : ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Screenplay draft");
+        }
 
         var projectDir = _projects.GetProjectDir(projectId);
         var bookPath = Path.Combine(projectDir, "source", "book_full.txt");

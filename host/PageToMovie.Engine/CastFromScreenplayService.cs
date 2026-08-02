@@ -1,3 +1,4 @@
+using PageToMovie.Core.Models;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -70,7 +71,7 @@ public sealed class CastFromScreenplayService
     /// </summary>
     public async Task<ExtractResult> ExtractAsync(
         string projectId,
-        string model = "grok-4.5",
+        string? model = null,
         bool force = false,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
@@ -78,15 +79,11 @@ public sealed class CastFromScreenplayService
         if (!_chat.IsConfigured)
             throw new InvalidOperationException("Connect service (API key) to build cast from the screenplay.");
 
-        if (string.IsNullOrWhiteSpace(model) || string.Equals(model, "grok-4.5", StringComparison.OrdinalIgnoreCase))
         {
-            try
-            {
-                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-                if (cfg.TryGetValue("planning_model_name", out var pEl) && pEl.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(pEl.GetString()))
-                    model = pEl.GetString()!.Trim();
-            }
-            catch { }
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            model = string.IsNullOrWhiteSpace(model)
+                ? ProjectModelSelection.RequirePlanning(cfg, "Cast from screenplay")
+                : ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Cast from screenplay");
         }
 
         ScreenplayService.EnsureCanonicalDraft(_projects, projectId);

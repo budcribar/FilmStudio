@@ -272,27 +272,37 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
         try
         {
             var sw = Stopwatch.StartNew();
-            string? selectedModel = null;
+            string targetModel;
+            SupportedModelEntry entry;
             try
             {
                 var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-                if (cfg.TryGetValue("quality_model_name", out var qEl) && qEl.ValueKind == JsonValueKind.String)
-                    selectedModel = qEl.GetString();
-                else if (cfg.TryGetValue("vision_model_name", out var vEl) && vEl.ValueKind == JsonValueKind.String)
-                    selectedModel = vEl.GetString();
+                targetModel = ProjectModelSelection.RequireVideoReview(cfg, "Dialogue verification");
+                entry = SupportedModelCatalog.Find(targetModel)
+                        ?? throw new InvalidOperationException(
+                            $"Dialogue verification: model '{targetModel}' missing from catalog.");
             }
-            catch { /* use fallback */ }
-
-            var targetModel = !string.IsNullOrWhiteSpace(selectedModel) ? selectedModel : "gemini-2.5-flash";
-            var entry = SupportedModelCatalog.Find(targetModel, ModelCapability.Vision)
-                ?? SupportedModelCatalog.ResolveOrDefault(targetModel, ModelCapability.Vision);
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
 
             var hasVideoFile = mediaToPass.Any(p => p.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".mov", StringComparison.OrdinalIgnoreCase));
 
             string responseJson;
-            if (hasVideoFile && !entry.SupportsVideoReview && _gemini is not null && _gemini.IsConfigured)
+            // Prefer the project-selected model. If it cannot take video and Gemini is available
+            // as the selected provider's path, still require catalog SupportVideoReview on selection —
+            // do not silently swap to a hard-coded Gemini id.
+            if (hasVideoFile && !entry.SupportsVideoReview)
             {
-                responseJson = await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, model: "gemini-2.5-flash", ct: ct).ConfigureAwait(false);
+                throw new InvalidOperationException(
+                    "Dialogue verification: the selected Video review model does not support native video. " +
+                    "Open Settings and choose a video-review-capable model (e.g. Gemini with SupportsVideoReview).");
+            }
+            if (hasVideoFile && entry.SupportsVideoReview && _gemini is not null && _gemini.IsConfigured
+                && string.Equals(entry.ProviderId, "gemini", StringComparison.OrdinalIgnoreCase))
+            {
+                responseJson = await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, model: targetModel, ct: ct).ConfigureAwait(false);
             }
             else
             {

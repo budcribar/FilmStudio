@@ -49,7 +49,8 @@ public sealed class GrokImageClient : IImageClient
         CancellationToken ct = default)
     {
         var modelName = string.IsNullOrWhiteSpace(model)
-            ? _opts.DefaultImageModel
+            ? throw new InvalidOperationException(
+                "Image generation: model is required. Open Settings and choose an Image generation model.")
             : model;
         var payload = new Dictionary<string, object?>
         {
@@ -156,7 +157,8 @@ public sealed class GrokImageClient : IImageClient
         CancellationToken ct = default)
     {
         var modelName = string.IsNullOrWhiteSpace(model)
-            ? _opts.DefaultImageModel
+            ? throw new InvalidOperationException(
+                "Image edit: model is required. Open Settings and choose an Image generation model.")
             : model;
         // Model-aware, not a bare hardcoded 3 — and no silent fallback: an image generation call
         // costs real money, so an unverified reference-image limit must refuse to start rather

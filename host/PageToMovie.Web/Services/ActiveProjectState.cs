@@ -11,9 +11,13 @@ public sealed class ActiveProjectState
     public string? ProjectId { get; private set; }
     public string? Label { get; private set; }
     public string? ParentProjectId { get; private set; }
+    /// <summary>full | simple-voice — from project.json.</summary>
+    public string StudioPath { get; private set; } = ProjectStudioPaths.Full;
     public AdaptationStatus? Status { get; private set; }
 
     public bool HasProject => !string.IsNullOrWhiteSpace(ProjectId);
+
+    public bool IsSimpleVoice => ProjectStudioPaths.IsSimpleVoice(StudioPath);
 
     /// <summary>Screenplay approved — Characters / cast work makes sense.</summary>
     public bool CanCharacters { get; private set; }
@@ -38,32 +42,49 @@ public sealed class ActiveProjectState
 
     public event Action? Changed;
 
-    public void Set(string? projectId, string? label = null, string? parentProjectId = null)
+    public void Set(
+        string? projectId,
+        string? label = null,
+        string? parentProjectId = null,
+        string? studioPath = null)
     {
         var id = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim();
         var lbl = string.IsNullOrWhiteSpace(label) ? id : label.Trim();
         var parentId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim();
+        var path = ProjectStudioPaths.Normalize(studioPath);
         if (string.Equals(ProjectId, id, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(Label, lbl, StringComparison.Ordinal) &&
-            string.Equals(ParentProjectId, parentId, StringComparison.OrdinalIgnoreCase))
+            string.Equals(ParentProjectId, parentId, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(StudioPath, path, StringComparison.OrdinalIgnoreCase))
             return;
 
         var projectChanged = !string.Equals(ProjectId, id, StringComparison.OrdinalIgnoreCase);
         ProjectId = id;
         Label = lbl;
         ParentProjectId = parentId;
+        StudioPath = path;
         // Until RefreshReadinessAsync runs, assume blocked so nav stays greyed
         if (projectChanged)
             ClearReadiness();
         Changed?.Invoke();
     }
 
+    public void SetStudioPathLocal(string? studioPath)
+    {
+        var path = ProjectStudioPaths.Normalize(studioPath);
+        if (string.Equals(StudioPath, path, StringComparison.OrdinalIgnoreCase)) return;
+        StudioPath = path;
+        Changed?.Invoke();
+    }
+
     public void Clear()
     {
-        if (ProjectId is null && Label is null && ParentProjectId is null) return;
+        if (ProjectId is null && Label is null && ParentProjectId is null
+            && StudioPath == ProjectStudioPaths.Full) return;
         ProjectId = null;
         Label = null;
         ParentProjectId = null;
+        StudioPath = ProjectStudioPaths.Full;
         ClearReadiness();
         Changed?.Invoke();
     }
@@ -76,7 +97,7 @@ public sealed class ActiveProjectState
             var projs = await engine.GetProjectsAsync(ct);
             var active = projs?.Active;
             if (active?.Id is { Length: > 0 } aid)
-                Set(aid, active.Label ?? active.Title ?? aid, active.ParentProjectId);
+                Set(aid, active.Label ?? active.Title ?? aid, active.ParentProjectId, active.StudioPath);
             else if (projs?.Projects is { Count: > 0 })
             {
                 // Prefer explicit active; if none, do not invent — user must pick on Studio

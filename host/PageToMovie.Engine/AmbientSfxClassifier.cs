@@ -15,7 +15,7 @@ public sealed class AmbientSfxClassifier
 {
     /// <summary>Shipped prompt id (matches host/evals/classifier_benchmarks/prompts/ambient_sfx/v2_grounded).</summary>
     public const string PromptVersion = "v2_grounded";
-    public const string DefaultModel = "grok-4.5";
+    public const string DefaultModel = "";
     public const int DefaultBatchSize = 30;
 
     private readonly IChatClient _chat;
@@ -46,7 +46,8 @@ public sealed class AmbientSfxClassifier
         var model = !string.IsNullOrWhiteSpace(overrideModel)
             ? overrideModel
             : (string.IsNullOrWhiteSpace(_opts.AmbientSfxClassifyModel)
-                ? DefaultModel
+                ? throw new InvalidOperationException(
+                    "Ambient SFX classify: no model configured. Set the project Script & planning model in Settings, or AmbientSfxClassifyModel.")
                 : _opts.AmbientSfxClassifyModel.Trim());
         var temp = _opts.AmbientSfxClassifyTemperature;
         if (double.IsNaN(temp) || temp < 0) temp = 0.2;

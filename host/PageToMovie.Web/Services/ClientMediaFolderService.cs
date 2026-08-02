@@ -155,9 +155,27 @@ public sealed class ClientMediaFolderService
             if (r is { Success: true })
             {
                 FolderName = r.FolderName;
-                await RefreshFullPathAsync();
+                // Prefer path returned from JS (or previously stored full path if still valid).
+                if (!string.IsNullOrWhiteSpace(r.FullPath))
+                    FullPath = r.FullPath.Trim();
+                else
+                    await RefreshFullPathAsync();
+                // Drop stale full path when its last segment no longer matches the folder name.
+                if (!string.IsNullOrWhiteSpace(FullPath) && !string.IsNullOrWhiteSpace(FolderName))
+                {
+                    var normalized = FullPath.Replace('/', '\\').TrimEnd('\\');
+                    var idx = normalized.LastIndexOf('\\');
+                    var last = idx >= 0 ? normalized[(idx + 1)..] : normalized;
+                    if (!string.Equals(last, FolderName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        FullPath = null;
+                        try { await _js.InvokeVoidAsync("PageToMovieMedia.setFullPath", (string?)null); } catch { /* ignore */ }
+                    }
+                }
                 LastStatus = $"Media folder: {FullPath ?? FolderName}";
-                LocalSaveWarning = null; // folder connected — clear fallback warning
+                LocalSaveWarning = null;
+                NeedsReconnect = false;
+                PendingReconnectFolderName = null;
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
                 TriggerAutoSyncIfConnected();
@@ -347,6 +365,7 @@ public sealed class ClientMediaFolderService
                             snap.Scene == 18 ||
                             string.Equals(snap.Kind, "credits", StringComparison.OrdinalIgnoreCase);
             var isMusic = string.Equals(snap.Kind, "music", StringComparison.OrdinalIgnoreCase);
+            var isSpeakBatch = string.Equals(snap.Kind, "speak-batch", StringComparison.OrdinalIgnoreCase);
             var keepTail = isCredits
                 ? ClipSilenceTrimmer.DefaultKeepTailSeconds
                 : ClipSilenceTrimmer.SpeechBreathTailSeconds; // safe default without dialogue metadata
@@ -358,7 +377,8 @@ public sealed class ClientMediaFolderService
             // silence-trimming it further risks cutting real content rather than dead air, so skip
             // that pass entirely for this clip (unlike a plain fresh generation, which can be
             // arbitrarily longer than its useful content).
-            if (!isCredits && !isMusic && extendSliceBlobUrl is null)
+            // Music + speak-batch are pure audio files — never run video silence-trim.
+            if (!isCredits && !isMusic && !isSpeakBatch && extendSliceBlobUrl is null)
             {
                 var (trimmed, trimUrl, message) = await SilenceTrimAsync(
                     url,
@@ -404,7 +424,7 @@ public sealed class ClientMediaFolderService
                     RelativePath = snap.ClientRelativePath!,
                     Sha256 = saved.Sha256,
                     SizeBytes = saved.SizeBytes,
-                    Kind = isCredits ? "credits" : isMusic ? "music" : "clip",
+                    Kind = isCredits ? "credits" : isMusic ? "music" : isSpeakBatch ? "audio" : "clip",
                     Scene = scene,
                     Clip = clip,
                 });
@@ -817,6 +837,7 @@ public sealed class ClientMediaFolderService
     {
         public bool Success { get; set; }
         public string? FolderName { get; set; }
+        public string? FullPath { get; set; }
         public string? Error { get; set; }
     }
 

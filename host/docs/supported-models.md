@@ -1,35 +1,58 @@
 # Supported models (master catalog)
 
-Users pick **model ids** in Configuration. The app never asks them to pick a “service” separately.
+**Single source of truth:** [`host/PageToMovie.Core/config/models_catalog.json`](../PageToMovie.Core/config/models_catalog.json)
 
-`PageToMovie.Core.Models.SupportedModelCatalog` is the single source of truth for:
+Code must **not** hardcode model lists, provider labels, pricing, or “default model” ids. Everything selectable in Settings / used for keys and costing is driven by this file (loaded by `SupportedModelCatalog`, served as `GET /api/models` and `GET /api/models/catalog-json`).
+
+## Shape
+
+### `providers[]` (who holds the API key)
 
 | Field | Purpose |
 |--------|---------|
-| `Id` | What the user selects / what we send to the API |
-| `Capability` | video · image · chat · vision |
-| `Provider` | xai · google (family) |
-| `ApiBase` | e.g. `https://api.x.ai/v1` |
-| `EndpointPath` | e.g. `videos/generations`, `images/generations` |
-| `RequiredEnvKeys` | e.g. `XAI_API_KEY` |
-| `Enabled` | shown in Configuration when true |
+| `id` | Stable key-slot id (`grok`, `gemini`, `suno`, `aimusicapi`, …) |
+| `label` | Operator-facing name (`xAI`, `Suno API (sunoapi.org)`, …) |
+| `aliases` | Alternate strings from model `provider` field (`Xai`, `Google`, …) |
+| `order` | Settings sort order |
 
-**Voice samples:** not a TTS model. Characters → Play uses short **video** gen + VOICE LOCK, then extracts audio only.
+**Provider ≠ model product.** Example: model name **Suno** / **Suno v5.5**; providers **Suno API (sunoapi.org)** vs **AI Music API (aimusicapi.ai)**.
 
-API: `GET /api/models` and `GET /api/models?capability=video`.
+### `models[]` (what the user selects)
 
-On save, Configuration writes `video_provider` / `image_provider` / `qa_provider` derived from the model catalog (for cost reports).
+| Field | Purpose |
+|--------|---------|
+| `id` | Stable model id sent to APIs / stored in project config |
+| `displayName` | Model product label only (no provider suffix) |
+| `capability` | `Video` · `Image` · `Chat` · `Vision` · `Audio` · `Voice` · … |
+| `provider` | Family/name matching `providers[].aliases` (e.g. `Xai`, `Suno`) |
+| `providerId` | Key-slot id (must match a `providers[].id`) |
+| `providerLabel` | Display label for that provider |
+| `apiBase` / `endpointPath` | HTTP surface |
+| `requiredEnvKeys` | e.g. `XAI_API_KEY`, `SUNO_API_KEY` |
+| `enabled` | Shown in pickers when true |
+| costs / limits / flags | Pricing, clip duration, `supportsVideoReview`, `isVoiceCloneStep`, … |
+
+### `capabilities[]`
+
+Studio jobs + **`defaultModelId`** (must be a real enabled model id in `models[]`).
+
+## Runtime rules
+
+1. **If it is not in the JSON, it is not real** — no C# fallback model cards.
+2. Resolve provider only via catalog (`providerId` / `NormalizeProviderId` + aliases), never from model-id heuristics.
+3. Project config that points at a missing model id should be reset to `capabilities[].defaultModelId` or `none` (optional features).
+4. Configuration writes provider fields derived from the **selected model’s** catalog row (for keys/cost), not from free-typed service names.
 
 ## Adding a model
 
-1. **Wire the client** (endpoint path, auth, request shape).
-2. **Add a row** to `SupportedModelCatalog` with correct capability, keys, and endpoint.
-3. Ship. Users can then select it.
+1. Implement/wire the HTTP client if the API shape is new.
+2. **Add or enable a row in `models_catalog.json`** (and `providers[]` if it is a new key-holder).
+3. Ship. Settings and coverage pick it up from the catalog — **no** new hard-coded id in Razor/C# options.
 
-## Not supported yet (GitHub feature requests)
+## Not supported yet
 
-Do **not** add half-working models to the enabled list.
+Do **not** enable half-working models. Prefer a disabled row + `featureRequestUrl` / GitHub issue until the client exists.
 
-Open a GitHub feature request for new backends (e.g. Veo, Gemini image client). When the client exists, add the catalog entry and close the issue.
+## Agent policy
 
-Optional: put the issue URL on a disabled catalog row via `FeatureRequestUrl` so admins can see the roadmap without offering a broken picker.
+See root **`AGENTS.md`** → *Models & providers — catalog SSoT (mandatory)*.

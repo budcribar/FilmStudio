@@ -14,6 +14,7 @@
     --fs-border-color: rgba(255, 255, 255, 0.08);
     --fs-border-hover: rgba(107, 140, 174, 0.45);
     --fs-text-primary: #f1f3f7;
+    --fs-text-secondary: #c8d0e0;
     --fs-text-muted: #9aa3b5;
     --fs-text-subtle: #6b7385;
     --fs-accent-indigo: #6b8cae;
@@ -70,6 +71,7 @@
     --fs-border-color: rgba(15, 23, 42, 0.12);
     --fs-border-hover: rgba(79, 70, 229, 0.4);
     --fs-text-primary: #191c24;
+    --fs-text-secondary: #5b6478;
     --fs-text-muted: #4b5565;
     --fs-text-subtle: #64748b;
     --fs-accent-indigo: #4f46e5;
@@ -235,9 +237,11 @@ label,
 .form-select::-webkit-input-placeholder,
 .form-control::-moz-placeholder,
 .form-select::-moz-placeholder {
-    color: var(--fs-text-secondary) !important;
+    /* Was --fs-text-secondary (undefined → unreadable). Keep clearly lighter than field bg. */
+    color: var(--fs-text-secondary, #c8d0e0) !important;
     opacity: 1 !important;
     font-style: normal;
+    -webkit-text-fill-color: var(--fs-text-secondary, #c8d0e0);
 }
 
 
@@ -1176,6 +1180,72 @@ h1:focus {
 
 .blazor-error-boundary::after {
     content: "An error has occurred."
+}
+
+
+/* Home landing header — product hero above easy-start / studio cards */
+.home-landing {
+    border-radius: 1rem;
+    border: 1px solid rgba(129, 140, 248, 0.22);
+    background:
+        radial-gradient(120% 80% at 100% 0%, rgba(99, 102, 241, 0.22), transparent 55%),
+        radial-gradient(90% 70% at 0% 100%, rgba(168, 85, 247, 0.12), transparent 50%),
+        linear-gradient(165deg, rgba(15, 18, 32, 0.98), rgba(22, 18, 40, 0.96));
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    padding: 1.5rem 1.35rem;
+}
+@media (min-width: 768px) {
+    .home-landing { padding: 1.75rem 1.75rem; }
+}
+.home-landing__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+}
+.home-landing__copy {
+    min-width: min(100%, 18rem);
+    flex: 1 1 16rem;
+    max-width: 36rem;
+}
+.home-landing__brand {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #a5b4fc 0%, #e9d5ff 50%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.home-landing__title {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.55rem, 3.5vw, 2.05rem);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: #f8fafc;
+    margin: 0 0 0.5rem;
+}
+.home-landing__lede {
+    color: #cbd5e1;
+    font-size: 0.98rem;
+    line-height: 1.55;
+    max-width: 34rem;
+}
+.home-landing__actions .btn-outline-light {
+    border-color: rgba(226, 232, 240, 0.45);
+    color: #f1f5f9;
+}
+.home-landing__actions .btn-outline-light:hover {
+    background: rgba(248, 250, 252, 0.1);
+    border-color: #e2e8f0;
+    color: #fff;
+}
+.home-landing__visual {
+    flex: 0 0 auto;
+    align-items: center;
 }
 
 /* Home hero — pages → AI → movie (HTML labels; fixed icon boxes; gentle motion) */

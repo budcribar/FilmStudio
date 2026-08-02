@@ -119,6 +119,22 @@ builder.Services.AddSingleton<ColorPaletteGradingClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<CreditsGeneratorService>();
 builder.Services.AddSingleton<VoicePreviewService>();
+builder.Services.AddHttpClient("elevenlabs", c =>
+{
+    c.BaseAddress = new Uri(SupportedModelCatalog.ElevenLabsApiBase.TrimEnd('/') + "/");
+    c.Timeout = TimeSpan.FromMinutes(3);
+});
+builder.Services.AddSingleton<IVoiceClient>(sp =>
+{
+    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("elevenlabs");
+    var log = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ElevenLabsVoiceClient>>();
+    return new ElevenLabsVoiceClient(http, log, allowMockFallback: true);
+});
+builder.Services.AddSingleton<PageToMovie.Engine.VoiceApply.VoicePreviewStore>();
+// Strategy order: Fal first (specific CanHandle), ElevenLabs last (default / mock fallback).
+builder.Services.AddSingleton<IVoiceApplyStrategy, PageToMovie.Engine.VoiceApply.FalVoiceApplyStrategy>();
+builder.Services.AddSingleton<IVoiceApplyStrategy, PageToMovie.Engine.VoiceApply.ElevenLabsVoiceApplyStrategy>();
+builder.Services.AddSingleton<VoiceCloneApplyService>();
 builder.Services.AddSingleton<ReviewEventStore>();
 builder.Services.AddSingleton<ProjectRulesService>();
 builder.Services.AddSingleton<LearningProposalService>();
@@ -489,6 +505,7 @@ app.Use(async (context, next) =>
     var fal = keyProvider?.GetKey(uid, "fal");
     var suno = keyProvider?.GetKey(uid, "suno");
     var aimusicapi = keyProvider?.GetKey(uid, "aimusicapi");
+    var elevenlabs = keyProvider?.GetKey(uid, "elevenlabs");
     using (ApiKeyScope.Push(new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
     {
         ["grok"] = xai,
@@ -497,6 +514,7 @@ app.Use(async (context, next) =>
         ["fal"] = fal,
         ["suno"] = suno,
         ["aimusicapi"] = aimusicapi,
+        ["elevenlabs"] = elevenlabs,
     }))
     using (UserApiCallScope.Push(uid))
     {
@@ -2111,7 +2129,8 @@ app.MapPost("/api/projects", async (
     {
         var name = body?.Name ?? body?.Id ?? body?.Title ?? "";
         var title = body?.Title;
-        var p = await store.CreateProjectAsync(name, title, ct, ownerUserId: user.UserId);
+        var p = await store.CreateProjectAsync(
+            name, title, ct, ownerUserId: user.UserId, studioPath: body?.StudioPath);
         var list = await store.ListProjectsAsync(ct);
         return Results.Ok(new
         {
@@ -2274,6 +2293,41 @@ app.MapPost("/api/jobs/gen-batch", async (
             message = job.Status == "queued"
                 ? $"Queued batch for {count} {unit}(s)"
                 : $"Started batch for {count} {unit}(s)",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
+
+/// <summary>
+/// Batch TTS for re-voice (keys stay on server). Progress + per-line audio handoff over SignalR
+/// (<c>Kind = speak-batch</c>, <c>ClientMediaUrl</c> / <c>ClientRelativePath</c>).
+/// </summary>
+app.MapPost("/api/jobs/speak-batch", async (
+    StartSpeakBatchRequest body,
+    FilmJobService jobService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb) =>
+{
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        if (string.IsNullOrWhiteSpace(body.CharKey))
+            body.CharKey = "Character_Narrator";
+        var job = await jobService.StartSpeakBatchAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = job.Status == "queued"
+                ? "Queued speak-batch (waiting for lock/worker)"
+                : "Started speak-batch",
             job,
         });
     }
@@ -2714,9 +2768,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone", async (
     string id,
     string charKey,
     CloneVoiceApiRequest? body,
-    ProjectStore store,
-    IVoiceCloneClient voiceClone,
-    ProjectTelemetryService telemetry,
+    VoiceCloneApplyService apply,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
@@ -2727,44 +2779,23 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone", async (
     {
         if (string.IsNullOrWhiteSpace(charKey))
             return Results.BadRequest(new { ok = false, error = "charKey required" });
-        if (!voiceClone.IsConfigured)
-            return Results.BadRequest(new { ok = false, error = "Connect a voice-clone service (FAL_API_KEY) in Configuration." });
-
-        var samplePath = store.GetVoiceCloneSamplePath(id, charKey);
-        if (!File.Exists(samplePath))
-            return Results.BadRequest(new { ok = false, error = "No voice-clone sample saved for this character yet." });
-
-        var model = body?.Model;
-        var entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-            .FirstOrDefault(m => m.IsVoiceCloneStep &&
-                (string.IsNullOrWhiteSpace(model) || string.Equals(m.Id, model, StringComparison.OrdinalIgnoreCase)));
-
-        var voiceId = await voiceClone.CloneVoiceAsync(samplePath, model, ct);
-        await telemetry.LogApiCallAsync(new ApiCallTelemetry
-        {
-            ProjectId = id,
-            Kind = "voice_clone",
-            Mode = "voice_clone",
-            Model = entry?.Id ?? model,
-            Provider = entry?.ProviderId,
-            CharKey = charKey,
-            EstimatedUsd = entry?.CostPerCloneUsd,
-            Ok = !string.IsNullOrWhiteSpace(voiceId),
-            Error = string.IsNullOrWhiteSpace(voiceId) ? "Voice clone failed" : null,
-        }, ct);
-        if (string.IsNullOrWhiteSpace(voiceId))
-            return Results.BadRequest(new { ok = false, error = "Voice clone failed — see server logs." });
-
-        store.UpdateCharacterSeedText(id, charKey, voiceCloneProviderId: voiceId);
-
+        // Unified router: catalog voice_model_name (or body.Model) → Fal MiniMax or ElevenLabs.
+        var result = await apply.ApplyFromSampleAsync(
+            id, charKey, modelOverride: body?.Model, ct: ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
         return Results.Ok(new
         {
             ok = true,
             projectId = id,
             charKey,
-            voiceId,
-            estimatedUsd = entry?.CostPerCloneUsd,
-            message = "Voice cloned — reused for narration until the sample is replaced.",
+            voiceId = result.ProviderVoiceId,
+            providerId = result.ProviderId,
+            modelId = result.ModelId,
+            usedMock = result.UsedMock,
+            estimatedUsd = result.EstimatedCloneUsd,
+            previewUrl = result.PreviewUrl,
+            message = result.Message ?? "Voice cloned — reused for narration until the sample is replaced.",
         });
     }
     catch (Exception ex)
@@ -2773,19 +2804,14 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone", async (
     }
 });
 
-/// <summary>
-/// Synthesize narration/dialogue speech in a previously cloned voice
-/// (see POST .../voice/clone). Explicit, human-triggered only — spends real provider money
-/// ($0.10/1000 chars as of 2026-08) and is never called automatically. Returns a media-proxy URL
-/// (not the raw provider URL) so the Fal.ai key never reaches the browser — same pattern as
-/// generated clips/music.
-/// </summary>
 app.MapPost("/api/projects/{id}/characters/{charKey}/voice/speak", async (
     string id,
     string charKey,
     SpeakVoiceApiRequest? body,
     ProjectStore store,
     IVoiceCloneClient voiceClone,
+    IVoiceClient voiceClient,
+    IHttpClientFactory httpFactory,
     MediaProxyTicketStore tickets,
     ProjectTelemetryService telemetry,
     IUserContext user,
@@ -2801,43 +2827,143 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/speak", async (
         var text = body?.Text?.Trim();
         if (string.IsNullOrWhiteSpace(text))
             return Results.BadRequest(new { ok = false, error = "text required" });
-        if (!voiceClone.IsConfigured)
-            return Results.BadRequest(new { ok = false, error = "Connect a voice-clone service (FAL_API_KEY) in Configuration." });
 
         var voiceId = body?.VoiceId;
         if (string.IsNullOrWhiteSpace(voiceId))
             voiceId = store.GetVoiceCloneProviderId(id, charKey);
         if (string.IsNullOrWhiteSpace(voiceId))
-            return Results.BadRequest(new { ok = false, error = "No cloned voice yet — call voice/clone first." });
+            return Results.BadRequest(new { ok = false, error = "No cloned voice yet — record and apply a voice sample first." });
 
+        // Prefer seed provider (who created the clone) so we don't TTS with the wrong stack.
+        var seedProvider = store.GetVoiceProviderId(id, charKey) ?? "";
         var model = body?.Model;
-        var entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-            .FirstOrDefault(m => !m.IsVoiceCloneStep &&
-                (string.IsNullOrWhiteSpace(model) || string.Equals(m.Id, model, StringComparison.OrdinalIgnoreCase)));
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            var cfg = await store.GetConfigAsync(id, ct);
+            if (cfg.TryGetValue("voice_model_name", out var vm) && vm.ValueKind == JsonValueKind.String)
+                model = vm.GetString();
+        }
+
+        // Resolve speak-shaped catalog entry (not the clone step).
+        SupportedModelEntry? entry = null;
+        if (!string.IsNullOrWhiteSpace(model))
+            entry = SupportedModelCatalog.Find(model, ModelCapability.Voice)
+                    ?? SupportedModelCatalog.Find(model);
+        if (entry is { IsVoiceCloneStep: true })
+        {
+            // User selected the clone model — pair to same-provider speak model.
+            entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Enabled &&
+                    string.Equals(m.ProviderId, entry.ProviderId, StringComparison.OrdinalIgnoreCase));
+            model = entry?.Id;
+        }
+        if (entry is null)
+        {
+            // Infer from seed provider id.
+            entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Enabled &&
+                    (string.IsNullOrWhiteSpace(seedProvider) ||
+                     string.Equals(m.ProviderId, seedProvider, StringComparison.OrdinalIgnoreCase)));
+            model = entry?.Id ?? model;
+        }
+
         var maxLen = entry?.MaxPromptLength ?? 5000;
         if (text.Length > maxLen)
             return Results.BadRequest(new { ok = false, error = $"Text is {text.Length} characters — this voice model's limit is {maxLen} per call. Split into multiple calls." });
 
-        var audioUrl = await voiceClone.SynthesizeSpeechAsync(text, voiceId!, model, ct);
-        var estimatedUsd = entry?.CostPerThousandCharsUsd is { } rate ? Math.Round(rate * text.Length / 1000.0, 4) : (double?)null;
+        var providerId = entry?.ProviderId
+                         ?? (string.IsNullOrWhiteSpace(seedProvider) ? null : seedProvider)
+                         ?? "unknown";
+        var useEleven = providerId.Equals("elevenlabs", StringComparison.OrdinalIgnoreCase)
+                        || (entry?.Provider == ModelProviderFamily.ElevenLabs)
+                        || voiceId.StartsWith("mock_", StringComparison.OrdinalIgnoreCase);
+
+        byte[]? audioBytes = null;
+        string contentType = "audio/mpeg";
+        string fileExt = ".mp3";
+        string? clientUrl = null;
+        string? error = null;
+        var usedMock = false;
+
+        if (useEleven)
+        {
+            if (!voiceClient.IsConfigured && !voiceId.StartsWith("mock_", StringComparison.OrdinalIgnoreCase))
+                return Results.BadRequest(new { ok = false, error = "ElevenLabs key is not configured. Open Settings → Voice." });
+            var speakModelId = entry?.Id
+                               ?? SupportedModelCatalog.Find("eleven_multilingual_v2", ModelCapability.Voice)?.Id
+                               ?? model
+                               ?? "eleven_multilingual_v2";
+            var tts = await voiceClient.TextToSpeechAsync(voiceId!, text, speakModelId, ct);
+            if (!tts.Ok || tts.AudioBytes is not { Length: > 0 })
+            {
+                error = tts.Error ?? "Speech synthesis failed";
+            }
+            else
+            {
+                audioBytes = tts.AudioBytes;
+                contentType = tts.ContentType ?? "audio/mpeg";
+                fileExt = tts.FileExtension ?? ".mp3";
+                usedMock = tts.UsedMock;
+            }
+        }
+        else
+        {
+            if (!voiceClone.IsConfigured)
+                return Results.BadRequest(new { ok = false, error = "Connect a voice service (Fal) in Settings for MiniMax speech." });
+            var speakModelId = entry?.Id
+                               ?? SupportedModelCatalog.Find("fal-ai/minimax/speech-02-hd", ModelCapability.Voice)?.Id
+                               ?? model;
+            var audioUrl = await voiceClone.SynthesizeSpeechAsync(text, voiceId!, speakModelId, ct);
+            if (string.IsNullOrWhiteSpace(audioUrl))
+            {
+                error = "Speech synthesis failed — see server logs.";
+            }
+            else
+            {
+                try
+                {
+                    var http = httpFactory.CreateClient();
+                    using var resp = await http.GetAsync(audioUrl, ct);
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        audioBytes = await resp.Content.ReadAsByteArrayAsync(ct);
+                        contentType = resp.Content.Headers.ContentType?.MediaType ?? "audio/mpeg";
+                    }
+                    else
+                    {
+                        // Fall back to proxy URL if download fails
+                        var ticket = tickets.Issue(audioUrl, TimeSpan.FromMinutes(45));
+                        clientUrl = $"/api/media/proxy/{ticket}";
+                    }
+                }
+                catch
+                {
+                    var ticket = tickets.Issue(audioUrl, TimeSpan.FromMinutes(45));
+                    clientUrl = $"/api/media/proxy/{ticket}";
+                }
+            }
+        }
+
+        var estimatedUsd = entry?.CostPerThousandCharsUsd is { } rate
+            ? Math.Round(rate * text.Length / 1000.0, 4)
+            : (double?)null;
+        var ok = audioBytes is { Length: > 0 } || !string.IsNullOrWhiteSpace(clientUrl);
         await telemetry.LogApiCallAsync(new ApiCallTelemetry
         {
             ProjectId = id,
             Kind = "tts",
             Mode = "dialogue_tts",
             Model = entry?.Id ?? model,
-            Provider = entry?.ProviderId,
+            Provider = providerId,
             CharKey = charKey,
             PromptChars = text.Length,
             EstimatedUsd = estimatedUsd,
-            Ok = !string.IsNullOrWhiteSpace(audioUrl),
-            Error = string.IsNullOrWhiteSpace(audioUrl) ? "Speech synthesis failed" : null,
+            Ok = ok,
+            Error = ok ? null : error ?? "Speech synthesis failed",
         }, ct);
-        if (string.IsNullOrWhiteSpace(audioUrl))
-            return Results.BadRequest(new { ok = false, error = "Speech synthesis failed — see server logs." });
 
-        var ticket = tickets.Issue(audioUrl, TimeSpan.FromMinutes(45));
-        var clientUrl = $"/api/media/proxy/{ticket}";
+        if (!ok)
+            return Results.BadRequest(new { ok = false, error = error ?? "Speech synthesis failed" });
 
         return Results.Ok(new
         {
@@ -2846,8 +2972,12 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/speak", async (
             charKey,
             voiceId,
             clientUrl,
+            audioBase64 = audioBytes is { Length: > 0 } ? Convert.ToBase64String(audioBytes) : null,
+            contentType,
+            fileExtension = fileExt,
             characterCount = text.Length,
             estimatedUsd,
+            usedMock,
             message = "Narration audio ready.",
         });
     }
@@ -2949,6 +3079,141 @@ app.MapPost("/api/projects/{id}/media/lip-sync", async (
         }
     }
 });
+
+
+/// <summary>List provider voices (ElevenLabs premade + clones, or mock catalog).</summary>
+app.MapGet("/api/voices", async (IVoiceClient voices, CancellationToken ct) =>
+{
+    try
+    {
+        var list = await voices.ListVoicesAsync(ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            provider = voices.ProviderId,
+            configured = voices.IsConfigured,
+            voices = list,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Create/apply a voice clone for a character from the saved sample (or generate a demo sample),
+/// store provider voice_id on the seed, and synthesize a short TTS preview.
+/// Complements POST .../voice/clone (Fal MiniMax) — this path uses IVoiceClient (ElevenLabs).
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/apply-clone", async (
+    string id,
+    string charKey,
+    VoiceCloneApplyService apply,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        var result = await apply.ApplyFromSampleAsync(id, charKey, ct: ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            providerId = result.ProviderId,
+            providerVoiceId = result.ProviderVoiceId,
+            voiceId = result.ProviderVoiceId,
+            modelId = result.ModelId,
+            usedMock = result.UsedMock,
+            voiceLabel = result.VoiceLabel,
+            previewUrl = result.PreviewUrl,
+            previewRelativePath = result.PreviewRelativePath,
+            estimatedUsd = result.EstimatedCloneUsd,
+            message = result.Message,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Assign a catalog/premade provider voice id to a character (no sample clone).</summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/apply-catalog", async (
+    string id,
+    string charKey,
+    ApplyCatalogVoiceRequest? body,
+    VoiceCloneApplyService apply,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        body ??= new ApplyCatalogVoiceRequest();
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        if (string.IsNullOrWhiteSpace(body.ProviderVoiceId))
+            return Results.BadRequest(new { ok = false, error = "providerVoiceId required" });
+        var result = await apply.ApplyCatalogVoiceAsync(
+            id, charKey, body.ProviderVoiceId!, body.DisplayName, body.PreviewText, ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            providerId = result.ProviderId,
+            providerVoiceId = result.ProviderVoiceId,
+            voiceId = result.ProviderVoiceId,
+            usedMock = result.UsedMock,
+            voiceLabel = result.VoiceLabel,
+            previewUrl = result.PreviewUrl,
+            message = result.Message,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Serve the last TTS preview for a character (from apply-clone / apply-catalog).</summary>
+app.MapGet("/api/projects/{id}/characters/{charKey}/voice/tts-preview",
+    (string id, string charKey, VoiceCloneApplyService apply) =>
+{
+    try
+    {
+        var path = apply.GetTtsPreviewPath(id, charKey);
+        if (path is null || !File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "No TTS preview yet — run apply-clone first." });
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        var contentType = ext switch
+        {
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".m4a" => "audio/mp4",
+            _ => "application/octet-stream",
+        };
+        return Results.File(path, contentType, Path.GetFileName(path));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 
 app.MapGet("/api/users/{id}/terms", async (string id, UserDatabaseService userDb) =>
 {
@@ -3667,6 +3932,30 @@ app.MapPost("/api/projects/{id}/visibility", async (
     return Results.Ok(new { ok = true, projectId = proj.Id, visibilityMode = proj.VisibilityMode });
 });
 
+
+/// <summary>Persist product path: full | simple-voice (library book + narrator voice).</summary>
+app.MapPost("/api/projects/{id}/studio-path", async (
+    string id,
+    SetStudioPathRequest? body,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+    {
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can change studio path." },
+            statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    var proj = await store.SetProjectStudioPathAsync(id, body?.StudioPath, ct);
+    return Results.Ok(new { ok = true, projectId = proj.Id, studioPath = proj.StudioPath });
+});
+
 app.MapPost("/api/projects/{id}/rename", async (
     string id,
     RenameProjectRequest? body,
@@ -3998,7 +4287,11 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/look", async (
                 charKey,
                 description: desc ?? "",
                 visualLock: vis ?? "",
-                model: string.IsNullOrWhiteSpace(body.Model) ? "grok-4.5" : body.Model,
+                model: string.IsNullOrWhiteSpace(body.Model)
+                    ? ProjectModelSelection.RequirePlanning(
+                        await store.GetConfigAsync(id, ct).ConfigureAwait(false),
+                        "Character look scrub")
+                    : ProjectModelSelection.RequireExplicit(body.Model, ModelCapability.Chat, "Character look scrub"),
                 ct: ct).ConfigureAwait(false);
             if (usedAi)
             {
@@ -4053,6 +4346,7 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
     string id,
     ExtractCastRequest? body,
     CastFromScreenplayService castService,
+    ProjectStore store,
     CancellationToken ct) =>
 {
     try
@@ -4061,9 +4355,13 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
         timeoutCts.CancelAfter(TimeSpan.FromSeconds(50));
 
         body ??= new ExtractCastRequest();
+        var cfg = await store.GetConfigAsync(id, timeoutCts.Token).ConfigureAwait(false);
+        var castModel = string.IsNullOrWhiteSpace(body.Model)
+            ? ProjectModelSelection.RequirePlanning(cfg, "Cast extract")
+            : ProjectModelSelection.RequireExplicit(body.Model, ModelCapability.Chat, "Cast extract");
         var result = await castService.ExtractAsync(
             id,
-            model: string.IsNullOrWhiteSpace(body.Model) ? "grok-4.5" : body.Model!,
+            model: castModel,
             force: body.Force,
             ct: timeoutCts.Token);
         return result.Ok
@@ -5359,23 +5657,32 @@ app.MapGet("/api/projects/{id}/resolution-lock", async (
     }
 });
 
-/// <summary>Actual spend by provider (then category) for this project — reconcile against a real vendor billing statement.</summary>
+/// <summary>
+/// Actual spend by provider for this project.
+/// Default: <b>signed-in user's</b> spend on this project. Pass <c>?all=true</c> (admin) for every user.
+/// </summary>
 app.MapGet("/api/projects/{id}/cost/by-provider", async (
     string id,
     ProjectStore store,
     UserDatabaseService userDb,
+    IUserContext user,
+    bool? all,
     CancellationToken ct) =>
 {
     try
     {
         _ = await store.GetProjectAsync(id, ct)
             ?? throw new InvalidOperationException($"Unknown project: {id}");
-        var stats = await userDb.GetApiCostByProviderAsync(userId: null, projectId: id, ct);
+        var allUsers = all == true && user.IsAdmin;
+        var userId = allUsers ? null : (string.IsNullOrWhiteSpace(user.UserId) ? null : user.UserId);
+        var stats = await userDb.GetApiCostByProviderAsync(userId: userId, projectId: id, ct);
         return Results.Ok(new
         {
             ok = true,
             projectId = id,
-            notes = "List-rate estimates at call time (catalog), grouped by provider. Not a provider invoice — use as a sanity check against your actual billing statement, not an exact match.",
+            userId = userId,
+            scope = allUsers ? "all_users" : "current_user",
+            notes = "List vs charge: list_usd = vendor catalog; charge = list × admin multiplier. Grouped by provider (xAI, Google, ElevenLabs, …).",
             stats,
         });
     }
@@ -5383,6 +5690,31 @@ app.MapGet("/api/projects/{id}/cost/by-provider", async (
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+});
+
+/// <summary>
+/// Signed-in user's spend: grand total, by project, by vendor, by category.
+/// Optional <c>?projectId=</c> filters to one project.
+/// </summary>
+app.MapGet("/api/me/spend", async (
+    IUserContext user,
+    UserDatabaseService userDb,
+    IOptions<PageToMovieOptions> opts,
+    string? projectId,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var uid = user.UserId?.Trim() ?? "";
+    if (string.IsNullOrWhiteSpace(uid))
+        return Results.Unauthorized();
+    var summary = await userDb.GetUserSpendSummaryAsync(uid, projectId, ct);
+    return Results.Ok(new
+    {
+        ok = true,
+        summary,
+        notes = "Per-user tracking from user_api_calls. Charge = list × admin multiplier. Provider = catalog vendor id (xai, google, elevenlabs, …).",
+    });
 });
 
 app.MapPost("/api/projects/{id}/cost/backfill", async (
@@ -5746,6 +6078,10 @@ app.MapGet("/api/projects/{id}/media/file", async (
             ".json" => "application/json",
             ".png" => "image/png",
             ".jpg" or ".jpeg" => "image/jpeg",
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".m4a" => "audio/mp4",
+            ".webm" => "audio/webm",
             _ => "application/octet-stream"
         };
 

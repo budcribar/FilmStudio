@@ -1229,14 +1229,33 @@ public sealed class EngineApiClient
     public async Task<ProjectsDto?> CreateProjectAsync(
         string name,
         string? title = null,
+        string? studioPath = null,
         CancellationToken ct = default)
     {
         SyncIdentityHeaders();
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/projects")
         {
-            Content = JsonContent.Create(new { name, title }, options: JsonOpts)
+            Content = JsonContent.Create(new { name, title, studioPath }, options: JsonOpts)
         };
         return await SendJsonAsync<ProjectsDto>(req, ct);
+    }
+
+    public async Task SetStudioPathAsync(
+        string projectId,
+        string studioPath,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/studio-path",
+            new SetStudioPathRequest { StudioPath = studioPath },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Studio path update failed");
+        }
     }
 
     
@@ -1407,6 +1426,23 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             throw new InvalidOperationException(TryError(err) ?? $"{(int)resp.StatusCode}");
         }
         var res = await resp.Content.ReadFromJsonAsync<GenBatchJobResponseDto>(JsonOpts, ct);
+        return res?.Job;
+    }
+
+    /// <summary>
+    /// Server-side batch TTS for re-voice. Progress over SignalR (kind <c>speak-batch</c>);
+    /// each finished line sets <see cref="JobSnapshot.ClientMediaUrl"/> for client media save.
+    /// </summary>
+    public async Task<JobSnapshot?> StartSpeakBatchAsync(
+        StartSpeakBatchRequest request,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync("/api/jobs/speak-batch", request, JsonOpts, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(raw) ?? $"{(int)resp.StatusCode}");
+        var res = JsonSerializer.Deserialize<GenBatchJobResponseDto>(raw, JsonOpts);
         return res?.Job;
     }
 
@@ -2524,19 +2560,67 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             ct);
     }
 
-    /// <summary>Actual spend by provider (then category) for this project — for reconciling against a real vendor billing statement.</summary>
-    public async Task<CostByProviderDto?> GetCostByProviderAsync(string projectId, CancellationToken ct = default)
+    /// <summary>
+    /// Spend by provider for a project (default: signed-in user only).
+    /// Pass <paramref name="allUsers"/> true only as admin for full project totals.
+    /// </summary>
+    public async Task<CostByProviderDto?> GetCostByProviderAsync(
+        string projectId,
+        bool allUsers = false,
+        CancellationToken ct = default)
     {
+        SyncIdentityHeaders();
+        var qs = allUsers ? "?all=true" : "";
         return await _http.GetFromJsonAsync<CostByProviderDto>(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/by-provider",
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/by-provider{qs}",
             JsonOpts,
             ct);
+    }
+
+    /// <summary>Signed-in user's total / by-project / by-vendor spend.</summary>
+    public async Task<UserSpendSummaryDto?> GetMySpendAsync(
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var qs = string.IsNullOrWhiteSpace(projectId)
+            ? ""
+            : $"?projectId={Uri.EscapeDataString(projectId)}";
+        var dto = await _http.GetFromJsonAsync<MySpendDto>($"/api/me/spend{qs}", JsonOpts, ct);
+        return dto?.Summary;
+    }
+
+    public sealed class MySpendDto
+    {
+        public bool Ok { get; set; }
+        public UserSpendSummaryDto? Summary { get; set; }
+    }
+
+    public sealed class UserSpendSummaryDto
+    {
+        public string UserId { get; set; } = "";
+        public int TotalCalls { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
+        public List<ProjectSpendRowDto> ByProject { get; set; } = new();
+        public Dictionary<string, ProviderCostStatsDto> ByProvider { get; set; } = new();
+        public Dictionary<string, CategoryCostStatsDto> ByCategory { get; set; } = new();
+    }
+
+    public sealed class ProjectSpendRowDto
+    {
+        public string ProjectId { get; set; } = "";
+        public int Calls { get; set; }
+        public double ListUsd { get; set; }
+        public double ChargeUsd { get; set; }
     }
 
     public sealed class CostByProviderDto
     {
         public bool Ok { get; set; }
         public string? ProjectId { get; set; }
+        public string? UserId { get; set; }
+        public string? Scope { get; set; }
         public ApiCostByProviderStatsDto? Stats { get; set; }
     }
 
@@ -2544,6 +2628,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     {
         public int TotalCalls { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public Dictionary<string, ProviderCostStatsDto> ByProvider { get; set; } = new();
     }
 
@@ -2552,6 +2638,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public string Provider { get; set; } = "unknown";
         public int Count { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public Dictionary<string, CategoryCostStatsDto> ByCategory { get; set; } = new();
     }
 
@@ -2560,6 +2648,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public string Category { get; set; } = "other";
         public int Count { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public double AvgUsd { get; set; }
     }
 
@@ -2683,7 +2773,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     public async Task<ExtractCastResultDto?> ExtractCastFromScreenplayAsync(
         string projectId,
         bool force = true,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
@@ -3000,6 +3090,68 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     }
 
     /// <summary>
+    /// Create provider clone from saved sample (or seed a demo sample), store voice id on the character, optional TTS preview.
+    /// </summary>
+    public async Task<VoiceApplyDto> ApplyVoiceCloneAsync(
+        string projectId,
+        string charKey,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/apply-clone",
+            new { },
+            JsonOpts,
+            ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        var body = JsonSerializer.Deserialize<VoiceApplyDto>(raw, JsonOpts)
+                   ?? new VoiceApplyDto { Ok = false, Error = "Empty response" };
+        if (!resp.IsSuccessStatusCode)
+        {
+            body.Ok = false;
+            if (string.IsNullOrWhiteSpace(body.Error))
+                body.Error = TryError(raw) ?? resp.ReasonPhrase ?? "Apply clone failed";
+        }
+        return body;
+    }
+
+    /// <summary>
+    /// TTS with the character's stored clone (or explicit voice id). Returns base64 audio and/or proxy URL.
+    /// </summary>
+    public async Task<SpeakVoiceDto> SpeakVoiceAsync(
+        string projectId,
+        string charKey,
+        string text,
+        string? voiceId = null,
+        string? model = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/speak",
+            new { text, voiceId, model },
+            JsonOpts,
+            ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        var body = JsonSerializer.Deserialize<SpeakVoiceDto>(raw, JsonOpts)
+                   ?? new SpeakVoiceDto { Ok = false, Error = "Empty response" };
+        if (!resp.IsSuccessStatusCode)
+        {
+            body.Ok = false;
+            if (string.IsNullOrWhiteSpace(body.Error))
+                body.Error = TryError(raw) ?? resp.ReasonPhrase ?? "Speech synthesis failed";
+        }
+        return body;
+    }
+
+    public async Task<VoiceCatalogDto?> ListProviderVoicesAsync(CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<VoiceCatalogDto>("/api/voices", JsonOpts, ct);
+    }
+
+
+    /// <summary>
     /// Save look text; by default API runs AI scrub (literal + base look). Returns cleaned fields.
     /// </summary>
     public async Task DeleteCharacterImageAsync(
@@ -3187,7 +3339,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         bool forceExtract = true,
         bool forceVision = false,
         bool autoVision = true,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
@@ -3337,6 +3489,52 @@ public sealed class ProjectsDto
     public bool Ok { get; set; }
     public ProjectInfo? Active { get; set; }
     public List<ProjectInfo> Projects { get; set; } = new();
+}
+
+public sealed class VoiceApplyDto
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public string? ProviderId { get; set; }
+    public string? ProviderVoiceId { get; set; }
+    public string? ModelId { get; set; }
+    public bool UsedMock { get; set; }
+    public string? PreviewUrl { get; set; }
+    public string? VoiceLabel { get; set; }
+    public double? EstimatedUsd { get; set; }
+}
+
+public sealed class SpeakVoiceDto
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public string? ClientUrl { get; set; }
+    public string? AudioBase64 { get; set; }
+    public string? ContentType { get; set; }
+    public string? FileExtension { get; set; }
+    public string? VoiceId { get; set; }
+    public int CharacterCount { get; set; }
+    public double? EstimatedUsd { get; set; }
+    public bool UsedMock { get; set; }
+}
+
+public sealed class VoiceCatalogDto
+{
+    public bool Ok { get; set; }
+    public string? Provider { get; set; }
+    public bool Configured { get; set; }
+    public List<VoiceCatalogItemDto> Voices { get; set; } = new();
+}
+
+public sealed class VoiceCatalogItemDto
+{
+    public string ProviderVoiceId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? Category { get; set; }
+    public string? PreviewUrl { get; set; }
+    public bool IsCloned { get; set; }
 }
 
 public sealed class JobsListDto

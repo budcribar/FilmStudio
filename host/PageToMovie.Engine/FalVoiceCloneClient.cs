@@ -52,12 +52,20 @@ public sealed class FalVoiceCloneClient : IVoiceCloneClient
     {
         if (!string.IsNullOrWhiteSpace(model))
         {
-            var hit = SupportedModelCatalog.Find(model, ModelCapability.Voice);
-            if (hit is { IsVoiceCloneStep: true }) return hit;
+            var hit = SupportedModelCatalog.Find(model, ModelCapability.Voice)
+                      ?? SupportedModelCatalog.Find(model);
+            if (hit is { IsVoiceCloneStep: true, Enabled: true }) return hit;
+            // Selected speak model for Fal → use same-provider clone step.
+            if (hit is not null && hit.Provider == ModelProviderFamily.Fal)
+            {
+                var pair = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                    .FirstOrDefault(m => m.IsVoiceCloneStep && m.Provider == ModelProviderFamily.Fal && m.Enabled);
+                if (pair is not null) return pair;
+            }
         }
-        var fallback = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-            .FirstOrDefault(m => m.IsVoiceCloneStep && m.Provider == ModelProviderFamily.Fal);
-        return fallback ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Voice);
+        throw new InvalidOperationException(
+            "Voice clone model is not selected or not a clone-capable catalog model. " +
+            "Open Settings → Voice clone and choose MiniMax Voice Clone (Fal.ai).");
     }
 
     /// <summary>Resolves the catalog's speak-shaped Voice model (mirror of <see cref="ResolveCloneModel"/>).</summary>
@@ -65,12 +73,18 @@ public sealed class FalVoiceCloneClient : IVoiceCloneClient
     {
         if (!string.IsNullOrWhiteSpace(model))
         {
-            var hit = SupportedModelCatalog.Find(model, ModelCapability.Voice);
-            if (hit is { IsVoiceCloneStep: false }) return hit;
+            var hit = SupportedModelCatalog.Find(model, ModelCapability.Voice)
+                      ?? SupportedModelCatalog.Find(model);
+            if (hit is { IsVoiceCloneStep: false, Enabled: true }) return hit;
+            if (hit is not null && hit.Provider == ModelProviderFamily.Fal)
+            {
+                var pair = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                    .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Provider == ModelProviderFamily.Fal && m.Enabled);
+                if (pair is not null) return pair;
+            }
         }
-        var fallback = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-            .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Provider == ModelProviderFamily.Fal);
-        return fallback ?? SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Voice);
+        throw new InvalidOperationException(
+            "Voice speech model is not selected. Open Settings → Voice clone and ensure a Fal MiniMax speak model is available.");
     }
 
     public async Task<string?> CloneVoiceAsync(

@@ -35,21 +35,38 @@ window.PageToMovieMedia = {
      */
     connectFolderAsync: async function () {
         if (!this.supportsDirectoryPicker()) {
-            return { success: false, error: "This browser does not support folder access (use Chrome/Edge)." };
+            return { success: false, error: "This browser does not support folder access (use Chrome or Edge)." };
         }
         try {
-            // Prefer reusing export folder if already connected
-            if (window.PageToMovieExport && window.PageToMovieExport._directoryHandle) {
-                this._root = window.PageToMovieExport._directoryHandle;
-            } else {
-                this._root = await window.showDirectoryPicker({ mode: "readwrite" });
-                if (window.PageToMovieExport)
-                    window.PageToMovieExport._directoryHandle = this._root;
+            // Always show the OS folder picker (Change/Select must open a chooser).
+            this._root = await window.showDirectoryPicker({ mode: "readwrite" });
+            if (window.PageToMovieExport)
+                window.PageToMovieExport._directoryHandle = this._root;
+            const name = this._root.name;
+            // Prefer any real path the host exposes (non-standard); else keep stored path if leaf matches.
+            let fullPath = null;
+            try {
+                if (typeof this._root.path === "string" && this._root.path)
+                    fullPath = this._root.path;
+                else if (typeof this._root.fullPath === "string" && this._root.fullPath)
+                    fullPath = this._root.fullPath;
+            } catch (_) { /* ignore */ }
+            const prev = this.getFullPath();
+            if (!fullPath && prev) {
+                const leaf = prev.replace(/[\\/]+$/, "").split(/[\\/]/).pop();
+                if (leaf && leaf.toLowerCase() === String(name).toLowerCase())
+                    fullPath = prev;
+                else
+                    try { localStorage.removeItem("ptm-media-fullpath"); } catch (_) { /* ignore */ }
             }
+            if (fullPath)
+                this.setFullPath(fullPath);
             await this._saveHandleToDbAsync(this._root);
-            return { success: true, folderName: this._root.name };
+            return { success: true, folderName: name, fullPath: fullPath || this.getFullPath() || null };
         } catch (err) {
-            return { success: false, error: err.message || "Folder selection cancelled" };
+            if (err && err.name === "AbortError")
+                return { success: false, error: "Folder selection cancelled." };
+            return { success: false, error: (err && err.message) || "Folder selection failed." };
         }
     },
 
@@ -327,6 +344,21 @@ window.PageToMovieMedia = {
     /** Revoke an arbitrary blob: URL (e.g. one handed back by PageToMovieFfmpeg.encodeSliceAsync). */
     revokeUrl: function (url) {
         try { URL.revokeObjectURL(url); } catch (_) { /* */ }
+    },
+
+    /** Build a blob: URL from base64 audio/video (TTS speak response). */
+    blobUrlFromBase64: function (base64, mime) {
+        if (!base64) return null;
+        try {
+            const bin = atob(base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const blob = new Blob([bytes], { type: mime || "audio/mpeg" });
+            return URL.createObjectURL(blob);
+        } catch (e) {
+            console.error("blobUrlFromBase64 failed", e);
+            return null;
+        }
     },
 
     /**

@@ -7,6 +7,7 @@
 @inject ActiveProjectState ActiveProject
 @inject ClientMediaFolderService MediaFolder
 @inject IJSRuntime Js
+@inject NavigationManager Nav
 @using PageToMovie.Core.Models
 @using PageToMovie.Web.Services
 @using Microsoft.AspNetCore.Components.Forms
@@ -14,15 +15,35 @@
 <PageTitle>Cast & voice</PageTitle>
 
 <div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Studio · Step 3</span>
-    <h1 class="ptm-adapt-title mb-1">Cast & voice</h1>
+    <span class="ptm-adapt-kicker">@(_simpleMode ? "Simple · your voice" : "Studio · Step 3")</span>
+    <h1 class="ptm-adapt-title mb-1">@(_simpleMode ? "Narrator voice" : "Cast & voice")</h1>
     <p class="ptm-adapt-lede">
-        Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free;
-        clone / profile is an add-on path when you want a personal sample.
+        @if (_simpleMode)
+        {
+            <text>Record one sample for the narrator. Library pictures stay as-is — we only re-voice the lines. Want faces of family? Use full studio.</text>
+        }
+        else
+        {
+            <text>Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free;
+            clone / profile is an add-on path when you want a personal sample.</text>
+        }
     </p>
 </div>
 
-<StudioProcessStrip Active="cast" />
+@if (_simpleMode)
+{
+    <div class="alert alert-primary border-primary border-opacity-50 py-2 small mb-3" data-testid="simple-voice-banner">
+        <strong>Simple path.</strong>
+        Pick the narrator (or lead), record the script below, then go to
+        <a href="cost" class="alert-link">Estimate</a> or
+        <a href="scenes" class="alert-link">Film</a>.
+        <button type="button" class="btn btn-link btn-sm p-0 align-baseline alert-link" @onclick="ExitSimplePathAsync">Exit simple → full cast</button>
+        ·
+        <a href="simple-voice" class="alert-link">Library books</a>
+    </div>
+}
+
+<StudioProcessStrip Active="cast" SimpleMode="@(_simpleMode || ActiveProject.IsSimpleVoice)" />
 
 @if (_gateChecked && !ActiveProject.CanCharacters)
 {
@@ -249,7 +270,31 @@ else
         <div class="col-md-9">
             @if (_selected is null)
             {
-                <p class="text-muted">Click a character on the left to set a preferred look and choose how to generate.</p>
+                <p class="text-muted">
+                    @(_simpleMode
+                        ? "Pick the narrator (or lead) on the left, then record your sample."
+                        : "Click a character on the left to set a preferred look and choose how to generate.")
+                </p>
+            }
+            else if (_simpleMode)
+            {
+                @* Simple path: voice first — no picture routing required to reach Record. *@
+                <div class="card mb-3 border-primary border-opacity-50" data-testid="simple-voice-card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span class="fw-semibold">@_selected.DisplayName · voice sample</span>
+                        <span class="badge text-bg-primary">Simple · your voice</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">
+                            Record (or pick) one sample for this character. Library pictures stay as-is — we re-speak lines in your voice when you film.
+                        </p>
+                        @RenderVoiceEditor()
+                    </div>
+                </div>
+                <p class="small text-muted mb-0">
+                    Want to change looks later?
+                    <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="ExitSimplePathAsync">Switch to full cast</button>
+                </p>
             }
             else if (_selected.VoiceOnly)
             {
@@ -880,16 +925,14 @@ else
     private string? _voiceSaveHint;
     private CancellationTokenSource? _voiceSaveCts;
 
-    /// <summary>
-    /// Phoneme-rich read-aloud for voice cloning.
-    /// Clear sentences, varied vowels/consonants, natural cadence.
-    /// </summary>
-    private const string VoiceCloneReadScript =
-        "Hello. This is my natural speaking voice for a film character. " +
-        "I will speak clearly at a calm, steady pace. " +
-        "The quick brown fox jumps over the lazy dog near the river at twilight. " +
-        "Please measure five, six, seven, eight, nine, and zero. " +
-        "Can you hear every word? Yes — I hope this sample helps you match my voice.";
+    /// <summary>Kids short script for simple path / children's books; general film otherwise.</summary>
+    private string VoiceCloneReadScript =>
+        _useKidsScript ? VoiceCloneScripts.KidsShort : VoiceCloneScripts.GeneralFilm;
+
+    private bool _simpleMode;
+    private bool _useKidsScript;
+    private bool _showKidsFullScript;
+    private string? _focusHint;
     private bool _showMediaAudioPicker;
     private bool _loadingMediaAudio;
     private List<ClientMediaFolderService.LocalAudioFile> _mediaAudioFiles = new();
@@ -904,107 +947,135 @@ else
 
     private RenderFragment RenderVoiceEditor() => __builder =>
     {
-        <div class="mb-2">
-            <label class="form-label small mb-0">Voice label</label>
-            <input class="form-control form-control-sm"
-                   value="@_editVoiceLabel"
-                   @oninput="OnVoiceLabelInput"
-                   disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                   placeholder="e.g. Daddy" />
-        </div>
-        <div class="mb-2">
-            <label class="form-label small mb-0">Voice profile</label>
-            <textarea class="form-control form-control-sm" rows="4"
-                      value="@_editVoiceProfile"
-                      @oninput="OnVoiceProfileInput"
-                      disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                      placeholder="Adult male; low soft presence — used in film video prompts (voice style)"></textarea>
-            <div class="form-text">
-                Optional: describe the voice (or use a personal style label). Play previews a short sample clip with this profile + dialogue.
-            </div>
-        </div>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="small text-muted">@(_voiceSaveHint ?? "Profile saves automatically")</span>
-            <button type="button"
-                    class="btn btn-sm btn-outline-secondary"
-                    disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                    title="Play cached sample, or generate a short film clip if missing"
-                    @onclick="() => PlayVoicePreviewAsync(force: false)">
-                ▶ Play
-            </button>
-            <button type="button"
-                    class="btn btn-sm btn-outline-primary"
-                    disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                    title="Always regenerate after editing the profile"
-                    @onclick="() => PlayVoicePreviewAsync(force: true)">
-                Regenerate
-            </button>
-        </div>
-        @if (VoiceJobRunning && _job is not null)
+        @* Simple path (home → library book → your voice): only the clone card.
+           Full cast keeps label/profile + film voice preview for prompt style. *@
+        @if (!_simpleMode)
         {
-            var vpct = _job.Status == "queued" || _job.Total <= 0
-                ? 8
-                : (int)Math.Round(100.0 * Math.Clamp(_job.Index, 0, _job.Total) / Math.Max(1, _job.Total));
-            if (_job.Status == "running" && _job.Index <= 0)
-                vpct = 0;
-            <div class="mt-2">
-                <div class="d-flex justify-content-between small text-muted">
-                    <span>@(_job.Message ?? "Generating voice…")</span>
-                    @if (_job.Status == "running" && _job.Total == 100)
-                    {
-                        <span>@_job.Index%</span>
-                    }
-                </div>
-                <div class="progress mt-1" style="height: 0.5rem;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated"
-                         role="progressbar"
-                         style="width: @(vpct)%"
-                         aria-valuenow="@vpct"
-                         aria-valuemin="0"
-                         aria-valuemax="100"></div>
+            <div class="mb-2">
+                <label class="form-label small mb-0">Voice label</label>
+                <input class="form-control form-control-sm"
+                       value="@_editVoiceLabel"
+                       @oninput="OnVoiceLabelInput"
+                       disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                       placeholder="e.g. Daddy" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label small mb-0">Voice profile</label>
+                <textarea class="form-control form-control-sm" rows="4"
+                          value="@_editVoiceProfile"
+                          @oninput="OnVoiceProfileInput"
+                          disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                          placeholder="Adult male; low soft presence — used in film video prompts (voice style)"></textarea>
+                <div class="form-text">
+                    Optional: describe the voice (or use a personal style label). Play previews a short sample clip with this profile + dialogue.
                 </div>
             </div>
-        }
-        @if (!string.IsNullOrEmpty(_voicePreviewHint))
-        {
-            <div class="form-text mt-1">@_voicePreviewHint</div>
-        }
-        @if (_voicePreviewStale && !VoiceJobRunning)
-        {
-            <div class="form-text text-warning mt-1">Profile changed — Regenerate to hear the new voice.</div>
-        }
-        @if (!string.IsNullOrEmpty(_voicePreviewError))
-        {
-            <div class="alert alert-danger py-1 small mt-2 mb-0">@_voicePreviewError</div>
-        }
-        @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
-        {
-            <video class="mt-2 w-100 rounded border" style="max-height: 240px; background: #000;"
-                   controls autoplay playsinline src="@_voicePreviewUrl" @key="_voicePreviewUrl"></video>
-        }
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="small text-muted">@(_voiceSaveHint ?? "Profile saves automatically")</span>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                        title="Play cached sample, or generate a short film clip if missing"
+                        @onclick="() => PlayVoicePreviewAsync(force: false)">
+                    ▶ Play
+                </button>
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                        title="Always regenerate after editing the profile"
+                        @onclick="() => PlayVoicePreviewAsync(force: true)">
+                    Regenerate
+                </button>
+            </div>
+            @if (VoiceJobRunning && _job is not null)
+            {
+                var vpct = _job.Status == "queued" || _job.Total <= 0
+                    ? 8
+                    : (int)Math.Round(100.0 * Math.Clamp(_job.Index, 0, _job.Total) / Math.Max(1, _job.Total));
+                if (_job.Status == "running" && _job.Index <= 0)
+                    vpct = 0;
+                <div class="mt-2">
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>@(_job.Message ?? "Generating voice…")</span>
+                        @if (_job.Status == "running" && _job.Total == 100)
+                        {
+                            <span>@_job.Index%</span>
+                        }
+                    </div>
+                    <div class="progress mt-1" style="height: 0.5rem;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar"
+                             style="width: @(vpct)%"
+                             aria-valuenow="@vpct"
+                             aria-valuemin="0"
+                             aria-valuemax="100"></div>
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_voicePreviewHint))
+            {
+                <div class="form-text mt-1">@_voicePreviewHint</div>
+            }
+            @if (_voicePreviewStale && !VoiceJobRunning)
+            {
+                <div class="form-text text-warning mt-1">Profile changed — Regenerate to hear the new voice.</div>
+            }
+            @if (!string.IsNullOrEmpty(_voicePreviewError))
+            {
+                <div class="alert alert-danger py-1 small mt-2 mb-0">@_voicePreviewError</div>
+            }
+            @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
+            {
+                <video class="mt-2 w-100 rounded border" style="max-height: 240px; background: #000;"
+                       controls autoplay playsinline src="@_voicePreviewUrl" @key="_voicePreviewUrl"></video>
+            }
 
-        <hr class="my-3" />
-        <CapabilityLockedControl Enabled="@Caps.VoiceCloneReady"
-                                 BlockedReason="@Caps.VoiceCloneBlockedReason"
-                                 SettingsHref="@Caps.VoiceCloneSettingsHref"
-                                 TitleWhenEnabled="Record a short sample for cloning"
-                                 TestId="voice-clone-gate"
-                                 CssClass="w-100">
-        <div class="ptm-voice-clone">
+            <hr class="my-3" />
+        }
+        @* Mic capture is always available (sample stays on the client).
+           Provider key is only required later when applying the clone while filming. *@
+        <div class="ptm-voice-clone" data-testid="voice-clone-gate">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                 <div>
-                    <strong class="small">Voice clone</strong>
+                    <strong class="small">@(_simpleMode ? "Your voice" : "Voice sample")</strong>
                 </div>
                 @if (_selected?.HasVoiceCloneSample == true)
                 {
                     <span class="badge text-bg-success" style="font-size:0.65rem">Ready</span>
                 }
             </div>
-            <p class="form-text mb-2">Record a short sample for cloning.</p>
+            @if (!Caps.VoiceCloneReady)
+            {
+                <div class="alert alert-warning py-2 small mb-2" data-testid="voice-clone-setup-hint">
+                    <div class="mb-1">@Caps.VoiceCloneBlockedReason</div>
+                    <a class="alert-link" href="@Caps.VoiceCloneSettingsHref">Open Settings →</a>
+                    <div class="text-muted mt-1 mb-0">
+                        You can still record a sample now — the key is only needed when we apply your voice to the film.
+                    </div>
+                </div>
+            }
+            <p class="form-text mb-2">@(_simpleMode ? "Record a short sample for the narrator." : "Record a short sample for cloning.")</p>
             <div class="ptm-voice-script border border-secondary border-opacity-50 rounded p-2 mb-2 bg-dark bg-opacity-25"
                  data-testid="voice-clone-script">
-                <div class="small fw-semibold text-info mb-1">Read this aloud</div>
+                <div class="small fw-semibold text-info mb-1">
+                    @(_useKidsScript ? "Read this aloud (story voice)" : "Read this aloud")
+                </div>
+                @if (_useKidsScript)
+                {
+                    <div class="small text-muted mb-1">Coach: smile, warm energy; soft on the bedtime ending — don't read stage directions.</div>
+                }
                 <p class="mb-0 small lh-sm" style="white-space: pre-wrap;">@VoiceCloneReadScript</p>
+                @if (_useKidsScript)
+                {
+                    <button type="button" class="btn btn-link btn-sm px-0 mt-1"
+                            @onclick="() => _showKidsFullScript = !_showKidsFullScript">
+                        @(_showKidsFullScript ? "Hide longer kids script" : "Longer kids script (richer clone)")
+                    </button>
+                    @if (_showKidsFullScript)
+                    {
+                        <p class="mb-0 small lh-sm mt-1 text-muted" style="white-space: pre-wrap;">@VoiceCloneScripts.KidsFull</p>
+                    }
+                }
             </div>
             <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                 @if (!_voiceRecRecording)
@@ -1039,6 +1110,12 @@ else
                 </button>
                 @if (_selected?.HasVoiceCloneSample == true)
                 {
+                    <button type="button" class="btn btn-sm btn-primary"
+                            disabled="@(_busy || _voiceCloneBusy || VoiceJobRunning)"
+                            @onclick="ApplyVoiceCloneToProviderAsync"
+                            data-testid="voice-clone-apply">
+                        @(_voiceCloneBusy ? "Applying…" : "Apply voice")
+                    </button>
                     <button type="button" class="btn btn-sm btn-outline-danger"
                             disabled="@(_busy || _voiceCloneBusy)"
                             @onclick="DeleteVoiceCloneSampleAsync">
@@ -1095,7 +1172,6 @@ else
                 <audio class="mt-2 w-100" controls src="@_voiceClonePlayUrl" @key="_voiceClonePlayUrl"></audio>
             }
         </div>
-        </CapabilityLockedControl>
 
     };
 
@@ -1207,6 +1283,15 @@ else
             _gateChecked = true;
             if (!string.IsNullOrEmpty(_projectId))
                 await Caps.RefreshAsync(Engine, _projectId);
+
+            ApplySimpleModeFromUri();
+            // Easy-start lives entirely on /simple-voice (story + record). No cast list.
+            if (_simpleMode)
+            {
+                Nav.NavigateTo("simple-voice");
+                return;
+            }
+
 
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanCharacters)
                 return;
@@ -1397,6 +1482,8 @@ else
                 ResetCompare();
                 _mode = Mode.PickSource;
             }
+
+            FocusNarratorIfNeeded();
 
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -2048,12 +2135,12 @@ else
                     // Keep what the operator typed; mark as saved baseline
                 }
                 else
-                    _editDescription = _selected.Description ?? _editDescription;
+                    _editDescription = _selected.Description ?? _editDescription ?? "";
 
                 if (!silent && result.VisualLock is not null)
                     _editVisualLock = result.VisualLock;
                 else if (!silent)
-                    _editVisualLock = _selected.VisualLock ?? _editVisualLock;
+                    _editVisualLock = _selected.VisualLock ?? _editVisualLock ?? "";
 
                 _savedLookDescription = _editDescription ?? "";
                 _savedLookVisualLock = _editVisualLock ?? "";
@@ -2274,6 +2361,69 @@ else
     }
 
 
+
+    private void ApplySimpleModeFromUri()
+    {
+        var querySimple = false;
+        try
+        {
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            var q = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            querySimple = q.TryGetValue("simple", out var sVals) &&
+                          sVals.Any(v => v is "1" or "true" or "yes");
+            if (q.TryGetValue("focus", out var fVals))
+                _focusHint = fVals.FirstOrDefault();
+        }
+        catch
+        {
+            /* ignore */
+        }
+
+        // project.json studioPath is source of truth; ?simple=1 still works as override entry
+        _simpleMode = ActiveProject.IsSimpleVoice || querySimple;
+
+        _useKidsScript = _simpleMode ||
+            VoiceCloneScripts.LooksLikeChildrensStory(
+                ActiveProject.Label,
+                genre: null,
+                projectId: _projectId);
+    }
+
+    private async Task ExitSimplePathAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId)) return;
+        try
+        {
+            await Engine.SetStudioPathAsync(_projectId, ProjectStudioPaths.Full);
+            ActiveProject.SetStudioPathLocal(ProjectStudioPaths.Full);
+            _simpleMode = false;
+            _useKidsScript = VoiceCloneScripts.LooksLikeChildrensStory(
+                ActiveProject.Label, null, _projectId);
+            Nav.NavigateTo("characters", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void FocusNarratorIfNeeded()
+    {
+        if (_chars is null || _chars.Count == 0) return;
+        var wantNarrator = _simpleMode
+            || string.Equals(_focusHint, "narrator", StringComparison.OrdinalIgnoreCase);
+        if (!wantNarrator) return;
+
+        var pick = _chars.FirstOrDefault(c =>
+                       (c.Key?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false)
+                       || (c.DisplayName?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false))
+                   ?? _chars.FirstOrDefault(c => c.VoiceOnly)
+                   ?? _chars[0];
+        if (pick is null) return;
+        if (!string.Equals(_selectedKey, pick.Key, StringComparison.OrdinalIgnoreCase))
+            Select(pick.Key, resetMode: true);
+    }
+
     private void RefreshVoiceClonePlayUrl()
     {
         if (_selected?.HasVoiceCloneSample == true && !string.IsNullOrEmpty(_projectId) && !string.IsNullOrEmpty(_selectedKey))
@@ -2283,6 +2433,80 @@ else
         }
         else
             _voiceClonePlayUrl = null;
+    }
+
+
+    /// <summary>
+    /// Simple path: pick Instant voice clone model so apply-ready status is clear once the key is set.
+    /// Does not block recording if the key is still missing.
+    /// </summary>
+
+    private async Task ApplyVoiceCloneToProviderAsync()
+    {
+        if (_selected is null || string.IsNullOrEmpty(_selectedKey) || string.IsNullOrEmpty(_projectId))
+            return;
+        _voiceCloneBusy = true;
+        _voiceCloneError = null;
+        _voiceCloneHint = "Applying voice…";
+        try
+        {
+            var result = await Engine.ApplyVoiceCloneAsync(_projectId, _selectedKey);
+            if (!result.Ok)
+            {
+                _voiceCloneError = result.Error ?? "Apply failed";
+                return;
+            }
+            _voiceCloneHint = result.Message
+                ?? (result.UsedMock
+                    ? "Demo voice applied. Preview saved."
+                    : $"Voice applied ({result.ProviderId ?? "provider"}) — id saved on this character.");
+            await LoadAsync();
+            if (!string.IsNullOrEmpty(_selectedKey))
+                Select(_selectedKey, resetMode: false);
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+        }
+        finally
+        {
+            _voiceCloneBusy = false;
+        }
+    }
+
+    private async Task EnsureSimpleVoiceModelAsync()
+    {
+        try
+        {
+            var cfgDto = await Engine.GetConfigAsync(_projectId);
+            var map = cfgDto?.Config;
+            string voice = "none";
+            if (map is not null && map.TryGetValue("voice_model_name", out var el)
+                && el.ValueKind == System.Text.Json.JsonValueKind.String)
+                voice = el.GetString() ?? "none";
+
+            if (!string.IsNullOrWhiteSpace(voice)
+                && !voice.Equals("none", StringComparison.OrdinalIgnoreCase)
+                && !voice.Equals("disabled", StringComparison.OrdinalIgnoreCase))
+            {
+                await Caps.RefreshAsync(Engine, _projectId);
+                return;
+            }
+
+            // First clone-step model from the catalog only (never invent an id).
+            var defaultClone = SupportedModelCatalog.FirstEnabledVoiceCloneModelId();
+            if (string.IsNullOrWhiteSpace(defaultClone))
+                return;
+            await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?>
+            {
+                ["voice_model_name"] = defaultClone,
+            });
+            await Caps.RefreshAsync(Engine, _projectId);
+        }
+        catch
+        {
+            // Non-fatal — recording still works without a selected model
+        }
     }
 
     private async Task StartVoiceCloneMicAsync()
@@ -2298,11 +2522,19 @@ else
             var result = await Js.InvokeAsync<VoiceCaptureStartResult>("PageToMovieVoiceCapture.start");
             if (result is null || !result.Ok)
             {
-                _voiceCloneError = "Could not access microphone.";
+                _voiceCloneError = string.IsNullOrWhiteSpace(result?.Error)
+                    ? "Could not access the microphone. Check browser permissions and try again."
+                    : result!.Error;
                 return;
             }
             _voiceRecRecording = true;
             _voiceCloneHint = "Recording — read the script, then tap Done.";
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (JSException jex)
+        {
+            _voiceCloneError = "Microphone failed: " + jex.Message;
+            _voiceRecRecording = false;
         }
         catch (Exception ex)
         {
@@ -2441,7 +2673,9 @@ else
         _voiceCloneHint = "Saving…";
 
         await using var ms = new MemoryStream(bytes);
-        await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, ms, "voice_clone_sample" + ext);
+        if (string.IsNullOrWhiteSpace(_selectedKey))
+            throw new InvalidOperationException("No character selected for voice sample.");
+        await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey!, ms, "voice_clone_sample" + ext);
         await SoftReloadAsync();
         RefreshVoiceClonePlayUrl();
         _voiceCloneBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

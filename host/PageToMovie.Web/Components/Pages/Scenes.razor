@@ -12,17 +12,33 @@
 @using PageToMovie.Core.Models
 @using PageToMovie.Web.Services
 
-<PageTitle>Film · Scenes & clips</PageTitle>
+<PageTitle>@(IsSimpleFilm ? "Movie" : "Film · Scenes & clips")</PageTitle>
 
 <div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Studio · Step 5 · Film</span>
-    <h1 class="ptm-adapt-title mb-1">Scenes & clips</h1>
+    <span class="ptm-adapt-kicker">@(IsSimpleFilm ? "Easiest start · Movie" : "Studio · Step 5 · Film")</span>
+    <h1 class="ptm-adapt-title mb-1">@(IsSimpleFilm ? "Make your movie" : "Scenes & clips")</h1>
     <p class="ptm-adapt-lede mb-0">
-        Generate and stitch clips on your machine where possible. Check Estimate before a full render if you are watching credits.
+        @if (IsSimpleFilm)
+        {
+            <text>Generate every scene with your narrator voice. Stock pictures stay as-is.</text>
+        }
+        else
+        {
+            <text>Generate and stitch clips on your machine where possible. Check Estimate before a full render if you are watching credits.</text>
+        }
     </p>
 </div>
 
-<StudioProcessStrip Active="film" />
+<StudioProcessStrip Active="film" SimpleMode="@IsSimpleFilm" />
+
+@if (IsSimpleFilm)
+{
+    <div class="alert alert-primary border-primary border-opacity-50 py-2 small mb-3" data-testid="simple-film-banner">
+        <strong>Simple path.</strong>
+        Your voice is ready — use <strong>Generate missing</strong> (or the batch control below) to film all scenes.
+        <a href="simple-voice" class="alert-link">Back to story & voice</a>
+    </div>
+}
 
 @if (_gateChecked && !ActiveProject.CanScenes)
 {
@@ -1969,6 +1985,10 @@ else
 }
 
 @code {
+    private bool IsSimpleFilm =>
+        ActiveProject.IsSimpleVoice
+        || (Nav.ToAbsoluteUri(Nav.Uri).Query?.Contains("simple=1", StringComparison.OrdinalIgnoreCase) ?? false);
+
     private bool _busy;
     private bool _gateChecked;
     private string? _error;

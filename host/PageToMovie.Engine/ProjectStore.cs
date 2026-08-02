@@ -1050,6 +1050,7 @@ public sealed class ProjectStore
         string? ownerUserId = null;
         string? parentProjectId = null;
         string? visibilityMode = null;
+        string? studioPath = null;
         string? metaId = null;
         try
         {
@@ -1073,6 +1074,9 @@ public sealed class ProjectStore
                 else if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
                          string.Equals(p.Name, "owner_user_id", StringComparison.OrdinalIgnoreCase))
                     ownerUserId = p.Value.GetString();
+                else if (string.Equals(p.Name, "studioPath", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(p.Name, "studio_path", StringComparison.OrdinalIgnoreCase))
+                    studioPath = p.Value.GetString();
             }
         }
         catch
@@ -1097,6 +1101,7 @@ public sealed class ProjectStore
             OwnerUserId = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim(),
             ParentProjectId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim(),
             VisibilityMode = string.IsNullOrWhiteSpace(visibilityMode) ? "Private" : visibilityMode.Trim(),
+            StudioPath = ProjectStudioPaths.Normalize(studioPath),
         };
     }
 
@@ -1147,7 +1152,8 @@ public sealed class ProjectStore
         string idOrTitle,
         string? title = null,
         CancellationToken ct = default,
-        string? ownerUserId = null)
+        string? ownerUserId = null,
+        string? studioPath = null)
     {
         var raw = (idOrTitle ?? "").Trim();
         if (raw.Length == 0)
@@ -1207,6 +1213,7 @@ public sealed class ProjectStore
             ["description"] = "",
             ["ownerUserId"] = string.IsNullOrWhiteSpace(ownerUserId) ? owner : ownerUserId.Trim(),
             ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"),
+            ["studioPath"] = ProjectStudioPaths.Normalize(studioPath),
             // Format version for export/import converters (ProjectMigrationService).
             ["schema_version"] = ProjectFormatVersions.ProjectSchemaVersion,
         };
@@ -1415,6 +1422,49 @@ public sealed class ProjectStore
         await File.WriteAllTextAsync(metaPath, updatedJson, ct).ConfigureAwait(false);
 
         proj.VisibilityMode = mode;
+        InvalidateReadCaches(null);
+        return proj;
+    }
+
+    /// <summary>
+    /// Persist product path (full vs simple-voice) on project.json.
+    /// </summary>
+    public async Task<ProjectInfo> SetProjectStudioPathAsync(
+        string projectId,
+        string? studioPath,
+        CancellationToken ct = default)
+    {
+        var path = ProjectStudioPaths.Normalize(studioPath);
+        var proj = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
+        var metaPath = Path.Combine(proj.Path, "project.json");
+        Dictionary<string, object?> meta;
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
+                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
+                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        else
+        {
+            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        meta["studioPath"] = path;
+        meta["id"] = proj.Id;
+        if (!string.IsNullOrWhiteSpace(proj.Title)) meta["title"] = proj.Title;
+        if (!string.IsNullOrWhiteSpace(proj.OwnerUserId)) meta["ownerUserId"] = proj.OwnerUserId;
+        if (!string.IsNullOrWhiteSpace(proj.ParentProjectId)) meta["parentProjectId"] = proj.ParentProjectId;
+        if (!string.IsNullOrWhiteSpace(proj.VisibilityMode)) meta["visibilityMode"] = proj.VisibilityMode;
+
+        await File.WriteAllTextAsync(metaPath, JsonSerializer.Serialize(meta, JsonOpts) + "\n", ct).ConfigureAwait(false);
+        proj.StudioPath = path;
         InvalidateReadCaches(null);
         return proj;
     }
@@ -1983,6 +2033,10 @@ public sealed class ProjectStore
                 VoiceCloneUrl = File.Exists(GetVoiceCloneSamplePath(projectId, key))
                     ? $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/voice/clone-sample"
                     : null,
+                VoiceProvider = info.TryGetProperty("voice_provider", out var vprov) ? vprov.GetString() : null,
+                VoiceProviderVoiceId = info.TryGetProperty("voice_provider_voice_id", out var vpid)
+                    ? vpid.GetString()
+                    : null,
                 VoiceOnly = voiceOnly,
                 Locked = voiceOnly
                     ? !string.IsNullOrWhiteSpace(
@@ -2266,6 +2320,9 @@ public sealed class ProjectStore
 
         model ??= _opts.DefaultImageModel;
         provider ??= _opts.ImageProvider;
+        if (string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException(
+                "Image seed limits: no image model selected. Open Settings and choose an Image generation model.");
         var resolved = ImageApiLimits.ResolveProvider(provider, model);
         return new ImageSeedLimits
         {
@@ -2289,11 +2346,38 @@ public sealed class ProjectStore
         {
             var seed = GetCharacterSeed(projectId, charKey);
             if (seed is not { } el) return null;
-            return el.TryGetProperty("voice_clone_provider_id", out var idEl) &&
-                   idEl.ValueKind == JsonValueKind.String &&
-                   idEl.GetString() is { Length: > 0 } id
-                ? id
-                : null;
+            if (el.TryGetProperty("voice_clone_provider_id", out var idEl) &&
+                idEl.ValueKind == JsonValueKind.String &&
+                idEl.GetString() is { Length: > 0 } id)
+                return id;
+            // Interop with ElevenLabs apply-clone path (voice_provider_voice_id).
+            if (el.TryGetProperty("voice_provider_voice_id", out var altEl) &&
+                altEl.ValueKind == JsonValueKind.String &&
+                altEl.GetString() is { Length: > 0 } alt)
+                return alt;
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Catalog provider id stored on the character seed after clone apply
+    /// (<c>voice_provider</c>, e.g. elevenlabs / fal). Null when never cloned.
+    /// </summary>
+    public string? GetVoiceProviderId(string projectId, string charKey)
+    {
+        try
+        {
+            var seed = GetCharacterSeed(projectId, charKey);
+            if (seed is not { } el) return null;
+            if (el.TryGetProperty("voice_provider", out var pEl) &&
+                pEl.ValueKind == JsonValueKind.String &&
+                pEl.GetString() is { Length: > 0 } p)
+                return p.Trim();
+            return null;
         }
         catch
         {
@@ -2389,6 +2473,8 @@ public sealed class ProjectStore
         string? voiceProfile = null,
         string? voiceLabel = null,
         string? voiceCloneSample = null,
+        string? voiceProvider = null,
+        string? voiceProviderVoiceId = null,
         string? voiceCloneProviderId = null)
     {
         void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
@@ -2425,6 +2511,20 @@ public sealed class ProjectStore
                     seed.Remove("voice_clone_sample");
                 else
                     seed["voice_clone_sample"] = voiceCloneSample.Trim();
+            }
+            if (voiceProvider is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceProvider))
+                    seed.Remove("voice_provider");
+                else
+                    seed["voice_provider"] = voiceProvider.Trim();
+            }
+            if (voiceProviderVoiceId is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceProviderVoiceId))
+                    seed.Remove("voice_provider_voice_id");
+                else
+                    seed["voice_provider_voice_id"] = voiceProviderVoiceId.Trim();
             }
             if (voiceCloneProviderId is not null)
             {
@@ -4313,7 +4413,11 @@ public sealed class ProjectStore
                              pmEl.ValueKind == JsonValueKind.String &&
                              pmEl.GetString() is { Length: > 0 } pm
             ? pm
-            : "grok-4.5";
+            : (cfg.TryGetValue("chat_model_name", out var cmEl) &&
+               cmEl.ValueKind == JsonValueKind.String &&
+               cmEl.GetString() is { Length: > 0 } cm
+                ? cm
+                : "");
 
         var cast = ReadCastStatus(projectId);
 

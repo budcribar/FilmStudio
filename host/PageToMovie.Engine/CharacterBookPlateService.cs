@@ -1,3 +1,4 @@
+using PageToMovie.Core.Models;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -39,11 +40,18 @@ public sealed class CharacterBookPlateService
         bool copyIntoAssets = true,
         string? onlyCharKey = null,
         bool useGrok = true,
-        string visionModel = "grok-4.5",
+        string? visionModel = null,
         int maxImages = 32,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            visionModel = string.IsNullOrWhiteSpace(visionModel)
+                ? ProjectModelSelection.RequireVision(cfg, "Character book plates")
+                : ProjectModelSelection.RequireExplicit(visionModel, ModelCapability.Vision, "Character book plates");
+        }
+
         var projectDir = _projects.GetProjectDir(projectId);
         var castSeedsPath = ScreenplayService.GetCastSeedsPath(_projects, projectId);
         var result = new PageToMovie.Core.Models.AttachCharacterPlatesResult();

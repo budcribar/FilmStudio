@@ -18,7 +18,6 @@ namespace PageToMovie.Engine;
 public sealed class SunoClient : IAudioClient
 {
     public const string ApiBase = "https://api.sunoapi.org/api/v1/";
-    private const string DefaultModel = "V5_5";
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(6);
     private static readonly TimeSpan PollTimeout = TimeSpan.FromMinutes(6);
 
@@ -60,6 +59,8 @@ public sealed class SunoClient : IAudioClient
         }
 
         var clampedDuration = Math.Clamp(durationSeconds, 10, 360);
+        // Wire model comes from Settings/catalog id (e.g. suno-v5-5 → vendor token V5_5 via notes/id).
+        var wireModel = ResolveSunoWireModel(model);
         var payload = new Dictionary<string, object?>
         {
             ["customMode"] = true,
@@ -69,7 +70,7 @@ public sealed class SunoClient : IAudioClient
             ["style"] = prompt,
             ["prompt"] = isVocal ? (lyrics ?? "") : "",
             ["title"] = "Scene Score",
-            ["model"] = DefaultModel,
+            ["model"] = wireModel,
             ["duration"] = clampedDuration,
             // No public webhook receiver here — we poll record-info instead. Their docs list
             // callBackUrl as required; empty string is accepted in practice by this class of API.
@@ -181,5 +182,30 @@ public sealed class SunoClient : IAudioClient
         _log.LogError("Suno (sunoapi.org) generation timed out after {Timeout} for task {TaskId}", PollTimeout, taskId);
         onProgress?.Invoke("Suno generation timed out.");
         return null;
+    }
+
+    /// <summary>
+    /// Map catalog model id (e.g. suno-v5-5) to the vendor wire token required by sunoapi.org.
+    /// Wire token is derived from the catalog id/displayName only — no private const defaults.
+    /// </summary>
+    private static string ResolveSunoWireModel(string? model)
+    {
+        var entry = SupportedModelCatalog.Find(model, ModelCapability.Audio)
+                    ?? SupportedModelCatalog.Find(model);
+        if (entry is null || !entry.Enabled)
+            throw new InvalidOperationException(
+                "Background music: no Suno model selected. Open Settings → Studio coverage and choose a music model.");
+
+        // Vendor API expects tokens like V5_5; catalog uses suno-v5-5.
+        var id = entry.Id;
+        if (id.StartsWith("suno-v", StringComparison.OrdinalIgnoreCase))
+        {
+            var rest = id["suno-".Length..].Replace('-', '_').ToUpperInvariant();
+            return rest; // v5-5 → V5_5
+        }
+        if (id.StartsWith("V", StringComparison.OrdinalIgnoreCase) && id.Contains('_'))
+            return id;
+        // Last resort: uppercase display-ish token from id
+        return id.Replace('-', '_').ToUpperInvariant();
     }
 }

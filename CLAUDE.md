@@ -74,6 +74,9 @@ happens client-side in the browser via ffmpeg.wasm; the server only stores hashe
 
 ### Multi-provider AI clients
 
+**Catalog SSoT:** all models and providers come from `host/PageToMovie.Core/config/models_catalog.json` (`providers[]` + `models[]`). Do not hardcode model ids, provider labels, or fallback model lists in C#/Razor — see root `AGENTS.md` (*Models & providers — catalog SSoT*). 
+
+
 Each AI capability (chat, image, video, vision) has an interface in `PageToMovie.Engine/Abstractions/IModelClients.cs`
 and a `MultiProvider*Client` (e.g. `MultiProviderChatClient`) that routes to the concrete provider client
 (Grok/Anthropic/Gemini/etc.) based on the requested model id via `SupportedModelCatalog.ResolveOrDefault`.

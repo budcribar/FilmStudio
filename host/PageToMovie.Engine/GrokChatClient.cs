@@ -55,7 +55,7 @@ public sealed class GrokChatClient : IChatClient
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "grok-4.5",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
         string? mode = null,

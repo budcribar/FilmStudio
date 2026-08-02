@@ -111,7 +111,7 @@ public static class BookToFountainConverter
         string? author = null,
         int totalRuntimeMinutes = 10,
         IChatClient? chat = null,
-        string model = "grok-4.5",
+        string? model = null,
         Action<string>? onProgress = null,
         CancellationToken ct = default,
         PromptBudget? budgetOverride = null,
@@ -125,6 +125,8 @@ public static class BookToFountainConverter
     {
         if (string.IsNullOrWhiteSpace(bookText))
             throw new InvalidOperationException("Book text is empty");
+
+        model = ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Screenplay generation");
 
         if (chat is null || !chat.IsConfigured)
             throw new InvalidOperationException(
@@ -807,7 +809,10 @@ public static class BookToFountainConverter
     /// </summary>
     public static PromptBudget ResolvePromptBudget(string? modelId)
     {
-        var id = string.IsNullOrWhiteSpace(modelId) ? "grok-4.5" : modelId.Trim();
+        if (string.IsNullOrWhiteSpace(modelId))
+            throw new InvalidOperationException(
+                "Screenplay generation: model is required. Open Settings and choose a Script & planning model.");
+        var id = modelId.Trim();
         // ~3.2 chars/token heuristic; leave headroom for system + user scaffolding.
         var catalogInputTokens = SupportedModelCatalog.Find(id, ModelCapability.Chat)?.MaxInputTokens;
         var inputTokens = catalogInputTokens ?? 128_000;

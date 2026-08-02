@@ -79,8 +79,9 @@ public sealed class CharacterDesignService
             ProjectId = projectId,
             CharKey = charKey,
         };
-        var imageModel = await GetConfigStringAsync(projectId, "image_model_name", _opts.DefaultImageModel, ct)
-            .ConfigureAwait(false);
+        var imageModel = ProjectModelSelection.RequireImage(
+            await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false),
+            "Character portrait generation");
         var imageProvider = await GetConfigStringAsync(projectId, "image_provider", _opts.ImageProvider, ct)
             .ConfigureAwait(false);
         var providerId = ImageApiLimits.ResolveProvider(imageProvider, imageModel);
@@ -178,10 +179,12 @@ public sealed class CharacterDesignService
         try
         {
             var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("planning_model_name", out var pEl) && pEl.ValueKind == System.Text.Json.JsonValueKind.String)
-                planningModel = pEl.GetString();
+            planningModel = ProjectModelSelection.RequirePlanning(cfg, "Character design look scrub");
         }
-        catch { }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
 
         try
         {
@@ -189,7 +192,7 @@ public sealed class CharacterDesignService
                 charKey,
                 description: descForGen,
                 visualLock: visForGen,
-                model: !string.IsNullOrWhiteSpace(planningModel) ? planningModel : "grok-4.5",
+                model: planningModel!,
                 onProgress: onProgress,
                 ct: ct).ConfigureAwait(false);
             if (usedAi)
@@ -689,10 +692,12 @@ public sealed class CharacterDesignService
             try
             {
                 var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-                if (cfg.TryGetValue("vision_model_name", out var vEl) && vEl.ValueKind == System.Text.Json.JsonValueKind.String)
-                    visionModel = vEl.GetString();
+                visionModel = ProjectModelSelection.RequireVision(cfg, "Portrait style gate");
             }
-            catch { }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
 
             var gate = await RunPortraitStyleGateAsync(
                 prompt, visionPath, visionModel, detail: "low", ct).ConfigureAwait(false);
@@ -757,7 +762,7 @@ public sealed class CharacterDesignService
             raw = await _vision.CompleteWithImagesAsync(
                 prompt,
                 new[] { visionPath },
-                model: !string.IsNullOrWhiteSpace(visionModel) ? visionModel! : "grok-4.5",
+                model: ProjectModelSelection.RequireExplicit(visionModel, ModelCapability.Vision, "Portrait style gate"),
                 detail: detail,
                 ct: ct).ConfigureAwait(false);
         }

@@ -480,7 +480,7 @@ public static string NormalizeText(string text)
         ProjectStore store,
         string projectId,
         PageToMovie.Engine.Abstractions.IChatClient? chat = null,
-        string model = "grok-4.5",
+        string model = "",
         Action<string>? onProgress = null,
         CancellationToken ct = default,
         GenerationErrorLogger? errorLogger = null,
@@ -495,15 +495,11 @@ public static string NormalizeText(string text)
         if (string.IsNullOrWhiteSpace(book))
             return new SaveResult { Ok = false, Error = "Book text is empty" };
 
-        if (string.IsNullOrWhiteSpace(model) || string.Equals(model, "grok-4.5", StringComparison.OrdinalIgnoreCase))
         {
-            try
-            {
-                var cfg = await store.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-                if (cfg.TryGetValue("planning_model_name", out var pEl) && pEl.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(pEl.GetString()))
-                    model = pEl.GetString()!.Trim();
-            }
-            catch { }
+            var cfg = await store.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            model = string.IsNullOrWhiteSpace(model)
+                ? ProjectModelSelection.RequirePlanning(cfg, "Screenplay draft from book")
+                : ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Screenplay draft from book");
         }
 
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);

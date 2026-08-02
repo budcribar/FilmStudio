@@ -21,7 +21,6 @@ namespace PageToMovie.Engine;
 public sealed class AiMusicApiClient : IAudioClient
 {
     public const string ApiBase = "https://api.aimusicapi.ai/api/v1/";
-    private const string DefaultModel = "chirp-v5";
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(6);
     private static readonly TimeSpan PollTimeout = TimeSpan.FromMinutes(6);
 
@@ -62,6 +61,7 @@ public sealed class AiMusicApiClient : IAudioClient
             return null;
         }
 
+        var wireModel = ResolveAiMusicWireModel(model);
         var payload = new Dictionary<string, object?>
         {
             ["task_type"] = "create_music",
@@ -72,7 +72,7 @@ public sealed class AiMusicApiClient : IAudioClient
             ["tags"] = prompt,
             ["prompt"] = isVocal ? (lyrics ?? "") : "",
             ["title"] = "Scene Score",
-            ["mv"] = DefaultModel,
+            ["mv"] = wireModel,
         };
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "suno/create");
@@ -194,5 +194,35 @@ public sealed class AiMusicApiClient : IAudioClient
             return FindStringByAnyKey(element[0], keys);
         }
         return null;
+    }
+
+    /// <summary>
+    /// Vendor wire model for aimusicapi.ai. Catalog id <c>aimusicapi-suno</c> maps to the
+    /// documented <c>chirp-v5</c> family token used in the <c>mv</c> field — derived only when
+    /// the model is a known catalog audio entry for this provider.
+    /// </summary>
+    private static string ResolveAiMusicWireModel(string? model)
+    {
+        var entry = SupportedModelCatalog.Find(model, ModelCapability.Audio)
+                    ?? SupportedModelCatalog.Find(model);
+        if (entry is null || !entry.Enabled)
+            throw new InvalidOperationException(
+                "Background music: no AI Music API model selected. Open Settings → Studio coverage and choose a music model.");
+
+        if (!string.Equals(entry.ProviderId, "aimusicapi", StringComparison.OrdinalIgnoreCase)
+            && entry.Provider != ModelProviderFamily.AiMusicApi
+            && !entry.Id.Contains("aimusic", StringComparison.OrdinalIgnoreCase))
+        {
+            // Still allow if caller passed a raw vendor token that is in catalog notes/id.
+        }
+
+        // Known catalog id → documented wire token. Prefer raw id if it already looks like chirp-*.
+        if (entry.Id.StartsWith("chirp-", StringComparison.OrdinalIgnoreCase))
+            return entry.Id;
+        if (entry.Id.Contains("suno", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(entry.ProviderId, "aimusicapi", StringComparison.OrdinalIgnoreCase))
+            return "chirp-v5"; // sole documented Suno family token for this reseller today
+
+        return entry.Id;
     }
 }

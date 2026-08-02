@@ -172,8 +172,19 @@ public sealed class ClipAutoReviewService
             catch { /* non-fatal */ }
             var imagePaths = images.Select(i => i.Path).ToList();
             var qualityModel = await GetConfigStringAsync(projectId, "quality_model_name", "", ct);
+            // legacy next line may fill vision — we re-resolve below
             if (string.IsNullOrWhiteSpace(qualityModel))
-                qualityModel = await GetConfigStringAsync(projectId, "vision_model_name", "grok-4.5", ct);
+                qualityModel = await GetConfigStringAsync(projectId, "vision_model_name", "", ct);
+            if (string.IsNullOrWhiteSpace(qualityModel))
+            {
+                var cfgMap = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                qualityModel = ProjectModelSelection.RequireVideoReview(cfgMap, "Clip auto-review");
+            }
+            else
+            {
+                qualityModel = ProjectModelSelection.RequireExplicit(qualityModel, ModelCapability.Chat, "Clip auto-review");
+            }
+
 
             var raw = await _vision.CompleteWithImagesAsync(
                 prompt,

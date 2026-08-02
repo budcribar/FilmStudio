@@ -53,6 +53,8 @@ public static class ApiKeyScope
 
     public static string? CurrentAiMusicApi => Get("aimusicapi");
 
+    public static string? CurrentElevenLabs => Get("elevenlabs");
+
     public static string? Get(string providerId)
     {
         var k = CurrentKeys.Value;
@@ -88,6 +90,7 @@ public static class ApiKeyScope
             "fal" => "fal",
             "suno" => "suno",
             "aimusicapi" or "aimusicapi.ai" => "aimusicapi",
+            "elevenlabs" or "eleven" => "elevenlabs",
             _ => p,
         };
     }

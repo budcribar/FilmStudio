@@ -54,7 +54,7 @@ public sealed class GrokVisionClient : IVisionClient
     public async Task<string> TranscribePageAsync(
         string imagePath,
         int page,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default)
     {
         FileInfo? fi = null;
@@ -101,7 +101,7 @@ public sealed class GrokVisionClient : IVisionClient
         string imagePath,
         int page,
         IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default)
     {
         if (cast.Count == 0)
@@ -353,7 +353,7 @@ public sealed class GrokVisionClient : IVisionClient
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "grok-4.5",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default)
     {

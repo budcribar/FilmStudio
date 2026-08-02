@@ -7,8 +7,7 @@ namespace PageToMovie.Engine;
 /// Routes <see cref="IImageClient"/> calls to the right concrete provider client based on
 /// the requested <c>model</c>'s provider in <see cref="SupportedModelCatalog"/> — callers
 /// (character portrait generation) keep calling one <see cref="IImageClient"/> and never
-/// need to know which backend actually served the request. A null/empty model id falls back
-/// to Grok's configured default image model.
+/// need to know which backend actually served the request. Empty model throws (Settings required).
 /// </summary>
 public sealed class MultiProviderImageClient : IImageClient
 {
@@ -52,10 +51,17 @@ public sealed class MultiProviderImageClient : IImageClient
     private IImageClient Resolve(string? model)
     {
         if (string.IsNullOrWhiteSpace(model))
-            return _grok;
-        var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Image).Provider;
-        if (provider == ModelProviderFamily.Google) return _gemini;
-        if (provider == ModelProviderFamily.Fal) return _fal;
-        return _grok;
+            throw new InvalidOperationException(
+                "Image: model is required. Open Settings and choose an Image generation model.");
+        var entry = SupportedModelCatalog.Find(model, ModelCapability.Image) ?? SupportedModelCatalog.Find(model);
+        if (entry is null || !entry.Enabled)
+            throw new InvalidOperationException(
+                $"Image: model '{model}' is not in the models catalog (or is disabled). Open Settings and pick a current model.");
+        return entry.Provider switch
+        {
+            ModelProviderFamily.Google => _gemini,
+            ModelProviderFamily.Fal => _fal,
+            _ => _grok,
+        };
     }
 }

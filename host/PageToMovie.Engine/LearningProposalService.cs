@@ -78,9 +78,10 @@ public sealed class LearningProposalService
             "Output plain text bullet list only. No markdown fences. Each bullet one sentence. " +
             "Do not invent book-specific plot; keep rules general and actionable.";
 
-        if (!_chat.IsConfigured)
+        // Never invent a model id. Without an explicit model (or chat key), stay offline.
+        var learningModel = (req.Model ?? "").Trim();
+        if (!_chat.IsConfigured || string.IsNullOrWhiteSpace(learningModel))
         {
-            // Deterministic offline proposal for tests / no key
             var offline = string.Join("\n", cats.Select(c =>
                 $"- Strengthen checks and gen guidance for category '{c}' based on {fails.Count} recent fails."));
             return new ProposeLearningRulesResult
@@ -94,8 +95,10 @@ public sealed class LearningProposalService
 
         try
         {
+            learningModel = ProjectModelSelection.RequireExplicit(
+                learningModel, ModelCapability.Chat, "Learning proposal");
             var proposal = await _chat.CompleteAsync(
-                    system, sb.ToString(), model: "grok-4.5", temperature: 0.3, ct,
+                    system, sb.ToString(), model: learningModel, temperature: 0.3, ct,
                     mode: ChatCallModes.LearningPropose)
                 .ConfigureAwait(false);
             return new ProposeLearningRulesResult
@@ -119,7 +122,7 @@ public sealed class LearningProposalService
         }
     }
 
-    public async Task<ReviewComparisonInsightsDto> SynthesizePromptImprovementsAsync(
+    public Task<ReviewComparisonInsightsDto> SynthesizePromptImprovementsAsync(
         string? projectId = null,
         CancellationToken ct = default)
     {
@@ -132,54 +135,16 @@ public sealed class LearningProposalService
         if (gaps.Count == 0)
         {
             insights.PromptImprovementProposal = "No discrepancies found between Human and AI reviews yet. As operators review clips, differences will be tracked here.";
-            return insights;
+            return Task.FromResult(insights);
         }
 
-        var sb = new StringBuilder();
-        sb.AppendLine("Discrepancies between Human Reviews and AI Auto-Reviews:");
-        var idx = 0;
-        foreach (var g in gaps)
-        {
-            idx++;
-            sb.AppendLine($"{idx}. [{g.DiscrepancyType}] project={g.ProjectId} S{g.SceneNumber:D2}C{g.ClipNumber:D2}");
-            sb.AppendLine($"   Human Verdict: {g.HumanVerdict.ToUpper()} | Human Note: {g.Note}");
-            sb.AppendLine($"   AI Verdict: {g.AiVerdict.ToUpper()} (Score: {g.AiScore}/10) | AI Reasoning: {g.AiReasoning}");
-        }
-
-        var systemPrompt =
-            "You are an expert AI prompt engineer optimizing automated film vision review prompts. " +
-            "Compare human director reviews against AI auto-review verdicts. " +
-            "Identify why the AI missed human quality expectations (e.g. AI too permissive) or penalized acceptable clips (e.g. AI too strict). " +
-            "Output plain text bullet recommendations for updating system prompts in ClipAutoReviewService and MovieAutoReviewService to align AI judgment with human directors.";
-
-        if (!_chat.IsConfigured)
-        {
-            insights.PromptImprovementProposal =
-                "- [AI Too Permissive]: Require explicit verification of character wardrobe/costume lock across scene cuts.\n" +
-                "- [AI Too Strict]: Allow subtle lighting shifts between angles if primary subject remains clear.\n" +
-                "- [General]: Update auto-review prompt to weight action continuity higher than minor background rendering quirks.";
-            return insights;
-        }
-
-        try
-        {
-            var proposal = await _chat.CompleteAsync(
-                systemPrompt,
-                sb.ToString(),
-                model: "grok-4.5",
-                temperature: 0.3,
-                ct: ct,
-                mode: ChatCallModes.LearningPropose).ConfigureAwait(false);
-
-            insights.PromptImprovementProposal = proposal.Trim();
-        }
-        catch (Exception ex)
-        {
-            _log.LogError(ex, "Failed to synthesize prompt improvements from review discrepancies");
-            insights.PromptImprovementProposal = "Error generating prompt recommendations: " + ex.Message;
-        }
-
-        return insights;
+        // Admin path without an explicit project model — offline template only (no invented Grok id).
+        insights.PromptImprovementProposal =
+            "- [AI Too Permissive]: Require explicit verification of character wardrobe/costume lock across scene cuts.\n" +
+            "- [AI Too Strict]: Allow subtle lighting shifts between angles if primary subject remains clear.\n" +
+            "- [General]: Update auto-review prompt to weight action continuity higher than minor background rendering quirks.\n" +
+            "- (Live AI synthesis requires an explicit Script & planning model from Settings.)";
+        return Task.FromResult(insights);
     }
 
     // Token-accurate now (was raw character count) — see PromptTokenizer.

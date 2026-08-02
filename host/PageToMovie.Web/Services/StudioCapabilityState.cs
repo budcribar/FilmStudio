@@ -16,15 +16,15 @@ public sealed class StudioCapabilityState
 
     public bool MusicReady { get; private set; }
     public string MusicBlockedReason { get; private set; } = "Choose a music model in Settings.";
-    public string MusicSettingsHref => "/configuration?focus=music#models";
+    public string MusicSettingsHref => "/configuration?focus=music#api-keys";
 
     public bool VoiceCloneReady { get; private set; }
     public string VoiceCloneBlockedReason { get; private set; } = "Add a voice clone key in Settings.";
-    public string VoiceCloneSettingsHref => "/configuration?focus=voice#models";
+    public string VoiceCloneSettingsHref => "/configuration?focus=voice#api-keys";
 
     public bool VideoReviewReady { get; private set; }
     public string VideoReviewBlockedReason { get; private set; } = "Choose a video review model in Settings.";
-    public string VideoReviewSettingsHref => "/configuration?focus=review#models";
+    public string VideoReviewSettingsHref => "/configuration?focus=review#api-keys";
 
     public async Task RefreshAsync(
         EngineApiClient engine,
@@ -57,7 +57,9 @@ public sealed class StudioCapabilityState
 
             string audioModel = "none";
             string voiceModel = "none";
-            string qualityModel = "gemini-2.5-flash";
+            string qualityModel = SupportedModelCatalog.DefaultModelIdForCapability("video-review")
+                ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
+                ?? "";
             if (!string.IsNullOrWhiteSpace(ProjectId))
             {
                 try
@@ -107,19 +109,25 @@ public sealed class StudioCapabilityState
                 if (hasEleven)
                 {
                     voiceReady = false;
-                    voiceReason = "Voice clone key is set, but no voice model is selected. Open Settings → Voice clone.";
+                    voiceReason = "Voice clone key is set, but no voice model is selected. Open Settings → Voice clone clone.";
                 }
                 else
                 {
                     voiceReady = false;
-                    voiceReason = "Voice clone needs a model and key. Open Settings → Voice clone.";
+                    voiceReason = "Voice clone needs a model and key. Open Settings → Voice clone clone.";
                 }
             }
             else
             {
                 var vpid = ProviderFor(voiceModel, ModelCapability.Voice);
-                if (string.IsNullOrEmpty(vpid)) vpid = "elevenlabs";
-                var hasKey = (keyByProvider.TryGetValue(vpid, out var vk) && vk) || hasEleven;
+                if (string.IsNullOrEmpty(vpid))
+                {
+                    // Prefer a provider the user already has a key for.
+                    if (hasEleven) vpid = "elevenlabs";
+                    else if (keyByProvider.TryGetValue("fal", out var hasFal) && hasFal) vpid = "fal";
+                    else vpid = "elevenlabs";
+                }
+                var hasKey = keyByProvider.TryGetValue(vpid, out var vk) && vk;
                 if (hasKey)
                 {
                     voiceReady = true;

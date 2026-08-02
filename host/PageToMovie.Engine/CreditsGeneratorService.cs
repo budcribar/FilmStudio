@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
 
@@ -226,7 +227,8 @@ public class CreditsGeneratorService
         var prompt = BuildCreditsVideoPrompt(projectId);
         var res = string.IsNullOrWhiteSpace(resolution) ? _options.DefaultResolution : resolution.Trim();
         if (string.IsNullOrWhiteSpace(res)) res = "480p";
-        var model = string.IsNullOrWhiteSpace(_options.DefaultModel) ? "grok-imagine-video" : _options.DefaultModel;
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        var model = ProjectModelSelection.RequireVideo(cfg, "Credits plate");
 
         onProgress?.Invoke("Generating end-credits plate (video API)…");
         _logger.LogInformation("Credits video gen for {ProjectId}: {Title}", projectId, title);
