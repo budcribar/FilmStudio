@@ -270,7 +270,31 @@ else
         <div class="col-md-9">
             @if (_selected is null)
             {
-                <p class="text-muted">Click a character on the left to set a preferred look and choose how to generate.</p>
+                <p class="text-muted">
+                    @(_simpleMode
+                        ? "Pick the narrator (or lead) on the left, then record your sample."
+                        : "Click a character on the left to set a preferred look and choose how to generate.")
+                </p>
+            }
+            else if (_simpleMode)
+            {
+                @* Simple path: voice first — no picture routing required to reach Record. *@
+                <div class="card mb-3 border-primary border-opacity-50" data-testid="simple-voice-card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span class="fw-semibold">@_selected.DisplayName</span>
+                        <span class="badge text-bg-primary">Simple · your voice</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">
+                            Record one sample. Library pictures stay as-is — we re-speak lines in your voice when you film.
+                        </p>
+                        @RenderVoiceEditor()
+                    </div>
+                </div>
+                <p class="small text-muted mb-0">
+                    Want to change looks later?
+                    <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="ExitSimplePathAsync">Switch to full cast</button>
+                </p>
             }
             else if (_selected.VoiceOnly)
             {
@@ -1003,23 +1027,29 @@ else
         }
 
         <hr class="my-3" />
-        <CapabilityLockedControl Enabled="@Caps.VoiceCloneReady"
-                                 BlockedReason="@Caps.VoiceCloneBlockedReason"
-                                 SettingsHref="@Caps.VoiceCloneSettingsHref"
-                                 TitleWhenEnabled="Record a short sample for cloning"
-                                 TestId="voice-clone-gate"
-                                 CssClass="w-100">
-        <div class="ptm-voice-clone">
+        @* Mic capture is always available (sample stays on the client).
+           Provider key is only required later when applying the clone while filming. *@
+        <div class="ptm-voice-clone" data-testid="voice-clone-gate">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                 <div>
-                    <strong class="small">Voice clone</strong>
+                    <strong class="small">@(_simpleMode ? "Your voice" : "Voice sample")</strong>
                 </div>
                 @if (_selected?.HasVoiceCloneSample == true)
                 {
                     <span class="badge text-bg-success" style="font-size:0.65rem">Ready</span>
                 }
             </div>
-            <p class="form-text mb-2">Record a short sample for cloning.</p>
+            @if (!Caps.VoiceCloneReady)
+            {
+                <div class="alert alert-warning py-2 small mb-2" data-testid="voice-clone-setup-hint">
+                    <div class="mb-1">@Caps.VoiceCloneBlockedReason</div>
+                    <a class="alert-link" href="@Caps.VoiceCloneSettingsHref">Open Settings →</a>
+                    <div class="text-muted mt-1 mb-0">
+                        You can still record a sample now — the key is only needed when we apply your voice to the film.
+                    </div>
+                </div>
+            }
+            <p class="form-text mb-2">@(_simpleMode ? "Record a short sample for the narrator." : "Record a short sample for cloning.")</p>
             <div class="ptm-voice-script border border-secondary border-opacity-50 rounded p-2 mb-2 bg-dark bg-opacity-25"
                  data-testid="voice-clone-script">
                 <div class="small fw-semibold text-info mb-1">
@@ -1131,7 +1161,6 @@ else
                 <audio class="mt-2 w-100" controls src="@_voiceClonePlayUrl" @key="_voiceClonePlayUrl"></audio>
             }
         </div>
-        </CapabilityLockedControl>
 
     };
 
@@ -1245,6 +1274,8 @@ else
                 await Caps.RefreshAsync(Engine, _projectId);
 
             ApplySimpleModeFromUri();
+            if (_simpleMode && !string.IsNullOrEmpty(_projectId))
+                await EnsureSimpleVoiceModelAsync();
 
 
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanCharacters)
@@ -2389,6 +2420,42 @@ else
             _voiceClonePlayUrl = null;
     }
 
+
+    /// <summary>
+    /// Simple path: pick Instant voice clone model so apply-ready status is clear once the key is set.
+    /// Does not block recording if the key is still missing.
+    /// </summary>
+    private async Task EnsureSimpleVoiceModelAsync()
+    {
+        try
+        {
+            var cfgDto = await Engine.GetConfigAsync(_projectId);
+            var map = cfgDto?.Config;
+            string voice = "none";
+            if (map is not null && map.TryGetValue("voice_model_name", out var el)
+                && el.ValueKind == System.Text.Json.JsonValueKind.String)
+                voice = el.GetString() ?? "none";
+
+            if (!string.IsNullOrWhiteSpace(voice)
+                && !voice.Equals("none", StringComparison.OrdinalIgnoreCase)
+                && !voice.Equals("disabled", StringComparison.OrdinalIgnoreCase))
+            {
+                await Caps.RefreshAsync(Engine, _projectId);
+                return;
+            }
+
+            await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?>
+            {
+                ["voice_model_name"] = "eleven_voice_clone",
+            });
+            await Caps.RefreshAsync(Engine, _projectId);
+        }
+        catch
+        {
+            // Non-fatal — recording still works without a selected model
+        }
+    }
+
     private async Task StartVoiceCloneMicAsync()
     {
         _voiceCloneError = null;
@@ -2402,11 +2469,19 @@ else
             var result = await Js.InvokeAsync<VoiceCaptureStartResult>("PageToMovieVoiceCapture.start");
             if (result is null || !result.Ok)
             {
-                _voiceCloneError = "Could not access microphone.";
+                _voiceCloneError = string.IsNullOrWhiteSpace(result?.Error)
+                    ? "Could not access the microphone. Check browser permissions and try again."
+                    : result!.Error;
                 return;
             }
             _voiceRecRecording = true;
             _voiceCloneHint = "Recording — read the script, then tap Done.";
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (JSException jex)
+        {
+            _voiceCloneError = "Microphone failed: " + jex.Message;
+            _voiceRecRecording = false;
         }
         catch (Exception ex)
         {
