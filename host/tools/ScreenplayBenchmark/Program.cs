@@ -203,8 +203,14 @@ public static class Program
                 Console.WriteLine("❌ Error: --adaptation-session-pilot requires --book <path/to/book.txt>.");
                 return 1;
             }
+            if (!TryGetCommittedPromptRevision(workspaceRoot, out var pilotPromptRevision, out var pilotPromptError))
+            {
+                Console.Error.WriteLine($"❌ Adaptation-session pilot not started: {pilotPromptError}");
+                Console.Error.WriteLine("   Commit prompts/book_to_fountain.txt, then run the pilot again.");
+                return 1;
+            }
             return await AdaptationSessionPilot.RunAsync(
-                bookPath, bookSlug, adaptationModel, targetRuntimeMinutes, workspaceRoot, CancellationToken.None,
+                bookPath, bookSlug, adaptationModel, targetRuntimeMinutes, workspaceRoot, pilotPromptRevision, CancellationToken.None,
                 judgeModel, samplingTemperature, adaptationJudgeTemperature, adaptationClipShotPlan,
                 adaptationDualAttachClipPlan, adaptationDualAttachAll, judgeModel2, videoModel);
         }
@@ -944,65 +950,6 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             catch { /* legacy history remains safely untagged if Git metadata is unavailable */ }
         }
         return changed;
-    }
-
-    /// <summary>
-    /// Resolves the PromptVersion hash for (a) the prompt file exactly as it sits on disk right
-    /// now (may include uncommitted edits — prompt tweaks routinely get benchmarked before being
-    /// committed) and (b) the prompt file as of the last git commit. The dashboard uses these to
-    /// label which tracked versions are "live on disk" vs. "actually committed" vs. neither
-    /// (an abandoned experiment) — a question git-log alone can't answer since committed history
-    /// says nothing about what's currently sitting in the working tree.
-    /// </summary>
-    private static (string? WorkingTree, string? GitHead) ResolveCurrentPromptVersions(string workspaceRoot)
-    {
-        static string Hash(string text) =>
-            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.Replace("{{TOTAL_RUNTIME_MINUTES}}", "10"))))[..10];
-
-        string? workingTree = null;
-        try
-        {
-            static string RunGit(string workingDirectory, string arguments)
-            {
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "git",
-                    Arguments = arguments,
-                    WorkingDirectory = workingDirectory,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                };
-                using var process = System.Diagnostics.Process.Start(psi);
-                if (process is null) throw new InvalidOperationException("Could not start git.");
-                var output = process.StandardOutput.ReadToEnd();
-                var standardError = process.StandardError.ReadToEnd();
-                process.WaitForExit(5000);
-                if (process.ExitCode != 0) throw new InvalidOperationException(standardError.Trim());
-                return output.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(RunGit(workspaceRoot, $"status --porcelain -- {promptPath}")))
-            {
-                error = "prompts/book_to_fountain.txt has uncommitted changes.";
-                return false;
-            }
-
-            var commit = RunGit(workspaceRoot, $"log -1 --format=%H -- {promptPath}");
-            if (commit.Length < 10)
-            {
-                error = "prompts/book_to_fountain.txt has no committed revision.";
-                return false;
-            }
-
-            revision = commit[..10];
-            return true;
-        }
-        catch (Exception ex)
-        {
-            error = $"could not verify the committed prompt revision ({ex.Message})";
-            return false;
-        }
     }
 
     private static string SanitizeFileName(string name) =>

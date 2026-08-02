@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Models;
 using PageToMovie.Engine;
 
 namespace ScreenplayBenchmark;
@@ -31,6 +32,7 @@ public static class AdaptationSessionPilot
     {
         public string Provider { get; set; } = "xai";
         public string Model { get; set; } = "";
+        public string? PromptRevision { get; set; }
         public string BookSha256 { get; set; } = "";
         public string FileId { get; set; } = "";
         public long? ExpiresAtUnixSeconds { get; set; }
@@ -74,6 +76,7 @@ public static class AdaptationSessionPilot
         string model,
         int targetRuntimeMinutes,
         string workspaceRoot,
+        string promptRevision,
         CancellationToken ct,
         string? judgeModel = null,
         double temperature = 0.2,
@@ -88,6 +91,21 @@ public static class AdaptationSessionPilot
         {
             Console.WriteLine($"❌ Error: book file not found: {bookPath}");
             return 1;
+        }
+
+        if (!UsesXaiResponsesApi(model, out var modelError))
+        {
+            Console.WriteLine($"❌ Error: {modelError}");
+            return 1;
+        }
+        foreach (var candidateJudge in new[] { judgeModel, judgeModel2 })
+        {
+            if (!string.IsNullOrWhiteSpace(candidateJudge) && !UsesXaiResponsesApi(candidateJudge, out var judgeError))
+            {
+                Console.WriteLine($"❌ Error: {judgeError}");
+                Console.WriteLine("   This pilot's file-attached judge calls currently use the xAI Responses API; choose an enabled xAI chat judge.");
+                return 1;
+            }
         }
 
         // Resolved once per run from the actual target video model — never a hardcoded constant.
@@ -150,6 +168,7 @@ public static class AdaptationSessionPilot
             session = new SessionRecord
             {
                 Model = model,
+                PromptRevision = promptRevision,
                 BookSha256 = bookSha256,
                 FileId = upload.FileId,
                 ExpiresAtUnixSeconds = upload.ExpiresAtUnixSeconds,
@@ -160,22 +179,27 @@ public static class AdaptationSessionPilot
             Console.WriteLine($"   file_id={upload.FileId} bytes={upload.Bytes} expires_at={upload.ExpiresAtUnixSeconds}");
         }
 
-        // A temperature OR target-runtime change invalidates every cached generation stage (not just
+        // A model, prompt revision, temperature, or target-runtime change invalidates every cached generation stage (not just
         // the ones that differ) — a cached beat plan built for a 10-minute target is wrong context
         // for a 16-minute request, and reusing an unknown/different-temperature artifact alongside
         // newly-controlled ones would silently defeat the point of controlling it. The book
         // upload/file_id is unaffected by either (neither has any bearing on that).
         if (session.StageResponseIds.Count > 0 &&
-            (session.Temperature != temperature || session.JudgeTemperature != judgeTemperature ||
+            (!string.Equals(session.Model, model, StringComparison.OrdinalIgnoreCase) ||
+             !string.Equals(session.PromptRevision, promptRevision, StringComparison.OrdinalIgnoreCase) ||
+             session.Temperature != temperature || session.JudgeTemperature != judgeTemperature ||
              session.TargetRuntimeMinutes != targetRuntimeMinutes))
         {
             Console.WriteLine(
-                $"⚠️  Settings changed (temperature {Fmt(session.Temperature)} -> {temperature}, judge " +
+                $"⚠️  Settings changed (model {session.Model} -> {model}, prompt {session.PromptRevision ?? "none"} -> {promptRevision}, temperature {Fmt(session.Temperature)} -> {temperature}, judge " +
                 $"{Fmt(session.JudgeTemperature)} -> {judgeTemperature}, target_runtime_minutes " +
                 $"{session.TargetRuntimeMinutes?.ToString() ?? "none"} -> {targetRuntimeMinutes}) — invalidating " +
                 "all cached generation stages so results stay comparable under one controlled setting.");
             session.StageResponseIds.Clear();
+            InvalidateDualAttachArtifactCache(outDir, session);
         }
+        session.Model = model;
+        session.PromptRevision = promptRevision;
         session.Temperature = temperature;
         session.JudgeTemperature = judgeTemperature;
         session.TargetRuntimeMinutes = targetRuntimeMinutes;
@@ -517,9 +541,7 @@ public static class AdaptationSessionPilot
         // every run, each judge here attaches the book file directly (small, cached-hit-friendly)
         // rather than inlining it. Deliberately an independent CompleteWithFilesAsync — NOT a
         // continuation of the generation session — so a judge never inherits chain memory/bias from
-        // having produced the content itself. judgeModel2 (optional, ideally a different provider)
-        // gives a genuine second opinion instead of two same-family judges agreeing for the wrong
-        // reasons.
+        // having produced the content itself. judgeModel2 supplies a second independent xAI judge.
         var judgeResults = await RunJudgesAsync(
             client, new[] { judgeModel, judgeModel2 }, new[] { session.FileId }, fountainText, judgeTemperature,
             outDir, "judge_review", "Stage 7",
@@ -1669,8 +1691,8 @@ public static class AdaptationSessionPilot
     /// <summary>Runs one or two independent, book-attached LLM judges against the approved Fountain.
     /// Every judge call is a fresh <see cref="XaiResponsesClient.CompleteWithFilesAsync"/> — never
     /// previous_response_id — so a judge never inherits the conversation memory of the pipeline that
-    /// generated the content (self-judging bias). Supports a second, ideally cross-provider, judge
-    /// model so two same-family judges don't simply agree with each other for the wrong reasons.
+    /// generated the content (self-judging bias). The stored-file path currently supports enabled
+    /// xAI chat judges only; a second judge remains an independent opinion.
     /// Returns (judgeModel, relativeFileName) per judge actually run, for the manifest.</summary>
     private static async Task<List<(string JudgeModel, string RelativeFileName)>> RunJudgesAsync(
         XaiResponsesClient client,
@@ -1719,6 +1741,54 @@ public static class AdaptationSessionPilot
 
     private static bool IsExpired(long? expiresAtUnixSeconds) =>
         expiresAtUnixSeconds is { } exp && DateTimeOffset.FromUnixTimeSeconds(exp) <= DateTimeOffset.UtcNow;
+
+    private static bool UsesXaiResponsesApi(string modelId, out string error)
+    {
+        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Chat);
+        if (entry is null || !entry.Enabled)
+        {
+            error = $"'{modelId}' is not an enabled chat model in models_catalog.json.";
+            return false;
+        }
+        if (entry.Provider != ModelProviderFamily.Xai)
+        {
+            error = $"'{modelId}' belongs to provider '{entry.ProviderId}', not xAI.";
+            return false;
+        }
+        error = "";
+        return true;
+    }
+
+    /// <summary>
+    /// The dual-attach experiment deliberately uses independently-addressable artifact files rather
+    /// than response-id chaining. Their filenames are stable for easy inspection, so clear only
+    /// their cache entries when the generation provenance changes; the uploaded book remains valid
+    /// and is never uploaded again merely because a model or prompt revision changed.
+    /// </summary>
+    private static void InvalidateDualAttachArtifactCache(string outDir, SessionRecord session)
+    {
+        var names = new[]
+        {
+            "cast_and_locations_dualattach_full.json",
+            "screenplay_dualattach_full.fountain",
+            "fountain_tagged_full.txt",
+            "edit_decision_list_dualattach_full.json",
+            "clip_shot_plan_dualattach_full.json",
+            "audio_plan_dualattach_full.json",
+            "validation_report_dualattach_full.json",
+            "adaptation_package_dualattach_full.json",
+        };
+        foreach (var name in names)
+        {
+            var path = Path.Combine(outDir, name);
+            if (File.Exists(path)) File.Delete(path);
+        }
+        foreach (var path in Directory.EnumerateFiles(outDir, "judge_review_dualattach_full.*.json"))
+            File.Delete(path);
+
+        session.FountainFileIdAlt = null;
+        session.FountainFileShaAlt = null;
+    }
 
     private static string Fmt(double? value) => value?.ToString() ?? "none";
 
