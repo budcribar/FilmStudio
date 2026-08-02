@@ -116,6 +116,13 @@ public static class Program
             return 0;
         }
 
+        if (!TryGetCommittedPromptRevision(workspaceRoot, out var promptRevision, out var promptError))
+        {
+            Console.Error.WriteLine($"❌ Benchmark not started: {promptError}");
+            Console.Error.WriteLine("   Commit prompts/book_to_fountain.txt, then run the benchmark again.");
+            return 1;
+        }
+
         outDir ??= Path.Combine(workspaceRoot, "evals", "results", $"screenplay_benchmark_{DateTime.Now:yyyyMMdd_HHmmss}");
         Directory.CreateDirectory(outDir);
 
@@ -142,13 +149,12 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, reasoningEffort);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort);
             }
 
             // Generate updated HTML Dashboard after suite execution
             historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
-            var (curWorkingTree, curGitHead) = ResolveCurrentPromptVersions(workspaceRoot);
-            var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, curWorkingTree, curGitHead);
+            var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, null, promptRevision);
             var dashboardFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
             await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
 
@@ -165,12 +171,11 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, reasoningEffort);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
-        var (curWorkingTree2, curGitHead2) = ResolveCurrentPromptVersions(workspaceRoot);
-        var html = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, curWorkingTree2, curGitHead2);
+        var html = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, null, promptRevision);
         var dashFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
         await File.WriteAllTextAsync(dashFile, html);
 
@@ -189,6 +194,7 @@ public static class Program
         string historyFilePath,
         IChatClient chat,
         string workspaceRoot,
+        string promptRevision,
         string? reasoningEffort = null)
     {
         var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
@@ -252,7 +258,7 @@ public static class Program
             string screenplayText;
 
             var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
-            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
+            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}.fountain");
 
             var diskCached = File.Exists(cacheFile) ? await File.ReadAllTextAsync(cacheFile) : null;
             var localCached = File.Exists(screenplayFile) ? await File.ReadAllTextAsync(screenplayFile) : null;
@@ -369,7 +375,7 @@ public static class Program
             // at boosted reasoning effort is not interchangeable with one at default effort, even
             // when ScreenplaysHash matches (the candidates could be unchanged while only the
             // judge's own effort level changed).
-            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}.json");
+            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}_{promptRevision}.json");
             JudgeEvaluationPayload? cachedJudge = null;
 
             if (File.Exists(judgeCacheFile))
@@ -449,7 +455,7 @@ public static class Program
             BookPath = bookPath,
             IsMockRun = isMockRun,
             ReasoningEffort = reasoningEffort ?? "",
-            PromptVersion = ComputePromptVersion(generationSystemPrompt, workspaceRoot),
+            PromptVersion = promptRevision,
             ModelScores = runData.Leaderboard,
             JudgeMatrix = runData.JudgeMatrix,
             SelfBiasNotes = runData.SelfBiasNotes,
@@ -683,73 +689,58 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
     }
 
     /// <summary>
-    /// Hashes the exact generation prompt text and, the first time this hash is seen, snapshots
-    /// the full text to evals/prompt_versions/&lt;hash&gt;.txt — so a later diff/comparison view can
-    /// show what actually changed between two versions without depending on git (prompt edits are
-    /// routinely tested here before being committed, so a git-commit lookup would miss them).
+    /// A benchmark is comparable only when its generation prompt is a committed revision. The
+    /// revision returned is the commit that last changed the prompt, rather than HEAD, so unrelated
+    /// application commits do not create artificial prompt-version buckets in benchmark history.
     /// </summary>
-    private static string ComputePromptVersion(string generationSystemPrompt, string workspaceRoot)
+    private static bool TryGetCommittedPromptRevision(string workspaceRoot, out string revision, out string error)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(generationSystemPrompt ?? ""));
-        var version = Convert.ToHexString(bytes)[..10];
-
-        var snapshotDir = Path.Combine(workspaceRoot, "evals", "prompt_versions");
-        var snapshotFile = Path.Combine(snapshotDir, $"{version}.txt");
-        if (!File.Exists(snapshotFile))
-        {
-            Directory.CreateDirectory(snapshotDir);
-            File.WriteAllText(snapshotFile, generationSystemPrompt ?? "");
-        }
-
-        return version;
-    }
-
-    /// <summary>
-    /// Resolves the PromptVersion hash for (a) the prompt file exactly as it sits on disk right
-    /// now (may include uncommitted edits — prompt tweaks routinely get benchmarked before being
-    /// committed) and (b) the prompt file as of the last git commit. The dashboard uses these to
-    /// label which tracked versions are "live on disk" vs. "actually committed" vs. neither
-    /// (an abandoned experiment) — a question git-log alone can't answer since committed history
-    /// says nothing about what's currently sitting in the working tree.
-    /// </summary>
-    private static (string? WorkingTree, string? GitHead) ResolveCurrentPromptVersions(string workspaceRoot)
-    {
-        static string Hash(string text) =>
-            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.Replace("{{TOTAL_RUNTIME_MINUTES}}", "10"))))[..10];
-
-        string? workingTree = null;
+        const string promptPath = "prompts/book_to_fountain.txt";
+        revision = "";
+        error = "";
         try
         {
-            var promptPath = Path.Combine(workspaceRoot, "prompts", "book_to_fountain.txt");
-            if (File.Exists(promptPath))
-                workingTree = Hash(File.ReadAllText(promptPath));
-        }
-        catch { /* best-effort */ }
-
-        string? gitHead = null;
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
+            static string RunGit(string workingDirectory, string arguments)
             {
-                FileName = "git",
-                Arguments = "show HEAD:prompts/book_to_fountain.txt",
-                WorkingDirectory = workspaceRoot,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-            };
-            using var proc = System.Diagnostics.Process.Start(psi);
-            if (proc is not null)
-            {
-                var output = proc.StandardOutput.ReadToEnd();
-                proc.WaitForExit(5000);
-                if (proc.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-                    gitHead = Hash(output);
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "git",
+                    Arguments = arguments,
+                    WorkingDirectory = workingDirectory,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                };
+                using var process = System.Diagnostics.Process.Start(psi);
+                if (process is null) throw new InvalidOperationException("Could not start git.");
+                var output = process.StandardOutput.ReadToEnd();
+                var standardError = process.StandardError.ReadToEnd();
+                process.WaitForExit(5000);
+                if (process.ExitCode != 0) throw new InvalidOperationException(standardError.Trim());
+                return output.Trim();
             }
-        }
-        catch { /* best-effort — git may be missing from PATH, or this may not be a repo */ }
 
-        return (workingTree, gitHead);
+            if (!string.IsNullOrWhiteSpace(RunGit(workspaceRoot, $"status --porcelain -- {promptPath}")))
+            {
+                error = "prompts/book_to_fountain.txt has uncommitted changes.";
+                return false;
+            }
+
+            var commit = RunGit(workspaceRoot, $"log -1 --format=%H -- {promptPath}");
+            if (commit.Length < 10)
+            {
+                error = "prompts/book_to_fountain.txt has no committed revision.";
+                return false;
+            }
+
+            revision = commit[..10];
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"could not verify the committed prompt revision ({ex.Message})";
+            return false;
+        }
     }
 
     private static string SanitizeFileName(string name) =>
@@ -1123,8 +1114,10 @@ FADE OUT.";
 
         BenchmarkHistoryStore.SaveHistory(historyStore, historyFilePath);
 
-        var (curWorkingTree3, curGitHead3) = ResolveCurrentPromptVersions(workspaceRoot);
-        var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, curWorkingTree3, curGitHead3);
+        var currentPromptCommit = TryGetCommittedPromptRevision(workspaceRoot, out var revision, out _)
+            ? revision
+            : null;
+        var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, null, currentPromptCommit);
         var dashboardFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
         await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
 
