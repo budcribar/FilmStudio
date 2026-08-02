@@ -252,6 +252,10 @@ public sealed class CharacterSummary
     public bool HasVoiceCloneSample { get; set; }
     public string? VoiceCloneFileName { get; set; }
     public string? VoiceCloneUrl { get; set; }
+    /// <summary>Provider id that owns the cloned/catalog voice (e.g. elevenlabs).</summary>
+    public string? VoiceProvider { get; set; }
+    /// <summary>Provider-side voice id for TTS (ElevenLabs voice_id).</summary>
+    public string? VoiceProviderVoiceId { get; set; }
     public bool VoiceOnly { get; set; }
     public bool Locked { get; set; }
     public string? RefFileName { get; set; }
@@ -440,6 +444,13 @@ public sealed class LockCharacterRequest
 }
 
 /// <summary>Update voice_label / voice_profile on character seeds (scenes.json + blueprint).</summary>
+public sealed class ApplyCatalogVoiceRequest
+{
+    public string? ProviderVoiceId { get; set; }
+    public string? DisplayName { get; set; }
+    public string? PreviewText { get; set; }
+}
+
 public sealed class UpdateCharacterVoiceRequest
 {
     public string ProjectId { get; set; } = "";

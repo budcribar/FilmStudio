@@ -2033,6 +2033,10 @@ public sealed class ProjectStore
                 VoiceCloneUrl = File.Exists(GetVoiceCloneSamplePath(projectId, key))
                     ? $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/voice/clone-sample"
                     : null,
+                VoiceProvider = info.TryGetProperty("voice_provider", out var vprov) ? vprov.GetString() : null,
+                VoiceProviderVoiceId = info.TryGetProperty("voice_provider_voice_id", out var vpid)
+                    ? vpid.GetString()
+                    : null,
                 VoiceOnly = voiceOnly,
                 Locked = voiceOnly
                     ? !string.IsNullOrWhiteSpace(
@@ -2408,7 +2412,9 @@ public sealed class ProjectStore
         string? visualLock = null,
         string? voiceProfile = null,
         string? voiceLabel = null,
-        string? voiceCloneSample = null)
+        string? voiceCloneSample = null,
+        string? voiceProvider = null,
+        string? voiceProviderVoiceId = null)
     {
         void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
         {
@@ -2444,6 +2450,20 @@ public sealed class ProjectStore
                     seed.Remove("voice_clone_sample");
                 else
                     seed["voice_clone_sample"] = voiceCloneSample.Trim();
+            }
+            if (voiceProvider is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceProvider))
+                    seed.Remove("voice_provider");
+                else
+                    seed["voice_provider"] = voiceProvider.Trim();
+            }
+            if (voiceProviderVoiceId is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceProviderVoiceId))
+                    seed.Remove("voice_provider_voice_id");
+                else
+                    seed["voice_provider_voice_id"] = voiceProviderVoiceId.Trim();
             }
             seeds[foundKey] = seed;
         }

@@ -119,6 +119,18 @@ builder.Services.AddSingleton<ColorPaletteGradingClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<CreditsGeneratorService>();
 builder.Services.AddSingleton<VoicePreviewService>();
+builder.Services.AddHttpClient("elevenlabs", c =>
+{
+    c.BaseAddress = new Uri(SupportedModelCatalog.ElevenLabsApiBase.TrimEnd('/') + "/");
+    c.Timeout = TimeSpan.FromMinutes(3);
+});
+builder.Services.AddSingleton<IVoiceClient>(sp =>
+{
+    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("elevenlabs");
+    var log = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ElevenLabsVoiceClient>>();
+    return new ElevenLabsVoiceClient(http, log, allowMockFallback: true);
+});
+builder.Services.AddSingleton<VoiceCloneApplyService>();
 builder.Services.AddSingleton<ReviewEventStore>();
 builder.Services.AddSingleton<ProjectRulesService>();
 builder.Services.AddSingleton<LearningProposalService>();
@@ -2661,6 +2673,134 @@ app.MapDelete("/api/projects/{id}/characters/{charKey}/voice/clone-sample",
     {
         var removed = store.DeleteVoiceCloneSample(id, charKey);
         return Results.Ok(new { ok = true, removed, projectId = id, charKey });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>List provider voices (ElevenLabs premade + clones, or mock catalog).</summary>
+app.MapGet("/api/voices", async (IVoiceClient voices, CancellationToken ct) =>
+{
+    try
+    {
+        var list = await voices.ListVoicesAsync(ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            provider = voices.ProviderId,
+            configured = voices.IsConfigured,
+            voices = list,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Create/apply a voice clone for a character from the saved sample (or generate a demo sample),
+/// store provider voice_id on the seed, and synthesize a short TTS preview.
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/apply-clone", async (
+    string id,
+    string charKey,
+    VoiceCloneApplyService apply,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        var result = await apply.ApplyFromSampleAsync(id, charKey, ct: ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            providerId = result.ProviderId,
+            providerVoiceId = result.ProviderVoiceId,
+            usedMock = result.UsedMock,
+            voiceLabel = result.VoiceLabel,
+            previewUrl = result.PreviewUrl,
+            previewRelativePath = result.PreviewRelativePath,
+            message = result.Message,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Assign a catalog/premade provider voice id to a character (no sample clone).</summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/apply-catalog", async (
+    string id,
+    string charKey,
+    ApplyCatalogVoiceRequest? body,
+    VoiceCloneApplyService apply,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        body ??= new ApplyCatalogVoiceRequest();
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        if (string.IsNullOrWhiteSpace(body.ProviderVoiceId))
+            return Results.BadRequest(new { ok = false, error = "providerVoiceId required" });
+        var result = await apply.ApplyCatalogVoiceAsync(
+            id, charKey, body.ProviderVoiceId!, body.DisplayName, body.PreviewText, ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            providerId = result.ProviderId,
+            providerVoiceId = result.ProviderVoiceId,
+            usedMock = result.UsedMock,
+            voiceLabel = result.VoiceLabel,
+            previewUrl = result.PreviewUrl,
+            message = result.Message,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Serve the last TTS preview for a character (from apply-clone / apply-catalog).</summary>
+app.MapGet("/api/projects/{id}/characters/{charKey}/voice/tts-preview",
+    (string id, string charKey, VoiceCloneApplyService apply) =>
+{
+    try
+    {
+        var path = apply.GetTtsPreviewPath(id, charKey);
+        if (path is null || !File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "No TTS preview yet — run apply-clone first." });
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        var contentType = ext switch
+        {
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".m4a" => "audio/mp4",
+            _ => "application/octet-stream",
+        };
+        return Results.File(path, contentType, Path.GetFileName(path));
     }
     catch (Exception ex)
     {

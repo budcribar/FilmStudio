@@ -14,8 +14,8 @@
         "description": "Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing.",
         "canonical_given_name": "The Narrator",
         "display_name_policy": "ok_anytime",
-        "voice_profile": "Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.",
-        "voice_label": "middle-aged male confessional",
+        "voice_profile": "Provider voice (elevenlabs:mock_clone_7598b653a98c). Mock clone \u2014 set ELEVENLABS_API_KEY for live Instant Voice Cloning.",
+        "voice_label": "Personal clone \u00B7 narrator",
         "reference_image_placeholder": "character_narrator_ref.png",
         "visual_lock": "Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye.",
         "wardrobe_always": [
@@ -25,7 +25,10 @@
         ],
         "source_image_pages": [],
         "performance_notes": "In bare-room frames, speaks to camera/implied listener with careful composure that frays; in bedchamber action, plays opposite the Old Man and officers without breaking confessional V.O. continuity.",
-        "species_kind": "human"
+        "species_kind": "human",
+        "voice_clone_sample": "voice_clone_sample.wav",
+        "voice_provider": "elevenlabs",
+        "voice_provider_voice_id": "mock_clone_7598b653a98c"
       },
       "Character_The_Old_Man": {
         "description": "Frail elderly man, thin stooped build, sparse white hair, deeply lined pale face; one pale blue eye with a dull filmy veil, the other eye ordinary; wears a plain white period nightshirt.",
@@ -59,8 +62,8 @@
         "description": "Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing.",
         "canonical_given_name": "The Narrator",
         "display_name_policy": "ok_anytime",
-        "voice_profile": "Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.",
-        "voice_label": "middle-aged male confessional",
+        "voice_profile": "Provider voice (elevenlabs:mock_clone_7598b653a98c). Mock clone \u2014 set ELEVENLABS_API_KEY for live Instant Voice Cloning.",
+        "voice_label": "Personal clone \u00B7 narrator",
         "reference_image_placeholder": "character_narrator_ref.png",
         "visual_lock": "Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye.",
         "wardrobe_always": [
@@ -70,7 +73,10 @@
         ],
         "source_image_pages": [],
         "performance_notes": "In bare-room frames, speaks to camera/implied listener with careful composure that frays; in bedchamber action, plays opposite the Old Man and officers without breaking confessional V.O. continuity.",
-        "species_kind": "human"
+        "species_kind": "human",
+        "voice_clone_sample": "voice_clone_sample.wav",
+        "voice_provider": "elevenlabs",
+        "voice_provider_voice_id": "mock_clone_7598b653a98c"
       },
       "Character_OldMan": {
         "description": "Frail elderly man, thin stooped build, sparse white hair, deeply lined pale face; one pale blue eye with a dull filmy veil, the other eye ordinary; wears a plain white period nightshirt.",
@@ -6846,13 +6852,13 @@
           "timestamp": "02:31-02:37",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Old_Man_S_Bedchamber",
-          "visual_prompt": "INT. OLD MAN'S BEDCHAMBER - NIGHT. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs \"I admit the deed! Tear up the planks! Here, here! It is the beating\". Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Low-angle medium orbits Narrator admitting the deed and demanding they tear up the planks. Performance: Acting intensity 10/10: Confession frenzy wild eyes admitting the deed tear up planks Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights",
+          "visual_prompt": "INT. OLD MAN\u0027S BEDCHAMBER - NIGHT. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs \u0022I admit the deed! Tear up the planks! Here, here! It is the beating\u0022. Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Low-angle medium orbits Narrator admitting the deed and demanding they tear up the planks. Performance: Acting intensity 10/10: Confession frenzy wild eyes admitting the deed tear up planks Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights",
           "negative_prompt": "no extra unmentioned hats or jackets, no modern wristwatches, no electric light bulbs, no plastic, no zippers, no printed logos, no denim, no sneakers, no modern hair gel, no smartphones, no LED lights, no synthetic fabrics, no power outlets, no contemporary furniture",
           "audio_payload": {
             "delivery": "spoken_on_camera",
             "speaker": "Character_The_Narrator",
             "dialogue": "I admit the deed! Tear up the planks! Here, here! It is the beating",
-            "pronunciation_hint": "Pronounce 'tear' as verb /tɛər/ ('tare' / rip apart), NOT eye tear",
+            "pronunciation_hint": "Pronounce \u0027tear\u0027 as verb /t\u025B\u0259r/ (\u0027tare\u0027 / rip apart), NOT eye tear",
             "sfx": "",
             "ambient": "",
             "ambient_layer": "Open floorboard heart roar fully unleashed",

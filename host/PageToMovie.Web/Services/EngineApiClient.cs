@@ -2928,6 +2928,34 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     }
 
     /// <summary>
+    /// Create provider clone from saved sample (or seed a demo sample), store voice id on the character, optional TTS preview.
+    /// </summary>
+    public async Task<VoiceApplyDto> ApplyVoiceCloneAsync(
+        string projectId,
+        string charKey,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/apply-clone",
+            new { },
+            JsonOpts,
+            ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(raw) ?? resp.ReasonPhrase ?? "Apply clone failed");
+        return JsonSerializer.Deserialize<VoiceApplyDto>(raw, JsonOpts)
+               ?? new VoiceApplyDto { Ok = false, Error = "Empty response" };
+    }
+
+    public async Task<VoiceCatalogDto?> ListProviderVoicesAsync(CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<VoiceCatalogDto>("/api/voices", JsonOpts, ct);
+    }
+
+
+    /// <summary>
     /// Save look text; by default API runs AI scrub (literal + base look). Returns cleaned fields.
     /// </summary>
     public async Task DeleteCharacterImageAsync(
@@ -3265,6 +3293,35 @@ public sealed class ProjectsDto
     public bool Ok { get; set; }
     public ProjectInfo? Active { get; set; }
     public List<ProjectInfo> Projects { get; set; } = new();
+}
+
+public sealed class VoiceApplyDto
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public string? ProviderId { get; set; }
+    public string? ProviderVoiceId { get; set; }
+    public bool UsedMock { get; set; }
+    public string? PreviewUrl { get; set; }
+    public string? VoiceLabel { get; set; }
+}
+
+public sealed class VoiceCatalogDto
+{
+    public bool Ok { get; set; }
+    public string? Provider { get; set; }
+    public bool Configured { get; set; }
+    public List<VoiceCatalogItemDto> Voices { get; set; } = new();
+}
+
+public sealed class VoiceCatalogItemDto
+{
+    public string ProviderVoiceId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? Category { get; set; }
+    public string? PreviewUrl { get; set; }
+    public bool IsCloned { get; set; }
 }
 
 public sealed class JobsListDto

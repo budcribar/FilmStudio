@@ -1105,6 +1105,12 @@ else
                 </button>
                 @if (_selected?.HasVoiceCloneSample == true)
                 {
+                    <button type="button" class="btn btn-sm btn-primary"
+                            disabled="@(_busy || _voiceCloneBusy || VoiceJobRunning)"
+                            @onclick="ApplyVoiceCloneToProviderAsync"
+                            data-testid="voice-clone-apply">
+                        @(_voiceCloneBusy ? "Applying…" : "Apply voice")
+                    </button>
                     <button type="button" class="btn btn-sm btn-outline-danger"
                             disabled="@(_busy || _voiceCloneBusy)"
                             @onclick="DeleteVoiceCloneSampleAsync">
@@ -2425,6 +2431,40 @@ else
     /// Simple path: pick Instant voice clone model so apply-ready status is clear once the key is set.
     /// Does not block recording if the key is still missing.
     /// </summary>
+
+    private async Task ApplyVoiceCloneToProviderAsync()
+    {
+        if (_selected is null || string.IsNullOrEmpty(_selectedKey) || string.IsNullOrEmpty(_projectId))
+            return;
+        _voiceCloneBusy = true;
+        _voiceCloneError = null;
+        _voiceCloneHint = "Applying voice…";
+        try
+        {
+            var result = await Engine.ApplyVoiceCloneAsync(_projectId, _selectedKey);
+            if (!result.Ok)
+            {
+                _voiceCloneError = result.Error ?? "Apply failed";
+                return;
+            }
+            _voiceCloneHint = result.Message
+                ?? (result.UsedMock
+                    ? "Demo voice applied (no ElevenLabs key). Preview saved."
+                    : "Voice applied — provider voice id saved on this character.");
+            await LoadAsync();
+            if (!string.IsNullOrEmpty(_selectedKey))
+                Select(_selectedKey, resetMode: false);
+        }
+        catch (Exception ex)
+        {
+            _voiceCloneError = ex.Message;
+        }
+        finally
+        {
+            _voiceCloneBusy = false;
+        }
+    }
+
     private async Task EnsureSimpleVoiceModelAsync()
     {
         try
