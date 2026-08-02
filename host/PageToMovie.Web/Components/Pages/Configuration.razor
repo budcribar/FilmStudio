@@ -768,7 +768,7 @@
     private string _planningModel = "grok-4.5";
     private string _visionModel = "grok-4.5";
     private string _qualityModel = "gemini-2.5-flash";
-    private string _audioModel = "fal-ai/stable-audio";
+    private string _audioModel = "fal-ai/stable-audio-2.0";
     private string _voiceModel = "none";
     /// <summary>Deep-link from gated features: music | voice | review | video | …</summary>
     private string? _focusCapability;
@@ -873,15 +873,23 @@
 
             var list = await Engine.GetSupportedModelsAsync();
             _allModels = list.ToList();
-            _videoModels = _allModels.Where(m => m.Capability == "video").ToList();
-            _imageModels = _allModels.Where(m => m.Capability == "image").ToList();
-            _planningModels = _allModels.Where(m => m.Capability == "chat").ToList();
-            _visionModels = _allModels.Where(m => m.Capability == "vision").ToList();
-            _audioModels = _allModels.Where(m => m.Capability == "audio").ToList();
-            _voiceModels = _allModels.Where(m => m.Capability == "voice").ToList();
-            _videoReviewModels = _allModels.Where(m => m.SupportsVideoReview || m.Capability is "chat" or "vision")
-                .GroupBy(m => m.Id)
-                .Select(g => g.First()).ToList();
+            bool Cap(SupportedModelDto m, string c) =>
+                string.Equals(m.Capability, c, StringComparison.OrdinalIgnoreCase);
+            _videoModels = _allModels.Where(m => Cap(m, "video")).ToList();
+            _imageModels = _allModels.Where(m => Cap(m, "image")).ToList();
+            _planningModels = _allModels.Where(m => Cap(m, "chat")).ToList();
+            _visionModels = _allModels.Where(m => Cap(m, "vision")).ToList();
+            _audioModels = _allModels.Where(m => Cap(m, "audio")).ToList();
+            _voiceModels = _allModels.Where(m => Cap(m, "voice")).ToList();
+            // Prefer models that natively accept video files (e.g. Gemini 2.5 Flash)
+            _videoReviewModels = _allModels.Where(m => m.SupportsVideoReview).ToList();
+            if (_videoReviewModels.Count == 0)
+                _videoReviewModels = _allModels.Where(m => Cap(m, "chat") || Cap(m, "vision")).ToList();
+            _videoReviewModels = _videoReviewModels
+                .Concat(_allModels.Where(m => m.SupportsVideoReview || Cap(m, "chat") || Cap(m, "vision")))
+                .GroupBy(m => m.Id, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
 
             if (_videoModels.Count == 0)
                 _videoModels.Add(new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video", Provider = "Xai" });
@@ -894,7 +902,7 @@
             if (_videoReviewModels.Count == 0)
                 _videoReviewModels.Add(new SupportedModelDto { Id = "gemini-2.5-flash", DisplayName = "Gemini 2.5 Flash", Provider = "Google", SupportsVideoReview = true });
             if (_audioModels.Count == 0)
-                _audioModels.Add(new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" });
+                _audioModels.Add(new SupportedModelDto { Id = "fal-ai/stable-audio-2.0", DisplayName = "Stable Audio 2.0 (Fal.ai)", Provider = "Fal", ProviderId = "fal" });
 
             if (!_audioModels.Any(m => m.Id == "none"))
                 _audioModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" });
@@ -912,7 +920,7 @@
             _videoReviewModels = [new SupportedModelDto { Id = "gemini-2.5-flash", DisplayName = "Gemini 2.5 Flash", Provider = "Google", SupportsVideoReview = true }];
             _audioModels = [
                 new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" },
-                new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" }
+                new SupportedModelDto { Id = "fal-ai/stable-audio-2.0", DisplayName = "Stable Audio 2.0 (Fal.ai)", Provider = "Fal", ProviderId = "fal" }
             ];
         }
     }
@@ -1092,6 +1100,10 @@
 
     private string ResolveProviderIdForModel(string modelId, string capability, bool preferVideoReview)
     {
+        // Legacy music id still present in some project configs.
+        if (string.Equals(modelId, "fal-ai/stable-audio", StringComparison.OrdinalIgnoreCase))
+            modelId = "fal-ai/stable-audio-2.0";
+
         var m = _allModels.FirstOrDefault(x =>
             string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase) &&
             (preferVideoReview
@@ -1107,6 +1119,11 @@
                 return SupportedModelCatalog.NormalizeProviderId(m.Provider);
         }
 
+        // Infer from model id before synthetic catalog fallback (which wrongly maps unknown audio → grok).
+        var inferred = InferProviderIdFromModelId(modelId);
+        if (!string.IsNullOrWhiteSpace(inferred))
+            return inferred;
+
         var cap = capability.ToLowerInvariant() switch
         {
             "video" => ModelCapability.Video,
@@ -1116,8 +1133,28 @@
             "voice" => ModelCapability.Voice,
             _ => ModelCapability.Chat,
         };
-        return SupportedModelCatalog.NormalizeProviderId(
+        var resolved = SupportedModelCatalog.NormalizeProviderId(
             SupportedModelCatalog.ProviderIdFor(modelId, cap));
+        // Guard: ProviderIdFor synthesizes unknown audio as Xai/grok — never treat that as music.
+        if (cap == ModelCapability.Audio && string.Equals(resolved, "grok", StringComparison.OrdinalIgnoreCase))
+            return "fal";
+        return resolved;
+    }
+
+    private static string InferProviderIdFromModelId(string? modelId)
+    {
+        if (string.IsNullOrWhiteSpace(modelId)) return "";
+        var id = modelId.Trim().ToLowerInvariant();
+        if (id is "none" or "disabled") return "";
+        if (id.StartsWith("fal-ai/") || id.StartsWith("fal/")) return "fal";
+        if (id.StartsWith("suno")) return "suno";
+        if (id.StartsWith("aimusicapi") || id.Contains("aimusic")) return "aimusicapi";
+        if (id.StartsWith("eleven")) return "elevenlabs";
+        if (id.StartsWith("grok") || id.StartsWith("grok-")) return "grok";
+        if (id.StartsWith("gemini") || id.StartsWith("veo")) return "gemini";
+        if (id.StartsWith("gpt") || id.StartsWith("o1") || id.StartsWith("o3")) return "openai";
+        if (id.StartsWith("claude")) return "anthropic";
+        return "";
     }
 
     private List<string> CoverageUsesForProvider(string providerId)
@@ -1433,6 +1470,15 @@
                     await PersistProjectConfigAsync();
                     _apiKeyFeedback += " Project models defaulted to Grok (video, image, planning, quality).";
                 }
+                // Music key: if coverage model is none/unknown, pick a model for this provider so Ready lights up.
+                if (providerId is "fal" or "suno" or "aimusicapi")
+                {
+                    EnsureMusicModelForProvider(providerId);
+                    if (!string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
+                    {
+                        try { await PersistProjectConfigAsync(); } catch { /* optional */ }
+                    }
+                }
             }
 
             _message = _apiKeyFeedback;
@@ -1448,6 +1494,41 @@
             _apiKeySaving = false;
             _savingProviderId = null;
         }
+    }
+
+
+    /// <summary>After saving a music-provider key, pick a matching music model so coverage goes Ready.</summary>
+    private void EnsureMusicModelForProvider(string providerId)
+    {
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var currentProvider = ResolveProviderIdForModel(_audioModel, "audio", preferVideoReview: false);
+        var off = string.IsNullOrWhiteSpace(_audioModel)
+                  || _audioModel.Equals("none", StringComparison.OrdinalIgnoreCase)
+                  || _audioModel.Equals("disabled", StringComparison.OrdinalIgnoreCase)
+                  || string.Equals(_audioModel, "fal-ai/stable-audio", StringComparison.OrdinalIgnoreCase);
+        if (!off && string.Equals(currentProvider, pid, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var pick = _audioModels.FirstOrDefault(m =>
+            !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(
+                !string.IsNullOrWhiteSpace(m.ProviderId)
+                    ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
+                    : SupportedModelCatalog.NormalizeProviderId(m.Provider),
+                pid,
+                StringComparison.OrdinalIgnoreCase));
+        if (pick is null)
+        {
+            _audioModel = pid switch
+            {
+                "fal" => "fal-ai/stable-audio-2.0",
+                "suno" => "suno-v5-5",
+                "aimusicapi" => "aimusicapi-suno",
+                _ => _audioModel,
+            };
+            return;
+        }
+        _audioModel = pick.Id;
     }
 
     /// <summary>Set all model slots to the standard Grok defaults after attaching an xAI key.</summary>
@@ -1487,6 +1568,8 @@
             _visionModel = GetStr("vision_model_name", _visionModel);
             _qualityModel = GetStr("quality_model_name", _qualityModel);
             _audioModel = GetStr("audio_model_name", _audioModel);
+            if (string.Equals(_audioModel, "fal-ai/stable-audio", StringComparison.OrdinalIgnoreCase))
+                _audioModel = "fal-ai/stable-audio-2.0";
             _voiceModel = GetStr("voice_model_name", _voiceModel);
             _enableBackgroundMusic = GetBool("enable_background_music", _enableBackgroundMusic);
             _backgroundMusicVolumePercent = GetInt("background_music_volume_percent", _backgroundMusicVolumePercent);
