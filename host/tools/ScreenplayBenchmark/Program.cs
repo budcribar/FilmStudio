@@ -962,36 +962,47 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
         string? workingTree = null;
         try
         {
-            var promptPath = Path.Combine(workspaceRoot, "prompts", "book_to_fountain.txt");
-            if (File.Exists(promptPath))
-                workingTree = Hash(File.ReadAllText(promptPath));
-        }
-        catch { /* best-effort */ }
-
-        string? gitHead = null;
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
+            static string RunGit(string workingDirectory, string arguments)
             {
-                FileName = "git",
-                Arguments = "show HEAD:prompts/book_to_fountain.txt",
-                WorkingDirectory = workspaceRoot,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-            };
-            using var proc = System.Diagnostics.Process.Start(psi);
-            if (proc is not null)
-            {
-                var output = proc.StandardOutput.ReadToEnd();
-                proc.WaitForExit(5000);
-                if (proc.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-                    gitHead = Hash(output);
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "git",
+                    Arguments = arguments,
+                    WorkingDirectory = workingDirectory,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                };
+                using var process = System.Diagnostics.Process.Start(psi);
+                if (process is null) throw new InvalidOperationException("Could not start git.");
+                var output = process.StandardOutput.ReadToEnd();
+                var standardError = process.StandardError.ReadToEnd();
+                process.WaitForExit(5000);
+                if (process.ExitCode != 0) throw new InvalidOperationException(standardError.Trim());
+                return output.Trim();
             }
-        }
-        catch { /* best-effort — git may be missing from PATH, or this may not be a repo */ }
 
-        return (workingTree, gitHead);
+            if (!string.IsNullOrWhiteSpace(RunGit(workspaceRoot, $"status --porcelain -- {promptPath}")))
+            {
+                error = "prompts/book_to_fountain.txt has uncommitted changes.";
+                return false;
+            }
+
+            var commit = RunGit(workspaceRoot, $"log -1 --format=%H -- {promptPath}");
+            if (commit.Length < 10)
+            {
+                error = "prompts/book_to_fountain.txt has no committed revision.";
+                return false;
+            }
+
+            revision = commit[..10];
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"could not verify the committed prompt revision ({ex.Message})";
+            return false;
+        }
     }
 
     private static string SanitizeFileName(string name) =>

@@ -175,7 +175,7 @@ public static class BookToFountainConverter
                     chat, model, onProgress, ct,
                     softMaxChars: budget.ChunkSoftMaxChars,
                     maxChunks: ResolveMaxChunks(bookText, budget),
-                    reasoningEffort: reasoningEffort).ConfigureAwait(false);
+                    reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
             }
 
             // Multi path: soft coverage failures still accept a structurally good draft

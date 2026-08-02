@@ -360,7 +360,7 @@ public static class HtmlDashboardGenerator
   <div id=""tab-progress"" class=""tab-content"">
     <div class=""card"" style=""position: relative;"">
       <h3>📈 Best Multi-Book Composite Score Over Time</h3>
-      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Every dot is one (model, reasoning effort, prompt version) combination's average composite score. The bold line traces the running best — the highest score achieved as of that point in time. Hover any dot for what it's made of.</p>
+      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Every dot is one (model, reasoning effort, temperature, prompt commit) combination's average composite score. The bold line traces the running best — the highest score achieved as of that point in time. Hover any dot for what it's made of.</p>
       <div id=""progress-chart-container"" style=""margin-top: 1rem;""></div>
       <div id=""progress-tooltip"" style=""display: none; position: fixed; z-index: 1000; background: #0b0f19; border: 1px solid var(--accent-cyan); border-radius: 0.5rem; padding: 0.6rem 0.85rem; font-size: 0.8rem; pointer-events: none; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); width: min(280px, calc(100vw - 24px)); box-sizing: border-box; overflow-wrap: anywhere;""></div>
     </div>
@@ -1208,8 +1208,9 @@ function computeProgressPoints() {
     if (!d) return;
     (r.modelScores || r.ModelScores || []).forEach(m => {
       if (isFallback(m) || composite(m) < 0) return;
-      const key = JSON.stringify([modelId(m), effort, pv]);
-      if (!groups.has(key)) groups.set(key, { modelId: modelId(m), effort, promptVersion: pv, scores: [], lastSeen: d });
+      const temperature = getRunTemperatureKey(r);
+      const key = JSON.stringify([modelId(m), effort, temperature, pv]);
+      if (!groups.has(key)) groups.set(key, { modelId: modelId(m), effort, temperature, promptVersion: pv, scores: [], lastSeen: d });
       const g = groups.get(key);
       g.scores.push(composite(m));
       if (d > g.lastSeen) g.lastSeen = d;
@@ -1219,6 +1220,7 @@ function computeProgressPoints() {
   const points = Array.from(groups.values()).map(g => ({
     modelId: g.modelId,
     effort: g.effort,
+    temperature: g.temperature,
     promptVersion: g.promptVersion,
     avgComposite: g.scores.reduce((a, b) => a + b, 0) / g.scores.length,
     bookCount: g.scores.length,
@@ -1314,6 +1316,7 @@ function showProgressTooltip(e, p) {
   tooltip.innerHTML = '<div style=""font-weight:700; color:' + (p.isRecord ? '#fbbf24' : '#a855f7') + '; margin-bottom:0.3rem;"">' + (p.isRecord ? '🏆 Record at this point' : 'Not a record') + '</div>'
     + '<div><strong>' + p.modelId + '</strong></div>'
     + '<div style=""color:#9ca3af;"">Effort: <strong style=""color:#f3f4f6;"">' + p.effort + '</strong></div>'
+    + '<div style=""color:#9ca3af;"">Temperature: <strong style=""color:#f3f4f6;"">' + p.temperature + '</strong></div>'
     + '<div style=""color:#9ca3af;"">Prompt: <strong style=""color:#f3f4f6;"">' + promptLabel + '</strong></div>'
     + '<div style=""color:#9ca3af; font-size:0.72rem;"">Git commit: <strong style=""color:#f3f4f6;"">' + p.promptVersion + '</strong></div>'
     + '<div style=""color:#9ca3af;"">Composite: <strong style=""color:#4ade80;"">' + p.avgComposite.toFixed(1) + '</strong> (' + p.bookCount + ' books)</div>'
