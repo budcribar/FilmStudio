@@ -2524,6 +2524,45 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             ct);
     }
 
+    /// <summary>Actual spend by provider (then category) for this project — for reconciling against a real vendor billing statement.</summary>
+    public async Task<CostByProviderDto?> GetCostByProviderAsync(string projectId, CancellationToken ct = default)
+    {
+        return await _http.GetFromJsonAsync<CostByProviderDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/by-provider",
+            JsonOpts,
+            ct);
+    }
+
+    public sealed class CostByProviderDto
+    {
+        public bool Ok { get; set; }
+        public string? ProjectId { get; set; }
+        public ApiCostByProviderStatsDto? Stats { get; set; }
+    }
+
+    public sealed class ApiCostByProviderStatsDto
+    {
+        public int TotalCalls { get; set; }
+        public double TotalUsd { get; set; }
+        public Dictionary<string, ProviderCostStatsDto> ByProvider { get; set; } = new();
+    }
+
+    public sealed class ProviderCostStatsDto
+    {
+        public string Provider { get; set; } = "unknown";
+        public int Count { get; set; }
+        public double TotalUsd { get; set; }
+        public Dictionary<string, CategoryCostStatsDto> ByCategory { get; set; } = new();
+    }
+
+    public sealed class CategoryCostStatsDto
+    {
+        public string Category { get; set; } = "other";
+        public int Count { get; set; }
+        public double TotalUsd { get; set; }
+        public double AvgUsd { get; set; }
+    }
+
     /// <summary>Resolution already used by this project's on-disk clips, or null if none yet.</summary>
     public async Task<string?> GetResolutionLockAsync(string projectId, CancellationToken ct = default)
     {

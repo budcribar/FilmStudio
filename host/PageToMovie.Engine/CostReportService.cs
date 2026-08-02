@@ -576,6 +576,43 @@ public sealed class CostReportService
         }
     }
 
+    /// <summary>
+    /// Rolls one already-priced API call's list-rate estimate into the project's <c>cost_ledger</c>,
+    /// so chat/vision spend (screenplay, cast, shot-plan classifiers, review) shows up in the same
+    /// "actual spend" total as video/image generation instead of always reading $0 for those
+    /// categories. Video/image already log their own richer event via
+    /// <see cref="RecordVideoGenerationAsync"/>/<see cref="RecordImageGenerationAsync"/> — callers
+    /// must not call this for those kinds, or spend double-counts (see
+    /// <c>ProjectTelemetryService.LogApiCallAsync</c>'s kind filter).
+    /// </summary>
+    public async Task RecordApiCallSpendAsync(ApiCallTelemetry rec, CancellationToken ct = default)
+    {
+        var projectId = rec.ProjectId;
+        var usd = rec.EstimatedUsd ?? 0;
+        if (string.IsNullOrWhiteSpace(projectId) || usd <= 0) return;
+
+        var evt = new Dictionary<string, object?>
+        {
+            ["kind"] = rec.Kind,
+            ["category"] = rec.Category ?? CostCategories.Resolve(rec.Kind, rec.Mode),
+            ["model"] = rec.Model,
+            ["provider"] = rec.Provider,
+            ["mode"] = rec.Mode,
+            ["request_id"] = rec.RequestId ?? "",
+            ["source"] = "list_rate",
+            ["usd"] = Math.Round(usd, 6),
+            ["currency"] = "USD",
+            ["user_id"] = rec.UserId ?? "",
+        };
+        // Only book-level classifiers with no single scene/clip/character omit these — keep the
+        // event dict free of literal nulls rather than writing "scene": null for every such call.
+        if (rec.Scene is { } scene) evt["scene"] = scene;
+        if (rec.Clip is { } clip) evt["clip"] = clip;
+        if (!string.IsNullOrWhiteSpace(rec.CharKey)) evt["char_key"] = rec.CharKey;
+
+        await AppendCostEventAsync(projectId, evt, save: true, ct).ConfigureAwait(false);
+    }
+
     // ---- internals ----
 
     private List<CostScenarioRow> BuildScenarios(
@@ -1343,7 +1380,10 @@ public sealed class CostReportService
     {
         v = 0;
         if (!e.TryGetProperty(name, out var p)) return false;
-        if (p.TryGetInt32(out v)) return true;
+        // JsonElement.TryGetInt32 throws (not just returns false) when the token is present but not
+        // a Number — e.g. an explicit JSON null (a scene/clip on a book-level, not per-scene, event) —
+        // so gate on ValueKind first rather than treating "property exists" as "property is numeric".
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out v)) return true;
         if (p.ValueKind == JsonValueKind.String && int.TryParse(p.GetString(), out v)) return true;
         return false;
     }
@@ -1352,7 +1392,7 @@ public sealed class CostReportService
     {
         v = 0;
         if (!e.TryGetProperty(name, out var p)) return false;
-        if (p.TryGetDouble(out v)) return true;
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out v)) return true;
         if (p.ValueKind == JsonValueKind.String &&
             double.TryParse(p.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out v))
             return true;

@@ -378,6 +378,43 @@ else
                             </table>
                         </div>
                     }
+
+                    @if (_byProvider is { ByProvider.Count: > 0 })
+                    {
+                        <div class="fw-semibold small mb-2 mt-3">Actual spend by provider</div>
+                        <p class="small text-muted mb-2">
+                            List-rate estimates at call time — not vendor invoices. Use to sanity-check against
+                            your provider billing statement, not as an exact match.
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Provider</th>
+                                        <th class="text-end">Calls</th>
+                                        <th class="text-end">Est. spend</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var kv in _byProvider.ByProvider.OrderByDescending(kv => kv.Value.TotalUsd))
+                                    {
+                                        <tr>
+                                            <td>@kv.Key</td>
+                                            <td class="text-end">@kv.Value.Count</td>
+                                            <td class="text-end">@Usd(kv.Value.TotalUsd)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="fw-semibold">
+                                        <td>Total</td>
+                                        <td class="text-end">@_byProvider.TotalCalls</td>
+                                        <td class="text-end">@Usd(_byProvider.TotalUsd)</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -396,6 +433,7 @@ else
     private double _retries = 0.5;
     private string? _openCategory;
     private bool _showAdvanced;
+    private EngineApiClient.ApiCostByProviderStatsDto? _byProvider;
 
     private static readonly (string Id, string Label, string Color)[] Categories =
     {
@@ -500,6 +538,16 @@ else
             _report = null;
         }
         finally { _busy = false; }
+
+        try
+        {
+            var byProviderDto = await Engine.GetCostByProviderAsync(_projectId);
+            _byProvider = byProviderDto?.Stats;
+        }
+        catch
+        {
+            _byProvider = null;
+        }
     }
 
     private async Task BackfillAsync()

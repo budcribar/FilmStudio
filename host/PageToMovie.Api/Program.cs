@@ -5359,6 +5359,32 @@ app.MapGet("/api/projects/{id}/resolution-lock", async (
     }
 });
 
+/// <summary>Actual spend by provider (then category) for this project — reconcile against a real vendor billing statement.</summary>
+app.MapGet("/api/projects/{id}/cost/by-provider", async (
+    string id,
+    ProjectStore store,
+    UserDatabaseService userDb,
+    CancellationToken ct) =>
+{
+    try
+    {
+        _ = await store.GetProjectAsync(id, ct)
+            ?? throw new InvalidOperationException($"Unknown project: {id}");
+        var stats = await userDb.GetApiCostByProviderAsync(userId: null, projectId: id, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            notes = "List-rate estimates at call time (catalog), grouped by provider. Not a provider invoice — use as a sanity check against your actual billing statement, not an exact match.",
+            stats,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/projects/{id}/cost/backfill", async (
     string id, ProjectStore store, CostReportService costs, CancellationToken ct) =>
 {
