@@ -356,7 +356,8 @@ public static class AdaptationSessionPilot
                         "batching by the smaller count; see the final reconciliation warning.");
                 }
                 var sceneCount = Math.Min(edlScenes.Count, fountainScenes.Count);
-                const int batchSize = 8;
+                var batchSize = ComputeSafeBatchSize(
+                    LookupMaxOutputTokens(workspaceRoot, model), ClipPlanEstimatedTokensPerScene);
                 var batchJsonTexts = new List<string>();
                 for (var batchStart = 0; batchStart < sceneCount; batchStart += batchSize)
                 {
@@ -415,7 +416,8 @@ public static class AdaptationSessionPilot
             var dualAttachPath = Path.Combine(outDir, "clip_shot_plan_dualattach.json");
             Console.WriteLine("🧪 [experiment] Clip-level shot plan (dual-attach, no chaining)...");
             var edlScenesForDual = ParseEdlSceneElements(edlJson);
-            const int dualBatchSize = 8;
+            var dualBatchSize = ComputeSafeBatchSize(
+                LookupMaxOutputTokens(workspaceRoot, model), ClipPlanEstimatedTokensPerScene);
             var dualBatchJsonTexts = new List<string>();
             for (var batchStart = 0; batchStart < edlScenesForDual.Count; batchStart += dualBatchSize)
             {
@@ -459,7 +461,8 @@ public static class AdaptationSessionPilot
         {
             Console.WriteLine("🎵 Stage 6: audio plan (batched)...");
             var edlScenesForAudio = ParseEdlSceneElements(edlJson);
-            const int audioBatchSize = 8;
+            var audioBatchSize = ComputeSafeBatchSize(
+                LookupMaxOutputTokens(workspaceRoot, model), AudioPlanEstimatedTokensPerScene);
             var audioBatchJsonTexts = new List<string>();
             for (var batchStart = 0; batchStart < edlScenesForAudio.Count; batchStart += audioBatchSize)
             {
@@ -795,7 +798,8 @@ public static class AdaptationSessionPilot
         {
             Console.WriteLine("🎥 [full experiment] Stage 5.5: clip-level shot plan (batched)...");
             var edlScenes = ParseEdlSceneElements(edlJsonAlt);
-            const int batchSize = 8;
+            var batchSize = ComputeSafeBatchSize(
+                LookupMaxOutputTokens(workspaceRoot, model), ClipPlanEstimatedTokensPerScene);
             var batchJsonTexts = new List<string>();
             for (var batchStart = 0; batchStart < edlScenes.Count; batchStart += batchSize)
             {
@@ -827,7 +831,8 @@ public static class AdaptationSessionPilot
         {
             Console.WriteLine("🎵 [full experiment] Stage 6: audio plan (batched)...");
             var edlScenes = ParseEdlSceneElements(edlJsonAlt);
-            const int batchSize = 8;
+            var batchSize = ComputeSafeBatchSize(
+                LookupMaxOutputTokens(workspaceRoot, model), AudioPlanEstimatedTokensPerScene);
             var batchJsonTexts = new List<string>();
             for (var batchStart = 0; batchStart < edlScenes.Count; batchStart += batchSize)
             {
@@ -1689,6 +1694,107 @@ public static class AdaptationSessionPilot
         }
         catch { /* fall through */ }
         return null;
+    }
+
+    private static readonly Dictionary<string, int?> ModelMaxOutputTokensCache = new();
+
+    /// <summary>Reuses the product's own per-model <c>maxOutputTokens</c> (models_catalog.json)
+    /// rather than hardcoding a second copy of it here — same direct-JSON-read pattern as
+    /// <see cref="LookupModelPricing"/>. Returns null when the catalog has no entry, or the entry
+    /// has no maxOutputTokens (e.g. an unresearched/new model id) — callers must fall back to a
+    /// flat default rather than guess in that case.</summary>
+    private static int? LookupMaxOutputTokens(string workspaceRoot, string modelId)
+    {
+        if (ModelMaxOutputTokensCache.TryGetValue(modelId, out var cached)) return cached;
+        try
+        {
+            var catalogPath = Path.Combine(workspaceRoot, "host", "PageToMovie.Core", "config", "models_catalog.json");
+            if (!File.Exists(catalogPath)) return null;
+            using var doc = JsonDocument.Parse(File.ReadAllText(catalogPath));
+            foreach (var m in doc.RootElement.GetProperty("models").EnumerateArray())
+            {
+                if (m.TryGetProperty("id", out var idEl) && idEl.GetString() == modelId)
+                {
+                    int? maxOut = m.TryGetProperty("maxOutputTokens", out var outEl) && outEl.ValueKind == JsonValueKind.Number
+                        ? outEl.GetInt32()
+                        : null;
+                    ModelMaxOutputTokensCache[modelId] = maxOut;
+                    return maxOut;
+                }
+            }
+        }
+        catch { /* fall through */ }
+        return null;
+    }
+
+    /// <summary>Flat batch size used before this model-aware sizing existed, and still the fallback
+    /// for any model without a researched <c>maxOutputTokens</c> in models_catalog.json — it was
+    /// picked after a real, observed truncation: one unbatched 68-scene clip-plan call silently ran
+    /// out of output budget and stopped mid-response (a "scenes_CONTINUED": [] marker acknowledging
+    /// it, only 9/68 scenes actually covered).</summary>
+    private const int FlatDefaultBatchSize = 8;
+
+    /// <summary>
+    /// Upper bound on computed batch size regardless of how much output budget a model claims to
+    /// have. Very large batches trade away more than they're worth even when the token math allows
+    /// them: a failed/truncated batch loses more work, per-batch progress/caching checkpoints
+    /// (SaveSession after every batch) get coarser, and single requests get slower/more prone to
+    /// timeouts. 40 is roughly 5x the historical flat default — enough to meaningfully cut the
+    /// number of chained calls for a large-budget model without letting one call cover an entire
+    /// book's scene list.
+    /// </summary>
+    private const int MaxReasonableBatchSize = 40;
+
+    /// <summary>
+    /// Fraction of a model's documented maxOutputTokens this pilot will actually plan to use per
+    /// batch call. Deliberately well under 100%: maxOutputTokens numbers are ceilings on VISIBLE
+    /// output only (reasoning/tool-call tokens aren't counted against them per-provider, but still
+    /// consume the same generation pass and push visible content later into it), real per-scene
+    /// output size varies scene-to-scene (a dialogue-heavy or multi-clip scene can run well above the
+    /// empirical average used below), and this is exactly the class of bug (silent truncation) that
+    /// motivated batching in the first place — so the margin needs to survive being wrong about the
+    /// average, not just be right on average. 0.6 keeps 40% headroom.
+    /// </summary>
+    private const double OutputBudgetSafetyMargin = 0.6;
+
+    /// <summary>
+    /// Empirical average output size of one scene's worth of clip-shot-plan JSON (a scene object with
+    /// its nested "clips" array — camera directive, performance intensity/note, dialogue/VO fragment,
+    /// sound, etc.), in tokens (~4 chars/token). Measured across real artifacts on disk:
+    /// evals/adaptation_sessions/nick_and_me/clip_shot_plan.json averaged ~483 tokens/scene (52
+    /// scenes), but the richer-schema variants (adding negative_prompt, ambient_layer, foley_layer,
+    /// depth_of_field, color_grading, continuation per clip) ran far higher —
+    /// clip_shot_plan_dualattach_full.json averaged ~984 tokens/scene for nick_and_me (53 scenes) and
+    /// ~1478 tokens/scene for the_tell-tale_heart (12 scenes, richer per-scene detail). This constant
+    /// uses that observed worst case (rounded up) rather than the average, since the batch-size
+    /// formula needs to stay safe for the richest schema variant a stage might actually produce, not
+    /// just the leanest one seen so far.
+    /// </summary>
+    private const int ClipPlanEstimatedTokensPerScene = 1500;
+
+    /// <summary>
+    /// Empirical average output size of one scene's worth of audio-plan JSON, in tokens (~4
+    /// chars/token). Measured across real artifacts on disk: nick_and_me/audio_plan.json averaged
+    /// ~121 tokens/scene (52 scenes) but audio_plan_dualattach_full.json ran ~310/scene (53 scenes)
+    /// and the_tell-tale_heart's audio_plan_dualattach_full.json ~332/scene (12 scenes). Rounded up
+    /// from the observed worst case for the same reason as <see cref="ClipPlanEstimatedTokensPerScene"/>.
+    /// </summary>
+    private const int AudioPlanEstimatedTokensPerScene = 350;
+
+    /// <summary>
+    /// Computes a per-call scene batch size from a model's real output-token budget instead of the
+    /// historical flat 8: <c>min(MaxReasonableBatchSize, floor(maxOutputTokens * safety_margin /
+    /// estimatedTokensPerScene))</c>, never below 1. Falls back to <see cref="FlatDefaultBatchSize"/>
+    /// verbatim — never a computed guess — when <paramref name="maxOutputTokens"/> is null (model not
+    /// yet researched in models_catalog.json), so behavior for an unresearched model is unchanged
+    /// from before this feature existed.
+    /// </summary>
+    private static int ComputeSafeBatchSize(int? maxOutputTokens, int estimatedTokensPerScene)
+    {
+        if (maxOutputTokens is not { } budget || budget <= 0) return FlatDefaultBatchSize;
+        var usableBudget = budget * OutputBudgetSafetyMargin;
+        var computed = (int)(usableBudget / estimatedTokensPerScene);
+        return Math.Max(1, Math.Min(MaxReasonableBatchSize, computed));
     }
 
     /// <summary>

@@ -411,12 +411,13 @@
       ],
       "enabled": true,
       "maxInputTokens": 500000,
+      "maxOutputTokens": 128000,
       "inputCostPerMillionTokens": 2.0,
       "outputCostPerMillionTokens": 6.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Stage planning, cast scrub, screenplay helpers."
+      "notes": "Stage planning, cast scrub, screenplay helpers. maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens \u2014 not documented per-model, this is xAI's platform-wide default cap on visible output tokens ('Defaults to 128,000 when unset; set a larger value to allow longer generations') that applies uniformly across chat/completions models, so it's the real ceiling any Grok chat call hits today unless the caller explicitly overrides it."
     },
     {
       "id": "grok-4",
@@ -430,11 +431,13 @@
       ],
       "enabled": true,
       "maxInputTokens": 256000,
+      "maxOutputTokens": 128000,
       "inputCostPerMillionTokens": 3.0,
       "outputCostPerMillionTokens": 15.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
-      "supportsVideoReview": false
+      "supportsVideoReview": false,
+      "notes": "maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset, platform-wide (not a per-model published figure) \u2014 see grok-4.5 note for full citation detail."
     },
     {
       "id": "grok-4.20-reasoning",
@@ -448,12 +451,13 @@
       ],
       "enabled": true,
       "maxInputTokens": 1000000,
+      "maxOutputTokens": 128000,
       "inputCostPerMillionTokens": 3.0,
       "outputCostPerMillionTokens": 15.0,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) \u2014 discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text \u2014 GrokChatClient's self-heal matches both spellings) \u2014 it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M)."
+      "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) \u2014 discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text \u2014 GrokChatClient's self-heal matches both spellings) \u2014 it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M). maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset platform-wide (per max_completion_tokens's own definition this excludes reasoning tokens, so this is the visible-JSON-output ceiling even for the reasoning variant \u2014 not a per-model published figure)."
     },
     {
       "id": "claude-sonnet-5",

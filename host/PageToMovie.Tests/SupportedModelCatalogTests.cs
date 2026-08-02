@@ -323,12 +323,23 @@ public class SupportedModelCatalogTests
     [Theory]
     [InlineData("claude-sonnet-5", ModelCapability.Chat, 128_000)]
     [InlineData("claude-opus-5", ModelCapability.Chat, 128_000)]
-    public void Claude_chat_models_carry_real_max_output_tokens(string id, ModelCapability cap, int expectedMaxOutputTokens)
+    [InlineData("grok-4.5", ModelCapability.Chat, 128_000)]
+    [InlineData("grok-4", ModelCapability.Chat, 128_000)]
+    [InlineData("grok-4.20-reasoning", ModelCapability.Chat, 128_000)]
+    public void Chat_models_carry_real_max_output_tokens(string id, ModelCapability cap, int expectedMaxOutputTokens)
     {
         // Provider-documented (platform.claude.com/docs/en/about-claude/models/overview, 2026-08):
         // Claude Sonnet 5 and Claude Opus 5 both cap at 128k output tokens on the synchronous
         // Messages API. AnthropicChatClient.ResolveMaxTokens reads this instead of always sending
         // the DefaultMaxTokens fallback.
+        //
+        // xAI Grok chat models (docs.x.ai/developers/rest-api-reference/inference/chat, 2026-08):
+        // xAI does not publish a distinct per-model output ceiling the way Anthropic does — its
+        // chat/completions `max_completion_tokens` parameter "Defaults to 128,000 when unset" as a
+        // single platform-wide figure that applies identically to grok-4, grok-4.5, and
+        // grok-4.20-reasoning (the doc explicitly notes it excludes reasoning/tool-call tokens, so it
+        // governs visible output even for the reasoning variant). Real and sourced, just not
+        // model-differentiated the way Claude's figures are.
         var e = SupportedModelCatalog.Find(id, cap);
         Assert.NotNull(e);
         Assert.Equal(expectedMaxOutputTokens, e!.MaxOutputTokens);
