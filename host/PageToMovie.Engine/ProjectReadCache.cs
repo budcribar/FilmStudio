@@ -383,6 +383,7 @@ public sealed class ProjectReadCache
                 OwnerUserId = p.OwnerUserId,
                 ParentProjectId = p.ParentProjectId,
                 VisibilityMode = p.VisibilityMode,
+                StudioPath = p.StudioPath,
             });
         }
         return list;

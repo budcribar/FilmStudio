@@ -1,0 +1,43 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity to the full arc (Viking brother setup, Sionna meet-cute and growth, Ma decline/hospital, bar fight, crash death, stabbing, Seattle aftermath, prison forgiveness) while correctly withholding the narrator\u2019s given name until the final beat. Visual locks for Nick (scars, reddish-brown hair, build), Sionna (pale, light-blue eyes, fish necklace, specific wardrobe), and Ma are introduced early and mostly held. Action lines stay concrete and single-location, with clean dream/wake splits and short-clip-friendly beats. Dialogue stays close to book cadence and length. Every scene carries usable (SOUND:) or (MUSIC:) cues, denser at peaks. Minor deductions for occasional thin re-description on late re-entries and some middle compression, but nothing breaks usability.",
+      "promptImprovementSuggestion": "Add an explicit CHARACTER RE-ENTRY rule requiring that after any time jump or gap of more than two scenes the first Action line must restate at least two locked visual traits (build/hair/scar/wardrobe) for every returning character."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 6.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.08,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Multiple scene headings illegally join distinct locations with / (DOCTOR\u2019S OFFICE / HOSPITAL CORRIDOR, FUNERAL HOME / CEMETERY, CITY STREET / PUBLIC LIBRARY), violating the hard single-place rule and breaking downstream scheduling/clip generation",
+        "Narrator is named PETER from the opening scenes, revealing the given name long before the book does so at the close"
+      ],
+      "rationale": "Covers the same spine and many book lines, but early permanent naming of the first-person narrator as PETER directly contradicts the source-withholding rule and costs fidelity. Character looks are introduced with decent specificity and held reasonably well. Directibility collapses on the multi-location headings, which also hurt pacing clarity and make short-clip extraction unreliable. Dialogue is largely authentic and clip-length. Sound cues are present and functional. The heading violations plus the name reveal are deal-breakers for production readiness even though average scores are middling.",
+      "promptImprovementSuggestion": "Add a mandatory pre-output scan: reject or auto-split any scene heading that contains \u0027/\u0027 or \u0027 AND \u0027 joining places; enforce one concrete filmable location per heading with zero exceptions."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it alone obeys single-location headings, correctly withholds the narrator\u2019s name until the book\u2019s final reveal, and delivers consistently clip-ready observable action. Weakest: Screenplay B because illegal multi-place slash headings render structure unusable for AI video breakdown and the early PETER naming violates source fidelity.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "7FEC2201D966CC046B019FD3EA65A6E20B6B41071E3C66AC79EC4AA36F3230F3"
+}

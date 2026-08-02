@@ -30,7 +30,7 @@ public sealed class CachingChatClientTests : IDisposable
             string model = "grok-4.5",
             double temperature = 0.2,
             CancellationToken ct = default,
-            string? mode = null)
+            string? mode = null, string? reasoningEffort = null)
         {
             Calls++;
             return Task.FromResult($"response-{Calls}");

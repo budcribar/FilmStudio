@@ -1,0 +1,226 @@
+{
+  "cast_seeds": {
+    "characters": [
+      {
+        "key": "THE_NARRATOR",
+        "display_name": "The Narrator",
+        "age_link": null,
+        "identity_anchors": "Lean pale adult man, hollow dark eyes, disheveled dark hair, sharp hearing posture, intense fixed gaze; never named in source",
+        "source_evidence": "Book opening and throughout first-person: nervous acute senses especially hearing; screenplay Notes lock lean pale hollow dark eyes disheveled dark hair shirtsleeves dark waistcoat; no given name in Poe",
+        "render_style_lock": "gothic period photorealistic live-action",
+        "voice_label": "tense intimate confessional baritone, quickening under strain",
+        "wardrobe_variants": [
+          {
+            "key": "NARRATOR_CHAMBER_NIGHT",
+            "description": "Shirtsleeves under dark waistcoat, no coat, disheveled; sometimes holding or near closed dark lantern",
+            "source_facts": [
+              "works at midnight with dark lantern",
+              "cautious nocturnal movements",
+              "present in chamber day and night"
+            ],
+            "creative_direction": "period 1840s plain linen shirt slightly open at collar, charcoal wool waistcoat unbuttoned under stress later, dark trousers, soft shoes for stealth; lantern as signature prop in night scenes",
+            "scenes": [
+              "S1",
+              "S2",
+              "S3",
+              "S5",
+              "S6",
+              "S7",
+              "S9"
+            ]
+          },
+          {
+            "key": "NARRATOR_CHAMBER_DAY",
+            "description": "Same shirtsleeves and dark waistcoat, hearty upright bearing for morning visit",
+            "source_facts": [
+              "went boldly into the chamber morning",
+              "spoke courageously hearty tone"
+            ],
+            "creative_direction": "same base wardrobe as night but posture open and smiling; no lantern",
+            "scenes": [
+              "S4"
+            ]
+          },
+          {
+            "key": "NARRATOR_ENTRY",
+            "description": "Same shirtsleeves dark waistcoat, light-hearted composed smile at door",
+            "source_facts": [
+              "went down to open street door with a light heart"
+            ],
+            "creative_direction": "identical base look; calm welcoming demeanor until later chamber breakdown",
+            "scenes": [
+              "S8"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "THE_OLD_MAN",
+        "display_name": "The Old Man",
+        "age_link": null,
+        "identity_anchors": "Frail elderly man, thin white hair, one pale blue eye with a film (vulture eye); otherwise ordinary beloved housemate",
+        "source_evidence": "Book: \u0027He had the eye of a vulture\u2014a pale blue eye, with a film over it\u0027; loved by narrator; sleeps in chamber bed; shrieks once when attacked",
+        "render_style_lock": "gothic period photorealistic live-action",
+        "voice_label": "thin aged, weak murmur by day; single sharp shriek; stifled terror groan",
+        "wardrobe_variants": [
+          {
+            "key": "OLD_MAN_BED",
+            "description": "Nightshirt or simple sleeping clothes in high bed; filmed pale blue eye closed, half-lidded, or wide open per beat",
+            "source_facts": [
+              "lies upon his bed",
+              "eye closed seven nights then open wide eighth night",
+              "frail enough to be dragged and covered by heavy bed"
+            ],
+            "creative_direction": "plain off-white period nightshirt, thin white hair loose on pillow; keep the filmed blue eye as the only distinctive facial feature; corpse state after S6 with no blood visible on bedding per tub catch",
+            "scenes": [
+              "S2",
+              "S3",
+              "S4",
+              "S5",
+              "S6"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "OFFICER_REYNOLDS",
+        "display_name": "Officer Reynolds",
+        "age_link": null,
+        "identity_anchors": "Adult man, bearded, calm bearing; one of three police officers in plain dark period coats",
+        "source_evidence": "Book: three men introduced themselves with perfect suavity as officers of the police; screenplay assigns bearded calm to Reynolds; speaks the search premise line",
+        "render_style_lock": "gothic period photorealistic live-action",
+        "voice_label": "calm measured official baritone",
+        "wardrobe_variants": [
+          {
+            "key": "OFFICER_COAT",
+            "description": "Plain dark period coat, bearded, calm expression",
+            "source_facts": [
+              "officers of the police",
+              "perfect suavity",
+              "dark period coats in screenplay"
+            ],
+            "creative_direction": "1840s dark wool frock coat, simple waistcoat and cravat, no ornate badge required; beard neatly kept; remains composed through confession",
+            "scenes": [
+              "S8",
+              "S9"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "OFFICER_HALE",
+        "display_name": "Officer Hale",
+        "age_link": null,
+        "identity_anchors": "Younger adult man, watchful; one of three police officers in plain dark period coats",
+        "source_evidence": "Book: three officers search and sit chatting of familiar things; screenplay assigns younger watchful to Hale",
+        "render_style_lock": "gothic period photorealistic live-action",
+        "voice_label": "lighter younger official tone, mostly ambient chat",
+        "wardrobe_variants": [
+          {
+            "key": "OFFICER_COAT",
+            "description": "Plain dark period coat, younger clean-shaven or light stubble, watchful eyes",
+            "source_facts": [
+              "officers of the police",
+              "chatted of familiar things",
+              "smiled"
+            ],
+            "creative_direction": "matching dark frock coat to other officers; slightly less formal posture; watches narrator as tension rises but keeps pleasant smile",
+            "scenes": [
+              "S8",
+              "S9"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "OFFICER_CLEMM",
+        "display_name": "Officer Clemm",
+        "age_link": null,
+        "identity_anchors": "Tall adult man, soft-spoken manner; one of three police officers in plain dark period coats",
+        "source_evidence": "Book: three officers; screenplay assigns tall soft-spoken to Clemm",
+        "render_style_lock": "gothic period photorealistic live-action",
+        "voice_label": "soft low official tone, ambient",
+        "wardrobe_variants": [
+          {
+            "key": "OFFICER_COAT",
+            "description": "Plain dark period coat, tall build, mild expression",
+            "source_facts": [
+              "officers of the police",
+              "sat and chatted pleasantly and smiled"
+            ],
+            "creative_direction": "same dark frock coat family; height contrast to Hale; remains seated smiling during narrator\u0027s breakdown",
+            "scenes": [
+              "S8",
+              "S9"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "location_bible": {
+    "locations": [
+      {
+        "key": "LOCATION_OLD_HOUSE_CHAMBER",
+        "canonical_name": "Old House Chamber",
+        "source_evidence": "Book: the old man\u0027s chamber/bedroom with bed, door latch, shutters close fastened through fear of robbers, flooring planks and scantlings, dark lantern ray, death watches in the wall, chairs brought in, treasures secure; narrator sits upon spot above corpse",
+        "layout_anchors": [
+          "single main chamber room",
+          "high bed against wall",
+          "door with latch opening from hall/entry side",
+          "close-fastened shutters on window",
+          "wooden floorboards with three liftable planks over scantlings",
+          "space for chairs near center/over burial spot",
+          "wall space implying death-watch insects"
+        ],
+        "lighting_states": [
+          "NIGHT candlelight and single thin lantern ray in deep shadow pitch black when shutters closed",
+          "DAY morning light seeping through closed shutters"
+        ],
+        "persistent_props": [
+          "high heavy bed",
+          "dark lantern (tin fastening)",
+          "wooden chairs",
+          "floor planks",
+          "tub (for blood catch, present during concealment)",
+          "old man\u0027s undisturbed treasures",
+          "candle"
+        ],
+        "image_brief": "Tight gothic bedroom interior, bare or sparse 1840s furnishings, heavy shadows, wooden floor with hidden cavity under three planks, high bed, shuttered window, door with quiet latch; candle and lantern as primary night sources",
+        "scenes": [
+          "S1",
+          "S2",
+          "S3",
+          "S4",
+          "S5",
+          "S6",
+          "S7",
+          "S9"
+        ]
+      },
+      {
+        "key": "LOCATION_OLD_HOUSE_ENTRY",
+        "canonical_name": "Old House Entry",
+        "source_evidence": "Book: knocking at the street door; narrator went down to open it; three officers entered; leads them over the house then to chamber",
+        "layout_anchors": [
+          "street-facing door with latch",
+          "threshold where three can stand",
+          "immediate interior entry/hall space leading toward chamber",
+          "sense of house above/beyond"
+        ],
+        "lighting_states": [
+          "NIGHT dark exterior spill and dim interior when door opens still dark as midnight four o\u0027clock"
+        ],
+        "persistent_props": [
+          "street door",
+          "latch",
+          "threshold boards"
+        ],
+        "image_brief": "Narrow period entry or front hall at street door, dark early-morning interior, door opening onto three officers; simple wood and plaster, no modern fixtures",
+        "scenes": [
+          "S8"
+        ]
+      }
+    ]
+  }
+}

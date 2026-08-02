@@ -165,7 +165,7 @@ public class BookToFountainPathTests
         var fountain = "Title: Test\nAuthor: Unit\n\nINT. ROOM - DAY\n\nSomething happens.\n";
         var fixed_ = BookToFountainConverter.EnsureFadeIn(fountain);
         Assert.Contains("FADE IN:\n\nINT. ROOM - DAY", fixed_, StringComparison.Ordinal);
-        Assert.Equal(1, Regex.Matches(fixed_, "FADE IN:", RegexOptions.IgnoreCase).Count);
+        Assert.Single(Regex.Matches(fixed_, "FADE IN:", RegexOptions.IgnoreCase));
     }
 
     [Fact]
@@ -448,7 +448,7 @@ public class BookToFountainPathTests
             string model = "grok-4.5",
             double temperature = 0.2,
             CancellationToken ct = default,
-            string? mode = null)
+            string? mode = null, string? reasoningEffort = null)
         {
             Calls++;
             UserPrompts.Add(userPrompt ?? "");

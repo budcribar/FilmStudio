@@ -35,6 +35,14 @@ public sealed class PageToMovieApiFactory : WebApplicationFactory<PageToMovie.Ap
                 ["PageToMovie:Auth:AdminUsername"] = "admin",
                 ["PageToMovie:Auth:AdminPassword"] = "admin",
                 ["PageToMovie:Auth:DefaultUserId"] = "test-user",
+                // Force YouTube OAuth to "unconfigured" regardless of the host machine's real
+                // environment variables (e.g. PageToMovie__YouTube__ClientId/ClientSecret/RedirectUri
+                // set for local dev use of the actual product) — otherwise a dev/CI box with real
+                // credentials in its environment leaks them into this isolated test host and the
+                // "unconfigured" gating tests (YouTubeUploadTests) become flaky/false-negative.
+                ["PageToMovie:YouTube:ClientId"] = "",
+                ["PageToMovie:YouTube:ClientSecret"] = "",
+                ["PageToMovie:YouTube:RedirectUri"] = "",
             });
         });
         builder.ConfigureServices(services =>
@@ -46,6 +54,10 @@ public sealed class PageToMovieApiFactory : WebApplicationFactory<PageToMovie.Ap
                 o.EnableReadCaches = true;
                 o.Auth ??= new AuthOptions();
                 o.Auth.RequireLogin = false;
+                o.YouTube ??= new YouTubeOptions();
+                o.YouTube.ClientId = "";
+                o.YouTube.ClientSecret = "";
+                o.YouTube.RedirectUri = "";
             });
         });
     }

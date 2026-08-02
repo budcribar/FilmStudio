@@ -105,7 +105,6 @@
                             <th class="text-end">Balance</th>
                             <th class="text-end">Used</th>
                             <th class="text-end">Granted</th>
-                            <th>Key</th>
                             <th>Created</th>
                             <th></th>
                         </tr>
@@ -114,7 +113,7 @@
                         @if (_overview.Users.Count == 0)
                         {
                             <tr>
-                                <td colspan="9" class="text-muted text-center py-3">No users yet.</td>
+                                <td colspan="8" class="text-muted text-center py-3">No users yet.</td>
                             </tr>
                         }
                         else
@@ -161,16 +160,6 @@
                                     <td class="text-end">
                                         @u.CreditsLifetimeGranted.ToString("N0")
                                         <div class="small text-muted">$@u.CreditsLifetimeGrantedUsd.ToString("F2")</div>
-                                    </td>
-                                    <td>
-                                        @if (u.HasXaiApiKey)
-                                        {
-                                            <span class="badge text-bg-success">Grok key</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge text-bg-secondary">no key</span>
-                                        }
                                     </td>
                                     <td class="small text-muted">@u.CreatedAt.ToLocalTime().ToString("g")</td>
                                     <td class="text-end">

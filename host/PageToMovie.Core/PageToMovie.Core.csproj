@@ -17,6 +17,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
+    <!-- WASM has no filesystem under /data or AppContext.BaseDirectory the same way;
+         ship the catalog inside the Core assembly so SupportedModelCatalog works in browser. -->
+    <EmbeddedResource Include="config\models_catalog.json">
+      <LogicalName>PageToMovie.Core.config.models_catalog.json</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

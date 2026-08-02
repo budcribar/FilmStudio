@@ -1,0 +1,12 @@
+{
+  "Status": "fail",
+  "SceneCount": 14,
+  "ClipCount": 104,
+  "Failures": [
+    "Audio plan is missing coverage for EDL scene(s): S1, S2, S3, S4, S5, S6, S7, S8."
+  ],
+  "Warnings": [
+    "14 scene headings found, above the rough target band of [8,12] scenes for this runtime \u2014 not necessarily wrong (a multi-location, multi-era story can need more scenes than the heuristic assumes), but review for over-fragmentation (one scene per paragraph rather than per location\u002Bpurpose).",
+    "2 clip dialogue_or_vo fragment(s) don\u0027t appear verbatim in their scene\u0027s Fountain text \u2014 check for invented or paraphrased lines."
+  ]
+}

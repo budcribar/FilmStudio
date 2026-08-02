@@ -1,0 +1,119 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 1,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 6.25,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Severe deviation from source material by inventing major plot events (pre-accident confrontation with Nick, Nick attacking Sionna *before* the accident, Peter promising to \u0027take care of him\u0027 at Ma\u0027s grave) and completely omitting a critical plot event (Nick stabbing Sionna and Peter intervening). This fundamentally alters the story and character arcs from the source book."
+      ],
+      "rationale": "Screenplay A attempts a proper screenplay format but introduces significant fidelity issues. It invents a pre-accident confrontation with Nick and omits the crucial scene where Nick stabs Sionna, which is a core event in the source material. This severely impacts the narrative\u0027s integrity and Peter\u0027s character development. While directibility and dialogue are generally good, the structural changes and omissions make it unusable for a faithful adaptation."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 1,
+      "characterDisambiguation": 1,
+      "aiVideoDirectibility": 1,
+      "dramaticPacing": 1,
+      "dialogueAuthenticity": 1,
+      "soundDesignMusic": 1,
+      "overallQualitativeScore": 1,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Not a screenplay adaptation; it is a raw text dump of the source material, lacking all necessary screenplay formatting (scene headings, action lines, character dialogue) and directibility for AI video generation."
+      ],
+      "rationale": "Screenplay B is not a screenplay. It is a direct copy-paste of the source text, with each paragraph simply labeled \u0027INT. ROOM - DAY\u0027 and attributed to \u0027NARRATOR\u0027. This format is completely unusable for AI video generation as it provides no visual direction, character descriptions, or properly formatted dialogue."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 1,
+      "characterDisambiguation": 1,
+      "aiVideoDirectibility": 1,
+      "dramaticPacing": 1,
+      "dialogueAuthenticity": 1,
+      "soundDesignMusic": 1,
+      "overallQualitativeScore": 1,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Not a screenplay adaptation; it is a raw text dump of the source material, lacking all necessary screenplay formatting (scene headings, action lines, character dialogue) and directibility for AI video generation."
+      ],
+      "rationale": "Screenplay C is identical to Screenplay B. It is a raw text dump of the source material, not a screenplay adaptation. It lacks proper formatting, visual direction, and character disambiguation, rendering it entirely unsuitable for AI video production."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 1,
+      "characterDisambiguation": 1,
+      "aiVideoDirectibility": 1,
+      "dramaticPacing": 1,
+      "dialogueAuthenticity": 1,
+      "soundDesignMusic": 1,
+      "overallQualitativeScore": 1,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Not a screenplay adaptation; it is a raw text dump of the source material, lacking all necessary screenplay formatting (scene headings, action lines, character dialogue) and directibility for AI video generation."
+      ],
+      "rationale": "Screenplay D is identical to Screenplays B and C. It is a raw text dump of the source material, not a screenplay adaptation. It lacks proper formatting, visual direction, and character disambiguation, rendering it entirely unsuitable for AI video production."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 7.42,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Significant omissions of key plot points and character interactions from the source material, such as the detailed schoolyard flashback, the confrontation between Nick and Sionna at Peter\u0027s apartment, and Peter\u0027s pizza baby dream. The invented scene of Nick attacking Sionna *before* the accident is a major deviation."
+      ],
+      "rationale": "Screenplay E demonstrates good directibility and character clarity, with strong dialogue and sound cues. However, it suffers from significant fidelity issues, including the omission of several important character development beats and dreams from the source. Crucially, it invents a scene where Nick attacks Sionna *before* the car accident, which fundamentally alters the narrative timeline and character motivations, making it an unfaithful adaptation."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 5,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 9.5,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 7.67,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The main character\u0027s name is changed from \u0027Peter Olson\u0027 to \u0027Jake\u0027, which is a significant deviation from the source material and would cause continuity issues if the source is referenced elsewhere."
+      ],
+      "rationale": "Screenplay F is well-structured and highly directible, effectively breaking down the narrative into short, filmable clips. It maintains strong dramatic pacing and authentic dialogue. The inclusion of the critical Nick attacking Sionna scene is a major strength. However, the unprompted change of the main character\u0027s name from \u0027Peter Olson\u0027 to \u0027Jake\u0027 is a severe fidelity issue that makes it not production-ready, despite its other strengths."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9.5,
+      "dramaticPacing": 9.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay G is an outstanding adaptation, demonstrating excellent fidelity to the source material while effectively translating it into a highly directible screenplay format. It provides clear character disambiguation, strong visual action lines, and maintains the dramatic pacing suitable for short video clips. The dialogue is authentic, and sound design cues are well-integrated. Minor omissions do not detract from the overall quality and faithfulness of the adaptation."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay G",
+    "Screenplay F",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay C",
+    "Screenplay D"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay G because it delivers exceptional adaptation fidelity, character clarity, and directibility, making it fully production-ready without significant deviations from the source. Weakest: Screenplays B, C, and D are equally weakest because they are not screenplays at all, but raw text dumps of the source material, rendering them completely unusable for video production.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready"
+}

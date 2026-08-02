@@ -7,9 +7,8 @@ namespace PageToMovie.Engine;
 /// Routes <see cref="IChatClient.CompleteAsync"/> to the right concrete provider client
 /// based on the requested <c>model</c>'s provider in <see cref="SupportedModelCatalog"/> —
 /// callers (Stage 1/2 planning, cast scrub, QA) keep calling one <see cref="IChatClient"/>
-/// and never need to know which backend actually served the request. Unknown / unrecognized
-/// model ids fall back to Grok, matching <see cref="SupportedModelCatalog.ResolveOrDefault"/>'s
-/// own forward-compatible default.
+/// and never need to know which backend actually served the request. Unknown / empty model
+/// ids throw — catalog + Settings selection only (no silent Grok default).
 /// </summary>
 public sealed class MultiProviderChatClient : IChatClient
 {
@@ -33,15 +32,23 @@ public sealed class MultiProviderChatClient : IChatClient
     public Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "grok-4.5",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null) =>
-        Resolve(model).CompleteAsync(systemPrompt, userPrompt, model, temperature, ct, mode);
+        string? mode = null,
+        string? reasoningEffort = null) =>
+        Resolve(model).CompleteAsync(systemPrompt, userPrompt, model, temperature, ct, mode, reasoningEffort);
 
     private IChatClient Resolve(string? model)
     {
-        var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Chat).Provider;
+        if (string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException(
+                "Chat: model is required. Open Settings → Studio coverage and choose a Script & planning model.");
+        var entry = SupportedModelCatalog.Find(model, ModelCapability.Chat) ?? SupportedModelCatalog.Find(model);
+        if (entry is null || !entry.Enabled)
+            throw new InvalidOperationException(
+                $"Chat: model '{model}' is not in the models catalog (or is disabled). Open Settings and pick a current model.");
+        var provider = entry.Provider;
         return provider switch
         {
             ModelProviderFamily.Anthropic => _anthropic,

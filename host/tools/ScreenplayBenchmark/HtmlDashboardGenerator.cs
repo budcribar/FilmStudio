@@ -8,7 +8,8 @@ namespace ScreenplayBenchmark;
 
 public static class HtmlDashboardGenerator
 {
-    public static string GenerateHtmlDashboard(HistoricalStoreContainer historyContainer)
+    public static string GenerateHtmlDashboard(
+        HistoricalStoreContainer historyContainer, string? currentWorkingTreePromptVersion = null, string? currentGitHeadPromptVersion = null)
     {
         var globalLeaderboard = BenchmarkHistoryStore.ComputeGlobalCompositeLeaderboard(historyContainer);
         var judgeLeaderboard = BenchmarkHistoryStore.ComputeJudgeLeaderboard(historyContainer);
@@ -16,6 +17,8 @@ public static class HtmlDashboardGenerator
         var historyJson = JsonSerializer.Serialize(historyContainer, jsonOpts);
         var globalJson = JsonSerializer.Serialize(globalLeaderboard, jsonOpts);
         var judgeJson = JsonSerializer.Serialize(judgeLeaderboard, jsonOpts);
+        var currentWorkingTreeJson = JsonSerializer.Serialize(currentWorkingTreePromptVersion, jsonOpts);
+        var currentGitHeadJson = JsonSerializer.Serialize(currentGitHeadPromptVersion, jsonOpts);
 
         var sb = new StringBuilder();
         sb.AppendLine(@"<!DOCTYPE html>
@@ -180,6 +183,8 @@ public static class HtmlDashboardGenerator
     <button class=""tab-btn"" onclick=""switchTab('perbook')"">📚 Per-Book History</button>
     <button class=""tab-btn"" onclick=""switchTab('heatmap')"">⚖️ Peer Judge Heatmap</button>
     <button class=""tab-btn"" onclick=""switchTab('judges')"">🧑‍⚖️ Judge Leaderboard</button>
+    <button class=""tab-btn"" onclick=""switchTab('promptversions')"">📝 Prompt Versions</button>
+    <button class=""tab-btn"" onclick=""switchTab('progress')"">📈 Progress Over Time</button>
   </nav>
 
   <!-- TAB 1: GLOBAL MULTI-BOOK LEADERBOARD -->
@@ -195,11 +200,23 @@ public static class HtmlDashboardGenerator
       </div>
       <p style=""color: var(--text-muted); font-size: 0.85rem;"">Aggregated average composite scores (40% C# Syntax + 60% LLM Peer Ratings) across all benchmarked books in the evaluation suite. Click any column header to sort.</p>
 
-      <div style=""display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 0.5rem;"">
+      <div style=""display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 0.5rem;"">
         <span style=""font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"">Books:</span>
         <div id=""global-book-filter"" style=""display: flex; gap: 1rem; flex-wrap: wrap; flex: 1;""></div>
         <button class=""tab-btn"" onclick=""setAllGlobalBooks(true)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Select All</button>
         <button class=""tab-btn"" onclick=""setAllGlobalBooks(false)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Clear</button>
+      </div>
+      <div style=""display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 0.5rem;"">
+        <span style=""font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"" title=""Runs at different reasoning-effort levels are not directly comparable — mixing them blends different conditions into one average."">Reasoning Effort:</span>
+        <div id=""global-effort-filter"" style=""display: flex; gap: 1rem; flex-wrap: wrap; flex: 1;""></div>
+        <button class=""tab-btn"" onclick=""setAllGlobalEfforts(true)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Select All</button>
+        <button class=""tab-btn"" onclick=""setAllGlobalEfforts(false)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Clear</button>
+      </div>
+      <div style=""display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 0.5rem;"">
+        <span style=""font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"" title=""Committed Git revision that last changed prompts/book_to_fountain.txt. Benchmarks refuse uncommitted prompt edits."">Prompt Commit:</span>
+        <div id=""global-prompt-filter"" style=""display: flex; gap: 1rem; flex-wrap: wrap; flex: 1;""></div>
+        <button class=""tab-btn"" onclick=""setAllGlobalPromptVersions(true)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Select All</button>
+        <button class=""tab-btn"" onclick=""setAllGlobalPromptVersions(false)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Clear</button>
       </div>
 
       <table id=""global-table"">
@@ -235,6 +252,9 @@ public static class HtmlDashboardGenerator
         <thead>
           <tr>
             <th>Date Run</th>
+            <th>Reasoning Effort</th>
+            <th>Temperature</th>
+            <th>Prompt Version</th>
             <th>Model ID</th>
             <th>Composite Score</th>
             <th>Syntax Score</th>
@@ -287,6 +307,65 @@ public static class HtmlDashboardGenerator
     </div>
   </div>
 
+  <!-- TAB 5: PROMPT VERSIONS -->
+  <div id=""tab-promptversions"" class=""tab-content"">
+    <div class=""card"" style=""margin-bottom: 1.5rem;"">
+      <h3>📝 Tracked Prompt Commits</h3>
+      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Every committed prompt revision used for a benchmark. A benchmark cannot start while the prompt has uncommitted edits.</p>
+      <table id=""promptversions-table"">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>First Seen</th>
+            <th>Status</th>
+            <th>Books × Models Tested</th>
+          </tr>
+        </thead>
+        <tbody id=""promptversions-tbody""></tbody>
+      </table>
+    </div>
+
+    <div class=""card"">
+      <h3>🔀 Compare Two Versions</h3>
+      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Average composite-score change per model, counting only books/effort-levels where BOTH versions have real (non-fallback) data — so a gap in one version never silently skews the delta.</p>
+      <div style=""display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 1rem 0;"">
+        <label style=""font-size: 0.85rem; color: var(--text-muted);"">From (older):
+          <select id=""pv-compare-from"" onchange=""renderPromptComparison()"" style=""margin-left: 0.5rem;""></select>
+        </label>
+        <label style=""font-size: 0.85rem; color: var(--text-muted);"">To (newer):
+          <select id=""pv-compare-to"" onchange=""renderPromptComparison()"" style=""margin-left: 0.5rem;""></select>
+        </label>
+      </div>
+      <div style=""display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 0.5rem;"">
+        <span style=""font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"">Books:</span>
+        <div id=""pv-book-filter"" style=""display: flex; gap: 1rem; flex-wrap: wrap; flex: 1;""></div>
+        <button class=""tab-btn"" onclick=""setAllPromptVersionBooks(true)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Select All</button>
+        <button class=""tab-btn"" onclick=""setAllPromptVersionBooks(false)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Clear</button>
+      </div>
+      <table id=""pv-compare-table"">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Common Books</th>
+            <th>Avg Δ</th>
+            <th>Per-Book Δ</th>
+          </tr>
+        </thead>
+        <tbody id=""pv-compare-tbody""></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 6: PROGRESS OVER TIME -->
+  <div id=""tab-progress"" class=""tab-content"">
+    <div class=""card"" style=""position: relative;"">
+      <h3>📈 Best Multi-Book Composite Score Over Time</h3>
+      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Every dot is one (model, reasoning effort, temperature, prompt commit) combination's average composite score. The bold line traces the running best — the highest score achieved as of that point in time. Hover any dot for what it's made of.</p>
+      <div id=""progress-chart-container"" style=""margin-top: 1rem;""></div>
+      <div id=""progress-tooltip"" style=""display: none; position: fixed; z-index: 1000; background: #0b0f19; border: 1px solid var(--accent-cyan); border-radius: 0.5rem; padding: 0.6rem 0.85rem; font-size: 0.8rem; pointer-events: none; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); width: min(280px, calc(100vw - 24px)); box-sizing: border-box; overflow-wrap: anywhere;""></div>
+    </div>
+  </div>
+
   <script>
     window.BENCHMARK_HISTORY = ");
         sb.AppendLine(historyJson);
@@ -296,6 +375,12 @@ public static class HtmlDashboardGenerator
         sb.AppendLine(";");
         sb.AppendLine("    window.JUDGE_LEADERBOARD = ");
         sb.AppendLine(judgeJson);
+        sb.AppendLine(";");
+        sb.AppendLine("    window.CURRENT_WORKING_TREE_PROMPT_VERSION = ");
+        sb.AppendLine(currentWorkingTreeJson);
+        sb.AppendLine(";");
+        sb.AppendLine("    window.CURRENT_GIT_HEAD_PROMPT_VERSION = ");
+        sb.AppendLine(currentGitHeadJson);
         sb.AppendLine(";");
 
         sb.AppendLine(@"
@@ -360,6 +445,15 @@ public static class HtmlDashboardGenerator
     function getSortVal(m, key) {
       switch(key) {
         case 'modelId': return (m.modelId || m.ModelId || '').toLowerCase();
+        case 'effort': return (m.reasoningEffort || m.ReasoningEffort || 'default').toLowerCase();
+        case 'temperature': return Number(m.samplingTemperature ?? m.SamplingTemperature ?? 0.2);
+        // Prompt revisions are displayed as V0, V1, V2 in first-seen order. Sort by that
+        // numeric version order instead of the unrelated lexical order of the Git hashes.
+        case 'promptversion': {
+          const version = m.promptVersion || m.PromptVersion || 'unknown';
+          const index = getTrackedPromptVersions().findIndex(v => v.version === version);
+          return index;
+        }
         case 'composite': return (m.multiBookCompositeScore !== undefined ? m.multiBookCompositeScore : m.MultiBookCompositeScore) || 0;
         case 'syntax': return (m.avgSyntaxScore !== undefined ? m.avgSyntaxScore : m.AvgSyntaxScore) || 0;
         case 'format': return (m.avgFormatCompliance !== undefined ? m.avgFormatCompliance : m.AvgFormatCompliance) || 0;
@@ -401,11 +495,27 @@ public static class HtmlDashboardGenerator
       return Object.values(matrix).some(row => Object.values(row).some(v => v > 0));
     }
 
-    function computeGlobalLeaderboardJs(selectedSlugs) {
+    function getRunEffortKey(run) {
+      const e = run.reasoningEffort || run.ReasoningEffort || '';
+      return e ? e : 'default';
+    }
+
+    function getRunPromptVersionKey(run) {
+      const p = run.promptVersion || run.PromptVersion || '';
+      return p ? p : 'unknown';
+    }
+
+    function getRunTemperatureKey(run) {
+      return Number(run.samplingTemperature ?? run.SamplingTemperature ?? 0.2).toFixed(2);
+    }
+
+    function computeGlobalLeaderboardJs(selectedSlugs, selectedEfforts, selectedPromptVersions) {
       const allRuns = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
       const liveRuns = allRuns
         .filter(isLiveRunJs)
-        .filter(r => selectedSlugs.has(r.bookSlug || r.BookSlug));
+        .filter(r => selectedSlugs.has(r.bookSlug || r.BookSlug))
+        .filter(r => !selectedEfforts || selectedEfforts.has(getRunEffortKey(r)))
+        .filter(r => !selectedPromptVersions || selectedPromptVersions.has(getRunPromptVersionKey(r)));
       if (liveRuns.length === 0) return [];
 
       const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -418,11 +528,23 @@ public static class HtmlDashboardGenerator
       const sa = (m, key, pkey) => { const s = syntaxAudit(m); return (s[key] !== undefined ? s[key] : s[pkey]) || 0; };
       const num = (m, key, pkey) => (m[key] !== undefined ? m[key] : m[pkey]) || 0;
 
-      const allModelIds = [...new Set(liveRuns.flatMap(r => (r.modelScores || r.ModelScores || []).map(modelId)))];
+      // Group by (model, effort, promptVersion) triple, not just model — a model run under two
+      // different effort levels or two different prompt texts is two (or more) different
+      // conditions and must appear as separate rows so rankings stay honest instead of silently
+      // blending ""old prompt"" and ""new prompt"" (or ""default"" and ""max"" effort) into one score.
+      const groupKeys = [...new Set(liveRuns.flatMap(r => {
+        const effort = getRunEffortKey(r);
+        const promptVersion = getRunPromptVersionKey(r);
+        return (r.modelScores || r.ModelScores || []).map(m => JSON.stringify([modelId(m), effort, promptVersion, getRunTemperatureKey(r)]));
+      }))];
       const result = [];
 
-      allModelIds.forEach(id => {
-        const modelRuns = liveRuns.filter(r => (r.modelScores || r.ModelScores || []).some(m => modelId(m) === id));
+      groupKeys.forEach(key => {
+        const [id, rowEffort, rowPromptVersion, rowTemperature] = JSON.parse(key);
+
+        const modelRuns = liveRuns.filter(r =>
+          getRunEffortKey(r) === rowEffort && getRunPromptVersionKey(r) === rowPromptVersion && getRunTemperatureKey(r) === rowTemperature
+          && (r.modelScores || r.ModelScores || []).some(m => modelId(m) === id));
         if (modelRuns.length === 0) return;
 
         const modelScoresList = modelRuns
@@ -430,8 +552,12 @@ public static class HtmlDashboardGenerator
           .filter(m => composite(m) >= 0 && !isFallback(m));
         if (modelScoresList.length === 0) return;
 
+        // Wins only count within the SAME effort level AND prompt version's runs — comparing
+        // scores generated under different conditions isn't a fair contest either way.
+        const sameConditionRuns = liveRuns.filter(r =>
+          getRunEffortKey(r) === rowEffort && getRunPromptVersionKey(r) === rowPromptVersion);
         let wins = 0;
-        liveRuns.forEach(run => {
+        sameConditionRuns.forEach(run => {
           const validScores = (run.modelScores || run.ModelScores || [])
             .filter(m => composite(m) >= 0 && !isFallback(m))
             .sort((a, b) => composite(b) - composite(a));
@@ -449,6 +575,9 @@ public static class HtmlDashboardGenerator
 
         result.push({
           modelId: id,
+          reasoningEffort: rowEffort,
+          samplingTemperature: rowTemperature,
+          promptVersion: rowPromptVersion,
           multiBookCompositeScore: round1(avg(modelScoresList.map(composite))),
           avgSyntaxScore: round1(avg(modelScoresList.map(m => sa(m, 'overallSyntaxScore', 'OverallSyntaxScore')))),
           avgFormatCompliance: round1(avg(modelScoresList.map(m => sa(m, 'formatComplianceScore', 'FormatComplianceScore')))),
@@ -506,11 +635,81 @@ public static class HtmlDashboardGenerator
       renderGlobalTable();
     }
 
+    function getAllGlobalEfforts() {
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      return [...new Set(runs.map(getRunEffortKey))];
+    }
+
+    function getSelectedGlobalEfforts() {
+      const checked = Array.from(document.querySelectorAll('#global-effort-filter input[type=checkbox]:checked'));
+      return new Set(checked.map(c => c.value));
+    }
+
+    function initGlobalEffortFilter() {
+      const container = document.getElementById('global-effort-filter');
+      if (!container) return;
+      container.innerHTML = '';
+      getAllGlobalEfforts().forEach(effort => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = effort;
+        cb.checked = true;
+        cb.onchange = renderGlobalTable;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(effort));
+        container.appendChild(label);
+      });
+    }
+
+    function setAllGlobalEfforts(checked) {
+      document.querySelectorAll('#global-effort-filter input[type=checkbox]').forEach(cb => { cb.checked = checked; });
+      renderGlobalTable();
+    }
+
+    function getAllGlobalPromptVersions() {
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      return [...new Set(runs.map(getRunPromptVersionKey))];
+    }
+
+    function getSelectedGlobalPromptVersions() {
+      const checked = Array.from(document.querySelectorAll('#global-prompt-filter input[type=checkbox]:checked'));
+      return new Set(checked.map(c => c.value));
+    }
+
+    function initGlobalPromptVersionFilter() {
+      const container = document.getElementById('global-prompt-filter');
+      if (!container) return;
+      container.innerHTML = '';
+      getAllGlobalPromptVersions().forEach(pv => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = pv;
+        cb.checked = true;
+        cb.onchange = renderGlobalTable;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(promptVersionLabel(pv)));
+        container.appendChild(label);
+      });
+    }
+
+    function setAllGlobalPromptVersions(checked) {
+      document.querySelectorAll('#global-prompt-filter input[type=checkbox]').forEach(cb => { cb.checked = checked; });
+      renderGlobalTable();
+    }
+
     function renderGlobalTable() {
       const thead = document.querySelector('#global-table thead');
       const tbody = document.getElementById('global-tbody');
       const selectedSlugs = getSelectedGlobalBookSlugs();
-      const leaderboard = (selectedSlugs.size > 0 ? computeGlobalLeaderboardJs(selectedSlugs) : []);
+      const selectedEfforts = getSelectedGlobalEfforts();
+      const selectedPromptVersions = getSelectedGlobalPromptVersions();
+      const leaderboard = (selectedSlugs.size > 0 && selectedEfforts.size > 0 && selectedPromptVersions.size > 0
+        ? computeGlobalLeaderboardJs(selectedSlugs, selectedEfforts, selectedPromptVersions)
+        : []);
 
       leaderboard.sort((a, b) => {
         const valA = getSortVal(a, globalSortKey);
@@ -527,6 +726,9 @@ public static class HtmlDashboardGenerator
       let headerHtml = `<tr>
           <th style=""${colStyle}"" onclick=""sortGlobal('rank')"">Rank${arrow('rank')}</th>
           <th style=""${colStyle}"" onclick=""sortGlobal('modelId')"">Model ID${arrow('modelId')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('effort')"" title=""--reasoning-effort this row's runs used; a model at two effort levels appears as two rows so you can compare directly"">Reasoning Effort${arrow('effort')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('temperature')"">Temperature${arrow('temperature')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('promptversion')"" title=""Committed Git revision of the prompt used for these runs; a model under two prompt revisions appears as two rows"">Prompt Commit${arrow('promptversion')}</th>
           <th style=""${colStyle}"" onclick=""sortGlobal('composite')"">${compositeLabel}${arrow('composite')}</th>
           <th style=""${colStyle}"" onclick=""sortGlobal('syntax')"">C# Syntax Avg${arrow('syntax')}</th>`;
 
@@ -560,12 +762,16 @@ public static class HtmlDashboardGenerator
 
       tbody.innerHTML = '';
       if (leaderboard.length === 0) {
-        let colSpan = 7;
+        let colSpan = 9;
         if (isSyntaxExpanded) colSpan += 5;
         if (isPeerExpanded) colSpan += 6;
         const msg = selectedSlugs.size === 0
           ? 'No books selected — check at least one book above to compute a leaderboard.'
-          : 'No live benchmark history runs recorded yet for the selected book(s).';
+          : selectedEfforts.size === 0
+          ? 'No reasoning-effort levels selected — check at least one above to compute a leaderboard.'
+          : selectedPromptVersions.size === 0
+          ? 'No prompt versions selected — check at least one above to compute a leaderboard.'
+          : 'No live benchmark history runs recorded yet for the selected book(s)/effort level(s)/prompt version(s).';
         tbody.innerHTML = `<tr><td colspan=""${colSpan}"" style=""text-align: center; color: var(--text-muted);"">${msg}</td></tr>`;
         return;
       }
@@ -573,6 +779,10 @@ public static class HtmlDashboardGenerator
       leaderboard.forEach((m, idx) => {
         const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1) + '. ';
         const modelId = m.modelId || m.ModelId || 'Unknown';
+        const effort = getSortVal(m, 'effort');
+        // Keep the original revision for the V# badge; getSortVal returns only its
+        // numeric chronological position for sorting.
+        const promptVersion = m.promptVersion || m.PromptVersion || 'unknown';
         const composite = getSortVal(m, 'composite');
         const syntax = getSortVal(m, 'syntax');
         const fmt = getSortVal(m, 'format');
@@ -598,6 +808,9 @@ public static class HtmlDashboardGenerator
         let row = `<tr>
           <td><strong>${medal}</strong></td>
           <td><strong>${modelId}</strong></td>
+          <td><span class=""score-badge ${effort === 'default' ? 'score-high' : 'score-mid'}"">${effort}</span></td>
+          <td>${Number(m.samplingTemperature ?? m.SamplingTemperature ?? 0.2).toFixed(2)}</td>
+          <td>${promptVersionBadge(promptVersion)}</td>
           <td><span class=""score-badge score-high"">${composite.toFixed(1)}</span></td>
           <td>${syntax.toFixed(1)}%</td>`;
 
@@ -680,13 +893,17 @@ public static class HtmlDashboardGenerator
 
       const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
       if (!slug || runs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan=""6"" style=""text-align: center; color: var(--text-muted);"">No book history found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan=""8"" style=""text-align: center; color: var(--text-muted);"">No book history found.</td></tr>';
         return;
       }
 
       const matchingRuns = runs.filter(r => (r.bookSlug || r.BookSlug) === slug);
       matchingRuns.forEach(r => {
         const date = r.timestamp || r.Timestamp || '—';
+        const effort = r.reasoningEffort || r.ReasoningEffort || '';
+        const effortLabel = effort ? effort : 'default';
+        const temperature = getRunTemperatureKey(r);
+        const promptVersion = getRunPromptVersionKey(r);
         const scores = r.modelScores || r.ModelScores || [];
         scores.forEach(m => {
           const modelId = m.modelId || m.ModelId || 'Unknown';
@@ -703,6 +920,9 @@ public static class HtmlDashboardGenerator
 
           const row = `<tr>
             <td><strong style=""color: var(--accent-cyan);"">${date}</strong></td>
+            <td><span class=""score-badge ${effort ? 'score-mid' : 'score-high'}"" title=""--reasoning-effort value this run was invoked with; runs at different effort levels are not directly comparable"">${effortLabel}</span></td>
+            <td>${temperature}</td>
+            <td>${promptVersionBadge(promptVersion)}</td>
             <td><strong>${modelLabel}</strong></td>
             <td><span class=""score-badge ${badgeClass}"">${compositeLabel}</span></td>
             <td>${syntaxScore.toFixed(1)}%</td>
@@ -790,12 +1010,362 @@ public static class HtmlDashboardGenerator
       });
     }
 
+    // Distinct real (non-'unknown') prompt versions seen in history, sorted oldest-first by the
+    // earliest run that used each one.
+    function getTrackedPromptVersions() {
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      const seen = {};
+      runs.forEach(r => {
+        const pv = r.promptVersion || r.PromptVersion || '';
+        if (!pv) return;
+        const ts = r.timestamp || r.Timestamp || '';
+        if (!seen[pv] || ts < seen[pv].firstSeen) {
+          seen[pv] = seen[pv] || { version: pv, firstSeen: ts, books: new Set(), models: new Set() };
+          seen[pv].firstSeen = seen[pv].firstSeen < ts ? seen[pv].firstSeen : ts;
+        }
+        seen[pv].books.add(r.bookSlug || r.BookSlug);
+        (r.modelScores || r.ModelScores || []).forEach(m => {
+          const isFallback = !!(m.isGenerationFallback !== undefined ? m.isGenerationFallback : m.IsGenerationFallback);
+          const composite = (m.compositeScore !== undefined ? m.compositeScore : m.CompositeScore) || 0;
+          if (!isFallback && composite >= 0) seen[pv].models.add(m.modelId || m.ModelId);
+        });
+      });
+      return Object.values(seen).sort((a, b) => a.firstSeen < b.firstSeen ? -1 : 1);
+    }
+
+    function promptVersionLabel(version) {
+      if (!version || version === 'unknown') return 'unknown';
+      const index = getTrackedPromptVersions().findIndex(v => v.version === version);
+      return index < 0 ? version.slice(0, 7) : 'V' + index;
+    }
+
+    function promptVersionBadge(version) {
+      const label = promptVersionLabel(version);
+      if (label === 'unknown') return '<span class=""score-badge score-mid"">unknown</span>';
+      const url = 'https://github.com/budcribar/PageToMovie/commit/' + encodeURIComponent(version);
+      return '<a class=""score-badge score-mid"" href=""' + url + '"" target=""_blank"" rel=""noopener"" title=""Git commit: ' + version + ' — open on GitHub"">' + label + '</a>';
+    }
+
+    function renderPromptVersionsList() {
+      const tbody = document.getElementById('promptversions-tbody');
+      if (!tbody) return;
+      const versions = getTrackedPromptVersions();
+      if (versions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan=""4"" style=""text-align: center; color: var(--text-muted);"">No tracked prompt versions yet — this dashboard predates prompt-version tracking, or every run so far is untagged (\'unknown\').</td></tr>';
+        return;
+      }
+      const curWorking = window.CURRENT_WORKING_TREE_PROMPT_VERSION;
+      const curHead = window.CURRENT_GIT_HEAD_PROMPT_VERSION;
+      tbody.innerHTML = versions.map(v => {
+        const badges = [];
+        if (curHead && v.version === curHead) badges.push('<span class=""score-badge score-high"" title=""Matches the prompt file as of the last git commit"">✅ committed (HEAD)</span>');
+        if (curWorking && v.version === curWorking && v.version !== curHead) badges.push('<span class=""score-badge score-mid"" title=""Matches the prompt file on disk right now, but has not been committed"">📝 uncommitted</span>');
+        if (badges.length === 0) badges.push('<span class=""score-badge score-mock"" title=""Neither the current working tree nor the last commit match this version"">🗄️ archived</span>');
+        return `<tr>
+          <td>${promptVersionBadge(v.version)}</td>
+          <td>${v.firstSeen}</td>
+          <td>${badges.join(' ')}</td>
+          <td>${v.books.size} books × ${v.models.size} models</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function initPromptComparisonPickers() {
+      const versions = getTrackedPromptVersions();
+      const fromSel = document.getElementById('pv-compare-from');
+      const toSel = document.getElementById('pv-compare-to');
+      if (!fromSel || !toSel) return;
+      const optionsHtml = versions.map(v => `<option value=""${v.version}"">${promptVersionLabel(v.version)} (${v.firstSeen})</option>`).join('');
+      fromSel.innerHTML = optionsHtml;
+      toSel.innerHTML = optionsHtml;
+      if (versions.length >= 2) {
+        fromSel.value = versions[versions.length - 2].version;
+        toSel.value = versions[versions.length - 1].version;
+      } else if (versions.length === 1) {
+        fromSel.value = toSel.value = versions[0].version;
+      }
+    }
+
+    function getAllPromptVersionBookSlugs() {
+      return getAllGlobalBookSlugs(); // same book universe as the Global Leaderboard tab
+    }
+
+    function getSelectedPromptVersionBookSlugs() {
+      const checked = Array.from(document.querySelectorAll('#pv-book-filter input[type=checkbox]:checked'));
+      return new Set(checked.map(c => c.value));
+    }
+
+    function initPromptVersionBookFilter() {
+      const container = document.getElementById('pv-book-filter');
+      if (!container) return;
+      container.innerHTML = '';
+      getAllPromptVersionBookSlugs().forEach(slug => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = slug;
+        cb.checked = true;
+        cb.onchange = renderPromptComparison;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(formatTitle(slug)));
+        container.appendChild(label);
+      });
+    }
+
+    function setAllPromptVersionBooks(checked) {
+      document.querySelectorAll('#pv-book-filter input[type=checkbox]').forEach(cb => { cb.checked = checked; });
+      renderPromptComparison();
+    }
+
+    // Per-model score delta between two prompt versions, counting only (book) pairs where BOTH
+    // versions have real (non-fallback, non-negative) data AND the book is in selectedBooks — a
+    // gap on one side (e.g. a billing failure) must never silently skew the average toward the
+    // side with more data.
+    function computePromptComparison(fromVersion, toVersion, selectedBooks) {
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      const modelId = m => m.modelId || m.ModelId || 'Unknown';
+      const composite = m => (m.compositeScore !== undefined ? m.compositeScore : m.CompositeScore) || 0;
+      const isFallback = m => !!(m.isGenerationFallback !== undefined ? m.isGenerationFallback : m.IsGenerationFallback);
+      const pvOf = r => r.promptVersion || r.PromptVersion || '';
+
+      function scoresFor(version) {
+        const out = {}; // modelId -> { bookSlug -> score }
+        runs.filter(r => pvOf(r) === version).forEach(r => {
+          const book = r.bookSlug || r.BookSlug;
+          if (selectedBooks && !selectedBooks.has(book)) return;
+          (r.modelScores || r.ModelScores || []).forEach(m => {
+            if (isFallback(m) || composite(m) < 0) return;
+            const id = modelId(m);
+            out[id] = out[id] || {};
+            out[id][book] = composite(m);
+          });
+        });
+        return out;
+      }
+
+      const fromScores = scoresFor(fromVersion);
+      const toScores = scoresFor(toVersion);
+      const allModels = [...new Set([...Object.keys(fromScores), ...Object.keys(toScores)])];
+
+      return allModels.map(id => {
+        const fb = fromScores[id] || {};
+        const tb = toScores[id] || {};
+        const commonBooks = Object.keys(fb).filter(b => b in tb);
+        const deltas = commonBooks.map(b => ({ book: b, delta: Math.round((tb[b] - fb[b]) * 10) / 10 }));
+        const avgDelta = deltas.length > 0 ? deltas.reduce((a, d) => a + d.delta, 0) / deltas.length : null;
+        return { modelId: id, commonBooks: commonBooks.length, avgDelta, deltas };
+      }).filter(r => r.commonBooks > 0).sort((a, b) => (b.avgDelta || -999) - (a.avgDelta || -999));
+    }
+
+    function renderPromptComparison() {
+      const tbody = document.getElementById('pv-compare-tbody');
+      const fromSel = document.getElementById('pv-compare-from');
+      const toSel = document.getElementById('pv-compare-to');
+      if (!tbody || !fromSel || !toSel || !fromSel.value || !toSel.value) return;
+
+      const selectedBooks = getSelectedPromptVersionBookSlugs();
+      if (selectedBooks.size === 0) {
+        tbody.innerHTML = '<tr><td colspan=""4"" style=""text-align: center; color: var(--text-muted);"">No books selected — check at least one book above.</td></tr>';
+        return;
+      }
+
+      const rows = computePromptComparison(fromSel.value, toSel.value, selectedBooks);
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan=""4"" style=""text-align: center; color: var(--text-muted);"">No models have comparable (non-fallback) data under both selected versions for the selected book(s).</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(r => {
+        const cls = r.avgDelta > 0 ? 'score-high' : r.avgDelta < 0 ? 'score-mock' : 'score-mid';
+        const sign = r.avgDelta > 0 ? '+' : '';
+        return `<tr>
+          <td><strong>${r.modelId}</strong></td>
+          <td>${r.commonBooks}</td>
+          <td><span class=""score-badge ${cls}"">${sign}${r.avgDelta.toFixed(2)}</span></td>
+          <td style=""font-size: 0.82rem; color: var(--text-muted);"">${r.deltas.map(d => `${formatTitle(d.book)}: ${d.delta > 0 ? '+' : ''}${d.delta.toFixed(1)}`).join(', ')}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function parseHistTimestamp(ts) {
+  if (!ts) return null;
+  const iso = ts.replace(' UTC', 'Z').replace(' ', 'T');
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function computeProgressPoints() {
+  const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+  const modelId = m => m.modelId || m.ModelId || 'Unknown';
+  const composite = m => (m.compositeScore !== undefined ? m.compositeScore : m.CompositeScore) || 0;
+  const isFallback = m => !!(m.isGenerationFallback !== undefined ? m.isGenerationFallback : m.IsGenerationFallback);
+
+  const groups = new Map();
+  runs.filter(isLiveRunJs).forEach(r => {
+    const effort = getRunEffortKey(r);
+    const pv = getRunPromptVersionKey(r);
+    const d = parseHistTimestamp(r.timestamp || r.Timestamp || '');
+    if (!d) return;
+    (r.modelScores || r.ModelScores || []).forEach(m => {
+      if (isFallback(m) || composite(m) < 0) return;
+      const temperature = getRunTemperatureKey(r);
+      const key = JSON.stringify([modelId(m), effort, temperature, pv]);
+      if (!groups.has(key)) groups.set(key, { modelId: modelId(m), effort, temperature, promptVersion: pv, scores: [], lastSeen: d });
+      const g = groups.get(key);
+      g.scores.push(composite(m));
+      if (d > g.lastSeen) g.lastSeen = d;
+    });
+  });
+
+  const points = Array.from(groups.values()).map(g => ({
+    modelId: g.modelId,
+    effort: g.effort,
+    temperature: g.temperature,
+    promptVersion: g.promptVersion,
+    avgComposite: g.scores.reduce((a, b) => a + b, 0) / g.scores.length,
+    bookCount: g.scores.length,
+    date: g.lastSeen,
+  }));
+  points.sort((a, b) => a.date - b.date);
+
+  let runningBest = -Infinity;
+  points.forEach(p => {
+    p.isRecord = p.avgComposite > runningBest + 1e-9;
+    if (p.isRecord) runningBest = p.avgComposite;
+  });
+
+  return points;
+}
+
+function renderProgressChart() {
+  const container = document.getElementById('progress-chart-container');
+  if (!container) return;
+  const points = computeProgressPoints();
+  if (points.length === 0) {
+    container.innerHTML = '<p style=""color: var(--text-muted);"">No live benchmark history yet.</p>';
+    return;
+  }
+
+  const width = 900, height = 340;
+  const padLeft = 50, padRight = 20, padTop = 20, padBottom = 50;
+  const plotW = width - padLeft - padRight;
+  const plotH = height - padTop - padBottom;
+
+  const minDate = points[0].date.getTime();
+  const maxDate = points[points.length - 1].date.getTime();
+  const dateRange = Math.max(1, maxDate - minDate);
+
+  const scores = points.map(p => p.avgComposite);
+  const minScore = Math.max(0, Math.floor(Math.min(...scores) - 3));
+  const maxScore = Math.min(100, Math.ceil(Math.max(...scores) + 3));
+  const scoreRange = Math.max(1, maxScore - minScore);
+
+  const xOf = d => padLeft + ((d.getTime() - minDate) / dateRange) * plotW;
+  const yOf = s => padTop + plotH - ((s - minScore) / scoreRange) * plotH;
+
+  let gridSvg = '';
+  const tickCount = 5;
+  for (let i = 0; i <= tickCount; i++) {
+    const val = minScore + (scoreRange * i / tickCount);
+    const y = yOf(val);
+    gridSvg += '<line x1=""' + padLeft + '"" y1=""' + y + '"" x2=""' + (width - padRight) + '"" y2=""' + y + '"" stroke=""rgba(255,255,255,0.06)"" stroke-width=""1"" />';
+    gridSvg += '<text x=""' + (padLeft - 8) + '"" y=""' + (y + 4) + '"" text-anchor=""end"" font-size=""10"" fill=""#9ca3af"">' + val.toFixed(0) + '</text>';
+  }
+
+  const fmtDate = d => d.toISOString().slice(0, 10);
+  let xLabelSvg = '';
+  [points[0], points[points.length - 1]].forEach((p, i) => {
+    const x = xOf(p.date);
+    xLabelSvg += '<text x=""' + x + '"" y=""' + (height - padBottom + 20) + '"" text-anchor=""' + (i === 0 ? 'start' : 'end') + '"" font-size=""10"" fill=""#9ca3af"">' + fmtDate(p.date) + '</text>';
+  });
+
+  const recordPoints = points.filter(p => p.isRecord);
+  const nonRecordPoints = points.filter(p => !p.isRecord);
+  const lineD = recordPoints.map((p, i) => (i === 0 ? 'M' : 'L') + ' ' + xOf(p.date).toFixed(1) + ' ' + yOf(p.avgComposite).toFixed(1)).join(' ');
+
+  let dotsSvg = '';
+  nonRecordPoints.forEach((p, i) => {
+    dotsSvg += '<circle class=""progress-dot"" data-idx=""nr' + i + '"" cx=""' + xOf(p.date).toFixed(1) + '"" cy=""' + yOf(p.avgComposite).toFixed(1) + '"" r=""3.5"" fill=""#a855f7"" fill-opacity=""0.55"" style=""cursor:pointer;"" />';
+  });
+  recordPoints.forEach((p, i) => {
+    dotsSvg += '<circle class=""progress-dot"" data-idx=""r' + i + '"" cx=""' + xOf(p.date).toFixed(1) + '"" cy=""' + yOf(p.avgComposite).toFixed(1) + '"" r=""5.5"" fill=""#fbbf24"" stroke=""#0b0f19"" stroke-width=""1.5"" style=""cursor:pointer;"" />';
+  });
+
+  container.innerHTML = '<svg viewBox=""0 0 ' + width + ' ' + height + '"" style=""width: 100%; height: auto;"">'
+    + '<line x1=""' + padLeft + '"" y1=""' + padTop + '"" x2=""' + padLeft + '"" y2=""' + (height - padBottom) + '"" stroke=""rgba(255,255,255,0.15)"" stroke-width=""1"" />'
+    + '<line x1=""' + padLeft + '"" y1=""' + (height - padBottom) + '"" x2=""' + (width - padRight) + '"" y2=""' + (height - padBottom) + '"" stroke=""rgba(255,255,255,0.15)"" stroke-width=""1"" />'
+    + gridSvg + xLabelSvg
+    + '<path d=""' + lineD + '"" fill=""none"" stroke=""#38bdf8"" stroke-width=""2"" />'
+    + dotsSvg
+    + '</svg>';
+
+  const circles = container.querySelectorAll('circle.progress-dot');
+  circles.forEach(circle => {
+    const idx = circle.getAttribute('data-idx');
+    const p = idx.startsWith('nr') ? nonRecordPoints[parseInt(idx.slice(2), 10)] : recordPoints[parseInt(idx.slice(1), 10)];
+    circle.addEventListener('mouseenter', (e) => showProgressTooltip(e, p));
+    circle.addEventListener('mousemove', (e) => positionProgressTooltip(e));
+    circle.addEventListener('mouseleave', hideProgressTooltip);
+  });
+}
+
+function showProgressTooltip(e, p) {
+  const tooltip = document.getElementById('progress-tooltip');
+  if (!tooltip) return;
+  const promptLabel = promptVersionLabel(p.promptVersion);
+  tooltip.innerHTML = '<div style=""font-weight:700; color:' + (p.isRecord ? '#fbbf24' : '#a855f7') + '; margin-bottom:0.3rem;"">' + (p.isRecord ? '🏆 Record at this point' : 'Not a record') + '</div>'
+    + '<div><strong>' + p.modelId + '</strong></div>'
+    + '<div style=""color:#9ca3af;"">Effort: <strong style=""color:#f3f4f6;"">' + p.effort + '</strong></div>'
+    + '<div style=""color:#9ca3af;"">Temperature: <strong style=""color:#f3f4f6;"">' + p.temperature + '</strong></div>'
+    + '<div style=""color:#9ca3af;"">Prompt: <strong style=""color:#f3f4f6;"">' + promptLabel + '</strong></div>'
+    + '<div style=""color:#9ca3af; font-size:0.72rem;"">Git commit: <strong style=""color:#f3f4f6;"">' + p.promptVersion + '</strong></div>'
+    + '<div style=""color:#9ca3af;"">Composite: <strong style=""color:#4ade80;"">' + p.avgComposite.toFixed(1) + '</strong> (' + p.bookCount + ' books)</div>'
+    + '<div style=""color:#9ca3af; font-size:0.72rem; margin-top:0.2rem;"">' + p.date.toISOString().replace('T', ' ').slice(0, 19) + ' UTC</div>';
+  tooltip.style.display = 'block';
+  positionProgressTooltip(e);
+}
+
+function positionProgressTooltip(e) {
+  const tooltip = document.getElementById('progress-tooltip');
+  if (!tooltip || tooltip.style.display === 'none') return;
+  const margin = 12;
+  const gap = 16;
+  const rect = tooltip.getBoundingClientRect();
+  // At the right edge, put the tooltip on the left of the point. Clamping alone
+  // can still obscure the point or leave the tooltip outside a narrow viewport.
+  const preferredLeft = e.clientX + gap + rect.width <= window.innerWidth - margin
+    ? e.clientX + gap
+    : e.clientX - gap - rect.width;
+  const left = Math.max(margin, Math.min(preferredLeft, window.innerWidth - rect.width - margin));
+  // Keep the details panel in the chart's upper area. SVG pointer coordinates can
+  // be offset in a docked-devtools/local-file view, which previously pinned this
+  // tooltip to the bottom of the window for the final point.
+  const chart = document.getElementById('progress-chart-container');
+  const chartTop = chart ? chart.getBoundingClientRect().top : margin;
+  const preferredTop = chartTop + margin;
+  const top = Math.max(margin, Math.min(preferredTop, window.innerHeight - rect.height - margin));
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+}
+
+function hideProgressTooltip() {
+  const tooltip = document.getElementById('progress-tooltip');
+  if (tooltip) tooltip.style.display = 'none';
+}
+
     window.addEventListener('DOMContentLoaded', () => {
       updateHeaderDates();
       initGlobalBookFilter();
+      initGlobalEffortFilter();
+      initGlobalPromptVersionFilter();
       renderGlobalTable();
       initBookSelects();
       renderJudgeLeaderboard();
+      renderPromptVersionsList();
+      initPromptVersionBookFilter();
+      initPromptComparisonPickers();
+      renderPromptComparison();
+      renderProgressChart();
     });
   </script>
 </body>

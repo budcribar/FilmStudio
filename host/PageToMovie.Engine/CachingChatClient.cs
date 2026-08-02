@@ -82,17 +82,18 @@ public sealed class CachingChatClient : IChatClient
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "grok-4.5",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null)
+        string? mode = null,
+        string? reasoningEffort = null)
     {
         var cacheable = _enabled && (temperature <= 0.0001 || _cacheNonZeroTemperature);
         if (!cacheable)
-            return await _inner.CompleteAsync(systemPrompt, userPrompt, model, temperature, ct, mode)
+            return await _inner.CompleteAsync(systemPrompt, userPrompt, model, temperature, ct, mode, reasoningEffort)
                 .ConfigureAwait(false);
 
-        var key = ComputeKey(_cacheVersion, model, temperature, systemPrompt, userPrompt);
+        var key = ComputeKey(_cacheVersion, model, temperature, systemPrompt, userPrompt, reasoningEffort);
         var path = CachePath(key);
 
         if (File.Exists(path))
@@ -109,7 +110,7 @@ public sealed class CachingChatClient : IChatClient
             }
         }
 
-        var response = await _inner.CompleteAsync(systemPrompt, userPrompt, model, temperature, ct, mode)
+        var response = await _inner.CompleteAsync(systemPrompt, userPrompt, model, temperature, ct, mode, reasoningEffort)
             .ConfigureAwait(false);
 
         await WriteCacheAsync(path, response, key, ct).ConfigureAwait(false);
@@ -139,12 +140,14 @@ public sealed class CachingChatClient : IChatClient
     private static readonly char FieldSeparator = (char)31;
 
     private static string ComputeKey(
-        string cacheVersion, string model, double temperature, string systemPrompt, string userPrompt)
+        string cacheVersion, string model, double temperature, string systemPrompt, string userPrompt,
+        string? reasoningEffort)
     {
         var sb = new StringBuilder();
         sb.Append(cacheVersion).Append(FieldSeparator);
         sb.Append(model).Append(FieldSeparator);
         sb.Append(temperature.ToString("R")).Append(FieldSeparator);
+        sb.Append(reasoningEffort ?? "").Append(FieldSeparator);
         sb.Append(systemPrompt).Append(FieldSeparator);
         sb.Append(userPrompt);
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));

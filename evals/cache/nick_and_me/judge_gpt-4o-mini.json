@@ -1,0 +1,98 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A effectively captures the essence of the source material while maintaining character consistency and providing directable scenes, though some pacing could be improved."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B excels in adaptation fidelity and dialogue authenticity, effectively translating the book\u0027s themes and character dynamics into a cinematic format."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.25,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Inconsistent character development and pacing issues."
+      ],
+      "rationale": "Screenplay C struggles with pacing and character development, making it less effective in conveying the source material\u0027s emotional weight."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D maintains a solid adaptation of the source material but lacks some depth in dialogue and pacing."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Pacing issues and some character inconsistencies."
+      ],
+      "rationale": "Screenplay E has a good foundation but suffers from pacing issues and lacks the emotional resonance found in the source material."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay F effectively captures the narrative and character dynamics, providing a strong visual and emotional experience."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay F",
+    "Screenplay A",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay C"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it excels in adaptation fidelity and dialogue authenticity, effectively translating the book\u0027s themes. Weakest: Screenplay C because it struggles with pacing and character development, making it less effective in conveying the source material\u0027s emotional weight.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "4529CB17D369EE662A1B437DC859E9EB2E60C388D0DF27C3CF0792B450362F27"
+}

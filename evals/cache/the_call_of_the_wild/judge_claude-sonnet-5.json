@@ -1,0 +1,98 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 4.5,
+      "overallQualitativeScore": 7.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Comprehensive, faithful coverage of nearly every chapter with dialogue lifted almost verbatim from the source. Character names and physical tags (Red Sweater, weazened Perrault, swarthy Francois) are consistent. A few scenes stack multiple actions/locations into single headings (e.g. team-formation montage beats), slightly hurting clip-by-clip directibility. Adds one small invented line (\u0027He has earned it\u0027) but nothing structurally disruptive. No explicit sound/music cues are given anywhere, only sparse atmosphere."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 7.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity with an explicit production note locking Buck\u0027s visual identity, which helps casting consistency. However it repeatedly leans on \u0027Montage, tight\u0027 scene headings that compress many distinct actions/locations into one block (e.g., the entire Dyea-to-Bennett trek, or the entire wilderness prospecting stretch), which directly conflicts with the single-clip-per-beat directive and lowers directibility/pacing granularity versus more evenly beat-broken scripts. Dialogue is period-accurate and lifted faithfully. No real music/SFX cueing beyond descriptive prose."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 7.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "The most complete and well-organized adaptation: covers every major beat (Curly\u0027s death, Spitz feud, Dolly\u0027s madness, Hal/Mercedes ordeal, Thornton rescue, the wager, the moose hunt, and the Yeehat massacre/wolf-pack finale) with clear, mostly single-action scene headings that suit short-clip generation. A locked visual-identity note for Buck and distinct descriptors for secondary characters (Hans as \u0027big placid Scandinavian,\u0027 Perrault \u0027weazened\u0027) support consistent casting. Still lacks explicit music/sound cues, relying only on descriptive atmosphere, which caps the sound-design score."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 2,
+      "characterDisambiguation": 3,
+      "aiVideoDirectibility": 4,
+      "dramaticPacing": 3.5,
+      "dialogueAuthenticity": 4,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 3.33,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invents named characters MR. QUINCY and MR. KELLY replacing the book\u0027s Manuel/stranger kidnapping sequence",
+        "Drops the vast majority of the source\u0027s plot: no Curly, no Spitz rivalry/fight, no Dave, no Perrault/Francois arc, no Hal/Charles/Mercedes ordeal in any detail, no gold-wager scene, no moose hunt, no Yeehat massacre",
+        "Ends abruptly on a generic howl without depicting Thornton\u0027s death or the wolf-pack integration, leaving the story structurally incomplete"
+      ],
+      "rationale": "This is closer to a loose two-page treatment than a full adaptation. It invents named characters not in the book, skips nearly every major event and supporting character, and relies on unfilmable internal-state narration (\u0027embraced his true self,\u0027 \u0027the ties of the past loosened\u0027). Pacing has no real escalation because almost the entire middle of the novel is missing. Not usable as a shootable draft."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Extremely thorough, near line-by-line fidelity to the novel with almost no invented content (aside from the minor spelling \u0027Billy\u0027 vs. \u0027Billee\u0027). Scene breakdown is granular and mostly single-action, good for clip generation, though some scenes still bundle two or three sequential beats. Dialogue is authentic and well-portioned. Notably, action lines frequently embed capitalized onomatopoeia (CHINKS, GROWLS, WHISTLES, CRACKS, SCREAMS) that double as usable sound-design cues, giving it the strongest (if still modest) sound-design implementation among the set."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 5.5,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 5,
+      "dialogueAuthenticity": 4,
+      "soundDesignMusic": 4,
+      "overallQualitativeScore": 4.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Covers most major plot points but drops the moose-hunt sequence entirely and adds substantial invented, sentimentalized dialogue (\u0027You\u0027re not just my dog, Buck. You\u0027re my heart,\u0027 \u0027Adventure awaits!\u0027) that is tonally inconsistent with Jack London\u0027s harsher period voice. Inconsistent spelling of recurring names (PERRAULT/PERREAULT, SALOON-KEEPER/SALON-KEEPER, YEEHATS/YEHAATS) undermines casting-reference consistency. Several action lines lean on unfilmable internal description (\u0027his spirit rekindled,\u0027 \u0027a spark of wildness igniting within him\u0027). Pacing sags in repetitive, low-content White River Camp scenes before the climax."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay C",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay F",
+    "Screenplay D"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay C, because it combines the most complete and accurate beat-for-beat coverage of the novel with clean, mostly single-action scene headings and a locked-identity note for consistent AI casting. Weakest: Screenplay D, because it replaces core named characters with invented ones, drops nearly the entire middle of the book (Spitz rivalry, Hal/Mercedes ordeal, the wager, the moose hunt, the Yeehat massacre), and ends on an unearned, truncated note, making it unusable as a faithful shootable draft.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "EA08087589D4771236B91D424EC1B88BD9B3F31321C5ED2E75F02F2ABF7034D4"
+}

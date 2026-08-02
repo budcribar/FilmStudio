@@ -1,0 +1,110 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A provides a solid adaptation with good fidelity to the source text, utilizing V.O. effectively to convey the narrator\u0027s internal thoughts. Action lines are generally directable, though some scenes combine multiple distinct actions that might challenge the 5-10 second clip constraint. Character descriptions are somewhat generic, and explicit sound design cues could be more frequent to enhance the atmosphere."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B maintains good adaptation fidelity, but its directibility is hampered by some action lines that are too dense, combining several distinct visual beats into one. The formatting for V.O. is also non-standard, and character descriptions lack the specificity needed for consistent AI casting. Pacing is adequate, but could be smoother."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9.5,
+      "overallQualitativeScore": 9.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C offers an exceptionally faithful adaptation, using a \u0027Confession Room\u0027 framing device effectively. Character descriptions are highly detailed and consistent, aiding casting clarity. Directibility is strong with concise, visual action lines. Pacing is well-managed, and sound design cues are integrated to enhance the narrative tension and atmosphere."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 6.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D demonstrates good adaptation fidelity and strong directibility due to its very short, single-action scenes, which align well with the clip constraint. However, character disambiguation is weak, with generic descriptions for most characters. Sound design is implied through V.O. but lacks explicit prompting in action lines."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9.5,
+      "dramaticPacing": 9.5,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9.5,
+      "overallQualitativeScore": 9.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E is an outstanding adaptation, excelling in fidelity, character clarity, and directibility. Its action lines are meticulously detailed for short clips, and the pacing builds tension effectively. Character descriptions are precise and consistent, and sound design cues are expertly woven into the narrative, creating a rich sensory experience."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 6,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 6.5,
+      "overallQualitativeScore": 5.67,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Action lines too condensed, combining multiple distinct beats into single descriptions, making it impossible to break into 5-10 second clips per beat as required by the production constraint."
+      ],
+      "rationale": "Screenplay F suffers from excessive condensation, sacrificing fidelity and directibility. Many action lines combine multiple events or summarize long periods, making it unusable for the short-clip production constraint. Character descriptions are minimal, and the rapid pacing undermines the story\u0027s psychological tension."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 10,
+      "characterDisambiguation": 10,
+      "aiVideoDirectibility": 10,
+      "dramaticPacing": 10,
+      "dialogueAuthenticity": 10,
+      "soundDesignMusic": 10,
+      "overallQualitativeScore": 10,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay G is an exceptional adaptation, achieving perfect scores across all dimensions. It demonstrates unparalleled fidelity to the source, provides meticulous character and sound detail, and its action lines are precisely crafted for AI video directibility, ensuring each beat can be rendered as a distinct 5-10 second clip. The pacing and structure are masterful."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay G",
+    "Screenplay E",
+    "Screenplay C",
+    "Screenplay D",
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay F"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay G because it demonstrates exceptional fidelity, meticulous directibility for short clips, and comprehensive character and sound detail. Weakest: Screenplay F because its extreme condensation of action lines makes it unusable for the required 5-10 second clip per beat constraint.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "88517034D4CA38BDC2DCED0379F639E178C5775039FAE9AC6B2B7CB5B82E07F9"
+}

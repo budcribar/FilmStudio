@@ -1,0 +1,53 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 6.42,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The Fountain body is not production-parseable as delivered: dialogue cues are separated from their dialogue by blank lines, contrary to the required Fountain format.",
+        "The required VISION_META sidecar is missing.",
+        "The protagonist is inconsistently keyed as both NARRATOR and PETER, and Peter\u0027s name is revealed substantially earlier than the source reveals it.",
+        "An unnamed GUARD has dialogue, violating the closed-cast/stable-token requirement.",
+        "Several headings improperly combine separate locations, including CITY STREET / PUBLIC LIBRARY, DOCTOR\u0027S OFFICE / HOSPITAL CORRIDOR, FUNERAL HOME / CEMETERY, and WISCONSIN HIGHWAY / AIRPORT."
+      ],
+      "rationale": "This is the stronger adaptation because it preserves the core emotional spine: Peter\u0027s dependence on intimidating Nick, Sionna\u0027s intellectual awakening of Peter, Ma\u0027s deterioration and death, Nick\u0027s assault on Sionna, the breakup, Seattle success, and the prison forgiveness scene. It is impressively comprehensive for a ten-minute target and generally avoids major invented plot. However, it skips or reduces major source development, especially Peter\u0027s schooling progression, Nick\u0027s manipulative return to Ma, the childhood material, and the extended psychological aftermath. Character looks are initially useful, especially Nick and Sionna, but the NARRATOR/PETER identity split is a serious portrait-lock defect, and re-entry descriptions are inconsistent. Many action lines are visual, but several scenes are compressed summaries containing multiple beats, locations, and emotional conclusions that cannot cleanly become one 5-10 second clip. Sound coverage is consistently present and often specific, though some music cues remain generic rather than tightly motivated. Dialogue retains portions of the book\u0027s cadence but often compresses source exchanges into blunt thematic statements.",
+      "promptImprovementSuggestion": "Add a mandatory preflight output-validation rule: before returning, verify Fountain cue/dialogue adjacency, stable character-token identity, one location per slugline, and the required sidecar; if any check fails, regenerate the full screenplay rather than returning a partially compliant draft."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 2.5,
+      "characterDisambiguation": 3,
+      "aiVideoDirectibility": 4.5,
+      "dramaticPacing": 6,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 5.08,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The Fountain body is not production-parseable as delivered: dialogue cues are separated from their dialogue by blank lines, contrary to the required Fountain format.",
+        "The required VISION_META sidecar is missing.",
+        "It invents named supporting characters not named in the source, including CARLOS, BOUNCER HARRIS, and INSTRUCTOR MAYA; under the evaluation rubric, invented named characters are a severe fidelity failure.",
+        "The protagonist is inconsistently keyed as NARRATOR and PETER, while MA is initially identified as OLIVIA OLSEN but later keyed only as MA.",
+        "Young Nick and adult Nick use the same NICK token without explicit age disambiguation, despite the childhood flashback.",
+        "DREAM is used as a scene heading without an INT./EXT. location, producing invalid/non-filmable scene structure."
+      ],
+      "rationale": "The draft has a coherent and readable dramatic throughline, strong initial visual descriptions, and excellent scene-level ambient sound coverage. It also gives the crash, ICU confrontation, stabbing, breakup, and prison reunion clear visual treatment. Nevertheless, its fidelity score must be severely capped because it invents several specifically named source-absent characters. It also substantially compresses or drops the book\u0027s gradual educational transformation, Peter\u0027s sustained caregiver burden, the family-history material, and portions of Nick\u0027s escalating possessiveness, making some later turns feel more abrupt. The childhood scene is useful source coverage but creates a major casting ambiguity because the same NICK token covers a twelve-year-old and adult Nick. Directibility is weakened by invalid dream slugs, broad action summaries, and sequences that ask one clip to carry multiple physical actions. Dialogue is generally concise and playable, but several exchanges are modernized or simplified rather than preserving the source\u0027s distinctive first-person voice and awkward specificity.",
+      "promptImprovementSuggestion": "Change the closed-cast rule to require stable neutral role tokens for source-unnamed people without inventing personal names or added dialogue; for example, use BOUNCER or LINDSEY\u0027S DATE only where essential, rather than fabricating a first name, surname, or new speaking character."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it covers the source\u0027s full emotional and plot arc more faithfully while maintaining a relatively efficient dramatic progression. Weakest: Screenplay B because its invented named characters trigger a severe fidelity penalty, compounded by major age/token ambiguity and invalid scene-heading structure.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "7FEC2201D966CC046B019FD3EA65A6E20B6B41071E3C66AC79EC4AA36F3230F3"
+}

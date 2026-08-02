@@ -42,7 +42,14 @@ public sealed class MultiProviderVideoClient : IVideoClient
         string? startFrameImagePath = null,
         string? continueFromVideoPath = null)
     {
-        var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).Provider;
+        if (string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException(
+                "Video: model is required. Open Settings and choose a Video generation model.");
+        var entry = SupportedModelCatalog.Find(model, ModelCapability.Video) ?? SupportedModelCatalog.Find(model);
+        if (entry is null || !entry.Enabled)
+            throw new InvalidOperationException(
+                $"Video: model '{model}' is not in the models catalog (or is disabled). Open Settings and pick a current model.");
+        var provider = entry.Provider;
         if (provider == ModelProviderFamily.Fal)
         {
             var falId = await _fal.SubmitGenerationAsync(

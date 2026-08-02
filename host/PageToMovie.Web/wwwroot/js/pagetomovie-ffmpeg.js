@@ -15,6 +15,7 @@ window.PageToMovieFfmpeg = {
     _blobUrl: null,
     _silenceSessions: {},
     _silenceSessionSeq: 0,
+    _trimTailSeq: 0,
     _lock: Promise.resolve(),
 
     _assets: {
@@ -399,6 +400,64 @@ window.PageToMovieFfmpeg = {
         });
     },
 
+    // Trims a video down to its last `keepSeconds` — used to prepare a video-extend continuation
+    // source (see FilmJobService.GenerateOneClipAsync): the model rejects input video longer than
+    // its own max clip length, so the client keeps only the tail before uploading it. Standalone
+    // (not tied to the silence-trim session bookkeeping that encodeSliceAsync uses) since the
+    // caller only ever wants one trim, not an analyze-then-slice round trip.
+    trimTailAsync: async function (url, keepSeconds, onProgress) {
+        if (!url) return { success: false, error: "No URL" };
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return { success: false, error: load.error };
+
+            const ffmpeg = self._ffmpeg;
+            const seq = ++self._trimTailSeq;
+            const inName = "trimtail_in_" + seq + ".mp4";
+            const outName = "trimtail_out_" + seq + ".mp4";
+            try {
+                reportProgress(onProgress, 10, "Loading clip…");
+                const data = await self._safeFetchFile(url);
+                await ffmpeg.writeFile(inName, data);
+
+                reportProgress(onProgress, 30, "Probing duration…");
+                const probe = await self._probeDurationMemfsAsync(inName);
+                if (!probe.success || !(probe.seconds > 0)) {
+                    return { success: false, error: "Could not read source duration" };
+                }
+
+                const totalSec = probe.seconds;
+                const keepSec = Math.max(0.5, Math.min(keepSeconds, totalSec));
+                const startSec = Math.max(0, totalSec - keepSec);
+
+                reportProgress(onProgress, 55, "Trimming tail…");
+                const args = ["-hide_banner", "-y"];
+                if (startSec > 0.001) args.push("-ss", String(startSec));
+                args.push("-i", inName);
+                args.push("-t", String(keepSec));
+                args.push(
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-movflags", "+faststart",
+                    outName);
+                await ffmpeg.exec(args);
+
+                reportProgress(onProgress, 90, "Preparing…");
+                const out = await ffmpeg.readFile(outName);
+                const blob = new Blob([out.buffer], { type: "video/mp4" });
+                const outUrl = URL.createObjectURL(blob);
+                reportProgress(onProgress, 100, "Trim done");
+                return { success: true, url: outUrl, sourceDurationSec: totalSec, keptSec: keepSec };
+            } catch (err) {
+                return { success: false, error: err.message || String(err) };
+            } finally {
+                try { await ffmpeg.deleteFile(inName); } catch (_) { /* */ }
+                try { await ffmpeg.deleteFile(outName); } catch (_) { /* */ }
+            }
+        });
+    },
+
     discardSessionAsync: async function (token) {
         const self = this;
         return this._runExclusiveAsync(async function () {
@@ -629,6 +688,121 @@ window.PageToMovieFfmpeg = {
             } catch (err) {
                 console.error("mixSceneAudioAsync failed:", err);
                 for (const n of [inVideo, inMusic, outName]) { try { await ffmpeg.deleteFile(n); } catch (_) { /* */ } }
+                return { success: false, error: err.message || String(err) };
+            }
+        });
+    },
+
+    /**
+     * Strip all original audio from a clip and replace with a single TTS (or other) track.
+     * Video stream is copied; new audio is AAC. If TTS is shorter than video, pad with silence;
+     * if longer, cut to video length (-shortest against padded audio matching video duration).
+     * @param {string} videoUrl blob: or http(s) URL
+     * @param {string} audioUrl blob: / data: / http(s) URL for the replacement speech
+     * @returns {{ success:boolean, url?:string, error?:string }}
+     */
+    replaceVideoAudioAsync: async function (videoUrl, audioUrl, onProgress) {
+        if (!videoUrl) return { success: false, error: "No video URL" };
+        if (!audioUrl) return { success: false, error: "No audio URL" };
+
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return load;
+
+            const ffmpeg = self._ffmpeg;
+            const inVideo = "rv_in_video.mp4";
+            const inAudio = "rv_in_audio";
+            const outName = "rv_out.mp4";
+            try {
+                reportProgress(onProgress, 8, "Loading picture…");
+                await ffmpeg.writeFile(inVideo, await self._safeFetchFile(videoUrl));
+                reportProgress(onProgress, 28, "Loading voice…");
+                // Keep extension so ffmpeg can sniff container (mp3/wav/m4a)
+                let audioName = inAudio + ".bin";
+                if (typeof audioUrl === "string") {
+                    if (audioUrl.indexOf("audio/wav") >= 0 || /\.wav(\?|$)/i.test(audioUrl)) audioName = inAudio + ".wav";
+                    else if (audioUrl.indexOf("audio/mp4") >= 0 || /\.m4a(\?|$)/i.test(audioUrl)) audioName = inAudio + ".m4a";
+                    else if (audioUrl.indexOf("audio/mpeg") >= 0 || /\.mp3(\?|$)/i.test(audioUrl)) audioName = inAudio + ".mp3";
+                    else audioName = inAudio + ".mp3";
+                }
+                await ffmpeg.writeFile(audioName, await self._safeFetchFile(audioUrl));
+
+                const probe = await self._probeDurationMemfsAsync(inVideo);
+                const durationSec = probe.success && probe.seconds > 0 ? probe.seconds : 0;
+
+                reportProgress(onProgress, 50, "Replacing audio…");
+                // Drop original audio entirely; use TTS only. Pad TTS with silence to video length
+                // when known so picture does not cut short; -shortest still guards runaway audio.
+                if (durationSec > 0.05) {
+                    const filter =
+                        "[1:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=mono," +
+                        "apad=whole_dur=" + durationSec.toFixed(3) + "[a]";
+                    await ffmpeg.exec([
+                        "-hide_banner", "-y",
+                        "-i", inVideo, "-i", audioName,
+                        "-filter_complex", filter,
+                        "-map", "0:v", "-map", "[a]",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                        "-t", durationSec.toFixed(3),
+                        outName,
+                    ]);
+                } else {
+                    await ffmpeg.exec([
+                        "-hide_banner", "-y",
+                        "-i", inVideo, "-i", audioName,
+                        "-map", "0:v", "-map", "1:a",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                        "-shortest",
+                        outName,
+                    ]);
+                }
+
+                reportProgress(onProgress, 90, "Saving clip…");
+                const url = await self._readAndCleanupAsync(
+                    ffmpeg, outName, "video/mp4", [inVideo, audioName]);
+                reportProgress(onProgress, 100, "Ready");
+                return { success: true, url: url };
+            } catch (err) {
+                console.error("replaceVideoAudioAsync failed:", err);
+                for (const n of [inVideo, outName]) { try { await ffmpeg.deleteFile(n); } catch (_) { /* */ } }
+                return { success: false, error: err.message || String(err) };
+            }
+        });
+    },
+
+    /**
+     * Strip all audio from a video (silent picture). Used when a clip has no dialogue.
+     * @param {string} videoUrl
+     * @returns {{ success:boolean, url?:string, error?:string }}
+     */
+    stripVideoAudioAsync: async function (videoUrl, onProgress) {
+        if (!videoUrl) return { success: false, error: "No video URL" };
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return load;
+            const ffmpeg = self._ffmpeg;
+            const inVideo = "sa_in.mp4";
+            const outName = "sa_out.mp4";
+            try {
+                reportProgress(onProgress, 20, "Loading picture…");
+                await ffmpeg.writeFile(inVideo, await self._safeFetchFile(videoUrl));
+                reportProgress(onProgress, 55, "Removing audio…");
+                await ffmpeg.exec([
+                    "-hide_banner", "-y",
+                    "-i", inVideo,
+                    "-map", "0:v", "-an",
+                    "-c:v", "copy",
+                    outName,
+                ]);
+                reportProgress(onProgress, 90, "Saving…");
+                const url = await self._readAndCleanupAsync(ffmpeg, outName, "video/mp4", [inVideo]);
+                reportProgress(onProgress, 100, "Ready");
+                return { success: true, url: url };
+            } catch (err) {
+                console.error("stripVideoAudioAsync failed:", err);
+                for (const n of [inVideo, outName]) { try { await ffmpeg.deleteFile(n); } catch (_) { /* */ } }
                 return { success: false, error: err.message || String(err) };
             }
         });

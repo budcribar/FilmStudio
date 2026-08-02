@@ -1,0 +1,40 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong closed-cast adaptation that hits the spine beats (kidnap, club law, Curly, Spitz death-fight, leadership, Dave, Hal/Mercedes collapse, Thornton rescue and bond, thousand-pound pull, Yeehats, pack joining, Ghost Dog coda) without inventing plot. Buck\u2019s look is locked and restated at skeletal and recovered re-entries; supporting humans get stable visual tags. Scenes are mostly one place/one purpose with concrete, clip-length actions and dense diegetic (SOUND) cues at peaks (club breaking, Spitz fight, ice collapse, Yeehat raid). Minor gaps (Dolly\u2019s madness, Black Burton, some trail texture) are acceptable under the 10-minute band. VO occasionally restates visible action but mostly carries book diction. Production-ready as-is.",
+      "promptImprovementSuggestion": "Add an explicit anti-redundancy rule: if Action already shows a beat, forbid NARRATOR V.O. from restating that same visible fact; V.O. may only add motive, irony, or book cadence not filmable in the image."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Faithful early arc and strong book-voice dialogue (Manuel, red-sweater man, Francois/Perrault \u2018two devils,\u2019 Thornton lines), with good cast locks for Buck, Spitz, Hal, Charles, Thornton. Biggest fidelity hit is dropping the Forty-Mile rapids rescue\u2014an iconic Thornton-bond set piece\u2014jumping from convalescent love to the Eldorado wager. Directibility suffers where multi-day arcs collapse into novelistic summary (\u2018Later: Dub shot, Outside dogs dead, Billee axed\u2019) and where one heading packs day harness work plus night snow-den (NORTHLAND TRAIL) or uses a slash location (ELDORADO SALOON / STREET). Sound cues are present and useful but thinner at some peaks than A. Still greenlightable after structural tightening; not disqualified.",
+      "promptImprovementSuggestion": "Forbid novelistic time-compression inside a single scene (\u2018Later: X died, Y happened\u2019); require each distinct story turn to be its own filmable Action micro-beat with a concrete observable event and its own (SOUND)/(MUSIC) cue, or a new scene heading if place/time changes."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it preserves the full Thornton emotional spine (including the rapids rescue), locks cast looks on re-entry, and breaks the novel into consistently clip-directable single-location beats with dense peak sound. Weakest: Screenplay B because it drops the iconic rapids rescue and collapses the Hal ordeal into unfilmable summary lines, weakening both fidelity and AI-video directibility.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "2BCAC96C630AE75C2EE8046C4726AAE132E0031B95797F12A2E6CF6C19F935D7"
+}

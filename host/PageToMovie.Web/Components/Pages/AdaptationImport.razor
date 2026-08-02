@@ -4,7 +4,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject AdminSessionService Session
 
-<PageTitle>Adaptation · Import</PageTitle>
+<PageTitle>Book · Import</PageTitle>
 
 <AdaptationShell Host="this" Step="import">
     @if (Status is not null)
@@ -13,38 +13,32 @@
         {
             <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
                 <div>
-                    <strong>⚠️ Service Connection Required:</strong> Connect your AI provider to convert stories into screenplays.
+                    <strong>⚠️ AI key not detected:</strong> Add a personal key under Settings (xAI/Grok, Gemini, OpenAI, etc.) or set a server env key.
                 </div>
-                <a class="btn btn-sm btn-warning fw-semibold" href="configuration">Connect your AI provider →</a>
+                <a class="btn btn-sm btn-warning fw-semibold" href="configuration">Open Settings →</a>
             </div>
         }
 
         <div class="card mb-4">
             <div class="card-body p-4">
-                <h5 class="card-title mb-3">Upload Source File</h5>
-                <div class="mb-3">
-                    <InputFile OnChange="OnSourceSelectedAsync"
-                               class="form-control"
-                               style="max-width: 28rem;"
-                               accept=".fountain,.spmd,.pdf,.txt"
-                               data-testid="import-file-input"
-                               disabled="@(_importing || Busy || JobRunning)" />
-                    @if (!string.IsNullOrWhiteSpace(_chosenFileName))
-                    {
-                        <div class="fs-file-chosen" data-testid="import-file-name">
-                            <span class="fs-file-chosen-label">Selected:</span>@_chosenFileName
-                        </div>
-                    }
-                    <div class="form-text mt-2">
-                        Supports screenplay (.fountain), PDF, or book text (.txt)
-                    </div>
-                </div>
-
                 @if (_importing)
                 {
-                    <div class="mt-2 mb-1">
+                    @* Import in flight — hide drop zone so progress has the room. *@
+                    <h5 class="card-title mb-1">Importing</h5>
+                    @if (!string.IsNullOrWhiteSpace(_chosenFileName))
+                    {
+                        <p class="text-muted small mb-3 text-truncate" title="@_chosenFileName">
+                            <span class="text-body-secondary">From</span> @_chosenFileName
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-3">Hang tight — the pipeline is running.</p>
+                    }
+
+                    <div class="mb-1">
                         <div class="d-flex justify-content-between align-items-center small mb-1 gap-2">
-                            <span>@_importStatus</span>
+                            <span class="fw-semibold">@(_importStatus.Length > 0 ? _importStatus : "Working…")</span>
                             <div class="d-flex align-items-center gap-2">
                                 @if (_importPct is int p)
                                 {
@@ -61,15 +55,16 @@
                                 }
                             </div>
                         </div>
-                        <div class="progress" style="height: 0.85rem;" role="progressbar"
-                             aria-valuenow="@(_importPct ?? 40)" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress" style="height: 1rem;" role="progressbar"
+                             aria-valuenow="@(_importPct ?? 40)" aria-valuemin="0" aria-valuemax="100"
+                             aria-label="@_importStatus">
                             <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
                                  style="width: @(_importPct ?? 40)%"></div>
                         </div>
 
                         @if (Session.IsAdmin && Job?.Log is { Count: > 0 })
                         {
-                            <details class="mt-2" open>
+                            <details class="mt-2">
                                 <summary class="small text-muted" style="cursor:pointer">Details (admin)</summary>
                                 <div class="small text-muted mb-1 mt-1">
                                     @if (Job.Kind is { Length: > 0 } k)
@@ -88,10 +83,44 @@
                         }
                     </div>
                 }
-                else if (CanContinueToScreenplay)
+                else
                 {
-                    <a class="btn btn-success btn-sm" data-testid="import-continue-screenplay" href="adaptation/screenplay">Continue to screenplay →</a>
+                    <h5 class="card-title mb-1">Import source</h5>
+                    <p class="text-muted small mb-3">PDF, text, or fountain — then the pipeline runs. You can edit after.</p>
+
+                    <label class="ptm-dropzone @(Busy || JobRunning ? "ptm-dropzone--disabled" : "") @(_dragOver ? "ptm-dropzone--active" : "")"
+                           @ondragenter="OnDragEnter"
+                           @ondragover="OnDragOver"
+                           @ondragover:preventDefault
+                           @ondragleave="OnDragLeave"
+                           @ondrop:preventDefault
+                           @ondrop="OnDragLeave">
+                        <InputFile OnChange="OnSourceSelectedAsync"
+                                   class="ptm-dropzone__input"
+                                   accept=".fountain,.spmd,.pdf,.txt"
+                                   data-testid="import-file-input"
+                                   disabled="@(Busy || JobRunning)" />
+                        <div class="ptm-dropzone__inner" aria-hidden="true">
+                            <div class="ptm-dropzone__icon">📖</div>
+                            <div class="ptm-dropzone__title">Drop your book here</div>
+                            <div class="ptm-dropzone__hint">or click to choose a file</div>
+                            <div class="ptm-dropzone__types">.pdf · .txt · .fountain</div>
+                        </div>
+                    </label>
+
+                    @if (!string.IsNullOrWhiteSpace(_chosenFileName))
+                    {
+                        <div class="fs-file-chosen mt-2" data-testid="import-file-name">
+                            <span class="fs-file-chosen-label">Selected:</span>@_chosenFileName
+                        </div>
+                    }
+
+                    @if (CanContinueToScreenplay)
+                    {
+                        <a class="btn btn-success btn-sm mt-3" data-testid="import-continue-screenplay" href="adaptation/screenplay">Continue to screenplay →</a>
+                    }
                 }
+
                 <div data-testid="import-status"
                      data-importing="@(_importing ? "true" : "false")"
                      data-can-continue="@(CanContinueToScreenplay ? "true" : "false")"
@@ -109,6 +138,7 @@
     private string _importStatus = "";
     private int? _importPct;
     private string? _chosenFileName;
+    private bool _dragOver;
 
     private bool CanContinueToScreenplay =>
         Status is not null &&
@@ -125,6 +155,20 @@
             Nav.NavigateTo("/login?returnUrl=/adaptation/import");
         }
     }
+
+    private void OnDragEnter(DragEventArgs e)
+    {
+        if (_importing || Busy || JobRunning) return;
+        _dragOver = true;
+    }
+
+    private void OnDragOver(DragEventArgs e)
+    {
+        if (_importing || Busy || JobRunning) return;
+        _dragOver = true;
+    }
+
+    private void OnDragLeave(DragEventArgs e) => _dragOver = false;
 
     private async Task OnSourceSelectedAsync(InputFileChangeEventArgs e)
     {

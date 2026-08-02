@@ -1,0 +1,40 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity to the full arc (Nick intro/Viking lore, Sionna meet, Ma decline/hospital, dreams, yoga, bar fight, crash/death, stabbing, breakup, Seattle success, prison forgiveness) with proper NARRATOR withholding until late reveal; minor spelling slip (Olsen/Olson) and light compression of secondary beats. Character looks are locked early (Nick scars/suede/reddish hair; Sionna pale/blue eyes/fish necklace) and mostly restated, though NARRATOR-to-PETER handoff and young/adult splits could be sharper. Action is highly clip-friendly (single observable beats, short scenes). Pacing holds momentum across ~40 tight scenes without padding. Dialogue stays close to book voice and clip-length. Sound/Music cues are dense and diegetic on every scene plus peaks.",
+      "promptImprovementSuggestion": "Add an explicit rule: on every character re-entry after a time jump, dream, or age split, the first Action line MUST restate at least three locked visual traits (build/hair/scar/wardrobe) using the exact same tokens; also require source-exact spelling of all proper names."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Covers the same essential spine cleanly but violates the source-name rule by locking PETER from the opening (book withholds until final line), slightly lowering fidelity; otherwise no major inventions or dropped peaks. Excellent consistent casting (PETER lean ordinary clothes; NICK tall scarred reddish hair; YOUNG NICK flashback; Sionna traits restated). Directibility is solid and filmable yet a few scenes pack denser multi-beat action that strains pure 5-10s clips. Pacing is smooth but less granular than ideal for the short-clip constraint. Dialogue is natural, character-distinct, and book-true. Sound cues present on every scene though slightly less varied at emotional peaks than A.",
+      "promptImprovementSuggestion": "Strengthen the narrator-name rule with: \u0027If the source withholds the first-person protagonist\u2019s given name until late (or never), the cue MUST remain NARRATOR/THE NARRATOR for all pre-reveal scenes; never front-load the revealed name even for casting convenience.\u0027"
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it best obeys narrator-name withholding, delivers the tightest clip-sized observable beats, and densest usable sound design while still hitting every major book turn. Weakest: Screenplay B because premature PETER naming undercuts fidelity and a few denser scenes reduce pure short-clip directibility.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "9CE9C14150D0453D6204F5A7223CE34022855DC2F990D3770424EFB9B3EB9222"
+}

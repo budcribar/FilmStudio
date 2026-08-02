@@ -1,15 +1,26 @@
 @page "/cost"
 @inject EngineApiClient Engine
+@inject ActiveProjectState ActiveProject
+@inject AdminSessionService Session
+@inject NavigationManager Nav
 @using PageToMovie.Core.Models
+@using System.Globalization
 
-<PageTitle>Cost</PageTitle>
+<PageTitle>Estimate & cost</PageTitle>
 
-<h1>Cost</h1>
-<p class="text-muted">
-    <strong>Actual</strong> = tracked spend at vendor list rates for the models used.
-    <strong>Estimates</strong> = catalog rates for the project’s selected video/image models × plan size.
-    Neither is your cloud invoice.
-</p>
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">Studio · Estimate</span>
+    <h1 class="ptm-adapt-title mb-1">Estimate & cost</h1>
+    <p class="ptm-adapt-lede mb-0">
+        See what this film is planned to cost, what you’ve spent so far, and where the money went —
+        by project and by vendor.
+    </p>
+</div>
+
+@if (ActiveProject.HasProject)
+{
+    <StudioProcessStrip Active="estimate" FullStudio="true" />
+}
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -20,372 +31,515 @@
     <div class="alert alert-success">@_message</div>
 }
 
-<div class="row mb-3 g-2 align-items-end">
-    <div class="col-md-3">
-        <label class="form-label">Project</label>
-        <select class="form-select" @bind="_projectId" @bind:after="LoadAsync" disabled="@_busy">
-            @foreach (var p in _projectIds)
-            {
-                <option value="@p">@p</option>
-            }
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label class="form-label">Draft res</label>
-        <select class="form-select" @bind="_draftRes" @bind:after="LoadAsync" disabled="@_busy">
-            <option value="480p">480p</option>
-            <option value="720p">720p</option>
-            <option value="1080p">1080p</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label class="form-label">Hero res</label>
-        <select class="form-select" @bind="_heroRes" @bind:after="LoadAsync" disabled="@_busy">
-            <option value="720p">720p</option>
-            <option value="1080p">1080p</option>
-            <option value="480p">480p</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label class="form-label">Avg retries</label>
-        <input type="number" class="form-control" min="0" max="3" step="0.25"
-               @bind="_retries" @bind:after="LoadAsync" disabled="@_busy" />
-    </div>
-    <div class="col-md-3 d-flex gap-2 flex-wrap">
-        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Reload</button>
-        <button class="btn btn-outline-primary" disabled="@_busy" @onclick="BackfillAsync"
-                title="Infer ledger rows for on-disk clips with no tracked event">
-            Backfill actuals
-        </button>
-    </div>
-</div>
-
-@if (_report is null)
+@* Soft gate — still show spend breakdown when screenplay is not ready yet. *@
+@if (ActiveProject.HasProject && !ActiveProject.CanEstimate)
 {
-    <p class="text-muted">Loading cost report…</p>
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <strong>Full quote needs a screenplay.</strong>
+            @ActiveProject.EstimateBlockedReason
+            You can still see what you’ve already spent.
+        </div>
+        <a class="btn btn-sm btn-warning fw-semibold" href="adaptation">Go to Book →</a>
+    </div>
 }
-else
-{
-    var s = _report.Summary;
-    var a = _report.Actual;
 
-    <div class="card mb-3">
-        <div class="card-header">Actual (tracked)</div>
-        <div class="card-body">
-            <p class="small text-muted">@a.Notes</p>
-            <div class="row g-3 text-center">
-                <div class="col-6 col-md-3">
-                    <div class="display-6 fs-3">@Usd(s.ActualUsd)</div>
-                    <div class="small text-muted">Actual total</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="display-6 fs-3">@s.ActualEvents</div>
-                    <div class="small text-muted">Ledger events</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="display-6 fs-3">@s.ActualVideoJobs</div>
-                    <div class="small text-muted">Video jobs</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="display-6 fs-3">@s.ActualVideoSec.ToString("0.#")</div>
-                    <div class="small text-muted">Video seconds</div>
-                </div>
-            </div>
-            @if (a.ByKind.Count > 0)
-            {
-                <p class="small mt-3 mb-1">
-                    By kind:
-                    @string.Join(" · ", a.ByKind.Select(kv => $"{kv.Key}={Usd(kv.Value)}"))
-                </p>
-            }
-            @if (a.ByModel.Count > 0)
-            {
-                <p class="small mb-0">
-                    By model:
-                    @string.Join(" · ", a.ByModel.Select(kv => $"`{kv.Key}` {Usd(kv.Value)}"))
-                </p>
-            }
+    <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+        <div style="min-width: 12rem;">
+            <label class="form-label small mb-0">Project</label>
+            <select class="form-select form-select-sm" @bind="_projectId" @bind:after="LoadAsync" disabled="@_busy">
+                @foreach (var p in _projectIds)
+                {
+                    <option value="@p">@p</option>
+                }
+            </select>
         </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header">Estimates (planning)</div>
-        <div class="card-body">
-            <p class="small text-muted">
-                Vendor rates for <strong>@(_report.VideoProvider)</strong> /
-                <code>@(_report.ModelName)</code>
-                · Draft @Usd(_report.OutputRateDraft)/sec · Hero @Usd(_report.OutputRateHero)/sec
-                · retries @_report.AssumeAvgRetries.ToString("0.##")
-                (from model catalog; change models in Configuration)
-            </p>
-            <div class="row g-3 text-center mb-3">
-                <div class="col-6 col-md-3">
-                    <div class="fs-4">@s.ClipsOnDisk/@s.ClipsTotal</div>
-                    <div class="small text-muted">Clips on disk</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="fs-4">@Usd(s.SpentUsd)</div>
-                    <div class="small text-muted">Est. spent (on disk)</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="fs-4">@Usd(s.RemainingFirstPassUsd)</div>
-                    <div class="small text-muted">Remaining first pass</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="fs-4">@Usd(s.RemainingHeroUpgradeUsd)</div>
-                    <div class="small text-muted">Hero upgrades left</div>
-                </div>
-            </div>
-            <div class="row g-3 text-center">
-                <div class="col-6 col-md-3">
-                    <div class="fs-5">@Usd(s.FinishDraftUsd)</div>
-                    <div class="small text-muted">Finish draft (est+missing)</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="fs-5">@Usd(s.FinishFromActualUsd)</div>
-                    <div class="small text-muted">Finish from actual+missing</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="fs-5">@Usd(s.FullFilmAllDraftUsd)</div>
-                    <div class="small text-muted">Full film @(_report.DraftResolution)</div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="fs-5">@Usd(s.FullFilmAllHeroUsd)</div>
-                    <div class="small text-muted">Full film @(_report.HeroResolution)</div>
-                </div>
-            </div>
-            <div class="progress mt-3" style="height: 1.25rem;">
-                <div class="progress-bar" role="progressbar"
-                     style="width: @(ProgressPct(s))%"
-                     aria-valuenow="@s.ClipsOnDisk" aria-valuemin="0" aria-valuemax="@Math.Max(1, s.ClipsTotal)">
-                    @s.ClipsOnDisk / @s.ClipsTotal clips
-                </div>
-            </div>
-            <p class="small text-muted mt-2 mb-0">
-                @s.ScenesWithMedia/@s.ScenesTotal scenes with media · @s.ScenesHero hero
-                · @s.SecOnDisk.ToString("0.#")s on disk · @s.SecMissing.ToString("0.#")s missing
-            </p>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header">Compare resolutions</div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <thead>
-                        <tr>
-                            <th>Scenario</th>
-                            <th>$/sec</th>
-                            <th>Full film</th>
-                            <th>Remaining</th>
-                            <th>Regen on-disk</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var r in _report.Scenarios)
-                        {
-                            var cheap = _cheapestLabel == r.Label;
-                            <tr class="@(cheap ? "table-success" : "")">
-                                <td>
-                                    @r.Label
-                                    @if (cheap)
-                                    {
-                                        <span class="badge bg-success ms-1">cheapest</span>
-                                    }
-                                </td>
-                                <td>@Usd(r.RatePerSec)</td>
-                                <td>@Usd(r.FullFilmUsd)</td>
-                                <td>@Usd(r.RemainingMissingUsd)</td>
-                                <td>@Usd(r.RegenOnDiskUsd)</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>Breakdown by scene</span>
-            <div class="btn-group btn-group-sm">
-                @foreach (var mode in new[] { "all", "with media", "incomplete" })
+        <div>
+            <label class="form-label small mb-0">Video resolution</label>
+            <div class="btn-group" role="group" aria-label="Video resolution">
+                @foreach (var res in new[] { "480p", "720p", "1080p" })
                 {
                     <button type="button"
-                            class="btn @(_filter == mode ? "btn-primary" : "btn-outline-secondary")"
-                            @onclick="() => _filter = mode">
-                        @mode
+                            class="btn btn-sm @(_draftRes == res ? "btn-primary" : "btn-outline-secondary")"
+                            data-testid="@($"cost-res-{res}")"
+                            disabled="@_busy"
+                            @onclick="() => SetDraftResolutionAsync(res)">
+                        @res
                     </button>
                 }
             </div>
         </div>
-        <div class="card-body">
-            <div class="row g-2 mb-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small mb-0">Character</label>
-                    <select class="form-select form-select-sm" @bind="_filterCharacter">
-                        <option value="">All characters</option>
-                        @foreach (var c in CharacterOptions)
-                        {
-                            <option value="@c">@ShortChar(c)</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small mb-0">Location</label>
-                    <select class="form-select form-select-sm" @bind="_filterLocation">
-                        <option value="">All locations</option>
-                        @foreach (var loc in LocationOptions)
-                        {
-                            <option value="@loc">@ShortLoc(loc)</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small mb-0">Setting text</label>
-                    <input class="form-control form-control-sm" @bind="_filterText" @bind:event="oninput"
-                           placeholder="e.g. yard" />
-                </div>
-                <div class="col-md-2">
-                    @if (HasSceneFilters)
-                    {
-                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearSceneFilters">Clear</button>
-                    }
-                    <span class="small text-muted ms-1">@FilteredScenes.Count() shown</span>
-                </div>
-            </div>
-            <div class="table-responsive p-0" style="max-height: 420px; overflow: auto;">
-                <table class="table table-sm table-hover mb-0">
-                    <thead class="sticky-top bg-white">
-                        <tr>
-                            <th>#</th>
-                            <th>Setting</th>
-                            <th>Cast / loc</th>
-                            <th>Clips</th>
-                            <th>Actual $</th>
-                            <th>Est spent</th>
-                            <th>Remaining</th>
-                            <th>Hero upg</th>
-                            <th>All @_report.DraftResolution</th>
-                            <th>All @_report.HeroResolution</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var r in FilteredScenes)
-                        {
-                            <tr>
-                                <td><code>S@(r.Scene.ToString("D2"))</code></td>
-                                <td class="small">@(string.IsNullOrEmpty(r.Setting) ? "—" : r.Setting)</td>
-                                <td class="small text-muted">
-                                    @string.Join(", ", r.CharactersOnScreen.Select(ShortChar).Take(3))
-                                    @if (!string.IsNullOrEmpty(r.PrimaryLocationId) || r.LocationIds.Count > 0)
-                                    {
-                                        <div><code>@ShortLoc(r.PrimaryLocationId ?? r.LocationIds.FirstOrDefault() ?? "")</code></div>
-                                    }
-                                </td>
-                                <td class="small">@r.ClipsOnDisk/@r.ClipsTotal</td>
-                                <td>@Usd(r.ActualUsd)</td>
-                                <td>@Usd(r.SpentUsd)</td>
-                                <td class="@(r.RemainingDraftUsd > 0 ? "text-warning" : "")">@Usd(r.RemainingDraftUsd)</td>
-                                <td>@Usd(r.HeroUpgradeUsd)</td>
-                                <td>@Usd(r.AllDraftUsd)</td>
-                                <td>@Usd(r.AllHeroUsd)</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Refresh</button>
     </div>
 
-    @if (_topRemaining.Count > 0)
+    @if (_report is null)
     {
-        <div class="card mb-3">
-            <div class="card-header">Highest remaining first-pass costs</div>
-            <div class="card-body p-0">
-                <table class="table table-sm mb-0">
-                    <thead>
-                        <tr>
-                            <th>Scene</th>
-                            <th>Setting</th>
-                            <th>Missing</th>
-                            <th>Remaining $</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var r in _topRemaining)
-                        {
-                            <tr>
-                                <td><code>S@(r.Scene.ToString("D2"))</code></td>
-                                <td class="small">@r.Setting</td>
-                                <td>@r.ClipsMissing</td>
-                                <td>@Usd(r.RemainingDraftUsd)</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+        <p class="text-muted">Loading…</p>
+    }
+    else
+    {
+        var s = _report.Summary;
+        var slices = BuildSpentSlices();
+        var totalSpent = slices.Sum(x => x.Usd);
+        var estSlices = BuildEstimateSlices();
+        var estTotal = estSlices.Sum(x => x.Usd);
+        var estimate = s.FullFilmAllDraftUsd;
+
+        @* —— Simple top summary —— *@
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100 cost-hero-card">
+                    <div class="card-body text-center py-4">
+                        <div class="text-muted small text-uppercase mb-1">Estimate</div>
+                        <div class="display-6 fs-2 cost-hero-num" data-testid="cost-estimate">@Usd(estimate)</div>
+                        <div class="small text-muted mt-1">
+                            Full film · <strong>@_report.DraftResolution</strong>
+                            @if (_report.OutputRateDraft > 0)
+                            {
+                                <span> · @Usd(_report.OutputRateDraft)/sec video</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 cost-hero-card">
+                    <div class="card-body text-center py-4">
+                        <div class="text-muted small text-uppercase mb-1">Spent</div>
+                        <div class="display-6 fs-2 cost-hero-num" data-testid="cost-spent">@Usd(s.ActualUsd)</div>
+                        <div class="small text-muted mt-1">So far on this project</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 cost-hero-card">
+                    <div class="card-body text-center py-4">
+                        <div class="text-muted small text-uppercase mb-1">Remaining</div>
+                        <div class="display-6 fs-2 cost-hero-num" data-testid="cost-remaining">
+                            @Usd(Math.Max(0, estimate - s.ActualUsd))
+                        </div>
+                        <div class="small text-muted mt-1">Estimate − spent</div>
+                    </div>
+                </div>
             </div>
         </div>
-    }
 
-    <div class="card mb-3">
-        <div class="card-header">Recent ledger events</div>
-        <div class="card-body p-0">
-            @if (_report.RecentEvents.Count == 0)
+        @if (!string.IsNullOrWhiteSpace(_report.Notes))
+        {
+            <p class="small text-muted mb-2" data-testid="cost-estimate-basis">@_report.Notes</p>
+        }
+        @if (_report.Refinement is { UsedHistory: true } hist)
+        {
+            <p class="small mb-3" data-testid="cost-estimate-history">
+                <span class="badge text-bg-success fw-normal me-1">Using history</span>
+                @if (hist.AppliedVideoMultiplier > 1.001)
+                {
+                    <span class="text-muted">Video ×@hist.AppliedVideoMultiplier.ToString("0.##")</span>
+                }
+                @if (hist.LearnedFailRate is double failRate)
+                {
+                    <span class="text-muted ms-1">· observed fail ~@failRate.ToString("P0")</span>
+                }
+                @if (hist.VideoApiSamples + hist.ReviewApiSamples + hist.TimingSamples > 0)
+                {
+                    <span class="text-muted ms-1">
+                        · samples video @hist.VideoApiSamples / review @hist.ReviewApiSamples / timing @hist.TimingSamples
+                    </span>
+                }
+            </p>
+        }
+        <div class="small text-muted mb-3 d-flex flex-wrap gap-2">
+            @if (!string.IsNullOrWhiteSpace(_report.ModelName))
             {
-                <p class="text-muted p-3 mb-0">No ledger events — generate a clip or run Backfill.</p>
+                <span class="badge text-bg-secondary fw-normal">Video · @_report.ModelName</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(_report.ImageModelName))
+            {
+                <span class="badge text-bg-secondary fw-normal">Portraits · @_report.ImageModelName</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(_report.PlanningModelName))
+            {
+                <span class="badge text-bg-secondary fw-normal">Planning · @_report.PlanningModelName</span>
+            }
+            @if (_report.VoiceIncludedInEstimate && !string.IsNullOrWhiteSpace(_report.VoiceModelName))
+            {
+                <span class="badge text-bg-secondary fw-normal">Voice · @_report.VoiceModelName</span>
             }
             else
             {
-                <div class="table-responsive" style="max-height: 320px; overflow: auto;">
-                    <table class="table table-sm mb-0">
-                        <thead class="sticky-top bg-white">
-                            <tr>
-                                <th>When</th>
-                                <th>Kind</th>
-                                <th>S/C</th>
-                                <th>Sec</th>
-                                <th>Res</th>
-                                <th>USD</th>
-                                <th>Src</th>
-                                <th>Model</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var e in _report.RecentEvents)
+                <span class="badge text-bg-dark border border-secondary fw-normal text-muted">Voice · not in estimate</span>
+            }
+            <span class="badge text-bg-primary fw-normal" data-testid="cost-res-badge">
+                Video · @_report.DraftResolution · @Usd(_report.OutputRateDraft)/sec
+            </span>
+        </div>
+
+        @if (_report.Scenarios.Count > 0)
+        {
+            <div class="card mb-3 border-secondary border-opacity-25">
+                <div class="card-body py-2">
+                    <div class="small text-muted mb-2">Video cost changes a lot with resolution — pick one:</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var r in _report.Scenarios)
+                        {
+                            var active = string.Equals(r.Resolution, _draftRes, StringComparison.OrdinalIgnoreCase);
+                            <button type="button"
+                                    class="btn btn-sm @(active ? "btn-primary" : "btn-outline-secondary")"
+                                    disabled="@_busy"
+                                    @onclick="() => SetDraftResolutionAsync(r.Resolution)">
+                                <span class="fw-semibold">@r.Resolution</span>
+                                <span class="ms-1">@Usd(r.FullFilmUsd)</span>
+                                <span class="text-muted ms-1 small">(@Usd(r.RatePerSec)/s)</span>
+                            </button>
+                        }
+                    </div>
+                    <div class="form-text mb-0">
+                        Full-film numbers above include cast, planning, and optional voice; these chips are video-heavy scenarios at catalog rates for the selected video model.
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* —— My spend (this user): total · projects · vendors —— *@
+        @if (_mySpend is not null)
+        {
+            <div class="card mb-4" data-testid="cost-my-spend">
+                <div class="card-body">
+                    <div class="fw-semibold mb-1">Your spending</div>
+                    <p class="small text-muted mb-3">
+                        Tracked under your account (charge = list rate × admin multiplier).
+                        Vendor = catalog provider (xAI, Google, ElevenLabs, …).
+                    </p>
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted text-uppercase">All projects</div>
+                                <div class="fs-4 fw-semibold" data-testid="cost-my-total-charge">@Usd(_mySpend.TotalChargeUsd)</div>
+                                <div class="small text-muted">List @Usd(_mySpend.TotalListUsd) · @_mySpend.TotalCalls calls</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted text-uppercase">This project</div>
+                                @{
+                                    var projRow = _mySpend.ByProject.FirstOrDefault(p =>
+                                        string.Equals(p.ProjectId, _projectId, StringComparison.OrdinalIgnoreCase));
+                                    var projCharge = projRow?.ChargeUsd ?? 0;
+                                    var projList = projRow?.ListUsd ?? 0;
+                                    var projCalls = projRow?.Calls ?? 0;
+                                }
+                                <div class="fs-4 fw-semibold" data-testid="cost-my-project-charge">@Usd(projCharge)</div>
+                                <div class="small text-muted">List @Usd(projList) · @projCalls calls</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted text-uppercase">Projects with spend</div>
+                                <div class="fs-4 fw-semibold">@_mySpend.ByProject.Count(p => p.ChargeUsd > 0)</div>
+                                <div class="small text-muted">across your account</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (_mySpend.ByProject.Count > 0)
+                    {
+                        <div class="fw-semibold small mb-2">By project</div>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm mb-0" data-testid="cost-my-by-project">
+                                <thead>
+                                    <tr class="small text-muted">
+                                        <th>Project</th>
+                                        <th class="text-end">Calls</th>
+                                        <th class="text-end">List</th>
+                                        <th class="text-end">Charge</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in _mySpend.ByProject.OrderByDescending(x => x.ChargeUsd).Take(12))
+                                    {
+                                        <tr class="@(string.Equals(p.ProjectId, _projectId, StringComparison.OrdinalIgnoreCase) ? "table-primary" : "")">
+                                            <td>@p.ProjectId</td>
+                                            <td class="text-end">@p.Calls</td>
+                                            <td class="text-end">@Usd(p.ListUsd)</td>
+                                            <td class="text-end">@Usd(p.ChargeUsd)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    @if (_mySpend.ByProvider.Count > 0)
+                    {
+                        <div class="fw-semibold small mb-2">By vendor</div>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0" data-testid="cost-my-by-vendor">
+                                <thead>
+                                    <tr class="small text-muted">
+                                        <th>Vendor</th>
+                                        <th class="text-end">Calls</th>
+                                        <th class="text-end">List</th>
+                                        <th class="text-end">Charge</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var kv in _mySpend.ByProvider.OrderByDescending(kv => kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd))
+                                    {
+                                        var charge = kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd;
+                                        var list = kv.Value.TotalListUsd > 0 ? kv.Value.TotalListUsd : kv.Value.TotalUsd;
+                                        <tr>
+                                            <td>@ProviderLabel(kv.Key)</td>
+                                            <td class="text-end">@kv.Value.Count</td>
+                                            <td class="text-end">@Usd(list)</td>
+                                            <td class="text-end">@Usd(charge)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="fw-semibold">
+                                        <td>Total</td>
+                                        <td class="text-end">@_mySpend.TotalCalls</td>
+                                        <td class="text-end">@Usd(_mySpend.TotalListUsd)</td>
+                                        <td class="text-end">@Usd(_mySpend.TotalChargeUsd)</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* —— Estimate pie —— *@
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="fw-semibold mb-1">Planned cost breakdown</div>
+                <p class="small text-muted mb-3">
+                    @if (string.Equals(_report.EstimateBasis, "none", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span>Import a book so we can size the film. Estimates use your selected models.</span>
+                    }
+                    else if (string.Equals(_report.EstimateBasis, "screenplay", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span>From the imported screenplay (scene lengths). Refines after the shot plan and cast choices.</span>
+                    }
+                    else
+                    {
+                        <span>From the shot plan and current cast / voice choices. Model rates from Settings.</span>
+                    }
+                </p>
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-5 d-flex justify-content-center">
+                        @RenderPie(estSlices, estTotal, "Estimate", "cost-estimate-pie")
+                    </div>
+                    <div class="col-md-7">
+                        @RenderLegend(estSlices, estTotal)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* —— Spent pie + legend —— *@
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="fw-semibold mb-1">Where spend went</div>
+                <p class="small text-muted mb-3">
+                    Tracked work so far. Open a category for details.
+                </p>
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-5 d-flex justify-content-center">
+                        @RenderPie(slices, totalSpent, "Spent", "cost-spent-pie")
+                    </div>
+                    <div class="col-md-7">
+                        @RenderLegend(slices, totalSpent)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* —— Expandable category cards —— *@
+        <div class="fw-semibold mb-2">Categories</div>
+        <div class="vstack gap-2 mb-4">
+            @foreach (var slice in slices)
+            {
+                var open = _openCategory == slice.Id;
+                var events = EventsForCategory(slice.Id);
+                <div class="card cost-cat-card" data-testid="@($"cost-cat-{slice.Id}")">
+                    <button type="button"
+                            class="cost-cat-toggle btn btn-link text-start text-decoration-none w-100 px-3 py-3"
+                            @onclick="() => ToggleCategory(slice.Id)">
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <span class="d-flex align-items-center gap-2 min-w-0">
+                                <span class="cost-swatch" style="background:@slice.Color"></span>
+                                <span class="fw-semibold text-body">@slice.Label</span>
+                                <span class="badge text-bg-secondary fw-normal">@events.Count</span>
+                            </span>
+                            <span class="d-flex align-items-center gap-2 flex-shrink-0">
+                                <strong class="text-body">@Usd(slice.Usd)</strong>
+                                <span class="text-muted small">@(open ? "▴" : "▾")</span>
+                            </span>
+                        </div>
+                    </button>
+                    @if (open)
+                    {
+                        <div class="border-top px-3 pb-3">
+                            @if (events.Count == 0)
                             {
-                                <tr>
-                                    <td class="small">@(e.Ts ?? "—")</td>
-                                    <td><span class="badge bg-secondary">@e.Kind</span></td>
-                                    <td class="small">
-                                        @if (e.Scene is int sn)
-                                        {
-                                            <span>S@sn</span>
-                                        }
-                                        @if (e.Clip is int cn)
-                                        {
-                                            <span>C@cn</span>
-                                        }
-                                    </td>
-                                    <td class="small">@(e.DurationSec?.ToString("0.#") ?? "—")</td>
-                                    <td class="small">@(e.Resolution ?? "—")</td>
-                                    <td>@Usd(e.Usd)</td>
-                                    <td class="small">@(e.Source ?? "—")</td>
-                                    <td class="small">@Trunc(e.Model, 28)</td>
-                                </tr>
+                                <p class="small text-muted mb-0 pt-2">Nothing tracked in this category yet.</p>
                             }
-                        </tbody>
-                    </table>
+                            else
+                            {
+                                <div class="table-responsive pt-2">
+                                    <table class="table table-sm mb-0 align-middle">
+                                        <thead>
+                                            <tr class="small text-muted">
+                                                <th>When</th>
+                                                <th>Detail</th>
+                                                <th class="text-end">Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var e in events)
+                                            {
+                                                <tr>
+                                                    <td class="small text-nowrap">@FormatTs(e.Ts)</td>
+                                                    <td class="small">
+                                                        @EventDetail(e)
+                                                    </td>
+                                                    <td class="small text-end text-nowrap">@Usd(e.Usd)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
             }
         </div>
-        <div class="card-footer small text-muted">
-            Edit rates under <a href="configuration">Configuration</a> → cost estimates.
-            @_report.Notes
+
+        @* —— Advanced (collapsed) —— *@
+        <div class="card mb-3">
+            <button type="button"
+                    class="btn btn-link text-start text-decoration-none w-100 px-3 py-2 d-flex justify-content-between align-items-center"
+                    @onclick="() => _showAdvanced = !_showAdvanced">
+                <span class="small fw-semibold text-body">More options</span>
+                <span class="text-muted small">@(_showAdvanced ? "▴" : "▾")</span>
+            </button>
+            @if (_showAdvanced)
+            {
+                <div class="card-body border-top pt-3">
+                    <div class="row g-2 align-items-end mb-3">
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-0">Draft res</label>
+                            <select class="form-select form-select-sm" value="@_draftRes"
+                                    @onchange="OnAdvancedDraftResAsync" disabled="@_busy">
+                                <option value="480p">480p</option>
+                                <option value="720p">720p</option>
+                                <option value="1080p">1080p</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-0">Hero res</label>
+                            <select class="form-select form-select-sm" @bind="_heroRes" @bind:after="LoadAsync" disabled="@_busy">
+                                <option value="720p">720p</option>
+                                <option value="1080p">1080p</option>
+                                <option value="480p">480p</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-0">Avg retries</label>
+                            <input type="number" class="form-control form-control-sm" min="0" max="3" step="0.25"
+                                   @bind="_retries" @bind:after="LoadAsync" disabled="@_busy" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="BackfillAsync">
+                                Rebuild spend from clips
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="small text-muted mb-2">
+                        Clips @s.ClipsOnDisk / @s.ClipsTotal
+                        · Scenes with media @s.ScenesWithMedia / @s.ScenesTotal
+                    </div>
+                    <div class="progress mb-3" style="height: 0.65rem;">
+                        <div class="progress-bar" role="progressbar"
+                             style="width: @(ProgressPct(s))%"></div>
+                    </div>
+
+                    @if (_report.Scenarios.Count > 0)
+                    {
+                        <div class="fw-semibold small mb-2">Resolution scenarios</div>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Scenario</th>
+                                        <th class="text-end">Full film</th>
+                                        <th class="text-end">Still to generate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in _report.Scenarios)
+                                    {
+                                        <tr>
+                                            <td>@r.Label</td>
+                                            <td class="text-end">@Usd(r.FullFilmUsd)</td>
+                                            <td class="text-end">@Usd(r.RemainingMissingUsd)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    @if (_byProvider is { ByProvider.Count: > 0 })
+                    {
+                        <div class="fw-semibold small mb-2 mt-3">This project · by vendor (your account)</div>
+                        <p class="small text-muted mb-2">
+                            Your spend on this project only. List = catalog rate; Charge = list × multiplier.
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Vendor</th>
+                                        <th class="text-end">Calls</th>
+                                        <th class="text-end">List</th>
+                                        <th class="text-end">Charge</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var kv in _byProvider.ByProvider.OrderByDescending(kv =>
+                                        kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd))
+                                    {
+                                        var charge = kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd;
+                                        var list = kv.Value.TotalListUsd > 0 ? kv.Value.TotalListUsd : kv.Value.TotalUsd;
+                                        <tr>
+                                            <td>@ProviderLabel(kv.Key)</td>
+                                            <td class="text-end">@kv.Value.Count</td>
+                                            <td class="text-end">@Usd(list)</td>
+                                            <td class="text-end">@Usd(charge)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="fw-semibold">
+                                        <td>Total</td>
+                                        <td class="text-end">@_byProvider.TotalCalls</td>
+                                        <td class="text-end">@Usd(_byProvider.TotalListUsd > 0 ? _byProvider.TotalListUsd : _byProvider.TotalUsd)</td>
+                                        <td class="text-end">@Usd(_byProvider.TotalChargeUsd > 0 ? _byProvider.TotalChargeUsd : _byProvider.TotalUsd)</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </div>
+            }
         </div>
-    </div>
-}
+    }
 
 @code {
     private bool _busy;
@@ -393,89 +547,27 @@ else
     private string? _message;
     private string _projectId = "";
     private List<string> _projectIds = new();
+    private CostReport? _report;
     private string _draftRes = "480p";
     private string _heroRes = "720p";
-    private double _retries;
-    private string _filter = "all";
-    private string _filterCharacter = "";
-    private string _filterLocation = "";
-    private string _filterText = "";
-    private CostReport? _report;
-    private string? _cheapestLabel;
-    private List<CostSceneRow> _topRemaining = new();
+    private double _retries = 0.5;
+    private string? _openCategory;
+    private bool _showAdvanced;
+    private EngineApiClient.ApiCostByProviderStatsDto? _byProvider;
+    private EngineApiClient.UserSpendSummaryDto? _mySpend;
 
-    private bool HasSceneFilters =>
-        !string.IsNullOrWhiteSpace(_filterCharacter) ||
-        !string.IsNullOrWhiteSpace(_filterLocation) ||
-        !string.IsNullOrWhiteSpace(_filterText);
-
-    private List<string> CharacterOptions =>
-        _report?.Scenes
-            .SelectMany(s => s.CharactersOnScreen)
-            .Where(c => !string.IsNullOrWhiteSpace(c))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(ShortChar, StringComparer.OrdinalIgnoreCase)
-            .ToList()
-        ?? new List<string>();
-
-    private List<string> LocationOptions =>
-        _report?.Scenes
-            .SelectMany(s =>
-            {
-                var list = new List<string>(s.LocationIds);
-                if (!string.IsNullOrWhiteSpace(s.PrimaryLocationId))
-                    list.Add(s.PrimaryLocationId!);
-                return list;
-            })
-            .Where(l => !string.IsNullOrWhiteSpace(l))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(ShortLoc, StringComparer.OrdinalIgnoreCase)
-            .ToList()
-        ?? new List<string>();
-
-    private IEnumerable<CostSceneRow> FilteredScenes
+    private static readonly (string Id, string Label, string Color)[] Categories =
     {
-        get
-        {
-            if (_report is null) return Enumerable.Empty<CostSceneRow>();
-            IEnumerable<CostSceneRow> q = _filter switch
-            {
-                "with media" => _report.Scenes.Where(r => r.ClipsOnDisk > 0),
-                "incomplete" => _report.Scenes.Where(r => r.ClipsMissing > 0),
-                _ => _report.Scenes,
-            };
+        (CostCategories.Screenplay, CostCategories.Label(CostCategories.Screenplay), "#38bdf8"),
+        (CostCategories.Characters, CostCategories.Label(CostCategories.Characters), "#a78bfa"),
+        (CostCategories.Video, CostCategories.Label(CostCategories.Video), "#34d399"),
+        (CostCategories.Voice, CostCategories.Label(CostCategories.Voice), "#fbbf24"),
+        (CostCategories.Music, CostCategories.Label(CostCategories.Music), "#f472b6"),
+        (CostCategories.Review, CostCategories.Label(CostCategories.Review), "#fb923c"),
+        (CostCategories.Other, CostCategories.Label(CostCategories.Other), "#94a3b8"),
+    };
 
-            if (!string.IsNullOrWhiteSpace(_filterCharacter))
-            {
-                q = q.Where(r =>
-                    r.CharactersOnScreen.Any(c =>
-                        string.Equals(c, _filterCharacter, StringComparison.OrdinalIgnoreCase)));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_filterLocation))
-            {
-                q = q.Where(r =>
-                    string.Equals(r.PrimaryLocationId, _filterLocation, StringComparison.OrdinalIgnoreCase) ||
-                    r.LocationIds.Any(l =>
-                        string.Equals(l, _filterLocation, StringComparison.OrdinalIgnoreCase)));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_filterText))
-            {
-                q = q.Where(r =>
-                    (r.Setting ?? "").Contains(_filterText, StringComparison.OrdinalIgnoreCase));
-            }
-
-            return q;
-        }
-    }
-
-    private void ClearSceneFilters()
-    {
-        _filterCharacter = "";
-        _filterLocation = "";
-        _filterText = "";
-    }
+    private sealed record CostSlice(string Id, string Label, double Usd, string Color);
 
     protected override async Task OnInitializedAsync()
     {
@@ -492,7 +584,6 @@ else
             else
                 _projectId = "";
 
-            // Seed draft res from config when possible
             if (!string.IsNullOrEmpty(_projectId))
             {
                 try
@@ -521,6 +612,36 @@ else
         }
     }
 
+    private Task OnAdvancedDraftResAsync(ChangeEventArgs e) =>
+        SetDraftResolutionAsync(e.Value?.ToString() ?? _draftRes);
+
+    private async Task SetDraftResolutionAsync(string res)
+    {
+        res = (res ?? "480p").Trim().ToLowerInvariant();
+        if (res is not ("480p" or "720p" or "1080p"))
+            return;
+        if (string.Equals(_draftRes, res, StringComparison.OrdinalIgnoreCase) && _report is not null)
+            return;
+
+        _draftRes = res;
+        // Persist so film generation and Home estimate use the same resolution.
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_projectId))
+            {
+                await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?>
+                {
+                    ["resolution"] = _draftRes,
+                });
+            }
+        }
+        catch
+        {
+            // Still recompute estimate even if save fails
+        }
+        await LoadAsync();
+    }
+
     private async Task LoadAsync()
     {
         _busy = true;
@@ -529,13 +650,8 @@ else
         {
             var dto = await Engine.GetCostAsync(_projectId, _draftRes, _heroRes, _retries);
             _report = dto?.Cost;
-            if (_report?.Scenarios is { Count: > 0 } sc)
-                _cheapestLabel = sc.MinBy(x => x.FullFilmUsd)?.Label;
-            _topRemaining = _report?.Scenes
-                .Where(r => r.RemainingDraftUsd > 0)
-                .OrderByDescending(r => r.RemainingDraftUsd)
-                .Take(15)
-                .ToList() ?? new List<CostSceneRow>();
+            if (_report is not null && !string.IsNullOrWhiteSpace(_report.DraftResolution))
+                _draftRes = _report.DraftResolution;
         }
         catch (Exception ex)
         {
@@ -543,6 +659,26 @@ else
             _report = null;
         }
         finally { _busy = false; }
+
+        try
+        {
+            var byProviderDto = await Engine.GetCostByProviderAsync(_projectId);
+            _byProvider = byProviderDto?.Stats;
+        }
+        catch
+        {
+            _byProvider = null;
+        }
+
+        try
+        {
+            // Full account summary (all projects) for the signed-in user.
+            _mySpend = await Engine.GetMySpendAsync();
+        }
+        catch
+        {
+            _mySpend = null;
+        }
     }
 
     private async Task BackfillAsync()
@@ -555,26 +691,205 @@ else
             var result = await Engine.BackfillCostAsync(_projectId);
             var b = result?.Backfill;
             _message = b is null
-                ? "Backfill done"
-                : $"Added {b.Added} events (skipped {b.Skipped}); ledger {b.LedgerEvents}; actual {Usd(b.ActualUsd)}";
+                ? "Done"
+                : $"Updated spend history ({b.Added} new, {b.Skipped} skipped).";
             await LoadAsync();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
     }
 
+    private void ToggleCategory(string id) =>
+        _openCategory = string.Equals(_openCategory, id, StringComparison.OrdinalIgnoreCase) ? null : id;
+
+    private List<CostSlice> BuildSpentSlices()
+    {
+        var totals = Categories.ToDictionary(c => c.Id, _ => 0.0, StringComparer.OrdinalIgnoreCase);
+        if (_report?.RecentEvents is { Count: > 0 } events)
+        {
+            foreach (var e in events)
+            {
+                var cat = MapCategory(e.Kind, mode: null, category: e.Category);
+                totals[cat] = totals.GetValueOrDefault(cat) + e.Usd;
+            }
+        }
+        else if (_report?.Actual?.ByKind is { Count: > 0 } byKind)
+        {
+            foreach (var kv in byKind)
+            {
+                var cat = MapCategory(kv.Key);
+                totals[cat] = totals.GetValueOrDefault(cat) + kv.Value;
+            }
+        }
+
+        // Prefer summary actual total if events are only a "recent" window and under-count
+        var sliceSum = totals.Values.Sum();
+        var actual = _report?.Summary.ActualUsd ?? 0;
+        if (actual > sliceSum + 0.02 && _report?.Actual?.ByKind is { Count: > 0 } bk)
+        {
+            totals = Categories.ToDictionary(c => c.Id, _ => 0.0, StringComparer.OrdinalIgnoreCase);
+            foreach (var kv in bk)
+            {
+                var cat = MapCategory(kv.Key);
+                totals[cat] = totals.GetValueOrDefault(cat) + kv.Value;
+            }
+        }
+
+        return Categories
+            .Select(c => new CostSlice(c.Id, c.Label, Math.Round(totals.GetValueOrDefault(c.Id), 2), c.Color))
+            .ToList();
+    }
+
+    private List<CostEvent> EventsForCategory(string categoryId)
+    {
+        if (_report?.RecentEvents is not { Count: > 0 } events)
+            return new List<CostEvent>();
+        return events
+            .Where(e => string.Equals(MapCategory(e.Kind, category: e.Category), categoryId, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(e => e.Ts ?? "")
+            .ToList();
+    }
+
+    private List<CostSlice> BuildEstimateSlices()
+    {
+        var by = _report?.EstimateByCategory;
+        return Categories
+            .Select(c =>
+            {
+                var usd = 0.0;
+                if (by is not null)
+                {
+                    if (by.TryGetValue(c.Id, out var v)) usd = v;
+                    else
+                    {
+                        // tolerate alternate keys
+                        foreach (var kv in by)
+                        {
+                            if (string.Equals(kv.Key, c.Id, StringComparison.OrdinalIgnoreCase))
+                            {
+                                usd = kv.Value;
+                                break;
+                            }
+                        }
+                    }
+                }
+                return new CostSlice(c.Id, c.Label, Math.Round(usd, 2), c.Color);
+            })
+            .ToList();
+    }
+
+    private RenderFragment RenderPie(List<CostSlice> slices, double total, string centerLabel, string testId) => __builder =>
+    {
+        if (total <= 0.0001)
+        {
+            <div class="cost-pie-empty text-center text-muted py-4" data-testid="@testId">
+                <div class="cost-pie-placeholder mb-2" aria-hidden="true"></div>
+                <div class="small">No @centerLabel.ToLowerInvariant() yet</div>
+            </div>
+        }
+        else
+        {
+            <svg class="cost-pie" viewBox="0 0 42 42" width="220" height="220"
+                 role="img" aria-label="@centerLabel by category" data-testid="@testId">
+                <circle cx="21" cy="21" r="15.915" fill="transparent"
+                        stroke="rgba(148,163,184,0.15)" stroke-width="6" />
+                @{
+                    var offset = 25.0;
+                    foreach (var slice in slices.Where(x => x.Usd > 0))
+                    {
+                        var pct = 100.0 * slice.Usd / total;
+                        <circle class="cost-pie-slice"
+                                cx="21" cy="21" r="15.915"
+                                fill="transparent"
+                                stroke="@slice.Color"
+                                stroke-width="6"
+                                stroke-dasharray="@pct.ToString("0.###", CultureInfo.InvariantCulture) @((100 - pct).ToString("0.###", CultureInfo.InvariantCulture))"
+                                stroke-dashoffset="@offset.ToString("0.###", CultureInfo.InvariantCulture)" />
+                        offset -= pct;
+                    }
+                }
+                <circle cx="21" cy="21" r="11.5" class="cost-pie-hole" />
+                <text x="21" y="20.2" text-anchor="middle" class="cost-pie-center-label">@centerLabel</text>
+                <text x="21" y="24.5" text-anchor="middle" class="cost-pie-center-value">@Usd(total)</text>
+            </svg>
+        }
+    };
+
+    private RenderFragment RenderLegend(List<CostSlice> slices, double total) => __builder =>
+    {
+        <ul class="list-unstyled mb-0 cost-legend">
+            @foreach (var slice in slices)
+            {
+                var pct = total > 0 ? 100.0 * slice.Usd / total : 0;
+                <li class="d-flex align-items-center justify-content-between gap-2 py-1">
+                    <span class="d-flex align-items-center gap-2 min-w-0">
+                        <span class="cost-swatch" style="background:@slice.Color"></span>
+                        <span class="text-truncate">@slice.Label</span>
+                    </span>
+                    <span class="text-nowrap small">
+                        <strong>@Usd(slice.Usd)</strong>
+                        @if (total > 0 && slice.Usd > 0)
+                        {
+                            <span class="text-muted ms-1">(@pct.ToString("0")%)</span>
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+    };
+
+    /// <summary>Map ledger kind/mode → user-facing category (shared with API telemetry).</summary>
+    internal static string MapCategory(string? kind, string? mode = null, string? category = null) =>
+        CostCategories.Resolve(kind, mode, category);
+
+    private static string EventDetail(CostEvent e)
+    {
+        var bits = new List<string>();
+        if (e.Scene is int sn)
+            bits.Add(e.Clip is int cn ? $"Scene {sn} · clip {cn}" : $"Scene {sn}");
+        if (!string.IsNullOrWhiteSpace(e.Character))
+            bits.Add(KeyFormatting.ShortChar(e.Character));
+        if (!string.IsNullOrWhiteSpace(e.Resolution))
+            bits.Add(e.Resolution!);
+        if (e.DurationSec is double d && d > 0)
+            bits.Add($"{d:0.#}s");
+        if (!string.IsNullOrWhiteSpace(e.Model))
+            bits.Add(e.Model!);
+        if (bits.Count == 0)
+            bits.Add(string.IsNullOrWhiteSpace(e.Kind) ? "Work item" : e.Kind);
+        return string.Join(" · ", bits);
+    }
+
+    private static string FormatTs(string? ts)
+    {
+        if (string.IsNullOrWhiteSpace(ts)) return "—";
+        if (DateTimeOffset.TryParse(ts, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal, out var dto))
+            return dto.ToLocalTime().ToString("MMM d · HH:mm");
+        return ts.Length <= 16 ? ts : ts[..16];
+    }
+
     private static string Usd(double v) => $"${v:0.00}";
+
+    private static string ProviderLabel(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return "Unknown";
+        return id.Trim().ToLowerInvariant() switch
+        {
+            "xai" or "grok" => "xAI",
+            "google" or "gemini" => "Google",
+            "openai" => "OpenAI",
+            "anthropic" => "Anthropic",
+            "elevenlabs" => "ElevenLabs",
+            "fal" => "Fal",
+            "suno" => "Suno API",
+            "aimusicapi" => "AI Music API",
+            "perplexity" => "Perplexity",
+            "unknown" => "Unknown",
+            _ => id,
+        };
+    }
 
     private static int ProgressPct(CostReportSummary s) =>
         (int)Math.Round(100.0 * s.ClipsOnDisk / Math.Max(1, s.ClipsTotal));
-
-    private static string Trunc(string? s, int n)
-    {
-        if (string.IsNullOrEmpty(s)) return "—";
-        return s.Length <= n ? s : s[..(n - 1)] + "…";
-    }
-
-    private static string ShortChar(string key) => KeyFormatting.ShortChar(key);
-
-    private static string ShortLoc(string key) => KeyFormatting.ShortLoc(key);
 }

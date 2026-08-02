@@ -1,0 +1,158 @@
+{
+  "BookPath": "../books/Nick_and_Me.txt",
+  "Timestamp": "2026-08-02 04:39:46 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 81.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 3,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 31,
+        "TotalDialogueBlocks": 20,
+        "AvgWordsPerDialogue": 12.2,
+        "MaxWordsInSingleDialogue": 22,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR V.O.",
+          "OFFICER DUPUIS V.O.",
+          "PETER V.O."
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 2 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.8,
+      "AvgCharacterDisambiguation": 5.5,
+      "AvgAiVideoDirectibility": 7.2,
+      "AvgDramaticPacing": 6.8,
+      "AvgDialogueAuthenticity": 7.2,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 6.9,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: The protagonist identity is unstable and inaccurate: NARRATOR becomes PETER before the source\u0027s final-name reveal, and the screenplay uses PETER OLSEN / \u0022President Peter Olsen\u0022 even though the source\u0027s final name is Peter Olson.",
+        "gpt-5.6-terra: YOUNG NICK is not given a distinct cast token from adult NICK; the draft instead uses \u0022Twelve-year-old NICK,\u0022 risking one locked adult reference image across incompatible ages.",
+        "gpt-5.6-terra: GUARD is an unnamed generic supporting dialogue token, contrary to the required stable named-role convention.",
+        "gpt-5.6-terra: Mandatory Vision Meta sidecar is absent.",
+        "gpt-5.6-terra: A dream scene and real-world wake-up are combined under \u0022EXT. DREAM ROAD - DAY,\u0022 creating an impossible single-location scene for clip production."
+      ]
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 81.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 3,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 40,
+        "TotalDialogueBlocks": 83,
+        "AvgWordsPerDialogue": 11.4,
+        "MaxWordsInSingleDialogue": 47,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "PETER",
+          "SIONNA",
+          "MA",
+          "LIBRARIAN",
+          "DR. CARSON",
+          "YOUNG NICK",
+          "OFFICER DUPUIS",
+          "BOB",
+          "ATTENDANT"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG NICK"
+        ],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. YOUNG NICK).",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.8,
+      "AvgCharacterDisambiguation": 6.5,
+      "AvgAiVideoDirectibility": 6.8,
+      "AvgDramaticPacing": 6.5,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 7.8,
+      "AvgOverallQualitative": 6.9,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: The protagonist is called PETER throughout despite the source withholding his name until the final line, and the draft alternates between PETER and NARRATOR for the same character; this is a source-spoiler and unstable cast-identity defect.",
+        "gpt-5.6-terra: Mandatory Vision Meta sidecar is absent.",
+        "gpt-5.6-terra: Several slugs combine distinct locations or travel beats, including \u0022INT. FUNERAL HOME / CEMETERY\u0022 and \u0022EXT. WISCONSIN HIGHWAY / AIRPORT,\u0022 which is unusable as a single scheduled, generated clip location.",
+        "gpt-5.6-terra: The climactic prison speech is a long multi-idea monologue that exceeds the prompt\u0027s dialogue-length limit and is not viable as one 5-10 second clip."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 5.67,
+      "gpt-5.6-terra": 5.58
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 8.25,
+      "grok-4.5": 8.08
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 1,
+      "grok-4.5": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u2139\uFE0F gpt-5.6-terra rated its own screenplay 5.6/10 vs. a 8.2/10 average from 1 other judge(s) (-2.7) \u2014 notably harsher on itself than peers were.",
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.1/10 vs. a 5.7/10 average from 1 other judge(s) (\u002B2.4) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "This is the stronger adaptation because it covers more of the book\u0027s emotional spine: Nick\u0027s early protection and intimidation, Sionna\u0027s awakening effect, college conflict, bar rupture, Ma\u0027s death, the stabbing, separation, Seattle reinvention, and prison forgiveness. However, it compresses several major turns into summary-like transitions, omits much of the gradual school/work transformation, and uses broad VO to bridge story rather than playable visual beats. Character locking is weak because the lead\u0027s identity switches from NARRATOR to PETER long before the book permits the reveal, while recurring appearances do not consistently restate locked traits. The sound cue coverage is consistently present and often concrete, with particularly effective crash, stabbing, hospital, and prison sound beds, though some scenes rely on only one generic ambient cue. Dialogue retains the book\u0027s rough voice in places, but the final confrontation is overpacked and several lines are more expositional than performable.",
+      "gpt-5.6-terra": "The draft is comparatively clean in scene-level construction and frequently offers concise, performable dialogue and concrete sound beds. Its hospital, bar confrontation, stabbing, breakup, and prison scenes are readable as short-form visual units. But it drops too much of the source\u0027s essential middle progression: Peter\u0027s sustained college growth, the escalating caregiver burden, Nick\u0027s withdrawal and tactical return to Ma, Sionna\u0027s family/farm material, and the work-to-business trajectory are substantially reduced or bypassed. This makes the final successful Seattle businessman feel under-earned. The script also contains severe continuity problems for downstream casting: the anonymous narrator is renamed early, the surname is misspelled, and young/adult Nick are not properly disambiguated. Sound design is a relative strength, with concrete environmental cues in nearly every scene and layered audio at the violent peaks, but it cannot compensate for the identity and fidelity failures."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Strong fidelity to the full arc (Nick intro/Viking lore, Sionna meet, Ma decline/hospital, dreams, yoga, bar fight, crash/death, stabbing, breakup, Seattle success, prison forgiveness) with proper NARRATOR withholding until late reveal; minor spelling slip (Olsen/Olson) and light compression of secondary beats. Character looks are locked early (Nick scars/suede/reddish hair; Sionna pale/blue eyes/fish necklace) and mostly restated, though NARRATOR-to-PETER handoff and young/adult splits could be sharper. Action is highly clip-friendly (single observable beats, short scenes). Pacing holds momentum across ~40 tight scenes without padding. Dialogue stays close to book voice and clip-length. Sound/Music cues are dense and diegetic on every scene plus peaks.",
+      "grok-4.5": "Covers the same essential spine cleanly but violates the source-name rule by locking PETER from the opening (book withholds until final line), slightly lowering fidelity; otherwise no major inventions or dropped peaks. Excellent consistent casting (PETER lean ordinary clothes; NICK tall scarred reddish hair; YOUNG NICK flashback; Sionna traits restated). Directibility is solid and filmable yet a few scenes pack denser multi-beat action that strains pure 5-10s clips. Pacing is smooth but less granular than ideal for the short-clip constraint. Dialogue is natural, character-distinct, and book-true. Sound cues present on every scene though slightly less varied at emotional peaks than A."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-terra": "Strongest: Screenplay A because it preserves substantially more of the book\u0027s full emotional and plot arc, especially the protagonist\u0027s education-driven awakening and the long path to forgiveness. Weakest: Screenplay B because its unstable and incorrect protagonist naming, failure to separate young and adult Nick, and more drastic loss of the source\u0027s middle transformation make its ending feel less faithful and less production-safe.",
+    "grok-4.5": "Strongest: Screenplay A because it best obeys narrator-name withholding, delivers the tightest clip-sized observable beats, and densest usable sound design while still hitting every major book turn. Weakest: Screenplay B because premature PETER naming undercuts fidelity and a few denser scenes reduce pure short-clip directibility."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "Add a mandatory identity-reveal audit: until a source text explicitly reveals a first-person protagonist\u0027s name, require the exact same anonymous character token in every action line, dialogue cue, title reference, and visual-description reference; prohibit early-name substitutions even when the name appears later in the source.",
+      "gpt-5.6-terra": "Add a final automated-style canonical-entity audit requiring every named character, age variant, surname, and supporting speaking role to match a single approved cast-token list exactly; require explicit separate tokens for any character shown at materially different ages."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Add an explicit rule: on every character re-entry after a time jump, dream, or age split, the first Action line MUST restate at least three locked visual traits (build/hair/scar/wardrobe) using the exact same tokens; also require source-exact spelling of all proper names.",
+      "grok-4.5": "Strengthen the narrator-name rule with: \u0027If the source withholds the first-person protagonist\u2019s given name until late (or never), the cue MUST remain NARRATOR/THE NARRATOR for all pre-reveal scenes; never front-load the revealed name even for casting convenience.\u0027"
+    }
+  }
+}

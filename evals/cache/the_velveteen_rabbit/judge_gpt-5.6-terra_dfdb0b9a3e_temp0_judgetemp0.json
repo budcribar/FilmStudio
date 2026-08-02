@@ -1,0 +1,42 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.4,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "A is a highly faithful, near-complete adaptation that preserves the central emotional and narrative spine: Christmas abandonment, the Skin Horse\u0027s lesson, bedtime attachment, the garden declaration of Realness, the wild-rabbit rejection, scarlet fever, disposal, Fairy transformation, and final reunion image. Dialogue is exceptionally close to the source and the sound plan is consistently specific, emotionally calibrated, and dense enough at major turns. The principal limitations are production-format issues rather than story failures: several action paragraphs contain a sequence of separate shots or elapsed actions that should be broken into individual 5-10 second clip beats, and recurring characters\u2014especially THE BOY\u2014are not consistently reintroduced with enough locked visual traits after substantial gaps or time passage. The brief invented nursery-window opening is harmless connective tissue, not a material fidelity issue.",
+      "promptImprovementSuggestion": "Add a hard clip-granularity rule: each Action element must represent no more than one filmable 5-10 second visual beat; split time passages, sequential actions, and distinct reveals into separate Action elements with their own sound or music cue."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 6,
+      "characterDisambiguation": 6.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 6.8,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The draft creates a major chronology and continuity contradiction by depicting the Boy as pale and thin after illness in the woodland scene, then immediately placing him back in bed contracting scarlet fever. This reverses the source\u0027s illness-and-recovery order and makes the dramatic progression unusable as-is."
+      ],
+      "rationale": "B retains most essential plot points and has clean, generally filmable short-form action, with strong ambient sound coverage throughout. However, its scene order contains a serious source and continuity failure: the Boy is shown in a post-illness state before the script dramatizes the illness itself. That inversion undercuts the source\u0027s escalation from loving companionship to fever crisis and makes the subsequent recovery beat confusing. It also substantially compresses the spring garden relationship-building material, adds unsupported spoken lines for the Boy, and provides less reliable identity locking for him; his clothing shifts from a velvet dressing gown to a velvet jacket without a stable visual specification, while re-entries do not consistently restate defining traits. The dialogue remains largely source-faithful, but it is less complete and precise than A\u0027s.",
+      "promptImprovementSuggestion": "Add a mandatory pre-delivery chronology check requiring every adapted scene to preserve the source\u0027s causal and temporal order; no consequence, recovery, revelation, or aftermath may appear before its establishing event unless the source explicitly uses a flashback or non-linear structure."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it delivers the source\u0027s full emotional arc with notably faithful dialogue, clear visual storytelling, and consistently production-useful sound and music cues. Weakest: Screenplay B because its post-illness woodland scene precedes the scarlet-fever sequence, creating a major chronological contradiction that prevents greenlight as submitted.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "D604F45C5E6045656B76D671358F40BD526155469D999687627B5D34791344DD"
+}

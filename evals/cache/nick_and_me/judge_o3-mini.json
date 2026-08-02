@@ -1,0 +1,94 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A faithfully covers many narrative beats from the book and offers clear flashbacks and voiceovers, though its pacing can feel a bit uneven and some dialogue is overly expository."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B covers most beats with a natural tone and clear visuals but suffers slightly from a name change (Jake instead of Peter) and a somewhat less engaging overall cinematic execution."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C is visually rich and faithful to the source, with strong montage sequences and a wide scope of narrative beats that lend themselves well to AI video clip generation."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D achieves a tight, contemporary structure with clearly delineated flashbacks and present-day scenes, strong character descriptions, and natural dialogue that make it highly directable for AI-generated video clips."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E retells many of the book\u2019s events but tends to be overly summary and expository, lacking the cinematic details and crisp dialogue necessary for effective short video clip adaptation."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay F offers the most polished, continuous narrative with clear age and time disambiguation, detailed visual directions, and authentic dialogue that perfectly translate the book\u2019s complex emotional beats into filmable short clips."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay F",
+    "Screenplay D",
+    "Screenplay C",
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay E"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay F because it delivers an exceptionally clear, cinematic, and coherent adaptation with precise visuals and character continuity; Weakest: Screenplay E because its overly summary style and lack of detailed, directable visual and dialogue cues detract from full production readiness.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "4529CB17D369EE662A1B437DC859E9EB2E60C388D0DF27C3CF0792B450362F27"
+}

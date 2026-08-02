@@ -1,0 +1,81 @@
+{
+  "schema_version": "adaptation_package.v1",
+  "pipeline_variant": "chained",
+  "book_slug": "the_tell-tale_heart",
+  "book_sha256": "73e702a481dc99a55ba1ba3e9c237a17595e915c6bc1f1b5d3f2e7d4a06d38c4",
+  "provider": "xai",
+  "model": "grok-4.5",
+  "judge_models": [
+    "grok-4",
+    "grok-4.20-reasoning"
+  ],
+  "temperature": 0.2,
+  "judge_temperature": 0,
+  "target_runtime_minutes": 16,
+  "generated_at_utc": "2026-08-01T18:21:41.7372296Z",
+  "validation_status": "pass",
+  "scene_count": 9,
+  "clip_count": null,
+  "artifacts": [
+    {
+      "key": "beat_plan",
+      "path": "adaptation_plan.json",
+      "exists": true,
+      "sha256": "6d0d11423699981f26de6038cabac58d2e0d8b37d4f38caeb4826a5753c075bc"
+    },
+    {
+      "key": "cast_and_locations",
+      "path": "cast_and_locations.json",
+      "exists": true,
+      "sha256": "a28ec0563de8e735297c604200386f131078c860770a6099726b53677330260c"
+    },
+    {
+      "key": "screenplay",
+      "path": "screenplay.fountain",
+      "exists": true,
+      "sha256": "7319f16b32854cb80828cce0e21991e564b3b40ada6fe1a34fb58431fb692a0f"
+    },
+    {
+      "key": "edit_decision_list",
+      "path": "edit_decision_list.json",
+      "exists": true,
+      "sha256": "e3b58bac2f78efc424cd2ffc5bc2f6f8637000f77c135d2eb2a6e189a1e53bf0"
+    },
+    {
+      "key": "audio_plan",
+      "path": "audio_plan.json",
+      "exists": true,
+      "sha256": "ef393d97a7f7305488fc9865235e88995ac756c40fb17dd6753471631ba2877c"
+    },
+    {
+      "key": "source_book_indexed",
+      "path": "book_indexed.txt",
+      "exists": true,
+      "sha256": "e7fb429b25782faceb7dfe848e242418ee4b34f939979c7dce58145c8dd56156"
+    },
+    {
+      "key": "source_book_annotated",
+      "path": "source_book_annotated.txt",
+      "exists": true,
+      "sha256": "9d96eb3428d41dfb09acdf69ab070d201f500bc6caadff2d8d1141d551b7f45b"
+    },
+    {
+      "key": "validation_report",
+      "path": "validation_report.json",
+      "exists": true,
+      "sha256": "00ae840b67d571512bc5de40647b65da64b7941b829e0471146e9ad99df8d97c"
+    },
+    {
+      "key": "judge_review_grok-4",
+      "path": "judge_review.grok-4.json",
+      "exists": true,
+      "sha256": "e651e181d2ffb6c45af02d43adf48118d803e8f992ccd4e26f4e79c37c4223c1"
+    },
+    {
+      "key": "judge_review_grok-4.20-reasoning",
+      "path": "judge_review.grok-4.20-reasoning.json",
+      "exists": true,
+      "sha256": "31b1686a1bb8a9900852ebd10d6d58175b563c34c417bfa8bd0a31e3e7c1f1a5"
+    }
+  ]
+}

@@ -48,7 +48,10 @@ public sealed class PlateRankClassifier
         if (!IsEnabled || candidateNames.Count <= 1)
             return (baseline, false);
 
-        var model = string.IsNullOrWhiteSpace(_opts.PlateRankClassifyModel) ? "grok-4.5" : _opts.PlateRankClassifyModel;
+        var model = string.IsNullOrWhiteSpace(_opts.PlateRankClassifyModel)
+            ? throw new InvalidOperationException(
+                "Plate rank classify: no model configured. Set the project Script & planning model in Settings, or PlateRankClassifyModel.")
+            : _opts.PlateRankClassifyModel;
         var cacheKey = $"{charKey}|{description}|{string.Join(",", candidateNames)}|{model}";
         if (Cache.TryGetValue(cacheKey, out var cached))
             return cached;

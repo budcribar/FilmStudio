@@ -1,0 +1,144 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highly faithful, detailed beats, consistent descriptions, filmable actions for clips."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Excellent fidelity and disambiguation, concise filmable beats, strong pacing for short clips."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 4,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 4.5,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 3,
+      "overallQualitativeScore": 4.08,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major invented content and condensed structure",
+        "Dropped major beats",
+        "Unfilmable summary style"
+      ],
+      "rationale": "Severely penalized for invented plot and poor source coverage."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity and directibility, minor pacing notes for clip length."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Very faithful, excellent dialogue and character consistency."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Solid but less detailed than top entries, some pacing compression."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 2.5,
+      "characterDisambiguation": 3.5,
+      "aiVideoDirectibility": 4,
+      "dramaticPacing": 3.5,
+      "dialogueAuthenticity": 4,
+      "soundDesignMusic": 2.5,
+      "overallQualitativeScore": 3.33,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major invented content",
+        "Broken structure",
+        "Dropped major beats"
+      ],
+      "rationale": "Severely penalized for invented plot and unusable summary format."
+    },
+    {
+      "screenplayId": "Screenplay H",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Exceptional fidelity, directibility and pacing for short clips."
+    },
+    {
+      "screenplayId": "Screenplay I",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity and disambiguation, concise filmable scenes."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay H",
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay I",
+    "Screenplay D",
+    "Screenplay F",
+    "Screenplay C",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay H because it achieves near-perfect fidelity with highly filmable short-clip beats and consistent character descriptions. Weakest: Screenplay G because it contains major invented content, dropped beats, and unusable summary structure that violates adaptation rules.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "397AB6C94539642F6BF01BD2C84A6B25267CF0D129917379042F8D99A224C0E3"
+}

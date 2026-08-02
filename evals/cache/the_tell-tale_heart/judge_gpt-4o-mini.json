@@ -1,0 +1,110 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A effectively captures the essence of Poe\u0027s narrative while maintaining a strong visual direction and character clarity."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B excels in adaptation fidelity and dialogue authenticity, creating a compelling and directable narrative."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C presents a solid adaptation but lacks the dramatic tension and pacing of the top candidates."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D captures the essence of the story but struggles with pacing and directibility in certain sections."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E is a competent adaptation but lacks the intensity and clarity found in stronger candidates."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Pacing issues lead to a lack of tension."
+      ],
+      "rationale": "Screenplay F has significant pacing issues that hinder its overall effectiveness and production readiness."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay G presents a strong adaptation with good pacing and character clarity, though it could use more tension."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A",
+    "Screenplay D",
+    "Screenplay G",
+    "Screenplay C",
+    "Screenplay E",
+    "Screenplay F"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it excels in adaptation fidelity and dialogue authenticity, creating a compelling narrative. Weakest: Screenplay F because it has significant pacing issues that hinder its overall effectiveness and production readiness.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "88517034D4CA38BDC2DCED0379F639E178C5775039FAE9AC6B2B7CB5B82E07F9"
+}

@@ -53,6 +53,8 @@ public static class ApiKeyScope
 
     public static string? CurrentAiMusicApi => Get("aimusicapi");
 
+    public static string? CurrentElevenLabs => Get("elevenlabs");
+
     public static string? Get(string providerId)
     {
         var k = CurrentKeys.Value;
@@ -88,6 +90,7 @@ public static class ApiKeyScope
             "fal" => "fal",
             "suno" => "suno",
             "aimusicapi" or "aimusicapi.ai" => "aimusicapi",
+            "elevenlabs" or "eleven" => "elevenlabs",
             _ => p,
         };
     }
@@ -102,6 +105,37 @@ public static class ApiKeyScope
             if (_done) return;
             _done = true;
             CurrentKeys.Value = _prev;
+        }
+    }
+}
+
+/// <summary>
+/// Ambient user id for API-call cost logging (AsyncLocal — flows with jobs like <see cref="ApiKeyScope"/>).
+/// </summary>
+public static class UserApiCallScope
+{
+    private static readonly System.Threading.AsyncLocal<string?> CurrentUser = new();
+
+    public static string? UserId =>
+        string.IsNullOrWhiteSpace(CurrentUser.Value) ? null : CurrentUser.Value.Trim();
+
+    public static IDisposable Push(string? userId)
+    {
+        var prev = CurrentUser.Value;
+        CurrentUser.Value = string.IsNullOrWhiteSpace(userId) ? null : userId.Trim();
+        return new Pop(prev);
+    }
+
+    private sealed class Pop : IDisposable
+    {
+        private readonly string? _prev;
+        private bool _done;
+        public Pop(string? prev) => _prev = prev;
+        public void Dispose()
+        {
+            if (_done) return;
+            _done = true;
+            CurrentUser.Value = _prev;
         }
     }
 }

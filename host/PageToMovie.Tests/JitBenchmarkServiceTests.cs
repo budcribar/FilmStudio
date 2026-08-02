@@ -67,7 +67,7 @@ public class JitBenchmarkServiceTests
         public bool IsConfigured => true;
         public string ResponseToReturn { get; set; } = "{}";
 
-        public Task<string> CompleteAsync(string systemPrompt, string userPrompt, string model, double temperature = 0.2, CancellationToken ct = default, string? mode = null)
+        public Task<string> CompleteAsync(string systemPrompt, string userPrompt, string model, double temperature = 0.2, CancellationToken ct = default, string? mode = null, string? reasoningEffort = null)
         {
             return Task.FromResult(ResponseToReturn);
         }
@@ -157,7 +157,11 @@ public class JitBenchmarkServiceTests
         var visionClient = new TestVisionClient();
         var jitService = new JitBenchmarkService(ledger, classifier, videoClient, visionClient);
 
-        var result = await jitService.EnsureBeatCalibratedAsync("Slashes with a machete", "(roaring)");
+        var result = await jitService.EnsureBeatCalibratedAsync(
+            "Slashes with a machete",
+            "(roaring)",
+            modelId: "fal-ai/hunyuan-video",
+            evaluatorModelId: "gemini-2.5-flash");
 
         Assert.True(result.IsLiveJitBenchmark);
         Assert.True(videoClient.GenerationSubmitted);

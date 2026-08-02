@@ -277,7 +277,10 @@ public sealed class ProjectStore
             else if (f.EndsWith("blueprint.clips.grok.json", StringComparison.OrdinalIgnoreCase) || f.EndsWith("scenes.json", StringComparison.OrdinalIgnoreCase))
             {
                 var bpScenes = GetBlueprintSceneNumbers(projectId);
-                foreach (var sn in bpScenes) modScenes.Add(sn);
+                if (bpScenes is not null)
+                {
+                    foreach (var sn in bpScenes) modScenes.Add(sn);
+                }
             }
         }
 
@@ -1047,6 +1050,7 @@ public sealed class ProjectStore
         string? ownerUserId = null;
         string? parentProjectId = null;
         string? visibilityMode = null;
+        string? studioPath = null;
         string? metaId = null;
         try
         {
@@ -1070,6 +1074,9 @@ public sealed class ProjectStore
                 else if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
                          string.Equals(p.Name, "owner_user_id", StringComparison.OrdinalIgnoreCase))
                     ownerUserId = p.Value.GetString();
+                else if (string.Equals(p.Name, "studioPath", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(p.Name, "studio_path", StringComparison.OrdinalIgnoreCase))
+                    studioPath = p.Value.GetString();
             }
         }
         catch
@@ -1094,6 +1101,7 @@ public sealed class ProjectStore
             OwnerUserId = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim(),
             ParentProjectId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim(),
             VisibilityMode = string.IsNullOrWhiteSpace(visibilityMode) ? "Private" : visibilityMode.Trim(),
+            StudioPath = ProjectStudioPaths.Normalize(studioPath),
         };
     }
 
@@ -1144,7 +1152,8 @@ public sealed class ProjectStore
         string idOrTitle,
         string? title = null,
         CancellationToken ct = default,
-        string? ownerUserId = null)
+        string? ownerUserId = null,
+        string? studioPath = null)
     {
         var raw = (idOrTitle ?? "").Trim();
         if (raw.Length == 0)
@@ -1204,6 +1213,9 @@ public sealed class ProjectStore
             ["description"] = "",
             ["ownerUserId"] = string.IsNullOrWhiteSpace(ownerUserId) ? owner : ownerUserId.Trim(),
             ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"),
+            ["studioPath"] = ProjectStudioPaths.Normalize(studioPath),
+            // Format version for export/import converters (ProjectMigrationService).
+            ["schema_version"] = ProjectFormatVersions.ProjectSchemaVersion,
         };
         await File.WriteAllTextAsync(
             Path.Combine(dir, "project.json"),
@@ -1319,6 +1331,58 @@ public sealed class ProjectStore
     /// <summary>
     /// Update project visibility mode ("Private", "Public", or "Open") in project.json.
     /// </summary>
+
+    /// <summary>
+    /// Update display title/label in project.json. Does not move the folder (id stays stable).
+    /// </summary>
+    public async Task<ProjectInfo> RenameProjectAsync(
+        string projectId,
+        string newTitle,
+        CancellationToken ct = default)
+    {
+        var title = (newTitle ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(title))
+            throw new InvalidOperationException("Project name is required.");
+        if (title.Length > 80)
+            title = title[..80].Trim();
+
+        var proj = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
+        var metaPath = Path.Combine(proj.Path, "project.json");
+        Dictionary<string, object?> meta;
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
+                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
+                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        else
+        {
+            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        meta["id"] = proj.Id;
+        meta["title"] = title;
+        meta["label"] = title;
+        if (!string.IsNullOrWhiteSpace(proj.OwnerUserId)) meta["ownerUserId"] = proj.OwnerUserId;
+        if (!string.IsNullOrWhiteSpace(proj.ParentProjectId)) meta["parentProjectId"] = proj.ParentProjectId;
+        if (!string.IsNullOrWhiteSpace(proj.VisibilityMode)) meta["visibilityMode"] = proj.VisibilityMode;
+
+        await File.WriteAllTextAsync(metaPath, JsonSerializer.Serialize(meta, JsonOpts) + "\n", ct).ConfigureAwait(false);
+        InvalidateReadCaches(null);
+
+        proj.Title = title;
+        proj.Label = title;
+        return proj;
+    }
+
+
     public async Task<ProjectInfo> SetProjectVisibilityModeAsync(
         string projectId,
         string visibilityMode,
@@ -1358,6 +1422,49 @@ public sealed class ProjectStore
         await File.WriteAllTextAsync(metaPath, updatedJson, ct).ConfigureAwait(false);
 
         proj.VisibilityMode = mode;
+        InvalidateReadCaches(null);
+        return proj;
+    }
+
+    /// <summary>
+    /// Persist product path (full vs simple-voice) on project.json.
+    /// </summary>
+    public async Task<ProjectInfo> SetProjectStudioPathAsync(
+        string projectId,
+        string? studioPath,
+        CancellationToken ct = default)
+    {
+        var path = ProjectStudioPaths.Normalize(studioPath);
+        var proj = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
+        var metaPath = Path.Combine(proj.Path, "project.json");
+        Dictionary<string, object?> meta;
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
+                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
+                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        else
+        {
+            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        meta["studioPath"] = path;
+        meta["id"] = proj.Id;
+        if (!string.IsNullOrWhiteSpace(proj.Title)) meta["title"] = proj.Title;
+        if (!string.IsNullOrWhiteSpace(proj.OwnerUserId)) meta["ownerUserId"] = proj.OwnerUserId;
+        if (!string.IsNullOrWhiteSpace(proj.ParentProjectId)) meta["parentProjectId"] = proj.ParentProjectId;
+        if (!string.IsNullOrWhiteSpace(proj.VisibilityMode)) meta["visibilityMode"] = proj.VisibilityMode;
+
+        await File.WriteAllTextAsync(metaPath, JsonSerializer.Serialize(meta, JsonOpts) + "\n", ct).ConfigureAwait(false);
+        proj.StudioPath = path;
         InvalidateReadCaches(null);
         return proj;
     }
@@ -1919,6 +2026,17 @@ public sealed class ProjectStore
                 VisualLock = info.TryGetProperty("visual_lock", out var v) ? v.GetString() ?? "" : "",
                 VoiceProfile = info.TryGetProperty("voice_profile", out var vp) ? vp.GetString() ?? "" : "",
                 VoiceLabel = info.TryGetProperty("voice_label", out var vlab) ? vlab.GetString() ?? "" : "",
+                HasVoiceCloneSample = File.Exists(GetVoiceCloneSamplePath(projectId, key)),
+                VoiceCloneFileName = File.Exists(GetVoiceCloneSamplePath(projectId, key))
+                    ? Path.GetFileName(GetVoiceCloneSamplePath(projectId, key))
+                    : null,
+                VoiceCloneUrl = File.Exists(GetVoiceCloneSamplePath(projectId, key))
+                    ? $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/voice/clone-sample"
+                    : null,
+                VoiceProvider = info.TryGetProperty("voice_provider", out var vprov) ? vprov.GetString() : null,
+                VoiceProviderVoiceId = info.TryGetProperty("voice_provider_voice_id", out var vpid)
+                    ? vpid.GetString()
+                    : null,
                 VoiceOnly = voiceOnly,
                 Locked = voiceOnly
                     ? !string.IsNullOrWhiteSpace(
@@ -2202,6 +2320,9 @@ public sealed class ProjectStore
 
         model ??= _opts.DefaultImageModel;
         provider ??= _opts.ImageProvider;
+        if (string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException(
+                "Image seed limits: no image model selected. Open Settings and choose an Image generation model.");
         var resolved = ImageApiLimits.ResolveProvider(provider, model);
         return new ImageSeedLimits
         {
@@ -2209,6 +2330,135 @@ public sealed class ProjectStore
             ImageModel = model,
             MaxReferenceImages = ImageApiLimits.MaxReferenceImages(resolved, model),
         };
+    }
+
+    /// <summary>
+    /// Provider voice id from a previous <see cref="PageToMovie.Engine.Abstractions.IVoiceCloneClient.CloneVoiceAsync"/>
+    /// call (e.g. MiniMax <c>custom_voice_id</c>), read straight from cast_seeds.json's
+    /// <c>voice_clone_provider_id</c> field. Null when no clone has been run yet (or the sample
+    /// changed since — callers should re-clone if the sample was replaced). <paramref name="charKey"/>
+    /// need not be an on-screen cast member — a narration flow can reuse this same per-character
+    /// storage under a caller-chosen pseudo-character key (e.g. "Narrator").
+    /// </summary>
+    public string? GetVoiceCloneProviderId(string projectId, string charKey)
+    {
+        try
+        {
+            var seed = GetCharacterSeed(projectId, charKey);
+            if (seed is not { } el) return null;
+            if (el.TryGetProperty("voice_clone_provider_id", out var idEl) &&
+                idEl.ValueKind == JsonValueKind.String &&
+                idEl.GetString() is { Length: > 0 } id)
+                return id;
+            // Interop with ElevenLabs apply-clone path (voice_provider_voice_id).
+            if (el.TryGetProperty("voice_provider_voice_id", out var altEl) &&
+                altEl.ValueKind == JsonValueKind.String &&
+                altEl.GetString() is { Length: > 0 } alt)
+                return alt;
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Catalog provider id stored on the character seed after clone apply
+    /// (<c>voice_provider</c>, e.g. elevenlabs / fal). Null when never cloned.
+    /// </summary>
+    public string? GetVoiceProviderId(string projectId, string charKey)
+    {
+        try
+        {
+            var seed = GetCharacterSeed(projectId, charKey);
+            if (seed is not { } el) return null;
+            if (el.TryGetProperty("voice_provider", out var pEl) &&
+                pEl.ValueKind == JsonValueKind.String &&
+                pEl.GetString() is { Length: > 0 } p)
+                return p.Trim();
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Absolute path for optional voice-clone template audio (mic or upload).</summary>
+    public string GetVoiceCloneSamplePath(string projectId, string charKey)
+    {
+        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        foreach (var name in new[] { "voice_clone_sample.webm", "voice_clone_sample.mp3", "voice_clone_sample.wav", "voice_clone_sample.m4a", "voice_clone_sample.ogg" })
+        {
+            var p = Path.Combine(dir, name);
+            if (File.Exists(p)) return p;
+        }
+        return Path.Combine(dir, "voice_clone_sample.webm");
+    }
+
+    private static string SanitizeCharKey(string charKey)
+    {
+        var k = (charKey ?? "").Trim();
+        foreach (var c in Path.GetInvalidFileNameChars())
+            k = k.Replace(c, '_');
+        return string.IsNullOrEmpty(k) ? "character" : k;
+    }
+
+    /// <summary>
+    /// Save operator mic/upload audio as the voice-clone template for this character.
+    /// Ext from file name; max 15 MB. Updates cast_seeds voice_clone_sample filename.
+    /// </summary>
+    public async Task<string> SaveVoiceCloneSampleAsync(
+        string projectId,
+        string charKey,
+        Stream content,
+        string fileName,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            throw new InvalidOperationException("charKey required");
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        if (ext is not (".webm" or ".mp3" or ".wav" or ".m4a" or ".ogg" or ".aac" or ".mp4"))
+            throw new InvalidOperationException("Use audio: webm, mp3, wav, m4a, or ogg.");
+        if (ext == ".mp4") ext = ".webm"; // browser often labels wrong
+
+        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        Directory.CreateDirectory(dir);
+        // Clear previous sample extensions
+        foreach (var old in Directory.EnumerateFiles(dir, "voice_clone_sample.*"))
+        {
+            try { File.Delete(old); } catch { /* ignore */ }
+        }
+        var dest = Path.Combine(dir, "voice_clone_sample" + ext);
+        await using (var fs = File.Create(dest))
+            await content.CopyToAsync(fs, ct);
+
+        UpdateCharacterSeedText(
+            projectId,
+            charKey,
+            voiceCloneSample: Path.GetFileName(dest),
+            // A new sample invalidates any previously cloned provider voice id — clear it so
+            // narration/dialogue synthesis re-clones from the new sample instead of silently
+            // reusing a voice built from the old one.
+            voiceCloneProviderId: "");
+        return dest;
+    }
+
+    public bool DeleteVoiceCloneSample(string projectId, string charKey)
+    {
+        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        var removed = false;
+        if (Directory.Exists(dir))
+        {
+            foreach (var f in Directory.EnumerateFiles(dir, "voice_clone_sample.*"))
+            {
+                try { File.Delete(f); removed = true; } catch { /* ignore */ }
+            }
+        }
+        if (removed)
+            UpdateCharacterSeedText(projectId, charKey, voiceCloneSample: "", voiceCloneProviderId: "");
+        return removed;
     }
 
     /// <summary>
@@ -2221,7 +2471,11 @@ public sealed class ProjectStore
         string? description = null,
         string? visualLock = null,
         string? voiceProfile = null,
-        string? voiceLabel = null)
+        string? voiceLabel = null,
+        string? voiceCloneSample = null,
+        string? voiceProvider = null,
+        string? voiceProviderVoiceId = null,
+        string? voiceCloneProviderId = null)
     {
         void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
         {
@@ -2251,6 +2505,34 @@ public sealed class ProjectStore
                 seed["voice_profile"] = voiceProfile.Trim();
             if (voiceLabel is not null)
                 seed["voice_label"] = voiceLabel.Trim();
+            if (voiceCloneSample is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceCloneSample))
+                    seed.Remove("voice_clone_sample");
+                else
+                    seed["voice_clone_sample"] = voiceCloneSample.Trim();
+            }
+            if (voiceProvider is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceProvider))
+                    seed.Remove("voice_provider");
+                else
+                    seed["voice_provider"] = voiceProvider.Trim();
+            }
+            if (voiceProviderVoiceId is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceProviderVoiceId))
+                    seed.Remove("voice_provider_voice_id");
+                else
+                    seed["voice_provider_voice_id"] = voiceProviderVoiceId.Trim();
+            }
+            if (voiceCloneProviderId is not null)
+            {
+                if (string.IsNullOrWhiteSpace(voiceCloneProviderId))
+                    seed.Remove("voice_clone_provider_id");
+                else
+                    seed["voice_clone_provider_id"] = voiceCloneProviderId.Trim();
+            }
             seeds[foundKey] = seed;
         }
 
@@ -2272,23 +2554,32 @@ public sealed class ProjectStore
                 else return;
 
                 System.Text.Json.Nodes.JsonObject? seeds;
+                System.Text.Json.Nodes.JsonObject? gpv = null;
                 if (root["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject direct)
                 {
                     seeds = direct;
                 }
                 else
                 {
-                    var gpv = root["global_production_variables"] as System.Text.Json.Nodes.JsonObject
-                              ?? new System.Text.Json.Nodes.JsonObject();
+                    gpv = root["global_production_variables"] as System.Text.Json.Nodes.JsonObject
+                          ?? new System.Text.Json.Nodes.JsonObject();
                     root["global_production_variables"] = gpv;
                     seeds = gpv["character_seed_tokens"] as System.Text.Json.Nodes.JsonObject
                             ?? new System.Text.Json.Nodes.JsonObject();
                     gpv["character_seed_tokens"] = seeds;
-                    if (createCastShape)
-                        root["character_seed_tokens"] = seeds;
                 }
 
                 PatchSeedsObject(seeds);
+                // Bug fix (pre-existing, hit by any brand-new cast_seeds.json write — e.g. the
+                // first voice/clone call for a narration pseudo-character on a project with no
+                // cast_seeds.json yet): a JsonNode instance can only have one parent, so the same
+                // `seeds` object can't be assigned directly to both root and global_production_
+                // variables. Mirror a separate parsed copy instead of the same reference — root[
+                // "character_seed_tokens"] previously threw "node already has a parent" here,
+                // which this method's catch-all silently swallowed, so the whole write was
+                // dropped with no visible error.
+                if (createCastShape && gpv is not null)
+                    root["character_seed_tokens"] = System.Text.Json.Nodes.JsonNode.Parse(seeds.ToJsonString());
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
             }
@@ -2904,9 +3195,9 @@ public sealed class ProjectStore
                     ? real
                     : key;
 
-            if (fields.Speaker.Length > 0)
+            if (!string.IsNullOrEmpty(fields.Speaker))
                 fields.Speaker = Canonicalize(fields.Speaker);
-            if (fields.PrimarySubject.Length > 0)
+            if (!string.IsNullOrEmpty(fields.PrimarySubject))
                 fields.PrimarySubject = Canonicalize(fields.PrimarySubject);
             fields.CharactersOnScreen = fields.CharactersOnScreen
                 .Select(Canonicalize)
@@ -3098,48 +3389,106 @@ public sealed class ProjectStore
 
     public void UpdateCharacterSeedPlaceholder(string projectId, string charKey, string refFileName)
     {
-        var bpPath = FindBlueprintPathSync(projectId);
-        if (bpPath is null || !File.Exists(bpPath))
-            return;
+        // Prefer explicit name when provided (e.g. clear on delete); else canonical lock name.
+        var placeholder = string.IsNullOrWhiteSpace(refFileName)
+            ? ""
+            : CharacterRefFileName(charKey);
+
+        // cast_seeds.json is the primary seed source for ListCharacters — update it first.
+        try
+        {
+            var castPath = Path.Combine(GetProjectDir(projectId), "source", ScreenplayService.CastSeedsFileName);
+            if (File.Exists(castPath))
+                PatchCharacterSeedPlaceholderInJsonFile(castPath, charKey, placeholder);
+        }
+        catch { /* non-fatal */ }
 
         try
         {
-            using var doc = JsonDocument.Parse(File.ReadAllText(bpPath));
-            var root = doc.RootElement.Clone();
-            // Rebuild via mutable dictionary tree
-            var tree = root.Deserialize<Dictionary<string, object?>>()
-                       ?? new Dictionary<string, object?>();
-            if (!tree.TryGetValue("global_production_variables", out var gpvObj) || gpvObj is null)
-                return;
+            var scenesPath = Path.Combine(GetProjectDir(projectId), "scenes.json");
+            if (File.Exists(scenesPath))
+                PatchCharacterSeedPlaceholderInJsonFile(scenesPath, charKey, placeholder);
+        }
+        catch { /* non-fatal */ }
 
+        var bpPath = FindBlueprintPathSync(projectId);
+        if (bpPath is not null && File.Exists(bpPath))
+        {
+            try
+            {
+                PatchCharacterSeedPlaceholderInJsonFile(bpPath, charKey, placeholder);
+                InvalidateSceneListCache(projectId);
+            }
+            catch
+            {
+                // Non-fatal: lock file still written
+            }
+        }
+
+        InvalidateReadCaches(projectId);
+    }
+
+    /// <summary>
+    /// Set <c>reference_image_placeholder</c> on a character seed inside cast_seeds / scenes / blueprint JSON.
+    /// </summary>
+    private static void PatchCharacterSeedPlaceholderInJsonFile(
+        string path, string charKey, string placeholder)
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        var tree = doc.RootElement.Deserialize<Dictionary<string, object?>>()
+                   ?? new Dictionary<string, object?>();
+
+        Dictionary<string, object?>? seeds = null;
+        Action? commit = null;
+
+        if (tree.TryGetValue("character_seed_tokens", out var direct) && direct is not null)
+        {
+            var seedsJson = JsonSerializer.Serialize(direct);
+            seeds = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedsJson)
+                    ?? new Dictionary<string, object?>();
+            commit = () => tree["character_seed_tokens"] = seeds;
+        }
+        else if (tree.TryGetValue("global_production_variables", out var gpvObj) && gpvObj is not null)
+        {
             var gpvJson = JsonSerializer.Serialize(gpvObj);
             var gpv = JsonSerializer.Deserialize<Dictionary<string, object?>>(gpvJson)
                       ?? new Dictionary<string, object?>();
             if (!gpv.TryGetValue("character_seed_tokens", out var seedsObj) || seedsObj is null)
                 return;
-
             var seedsJson = JsonSerializer.Serialize(seedsObj);
-            var seeds = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedsJson)
-                        ?? new Dictionary<string, object?>();
-            if (!seeds.TryGetValue(charKey, out var seedObj) || seedObj is null)
-                return;
-
-            var seedJson = JsonSerializer.Serialize(seedObj);
-            var seed = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedJson)
-                       ?? new Dictionary<string, object?>();
-            seed["reference_image_placeholder"] = CharacterRefFileName(charKey);
-            seeds[charKey] = seed;
-            gpv["character_seed_tokens"] = seeds;
-            tree["global_production_variables"] = gpv;
-
-            var outJson = JsonSerializer.Serialize(tree, JsonDefaults.Indented);
-            File.WriteAllText(bpPath, outJson + "\n");
-            InvalidateSceneListCache(projectId);
+            seeds = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedsJson)
+                    ?? new Dictionary<string, object?>();
+            commit = () =>
+            {
+                gpv["character_seed_tokens"] = seeds;
+                tree["global_production_variables"] = gpv;
+            };
         }
-        catch
+        else
+            return;
+
+        // Case-insensitive key match (Character_Narrator vs character_narrator)
+        string? matchKey = null;
+        foreach (var k in seeds!.Keys)
         {
-            // Non-fatal: lock file still written
+            if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase))
+            {
+                matchKey = k;
+                break;
+            }
         }
+        if (matchKey is null)
+            return;
+
+        var seedJson = JsonSerializer.Serialize(seeds[matchKey]);
+        var seed = JsonSerializer.Deserialize<Dictionary<string, object?>>(seedJson)
+                   ?? new Dictionary<string, object?>();
+        seed["reference_image_placeholder"] = placeholder;
+        seeds[matchKey] = seed;
+        commit!();
+
+        var outJson = JsonSerializer.Serialize(tree, JsonDefaults.Indented);
+        File.WriteAllText(path, outJson + "\n");
     }
 
     /// <summary>Resolve pipeline_state.json path (honors project.json state_file).</summary>
@@ -3874,15 +4223,11 @@ public sealed class ProjectStore
             verPath,
             (bytes, _) =>
             {
-                try
-                {
-                    return Task.FromResult(
-                        JsonSerializer.Deserialize<ClipDialogueVerificationResult>(bytes, JsonDefaults.IndentedCaseInsensitive));
-                }
-                catch
-                {
-                    return Task.FromResult<ClipDialogueVerificationResult?>(null);
-                }
+                var parsed = JsonSerializer.Deserialize<ClipDialogueVerificationResult>(
+                    bytes, JsonDefaults.IndentedCaseInsensitive);
+                if (parsed is null)
+                    throw new InvalidOperationException("Empty dialogue verification JSON");
+                return Task.FromResult(parsed);
             },
             ct);
     }
@@ -4003,7 +4348,52 @@ public sealed class ProjectStore
         return Path.Combine(dir, preferred);
     }
 
-    public AdaptationStatus GetAdaptationStatus(string projectId)
+    /// <summary>
+    /// True when this user has a personal studio key (BYOK). Server env keys do not count
+    /// unless <see cref="PageToMovieOptions.AllowServerApiKeyFallback"/> is on.
+    /// </summary>
+    public bool IsAnyStudioKeyConfigured(string? userId = null)
+    {
+        if (_keyProvider is not null && !string.IsNullOrWhiteSpace(userId))
+        {
+            foreach (var provider in new[] { "grok", "gemini", "anthropic", "openai", "fal" })
+            {
+                if (_keyProvider.HasKey(userId, provider))
+                    return true;
+            }
+        }
+
+        // Ambient scope only after personal keys were loaded into the request — still OK
+        // because GetKey no longer injects server env for signed-in users under BYOK.
+        if (!string.IsNullOrWhiteSpace(ApiKeyScope.Current)
+            || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentGemini)
+            || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentAnthropic)
+            || !string.IsNullOrWhiteSpace(ApiKeyScope.Get("openai")))
+            return true;
+
+        if (_opts.AllowServerApiKeyFallback)
+        {
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OPENAI_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_API_KEY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_KEY")))
+                return true;
+            if (_keyProvider is not null)
+            {
+                foreach (var provider in new[] { "grok", "gemini", "anthropic", "fal", "openai" })
+                {
+                    if (_keyProvider.HasKey(null, provider))
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public AdaptationStatus GetAdaptationStatus(string projectId, string? userId = null)
     {
         var dir = GetProjectDir(projectId);
         var book = ReadBookSourceStatus(dir);
@@ -4013,29 +4403,21 @@ public sealed class ProjectStore
         // Fountain re-sign that changed Stage 1 makes an existing shot plan stale
         if (screenplay.DraftExists && screenplay.Dirty && stage2.Stage2Ready)
             stage2.Stage2Stale = true;
-        // Prefer ambient scope (request middleware / job), then any configured Grok key
-        // (personal DB or process env). HasKey(null) only sees process env — use empty user
-        // fallbacks via GetKey with common local id when scope is empty.
-        var xai = !string.IsNullOrWhiteSpace(ApiKeyScope.Current)
-                  || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentGemini)
-                  || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentAnthropic)
-                  || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentFal)
-                  || (_keyProvider is not null && (
-                      _keyProvider.HasKey(null)
-                      || _keyProvider.HasKey("local")
-                      || _keyProvider.HasKey("grok")))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_KEY"));
+        // Any planning/gen key is enough for import→screenplay. Prefer ambient scope
+        // (request middleware already loaded this user's personal keys), then provider
+        // lookup for the real userId — never HasKey("grok") as a *user id* (old bug).
+        var xai = IsAnyStudioKeyConfigured(userId);
 
         var cfg = GetConfigSync(projectId);
         var planningModel = cfg.TryGetValue("planning_model_name", out var pmEl) &&
                              pmEl.ValueKind == JsonValueKind.String &&
                              pmEl.GetString() is { Length: > 0 } pm
             ? pm
-            : "grok-4.5";
+            : (cfg.TryGetValue("chat_model_name", out var cmEl) &&
+               cmEl.ValueKind == JsonValueKind.String &&
+               cmEl.GetString() is { Length: > 0 } cm
+                ? cm
+                : "");
 
         var cast = ReadCastStatus(projectId);
 

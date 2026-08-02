@@ -1,0 +1,83 @@
+{
+  "BookPath": "books/Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 00:09:25 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 70.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 1,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 86.8,
+        "FormatComplianceScore": 85,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 75,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 32,
+        "TotalDialogueBlocks": 151,
+        "AvgWordsPerDialogue": 13.1,
+        "MaxWordsInSingleDialogue": 98,
+        "LongMonologueCount": 5,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "NICK",
+          "SIONNA",
+          "LIBRARIAN",
+          "DR. CARSON",
+          "MA",
+          "RAY",
+          "ANSWERING MACHINE",
+          "OFFICER DUPUIS",
+          "NURSE",
+          "SAGE",
+          "BOB",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Non-Fountain colon dialogue format (6 instances like \u0027Character:\u0027) detected.",
+          "5 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8,
+      "AvgCharacterDisambiguation": 6,
+      "AvgAiVideoDirectibility": 5.5,
+      "AvgDramaticPacing": 6.5,
+      "AvgDialogueAuthenticity": 7.5,
+      "AvgSoundDesignMusic": 2,
+      "AvgOverallQualitative": 5.9,
+      "DisqualifyingFlags": [
+        "claude-sonnet-5: No sound design or music cues included anywhere in the script (zero score-worthy content for that dimension) \u2014 completely unaddressed for an AI video pipeline that needs audio direction.",
+        "claude-sonnet-5: Narrator is unnamed for nearly the entire script (credited as THE NARRATOR), which will cause severe reference-image/casting confusion in a system that needs a consistent character identity from the first clip; the late reveal works in prose but is a serious usability problem for per-character casting in this pipeline.",
+        "claude-sonnet-5: Several scene headings/action blocks combine multiple distinct actions or time-jumps (e.g., the bar brawl scene, the stabbing scene) that pack too much into a single filmable beat, violating the one-clip-per-beat constraint in places.",
+        "claude-sonnet-5: Nick\u0027s transformation from violent to sobbing/apologetic in the prison scene is compressed into a single short exchange with little intermediate beat coverage, undercutting the emotional arc of Part 4."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": 5.9
+    }
+  },
+  "JudgeRankMatrix": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": 1
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": "Screenplay A is a fairly faithful, well-condensed adaptation that hits nearly all major book beats: Nick\u0027s introduction, Sionna\u0027s meet-cute, the Wuthering Heights parallel, the medieval dream sequences, Ma\u0027s decline, the DUI accident, the stabbing, the estrangement, and the prison reconciliation. It preserves the closed cast (Narrator, Nick, Ma, Sionna, Bob, Dr. Carson, Officer Dupuis, Lindsey/Ray, Sage) without inventing new named characters, which is a real strength for fidelity. However, character disambiguation suffers because the narrator is credited as \u0027THE NARRATOR\u0027 for the entire runtime and only gets a name in the final seconds \u2014 for a system that locks reference images per named character, this is a structural liability. Visual descriptions for Nick, Sionna, and Ma are given once at introduction but are not consistently restated at each reappearance, and aging/timeskip (Nick in prison eight years later) is only marked by adjective changes in action lines rather than clear age-labeled sluglines. Directibility is hurt by several scenes that mash together dialogue-heavy exchanges with multiple physical actions (the Joe\u0027s Bar brawl, the stabbing scene) that would need to be split into many more clips than the writing implies. Pacing is brisk and generally follows a clear escalation, though Part Two\u0027s college/growth material is compressed to the point of feeling rushed. Dialogue is largely lifted verbatim from the book, which keeps Nick and the narrator\u0027s voices authentic and distinct, though it occasionally retains run-on interior-monologue-style lines translated awkwardly into spoken dialogue. The complete absence of any sound design, score, or ambient audio cues across the entire script is the most severe deficiency \u2014 there is not a single music or sound prompt anywhere in the document, making this dimension essentially a zero and a disqualifying gap for a production that specifically evaluates audio-visual scoring."
+    }
+  },
+  "JudgeSummaries": {
+    "claude-sonnet-5": "Strongest: Screenplay A by default, as it is the only candidate submitted and demonstrates strong narrative fidelity and closed-cast discipline. Weakest: Screenplay A also, since it is the only candidate and suffers from a complete absence of sound/music direction, an unnamed protagonist for nearly the entire runtime causing casting-clarity problems, and several overstuffed action beats that violate the single-clip-per-beat directive."
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong source coverage and consistent character visuals for NARRATOR and MR. VALE, but dissolves and multiple short scenes reduce directibility for 5-10s clips.",
+      "promptImprovementSuggestion": "Add an explicit rule forbidding dissolves or montages within a single scene heading and requiring every scene to contain at most three distinct visual beats."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.3,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Excellent fidelity and sound integration with clear frame room, though some V.O. blocks are lengthy for short clips.",
+      "promptImprovementSuggestion": "Add a rule that any V.O. passage exceeding two sentences must be interleaved with at least one concrete visual or sound micro-beat before continuing."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highly concrete action lines, consistent THE NARRATOR and THE OLD MAN descriptions, and precise sound cues make it exceptionally filmable in short clips.",
+      "promptImprovementSuggestion": "Add an explicit instruction to restate two to three locked visual traits for every recurring character on their first re-entry after any time gap or location change."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 6,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.2,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Inconsistent capitalization of character names (Narrator vs NARRATOR) violating ALL CAPS closed-cast rule"
+      ],
+      "rationale": "Format violations in character cues reduce clarity; some actions cram multiple beats into one heading.",
+      "promptImprovementSuggestion": "Add a hard rule that every character cue must appear in ALL CAPS on its own line with no exceptions or lowercase variants anywhere in the screenplay."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Solid coverage and natural pacing with good officer naming, but occasional long action paragraphs limit short-clip suitability.",
+      "promptImprovementSuggestion": "Add a rule capping every action line at two sentences maximum to enforce single-clip filmability."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.7,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Excellent fidelity, consistent NARRATOR and OLD MAN visuals, and precise sound cues with strong subtext in dialogue.",
+      "promptImprovementSuggestion": "Add an instruction requiring at least one explicit diegetic sound cue in every scene, placed on its own line immediately after the relevant action."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Good source fidelity and frame usage, but some scene headings vary slightly and pacing has minor repetition in night sequences.",
+      "promptImprovementSuggestion": "Add a rule that every recurring location must use the exact same scene heading wording on every return, with no additions or omissions."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay C",
+    "Screenplay F",
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay G",
+    "Screenplay D"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay C because its detailed, concrete action lines and consistent use of THE NARRATOR and THE OLD MAN make it highly directible for short AI clips. Weakest: Screenplay D because inconsistent character name capitalization breaks the closed cast requirement and reduces casting clarity.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "705263D6AD0B7518EB17FB84B9D669EA2DA8D9512CD6F8F8CF6ED0B9B05BD728"
+}

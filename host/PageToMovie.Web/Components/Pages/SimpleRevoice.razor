@@ -1,0 +1,578 @@
+@page "/simple-revoice"
+@implements IAsyncDisposable
+@inject EngineApiClient Engine
+@inject ActiveProjectState ActiveProject
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@inject ClientMediaFolderService MediaFolder
+
+<PageTitle>Put your voice on the film · PageToMovie</PageTitle>
+
+<div class="mb-3">
+    <span class="ptm-adapt-kicker">Easiest start · step 3</span>
+    <h1 class="ptm-adapt-title mb-1">Your voice on the film</h1>
+    <p class="ptm-adapt-lede mb-0">
+        We keep the pictures and only re-speak the <strong>narrator</strong> with your cloned voice.
+        Other speakers (like Mom) and silent clips stay as they are.
+    </p>
+</div>
+
+@if (!Session.IsLoggedIn)
+{
+    <div class="alert alert-warning">
+        <span>Sign in to re-voice a project.</span>
+        <a class="btn btn-sm btn-primary ms-2" href="login?returnUrl=/simple-revoice">Sign in</a>
+    </div>
+}
+else
+{
+    <StudioProcessStrip Active="film" SimpleMode="true" />
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger" data-testid="simple-revoice-error">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="alert alert-success py-2" data-testid="simple-revoice-message">@_message</div>
+    }
+
+    <div class="card border-primary border-opacity-50 mb-3" data-testid="simple-revoice-card">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="fw-semibold">Automatic re-voice</span>
+            @if (!string.IsNullOrWhiteSpace(_projectId))
+            {
+                <span class="badge text-bg-secondary">@_projectId</span>
+            }
+        </div>
+        <div class="card-body">
+            @if (string.IsNullOrWhiteSpace(_projectId))
+            {
+                <p class="mb-2">No active project. Start from story & voice first.</p>
+                <a class="btn btn-primary" href="simple-voice">← Back to story & voice</a>
+            }
+            else if (!_hasClone)
+            {
+                <p class="mb-2">No cloned voice on the narrator yet.</p>
+                <a class="btn btn-primary" href="simple-voice">← Record your voice</a>
+            }
+            else
+            {
+                <p class="small text-muted mb-3">
+                    Only clips whose speaker is the narrator get TTS + audio replace.
+                    Everyone else keeps the original soundtrack. Nothing goes through the video model.
+                    @if (_narratorClipCount > 0)
+                    {
+                        <span class="d-block mt-1">
+                            <strong>@_narratorClipCount</strong> narrator clip(s) to re-voice
+                            · <strong>@_keepClipCount</strong> left as-is
+                        </span>
+                    }
+                </p>
+
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <button type="button"
+                            class="btn btn-primary btn-lg"
+                            data-testid="simple-revoice-start"
+                            disabled="@(_busy || _narratorClipCount == 0)"
+                            @onclick="RunAsync">
+                        @if (_busy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <span>Working…</span>
+                        }
+                        else if (_done)
+                        {
+                            <span>Run again</span>
+                        }
+                        else
+                        {
+                            <span>Replace narrator audio →</span>
+                        }
+                    </button>
+                    <a class="btn btn-outline-secondary" href="simple-voice">← Voice sample</a>
+                    @if (_done)
+                    {
+                        <a class="btn btn-outline-primary" href="scenes?simple=1">Open scenes</a>
+                        <a class="btn btn-outline-primary" href="review">Preview / stitch</a>
+                    }
+                </div>
+
+                @if (_clips.Count == 0 && !_loading)
+                {
+                    <div class="alert alert-warning mb-0">
+                        No clips found yet. Finish the library film (shot plan + video) in full studio first,
+                        or open a project that already has picture clips.
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>@_status</span>
+                            <span>@_doneCount / @_clips.Count</span>
+                        </div>
+                        <div class="progress" style="height: 10px;" data-testid="simple-revoice-progress">
+                            @{
+                                var pct = _clips.Count == 0 ? 0 : (int)Math.Round(100.0 * _doneCount / _clips.Count);
+                            }
+                            <div class="progress-bar @( _busy ? "progress-bar-striped progress-bar-animated" : "")"
+                                 role="progressbar"
+                                 style="width: @(pct)%"
+                                 aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <ul class="list-group list-group-flush small" data-testid="simple-revoice-log">
+                        @foreach (var row in _clips)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-start gap-2 px-0">
+                                <div>
+                                    <span class="fw-semibold">S@(row.Scene.ToString("D2")) C@(row.Clip.ToString("D2"))</span>
+                                    @if (!string.IsNullOrWhiteSpace(row.SpeakerLabel))
+                                    {
+                                        <span class="badge @row.SpeakerBadgeClass ms-1">@row.SpeakerLabel</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(row.DialoguePreview))
+                                    {
+                                        <span class="text-muted"> — @row.DialoguePreview</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted"> — (no dialogue)</span>
+                                    }
+                                </div>
+                                <span class="@StatusClass(row.Status)">@row.Status</span>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (!string.IsNullOrEmpty(_previewUrl))
+                {
+                    <div class="mt-3">
+                        <div class="fw-semibold mb-1">Last clip preview</div>
+                        <video class="w-100 rounded border" controls src="@_previewUrl" @key="_previewUrl"></video>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private string? _projectId;
+    private string _narratorKey = "Character_Narrator";
+    private bool _hasClone;
+    private bool _busy;
+    private bool _loading = true;
+    private bool _done;
+    private string? _error;
+    private string? _message;
+    private string _status = "Ready";
+    private int _doneCount;
+    private string? _previewUrl;
+    private readonly List<ClipRow> _clips = new();
+    private readonly List<string> _blobUrls = new();
+    private bool _autoStarted;
+
+    private sealed class ClipRow
+    {
+        public int Scene { get; init; }
+        public int Clip { get; init; }
+        public string Dialogue { get; init; } = "";
+        public string? Speaker { get; init; }
+        public bool IsNarrator { get; init; }
+        public string DialoguePreview =>
+            Dialogue.Length <= 72 ? Dialogue : Dialogue[..69] + "…";
+        public string? VideoUrl { get; set; }
+        public string RelativePath => $"assets/video/scene_{Scene:D2}_clip_{Clip:D2}.mp4";
+        public string Status { get; set; } = "Queued";
+
+        public bool WillRevoice => IsNarrator && !string.IsNullOrWhiteSpace(Dialogue);
+
+        public string SpeakerLabel
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Speaker) && string.IsNullOrWhiteSpace(Dialogue))
+                    return "Silent";
+                if (IsNarrator) return "Narrator";
+                if (string.IsNullOrWhiteSpace(Speaker)) return "Other";
+                return Speaker.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' ');
+            }
+        }
+
+        public string SpeakerBadgeClass => WillRevoice
+            ? "text-bg-primary"
+            : string.IsNullOrWhiteSpace(Dialogue)
+                ? "text-bg-light text-dark border"
+                : "text-bg-secondary";
+    }
+
+    private int _narratorClipCount => _clips.Count(c => c.WillRevoice);
+    private int _keepClipCount => _clips.Count - _narratorClipCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.IsLoggedIn) return;
+        _projectId = ActiveProject.ProjectId;
+        if (string.IsNullOrWhiteSpace(_projectId))
+        {
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            await ActiveProject.RefreshReadinessAsync(Engine);
+            _projectId = ActiveProject.ProjectId ?? _projectId;
+
+            // Prefer narrator seed with a stored clone.
+            try
+            {
+                var chars = await Engine.GetCharactersAsync(_projectId);
+                var withVoice = chars?.Characters?
+                    .FirstOrDefault(c =>
+                        !string.IsNullOrWhiteSpace(c.VoiceProviderVoiceId));
+                var narrator = chars?.Characters?
+                    .FirstOrDefault(c =>
+                        string.Equals(c.Key, "Character_Narrator", StringComparison.OrdinalIgnoreCase) ||
+                        (c.Key?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false));
+                if (narrator is not null)
+                    _narratorKey = narrator.Key ?? _narratorKey;
+                else if (withVoice is not null)
+                    _narratorKey = withVoice.Key ?? _narratorKey;
+
+                _hasClone = chars?.Characters?.Any(c =>
+                    string.Equals(c.Key, _narratorKey, StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(c.VoiceProviderVoiceId)) == true;
+            }
+            catch
+            {
+                _hasClone = true; // try speak anyway — API will reject if missing
+            }
+
+            var scenes = await Engine.GetScenesAsync(_projectId);
+            if (scenes?.Scenes is { Count: > 0 })
+            {
+                foreach (var s in scenes.Scenes.OrderBy(x => x.SceneNumber))
+                {
+                    var detail = await Engine.GetSceneDetailAsync(_projectId, s.SceneNumber);
+                    if (detail?.Scene?.Clips is not { Count: > 0 } clips) continue;
+                    foreach (var c in clips.OrderBy(x => x.ClipNumber))
+                    {
+                        var speaker = (c.Speaker ?? "").Trim();
+                        var dialogue = (c.Dialogue ?? "").Trim();
+                        var isNarrator = IsNarratorSpeaker(speaker, _narratorKey);
+                        _clips.Add(new ClipRow
+                        {
+                            Scene = s.SceneNumber,
+                            Clip = c.ClipNumber,
+                            Dialogue = dialogue,
+                            Speaker = string.IsNullOrEmpty(speaker) ? null : speaker,
+                            IsNarrator = isNarrator,
+                            VideoUrl = c.OnDisk ? Engine.ClipVideoUrl(_projectId, s.SceneNumber, c.ClipNumber) : null,
+                            Status = isNarrator && dialogue.Length > 0
+                                ? "Queued"
+                                : isNarrator
+                                    ? "Keep · no line"
+                                    : string.IsNullOrEmpty(dialogue)
+                                        ? "Keep · silent"
+                                        : $"Keep · {ShortSpeaker(speaker)}",
+                        });
+                    }
+                }
+            }
+
+            if (_clips.Count == 0)
+                _status = "No clips in this project yet";
+            else if (_narratorClipCount == 0)
+                _status = "No narrator clips to re-voice";
+            else
+                _status = $"{_narratorClipCount} narrator clip(s) · {_keepClipCount} kept as-is";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _autoStarted || _busy || _loading) return;
+        if (!_hasClone || _narratorClipCount == 0 || string.IsNullOrWhiteSpace(_projectId)) return;
+        // Auto-run once when arriving from “Put my voice on the film”.
+        _autoStarted = true;
+        await RunAsync();
+    }
+
+    private async Task RunAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_projectId) || _narratorClipCount == 0 || _busy) return;
+        _busy = true;
+        _done = false;
+        _error = null;
+        _message = null;
+        _doneCount = 0;
+        _status = "Starting…";
+        StateHasChanged();
+
+        try
+        {
+            // Prefer client copies when the media folder is connected.
+            if (!MediaFolder.IsConnected)
+                await MediaFolder.TryReconnectAsync();
+
+            var okCount = 0;
+            var failCount = 0;
+            var keepCount = 0;
+            double? estUsd = 0;
+
+            for (var i = 0; i < _clips.Count; i++)
+            {
+                var row = _clips[i];
+                _status = $"Clip {i + 1} of {_clips.Count}: S{row.Scene:D2} C{row.Clip:D2}";
+                StateHasChanged();
+
+                try
+                {
+                    // Only re-voice narrator dialogue. Mom / others / silent clips stay original.
+                    if (!row.WillRevoice)
+                    {
+                        row.Status = string.IsNullOrWhiteSpace(row.Dialogue)
+                            ? "Keep · silent"
+                            : row.IsNarrator
+                                ? "Keep · no line"
+                                : $"Keep · {row.SpeakerLabel}";
+                        keepCount++;
+                        _doneCount = i + 1;
+                        StateHasChanged();
+                        continue;
+                    }
+
+                    row.Status = "Working…";
+                    StateHasChanged();
+
+                    var videoUrl = await ResolveVideoUrlAsync(row);
+                    if (string.IsNullOrWhiteSpace(videoUrl))
+                    {
+                        row.Status = "Skip · no picture";
+                        failCount++;
+                        _doneCount = i + 1;
+                        continue;
+                    }
+
+                    row.Status = "Speaking…";
+                    StateHasChanged();
+                    var speak = await Engine.SpeakVoiceAsync(_projectId, _narratorKey, row.Dialogue);
+                    if (!speak.Ok)
+                    {
+                        row.Status = "Fail · TTS";
+                        _error = speak.Error ?? "Speech failed";
+                        failCount++;
+                        _doneCount = i + 1;
+                        continue;
+                    }
+                    if (speak.EstimatedUsd is { } u) estUsd = (estUsd ?? 0) + u;
+
+                    var audioUrl = await AudioUrlFromSpeakAsync(speak);
+                    if (string.IsNullOrWhiteSpace(audioUrl))
+                    {
+                        row.Status = "Fail · audio";
+                        failCount++;
+                        _doneCount = i + 1;
+                        continue;
+                    }
+
+                    row.Status = "Muxing…";
+                    StateHasChanged();
+                    var mux = await Js.InvokeAsync<FfmpegResult>(
+                        "PageToMovieFfmpeg.replaceVideoAudioAsync", videoUrl, audioUrl);
+                    if (mux is not { Success: true } || string.IsNullOrWhiteSpace(mux.Url))
+                    {
+                        row.Status = "Fail · mux";
+                        failCount++;
+                        _doneCount = i + 1;
+                        if (!string.IsNullOrWhiteSpace(mux?.Error))
+                            _error = mux.Error;
+                        continue;
+                    }
+
+                    var outUrl = mux.Url;
+
+                    // Persist into the client media folder when connected.
+                    if (MediaFolder.IsConnected)
+                    {
+                        try
+                        {
+                            var clientPath = $"{_projectId}/{row.RelativePath}";
+                            var saved = await Js.InvokeAsync<SaveBlobResult>(
+                                "PageToMovieMedia.saveBlobUrlAsync", outUrl, clientPath);
+                            if (saved is { Success: true } && !string.IsNullOrWhiteSpace(saved.Sha256))
+                            {
+                                try
+                                {
+                                    await Engine.RegisterMediaAsync(_projectId, new MediaRegisterRequest
+                                    {
+                                        RelativePath = row.RelativePath,
+                                        Sha256 = saved.Sha256,
+                                        SizeBytes = saved.SizeBytes,
+                                        Kind = "clip",
+                                        Scene = row.Scene,
+                                        Clip = row.Clip,
+                                    });
+                                }
+                                catch { /* non-fatal */ }
+                            }
+                        }
+                        catch { /* keep going — blob still previewable */ }
+                    }
+
+                    if (!string.IsNullOrEmpty(_previewUrl) && _previewUrl.StartsWith("blob:", StringComparison.Ordinal))
+                    {
+                        try { await Js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", _previewUrl); } catch { /* */ }
+                    }
+                    _previewUrl = outUrl;
+                    _blobUrls.Add(outUrl);
+                    row.Status = "Done";
+                    okCount++;
+                }
+                catch (Exception ex)
+                {
+                    row.Status = "Fail";
+                    _error = ex.Message;
+                    failCount++;
+                }
+
+                _doneCount = i + 1;
+                StateHasChanged();
+            }
+
+            _done = true;
+            _status = failCount == 0
+                ? $"Done — {okCount} narrator clip(s) re-voiced · {keepCount} kept"
+                : $"Finished with issues — {okCount} re-voiced, {failCount} failed, {keepCount} kept";
+            _message = failCount == 0
+                ? "Narrator lines use your voice. Other speakers (and silent clips) are unchanged. Open Preview to stitch."
+                : "Some narrator clips could not be re-voiced. Fix those (missing video or voice key) and run again.";
+            if (estUsd is > 0)
+                _message += $" · TTS ~${estUsd:0.0000}";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _status = "Stopped";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task<string?> ResolveVideoUrlAsync(ClipRow row)
+    {
+        // 1) Client media folder
+        if (MediaFolder.IsConnected)
+        {
+            try
+            {
+                var local = await MediaFolder.GetCurrentBlobUrlAsync(_projectId!, row.RelativePath, null);
+                if (!string.IsNullOrWhiteSpace(local))
+                    return local;
+            }
+            catch { /* fall through */ }
+        }
+
+        // 2) Server clip URL
+        if (!string.IsNullOrWhiteSpace(row.VideoUrl))
+            return Engine.BrowserMediaPath(row.VideoUrl);
+
+        return Engine.BrowserMediaPath(Engine.ClipVideoUrl(_projectId!, row.Scene, row.Clip));
+    }
+
+    private async Task<string?> AudioUrlFromSpeakAsync(SpeakVoiceDto speak)
+    {
+        if (!string.IsNullOrWhiteSpace(speak.AudioBase64))
+        {
+            try
+            {
+                var mime = string.IsNullOrWhiteSpace(speak.ContentType) ? "audio/mpeg" : speak.ContentType;
+                var url = await Js.InvokeAsync<string?>("PageToMovieMedia.blobUrlFromBase64", speak.AudioBase64, mime);
+                if (!string.IsNullOrWhiteSpace(url))
+                {
+                    _blobUrls.Add(url);
+                    return url;
+                }
+            }
+            catch
+            {
+                // fall through to clientUrl
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(speak.ClientUrl))
+            return Engine.BrowserMediaPath(speak.ClientUrl);
+        return null;
+    }
+
+    private static string StatusClass(string status) => status switch
+    {
+        "Done" => "badge text-bg-success",
+        "Queued" => "badge text-bg-primary",
+        var s when s.StartsWith("Keep", StringComparison.OrdinalIgnoreCase) => "badge text-bg-secondary",
+        var s when s.StartsWith("Fail", StringComparison.OrdinalIgnoreCase) => "badge text-bg-danger",
+        var s when s.StartsWith("Skip", StringComparison.OrdinalIgnoreCase) => "badge text-bg-warning text-dark",
+        _ => "badge text-bg-primary",
+    };
+
+    /// <summary>
+    /// True when this clip's speaker is the project narrator (exact key, or name contains "narrator").
+    /// </summary>
+    private static bool IsNarratorSpeaker(string? speaker, string narratorKey)
+    {
+        if (string.IsNullOrWhiteSpace(speaker)) return false;
+        if (!string.IsNullOrWhiteSpace(narratorKey) &&
+            string.Equals(speaker.Trim(), narratorKey.Trim(), StringComparison.OrdinalIgnoreCase))
+            return true;
+        return speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ShortSpeaker(string? speaker)
+    {
+        if (string.IsNullOrWhiteSpace(speaker)) return "other";
+        return speaker.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' ');
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var u in _blobUrls.Distinct())
+        {
+            if (u.StartsWith("blob:", StringComparison.Ordinal))
+            {
+                try { await Js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", u); } catch { /* */ }
+            }
+        }
+    }
+
+    private sealed class FfmpegResult
+    {
+        public bool Success { get; set; }
+        public string? Url { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class SaveBlobResult
+    {
+        public bool Success { get; set; }
+        public string? Sha256 { get; set; }
+        public long SizeBytes { get; set; }
+        public string? RelativePath { get; set; }
+        public string? Error { get; set; }
+    }
+}

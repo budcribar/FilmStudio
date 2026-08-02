@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using PageToMovie.Core.Billing;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using Microsoft.Extensions.Logging;
@@ -18,7 +19,7 @@ public interface IRuntimeConfigStore
 }
 
 /// <summary>
-/// File-backed runtime capacity/fakes config with hot-apply onto <see cref="PageToMovieOptions"/>.
+/// File-backed runtime capacity/fakes/billing config with hot-apply onto <see cref="PageToMovieOptions"/>.
 /// </summary>
 public sealed class RuntimeConfigStore : IRuntimeConfigStore
 {
@@ -60,6 +61,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
         var o = _opts.Value;
         var cap = o.Capacity ?? new CapacityOptions();
         var f = o.Fakes ?? new FakesOptions();
+        o.Billing ??= new BillingOptions();
         return new RuntimeConfigDto
         {
             Capacity = new CapacityRuntimeDto
@@ -76,6 +78,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
                 RateLimitEveryN = f.RateLimitEveryN,
             },
             UseFakes = o.UseFakes,
+            ChargeMultiplier = ChargePricing.ClampMultiplier(o.Billing.ChargeMultiplier),
             RestartRequired = new List<string> { "UseFakes" },
             ConfigPath = _path,
             UpdatedAt = _updatedAt,
@@ -95,6 +98,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             var o = _opts.Value;
             o.Capacity ??= new CapacityOptions();
             o.Fakes ??= new FakesOptions();
+            o.Billing ??= new BillingOptions();
             var before = Get();
 
             if (req.Capacity is { } c)
@@ -118,6 +122,9 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
 
             if (req.UseFakes is bool uf)
                 o.UseFakes = uf;
+
+            if (req.ChargeMultiplier is double mult)
+                o.Billing.ChargeMultiplier = ChargePricing.ClampMultiplier(mult);
 
             _updatedAt = DateTimeOffset.UtcNow;
             _updatedBy = adminUserId;
@@ -143,6 +150,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             var o = _opts.Value;
             o.Capacity ??= new CapacityOptions();
             o.Fakes ??= new FakesOptions();
+            o.Billing ??= new BillingOptions();
             if (dto.Capacity is { } c)
             {
                 o.Capacity.MaxVideoInFlight = Math.Clamp(c.MaxVideoInFlight, 1, 64);
@@ -160,6 +168,8 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             }
             if (dto.UseFakes is bool uf)
                 o.UseFakes = uf;
+            if (dto.ChargeMultiplier is double mult)
+                o.Billing.ChargeMultiplier = ChargePricing.ClampMultiplier(mult);
             _updatedAt = dto.UpdatedAt;
             _updatedBy = dto.UpdatedBy;
             _log.LogInformation("Loaded runtime config from {Path}", _path);
@@ -173,6 +183,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
     private async Task PersistAsync(CancellationToken ct)
     {
         var o = _opts.Value;
+        o.Billing ??= new BillingOptions();
         var file = new RuntimeConfigFile
         {
             Capacity = new CapacityRuntimeDto
@@ -189,6 +200,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
                 RateLimitEveryN = o.Fakes?.RateLimitEveryN ?? 0,
             },
             UseFakes = o.UseFakes,
+            ChargeMultiplier = ChargePricing.ClampMultiplier(o.Billing.ChargeMultiplier),
             UpdatedAt = _updatedAt,
             UpdatedBy = _updatedBy,
         };
@@ -227,6 +239,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
         public CapacityRuntimeDto? Capacity { get; set; }
         public FakesRuntimeDto? Fakes { get; set; }
         public bool? UseFakes { get; set; }
+        public double? ChargeMultiplier { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
         public string? UpdatedBy { get; set; }
     }

@@ -1,0 +1,406 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "INT. NURSERY - CHRISTMAS MORNING",
+      "purpose": "Introduce splendid new Velveteen Rabbit in stocking; brief love then forgotten amid presents",
+      "location_key": "LOCATION_NURSERY",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "THE_BOY"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_NEW_SPLENDID",
+        "BOY_CHRISTMAS"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "Christmas stocking by hearth with Rabbit wedged at top holding holly",
+        "Boy pulls Rabbit free and hugs hard",
+        "Other stocking gifts spill out",
+        "Aunts and Uncles rush in; tissue paper; Rabbit set aside forgotten on floor"
+      ],
+      "source_paragraphs": [
+        "P18",
+        "P19",
+        "P20"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. NURSERY - DAY",
+      "purpose": "Rabbit snubbed among superior toys; Skin Horse explains what REAL means",
+      "location_key": "LOCATION_NURSERY",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "SKIN_HORSE"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_NURSERY_SHY",
+        "SKIN_HORSE_NURSERY"
+      ],
+      "estimated_duration_seconds": 140,
+      "visual_beats": [
+        "Rabbit on cupboard floor among mechanical toys and model boat and wooden lion",
+        "Rabbit settles beside bald patched Skin Horse near fender",
+        "Dialogue on Real: love over time, shabbiness, lasting forever",
+        "Rabbit sighs at thought of growing shabby"
+      ],
+      "source_paragraphs": [
+        "P21",
+        "P22",
+        "P23",
+        "P24",
+        "P25",
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "INT. NURSERY - NIGHT",
+      "purpose": "Nana gives Rabbit to Boy for bed; nights of hugs and tunnels; fur begins to wear from love",
+      "location_key": "LOCATION_BOYS_BED",
+      "cast": [
+        "NANA",
+        "THE_BOY",
+        "VELVETEEN_RABBIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "NANA_NURSEMAID",
+        "BOY_NURSERY_BED",
+        "RABBIT_BELOVED_WORN"
+      ],
+      "estimated_duration_seconds": 100,
+      "visual_beats": [
+        "Night-light on mantel; Nana hurries bedtime; china dog missing",
+        "Nana swoops cupboard and drags Rabbit by ear into Boy\u0027s arms",
+        "Tight hugs, rolled on, pushed under pillow; later whispered tunnels",
+        "Rabbit snuggles under chin all night; time-lapse of shabbier fur, unsewn tail, pink nose rubbed off"
+      ],
+      "source_paragraphs": [
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "EXT. GARDEN - SPRING DAY",
+      "purpose": "Spring garden play; Rabbit left in dew; Nana grumbles he is only a toy",
+      "location_key": "LOCATION_GARDEN",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT",
+        "NANA"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_GARDEN_PLAY",
+        "RABBIT_BELOVED_WORN",
+        "NANA_NURSEMAID"
+      ],
+      "estimated_duration_seconds": 100,
+      "visual_beats": [
+        "Wheelbarrow rides, grass picnics, fairy huts under raspberry canes",
+        "Rabbit dives earthy into flower-bed burrows",
+        "Boy called to tea; Rabbit left on lawn after dusk soaked in dew",
+        "Nana with candle rubs him on apron corner and calls him a toy"
+      ],
+      "source_paragraphs": [
+        "P38",
+        "P39",
+        "P40"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "INT. NURSERY - NIGHT",
+      "purpose": "Boy fiercely declares Bunny is REAL; Rabbit gains knowing look",
+      "location_key": "LOCATION_BOYS_BED",
+      "cast": [
+        "THE_BOY",
+        "NANA",
+        "VELVETEEN_RABBIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_NURSERY_BED",
+        "NANA_NURSEMAID",
+        "RABBIT_BELOVED_WORN"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Boy sits up arms out demanding Bunny",
+        "Boy insists he is not a toy he is REAL",
+        "Love stirs; boot-button eyes gain wisdom and beauty",
+        "Next morning Nana notices knowing expression"
+      ],
+      "source_paragraphs": [
+        "P41",
+        "P42",
+        "P43",
+        "P44"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "EXT. WOOD - SUMMER EVENING",
+      "purpose": "Wild rabbits mock missing hind legs and wrong smell; Rabbit left alone then carried home; grows still shabbier yet loved",
+      "location_key": "LOCATION_WOOD",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT",
+        "WILD_RABBITS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_GARDEN_PLAY",
+        "RABBIT_VERY_OLD_SHABBY",
+        "WILD_RABBITS_FURRY"
+      ],
+      "estimated_duration_seconds": 160,
+      "visual_beats": [
+        "Boy nests very shabby Rabbit in tall bracken then wanders off",
+        "Two furry wild rabbits emerge, hop, inspect, mock no hind legs and smell",
+        "Boy\u0027s footsteps scatter them with white-tail flash; Rabbit calls after them",
+        "Boy carries him home; weeks of further wearing while still beautiful to Boy"
+      ],
+      "source_paragraphs": [
+        "P45",
+        "P46",
+        "P47",
+        "P48",
+        "P49",
+        "P50",
+        "P51",
+        "P52",
+        "P53",
+        "P54",
+        "P55",
+        "P56",
+        "P57",
+        "P58",
+        "P59",
+        "P60",
+        "P61",
+        "P62",
+        "P63",
+        "P64",
+        "P65",
+        "P66",
+        "P67",
+        "P68",
+        "P69",
+        "P70",
+        "P71",
+        "P72"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "INT. NURSERY - NIGHT",
+      "purpose": "Boy\u0027s scarlet fever; Rabbit stays hidden under bedclothes through long illness until fever turns",
+      "location_key": "LOCATION_BOYS_BED",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_ILL_FEVER",
+        "RABBIT_VERY_OLD_SHABBY"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "Boy flushed burning talking in sleep; body heats Rabbit",
+        "Strange people come and go; light burns all night",
+        "Rabbit hidden unmoving under bedclothes whispering garden plans",
+        "Fever turns; Boy sits with picture-books Rabbit cuddled close"
+      ],
+      "source_paragraphs": [
+        "P73",
+        "P74",
+        "P75"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "INT. NURSERY - BRIGHT MORNING",
+      "purpose": "Recovery morning; Boy carried out in shawl; windows open",
+      "location_key": "LOCATION_NURSERY",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_ILL_FEVER",
+        "RABBIT_VERY_OLD_SHABBY"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "Windows wide open sunny air",
+        "Pale Boy wrapped in shawl carried toward balcony",
+        "Rabbit tangled in bedclothes head peeping"
+      ],
+      "source_paragraphs": [
+        "P76"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "EXT. BALCONY - DAY",
+      "purpose": "Seaside plans and doctor orders old Bunny burned as scarlet fever germs",
+      "location_key": "LOCATION_BALCONY",
+      "cast": [
+        "THE_BOY",
+        "NANA",
+        "DOCTOR",
+        "VELVETEEN_RABBIT"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_ILL_FEVER",
+        "NANA_NURSEMAID",
+        "DOCTOR_VISIT",
+        "RABBIT_VERY_OLD_SHABBY"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "Boy on balcony in shawl looking out",
+        "Voices on seaside tomorrow disinfection and burning bed toys",
+        "Nana asks about old Bunny",
+        "Doctor orders burn at once get a new one"
+      ],
+      "source_paragraphs": [
+        "P77",
+        "P78",
+        "P79",
+        "P80",
+        "P81"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "heading": "EXT. END OF THE GARDEN BEHIND THE FOWL-HOUSE - DAY",
+      "purpose": "Rabbit sacked with rubbish behind fowl-house for morning bonfire; Boy gets new bunny",
+      "location_key": "LOCATION_BEHIND_FOWL_HOUSE",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "THE_BOY"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_VERY_OLD_SHABBY",
+        "BOY_ILL_FEVER"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Rabbit put in sack with picture-books and rubbish",
+        "Carried to end of garden behind fowl-house",
+        "Sack left untied; gardener busy elsewhere",
+        "That night Boy sleeps elsewhere with new white plush bunny dreaming of seaside"
+      ],
+      "source_paragraphs": [
+        "P82",
+        "P83",
+        "P84"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "heading": "EXT. END OF THE GARDEN BEHIND THE FOWL-HOUSE - NIGHT",
+      "purpose": "Lonely tear; mysterious flower; Nursery Magic Fairy appears and takes Rabbit to be Real to everyone",
+      "location_key": "LOCATION_BEHIND_FOWL_HOUSE",
+      "cast": [
+        "VELVETEEN_RABBIT",
+        "NURSERY_MAGIC_FAIRY"
+      ],
+      "wardrobe_or_age_variant": [
+        "RABBIT_VERY_OLD_SHABBY",
+        "FAIRY_PEARL_DEWDROPS"
+      ],
+      "estimated_duration_seconds": 130,
+      "visual_beats": [
+        "Moonlit Rabbit head through sack shivering threadbare",
+        "Memories of garden wood Skin Horse; real tear falls",
+        "Emerald-leaved golden-cup flower grows and opens",
+        "Fairy in pearl and dew-drops kisses him explains nursery magic and flies him to wood"
+      ],
+      "source_paragraphs": [
+        "P85",
+        "P86",
+        "P87",
+        "P88",
+        "P89",
+        "P90",
+        "P91",
+        "P92",
+        "P93",
+        "P94"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "heading": "EXT. WOOD - NIGHT",
+      "purpose": "Fairy delivers Rabbit to wild rabbits; final kiss grants hind legs and living fur; joyful first leaps",
+      "location_key": "LOCATION_WOOD",
+      "cast": [
+        "NURSERY_MAGIC_FAIRY",
+        "VELVETEEN_RABBIT",
+        "WILD_RABBITS"
+      ],
+      "wardrobe_or_age_variant": [
+        "FAIRY_PEARL_DEWDROPS",
+        "RABBIT_REAL_LIVING",
+        "WILD_RABBITS_FURRY"
+      ],
+      "estimated_duration_seconds": 120,
+      "visual_beats": [
+        "Moonlit glade; wild rabbits dance then ring Fairy",
+        "Fairy sets Rabbit down and bids him run and play",
+        "Nose tickle; hind toe scratch reveals real hind legs and shiny brown fur",
+        "Joyous leaping whirling; Fairy gone; Real Rabbit at home"
+      ],
+      "source_paragraphs": [
+        "P95",
+        "P96",
+        "P97",
+        "P98",
+        "P99",
+        "P100",
+        "P101",
+        "P102"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "heading": "EXT. WOOD - SPRING DAY",
+      "purpose": "Next spring Boy glimpses marked familiar rabbit and wonders if old Bunny; never knows for certain",
+      "location_key": "LOCATION_WOOD",
+      "cast": [
+        "THE_BOY",
+        "VELVETEEN_RABBIT",
+        "WILD_RABBITS"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOY_LATER_SPRING",
+        "RABBIT_REAL_LIVING",
+        "WILD_RABBITS_FURRY"
+      ],
+      "estimated_duration_seconds": 75,
+      "visual_beats": [
+        "Warm spring; healthy Boy plays in wood",
+        "Two rabbits peep from bracken; one brown one with faint spots under fur",
+        "Familiar soft nose and round black eyes",
+        "Boy wonders softly if old Bunny; rabbits slip back into bracken"
+      ],
+      "source_paragraphs": [
+        "P103",
+        "P104",
+        "P105"
+      ]
+    }
+  ]
+}

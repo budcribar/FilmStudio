@@ -204,12 +204,47 @@ public static class ScreenplayService
 
     public static string ComputeHash(string text)
     {
+        // Approval / dirty hash must ignore pipeline-only stamps (Draft date on every SaveDraft)
+        // and match SaveDraft transforms (scene heading unify).
+        var normalized = NormalizeForApprovalHash(text);
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    /// <summary>Pre-2026 hash: NormalizeText only (kept so old SignedHash still validates).</summary>
+    public static string ComputeHashLegacy(string text)
+    {
         var normalized = NormalizeText(text);
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
-    public static string NormalizeText(string text)
+    /// <summary>
+    /// Stable body for sign-off and dirty detection. Drops title-page fields the app rewrites
+    /// without user edits (Draft date / Date / Last saved) and unifies scene heading wording.
+    /// </summary>
+        public static string NormalizeForApprovalHash(string text)
+    {
+        text = NormalizeText(text);
+        text = BookToFountainConverter.NormalizeSceneHeadingWording(text);
+        var lines = text.Split('\n');
+        var kept = new System.Collections.Generic.List<string>(lines.Length);
+        foreach (var line in lines)
+        {
+            var trim = line.TrimStart();
+            if (trim.StartsWith("Draft date:", StringComparison.OrdinalIgnoreCase)
+                || trim.StartsWith("Date:", StringComparison.OrdinalIgnoreCase)
+                || trim.StartsWith("Last saved:", StringComparison.OrdinalIgnoreCase))
+                continue;
+            kept.Add(line);
+        }
+        var joined = string.Join("\n", kept);
+        if (joined.Length > 0 && !joined.EndsWith('\n'))
+            joined += "\n";
+        return joined;
+    }
+
+public static string NormalizeText(string text)
     {
         text ??= "";
         text = text.Replace("\r\n", "\n").Replace('\r', '\n');
@@ -252,12 +287,17 @@ public static class ScreenplayService
 
         if (status.DraftExists)
         {
-            status.Signed = !string.IsNullOrEmpty(meta.SignedHash) &&
+            // DraftHash uses v2 (approval-stable). Also accept legacy v1 hashes so existing
+            // projects do not all flip to "Edited since approval" after the hash change.
+            var matchesV2 = !string.IsNullOrEmpty(meta.SignedHash) &&
                             string.Equals(meta.SignedHash, status.DraftHash, StringComparison.OrdinalIgnoreCase);
-            status.Dirty = !status.Signed;
+            var matchesLegacy = !string.IsNullOrEmpty(meta.SignedHash) &&
+                                string.Equals(meta.SignedHash, ComputeHashLegacy(File.ReadAllText(draftPath)), StringComparison.OrdinalIgnoreCase);
+            status.Signed = matchesV2 || matchesLegacy;
+            // Dirty only after a real prior approval that no longer matches the draft.
+            // Never-approved drafts are not "edited since approval".
+            status.Dirty = !string.IsNullOrEmpty(meta.SignedHash) && !status.Signed;
         }
-
-
         else
         {
             status.Signed = false;
@@ -334,18 +374,14 @@ public static class ScreenplayService
         if (best is null)
             return false;
 
-        var text = File.ReadAllText(best);
-        File.WriteAllText(draftPath, NormalizeText(text));
+        var text = NormalizeText(File.ReadAllText(best));
+        File.WriteAllText(draftPath, text);
         var meta = ReadMeta(store, projectId);
+        // Hash the bytes we actually wrote (normalized), not the pre-normalize source.
         meta.LastSavedHash = ComputeHash(text);
         meta.LastSavedAt = DateTime.UtcNow.ToString("o");
-        // If Stage 1 already exists from a prior import, treat as signed so shot plan stays available
-        var stage1 = ReadStage1Lite(store, projectId);
-        if (stage1.Present && stage1.SceneCount > 0 && string.IsNullOrEmpty(meta.SignedHash))
-        {
-            meta.SignedHash = meta.LastSavedHash;
-            meta.SignedAt = meta.LastSavedAt;
-        }
+        // Do not auto-approve here — Stage 1 can exist from book import before the user
+        // has reviewed Fountain. Sign-off is an explicit user action.
         WriteMeta(store, projectId, meta);
         return true;
     }
@@ -355,8 +391,9 @@ public static class ScreenplayService
         text = NormalizeText(text ?? "");
         // Unify drifted same-place headings before they seed location_seed_tokens
         text = BookToFountainConverter.NormalizeSceneHeadingWording(text);
-        // Stamp Draft date to today even when the model invents a wrong year
-        text = BookToFountainConverter.FixDraftDate(text);
+        // Do NOT FixDraftDate on every save — stamping "today" changed the file after
+        // approval and falsely set Dirty / "Edited since approval". Date is set at
+        // draft creation / import only (CreateDraftFromBook, ImportAsDraft).
         var sourceDir = Path.Combine(store.GetProjectDir(projectId), "source");
         Directory.CreateDirectory(sourceDir);
         var draftPath = GetDraftPath(store, projectId);
@@ -390,6 +427,7 @@ public static class ScreenplayService
         if (string.IsNullOrWhiteSpace(text))
             return new SaveResult { Ok = false, Error = "Empty screenplay text" };
 
+        text = BookToFountainConverter.FixDraftDate(NormalizeText(text));
         var result = SaveDraft(store, projectId, text);
 
         // Keep a copy under the original name for reference when different
@@ -427,6 +465,7 @@ public static class ScreenplayService
 
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
         var fountain = BookToFountainConverter.ConvertHeuristic(title, book, author);
+        fountain = BookToFountainConverter.FixDraftDate(fountain);
         var save = SaveDraft(store, projectId, fountain);
         if (!save.Ok) return save;
         save.Message = "Screenplay draft ready — review and approve";
@@ -441,9 +480,11 @@ public static class ScreenplayService
         ProjectStore store,
         string projectId,
         PageToMovie.Engine.Abstractions.IChatClient? chat = null,
-        string model = "grok-4.5",
+        string model = "",
         Action<string>? onProgress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        GenerationErrorLogger? errorLogger = null,
+        string? jobId = null)
     {
         var projectDir = store.GetProjectDir(projectId);
         var bookPath = Path.Combine(projectDir, "source", "book_full.txt");
@@ -454,15 +495,11 @@ public static class ScreenplayService
         if (string.IsNullOrWhiteSpace(book))
             return new SaveResult { Ok = false, Error = "Book text is empty" };
 
-        if (string.IsNullOrWhiteSpace(model) || string.Equals(model, "grok-4.5", StringComparison.OrdinalIgnoreCase))
         {
-            try
-            {
-                var cfg = await store.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-                if (cfg.TryGetValue("planning_model_name", out var pEl) && pEl.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(pEl.GetString()))
-                    model = pEl.GetString()!.Trim();
-            }
-            catch { }
+            var cfg = await store.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            model = string.IsNullOrWhiteSpace(model)
+                ? ProjectModelSelection.RequirePlanning(cfg, "Screenplay draft from book")
+                : ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Screenplay draft from book");
         }
 
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
@@ -471,6 +508,7 @@ public static class ScreenplayService
 
         try
         {
+            ProjectVisionMeta.Document? visionFromScript = null;
             var fountain = await BookToFountainConverter.ConvertAsync(
                 workspaceRoot: store.WorkspaceRoot,
                 title: title,
@@ -480,10 +518,44 @@ public static class ScreenplayService
                 chat: chat,
                 model: model,
                 onProgress: onProgress,
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                onVisionMeta: v => visionFromScript = v,
+                errorLogger: errorLogger,
+                jobId: jobId,
+                projectId: projectId).ConfigureAwait(false);
 
+            fountain = BookToFountainConverter.FixDraftDate(fountain);
             var save = SaveDraft(store, projectId, fountain);
             if (!save.Ok) return save;
+
+            // Medium sidecar from the same adaptation response (preferred).
+            // Fallback: one structured LLM call if the model omitted the trailer.
+            try
+            {
+                if (visionFromScript is not null)
+                {
+                    ProjectVisionMeta.Write(projectDir, visionFromScript);
+                    onProgress?.Invoke($"Saved visual medium ({visionFromScript.VisualMedium}) to extract_meta");
+                }
+                else if (chat is not null && chat.IsConfigured)
+                {
+                    onProgress?.Invoke("No VISION_META trailer in screenplay response — asking model for medium…");
+                    await ProjectVisionMeta.DecideAtAdaptationAsync(
+                        projectDir,
+                        title,
+                        book,
+                        fountain,
+                        chat,
+                        model,
+                        onProgress,
+                        ct).ConfigureAwait(false);
+                }
+            }
+            catch (Exception metaEx)
+            {
+                onProgress?.Invoke("Vision medium metadata skipped: " + metaEx.Message);
+            }
+
             save.Message = "Screenplay draft ready — review and approve";
             return save;
         }
@@ -525,6 +597,20 @@ public static class ScreenplayService
                 return new SignOffResult { Ok = false, Error = save.Error };
         }
 
+        // When no body was sent, still run SaveDraft so heading unify matches later saves.
+        if (text is null)
+        {
+            var draftPath0 = GetDraftPath(store, projectId);
+            if (!File.Exists(draftPath0))
+                return new SignOffResult { Ok = false, Error = "No screenplay draft to approve" };
+            var existing = File.ReadAllText(draftPath0);
+            if (string.IsNullOrWhiteSpace(existing))
+                return new SignOffResult { Ok = false, Error = "Screenplay draft is empty" };
+            var pre = SaveDraft(store, projectId, existing);
+            if (!pre.Ok)
+                return new SignOffResult { Ok = false, Error = pre.Error };
+        }
+
         var draftPath = GetDraftPath(store, projectId);
         if (!File.Exists(draftPath))
             return new SignOffResult { Ok = false, Error = "No screenplay draft to approve" };
@@ -532,9 +618,6 @@ public static class ScreenplayService
         var draftText = File.ReadAllText(draftPath);
         if (string.IsNullOrWhiteSpace(draftText))
             return new SignOffResult { Ok = false, Error = "Screenplay draft is empty" };
-
-        draftText = NormalizeText(draftText);
-        File.WriteAllText(draftPath, draftText);
 
         var hash = ComputeHash(draftText);
         var metaBefore = ReadMeta(store, projectId);

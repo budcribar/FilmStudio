@@ -1,0 +1,515 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
+  "Timestamp": "2026-07-31 06:43:16 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 90,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 14,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 22,
+        "TotalDialogueBlocks": 113,
+        "AvgWordsPerDialogue": 14.7,
+        "MaxWordsInSingleDialogue": 51,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. HARTLEY",
+          "BOB CRATCHIT",
+          "MARLEY",
+          "CHRISTMAS PAST",
+          "FAN",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG SCROOGE",
+          "CHRISTMAS PRESENT",
+          "TINY TIM",
+          "OLD JOE",
+          "MRS. DILBER",
+          "PETER",
+          "MRS. CRATCHIT",
+          "TOM"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SCROOGE",
+          "TINY TIM",
+          "OLD JOE"
+        ],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, OLD JOE).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.2,
+      "AvgCharacterDisambiguation": 9.4,
+      "AvgAiVideoDirectibility": 8.8,
+      "AvgDramaticPacing": 8.6,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 7.4,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 10,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.2,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 107,
+        "AvgWordsPerDialogue": 13.6,
+        "MaxWordsInSingleDialogue": 44,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. HARKER",
+          "BOB",
+          "JACOB MARLEY",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "FEZZIWIG",
+          "BELLE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "TINY TIM",
+          "FRED\u0027S WIFE",
+          "MR. BENTLEY",
+          "MR. PARSONS",
+          "MRS. HOPKINS",
+          "MRS. DILBER",
+          "OLD JOE",
+          "TOM"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "TINY TIM",
+          "OLD JOE"
+        ],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 2 age-qualified character header(s) (e.g. TINY TIM, OLD JOE).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.1,
+      "AvgCharacterDisambiguation": 8.6,
+      "AvgAiVideoDirectibility": 8.4,
+      "AvgDramaticPacing": 8,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 8,
+      "DisqualifyingFlags": [
+        "grok-4.5: Dropped major source beats: Belle\u0027s later happy-family vision and the unwatched corpse reveal"
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-luna",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 12,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 21,
+        "TotalDialogueBlocks": 145,
+        "AvgWordsPerDialogue": 14.4,
+        "MaxWordsInSingleDialogue": 50,
+        "LongMonologueCount": 9,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. LAMBERT",
+          "JACOB MARLEY",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "YOUNG SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "HENRY BELLE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "BOB CRATCHIT",
+          "TINY TIM",
+          "MRS. CRATCHIT",
+          "CLARA",
+          "MERCHANT HARRIS",
+          "MERCHANT JONES",
+          "MERCHANT BROWN",
+          "MRS. HIGGINS",
+          "MRS. DILBER",
+          "OLD JOE",
+          "PETER CRATCHIT",
+          "TOM"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SCROOGE",
+          "TINY TIM",
+          "OLD JOE"
+        ],
+        "DiagnosticWarnings": [
+          "9 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, OLD JOE).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.8,
+      "AvgCharacterDisambiguation": 8.8,
+      "AvgAiVideoDirectibility": 7.5,
+      "AvgDramaticPacing": 7.6,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 7,
+      "AvgOverallQualitative": 8.1,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.1-pro-preview",
+      "AnonymousLabel": "",
+      "CompositeScore": 81.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 4.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 156,
+        "AvgWordsPerDialogue": 17.4,
+        "MaxWordsInSingleDialogue": 66,
+        "LongMonologueCount": 19,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. HOWELL",
+          "BOB CRATCHIT",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG SCROOGE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "MRS. CRATCHIT",
+          "TINY TIM",
+          "CLARA",
+          "MR. GRUBB",
+          "MR. BLAKE",
+          "MRS. DILBER",
+          "OLD JOE",
+          "PETER",
+          "THOMAS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SCROOGE",
+          "TINY TIM",
+          "OLD JOE"
+        ],
+        "DiagnosticWarnings": [
+          "19 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, OLD JOE).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.5,
+      "AvgCharacterDisambiguation": 7.8,
+      "AvgAiVideoDirectibility": 7.4,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 7.4,
+      "DisqualifyingFlags": [
+        "grok-4.5: Dropped school/Fan Past beats and Future corpse; Belle \u0027one shadow more\u0027 promised but never shown; parlor scene mis-headed as EXT. CITY STREET"
+      ]
+    },
+    {
+      "ModelId": "grok-4.20-reasoning",
+      "AnonymousLabel": "",
+      "CompositeScore": 81,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 5,
+      "AvgJudgeRank": 5.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 187,
+        "AvgWordsPerDialogue": 16.4,
+        "MaxWordsInSingleDialogue": 95,
+        "LongMonologueCount": 24,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. HOPKINS",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "FEZZIWIG",
+          "BELLE",
+          "HUSBAND",
+          "GHOST OF CHRISTMAS PRESENT",
+          "BOB CRATCHIT",
+          "TINY TIM",
+          "ALL",
+          "FRED\u0027S NIECE",
+          "MISS LUCY",
+          "MR. BULKLEY",
+          "MR. PECK",
+          "MR. GRUBB",
+          "MR. SMYTHE",
+          "MR. HALE",
+          "MRS. DILBER",
+          "OLD JOE",
+          "WIFE",
+          "PETER",
+          "MRS. CRATCHIT",
+          "BOY",
+          "PASSERSBY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "TINY TIM",
+          "OLD JOE",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "24 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 age-qualified character header(s) (e.g. TINY TIM, OLD JOE, BOY)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.4,
+      "AvgCharacterDisambiguation": 6.8,
+      "AvgAiVideoDirectibility": 6.5,
+      "AvgDramaticPacing": 5.8,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 7,
+      "AvgOverallQualitative": 7.1,
+      "DisqualifyingFlags": [
+        "grok-4.5: Closed-cast violations (PASSERSBY, HUSBAND, WIFE, FRED\u0027S NIECE as cues); severe runtime bloat from retaining nearly every secondary travelogue and game beat far beyond 10-minute target"
+      ]
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 80.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 6,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 17,
+        "TotalDialogueBlocks": 118,
+        "AvgWordsPerDialogue": 15.9,
+        "MaxWordsInSingleDialogue": 59,
+        "LongMonologueCount": 9,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "FRED",
+          "SCROOGE",
+          "SOLICITOR",
+          "BOB CRATCHIT",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "FEZZIWIG",
+          "BELLE",
+          "MIDDLE-AGED SCROOGE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "TINY TIM",
+          "MRS. CRATCHIT",
+          "CHARWOMAN",
+          "OLD JOE",
+          "BOY",
+          "NARRATOR"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "TINY TIM",
+          "OLD JOE",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "9 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 age-qualified character header(s) (e.g. TINY TIM, OLD JOE, BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6,
+      "AvgCharacterDisambiguation": 7.2,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 8.1,
+      "AvgSoundDesignMusic": 6.5,
+      "AvgOverallQualitative": 7.1,
+      "DisqualifyingFlags": [
+        "grok-4.5: Severe omission of major beats (entire school/Fan sequence, Belle family coda, Fred\u0027s party, merchants, corpse); non-closed cast tokens (SOLICITOR, CHARWOMAN, BOY)"
+      ]
+    },
+    {
+      "ModelId": "claude-opus-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 31.6,
+      "IsGenerationFallback": true,
+      "GenerationFallbackReason": "Anthropic messages HTTP 400: {\u0022type\u0022:\u0022error\u0022,\u0022error\u0022:{\u0022type\u0022:\u0022invalid_request_error\u0022,\u0022message\u0022:\u0022Your credit balance is too low to access the Anthropic API. Please go to Plans \u0026 Billing to upgrade or purchase credits.\u0022},\u0022request_id\u0022:\u0022req_011CdZfujRatpuLQob8oQmGE\u0022}",
+      "BordaPoints": 0,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 79,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 714,
+        "TotalDialogueBlocks": 714,
+        "AvgWordsPerDialogue": 32.1,
+        "MaxWordsInSingleDialogue": 86,
+        "LongMonologueCount": 273,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (714 scenes); high micro-scene density inflates video gen budget.",
+          "High average dialogue length (32.1 words/turn); speech beats risk clip overrun.",
+          "273 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 0,
+      "AvgCharacterDisambiguation": 0,
+      "AvgAiVideoDirectibility": 0,
+      "AvgDramaticPacing": 0,
+      "AvgDialogueAuthenticity": 0,
+      "AvgSoundDesignMusic": 0,
+      "AvgOverallQualitative": 0,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-luna": 7.75,
+      "gpt-5.6-terra": 7.62,
+      "gemini-3.6-flash": 6.28,
+      "gemini-3.1-pro-preview": 6.95,
+      "grok-4.20-reasoning": 6.78,
+      "gpt-5.6-sol": 8.45
+    },
+    "grok-4": {
+      "gpt-5.6-luna": 8.42,
+      "gemini-3.6-flash": 8,
+      "gemini-3.1-pro-preview": 7.75,
+      "gpt-5.6-terra": 8.42,
+      "gpt-5.6-sol": 8.92,
+      "grok-4.20-reasoning": 7.5
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-luna": 2,
+      "gpt-5.6-terra": 3,
+      "gemini-3.1-pro-preview": 4,
+      "grok-4.20-reasoning": 5,
+      "gemini-3.6-flash": 6
+    },
+    "grok-4": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-luna": 2,
+      "gpt-5.6-terra": 3,
+      "gemini-3.6-flash": 4,
+      "gemini-3.1-pro-preview": 5,
+      "grok-4.20-reasoning": 6
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Covers the full spine including school/Fan, Fezziwig, Belle breakup plus family coda, Cratchit/Tim, Fred, Ignorance/Want, merchants, Old Joe, corpse, grave and redemption with largely book-faithful dialogue and stable named cast. Visual intros are usable but age variants lack explicit year/build tags on reappearance; Present spirit travel crams miner/lighthouse/ship into one heading, hurting single-clip directibility. Pacing fits the 10-minute band. No explicit BGM/SFX beds.",
+      "gpt-5.6-terra": "Clean short-clip structure, solid age tags (BOY SCROOGE), consistent wardrobe locks and mostly book dialogue make it filmable, but omitting the corpse tableau and Belle family coda are severe fidelity failures on core emotional turns. Present and Future are tightened effectively for runtime yet lose necessary horror/regret payoffs. Sound beds are only ambient implications.",
+      "gemini-3.6-flash": "Dialogue retains many iconic lines and individual scenes are visually concrete, but wholesale deletion of Past loneliness/Fan, Fred party and Future body destroys narrative causality and theme. Supporting cues violate closed-cast rules. Pacing feels abrupt from the gaps. Minimal sound direction.",
+      "gemini-3.1-pro-preview": "Strongest raw dialogue fidelity to Dickens wording and good Cratchit/Fred energy, yet core Past (school/Fan) and the body horror are missing, and the promised final Belle shadow is elided. Some headings mismatch location. Character looks are book-derived but thin on re-entry consistency. Sound limited to described bells/chains.",
+      "grok-4.20-reasoning": "Most complete book coverage and excellent on-camera NARRATOR frame with proper closing return, plus near-verbatim dialogue. However unusable group/relationship cues break closed cast, Scrooge\u0027s visual lock is metaphor-heavy rather than concrete, and dense multi-page scenes with travel montages and full party games destroy short-clip directibility and 10-minute pacing.",
+      "gpt-5.6-sol": "Best overall package: high fidelity to essential beats (school/Fan, Fezziwig, Belle family, Cratchit/Tim, Ignorance/Want, Joe, corpse, grave, full redemption) without bloat, precise age-disambiguated locks (BOY SCROOGE twelve thin brown-haired; YOUNG SCROOGE slim apprentice of twenty) that stay consistent, and concrete single-location action lines ideal for 5-10 s AI clips. Dialogue stays close to book while remaining clip-length. Only minor notes are absent explicit BGM calls and light Present compression."
+    },
+    "grok-4": {
+      "gpt-5.6-luna": "High fidelity with consistent character visuals and book-accurate dialogue; some scenes contain too many beats for the 5-10s clip constraint, lowering pacing and directibility.",
+      "gemini-3.6-flash": "Solid coverage and directible actions but some character descriptions lack recurring wardrobe details and a few lines are lightly paraphrased.",
+      "gemini-3.1-pro-preview": "Good book voice in narration but several scenes cram multiple locations or time jumps into single headings, hurting pacing and directibility.",
+      "gpt-5.6-terra": "Strong fidelity and consistent looks; action lines are mostly concrete but a few long descriptive paragraphs exceed short-clip limits.",
+      "gpt-5.6-sol": "Highest source fidelity with precise visual actions, stable character tokens, and natural short dialogue lines throughout.",
+      "grok-4.20-reasoning": "Invented narrator study frame adds an unbooked location and some scenes rely on summary rather than concrete visuals, lowering fidelity and pacing."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay F because it uniquely balances near-complete fidelity, explicit age-tagged casting locks, and strictly single-location clip-directible action inside the 10-minute envelope. Weakest: Screenplay C because it deletes multiple irreplaceable source sequences (school/Fan, Fred party, corpse) and uses illegal non-closed cast tokens, making it unusable.",
+    "grok-4": "Strongest: Screenplay E because it achieves the highest fidelity while keeping every action line visually concrete and short-clip ready. Weakest: Screenplay F because it introduces an invented narrator study frame absent from the source, violating location stability."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Add a hard rule that every distinct location change (even during spirit voyages or montages) requires its own scene heading; forbid packing multiple places into one action block or heading.",
+      "gpt-5.6-terra": "Require an explicit pre-write checklist of the source\u0027s must-hit turning-point tableaux; any omitted spine vision automatically fails fidelity.",
+      "gemini-3.6-flash": "Mandate that every speaking role receive a unique proper-name token at first appearance and ban role-only or generic cues (SOLICITOR, CHARWOMAN, BOY, MAN); treat any such cue as a parse failure.",
+      "gemini-3.1-pro-preview": "Forbid promising a vision or \u0027one more\u0027 beat in dialogue/action unless the subsequent scene heading and content actually dramatize it; elision after a promise is a hard fidelity fail.",
+      "grok-4.20-reasoning": "Cap total scene count or add an explicit estimated-runtime check against the 10-minute goal; require every speaker cue to be a unique proper name and reject any group noun, bare relationship or ordinal cue at generation time.",
+      "gpt-5.6-sol": "Require every scene to carry at least one explicit parenthetical or trailing BGM/mood \u002B key SFX note so audio direction is first-class alongside picture for clip generation."
+    },
+    "grok-4": {
+      "gpt-5.6-luna": "Add an explicit rule that every scene heading must contain at most three distinct visual micro-beats to fit short-clip production.",
+      "gemini-3.6-flash": "Add a rule requiring every recurring character to have one fixed signature wardrobe item restated on every reappearance.",
+      "gemini-3.1-pro-preview": "Add a rule forbidding any scene heading that implies movement across multiple rooms or time periods without a new heading.",
+      "gpt-5.6-terra": "Add a rule capping any single action paragraph at two sentences maximum to support 5-10 second clip editing.",
+      "gpt-5.6-sol": "Add a rule requiring every scene to end with a clear visual or sound hook that can transition directly into the next clip.",
+      "grok-4.20-reasoning": "Add a rule that any on-camera narrator frame must be explicitly established from the source text and reused only at major turns."
+    }
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 3.5,
+      "characterDisambiguation": 4,
+      "aiVideoDirectibility": 4.5,
+      "dramaticPacing": 3.5,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 3,
+      "overallQualitativeScore": 3.92,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major invented confrontations and incomplete/dropped beats (yoga details, full college arc, Bob scenes, sage dream specifics)",
+        "Inconsistent unnamed YOUNG MAN / NARRATOR with no age disambiguation or locked visual refs",
+        "Fragmented non-clip structure with multi-location crams and heavy unfilmable V.O."
+      ],
+      "rationale": "Severely penalized on fidelity for inventions and drops; characters lack consistent visual locks or young/adult tags; scenes often tell via V.O. rather than single observable actions; pacing collapses into summary jumps; dialogue generic; zero music/sound beds."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 6.5,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "High fidelity to all major beats and themes with minimal invention; excellent consistent visuals (Nick scars/hair, Sionna eyes/necklace/clothes, explicit young Nick/Peter ages); strong single-action clip beats and dream visuals; tight escalating structure; book-authentic short dialogue; atmospheric potential (bar, rain, hospital) but sparse explicit beds."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 7.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong source coverage with Seattle frame and closed-cast note; solid recurring visuals and age shifts; mostly clip-directable actions though some V.O. density; good rhythm through accident/stabbing/prison; natural dialogue; limited explicit sound prompts."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 5,
+      "characterDisambiguation": 6,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 4,
+      "overallQualitativeScore": 5.58,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Dropped major beats (full yoga/Buddhism arc, detailed college, Bob reunion depth, sage dream)",
+        "Over-condensed structure skips source coverage"
+      ],
+      "rationale": "Fidelity hit hard by compression and omissions; basic but inconsistent character locks; some clean visual actions but many summary scenes; pacing rushes key escalations; dialogue serviceable but thinned; almost no sound design support."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 2.5,
+      "characterDisambiguation": 5.5,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 4.5,
+      "overallQualitativeScore": 4.75,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented protagonist name JAKE (book reveals Peter only at end)",
+        "Excess length and novelistic internals unsuited to 5-10s clips",
+        "Some invented expansions"
+      ],
+      "rationale": "Severe fidelity penalty for renaming lead and sprawl; visuals present but name break and inconsistent refs; many multi-beat or internal scenes; pacing drags then jumps; dialogue often book-true; weak sound integration."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 5.5,
+      "overallQualitativeScore": 7.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Good overall coverage of core arc and themes; decent recurring descriptions though less rigorous age/wardrobe locks; mostly filmable actions with some V.O. overload; solid momentum; authentic lines; minimal music/sound cues."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 1.5,
+      "characterDisambiguation": 2,
+      "aiVideoDirectibility": 2,
+      "dramaticPacing": 2.5,
+      "dialogueAuthenticity": 3,
+      "soundDesignMusic": 2,
+      "overallQualitativeScore": 2.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Massive invented plot (montages, headlines, altered confrontations, happy Sionna reunion)",
+        "Vague unnamed characters with no visual consistency or age tags",
+        "Montage structure unusable for single 5-10s beats"
+      ],
+      "rationale": "Broken fidelity via wholesale invention and summary; characters indistinct; almost nothing camera-concrete or single-beat; no dramatic build; generic dialogue; zero sound design."
+    },
+    {
+      "screenplayId": "Screenplay H",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 8.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Near-perfect fidelity including late Peter name reveal and all key beats/dreams; locked consistent visuals and explicit young/adult tags; exemplary single-action clip scenes; precise escalation and transitions; book-true performable dialogue; strong atmospheric beds (bar, rain, hospital, prison) implied."
+    },
+    {
+      "screenplayId": "Screenplay I",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 6.5,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Excellent source coverage with Narrator-to-Peter reveal and full arc; consistent detailed casting refs and age handling; highly directable visual beats and dreams; clean short-clip pacing; authentic dialogue; good but not explicit sound support."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay H",
+    "Screenplay B",
+    "Screenplay I",
+    "Screenplay C",
+    "Screenplay F",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay H because it delivers near-perfect fidelity (including the book\u0027s late name reveal), locked visual character consistency across ages, and purely clip-directable single-action scenes with authentic dialogue. Weakest: Screenplay G because it replaces the source with invented montages and plot, uses vague uncastable characters, and is structurally unusable for 5-10s AI beats.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "DCAAC19F09998F38076AB4BA803C7F5E7111230C6F9CD6AF2B7115F0654037B3"
+}

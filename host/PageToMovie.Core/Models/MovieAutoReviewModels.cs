@@ -13,7 +13,7 @@ public sealed class MovieAutoReviewReport
     public Dictionary<string, int> CategoryScores { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<MovieSceneGroupFeedback> GroupFeedback { get; set; } = new();
     public List<int> FlaggedScenes { get; set; } = new();
-    public string ProviderUsed { get; set; } = "grok";
+    public string ProviderUsed { get; set; } = "";
     public string CreatedAtUtc { get; set; } = DateTime.UtcNow.ToString("o");
 }
 

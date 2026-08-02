@@ -1,0 +1,69 @@
+{
+  "BookPath": "books/Nick_and_Me.txt",
+  "Timestamp": "2026-07-30 23:31:55 UTC",
+  "IsMockRun": true,
+  "Leaderboard": [
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 28.2,
+      "IsGenerationFallback": true,
+      "GenerationFallbackReason": "Anthropic messages HTTP 400: {\u0022type\u0022:\u0022error\u0022,\u0022error\u0022:{\u0022type\u0022:\u0022invalid_request_error\u0022,\u0022message\u0022:\u0022\u0060temperature\u0060 is deprecated for this model.\u0022},\u0022request_id\u0022:\u0022req_011CdZ7b64Z5pcb7inLHamE8\u0022}",
+      "BordaPoints": 0,
+      "AvgJudgeRank": 0.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 70.5,
+        "FormatComplianceScore": 80,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 566,
+        "TotalDialogueBlocks": 566,
+        "AvgWordsPerDialogue": 56.9,
+        "MaxWordsInSingleDialogue": 90,
+        "LongMonologueCount": 415,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
+          "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
+          "415 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 0,
+      "AvgCharacterDisambiguation": 0,
+      "AvgAiVideoDirectibility": 0,
+      "AvgDramaticPacing": 0,
+      "AvgDialogueAuthenticity": 0,
+      "AvgSoundDesignMusic": 0,
+      "AvgOverallQualitative": 0,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": -1
+    }
+  },
+  "JudgeRankMatrix": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": -1
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay A\u0027."
+    }
+  },
+  "JudgeSummaries": {
+    "claude-sonnet-5": "\u26A0\uFE0F Mock judge evaluation returned for claude-sonnet-5."
+  }
+}

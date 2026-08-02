@@ -1,0 +1,125 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong full-arc coverage from Milwaukee setup through crash, stabbing, Seattle success and prison forgiveness with book-close dialogue and consistent Seattle frame; minor Sionna hair-length drift and light compression of secondary library/yoga beats keep it from perfect. Excellent per-scene sound cues and filmable single-location actions make it highly directible for short clips.",
+      "promptImprovementSuggestion": "Require that every character re-entry after a time jump or age split must restate 2-3 locked visual traits (build, hair, scar, signature wardrobe) in the opening Action line of that scene."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Tight, faithful compression of the essential spine (Sionna meet-cute, Ma decline, bar confrontation, crash, stabbing, separation, prison release) with clear visual locks (dark-blond Narrator, scarred Nick) and concrete crash/stabbing micro-beats; dialogue is performable though slightly smoothed. Sound beds are present and useful; pacing suits 5-10s clips without multi-location cram.",
+      "promptImprovementSuggestion": "Add an explicit cap that no single Action block may contain more than two distinct physical actions; split further actions into new Action lines or micro-scenes."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 4,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 2,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 4.67,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Ma repeatedly mis-cued/renamed as MRS. ENGEL, breaking closed cast and source identity",
+        "Non-Fountain garbage text and model metadata embedded near the end, rendering the file unparsable",
+        "Massively exceeds 10-minute target with dozens of secondary scenes"
+      ],
+      "rationale": "Contains many authentic book passages and strong young/adult splits, but catastrophic Ma/Mrs. Engel identity swap, embedded junk text, and runaway length make it unusable; fidelity and pacing collapse under the errors.",
+      "promptImprovementSuggestion": "Add a hard validation rule: every CHARACTER cue and Action mention must match an explicitly introduced token with identical spelling; any rename or swap is a fatal defect."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 4,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Protagonist locked as PETER from the opening scene, violating the source\u0027s late name reveal and the NARRATOR-token rule"
+      ],
+      "rationale": "Clean short-clip structure, solid sound, and filmable actions, but front-loading the real name PETER (revealed only on the final boarding pass in the book) is a hard fidelity and closed-cast violation; some paraphrase and minor invented gate-agent business further lower the score.",
+      "promptImprovementSuggestion": "Re-state as a hard rule that a first-person narrator\u0027s real name may appear in cues or Action only at or after the exact moment the source text first discloses it; until then the token must remain NARRATOR/THE NARRATOR."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 3.5,
+      "characterDisambiguation": 6,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 5,
+      "dialogueAuthenticity": 6,
+      "soundDesignMusic": 6.5,
+      "overallQualitativeScore": 5.58,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Protagonist named PETER from the first scene onward",
+        "Invented non-source closing line \u0027God bless us, every one\u0027",
+        "Heavy omission of major middle beats (full library/yoga/philosophy arc) and choppy CUT-TO structure"
+      ],
+      "rationale": "Over-compressed skeleton that drops essential growth beats, front-loads the name, and grafts an alien Christmas-Carol tag; remaining scenes are only moderately directible and sound coverage is uneven.",
+      "promptImprovementSuggestion": "Prohibit any dialogue or closing button that is not traceable to the source text; require the final image/VO to use only diction present in the book."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highest-fidelity spine that preserves book wording, late name reveal, key dreams, crash, stabbing and prison forgiveness while locking consistent visual traits (lean Narrator, scarred reddish-brown Nick, pale blue-eyed Sionna) on re-entry; actions are single-clip concrete and dialogue is performable. Sound is strong though a few bridge scenes are thinner.",
+      "promptImprovementSuggestion": "Mandate that every scene heading is followed by at least one explicit (SOUND:) or (MUSIC:) cue before any dialogue; treat absence as a parse failure."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Clean, well-paced short-film cut with authentic book dialogue, reliable sound beds on every scene, and clear visual introductions; slightly lighter on middle-act philosophy/yoga texture than the top candidate but still fully filmable and faithful to the emotional arc.",
+      "promptImprovementSuggestion": "Require that the central violent/emotional peak (crash, stabbing, confession) interleave at least two distinct visual or sound micro-beats with any VO rather than a single summary Action under a long monologue."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay F",
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay G",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay C"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay F because it delivers the highest fidelity to the book\u0027s late name reveal, locked character visuals, book-close dialogue and single-clip directible beats without any disqualifying inventions. Weakest: Screenplay C because Ma is fatally mis-cued as Mrs. Engel, the file contains unparsable garbage text, and the scene count massively exceeds the 10-minute short-clip target.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "27127BF4F6BE9E98DE8FC8C1B48748DF06A531EF9DB1DDA5683FF74BE94F469A"
+}

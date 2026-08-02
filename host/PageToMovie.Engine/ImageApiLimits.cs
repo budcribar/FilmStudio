@@ -22,44 +22,38 @@ public static class ImageApiLimits
     public const int DefaultMaxReferenceImages = GrokMaxReferenceImages;
 
     /// <summary>
-    /// Resolve provider id from model catalog first, then explicit config / name heuristics.
+    /// Resolve provider id from model catalog only. Empty when unknown — never invents "grok".
     /// </summary>
     public static string ResolveProvider(string? imageProvider, string? imageModel)
     {
-        // Master catalog (model id → provider family)
         var entry = PageToMovie.Core.Models.SupportedModelCatalog.Find(
             imageModel,
-            PageToMovie.Core.Models.ModelCapability.Image);
-        if (entry is not null)
+            PageToMovie.Core.Models.ModelCapability.Image)
+            ?? PageToMovie.Core.Models.SupportedModelCatalog.Find(imageModel);
+        if (entry is not null && !string.IsNullOrWhiteSpace(entry.ProviderId))
             return entry.ProviderId;
 
-        var p = (imageProvider ?? "").Trim().ToLowerInvariant();
-        if (p is "grok" or "xai" or "x.ai")
-            return ProviderGrok;
-        if (p is "gemini" or "google" or "nano-banana" or "nanobanana")
-            return ProviderGemini;
+        if (!string.IsNullOrWhiteSpace(imageProvider)
+            && PageToMovie.Core.Models.SupportedModelCatalog.IsKnownProviderId(imageProvider))
+            return PageToMovie.Core.Models.SupportedModelCatalog.NormalizeProviderId(imageProvider);
 
-        var m = (imageModel ?? "").Trim().ToLowerInvariant();
-        if (m.Contains("gemini", StringComparison.Ordinal) ||
-            m.Contains("imagen", StringComparison.Ordinal) ||
-            m.Contains("nano-banana", StringComparison.Ordinal) ||
-            m.Contains("nanobanana", StringComparison.Ordinal))
-            return ProviderGemini;
-
-        if (m.Contains("grok", StringComparison.Ordinal) ||
-            m.Contains("imagine", StringComparison.Ordinal))
-            return ProviderGrok;
-
-        return ProviderGrok; // host default today
+        return "";
     }
 
     /// <summary>Hard max reference images for multi-image edit on this provider.</summary>
     public static int MaxReferenceImages(string? imageProvider, string? imageModel)
     {
+        var entry = PageToMovie.Core.Models.SupportedModelCatalog.Find(
+            imageModel, PageToMovie.Core.Models.ModelCapability.Image)
+            ?? PageToMovie.Core.Models.SupportedModelCatalog.Find(imageModel);
+        if (entry?.MaxReferenceImages is { } catalogMax && catalogMax > 0)
+            return catalogMax;
+
         return ResolveProvider(imageProvider, imageModel) switch
         {
-            ProviderGemini => GeminiMaxReferenceImages,
-            _ => GrokMaxReferenceImages,
+            ProviderGemini or "google" => GeminiMaxReferenceImages,
+            ProviderGrok or "xai" => GrokMaxReferenceImages,
+            _ => DefaultMaxReferenceImages,
         };
     }
 

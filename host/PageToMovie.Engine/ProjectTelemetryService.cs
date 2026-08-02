@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Utils;
+using PageToMovie.Core.Models;
+using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -32,12 +34,20 @@ public sealed class ProjectTelemetryService
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly ProjectStore _projects;
+    private readonly UserDatabaseService? _userDb;
+    private readonly CostReportService? _costs;
     private readonly ILogger<ProjectTelemetryService> _log;
 
-    public ProjectTelemetryService(ProjectStore projects, ILogger<ProjectTelemetryService> log)
+    public ProjectTelemetryService(
+        ProjectStore projects,
+        ILogger<ProjectTelemetryService> log,
+        UserDatabaseService? userDb = null,
+        CostReportService? costs = null)
     {
         _projects = projects;
         _log = log;
+        _userDb = userDb;
+        _costs = costs;
     }
 
     /// <summary>Bind telemetry writes to a project for the current async flow.</summary>
@@ -72,23 +82,187 @@ public sealed class ProjectTelemetryService
     public async Task LogApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
     {
         var projectId = rec.ProjectId ?? CurrentProjectId;
-        if (string.IsNullOrWhiteSpace(projectId))
+        rec.UserId ??= UserApiCallScope.UserId;
+        if (rec.Ts is null)
+            rec.Ts = DateTimeOffset.UtcNow;
+        // Catalog is the single source of truth for model + provider identity on every log line.
+        ApplyCatalogIdentity(rec);
+        rec.EstimatedUsd ??= EstimateListRateUsd(rec);
+        // Always a user-facing cost bucket (same ids as Estimate & cost pie).
+        rec.Category = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
+        // Customer charge = list × admin multiplier (same as cost_ledger / credits).
+        if (rec.EstimatedUsd is > 0 && rec.ChargeUsd is null && _costs is not null)
         {
-            _log.LogDebug("api_calls skip — no project id (kind={Kind})", rec.Kind);
+            var mult = _costs.GetChargeMultiplier();
+            rec.ChargeMultiplier = mult;
+            rec.ChargeUsd = PageToMovie.Core.Billing.ChargePricing.ToCharge(rec.EstimatedUsd.Value, mult);
+        }
+
+        // Project jsonl (full prompts) when a project is in scope.
+        if (!string.IsNullOrWhiteSpace(projectId))
+        {
+            rec.ProjectId = projectId;
+            try
+            {
+                await AppendJsonlAsync(ApiCallsPath(projectId), rec, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "api_calls append failed for {ProjectId}", projectId);
+            }
+        }
+        else
+        {
+            _log.LogDebug("api_calls project skip — no project id (kind={Kind})", rec.Kind);
+        }
+
+        // Always attribute to user SQLite when we know who paid / whose key ran.
+        if (_userDb is not null && !string.IsNullOrWhiteSpace(rec.UserId))
+        {
+            try
+            {
+                await _userDb.InsertUserApiCallAsync(rec, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "user_api_calls insert failed for {UserId}", rec.UserId);
+            }
+        }
+
+        // Roll chat/vision/other non-video/image spend into the project's actual cost_ledger.
+        // Video/image already log their own richer event via CostReportService.RecordVideoGenerationAsync/
+        // RecordImageGenerationAsync (called from FilmJobService/CharacterDesignService) — skip those
+        // kinds here or spend double-counts.
+        if (_costs is not null && !string.IsNullOrWhiteSpace(projectId) && IsLedgerEligibleKind(rec.Kind))
+        {
+            try
+            {
+                await _costs.RecordApiCallSpendAsync(rec, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "cost_ledger append failed for {ProjectId}", projectId);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Force <see cref="ApiCallTelemetry.Model"/> / <see cref="ApiCallTelemetry.Provider"/> from
+    /// <c>models_catalog.json</c>. Never invents providers or keeps hard-coded caller strings when
+    /// the model is in the catalog. Unknown models keep their raw model id and clear a mismatched
+    /// hard-coded provider so we do not record fake catalog identities.
+    /// </summary>
+    public static void ApplyCatalogIdentity(ApiCallTelemetry rec)
+    {
+        if (rec is null) return;
+        var entry = SupportedModelCatalog.ResolveForLogging(rec.Model, rec.Kind);
+        if (entry is not null)
+        {
+            rec.Model = entry.Id;
+            if (!string.IsNullOrWhiteSpace(entry.ProviderId))
+                rec.Provider = entry.ProviderId;
             return;
         }
 
-        rec.ProjectId = projectId;
-        if (rec.Ts is null)
-            rec.Ts = DateTimeOffset.UtcNow;
+        // Model not in catalog — do not invent a provider from string heuristics.
+        if (!string.IsNullOrWhiteSpace(rec.Provider)
+            && SupportedModelCatalog.IsKnownProviderId(rec.Provider))
+        {
+            // Keep only if it is a real catalog provider id (caller may have set it from catalog).
+            rec.Provider = SupportedModelCatalog.NormalizeProviderId(rec.Provider);
+        }
+        else if (!string.IsNullOrWhiteSpace(rec.Provider))
+        {
+            // Unknown free-text provider (legacy hardcodes like "XAI") — drop rather than store noise.
+            rec.Provider = null;
+        }
+    }
 
+    private static bool IsLedgerEligibleKind(string? kind) => (kind ?? "").ToLowerInvariant() switch
+    {
+        "video" or "video_extend" or "video_poll" or "image" or "image_edit" => false,
+        _ => true,
+    };
+
+    [Obsolete("Use SupportedModelCatalog.CatalogProviderId — catalog is SSoT.")]
+    private static string? TryProviderForModel(string model, string? kind) =>
+        SupportedModelCatalog.CatalogProviderId(model, kind);
+
+    /// <summary>Catalog list-rate estimate — not a provider invoice line. No invent / no synthetic models.</summary>
+    public static double? EstimateListRateUsd(ApiCallTelemetry rec)
+    {
         try
         {
-            await AppendJsonlAsync(ApiCallsPath(projectId), rec, ct).ConfigureAwait(false);
+            var model = rec.Model ?? "";
+            var kind = (rec.Kind ?? "").ToLowerInvariant();
+            if (kind is "image" or "image_edit")
+            {
+                var entry = SupportedModelCatalog.ResolveForLogging(model, kind);
+                if (entry?.ImageCostPerImage is not { } unit)
+                    return null;
+                var n = Math.Max(1, rec.ImageCount ?? 1);
+                return Math.Round(unit * n, 6);
+            }
+            if (kind is "video" or "video_extend")
+            {
+                var entry = SupportedModelCatalog.ResolveForLogging(model, kind);
+                if (entry is null) return null;
+                var res = rec.Resolution ?? "480p";
+                double? rate = null;
+                if (entry.VideoCostPerSecondByResolution is { Count: > 0 } table)
+                {
+                    if (table.TryGetValue(res, out var r))
+                        rate = r;
+                    else
+                        rate = table.Values.FirstOrDefault();
+                }
+                if (rate is null or <= 0)
+                    return null;
+                var sec = rec.DurationSec ?? 6;
+                return Math.Round(rate.Value * sec, 6);
+            }
+            if (kind is "voice" or "tts" or "voice_clone")
+            {
+                var entry = SupportedModelCatalog.ResolveForLogging(model, kind);
+                if (entry is null) return null;
+                if (kind is "voice_clone" && entry.CostPerCloneUsd is { } cloneUsd)
+                    return Math.Round(cloneUsd, 6);
+                if (kind is "tts" && entry.CostPerThousandCharsUsd is { } perK)
+                {
+                    var chars = Math.Max(0, rec.PromptChars ?? 0);
+                    return Math.Round((chars / 1000.0) * perK, 6);
+                }
+                if (entry.CostPerMinuteUsd is { } perMin && rec.DurationSec is { } sec)
+                    return Math.Round((sec / 60.0) * perMin, 6);
+                if (entry.CostPerCloneUsd is { } anyVoice)
+                    return Math.Round(anyVoice, 6);
+                return null;
+            }
+            if (kind is "audio" or "music")
+            {
+                // Music models price differently; without a catalog unit, leave null (ledger may set explicitly).
+                _ = SupportedModelCatalog.ResolveForLogging(model, kind);
+                return null;
+            }
+            // chat / vision / other text: token rates only from catalog entry (no invent).
+            var chat = SupportedModelCatalog.ResolveForLogging(model, kind)
+                       ?? SupportedModelCatalog.ResolveForLogging(model, "chat")
+                       ?? SupportedModelCatalog.ResolveForLogging(model, "vision");
+            if (chat is null) return null;
+            var inPerM = chat.InputCostPerMillionTokens ?? 0;
+            var outPerM = chat.OutputCostPerMillionTokens ?? 0;
+            if (inPerM <= 0 && outPerM <= 0)
+                return null;
+            var inTok = rec.InputTokens
+                        ?? Math.Max(0, (rec.PromptChars ?? ((rec.SystemPrompt?.Length ?? 0) + (rec.UserPrompt?.Length ?? 0))) / 4);
+            var outTok = rec.OutputTokens
+                         ?? Math.Max(0, (rec.ResponseChars ?? (rec.ResponsePreview?.Length ?? 0)) / 4);
+            var usd = (inTok / 1_000_000.0) * inPerM + (outTok / 1_000_000.0) * outPerM;
+            return usd > 0 ? Math.Round(usd, 6) : null;
         }
-        catch (Exception ex)
+        catch
         {
-            _log.LogWarning(ex, "api_calls append failed for {ProjectId}", projectId);
+            return null;
         }
     }
 
@@ -292,7 +466,28 @@ public sealed class ApiCallTelemetry
 {
     public DateTimeOffset? Ts { get; set; }
     public string? ProjectId { get; set; }
-    /// <summary>video | video_extend | video_poll | image | image_edit | vision | chat | tts | …</summary>
+    /// <summary>Signed-in user who triggered the call (BYOK / cost attribution).</summary>
+    public string? UserId { get; set; }
+    /// <summary>
+    /// Provider id from <c>models_catalog.json</c> (<c>providers[].id</c> / model <c>providerId</c>),
+    /// e.g. grok, gemini, openai, anthropic, fal, suno, aimusicapi, elevenlabs.
+    /// Filled automatically by <see cref="ProjectTelemetryService.LogApiCallAsync"/> from the model id.
+    /// </summary>
+    public string? Provider { get; set; }
+    /// <summary>List-rate USD estimate at call time (catalog). Not a provider invoice.</summary>
+    public double? EstimatedUsd { get; set; }
+    /// <summary>Customer charge USD (list × admin charge multiplier). Per-user tracking.</summary>
+    public double? ChargeUsd { get; set; }
+    /// <summary>Multiplier used when <see cref="ChargeUsd"/> was computed.</summary>
+    public double? ChargeMultiplier { get; set; }
+    public int? InputTokens { get; set; }
+    public int? OutputTokens { get; set; }
+    /// <summary>
+    /// User-facing cost bucket (<see cref="CostCategories"/>): screenplay, characters, video, voice, music, other.
+    /// Set automatically in <see cref="ProjectTelemetryService.LogApiCallAsync"/> if omitted.
+    /// </summary>
+    public string? Category { get; set; }
+    /// <summary>Transport kind: video | image | chat | … (internal; prefer <see cref="Category"/> for UX).</summary>
     public string Kind { get; set; } = "";
     public string? Endpoint { get; set; }
     public string? Model { get; set; }

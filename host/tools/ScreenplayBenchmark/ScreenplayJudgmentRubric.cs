@@ -42,6 +42,15 @@ public sealed class ScreenplayEvaluationEntry
 
     [JsonPropertyName("rationale")]
     public string Rationale { get; set; } = "";
+
+    /// <summary>
+    /// If you were tuning the shared adaptation system prompt specifically to fix this candidate's
+    /// weaknesses, what's the single highest-leverage change? Collected per (judge, book, model) —
+    /// a one-book suggestion isn't enough evidence to fork the shared prompt on its own; the intent
+    /// is to accumulate these across books/runs and look for a recurring pattern before acting.
+    /// </summary>
+    [JsonPropertyName("promptImprovementSuggestion")]
+    public string PromptImprovementSuggestion { get; set; } = "";
 }
 
 public sealed class JudgeEvaluationPayload
@@ -87,9 +96,10 @@ public static class ScreenplayJudgmentRubric
     /// Bump whenever <see cref="BuildPrompt"/>'s instructions or the evaluation JSON schema change
     /// meaningfully — invalidates cached judge results from the prior rubric on the next run.
     /// </summary>
-    public const string RubricVersion = "2-calibrated-selfbias-productionready";
+    public const string RubricVersion = "4-prompt-improvement-with-actual-prompt-text";
 
-    public static string BuildPrompt(string bookText, Dictionary<string, string> anonymizedScreenplays)
+    public static string BuildPrompt(
+        string bookText, Dictionary<string, string> anonymizedScreenplays, string? generationSystemPrompt = null)
     {
         var sb = new System.Text.StringBuilder();
 
@@ -121,6 +131,17 @@ public static class ScreenplayJudgmentRubric
         sb.AppendLine("PRODUCTION READINESS: For each candidate, also decide productionReady (true/false) independent of the 1-10 scores — false if there is any single deal-breaking issue");
         sb.AppendLine("(major invented content, broken/unusable structure, closed-cast violation, or anything else that would make you refuse to greenlight this draft as-is), even if the averaged scores look fine. List each such issue in disqualifyingIssues.");
         sb.AppendLine();
+        sb.AppendLine("PROMPT IMPROVEMENT: All candidates were generated from the SAME shared system prompt below (not a prompt tailored per model). Read it before suggesting anything —");
+        sb.AppendLine("do not propose an instruction that is already present in some form; propose what's missing or what should change.");
+        if (!string.IsNullOrWhiteSpace(generationSystemPrompt))
+        {
+            sb.AppendLine("=== SHARED GENERATION SYSTEM PROMPT (verbatim, given to every candidate model) ===");
+            sb.AppendLine(generationSystemPrompt);
+            sb.AppendLine("=== END SHARED GENERATION SYSTEM PROMPT ===");
+        }
+        sb.AppendLine("For each candidate, in promptImprovementSuggestion, name the single highest-leverage instruction you would add or change in that SHARED prompt to fix this candidate's biggest weakness — one or two sentences, concrete and actionable (e.g. \"add an explicit rule capping monologue turns at N words\" rather than \"improve dialogue\").");
+        sb.AppendLine("Only suggest changes that would generalize to any book/cast, never something tied to this specific story's characters or plot.");
+        sb.AppendLine();
         sb.AppendLine("=== CANDIDATE SCREENPLAYS ===");
         foreach (var (anonId, content) in anonymizedScreenplays)
         {
@@ -144,7 +165,8 @@ public static class ScreenplayJudgmentRubric
       ""overallQualitativeScore"": 8.25,
       ""productionReady"": true,
       ""disqualifyingIssues"": [],
-      ""rationale"": ""Detailed evaluation rationale...""
+      ""rationale"": ""Detailed evaluation rationale..."",
+      ""promptImprovementSuggestion"": ""One concrete, book-agnostic instruction to add/change in the shared prompt to fix this candidate's biggest weakness.""
     }
   ],
   ""forcedRanking"": [""Screenplay B"", ""Screenplay A""],

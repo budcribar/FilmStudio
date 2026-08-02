@@ -11,9 +11,13 @@ public sealed class ActiveProjectState
     public string? ProjectId { get; private set; }
     public string? Label { get; private set; }
     public string? ParentProjectId { get; private set; }
+    /// <summary>full | simple-voice — from project.json.</summary>
+    public string StudioPath { get; private set; } = ProjectStudioPaths.Full;
     public AdaptationStatus? Status { get; private set; }
 
     public bool HasProject => !string.IsNullOrWhiteSpace(ProjectId);
+
+    public bool IsSimpleVoice => ProjectStudioPaths.IsSimpleVoice(StudioPath);
 
     /// <summary>Screenplay approved — Characters / cast work makes sense.</summary>
     public bool CanCharacters { get; private set; }
@@ -24,39 +28,63 @@ public sealed class ActiveProjectState
     /// <summary>Same as CanScenes for review of generated clips.</summary>
     public bool CanReview { get; private set; }
 
+    /// <summary>
+    /// Cost quote is only useful once a screenplay exists (import + draft/approve).
+    /// Not available after a failed or incomplete book import.
+    /// </summary>
+    public bool CanEstimate { get; private set; }
+
     /// <summary>Operator hint when a nav item is disabled (short, no jargon).</summary>
     public string CharactersBlockedReason { get; private set; } = "Approve the screenplay first";
     public string ScenesBlockedReason { get; private set; } = "Finish the shot plan first";
     public string ReviewBlockedReason { get; private set; } = "Finish the shot plan first";
+    public string EstimateBlockedReason { get; private set; } = "Finish importing the book and approve the screenplay first";
 
     public event Action? Changed;
 
-    public void Set(string? projectId, string? label = null, string? parentProjectId = null)
+    public void Set(
+        string? projectId,
+        string? label = null,
+        string? parentProjectId = null,
+        string? studioPath = null)
     {
         var id = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim();
         var lbl = string.IsNullOrWhiteSpace(label) ? id : label.Trim();
         var parentId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim();
+        var path = ProjectStudioPaths.Normalize(studioPath);
         if (string.Equals(ProjectId, id, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(Label, lbl, StringComparison.Ordinal) &&
-            string.Equals(ParentProjectId, parentId, StringComparison.OrdinalIgnoreCase))
+            string.Equals(ParentProjectId, parentId, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(StudioPath, path, StringComparison.OrdinalIgnoreCase))
             return;
 
         var projectChanged = !string.Equals(ProjectId, id, StringComparison.OrdinalIgnoreCase);
         ProjectId = id;
         Label = lbl;
         ParentProjectId = parentId;
+        StudioPath = path;
         // Until RefreshReadinessAsync runs, assume blocked so nav stays greyed
         if (projectChanged)
             ClearReadiness();
         Changed?.Invoke();
     }
 
+    public void SetStudioPathLocal(string? studioPath)
+    {
+        var path = ProjectStudioPaths.Normalize(studioPath);
+        if (string.Equals(StudioPath, path, StringComparison.OrdinalIgnoreCase)) return;
+        StudioPath = path;
+        Changed?.Invoke();
+    }
+
     public void Clear()
     {
-        if (ProjectId is null && Label is null && ParentProjectId is null) return;
+        if (ProjectId is null && Label is null && ParentProjectId is null
+            && StudioPath == ProjectStudioPaths.Full) return;
         ProjectId = null;
         Label = null;
         ParentProjectId = null;
+        StudioPath = ProjectStudioPaths.Full;
         ClearReadiness();
         Changed?.Invoke();
     }
@@ -69,7 +97,7 @@ public sealed class ActiveProjectState
             var projs = await engine.GetProjectsAsync(ct);
             var active = projs?.Active;
             if (active?.Id is { Length: > 0 } aid)
-                Set(aid, active.Label ?? active.Title ?? aid, active.ParentProjectId);
+                Set(aid, active.Label ?? active.Title ?? aid, active.ParentProjectId, active.StudioPath);
             else if (projs?.Projects is { Count: > 0 })
             {
                 // Prefer explicit active; if none, do not invent — user must pick on Studio
@@ -118,7 +146,7 @@ public sealed class ActiveProjectState
         Status = a;
         if (a is null)
         {
-            if (!CanCharacters && !CanScenes && !CanReview)
+            if (!CanCharacters && !CanScenes && !CanReview && !CanEstimate)
                 return false;
             ClearReadiness();
             return true;
@@ -144,20 +172,30 @@ public sealed class ActiveProjectState
         else
             scenesReason = "Finish the shot plan first";
 
+        // Estimate after book/screenplay is real — never when import failed mid-way.
+        var estimateReady = screenplayReady;
+        var estimateReason = estimateReady
+            ? ""
+            : "Finish importing the book and approve the screenplay first";
+
         var changed =
             CanCharacters != screenplayReady ||
             CanScenes != shotsReady ||
             CanReview != shotsReady ||
+            CanEstimate != estimateReady ||
             !string.Equals(CharactersBlockedReason, charactersReason, StringComparison.Ordinal) ||
             !string.Equals(ScenesBlockedReason, scenesReason, StringComparison.Ordinal) ||
-            !string.Equals(ReviewBlockedReason, scenesReason, StringComparison.Ordinal);
+            !string.Equals(ReviewBlockedReason, scenesReason, StringComparison.Ordinal) ||
+            !string.Equals(EstimateBlockedReason, estimateReason, StringComparison.Ordinal);
 
         CanCharacters = screenplayReady;
         CharactersBlockedReason = charactersReason;
         CanScenes = shotsReady;
         CanReview = shotsReady;
+        CanEstimate = estimateReady;
         ScenesBlockedReason = scenesReason;
         ReviewBlockedReason = scenesReason;
+        EstimateBlockedReason = estimateReason;
         return changed;
     }
 
@@ -166,8 +204,10 @@ public sealed class ActiveProjectState
         CanCharacters = false;
         CanScenes = false;
         CanReview = false;
+        CanEstimate = false;
         CharactersBlockedReason = "Approve the screenplay first";
         ScenesBlockedReason = "Finish the shot plan first";
         ReviewBlockedReason = "Finish the shot plan first";
+        EstimateBlockedReason = "Finish importing the book and approve the screenplay first";
     }
 }

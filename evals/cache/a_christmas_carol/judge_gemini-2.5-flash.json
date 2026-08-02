@@ -1,0 +1,114 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 2,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 4,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 4.58,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Severe lack of source coverage, dropping major plot points and characters (e.g., Ignorance and Want, Old Joe\u0027s scene, Caroline\u0027s scene, much of Fezziwig and Fred\u0027s party).",
+        "Extensive use of NARRATOR V.O. and unfilmable internal monologues.",
+        "Poor character disambiguation and casting clarity for several key characters."
+      ],
+      "rationale": "This screenplay is a highly condensed summary rather than a faithful adaptation, omitting numerous critical plot points and characters, which severely impacts fidelity. Character descriptions are inconsistent and often sparse, making casting clarity difficult. While action lines are generally concise, the frequent use of V.O. and internal thoughts detracts from directibility for AI video. The extreme condensation results in rushed pacing and a loss of dramatic depth and subtext in the dialogue."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 10,
+      "characterDisambiguation": 10,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 6,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 7.91,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Extensive NARRATOR V.O. and unfilmable internal monologues/emotions, violating \u0027show, don\u0027t tell\u0027 for AI video clips.",
+        "Many action lines are too dense, describing multiple visual elements or complex states that would exceed a 5-10 second clip without further breakdown."
+      ],
+      "rationale": "Screenplay B demonstrates exceptional fidelity to the source text, including almost verbatim dialogue and comprehensive character descriptions with excellent disambiguation across time periods. However, its heavy reliance on NARRATOR V.O. and internal monologues, coupled with very dense action lines, makes it poorly suited for direct AI video generation under the specified constraints, as these elements are not camera-observable actions."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 3.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 7.91,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Extensive NARRATOR V.O. and unfilmable internal monologues/emotions, violating \u0027show, don\u0027t tell\u0027 for AI video clips.",
+        "Some action lines are too dense for single short clips without further breakdown."
+      ],
+      "rationale": "This screenplay offers very high adaptation fidelity and strong character clarity, preserving much of the original dialogue and emotional beats. It is slightly better than B and D in AI directibility due to marginally less dense action lines and a slightly more cinematic pacing. However, the pervasive use of NARRATOR V.O. and internal monologues remains a significant barrier for direct AI video generation, preventing it from being production-ready."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9.8,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 6,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.05,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Extensive NARRATOR V.O. and unfilmable internal monologues/emotions, violating \u0027show, don\u0027t tell\u0027 for AI video clips.",
+        "Many action lines are too dense, describing multiple visual elements or complex states that would exceed a 5-10 second clip without further breakdown."
+      ],
+      "rationale": "Screenplay D provides an exceptionally faithful adaptation, closely mirroring the source text\u0027s dialogue and narrative. Character descriptions are detailed and consistent. However, its extensive use of NARRATOR V.O. and internal character thoughts, combined with action lines that frequently cram too much visual information into a single beat, makes it highly problematic for AI video directibility and prevents it from being production-ready."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 2,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 5,
+      "dialogueAuthenticity": 6,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 5.5,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Severe lack of character disambiguation and casting clarity for almost all characters, making it impossible to consistently cast and visualize them (closed-cast violation).",
+        "Heavy condensation of plot points reduces emotional impact and source coverage."
+      ],
+      "rationale": "This screenplay suffers from a severe lack of character disambiguation, with most characters lacking distinct visual descriptions, which is a critical flaw for AI casting. While it avoids NARRATOR V.O., its heavy condensation of the plot sacrifices significant detail and emotional depth, leading to rushed pacing and truncated dialogue, making it a superficial adaptation."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 1,
+      "characterDisambiguation": 2,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 1,
+      "dialogueAuthenticity": 1,
+      "soundDesignMusic": 4,
+      "overallQualitativeScore": 2.66,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Severe lack of source coverage, dropping most major plot points and characters, rendering it an unusable outline.",
+        "Extremely poor character disambiguation, making consistent casting impossible.",
+        "Dialogue is heavily truncated and often invented, losing all authenticity and subtext."
+      ],
+      "rationale": "Screenplay F is an extremely condensed outline that fails to capture the essence or detail of the source material, resulting in very poor fidelity and dramatic pacing. Character descriptions are almost non-existent, making it impossible for consistent AI casting. Dialogue is minimal and often invented, completely stripping away authenticity and subtext, making it unusable as an adaptation."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay C",
+    "Screenplay B",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay F"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay C because it offers the most comprehensive adaptation with strong character clarity and dialogue, while having slightly better directibility and pacing for short clips than other faithful adaptations. Weakest: Screenplay F because it is an extremely condensed outline that sacrifices nearly all fidelity, character detail, and dramatic pacing, rendering it unusable.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "DD0D45DB8BC6D745A8E3940275AACA04B1B253EAF3A9AE7CEE75A03864A0208B"
+}

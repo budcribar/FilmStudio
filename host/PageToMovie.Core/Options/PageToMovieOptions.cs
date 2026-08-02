@@ -7,13 +7,13 @@ public sealed class PageToMovieOptions
     /// <summary>Repo / workspace root containing projects/ and prompts/.</summary>
     public string WorkspaceRoot { get; set; } = "";
 
-    public string DefaultModel { get; set; } = "grok-imagine-video";
-    public string DefaultImageModel { get; set; } = "grok-imagine-image-quality";
+    public string DefaultModel { get; set; } = "";
+    public string DefaultImageModel { get; set; } = "";
     /// <summary>
     /// Image backend for character portraits: grok | gemini.
-    /// Also inferred from DefaultImageModel / project image_model_name when empty.
+    /// Inferred from project image_model_name / DefaultImageModel when empty.
     /// </summary>
-    public string ImageProvider { get; set; } = "grok";
+    public string ImageProvider { get; set; } = "";
     public string DefaultResolution { get; set; } = "480p";
     public int DefaultDurationSeconds { get; set; } = 6;
     public int GrokPollSeconds { get; set; } = 5;
@@ -21,6 +21,20 @@ public sealed class PageToMovieOptions
 
     /// <summary>When true, DI registers fake Grok clients (no xAI spend).</summary>
     public bool UseFakes { get; set; }
+
+    /// <summary>
+    /// Customer billing: charge multiplier applied to vendor list rates for estimates,
+    /// cost_ledger charges, and credit debits. Hot-editable via admin runtime config.
+    /// </summary>
+    public BillingOptions Billing { get; set; } = new();
+
+    /// <summary>
+    /// When false (default), users must bring their own API keys (personal DB). Process
+    /// env keys are not used for user jobs and do not count as "configured" — keep this
+    /// off until server-side cost/credit control is solid. Set true only for local ops
+    /// / demos: <c>PageToMovie__AllowServerApiKeyFallback=true</c>.
+    /// </summary>
+    public bool AllowServerApiKeyFallback { get; set; }
 
     /// <summary>
     /// When true (default), vision-check character portraits before lock so a photoreal
@@ -84,7 +98,7 @@ public sealed class PageToMovieOptions
     public bool ClassifySilentBeatsWithChat { get; set; } = true;
 
     /// <summary>Chat model for silent beat classify (compare via BeatLabelEval).</summary>
-    public string SilentBeatClassifyModel { get; set; } = "grok-4.5";
+    public string SilentBeatClassifyModel { get; set; } = "";
 
     /// <summary>Sampling temperature for silent beat classify (0 = most stable).</summary>
     public double SilentBeatClassifyTemperature { get; set; } = 0.0;
@@ -96,51 +110,51 @@ public sealed class PageToMovieOptions
     public int SilentBeatClassifyBackoffBaseMs { get; set; } = 400;
 
     public bool ClassifyAmbientSfxWithChat { get; set; } = true;
-    public string AmbientSfxClassifyModel { get; set; } = "grok-4.5";
+    public string AmbientSfxClassifyModel { get; set; } = "";
     public double AmbientSfxClassifyTemperature { get; set; } = 0.2;
     public int AmbientSfxClassifyMaxAttempts { get; set; } = 3;
 
     public bool ClassifyOnScreenCastWithChat { get; set; } = true;
-    public string OnScreenCastClassifyModel { get; set; } = "grok-4.5";
+    public string OnScreenCastClassifyModel { get; set; } = "";
 
     public bool ClassifyExtendCutWithChat { get; set; } = true;
-    public string ExtendCutClassifyModel { get; set; } = "grok-4.5";
+    public string ExtendCutClassifyModel { get; set; } = "";
 
     public bool ClassifySpeciesKindWithChat { get; set; } = true;
-    public string SpeciesKindClassifyModel { get; set; } = "grok-4.5";
+    public string SpeciesKindClassifyModel { get; set; } = "";
 
     public bool ClassifyPlateRankWithChat { get; set; } = true;
-    public string PlateRankClassifyModel { get; set; } = "grok-4.5";
+    public string PlateRankClassifyModel { get; set; } = "";
 
     public bool ClassifyShotPlanRefineWithChat { get; set; } = true;
-    public string ShotPlanRefineClassifyModel { get; set; } = "grok-4.5";
+    public string ShotPlanRefineClassifyModel { get; set; } = "";
 
     public bool ClassifyBeatPacingWithChat { get; set; } = true;
-    public string BeatPacingClassifyModel { get; set; } = "grok-4.5";
+    public string BeatPacingClassifyModel { get; set; } = "";
 
     public bool ClassifyCinematicLightingWithChat { get; set; } = true;
-    public string CinematicLightingClassifyModel { get; set; } = "grok-4.5";
+    public string CinematicLightingClassifyModel { get; set; } = "";
 
     public bool ClassifyCameraDirectorWithChat { get; set; } = true;
-    public string CameraDirectorClassifyModel { get; set; } = "grok-4.5";
+    public string CameraDirectorClassifyModel { get; set; } = "";
 
     public bool ClassifyNegativePromptWithChat { get; set; } = true;
-    public string NegativePromptClassifyModel { get; set; } = "grok-4.5";
+    public string NegativePromptClassifyModel { get; set; } = "";
 
     public bool ClassifyWardrobeContinuityWithChat { get; set; } = true;
-    public string WardrobeContinuityClassifyModel { get; set; } = "grok-4.5";
+    public string WardrobeContinuityClassifyModel { get; set; } = "";
 
     public bool ClassifyCharacterEmotionArcWithChat { get; set; } = true;
-    public string CharacterEmotionArcClassifyModel { get; set; } = "grok-4.5";
+    public string CharacterEmotionArcClassifyModel { get; set; } = "";
 
     public bool ClassifySoundDesignComposerWithChat { get; set; } = true;
-    public string SoundDesignComposerClassifyModel { get; set; } = "grok-4.5";
+    public string SoundDesignComposerClassifyModel { get; set; } = "";
 
     public bool ClassifyDepthOfFieldWithChat { get; set; } = true;
-    public string DepthOfFieldClassifyModel { get; set; } = "grok-4.5";
+    public string DepthOfFieldClassifyModel { get; set; } = "";
 
     public bool ClassifyColorPaletteGradingWithChat { get; set; } = true;
-    public string ColorPaletteGradingClassifyModel { get; set; } = "grok-4.5";
+    public string ColorPaletteGradingClassifyModel { get; set; } = "";
 
     public bool EnableBackgroundMusic { get; set; } = true;
     public string BackgroundMusicModel { get; set; } = "";
@@ -449,4 +463,30 @@ public sealed class FakesOptions
     public double FailRate { get; set; }
     /// <summary>Throw rate-limit every N submits (0 = never).</summary>
     public int RateLimitEveryN { get; set; }
+}
+
+/// <summary>Customer-facing charge settings (list-rate markup).</summary>
+public sealed class BillingOptions
+{
+    /// <summary>
+    /// Multiplier on vendor list rates for estimates and customer charges.
+    /// 1.0 = list rate; 1.5 = 50% markup. Applied to cost estimates, ledger <c>usd</c>,
+    /// and credit debits. List rates remain available as <c>list_usd</c> on events.
+    /// </summary>
+    public double ChargeMultiplier { get; set; } = 1.0;
+
+    /// <summary>
+    /// User id that receives orphaned pre-attribution cost rows on DB migrate (Railway old DBs).
+    /// Default: <c>budcribar</c> (Bud Cribar).
+    /// </summary>
+    public string LegacyCostOwnerUserId { get; set; } = "budcribar";
+
+    /// <summary>Display username created if the legacy owner user does not exist yet.</summary>
+    public string LegacyCostOwnerUsername { get; set; } = "Bud Cribar";
+
+    /// <summary>
+    /// Project id stamped on cost rows that had no project (pre-attribution era).
+    /// Default: <c>development</c>.
+    /// </summary>
+    public string LegacyCostProjectId { get; set; } = "development";
 }

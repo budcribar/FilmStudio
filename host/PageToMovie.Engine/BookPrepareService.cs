@@ -1,3 +1,4 @@
+using PageToMovie.Core.Models;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -46,10 +47,17 @@ public sealed class BookPrepareService
         bool forceExtract = true,
         bool forceVision = false,
         bool autoVision = true,
-        string visionModel = "grok-4.5",
+        string? visionModel = null,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            visionModel = string.IsNullOrWhiteSpace(visionModel)
+                ? ProjectModelSelection.RequireVision(cfg, "Book prepare")
+                : ProjectModelSelection.RequireExplicit(visionModel, ModelCapability.Vision, "Book prepare");
+        }
+
         var projectDir = _projects.GetProjectDir(projectId);
         var source = Path.Combine(projectDir, "source");
         Directory.CreateDirectory(source);
@@ -280,7 +288,7 @@ public sealed class BookPrepareService
 
         result.Ok = true;
 
-        await WriteExtractMetaAsync(source, result, analysis, strategy, ct).ConfigureAwait(false);
+        await WriteExtractMetaAsync(source, result, analysis, strategy, visionModel, ct).ConfigureAwait(false);
         onProgress?.Invoke(
             result.ReadyForStage1
                 ? $"Book ready for Stage 1 (~{result.SuggestedTotalMinutes} min)"
@@ -810,6 +818,7 @@ public sealed class BookPrepareService
         BookPrepareResult result,
         BookTextAnalysis analysis,
         BookStrategy strategy,
+        string? visionModel,
         CancellationToken ct = default)
     {
         var meta = new Dictionary<string, object?>
@@ -823,6 +832,14 @@ public sealed class BookPrepareService
             ["text_words"] = analysis.TextWords,
             ["text_quality"] = analysis.TextQuality,
             ["book_kind"] = analysis.BookKind,
+            // Initial film medium from import analysis (refined at screenplay adaptation).
+            ["visual_medium"] = analysis.BookKind == "picture_book"
+                ? "illustrated_picture_book"
+                : "photoreal_live_action",
+            ["render_style_lock"] = analysis.BookKind == "picture_book"
+                ? "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action"
+                : "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe. NOT cartoon, NOT illustration, NOT anime",
+            ["medium_source"] = "import_extract_meta",
             ["suggested_total_minutes"] = analysis.SuggestedTotalMinutes,
             ["suggested_chunk_pages"] = analysis.SuggestedChunkPages,
             ["strategy"] = new Dictionary<string, object?>
@@ -859,7 +876,7 @@ public sealed class BookPrepareService
                 ? new Dictionary<string, object?>
                 {
                     ["ran"] = true,
-                    ["model"] = "grok-4.5",
+                    ["model"] = visionModel,
                     ["failed_pages"] = result.VisionFailedPages,
                 }
                 : null,

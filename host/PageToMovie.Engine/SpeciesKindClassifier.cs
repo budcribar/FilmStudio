@@ -60,15 +60,19 @@ public sealed class SpeciesKindClassifier
 
         onProgress?.Invoke($"Classifying species kind for {seeds.Count} cast…");
         var maxAttempts = Math.Clamp(_opts.SilentBeatClassifyMaxAttempts, 1, 5);
+        var backoffBaseMs = Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs);
         var labeled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var missing = seeds.Select(s => s.Key).ToList();
+        var seedIds = seeds.Select(s => s.Key).ToList();
         var byKey = seeds.ToDictionary(s => s.Key, StringComparer.OrdinalIgnoreCase);
+        // Mutable: shrinks to only still-missing keys so each retry re-asks fewer cast members —
+        // mirrors the pre-refactor hand-rolled loop exactly (single call, no chunking).
+        var currentIds = new List<string>(seedIds);
 
-        for (var attempt = 1; attempt <= maxAttempts && missing.Count > 0; attempt++)
-        {
-            try
+        var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<string>(
+            seedIds,
+            callChat: async () =>
             {
-                var payload = missing.Select(k =>
+                var payload = currentIds.Select(k =>
                 {
                     var s = byKey[k];
                     return new Dictionary<string, object?>
@@ -84,23 +88,29 @@ public sealed class SpeciesKindClassifier
                 var raw = await _chat.CompleteAsync(SystemPrompt(), user, effectiveModel, 0, ct, ChatCallModes.SpeciesKindClassify)
                     .ConfigureAwait(false);
                 result.ChatCalls++;
-                var parsed = ParseLabels(raw);
-                foreach (var k in missing.ToList())
-                {
-                    if (!parsed.TryGetValue(k, out var kind)) continue;
-                    byKey[k].Dict["species_kind"] = kind;
-                    missing.Remove(k);
-                    labeled.Add(k);
-                }
-                if (missing.Count > 0)
-                    await Task.Delay(Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs) * attempt, ct);
-            }
-            catch (OperationCanceledException) { throw; }
-            catch (Exception ex)
+                return raw;
+            },
+            parseResponse: raw =>
             {
-                _log.LogWarning(ex, "SpeciesKind attempt {A}", attempt);
-                result.LastError = ex.Message;
-                await Task.Delay(Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs) * attempt, ct);
+                var parsed = ParseLabels(raw);
+                currentIds.RemoveAll(id => parsed.ContainsKey(id));
+                return parsed;
+            },
+            maxAttempts,
+            backoffBaseMs,
+            ct).ConfigureAwait(false);
+
+        if (retry.LastError is not null)
+        {
+            _log.LogWarning("SpeciesKind classify failed: {Error}", retry.LastError);
+            result.LastError = retry.LastError;
+        }
+        if (retry.Result is not null)
+        {
+            foreach (var kv in retry.Result)
+            {
+                byKey[kv.Key].Dict["species_kind"] = kv.Value;
+                labeled.Add(kv.Key);
             }
         }
 

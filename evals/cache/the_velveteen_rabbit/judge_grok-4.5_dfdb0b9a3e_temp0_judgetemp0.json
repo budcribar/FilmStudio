@@ -1,0 +1,43 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 6.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.42,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Chronological error: Boy is described as pale and thin after illness in a woodland scene that plays before the scarlet-fever bedroom sequence",
+        "Invented on-camera Boy dialogue (\u0027Bunny goes to the seaside\u0027) not present in the source"
+      ],
+      "rationale": "Solid picture-book medium lock, clear cast looks for Rabbit/Skin Horse/Nana, and generally filmable short beats with consistent sound cues. Fidelity and pacing are hurt by a hard timeline break (recovery appearance before the illness is dramatized), thinner coverage of the mechanical-toy snubbing and Nana\u0027s \u0027knowing expression\u0027 beat, and a small invented Boy protest at the burn order. Dialogue is mostly book-true but less complete than B in the Skin Horse and wild-rabbit exchanges. Still very shootable clip-by-clip once the illness arc order is fixed.",
+      "promptImprovementSuggestion": "Add an explicit rule that time-jump Action must use a clear temporal anchor (e.g. \u0027Weeks later.\u0027) and must never describe a character in a post-event state (recovered, older, scarred) before the causative event has been dramatized on screen."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highest-fidelity pass: Christmas snubbing, full Skin Horse theology, Nana/china-dog handoff, garden REAL declaration plus knowing-expression button, complete wild-rabbit humiliation, fever vigil, sack/tear/fairy, transformation, and spring coda all land in book order with book wording. Cast locks are specific and restated on re-entry; beats are single-location and clip-sized; SOUND/MUSIC density matches emotional peaks. Minor nits only (NURSERY FAIRY vs full book epithet; Boy\u0027s closing thought carried as NARRATOR V.O. rather than marked thought). Ready to greenlight.",
+      "promptImprovementSuggestion": "Require that when the book presents a character\u0027s unspoken thought, the screenplay either shows a visible reaction plus brief thought via that character\u0027s cue with an (unspoken)/(to himself) parenthetical, or keeps NARRATOR V.O. clearly framed as reporting their thought\u2014never bare NARRATOR lines that read as if the narrator originated the words."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it preserves the full emotional spine and book dialogue in correct chronology with dense, clip-ready action and peak-matched sound/music. Weakest: Screenplay A because it misorders the illness/recovery arc and inserts invented Boy dialogue, forcing a structural rewrite before production.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "D604F45C5E6045656B76D671358F40BD526155469D999687627B5D34791344DD"
+}

@@ -1,3 +1,4 @@
+using PageToMovie.Core.Models;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -36,12 +37,18 @@ public sealed class CastVisualLiteralizeService
     /// </summary>
     public async Task<Dictionary<string, object?>> LiteralizeSeedsAsync(
         Dictionary<string, object?> seeds,
-        string model = "grok-4.5",
+        string model = "",
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
         if (seeds.Count == 0 || !_chat.IsConfigured)
             return seeds;
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            onProgress?.Invoke("AI visual scrub skipped (no Script & planning model in Settings).");
+            return seeds;
+        }
+        model = ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Cast visual scrub");
 
         onProgress?.Invoke("Scrubbing visual descriptions (AI prompt)…");
         try
@@ -82,7 +89,7 @@ public sealed class CastVisualLiteralizeService
         string? description,
         string? visualLock,
         string? wardrobeAlwaysJson = null,
-        string model = "grok-4.5",
+        string model = "",
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
@@ -90,8 +97,11 @@ public sealed class CastVisualLiteralizeService
         var visIn = visualLock ?? "";
         if (!_chat.IsConfigured)
             return (descIn, visIn, false);
+        if (string.IsNullOrWhiteSpace(model))
+            return (descIn, visIn, false);
         if (string.IsNullOrWhiteSpace(descIn) && string.IsNullOrWhiteSpace(visIn))
             return (descIn, visIn, false);
+        model = ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Look scrub");
 
         var seed = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {

@@ -1,0 +1,108 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A effectively captures the essence of the original story while maintaining a clear narrative structure and character clarity."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B excels in adaptation fidelity and pacing, providing a strong visual narrative that aligns closely with the source material."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C is a solid adaptation but lacks the same level of visual clarity and pacing as the top candidates."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D maintains fidelity to the source but struggles with pacing and directibility in certain scenes."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E offers a strong adaptation with good pacing and character clarity, though it could improve in directibility."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.58,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay F is a competent adaptation but lacks the depth and engagement found in higher-rated candidates."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay G presents a charming adaptation but could enhance its pacing and dialogue authenticity."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay D",
+    "Screenplay C",
+    "Screenplay G",
+    "Screenplay F"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it excels in adaptation fidelity and pacing, providing a strong visual narrative. Weakest: Screenplay F because it lacks the depth and engagement found in higher-rated candidates.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "BA4AF8E59100C49AEC27EC8D1C63E9C6EB3245CF7939A65AAB9010913A4A4F64"
+}

@@ -1,0 +1,50 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 6,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 7.2,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The draft does not follow the required Fountain blank-line separation rules, so its scene, action, and dialogue elements are not reliably parseable by the stated downstream pipeline.",
+        "The required VISION_META sidecar is absent.",
+        "Several dialogue turns substantially exceed the prompt\u0027s 35-word maximum and cannot fit the intended 5-10 second clip format without further subdivision.",
+        "The heading \u0022EXT. BLEAK MOOR / LIGHTHOUSE / SHIP - NIGHT\u0022 combines three distinct locations in direct violation of the one-location-per-heading rule."
+      ],
+      "rationale": "This is the stronger adaptation on story fidelity. It preserves nearly the entire dramatic spine: Scrooge\u0027s cruelty, Fred and the charity collectors, Marley, all three Spirits, Fan, Fezziwig, Belle, the Cratchits, Ignorance and Want, Old Joe, Caroline\u0027s debtor-family relief, Tiny Tim\u0027s death vision, the grave reveal, and the redemption. Character visual introductions are generally specific and useful, especially Scrooge, Marley, the three Spirits, Bob, Tiny Tim, and the young/adult Scrooge split. However, it is not operationally built for short AI clips: many scenes contain several locations, time shifts, reveals, and action units; the Fezziwig, Belle, Cratchit, and ending sequences are especially overpacked. Long blocks of Dickens dialogue are faithful but routinely unplayable in one short clip. Its sound cues are consistently concrete, emotionally apt, and stronger than B\u0027s, but formal Fountain noncompliance and the missing sidecar prevent greenlight as-is.",
+      "promptImprovementSuggestion": "Add a mandatory runtime-budget audit before output: cap the entire draft at a defined total dialogue/action word count for the target runtime, and require every dialogue turn and visual beat to be independently playable within one 5-10 second clip."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 6.4,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The draft does not follow the required Fountain blank-line separation rules, so its screenplay elements will not reliably parse in the specified production pipeline.",
+        "The required VISION_META sidecar is absent.",
+        "It drops major source beats, including the Ghost of Christmas Present\u0027s revelation of Ignorance and Want and the debtor family\u0027s relieved response to Scrooge\u0027s death; under the stated rubric, these omissions are a severe adaptation-fidelity failure.",
+        "Some scenes combine distinct locations and narrative turns under one heading, notably the Old Joe shop sequence shifting directly into the dead man\u0027s bedroom."
+      ],
+      "rationale": "B is more concise and generally more shootable than A. It provides clear location grounding, concrete visual actions, stronger scene-to-scene economy, and dialogue that is usually short enough to stage in a single generated clip. Its casting descriptions are solid and mostly consistent, with clear age distinctions for Young Scrooge and recurring physical markers for Bob, Fred, Tiny Tim, and the Spirits. Sound beds are present in every scene and are functional, although several music cues remain generic rather than being developed as a deliberate thematic score. The central flaw is fidelity: it omits major moral and plot turns from the source, most notably Ignorance and Want and the debtor household\u0027s joy at the miser\u0027s death, which weakens the Present Spirit\u0027s social indictment and the Future Spirit\u0027s accumulating evidence of Scrooge\u0027s legacy. It also compresses some consequential transitions so aggressively that the final revelation has less investigative dread and emotional inevitability.",
+      "promptImprovementSuggestion": "Add a mandatory source-coverage checklist step requiring the model to identify every major plot turn, thematic revelation, and final-act proof sequence before drafting, then verify that each is represented by at least one scene or explicit visual beat in the completed screenplay."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it retains substantially more of Dickens\u0027s essential plot, character, and thematic architecture while providing exceptionally consistent scene-level sound cues. Weakest: Screenplay B because, despite its cleaner clip-oriented economy, it omits major source beats that are indispensable to the Present and Future visions, triggering the rubric\u0027s severe fidelity penalty.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "ACFF03ED024FBF0B690061920E1403D81F64F9E882C4AFA428D176B08281D668"
+}

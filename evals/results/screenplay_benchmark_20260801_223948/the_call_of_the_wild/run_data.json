@@ -1,0 +1,148 @@
+{
+  "BookPath": "../books/The_Call_of_the_Wild.txt",
+  "Timestamp": "2026-08-02 04:44:02 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 19,
+        "TotalDialogueBlocks": 34,
+        "AvgWordsPerDialogue": 8.2,
+        "MaxWordsInSingleDialogue": 22,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MANUEL",
+          "DOG BREAKER",
+          "FRANCOIS",
+          "PERREAULT",
+          "HAL",
+          "JOHN THORNTON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.2,
+      "AvgCharacterDisambiguation": 8.1,
+      "AvgAiVideoDirectibility": 8.6,
+      "AvgDramaticPacing": 8.3,
+      "AvgDialogueAuthenticity": 7.9,
+      "AvgSoundDesignMusic": 8.1,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 20,
+        "TotalDialogueBlocks": 33,
+        "AvgWordsPerDialogue": 13.1,
+        "MaxWordsInSingleDialogue": 29,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "STRANGER",
+          "MANUEL",
+          "MAN IN RED SWEATER",
+          "PERRAULT",
+          "FRANCOIS",
+          "NEIGHBOR MAN",
+          "HAL",
+          "JOHN THORNTON",
+          "THORNTON",
+          "SKOOKUM BENCH KING"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": []
+      },
+      "AvgAdaptationFidelity": 8.6,
+      "AvgCharacterDisambiguation": 6.9,
+      "AvgAiVideoDirectibility": 6.4,
+      "AvgDramaticPacing": 7.4,
+      "AvgDialogueAuthenticity": 8.6,
+      "AvgSoundDesignMusic": 8.6,
+      "AvgOverallQualitative": 7.8,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: Closed-cast violation: STRANGER and NEIGHBOR MAN are generic dialogue speakers rather than stable named cast tokens.",
+        "gpt-5.6-terra: Character-token inconsistency: JOHN THORNTON is later cued as THORNTON, creating an unstable second identity for a core character.",
+        "gpt-5.6-terra: The final heading, \u0022EXT. THE VALLEY - SUMMER DAY / WINTER NIGHT,\u0022 combines separate times and visual locations/purposes into one slug, violating the one-place/one-time scene constraint."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 7.25,
+      "gpt-5.6-terra": 8.02
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 8.42,
+      "grok-4.5": 8.25
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-terra": {
+      "gpt-5.6-terra": 1,
+      "grok-4.5": 2
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 1,
+      "grok-4.5": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.2/10 vs. a 7.2/10 average from 1 other judge(s) (\u002B1.0) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "A has the broader and more thematically faithful adaptation spine, effectively preserving Buck\u0027s kidnapping, club lesson, Curly\u0027s death, Spitz rivalry, ascension, Hal\u0027s collapse, Thornton bond, wager, call, Thornton\u0027s death, and wolf-pack ending. Its quoted dialogue and narration are generally close to London, and its sound work is consistently specific and emotionally calibrated. However, the draft repeatedly overloads individual scenes and action paragraphs with large sequences that would need to become many distinct 5\u201310 second clips, especially the Yukon montage, Hal\u0027s team collapse, and the final attack. Character identity control is materially compromised by generic speaking roles and the JOHN THORNTON/THORNTON cue variation. These are explicit downstream casting defects rather than cosmetic formatting issues.",
+      "gpt-5.6-terra": "B is the more production-ready short-film draft. It has cleaner scene segmentation, stronger recurring visual locks for Buck, Thornton, Spitz, and the key human antagonists, and action units that are generally concise, observable, and readily divisible into short AI-video clips. It also includes the Forty-Mile rescue, a consequential Thornton/Buck beat omitted by A. Its compression is aggressive: Buck\u0027s trail adaptation, revolt against Spitz, Hal/Charles/Mercedes\u0027s cascading incompetence, and Buck\u0027s final moose hunt are substantially reduced or skipped, slightly weakening source breadth and the inevitability of Buck\u0027s transformation. Dialogue is mostly sourced and playable, though a few excerpts lose contextual setup or are reassigned in a way that makes them feel more like iconic-line delivery than organic conversation. Minor technical defects, including \u0022INT. SEATTLE BACK YARD\u0022 and inconsistent spellings such as DYEAA/PERREAULT, should be corrected in polish but do not prevent production."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Tight, faithful spine covering kidnapping, club law, Curly, Spitz death, leadership, Dave, Hal/Thornton rescue, rapids, thousand-pound pull, Yeehats, and pack joining without invented major plot. Buck\u2019s visual lock (brown-black coat, white chest blaze, wolfish muzzle) is restated on re-entry; humans are thinner but usable. Every scene is one concrete place with camera-observable micro-beats ideal for 5\u201310s clips\u2014no montage headings. Pacing holds escalation cleanly across ~22 scenes. Dialogue keeps key Francois/Thornton lines but drops some fuller book exchanges (Perrault purchase, red-sweater speech length, Hal camp chaos). Sound cues are present and diegetic on every scene; peaks often lack a distinct MUSIC bed beside SOUND.",
+      "grok-4.5": "Highest book coverage and wording fidelity: fuller red-sweater lesson, Perrault bargain, Curly, Spitz fight detail, Hal/Mercedes/Charles business, Eldorado pull, hairy-man call, Yeehat raid, and Ghost Dog epilogue. Cast looks are strongest (Hal\u2019s cartridge belt, Charles\u2019s mustache, Man in Red Sweater sag, Buck\u2019s 140-lb mix). Dialogue is the most authentic and performable. Directibility suffers: EXT. YUKON TRAIL - DAY (MONTAGE) and EXT. THE VALLEY - SUMMER DAY / WINTER NIGHT violate one-place/one-time heading rules; Skaguay and mail-train stretches compress weeks into summary Action hard to split into discrete 5\u201310s clips. Sound/Music is strong, including a clear pack-song MUSIC cue at the close. Still greenlightable after heading splits, but not clip-ready as-is."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-terra": "Strongest: Screenplay B because it is more cleanly structured for short AI-generated clips, maintains stronger practical visual continuity, and includes a key Thornton rescue sequence while preserving the full endpoint. Weakest: Screenplay A because, despite superior breadth and sound design, it has explicit closed-cast and canonical-character-token failures plus several overloaded, multi-beat scenes that are not ready for automated clip production.",
+    "grok-4.5": "Strongest: Screenplay A because its single-location, beat-ordered scenes are optimally structured for 5\u201310s AI clips without montage or dual-time heading collapse. Weakest: Screenplay B because montage and DAY/NIGHT combined headings plus over-compressed multi-week beats undermine clip-level directibility despite superior dialogue and fidelity."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "Add a mandatory final cast-token validation rule: every dialogue cue must use a previously introduced canonical character token, and generic labels such as STRANGER, MAN, WOMAN, or NEIGHBOR may never speak unless replaced by a uniquely stable role token.",
+      "gpt-5.6-terra": "Add a required source-spine checklist before drafting: for each major section of a novel, identify its irreversible plot turn, relationship turn, and transformation beat, and ensure each is either dramatized or deliberately represented by a concise visual bridge."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Require that at major emotional peaks (kill, death, reunion, victory) each scene include at least one explicit (MUSIC: \u2026) cue in addition to diegetic (SOUND: \u2026), interleaved with action\u2014not sound-only beds.",
+      "grok-4.5": "Forbid MONTAGE labels, slash-joined times (DAY / NIGHT), and multi-week summary paragraphs under one heading; require each time-jump or multi-phase beat to be separate single-place headings or short progressive Action beats that each remain filmable as one 5\u201310s clip."
+    }
+  }
+}

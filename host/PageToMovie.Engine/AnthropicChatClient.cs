@@ -27,50 +27,87 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     // past the old cap; 16K leaves real headroom without guessing per-model.
     public const int DefaultMaxTokens = 16_000;
 
+    /// <summary>
+    /// Resolves the <c>max_tokens</c> request field from the model catalog's confirmed
+    /// per-model ceiling (<see cref="SupportedModelEntry.MaxOutputTokens"/>), falling back to
+    /// <see cref="DefaultMaxTokens"/> when the catalog has no entry or hasn't confirmed a real
+    /// number for this model. Never guesses a per-model max — an unconfirmed catalog entry means
+    /// "use the safe default", not "make one up".
+    /// </summary>
+    private static int ResolveMaxTokens(string model) =>
+        SupportedModelCatalog.Find(model, ModelCapability.Chat)?.MaxOutputTokens ?? DefaultMaxTokens;
+
     private readonly HttpClient _http;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<AnthropicChatClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public AnthropicChatClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
-        ILogger<AnthropicChatClient> log)
+        ILogger<AnthropicChatClient> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _ = opts; // reserved — no Anthropic-specific options today
         _http = http;
         _telemetry = telemetry;
         _log = log;
+        _errorLogger = errorLogger;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
+    /// <summary>Maps the provider-neutral <c>reasoningEffort</c> scale to Anthropic's
+    /// <c>output_config.effort</c> values (confirmed live: low/medium/high/xhigh/max).</summary>
+    private static string? MapReasoningEffort(string? effort) => effort?.Trim().ToLowerInvariant() switch
+    {
+        null or "" => null,
+        "max" or "xhigh" => "max",
+        var other => other,
+    };
+
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "claude-sonnet-5",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null)
+        string? mode = null,
+        string? reasoningEffort = null)
     {
+        var mappedEffort = MapReasoningEffort(reasoningEffort);
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
-            ["max_tokens"] = DefaultMaxTokens,
-            ["temperature"] = temperature,
+            ["max_tokens"] = ResolveMaxTokens(model),
             ["system"] = systemPrompt,
             ["messages"] = new object[]
             {
                 new Dictionary<string, object?> { ["role"] = "user", ["content"] = userPrompt },
             },
         };
-        return await SendAsync(
-            payload, model, "chat", "messages", mode,
-            systemPrompt, userPrompt,
-            (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
-            ct).ConfigureAwait(false);
+        if (mappedEffort is not null)
+        {
+            // Extended/adaptive thinking requires temperature to stay at its implicit default
+            // (confirmed live: "`temperature` may only be set to 1 when thinking is enabled or
+            // in adaptive mode") — omit it up front rather than round-tripping a 400 first.
+            payload["thinking"] = new Dictionary<string, object?> { ["type"] = "adaptive" };
+            payload["output_config"] = new Dictionary<string, object?> { ["effort"] = mappedEffort };
+        }
+        else
+        {
+            payload["temperature"] = temperature;
+        }
+        return await SendWithTransientRetryAsync(
+            () => SendAsync(
+                payload, model, "chat", "messages", mode,
+                systemPrompt, userPrompt,
+                (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
+                ct),
+            model, mode, ct).ConfigureAwait(false);
     }
 
     private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -82,7 +119,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "claude-sonnet-5",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default)
     {
@@ -106,16 +143,54 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
-            ["max_tokens"] = DefaultMaxTokens,
+            ["max_tokens"] = ResolveMaxTokens(model),
             ["messages"] = new object[]
             {
                 new Dictionary<string, object?> { ["role"] = "user", ["content"] = content },
             },
         };
-        return await SendAsync(
-            payload, model, "vision", "messages", "clip_auto_review",
-            prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
-            prompt.Length, ct).ConfigureAwait(false);
+        return await SendWithTransientRetryAsync(
+            () => SendAsync(
+                payload, model, "vision", "messages", "clip_auto_review",
+                prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
+                prompt.Length, ct),
+            model, "clip_auto_review", ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Retries the whole <see cref="SendAsync"/> call (including its internal param-shape
+    /// self-heal recursion, untouched) on 429/5xx or a network/timeout failure. Logs each failed
+    /// attempt via <see cref="GenerationErrorLogger"/> before backing off.
+    /// </summary>
+    private async Task<string> SendWithTransientRetryAsync(
+        Func<Task<string>> call,
+        string model,
+        string? mode,
+        CancellationToken ct)
+    {
+        return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+            _ => call(),
+            isTransient: AiRetryPolicy.IsTransientChatFailure,
+            maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+            backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+            onRetry: async (attemptNum, ex) =>
+            {
+                if (_errorLogger is null) return;
+                var httpStatus = ex is ChatHttpStatusException hse2 ? hse2.StatusCode : (int?)null;
+                await _errorLogger.LogAsync(new GenerationErrorRecord
+                {
+                    Stage = "anthropic_chat_completion",
+                    Provider = SupportedModelCatalog.CatalogProviderId(model, "chat"),
+                    Model = model,
+                    ErrorType = httpStatus is not null ? "http_error" : "exception",
+                    ErrorMessage = ex.Message,
+                    HttpStatus = httpStatus,
+                    Attempt = attemptNum,
+                    Resolved = false,
+                    RequestSummary = $"mode={mode}",
+                }, ct).ConfigureAwait(false);
+            },
+            ct: ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -124,14 +199,14 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     /// returning a wrong answer if ever routed here.
     /// </summary>
     public Task<string> TranscribePageAsync(
-        string imagePath, int page, string model = "claude-sonnet-5", CancellationToken ct = default) =>
+        string imagePath, int page, string model = "", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Book-page transcription is not implemented for Anthropic yet — route this call to Grok.");
 
     /// <inheritdoc cref="TranscribePageAsync"/>
     public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(
         string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "claude-sonnet-5", CancellationToken ct = default) =>
+        string model = "", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Character-page classification is not implemented for Anthropic yet — route this call to Grok.");
 
@@ -183,6 +258,22 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                         promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
                 }
 
+                // Older/smaller Claude models don't support adaptive thinking or output_config.effort
+                // at all — self-heal the same way rather than maintaining a model-capability list.
+                if (resp.StatusCode == System.Net.HttpStatusCode.BadRequest
+                    && (payload.ContainsKey("thinking") || payload.ContainsKey("output_config"))
+                    && (body.Contains("thinking", StringComparison.OrdinalIgnoreCase)
+                        || body.Contains("output_config", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var retryPayload = new Dictionary<string, object?>(payload);
+                    retryPayload.Remove("thinking");
+                    retryPayload.Remove("output_config");
+                    retryPayload["temperature"] = 0.2;
+                    return await SendAsync(
+                        retryPayload, model, kind, endpoint, mode,
+                        promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                }
+
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = kind,
@@ -197,7 +288,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
+                throw new ChatHttpStatusException((int)resp.StatusCode,
                     $"Anthropic {endpoint} HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 

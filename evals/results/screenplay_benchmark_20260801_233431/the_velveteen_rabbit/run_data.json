@@ -1,0 +1,152 @@
+{
+  "BookPath": "../books/The_Velveteen_Rabbit.txt",
+  "Timestamp": "2026-08-02 05:37:36 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 14,
+        "TotalDialogueBlocks": 59,
+        "AvgWordsPerDialogue": 13.2,
+        "MaxWordsInSingleDialogue": 28,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "NURSERY MAGIC FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.4,
+      "AvgCharacterDisambiguation": 7.8,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 8.3,
+      "AvgSoundDesignMusic": 8.3,
+      "AvgOverallQualitative": 8.3,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: Missing the required ---VISION_META--- sidecar, which the shared prompt designates as mandatory downstream source material for portrait generation and clip production."
+      ]
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 14,
+        "TotalDialogueBlocks": 54,
+        "AvgWordsPerDialogue": 14.8,
+        "MaxWordsInSingleDialogue": 35,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "WILD RABBIT",
+          "THE DOCTOR",
+          "NURSERY MAGIC FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 7.9,
+      "AvgAiVideoDirectibility": 7,
+      "AvgDramaticPacing": 7.6,
+      "AvgDialogueAuthenticity": 8.9,
+      "AvgSoundDesignMusic": 8.8,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": [
+        "gpt-5.6-terra: Missing the required ---VISION_META--- sidecar, which the shared prompt designates as mandatory downstream source material for portrait generation and clip production."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-terra": {
+      "grok-4.5": 8.12,
+      "gpt-5.6-terra": 8.13
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 8.5,
+      "grok-4.5": 8.3
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-terra": {
+      "gpt-5.6-terra": 1,
+      "grok-4.5": 2
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": 1,
+      "grok-4.5": 2
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "A is highly faithful and covers the complete emotional spine: Christmas abandonment, the Skin Horse\u0027s definition of Real, bed companionship, garden recognition, rejection by wild rabbits, scarlet fever separation, Fairy transformation, and the final reunion image. It preserves most iconic dialogue closely and supplies especially strong, emotionally graduated sound and music cues. However, several action paragraphs contain too many sequential events for a single 5\u201310 second clip, particularly the bedroom companionship, illness, and woodland sequences. The Boy is not sufficiently visually locked beyond broad child descriptors, and his later appearance is only minimally refreshed. A few action lines state internal conditions rather than exclusively observable behavior, and the Rabbit\u0027s ellipsis response to the Fairy is an awkward invented dialogue turn. The mandatory vision sidecar is absent.",
+      "gpt-5.6-terra": "B delivers the cleanest short-film structure of the two drafts. It separates key dramatic turns into more manageable, clip-friendly scenes, maintains clear escalation from abandonment to illness and loss, and lands the transformation and epilogue efficiently. Its Rabbit, Skin Horse, Nana, Fairy, and final transformed-rabbit descriptions are usable visual anchors, though the Boy remains under-specified as a recurring human lead and is not formally disambiguated as an older version beyond a changed coat and cap. Fidelity is strong but slightly below A because it trims more of the toy-social-world material and invents the Rabbit\u0027s spoken \u0027No\u0027 to the Fairy, where the source gives him a silent look. Some action still compresses multiple beats, and isolated internal labels such as \u0027ashamed\u0027 should be externalized. Sound coverage is consistently competent, but its music plan is less developed and emotionally varied than A\u0027s. The mandatory vision sidecar is absent."
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Faithful spine covering Christmas arrival, Skin Horse lesson, bedtime adoption, garden REAL declaration, wild-rabbit rejection, scarlet-fever crisis, sack/tear/fairy transformation, and spring reunion glance. Dialogue stays close to the book with only minor compression (Skin Horse loses the \u201Ccan\u2019t be ugly\u201D beat) and one small invented spoken \u201CNo.\u201D Scenes are cleanly segmented by single location\u002Bpurpose with concrete, clip-length observable actions ideal for 5\u201310s AI shots. Character looks lock well for Rabbit (degradation tracked), Skin Horse, Nana, and Fairy, but DOCTOR never gets a visual description on entrance. Sound cues appear in every scene with good peak density. No deal-breakers.",
+      "grok-4.5": "Slightly fuller book coverage than A: Skin Horse monologue is more complete, wild-rabbit exchange retains more iconic lines, and the tear-to-fairy arc is richly staged. Dialogue authenticity is excellent. Casting locks are generally strong (Doctor gets \u201Cserious man with black bag\u201D; Rabbit degradation is clear). Weaknesses cluster on short-clip directibility: Nana\u2019s dusk rescue is jammed into a parenthetical instead of standalone Action; illness/recovery and several wood beats cram multiple distinct micro-events into one heading; \u201Ctime passes in soft dissolves\u201D and an empty \u201C\u2026\u201D dialogue cue are unfilmable or non-performable as discrete 5\u201310s clips. Sound/Music design is the best of the two (lullaby, chime, leaping theme, closing theme). Still greenlightable, but needs scene splits before shoot."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-terra": "Strongest: Screenplay B because its scene segmentation, escalation, and clip-scale directibility are more disciplined while retaining nearly the entire source arc. Weakest: Screenplay A because, despite superior fidelity and sound design, its denser action blocks more often overload a single short AI-video beat; both drafts are not production-ready because neither includes the mandated VISION_META sidecar.",
+    "grok-4.5": "Strongest: Screenplay A because its single-purpose scene cuts and consistently camera-observable micro-beats map cleanly onto 5\u201310s AI clips without cramming. Weakest: Screenplay B because denser multi-beat scenes, parenthetical entrances, and dissolve summaries undercut short-clip directibility despite slightly higher book-line fidelity."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-terra": {
+      "grok-4.5": "Add a final machine-checkable compliance rule: \u0027Reject the output as incomplete unless it ends with the exact required VISION_META delimiters and valid JSON sidecar; this sidecar is mandatory even when the screenplay body is otherwise valid Fountain.\u0027",
+      "gpt-5.6-terra": "Add a final machine-checkable compliance rule: \u0027Reject the output as incomplete unless it ends with the exact required VISION_META delimiters and valid JSON sidecar; this sidecar is mandatory even when the screenplay body is otherwise valid Fountain.\u0027"
+    },
+    "grok-4.5": {
+      "gpt-5.6-terra": "Require that every speaking character, including one-scene supporting roles, receive 2\u20133 locked visual traits (build, wardrobe, defining prop) in the first Action line of their first entrance, restated on any later re-entry after a time jump.",
+      "grok-4.5": "Prohibit conveying entrances, time jumps, or essential story actions only inside parentheticals or summary phrases like \u2018time passes in dissolves\u2019; each such beat must be a concrete standalone Action line under a proper scene heading so it can be filmed as its own short clip."
+    }
+  }
+}

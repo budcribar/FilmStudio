@@ -1,0 +1,116 @@
+{
+  "key": "BUCK",
+  "display_name": "Buck",
+  "age_link": null,
+  "identity_anchors": "Large mixed-breed dog, St. Bernard sire and Scotch shepherd dam; 140 lb prime weight later starved to 115 then recovered near 150; broad-breasted, long-furred, white-fanged; muzzle long and wolf-like but oversized, head broader massive wolf scale; stray brown on muzzle and above eyes, white splash mid-chest; coat can show silk sheen or hang limp draggled matted with blood; muscles hard iron rolls under skin when fit",
+  "source_evidence": "Weighed only one hundred and forty pounds; father huge St. Bernard Elmo, mother Scotch shepherd Shep; later one hundred and fifteen; one hundred and fifty pounds grit and virility; furry coat shone with sheen of silk; mane half bristled; brown on muzzle and above eyes, splash of white hair midmost down chest; muzzle long wolf muzzle larger, head somewhat broader wolf head on massive scale",
+  "render_style_lock": "photorealistic live-action",
+  "voice_label": "deep resonant bark / wolf howl / low growl",
+  "wardrobe_variants": [
+    {
+      "key": "BUCK_ARISTOCRAT",
+      "description": "Full glossy coat, clean, no harness; brass collar later filed off",
+      "source_facts": [
+        "lived life of sated aristocrat",
+        "beautiful coat",
+        "heavy brass collar"
+      ],
+      "creative_direction": "Sun-warmed healthy sheen, proud carriage, no trail wear",
+      "beats": [
+        "B1",
+        "B2"
+      ]
+    },
+    {
+      "key": "BUCK_CRATE_RAGE",
+      "description": "Coat flecked bloody slaver, eyes blood-shot, tongue swollen; no collar",
+      "source_facts": [
+        "blood flowing from nose mouth ears",
+        "beautiful coat sprayed and flecked with bloody slaver",
+        "eyes turned blood-shot",
+        "parched and swollen throat and tongue"
+      ],
+      "creative_direction": "Matted fury, foam, raw neck after collar removal",
+      "beats": [
+        "B3",
+        "B4"
+      ]
+    },
+    {
+      "key": "BUCK_HARNESS_TRACE",
+      "description": "Working sled harness of straps and buckles; coat hardens, feet may wear moccasins temporarily",
+      "source_facts": [
+        "arrangement of straps and buckles",
+        "harness",
+        "Francois sacrificed tops of moccasins to make four moccasins for Buck",
+        "muscles became hard as iron"
+      ],
+      "creative_direction": "Practical northern trace gear, progressive trail grime and ice between toes",
+      "beats": [
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9",
+        "B10",
+        "B11",
+        "B12",
+        "B13",
+        "B14",
+        "B15",
+        "B16"
+      ]
+    },
+    {
+      "key": "BUCK_STARVED_SKELETON",
+      "description": "Coat limp draggled or matted dried blood; muscles wasted to knotty strings; ribs and bones outlined through loose wrinkled hide; 115 lb",
+      "source_facts": [
+        "one hundred and forty pounds had dwindled to one hundred and fifteen",
+        "hair hung down limp and draggled or matted with dried blood",
+        "muscles wasted away to knotty strings",
+        "flesh pads disappeared",
+        "each rib and every bone outlined cleanly through loose hide wrinkled in folds of emptiness"
+      ],
+      "creative_direction": "Emaciated walking skeleton under Hal\u0027s club marks",
+      "beats": [
+        "B17",
+        "B18",
+        "B19",
+        "B20"
+      ]
+    },
+    {
+      "key": "BUCK_THORNTON_PRIME",
+      "description": "Recovered full coat silk sheen, heavy mane, perfect condition no superfluous flesh; later scarred by many dog teeth",
+      "source_facts": [
+        "muscles swelled out flesh came back",
+        "in perfect condition without ounce of superfluous flesh",
+        "furry coat shone with sheen of silk",
+        "face and body scored by teeth of many dogs"
+      ],
+      "creative_direction": "Glorious virile northern dog, love-bond posture softens only for Thornton",
+      "beats": [
+        "B21",
+        "B22",
+        "B23",
+        "B24",
+        "B25"
+      ]
+    },
+    {
+      "key": "BUCK_GHOST_DOG",
+      "description": "Gigantic wolf-like form, brown muzzle splashes and white chest rift retained; coat glorious; runs at pack head",
+      "source_facts": [
+        "great gloriously coated wolf like and yet unlike all other wolves",
+        "splashes of brown on head and muzzle rift of white centring down the chest",
+        "leaping gigantic above his fellows"
+      ],
+      "creative_direction": "Legendary night silhouette under moon or borealis, throat a-bellow",
+      "beats": [
+        "B26",
+        "B27",
+        "B28"
+      ]
+    }
+  ]
+}

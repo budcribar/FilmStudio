@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 namespace PageToMovie.Api.Auth;
 
 /// <summary>
-/// Shared 401/403 checks for project mutation, API-key settings, and OCR/import.
+/// Shared 401/403 checks for project mutation, API-key settings, and import/gen.
 /// </summary>
 public static class AuthGate
 {
@@ -29,50 +29,81 @@ public static class AuthGate
     }
 
     /// <summary>
-    /// Login + personal xAI/Grok key in the user DB (not merely server env).
-    /// OCR / book import must use the signed-in user's key.
+    /// Login + personal (BYOK) key in the user DB. Server env keys do not count until
+    /// <see cref="PageToMovieOptions.AllowServerApiKeyFallback"/> is enabled.
+    /// Vision OCR needs personal Grok; screenplay may use personal Grok / OpenAI / Anthropic / Gemini.
     /// </summary>
     public static async Task<IResult?> RequirePersonalGrokKeyAsync(
         IUserContext user,
         UserDatabaseService userDb,
         IOptions<PageToMovieOptions> opts,
-        bool useFakes = false)
+        bool useFakes = false,
+        IUserApiKeyProvider? keys = null,
+        bool requireVisionKey = false)
     {
         var login = RequireLogin(user, opts);
         if (login is not null)
             return login;
 
-        // Fakes mode (tests/loadsim) does not need a real xAI key.
         if (useFakes || opts.Value.UseFakes)
             return null;
 
-        string? personal = null;
-        try
+        var allowServer = opts.Value.AllowServerApiKeyFallback;
+
+        // Personal keys only (and optional server fallback when explicitly enabled).
+        var providers = requireVisionKey
+            ? new[] { "grok" }
+            : new[] { "grok", "openai", "anthropic", "gemini" };
+
+        foreach (var p in providers)
         {
-            personal = await userDb.GetDecryptedXaiApiKeyAsync(user.UserId).ConfigureAwait(false);
-        }
-        catch
-        {
-            personal = null;
+            try
+            {
+                var personal = await userDb.GetDecryptedProviderApiKeyAsync(user.UserId, p).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(personal))
+                    return null;
+            }
+            catch { /* next */ }
         }
 
-        if (!string.IsNullOrWhiteSpace(personal))
-            return null;
+        if (allowServer)
+        {
+            if (keys is not null)
+            {
+                foreach (var p in providers)
+                {
+                    if (keys.HasKey(user.UserId, p) || keys.HasKey(null, p))
+                        return null;
+                }
+            }
+            else
+            {
+                foreach (var env in requireVisionKey
+                    ? new[] { "XAI_API_KEY" }
+                    : new[] { "XAI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY" })
+                {
+                    if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(env)))
+                        return null;
+                }
+            }
+        }
+
+        var error = requireVisionKey
+            ? "Save your personal xAI / Grok API key in Settings before PDF vision OCR. (Server env keys are not used in bring-your-own-key mode.)"
+            : "Save a personal API key in Settings (Grok, OpenAI, Anthropic, or Gemini) before generating a screenplay. Server env keys are not used until cost management is enabled.";
 
         return Results.Json(
             new
             {
                 ok = false,
-                error =
-                    "Save your personal xAI / Grok API key in Configuration before book OCR or import. " +
-                    "Server env keys alone are not enough for this action.",
+                error,
                 code = "personal_key_required",
             },
             statusCode: StatusCodes.Status403Forbidden);
     }
 
     /// <summary>
-    /// 403 unless the signed-in user has accepted the Terms &amp; IP Licensing Agreement
+    /// 403 unless the signed-in user has accepted the Terms & IP Licensing Agreement
     /// (<c>terms_accepted_at</c>). Composes with <see cref="RequireLogin"/> — a caller only needs
     /// this one check on gated endpoints (project create, gen, publish).
     /// Skips entirely when <see cref="AuthOptions.RequireLogin"/> is false (tests / LoadSim), and

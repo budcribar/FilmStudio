@@ -61,20 +61,24 @@ public sealed class FalVideoClient : IVideoClient
         var apiKey = ResolveApiKey()
             ?? throw new InvalidOperationException($"Fal.ai API key is missing. Set {SupportedModelCatalog.FalApiKeyEnv} in environment or Configuration.");
 
-        var maxLen = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).MaxPromptLength ?? 1000;
+        var catalogEntry = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
+        var maxLen = catalogEntry.MaxPromptLength ?? 1000;
         if (prompt.Length > maxLen)
         {
             prompt = ClipVideoPromptBuilder.FitPromptToVideoBudget(prompt, maxLen);
         }
 
-        var numFrames = durationSeconds is > 0 and <= 4 ? 85 : 129;
+        var numFrames = durationSeconds is > 0 and <= 4
+            ? catalogEntry.ShortClipFrameCount ?? 85
+            : catalogEntry.LongClipFrameCount ?? 129;
+        var numInferenceSteps = catalogEntry.NumInferenceSteps ?? 30;
 
         var payload = new Dictionary<string, object?>
         {
             ["prompt"] = prompt,
-            ["aspect_ratio"] = "16:9",
+            ["aspect_ratio"] = ResolveAspectRatio(model),
             ["num_frames"] = numFrames,
-            ["num_inference_steps"] = 30,
+            ["num_inference_steps"] = numInferenceSteps,
         };
 
         var imagePath = !string.IsNullOrWhiteSpace(startFrameImagePath) && File.Exists(startFrameImagePath)
@@ -83,11 +87,18 @@ public sealed class FalVideoClient : IVideoClient
                 ? referenceImagePaths[0]
                 : null;
 
-        var endpoint = "fal-ai/hunyuan-video";
+        // Catalog endpointPath is SSoT (e.g. fal-ai/hunyuan-video). When an init image is present,
+        // hunyuan's i2v path is the text endpoint + "-image-to-video"; other fal models already list
+        // their full i2v path as endpointPath.
+        var endpoint = !string.IsNullOrWhiteSpace(catalogEntry.EndpointPath)
+            ? catalogEntry.EndpointPath.Trim().TrimStart('/')
+            : throw new InvalidOperationException(
+                $"Fal video: model '{catalogEntry.Id}' has no endpointPath in models_catalog.json.");
         if (!string.IsNullOrWhiteSpace(imagePath))
         {
-            endpoint = "fal-ai/hunyuan-video-image-to-video";
-            var maxDim = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).MaxReferenceImageDimension ?? 1280;
+            if (!endpoint.Contains("image-to-video", StringComparison.OrdinalIgnoreCase))
+                endpoint = endpoint.TrimEnd('/') + "-image-to-video";
+            var maxDim = catalogEntry.MaxReferenceImageDimension ?? 1280;
             payload["image_url"] = await PrepareOptimizedImageDataUriAsync(imagePath, maxDim, ct).ConfigureAwait(false);
         }
 
@@ -122,8 +133,11 @@ public sealed class FalVideoClient : IVideoClient
             ?? throw new InvalidOperationException($"Fal.ai API key is missing ({SupportedModelCatalog.FalApiKeyEnv}).");
 
         var parts = requestId.Split(':', 2);
-        var endpoint = parts.Length == 2 ? parts[0] : "fal-ai/hunyuan-video-image-to-video";
-        var actualReqId = parts.Length == 2 ? parts[1] : requestId;
+        if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1]))
+            throw new InvalidOperationException(
+                $"Fal video poll: request id must be 'endpoint:requestId' (got '{requestId}').");
+        var endpoint = parts[0];
+        var actualReqId = parts[1];
 
         var statusUrl = $"{endpoint}/requests/{actualReqId}/status";
         var resultUrl = $"{endpoint}/requests/{actualReqId}";
@@ -207,6 +221,13 @@ public sealed class FalVideoClient : IVideoClient
         await using var fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, useAsync: true);
         await stream.CopyToAsync(fs, ct).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Catalog's <c>DefaultAspectRatio</c> for the requested Fal.ai model, falling back to the
+    /// historical hardcoded "16:9" for models the catalog doesn't cover yet.
+    /// </summary>
+    private static string ResolveAspectRatio(string model) =>
+        SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).DefaultAspectRatio ?? "16:9";
 
     private static async Task<string> PrepareOptimizedImageDataUriAsync(string imagePath, int maxDim, CancellationToken ct)
     {

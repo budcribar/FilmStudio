@@ -75,6 +75,57 @@ public static class ClipDurationEstimator
     }
 
     /// <summary>
+    /// Resolves the actual generation-time duration for a specific video model, snapping to the
+    /// nearest value in <see cref="SupportedModelEntry.AllowedDurationsSeconds"/> when the model
+    /// only accepts a discrete set (e.g. Veo 3.1's documented 4/6/8 seconds only — clamping a
+    /// planned "7" into a min/max range still isn't an accepted duration). Falls back to a plain
+    /// min/max clamp via <see cref="ResolveBoundsForModel"/> for any model without a declared
+    /// discrete set, so this is a safe drop-in replacement for a bare Math.Clamp call everywhere.
+    /// </summary>
+    /// <param name="isExtensionMode">
+    /// True for image-to-video / reference-conditioned / video-extend calls, which some providers
+    /// (Grok) cap tighter than a fresh text-to-video clip — applies
+    /// <see cref="SupportedModelEntry.MaxExtensionSeconds"/> as an additional ceiling on top of the
+    /// normal result when the model declares one.
+    /// </param>
+    public static int ResolveActualDurationForModel(
+        string? modelId, int requestedSeconds, bool isExtensionMode = false)
+    {
+        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
+        int resolved;
+        if (entry?.AllowedDurationsSeconds is { Count: > 0 } allowed)
+        {
+            resolved = allowed
+                .OrderBy(d => Math.Abs(d - requestedSeconds))
+                .ThenBy(d => d)
+                .First();
+        }
+        else
+        {
+            var (min, max, _) = ResolveBoundsForModel(modelId);
+            resolved = Math.Clamp(requestedSeconds, min, max);
+        }
+
+        if (isExtensionMode && entry?.MaxExtensionSeconds is { } extMax && resolved > extMax)
+            resolved = extMax;
+
+        return resolved;
+    }
+
+    /// <summary>
+    /// Resolves the max duration for a clip that will be generated as an extend-from-previous
+    /// continuation, for planning purposes (e.g. deciding how many beats can be coalesced into one
+    /// clip before it needs its own fresh cut). Falls back to <paramref name="fallbackMax"/> — the
+    /// model's normal fresh-generation max — for any model without a declared tighter extension
+    /// cap, matching today's behavior for every model except Grok.
+    /// </summary>
+    public static int ResolveExtensionMaxForModel(string? modelId, int fallbackMax)
+    {
+        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
+        return entry?.MaxExtensionSeconds ?? fallbackMax;
+    }
+
+    /// <summary>
     /// Estimate duration for a planned beat (Stage 2). Optional bounds (typically from
     /// <see cref="ResolveBoundsForModel"/>) clamp against the actually-selected video model's
     /// own limits instead of the global Grok-shaped defaults; omitted, behavior is unchanged.
@@ -645,18 +696,20 @@ public static class ClipDurationEstimator
         string Join(List<string> ws)
         {
             var sb = new StringBuilder();
+            var suppressNextSpace = false;
             foreach (var w in ws)
             {
-                if (sb.Length == 0)
-                {
-                    sb.Append(w);
-                    continue;
-                }
-                // No space before trailing punctuation-only tokens
-                if (Regex.IsMatch(w, @"^[.!?;,:]+$"))
+                // Em-dash/en-dash/hyphen tokens attach directly to both neighbors (source text has
+                // no surrounding space, e.g. "nights—every") — unlike trailing punctuation (.!?;,:),
+                // which only suppresses its OWN leading space, a dash also suppresses the space
+                // before the word that follows it.
+                var isDash = Regex.IsMatch(w, @"^[—–-]+$");
+                var noLeadingSpace = suppressNextSpace || isDash || Regex.IsMatch(w, @"^[.!?;,:]+$");
+                if (sb.Length == 0 || noLeadingSpace)
                     sb.Append(w);
                 else
                     sb.Append(' ').Append(w);
+                suppressNextSpace = isDash;
             }
             return sb.ToString().Trim();
         }

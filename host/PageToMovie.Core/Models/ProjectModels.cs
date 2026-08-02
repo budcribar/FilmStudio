@@ -17,6 +17,26 @@ public sealed class ProjectInfo
     /// Git-aligned visibility mode: "Private" (owner/collaborators only), "Public" (Read-Only / listed on gallery), or "Open" (Public Forkable). Default: "Private".
     /// </summary>
     public string VisibilityMode { get; set; } = "Private";
+    /// <summary>
+    /// Product path: "full" (cast/faces/estimate) or "simple-voice" (library book + narrator re-voice).
+    /// Stored in project.json as studioPath.
+    /// </summary>
+    public string StudioPath { get; set; } = ProjectStudioPaths.Full;
+}
+
+/// <summary>Known values for <see cref="ProjectInfo.StudioPath"/>.</summary>
+public static class ProjectStudioPaths
+{
+    public const string Full = "full";
+    public const string SimpleVoice = "simple-voice";
+
+    public static string Normalize(string? value) =>
+        string.Equals(value?.Trim(), SimpleVoice, StringComparison.OrdinalIgnoreCase)
+            ? SimpleVoice
+            : Full;
+
+    public static bool IsSimpleVoice(string? value) =>
+        string.Equals(Normalize(value), SimpleVoice, StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class WorkspaceState
@@ -204,6 +224,44 @@ public sealed class StartBatchGenRequest
     public bool FailIfLocked { get; set; }
 }
 
+/// <summary>
+/// Server-side batch TTS for re-voice: synthesize each clip's dialogue with a stored clone voice id.
+/// Audio is written under the project and handed to the client via <see cref="JobSnapshot.ClientMediaUrl"/>
+/// (same mid-batch pattern as video/music). Keys never leave the server.
+/// </summary>
+public sealed class StartSpeakBatchRequest
+{
+    public string ProjectId { get; set; } = "";
+    /// <summary>Character seed that owns the clone (e.g. Character_Narrator).</summary>
+    public string CharKey { get; set; } = "Character_Narrator";
+    /// <summary>
+    /// Explicit (scene, clip[, text]) targets. When empty, the job loads the blueprint and selects
+    /// clips automatically (see <see cref="NarratorOnly"/>).
+    /// </summary>
+    public List<SpeakBatchClip>? Clips { get; set; }
+    /// <summary>
+    /// When <see cref="Clips"/> is empty: only clips whose speaker is the narrator (default true).
+    /// When false, every clip with non-empty dialogue is spoken with <see cref="CharKey"/>'s voice.
+    /// </summary>
+    public bool NarratorOnly { get; set; } = true;
+    /// <summary>Skip clips that already have revoice audio on the server project disk.</summary>
+    public bool OnlyMissing { get; set; } = true;
+    /// <summary>Max concurrent TTS provider calls (clamped 1–8). Default 3.</summary>
+    public int MaxParallel { get; set; } = 3;
+    /// <summary>Optional catalog speak-model id override; empty uses project voice_model_name / seed provider.</summary>
+    public string? Model { get; set; }
+    public bool FailIfLocked { get; set; }
+}
+
+/// <summary>One line to synthesize in a speak-batch job.</summary>
+public sealed class SpeakBatchClip
+{
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+    /// <summary>Dialogue text. When empty, the job reads dialogue from the Stage 2 blueprint.</summary>
+    public string? Text { get; set; }
+}
+
 /// <summary>One explicit clip target for a multi-select clip regen batch.</summary>
 public sealed class ClipTarget
 {
@@ -228,6 +286,14 @@ public sealed class CharacterSummary
     public string VisualLock { get; set; } = "";
     public string VoiceProfile { get; set; } = "";
     public string VoiceLabel { get; set; } = "";
+    /// <summary>Operator uploaded/recorded audio used as a voice-clone template (future TTS providers).</summary>
+    public bool HasVoiceCloneSample { get; set; }
+    public string? VoiceCloneFileName { get; set; }
+    public string? VoiceCloneUrl { get; set; }
+    /// <summary>Provider id that owns the cloned/catalog voice (e.g. elevenlabs).</summary>
+    public string? VoiceProvider { get; set; }
+    /// <summary>Provider-side voice id for TTS (ElevenLabs voice_id).</summary>
+    public string? VoiceProviderVoiceId { get; set; }
     public bool VoiceOnly { get; set; }
     public bool Locked { get; set; }
     public string? RefFileName { get; set; }
@@ -294,7 +360,7 @@ public sealed class ExtractCastRequest
     public string ProjectId { get; set; } = "";
     /// <summary>Rebuild cast even if cast_seeds.json already exists.</summary>
     public bool Force { get; set; } = true;
-    public string Model { get; set; } = "grok-4.5";
+    public string Model { get; set; } = "";
 }
 
 public sealed class AttachCharacterPlatesRequest
@@ -313,7 +379,7 @@ public sealed class AttachCharacterPlatesRequest
     public bool UseGrok { get; set; } = true;
     /// <summary>Max book images to send to Grok (cost/latency cap).</summary>
     public int MaxImages { get; set; } = 32;
-    public string VisionModel { get; set; } = "grok-4.5";
+    public string VisionModel { get; set; } = "";
 }
 
 public sealed class AttachCharacterPlatesResult
@@ -351,8 +417,8 @@ public sealed class CharacterPlatesState
 /// <summary>Active image backend seed limits for Characters UI.</summary>
 public sealed class ImageSeedLimits
 {
-    /// <summary>grok | gemini</summary>
-    public string Provider { get; set; } = "grok";
+    /// <summary>Catalog provider id (from models_catalog.json), e.g. grok | gemini | openai.</summary>
+    public string Provider { get; set; } = "";
     public string? ImageModel { get; set; }
     /// <summary>Max reference images the active image API accepts per edit.</summary>
     public int MaxReferenceImages { get; set; } = 3;
@@ -364,7 +430,7 @@ public sealed class StartBookPrepareRequest
     public bool ForceExtract { get; set; } = true;
     public bool ForceVision { get; set; }
     public bool AutoVision { get; set; } = true;
-    public string VisionModel { get; set; } = "grok-4.5";
+    public string VisionModel { get; set; } = "";
 }
 
 /// <summary>
@@ -379,17 +445,31 @@ public sealed class StartBookImportRequest
     public bool ForceExtract { get; set; } = true;
     public bool ForceVision { get; set; }
     public bool AutoVision { get; set; } = true;
-    public string VisionModel { get; set; } = "grok-4.5";
-    public string Model { get; set; } = "grok-4.5";
+    public string VisionModel { get; set; } = "";
+    public string Model { get; set; } = "";
 }
 
 /// <summary>POST /api/projects — create a new project folder.</summary>
+public sealed class RenameProjectRequest
+{
+    public string? Title { get; set; }
+    public string? Name { get; set; }
+}
+
 public sealed class CreateProjectRequest
 {
     /// <summary>Display name or folder id.</summary>
     public string? Name { get; set; }
     public string? Id { get; set; }
     public string? Title { get; set; }
+    /// <summary>optional: full | simple-voice</summary>
+    public string? StudioPath { get; set; }
+}
+
+public sealed class SetStudioPathRequest
+{
+    /// <summary>full | simple-voice</summary>
+    public string? StudioPath { get; set; }
 }
 
 public sealed class LockCharacterRequest
@@ -402,12 +482,34 @@ public sealed class LockCharacterRequest
 }
 
 /// <summary>Update voice_label / voice_profile on character seeds (scenes.json + blueprint).</summary>
+public sealed class ApplyCatalogVoiceRequest
+{
+    public string? ProviderVoiceId { get; set; }
+    public string? DisplayName { get; set; }
+    public string? PreviewText { get; set; }
+}
+
 public sealed class UpdateCharacterVoiceRequest
 {
     public string ProjectId { get; set; } = "";
     public string CharKey { get; set; } = "";
     public string? VoiceLabel { get; set; }
     public string? VoiceProfile { get; set; }
+}
+
+/// <summary>POST .../voice/clone body — optional catalog model id override.</summary>
+public sealed class CloneVoiceApiRequest
+{
+    public string? Model { get; set; }
+}
+
+/// <summary>POST .../voice/speak body — narration/dialogue text (required) + optional voice id / model override.</summary>
+public sealed class SpeakVoiceApiRequest
+{
+    public string? Text { get; set; }
+    /// <summary>Provider voice id. When omitted, resolved from the character's stored voice/clone result.</summary>
+    public string? VoiceId { get; set; }
+    public string? Model { get; set; }
 }
 
 /// <summary>
@@ -573,7 +675,7 @@ public sealed class UpdateCharacterLookRequest
     /// Run AI visual scrub (literal + base-look, not later wardrobe) before save. Default true.
     /// </summary>
     public bool ScrubWithAi { get; set; } = true;
-    public string Model { get; set; } = "grok-4.5";
+    public string Model { get; set; } = "";
 }
 
 /// <summary>Response from look save (optional AI scrub applied).</summary>
@@ -713,7 +815,7 @@ public sealed class AdaptationStatus
     public CastStatus Cast { get; set; } = new();
     public bool XaiConfigured { get; set; }
     /// <summary>Configured planning model (Configuration page) — Stage 1 / book→Fountain / cast scrub.</summary>
-    public string PlanningModel { get; set; } = "grok-4.5";
+    public string PlanningModel { get; set; } = "";
     public string NextStep { get; set; } = "";
 }
 
@@ -818,7 +920,7 @@ public sealed class StartStage1Request
     public string ProjectId { get; set; } = "";
     public int ChunkPages { get; set; } = 10;
     public int? TotalMinutes { get; set; }
-    public string Model { get; set; } = "grok-4.5";
+    public string Model { get; set; } = "";
     public bool Resume { get; set; }
     public int MaxChunks { get; set; }
 }
@@ -951,13 +1053,19 @@ public sealed class CostEvent
 {
     public string? Id { get; set; }
     public string? Ts { get; set; }
-    public string Kind { get; set; } = "video"; // video | image | other
+    public string Kind { get; set; } = "video"; // transport: video | image | chat | …
+    /// <summary>User-facing bucket (<see cref="CostCategories"/>).</summary>
+    public string Category { get; set; } = CostCategories.Other;
     public int? Scene { get; set; }
     public int? Clip { get; set; }
     public string? Model { get; set; }
     public string? Resolution { get; set; }
     public double? DurationSec { get; set; }
     public double Usd { get; set; }
+    /// <summary>Vendor list rate before charge multiplier (when recorded).</summary>
+    public double? ListUsd { get; set; }
+    /// <summary>Charge multiplier applied when the event was written (null = legacy list-rate-only).</summary>
+    public double? ChargeMultiplier { get; set; }
     public string Currency { get; set; } = "USD";
     public string? Source { get; set; } // list_rate | backfill
     public string? Character { get; set; }
@@ -969,6 +1077,8 @@ public sealed class CostEvent
 public sealed class CostLedgerSummary
 {
     public double ActualUsd { get; set; }
+    /// <summary>Sum of vendor list rates (COGS). Equals ActualUsd when multiplier was 1 or legacy events.</summary>
+    public double ListRateUsd { get; set; }
     public int EventCount { get; set; }
     public int VideoJobs { get; set; }
     public int ImageJobs { get; set; }
@@ -978,7 +1088,7 @@ public sealed class CostLedgerSummary
     public Dictionary<string, double> ByModel { get; set; } = new();
     public string Currency { get; set; } = "USD";
     public string Notes { get; set; } =
-        "Tracked actuals = list-rate pricing at generation time (cost_ledger). Not xAI invoices.";
+        "Tracked actuals = charged amounts (list rate × admin charge multiplier) in cost_ledger.";
 }
 
 public sealed class CostSceneRow
@@ -1022,6 +1132,10 @@ public sealed class CostReportSummary
     public double FinishFromActualUsd { get; set; }
     public double FullFilmAllDraftUsd { get; set; }
     public double FullFilmAllHeroUsd { get; set; }
+    /// <summary>Vendor list-rate full-film draft estimate (before charge multiplier).</summary>
+    public double FullFilmAllDraftListUsd { get; set; }
+    /// <summary>Vendor list-rate full-film hero estimate (before charge multiplier).</summary>
+    public double FullFilmAllHeroListUsd { get; set; }
     public int ScenesWithMedia { get; set; }
     public int ScenesHero { get; set; }
     public int ScenesTotal { get; set; }
@@ -1039,6 +1153,23 @@ public sealed class CostScenarioRow
     public double AssumeAvgRetries { get; set; }
 }
 
+/// <summary>How planning estimates were adjusted from stored actuals (DB / ledger).</summary>
+public sealed class CostEstimateRefinement
+{
+    public bool UsedHistory { get; set; }
+    public int VideoApiSamples { get; set; }
+    public int ReviewApiSamples { get; set; }
+    public int TimingSamples { get; set; }
+    public int ProjectLedgerEvents { get; set; }
+    /// <summary>QA video multiplier prior before history (e.g. 1.3).</summary>
+    public double PriorVideoMultiplier { get; set; } = 1.3;
+    /// <summary>Multiplier after blending history (fail/truncation rate, etc.).</summary>
+    public double AppliedVideoMultiplier { get; set; } = 1.0;
+    public double? LearnedFailRate { get; set; }
+    public double HistoryWeight { get; set; }
+    public string Notes { get; set; } = "";
+}
+
 public sealed class CostReport
 {
     public string ProjectId { get; set; } = "";
@@ -1046,16 +1177,42 @@ public sealed class CostReport
     public string HeroResolution { get; set; } = "720p";
     public string? ModelName { get; set; }
     public string? VideoProvider { get; set; }
+    /// <summary>Active image model used for character-portrait estimates.</summary>
+    public string? ImageModelName { get; set; }
+    /// <summary>Active planning/chat model (screenplay / shot plan).</summary>
+    public string? PlanningModelName { get; set; }
+    /// <summary>Active voice model when voice is in scope.</summary>
+    public string? VoiceModelName { get; set; }
+    /// <summary>
+    /// What drove clip counts: <c>shot_plan</c> (blueprint), <c>screenplay</c> (post-import durations),
+    /// or <c>none</c> (no book yet).
+    /// </summary>
+    public string EstimateBasis { get; set; } = "none";
+    /// <summary>True when optional personal voice is included in the estimate.</summary>
+    public bool VoiceIncludedInEstimate { get; set; }
+    /// <summary>
+    /// Admin charge multiplier applied to list rates for customer-facing estimates
+    /// (and used when recording actual charges). 1.0 = list rate.
+    /// </summary>
+    public double ChargeMultiplier { get; set; } = 1.0;
     public double OutputRateDraft { get; set; }
     public double OutputRateHero { get; set; }
     public double AssumeAvgRetries { get; set; }
     public CostReportSummary Summary { get; set; } = new();
     public CostLedgerSummary Actual { get; set; } = new();
+    /// <summary>
+    /// Full-film planning estimate by user-facing category
+    /// (screenplay, characters, video, voice, music, other) — <b>customer charge</b> amounts.
+    /// </summary>
+    public Dictionary<string, double> EstimateByCategory { get; set; } = new();
+    /// <summary>Same buckets as EstimateByCategory but vendor list rates (before multiplier).</summary>
+    public Dictionary<string, double> EstimateByCategoryListRate { get; set; } = new();
+    public CostEstimateRefinement Refinement { get; set; } = new();
     public List<CostSceneRow> Scenes { get; set; } = new();
     public List<CostScenarioRow> Scenarios { get; set; } = new();
     public List<CostEvent> RecentEvents { get; set; } = new();
     public string Notes { get; set; } =
-        "Estimates = planning (current rates × scope). Actual = cost_ledger list rates (not xAI invoice).";
+        "Estimates = planning × charge multiplier. Actual = cost_ledger charged amounts.";
     public string Currency { get; set; } = "USD";
 }
 

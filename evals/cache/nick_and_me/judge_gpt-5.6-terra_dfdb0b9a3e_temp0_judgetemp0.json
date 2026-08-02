@@ -1,0 +1,51 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 6,
+      "characterDisambiguation": 4,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 5.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 5.67,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The protagonist is called PETER throughout despite the source withholding his name until the final line, and the draft alternates between PETER and NARRATOR for the same character; this is a source-spoiler and unstable cast-identity defect.",
+        "Mandatory Vision Meta sidecar is absent.",
+        "Several slugs combine distinct locations or travel beats, including \u0022INT. FUNERAL HOME / CEMETERY\u0022 and \u0022EXT. WISCONSIN HIGHWAY / AIRPORT,\u0022 which is unusable as a single scheduled, generated clip location.",
+        "The climactic prison speech is a long multi-idea monologue that exceeds the prompt\u0027s dialogue-length limit and is not viable as one 5-10 second clip."
+      ],
+      "rationale": "This is the stronger adaptation because it covers more of the book\u0027s emotional spine: Nick\u0027s early protection and intimidation, Sionna\u0027s awakening effect, college conflict, bar rupture, Ma\u0027s death, the stabbing, separation, Seattle reinvention, and prison forgiveness. However, it compresses several major turns into summary-like transitions, omits much of the gradual school/work transformation, and uses broad VO to bridge story rather than playable visual beats. Character locking is weak because the lead\u0027s identity switches from NARRATOR to PETER long before the book permits the reveal, while recurring appearances do not consistently restate locked traits. The sound cue coverage is consistently present and often concrete, with particularly effective crash, stabbing, hospital, and prison sound beds, though some scenes rely on only one generic ambient cue. Dialogue retains the book\u0027s rough voice in places, but the final confrontation is overpacked and several lines are more expositional than performable.",
+      "promptImprovementSuggestion": "Add a mandatory identity-reveal audit: until a source text explicitly reveals a first-person protagonist\u0027s name, require the exact same anonymous character token in every action line, dialogue cue, title reference, and visual-description reference; prohibit early-name substitutions even when the name appears later in the source."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 5,
+      "characterDisambiguation": 3,
+      "aiVideoDirectibility": 6,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 5.58,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The protagonist identity is unstable and inaccurate: NARRATOR becomes PETER before the source\u0027s final-name reveal, and the screenplay uses PETER OLSEN / \u0022President Peter Olsen\u0022 even though the source\u0027s final name is Peter Olson.",
+        "YOUNG NICK is not given a distinct cast token from adult NICK; the draft instead uses \u0022Twelve-year-old NICK,\u0022 risking one locked adult reference image across incompatible ages.",
+        "GUARD is an unnamed generic supporting dialogue token, contrary to the required stable named-role convention.",
+        "Mandatory Vision Meta sidecar is absent.",
+        "A dream scene and real-world wake-up are combined under \u0022EXT. DREAM ROAD - DAY,\u0022 creating an impossible single-location scene for clip production."
+      ],
+      "rationale": "The draft is comparatively clean in scene-level construction and frequently offers concise, performable dialogue and concrete sound beds. Its hospital, bar confrontation, stabbing, breakup, and prison scenes are readable as short-form visual units. But it drops too much of the source\u0027s essential middle progression: Peter\u0027s sustained college growth, the escalating caregiver burden, Nick\u0027s withdrawal and tactical return to Ma, Sionna\u0027s family/farm material, and the work-to-business trajectory are substantially reduced or bypassed. This makes the final successful Seattle businessman feel under-earned. The script also contains severe continuity problems for downstream casting: the anonymous narrator is renamed early, the surname is misspelled, and young/adult Nick are not properly disambiguated. Sound design is a relative strength, with concrete environmental cues in nearly every scene and layered audio at the violent peaks, but it cannot compensate for the identity and fidelity failures.",
+      "promptImprovementSuggestion": "Add a final automated-style canonical-entity audit requiring every named character, age variant, surname, and supporting speaking role to match a single approved cast-token list exactly; require explicit separate tokens for any character shown at materially different ages."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it preserves substantially more of the book\u0027s full emotional and plot arc, especially the protagonist\u0027s education-driven awakening and the long path to forgiveness. Weakest: Screenplay B because its unstable and incorrect protagonist naming, failure to separate young and adult Nick, and more drastic loss of the source\u0027s middle transformation make its ending feel less faithful and less production-safe.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "9CE9C14150D0453D6204F5A7223CE34022855DC2F990D3770424EFB9B3EB9222"
+}

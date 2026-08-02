@@ -1,0 +1,147 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 5.5,
+      "characterDisambiguation": 4,
+      "aiVideoDirectibility": 4.5,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 3,
+      "overallQualitativeScore": 4.33,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Heavy reliance on unfilmable narrator VO for internal states and plot",
+        "Major compression and invented soft dialogue with Thornton that flattens the rescue and love arc",
+        "Missing concrete sound/music beds",
+        "Character visuals inconsistently locked"
+      ],
+      "rationale": "Covers main beats but leans on continuous narrator to carry emotion and exposition; many scenes pack multiple actions and lack camera-specific staging for 5-10s clips. Character looks are thin and dialogue often generic."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 5.5,
+      "overallQualitativeScore": 8.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Tight, faithful compression of the novel into observable action beats ideal for short AI clips. Distinct visual locks on Buck and key humans; dialogue is sparse and period-true. Sound design is only lightly implied rather than prompted per scene."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highest fidelity with locked Buck identity note and near-complete beat coverage including Dave\u2019s death, the thousand-pound pull, and Ghost Dog coda. Action lines are concrete though some montages slightly overload a single heading; music/sound beds under-specified."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 5.5,
+      "overallQualitativeScore": 8.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Excellent show-don\u2019t-tell staging of fights, theft, and the ice collapse. Characters remain visually consistent; pacing serves clip length. Sound remains mostly implicit."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 8.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Extremely complete adaptation including Black Burton and the rapids rescue. Directibility is strong but density of incident in later reels risks multi-action scenes; still production-viable with minor splitting."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Faithful and dialogue-rich, yet several sequences cram location/action changes that would need splitting for 5-10s AI clips. Character intros are adequate but less rigorously re-locked than top tier."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 1.5,
+      "characterDisambiguation": 2,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 2,
+      "dialogueAuthenticity": 2.5,
+      "soundDesignMusic": 2,
+      "overallQualitativeScore": 2.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Drops nearly every major plot beat and invents named characters (Mr. Quincy, Mr. Kelly)",
+        "Collapses entire novel into a vague short",
+        "No usable character visual locks or clip-scale structure"
+      ],
+      "rationale": "Essentially a different, severely truncated story. Unusable as an adaptation of the source."
+    },
+    {
+      "screenplayId": "Screenplay H",
+      "adaptationFidelity": 6,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 6.83,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented named characters (Elias Holt, Edward Blake, Arthur Pike, Samuel Keene, Chief Kitchi, Warrior Makwa) constitute major source deviation"
+      ],
+      "rationale": "Strong visual staging and clip-friendly action, but the closed-cast / fidelity violation from numerous invented proper names is a deal-breaker for a strict book adaptation."
+    },
+    {
+      "screenplayId": "Screenplay I",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 5.5,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Best overall package: locked Buck description, exhaustive yet clip-scalable beats, authentic dialect, and clean scene isolation. Sound design still only lightly indicated but every other dimension is production-ready."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay I",
+    "Screenplay C",
+    "Screenplay B",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay F",
+    "Screenplay H",
+    "Screenplay A",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay I because it delivers the fullest faithful beat coverage with locked character visuals and cleanly isolated, camera-ready actions ideal for 5-10s AI clips. Weakest: Screenplay G because it abandons the source plot, invents characters, and collapses the novel into an unusable short outline.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "F8A9E2E9CD9803C70C81B7C4020A6BD5E8EADCACB947B2F7E76EEB3A7027EE4C"
+}

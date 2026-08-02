@@ -7,59 +7,9 @@
 @inject AdminSessionService Session
 @inject IJSRuntime Js
 @using PageToMovie.Core.Models
+@using PageToMovie.Core.Util
 
 <PageTitle>PageToMovie</PageTitle>
-
-<div class="home-hero d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
-    <div class="d-flex align-items-center gap-3">
-        <img src="/favicon.png" alt="PageToMovie" width="68" height="68" class="rounded-3 shadow flex-shrink-0" />
-        <div>
-            <h1 class="display-6 fw-bold mb-0 lh-1">PageToMovie</h1>
-            <span class="text-muted fs-6">Turn books and screenplays into movies</span>
-        </div>
-    </div>
-
-    <!-- Pages → AI → Movie (HTML labels + gentle CSS motion; fixed stage size so nothing jumps) -->
-    <div class="home-pipeline" role="img" aria-label="Pages into AI into movie">
-        <div class="home-pipeline__stage">
-            <div class="home-pipeline__icon home-pipeline__pages" aria-hidden="true">
-                <span class="home-pipeline__sheet s1"></span>
-                <span class="home-pipeline__sheet s2"></span>
-                <span class="home-pipeline__sheet s3"></span>
-            </div>
-            <span class="home-pipeline__label">PAGES</span>
-        </div>
-
-        <div class="home-pipeline__arrows" aria-hidden="true" title="Pages feeding into AI">
-            <span class="home-pipeline__chev c1">›</span>
-            <span class="home-pipeline__chev c2">›</span>
-            <span class="home-pipeline__chev c3">›</span>
-        </div>
-
-        <div class="home-pipeline__stage">
-            <div class="home-pipeline__icon home-pipeline__ai" aria-hidden="true">
-                <span class="home-pipeline__brain">🧠</span>
-            </div>
-            <span class="home-pipeline__label">AI</span>
-        </div>
-
-        <div class="home-pipeline__arrows" aria-hidden="true" title="AI generating movie">
-            <span class="home-pipeline__chev c1">›</span>
-            <span class="home-pipeline__chev c2">›</span>
-            <span class="home-pipeline__chev c3">›</span>
-        </div>
-
-        <div class="home-pipeline__stage">
-            <div class="home-pipeline__icon home-pipeline__movie" aria-hidden="true">
-                <span class="home-pipeline__clapper">
-                    <span class="home-pipeline__clapper-top"></span>
-                    <span class="home-pipeline__clapper-body"></span>
-                </span>
-            </div>
-            <span class="home-pipeline__label">MOVIE</span>
-        </div>
-    </div>
-</div>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -77,42 +27,409 @@
     </div>
 }
 
-<div class="row g-3">
-    <div class="col-md-5">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Projects</span>
-                @if (!_showNew)
-                {
-                    <button class="btn btn-primary btn-sm"
-                            data-testid="home-new-project"
-                            disabled="@(_busy || !Session.IsLoggedIn)"
-                            title="@(Session.IsLoggedIn ? "Create a project" : "Sign in to create projects")"
-                            @onclick="ToggleNewProjectAsync">
-                        New project
-                    </button>
-                }
+
+@* Landing-style header — brand + promise above the action cards *@
+<header class="home-landing mb-4" data-testid="home-landing-header">
+    <div class="home-landing__inner">
+        <div class="home-landing__copy">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <img src="/favicon.png" alt="" width="40" height="40" class="rounded-2 shadow-sm flex-shrink-0" />
+                <span class="home-landing__brand">PageToMovie</span>
             </div>
-            <div class="card-body">
-                @if (!Session.IsLoggedIn)
-                {
-                    <div class="alert alert-warning py-2 small mb-3">
-                        <strong>Sign in required.</strong>
-                        <a href="login?returnUrl=/" class="alert-link">Sign in or create an account</a>
-                        to create projects and connect your AI provider.
+            <h1 class="home-landing__title">Drop a book. Get a movie.</h1>
+            <p class="home-landing__lede mb-0">
+                Turn a story into a short film with your voice — or open the full studio to cast, estimate, and film every scene.
+            </p>
+            @* Actions live on the cards below — avoid duplicate Easy start / Full studio / Demos buttons here. *@
+            @if (!Session.IsLoggedIn)
+            {
+                <div class="home-landing__actions d-flex flex-wrap gap-2 mt-3">
+                    <a href="login?returnUrl=/" class="btn btn-primary" data-testid="home-landing-signin">Sign in</a>
+                </div>
+            }
+        </div>
+        <div class="home-landing__visual d-none d-md-flex" aria-hidden="true">
+            <div class="home-pipeline">
+                <div class="home-pipeline__stage">
+                    <div class="home-pipeline__icon home-pipeline__pages">
+                        <span class="home-pipeline__sheet s1"></span>
+                        <span class="home-pipeline__sheet s2"></span>
+                        <span class="home-pipeline__sheet s3"></span>
                     </div>
+                    <span class="home-pipeline__label">Book</span>
+                </div>
+                <div class="home-pipeline__arrows" aria-hidden="true">
+                    <span class="home-pipeline__chev c1">›</span>
+                    <span class="home-pipeline__chev c2">›</span>
+                    <span class="home-pipeline__chev c3">›</span>
+                </div>
+                <div class="home-pipeline__stage">
+                    <div class="home-pipeline__icon home-pipeline__ai">
+                        <span class="home-pipeline__brain"></span>
+                    </div>
+                    <span class="home-pipeline__label">Studio</span>
+                </div>
+                <div class="home-pipeline__arrows" aria-hidden="true">
+                    <span class="home-pipeline__chev c1">›</span>
+                    <span class="home-pipeline__chev c2">›</span>
+                    <span class="home-pipeline__chev c3">›</span>
+                </div>
+                <div class="home-pipeline__stage">
+                    <div class="home-pipeline__icon home-pipeline__movie">
+                        <span class="home-pipeline__clapper">
+                            <span class="home-pipeline__clapper-body"></span>
+                        </span>
+                    </div>
+                    <span class="home-pipeline__label">Film</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+@if (!Session.IsLoggedIn)
+{
+    @* Same three cards as signed-in easy home; CTAs send guests to sign-in. *@
+    <div class="card mb-3 border-primary border-opacity-50" data-testid="home-simple-voice-card">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="min-w-0">
+                <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Easiest start</div>
+                <div class="fw-semibold">Read a library book in your voice</div>
+                <div class="small text-muted">
+                    Pick a story, record one sample — we put your voice on the narrator.
+                </div>
+            </div>
+            <a href="login?returnUrl=/simple-voice" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-simple-voice">
+                Sign in to try →
+            </a>
+        </div>
+    </div>
+    <div class="card mb-3" data-testid="home-full-studio-card">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="min-w-0">
+                <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing:0.06em;">Advanced</div>
+                <div class="fw-semibold">Full studio</div>
+                <div class="small text-muted">
+                    Cast, estimate, film, and review — full control.
+                </div>
+            </div>
+            <a href="login?returnUrl=/" class="btn btn-outline-secondary btn-sm flex-shrink-0" data-testid="home-open-full-studio-guest">
+                Sign in for studio →
+            </a>
+        </div>
+    </div>
+}
+else if (_projects is null)
+{
+    <div class="card mb-3 home-studio-card">
+        <div class="card-body py-3 text-muted small">Loading projects…</div>
+    </div>
+}
+else
+{
+    var activeMeta = _projects.Projects.FirstOrDefault(p =>
+        string.Equals(p.Id, _projects.Active?.Id, StringComparison.OrdinalIgnoreCase));
+    var hasActive = ActiveProject.HasProject || !string.IsNullOrWhiteSpace(_projects.Active?.Id);
+
+    @if (ShowEasyHome)
+    {
+        @* Default home: easiest start only — advanced project picker is behind Full studio. *@
+        <div class="card mb-3 border-primary border-opacity-50" data-testid="home-simple-voice-card">
+            <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="min-w-0">
+                    <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Easiest start</div>
+                    <div class="fw-semibold">Read a library book in your voice</div>
+                    <div class="small text-muted">
+                        Pick a story, record one sample — we put your voice on the narrator.
+                        Stock pictures stay as-is.
+                    </div>
+                </div>
+                <a href="simple-voice" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-simple-voice">
+                    Try with your voice →
+                </a>
+            </div>
+        </div>
+
+        <div class="card mb-3" data-testid="home-full-studio-card">
+            <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="min-w-0">
+                    <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing:0.06em;">Advanced</div>
+                    <div class="fw-semibold">Full studio</div>
+                    <div class="small text-muted">
+                        Pick or create a project, cast faces, estimate, film, and review — full control.
+                    </div>
+                </div>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                        data-testid="home-open-full-studio"
+                        @onclick="EnterFullStudio">
+                    Open full studio →
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+            <button type="button"
+                    class="btn btn-link btn-sm px-0"
+                    data-testid="home-back-easy-start"
+                    @onclick="ExitFullStudio">
+                ← Easy start
+            </button>
+            <span class="small text-muted">Full studio</span>
+        </div>
+
+        <div class="card mb-3 home-studio-card" data-testid="home-studio-card">
+            <div class="card-body py-3">
+                @if (hasActive)
+                {
+                    @* Single studio bar: Project · name · visibility · New · Manage · [Setup if keys missing] *@
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2 home-active-toolbar">
+                        <span class="home-project-label text-muted small text-uppercase flex-shrink-0">Project</span>
+                        <select class="form-select form-select-sm home-project-select flex-grow-1"
+                                style="min-width: 10rem; max-width: 22rem;"
+                                data-testid="home-project-picker"
+                                value="@(_projects.Active?.Id ?? ActiveProject.ProjectId)"
+                                disabled="@_busy"
+                                title="Project"
+                                aria-label="Project"
+                                @onchange="OnPickerChangedAsync">
+                            @foreach (var p in _projects.Projects)
+                            {
+                                <option value="@p.Id">@(p.Label ?? p.Title ?? p.Id)</option>
+                            }
+                        </select>
+                        @if (activeMeta is not null)
+                        {
+                            <span class="badge @VisibilityBadgeClass(activeMeta.VisibilityMode) small fw-normal flex-shrink-0"
+                                  title="Visibility">
+                                @VisibilityBadgeText(activeMeta.VisibilityMode)
+                            </span>
+                        }
+                        <button type="button"
+                                class="btn btn-outline-primary btn-sm flex-shrink-0"
+                                data-testid="home-new-project"
+                                disabled="@_busy"
+                                @onclick="OpenNewProjectAsync"
+                                title="New project">
+                            + New
+                        </button>
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                                data-testid="home-manage-projects"
+                                aria-expanded="@(_manageExpanded ? "true" : "false")"
+                                @onclick="() => _manageExpanded = !_manageExpanded">
+                            Manage @(_manageExpanded ? "▴" : "▾")
+                        </button>
+                        @if (NeedsApiSetup)
+                        {
+                            <a href="configuration"
+                               class="btn btn-warning btn-sm flex-shrink-0"
+                               data-testid="home-setup-config"
+                               title="Connect your AI API keys">
+                                Setup keys
+                            </a>
+                        }
+                    </div>
+
+                    <div class="home-project-cost d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-2"
+                         data-testid="home-project-cost">
+                        @if (_costLoading && _costEstimateUsd is null && _costActualUsd is null)
+                        {
+                            <span class="small text-muted">Loading cost…</span>
+                        }
+                        else
+                        {
+                            <span class="small">
+                                <span class="text-muted">Estimate</span>
+                                <strong class="ms-1" data-testid="home-cost-estimate">@FormatUsd(_costEstimateUsd)</strong>
+                                @if (!string.IsNullOrWhiteSpace(_costResolution))
+                                {
+                                    <span class="text-muted ms-1">(@_costResolution</span>
+                                    @if (_costVideoRate is > 0)
+                                    {
+                                        <span class="text-muted"> · @FormatUsd(_costVideoRate)/s</span>
+                                    }
+                                    <span class="text-muted">)</span>
+                                }
+                            </span>
+                            <span class="text-muted small d-none d-sm-inline">·</span>
+                            <span class="small">
+                                <span class="text-muted">Spent</span>
+                                <strong class="ms-1" data-testid="home-cost-spent">@FormatUsd(_costActualUsd)</strong>
+                            </span>
+                            <a href="/cost" class="small ms-sm-1" data-testid="home-cost-details">Details</a>
+                        }
+                    </div>
+
+                    @if (_manageExpanded && hasActive)
+                    {
+                        <div class="home-manage-panel mb-3 p-2 rounded border border-secondary border-opacity-25">
+                            @{
+                                var id = _projects.Active?.Id ?? ActiveProject.ProjectId ?? "";
+                                var p = activeMeta ?? _projects.Projects.FirstOrDefault(x =>
+                                    string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
+                                var canManage = p is not null && (Session.IsAdmin ||
+                                    string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase));
+                            }
+                            @if (p is not null)
+                            {
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    @if (!string.IsNullOrWhiteSpace(p.ParentProjectId) && canManage)
+                                    {
+                                        <a class="btn btn-sm btn-outline-warning"
+                                           href="projects/@id/review-contribution?originProjectId=@p.ParentProjectId">
+                                            Diff
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
+                                                @onclick="() => SyncOriginAsync(id, p.ParentProjectId!)">
+                                            Sync origin
+                                        </button>
+                                    }
+                                    @if (canManage)
+                                    {
+                                        <select class="form-select form-select-sm w-auto"
+                                                value="@p.VisibilityMode"
+                                                disabled="@_busy"
+                                                @onchange="(e) => ChangeVisibilityAsync(id, e.Value?.ToString())">
+                                            <option value="Private">Private</option>
+                                            <option value="Public">Public (Read-Only)</option>
+                                            <option value="Open">Public (Forkable)</option>
+                                        </select>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
+                                                @onclick="BeginRenameAsync">
+                                            Rename
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
+                                                @onclick="() => OpenCollaboratorsModal(id)">
+                                            Collaborate
+                                        </button>
+                                        @if (_historyUrls.TryGetValue(id, out var historyUrl) && !string.IsNullOrWhiteSpace(historyUrl))
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
+                                                    @onclick="() => OpenHistoryAsync(historyUrl)">
+                                                GitHub
+                                            </button>
+                                        }
+                                    }
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" disabled="@_busy"
+                                            @onclick="() => BeginDeleteAsync(id, p.Label ?? p.Title ?? id)">
+                                        Delete
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="small text-muted mb-0">No project details to manage.</p>
+                            }
+                        </div>
+                    }
+
+                    @if (_showRename && hasActive)
+                    {
+                        <div class="border border-secondary border-opacity-50 rounded p-3 mt-2 bg-dark bg-opacity-75 text-white shadow-sm">
+                            <div class="fw-semibold small text-light mb-2">Rename project</div>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <input class="form-control form-control-sm flex-grow-1 bg-white text-dark border-secondary fw-medium"
+                                       style="min-width: 10rem; color: #111111 !important; background-color: #ffffff !important;"
+                                       data-testid="home-rename-project-name"
+                                       value="@_renameName"
+                                       @oninput="OnRenameNameInput"
+                                       disabled="@_busy"
+                                       maxlength="80"
+                                       placeholder="New display name"
+                                       aria-label="Rename project" />
+                                <button class="btn btn-success btn-sm"
+                                        data-testid="home-rename-project-save"
+                                        disabled="@(_busy || string.IsNullOrWhiteSpace(_renameName))"
+                                        @onclick="ConfirmRenameAsync">
+                                    Save name
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm text-light border-secondary"
+                                        disabled="@_busy"
+                                        @onclick="CancelRename">
+                                    Cancel
+                                </button>
+                            </div>
+                            <div class="form-text text-muted mt-1">Changes the display name only — project id stays the same.</div>
+                        </div>
+                    }
+
+                    @if (_deleteId is not null)
+                    {
+                        <div class="border border-danger border-opacity-50 rounded p-3 mt-2 bg-dark bg-opacity-75 text-white shadow-sm">
+                            <p class="small mb-2 text-white">
+                                Delete <strong>@_deleteLabel</strong>? This removes the project folder and all its files.
+                            </p>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-danger btn-sm" disabled="@_busy" @onclick="ConfirmDeleteAsync">Delete project</button>
+                                <button class="btn btn-outline-secondary btn-sm" disabled="@_busy" @onclick="CancelDelete">Cancel</button>
+                            </div>
+                        </div>
+                    }
+
+                    <StudioProcessStrip Active="@HomeActiveStep" FullStudio="true" />
+                }
+                else
+                {
+                    @* Empty studio: brand + pick/create only. *@
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2 min-w-0">
+                            <img src="/favicon.png" alt="" width="36" height="36" class="rounded-2 shadow-sm flex-shrink-0" />
+                            <div class="min-w-0">
+                                <div class="small text-muted">Full studio</div>
+                                <h1 class="home-top__title mb-0">Choose a film</h1>
+                                <div class="home-top__sub">Import a book, cast, estimate, film</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-sm"
+                                data-testid="home-new-project"
+                                disabled="@_busy"
+                                @onclick="OpenNewProjectAsync">
+                            + New project
+                        </button>
+                    </div>
+
+                    @if (ActiveProject.Status is { XaiConfigured: false })
+                    {
+                        <StudioProcessStrip Active="setup" FullStudio="true" />
+                    }
+
+                    @if (_projects.Projects.Count == 0 && !_showNew)
+                    {
+                        <p class="small text-muted mb-0">No projects yet — create one to start Book → Cast → Film.</p>
+                    }
+                    else if (_projects.Projects.Count > 0)
+                    {
+                        <div class="list-group project-list">
+                            @foreach (var p in _projects.Projects)
+                            {
+                                var id = p.Id ?? "";
+                                <button type="button"
+                                        class="list-group-item list-group-item-action d-flex align-items-center justify-content-between gap-2"
+                                        data-testid="@($"home-project-{id}")"
+                                        disabled="@_busy"
+                                        @onclick="() => OpenProjectAsync(id)">
+                                    <span class="text-truncate fw-semibold">@(p.Label ?? p.Title ?? id)</span>
+                                    <span class="badge @VisibilityBadgeClass(p.VisibilityMode) small fw-normal flex-shrink-0">
+                                        @VisibilityBadgeText(p.VisibilityMode)
+                                    </span>
+                                </button>
+                            }
+                        </div>
+                    }
                 }
 
-                @if (_showNew && Session.IsLoggedIn)
+                @if (_showNew)
                 {
-                    <div class="border border-secondary border-opacity-50 rounded p-3 mb-3 bg-dark bg-opacity-75 text-white shadow-sm">
+                    <div class="border border-secondary border-opacity-50 rounded p-3 mt-3 bg-dark bg-opacity-75 text-white shadow-sm">
                         <div class="fw-semibold small text-light mb-2">Create New Project</div>
                         @if (ActiveProject.Status is not null && !ActiveProject.Status.XaiConfigured)
                         {
                             <div class="alert alert-warning py-1 px-2 small mb-2">
-                                ⚠️ <strong>Notice:</strong> No AI provider connected yet.
-                                <a href="configuration" class="alert-link">Connect your AI provider →</a>
-                                before story import.
+                                No AI provider connected yet — finish <strong>Setup</strong> (step 0) first.
+                                <a href="configuration" class="alert-link">Open Setup →</a>
                             </div>
                         }
                         <div class="d-flex flex-wrap align-items-center gap-2">
@@ -142,236 +459,85 @@
                         </div>
                     </div>
                 }
-
-                @if (_projects is null)
-                {
-                    <p class="text-muted mb-0">Loading…</p>
-                }
-                else if (_projects.Projects.Count == 0 && !_showNew)
-                {
-                    <p class="text-muted mb-0">No projects yet. Click <strong>New project</strong> to get started.</p>
-                }
-                else if (_projects.Projects.Count > 0)
-                {
-                    <div class="list-group project-list">
-                        @foreach (var p in _projects.Projects)
-                        {
-                            var id = p.Id ?? "";
-                            var active = string.Equals(id, _projects.Active?.Id, StringComparison.OrdinalIgnoreCase);
-                            var canManage = Session.IsAdmin ||
-                                string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase);
-                            // One place for visibility: dropdown when owner can edit; badge only when they cannot.
-                            var showVisibilityBadge = !(active && canManage);
-                            <div class="list-group-item list-group-item-action p-2 overflow-hidden @(active ? "active" : null)">
-                                 <div class="d-flex align-items-center justify-content-between gap-1 min-w-0 w-100">
-                                     <button type="button"
-                                             class="btn border-0 bg-transparent text-start p-1 project-list__pick min-w-0 flex-grow-1 text-truncate @(active ? "text-white" : null)"
-                                             data-testid="@($"home-project-{id}")"
-                                             data-project-id="@id"
-                                             data-project-active="@(active ? "true" : "false")"
-                                             title="Click to open project"
-                                             disabled="@_busy"
-                                             @onclick="() => OpenProjectAsync(id)">
-                                         <strong class="text-truncate d-inline-block mw-100">@(p.Label ?? p.Title ?? id)</strong>
-                                     </button>
-                                     @if (!string.IsNullOrWhiteSpace(p.ParentProjectId))
-                                     {
-                                         <span class="badge bg-secondary ms-1 small fw-normal flex-shrink-0" title="Forked from @p.ParentProjectId">🍴 Fork of @p.ParentProjectId</span>
-                                     }
-                                     @if (showVisibilityBadge)
-                                     {
-                                         @if (string.Equals(p.VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase))
-                                         {
-                                             <span class="badge bg-success ms-1 small fw-normal flex-shrink-0" title="Public (forkable)">🍴 Public (Forkable)</span>
-                                         }
-                                         else if (string.Equals(p.VisibilityMode, "Public", StringComparison.OrdinalIgnoreCase))
-                                         {
-                                             <span class="badge bg-info text-dark ms-1 small fw-normal flex-shrink-0" title="Public (read-only)">👁️ Public (Read-Only)</span>
-                                         }
-                                         else
-                                         {
-                                             <span class="badge bg-dark border border-secondary text-muted ms-1 small fw-normal flex-shrink-0" title="Private">🔒 Private</span>
-                                         }
-                                     }
-                                 </div>
-                                 @if (active)
-                                 {
-                                     <div class="d-flex align-items-center gap-1 flex-wrap mt-1 pt-1 border-top border-secondary border-opacity-25 w-100">
-                                         @if (!string.IsNullOrWhiteSpace(p.ParentProjectId) && canManage)
-                                         {
-                                             <a class="btn btn-sm btn-outline-warning"
-                                                href="projects/@id/review-contribution?originProjectId=@p.ParentProjectId"
-                                                title="Review line-by-line diffs before syncing">
-                                                 🔍 Diff
-                                             </a>
-                                             <button type="button"
-                                                     class="btn btn-sm btn-outline-light"
-                                                     disabled="@_busy"
-                                                     @onclick="() => SyncOriginAsync(id, p.ParentProjectId!)">
-                                                 🔄 Sync
-                                             </button>
-                                         }
-                                         @if (canManage)
-                                         {
-                                             <select class="form-select form-select-sm bg-dark text-white border-secondary w-auto py-1 px-2"
-                                                     value="@p.VisibilityMode"
-                                                     title="Who can see or fork this project"
-                                                     disabled="@_busy"
-                                                     @onchange="(e) => ChangeVisibilityAsync(id, e.Value?.ToString())">
-                                                 <option value="Private">🔒 Private</option>
-                                                 <option value="Public">👁️ Public (Read-Only)</option>
-                                                 <option value="Open">🍴 Public (Forkable)</option>
-                                             </select>
-                                             <button type="button"
-                                                     class="btn btn-sm btn-outline-light py-1 px-2"
-                                                     disabled="@_busy"
-                                                     @onclick="() => OpenCollaboratorsModal(id)">
-                                                 Collaborate
-                                             </button>
-                                             @if (_historyUrls.TryGetValue(id, out var historyUrl) && !string.IsNullOrWhiteSpace(historyUrl))
-                                             {
-                                                 <button type="button"
-                                                         class="btn btn-sm btn-light py-1 px-2"
-                                                         data-testid="home-view-history"
-                                                         title="Open package history"
-                                                         disabled="@_busy"
-                                                         @onclick="() => OpenHistoryAsync(historyUrl)">
-                                                     GitHub
-                                                 </button>
-                                             }
-                                             @if (_revisionHashes.TryGetValue(id, out var revHash) && !string.IsNullOrWhiteSpace(revHash))
-                                             {
-                                                 <span class="badge text-bg-light font-monospace text-dark"
-                                                       title="Last saved revision"
-                                                       style="font-size: 0.7rem;">@ShortHash(revHash)</span>
-                                             }
-                                         }
-                                         <button type="button"
-                                                 class="btn btn-sm btn-outline-danger py-1 px-2 ms-auto"
-                                                 title="Delete project"
-                                                 disabled="@_busy"
-                                                 @onclick="() => BeginDeleteAsync(id, p.Label ?? p.Title ?? id)">
-                                             🗑️
-                                         </button>
-                                     </div>
-                                 }
-                             </div>
-                        }
-                    </div>
-                }
-
-
-                @if (_deleteId is not null)
-                {
-                    <div class="border border-danger border-opacity-50 rounded p-3 mt-3 bg-dark bg-opacity-75 text-white shadow-sm">
-                        <p class="small mb-2 text-white">
-                            Delete <strong>@_deleteLabel</strong>? This removes the project folder and all its files.
-                        </p>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-danger btn-sm"
-                                    disabled="@_busy"
-                                    @onclick="ConfirmDeleteAsync">
-                                Delete project
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm"
-                                    disabled="@_busy"
-                                    @onclick="CancelDelete">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                }
             </div>
         </div>
-    </div>
+    }
+}
 
-    <div class="col-md-7">
-        @if (ActiveProject.HasProject)
+@* Demo films always visible under either mode *@
+<div class="card home-showcase-card mb-3" data-testid="home-demo-films-card">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+            <div class="min-w-0">
+                <div class="ptm-adapt-kicker mb-1">Page to Movie channel</div>
+                <div class="fw-semibold fs-5 mb-0">Demo films</div>
+                <div class="small text-muted text-truncate" title="@_demoShowcaseHint">@_demoShowcaseHint</div>
+            </div>
+            <a href="/demo" class="btn btn-sm btn-primary flex-shrink-0" data-testid="home-open-demo-gallery">
+                Open gallery →
+            </a>
+        </div>
+        @if (_publicDemos.Count > 0)
         {
-            <div class="card mb-3 border-primary shadow-sm">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <span class="fw-bold fs-6">🎬 Active Project: @ActiveProject.ProjectId</span>
-                    <a href="configuration" class="btn btn-sm btn-light fw-semibold">⚙️ Configuration &amp; Services</a>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted small mb-3">
-                        Work through the film production workflow steps below or switch projects in the list to the left.
-                    </p>
-
-                    <div class="row g-2">
-                        <div class="col-6 col-md-3">
-                            <a href="adaptation" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center">
-                                <span class="fs-2 mb-1">📜</span>
-                                <strong class="small">1. Adaptation</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Screenplay &amp; Shots</span>
-                            </a>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <a href="characters" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanCharacters ? "" : "disabled opacity-50")">
-                                <span class="fs-2 mb-1">👥</span>
-                                <strong class="small">2. Characters</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Cast &amp; Portraits</span>
-                            </a>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <a href="scenes" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanScenes ? "" : "disabled opacity-50")">
-                                <span class="fs-2 mb-1">🎬</span>
-                                <strong class="small">3. Scenes</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Clips &amp; Music</span>
-                            </a>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <a href="review" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanReview ? "" : "disabled opacity-50")">
-                                <span class="fs-2 mb-1">✅</span>
-                                <strong class="small">4. Review</strong>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Full Cut &amp; Publish</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+            <div class="home-showcase-thumbs" aria-label="Recent demo films">
+                @foreach (var d in _publicDemos.Take(4))
+                {
+                    var yt = YouTubeVideoId.Extract(d.YoutubeId) ?? YouTubeVideoId.Extract(d.YoutubeUrl);
+                    var href = yt is not null
+                        ? YouTubeVideoId.WatchUrl(yt)
+                        : (!string.IsNullOrWhiteSpace(d.YoutubeUrl) && Uri.TryCreate(d.YoutubeUrl.Trim(), UriKind.Absolute, out _)
+                            ? d.YoutubeUrl!.Trim()
+                            : "/demo");
+                    var thumb = yt is not null
+                        ? YouTubeVideoId.ThumbnailUrl(yt, "mqdefault")
+                        : null;
+                    <a class="home-showcase-thumb"
+                       href="@href"
+                       target="@(yt is not null || href.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? "_blank" : null)"
+                       rel="@(yt is not null || href.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? "noopener noreferrer" : null)"
+                       title="@d.Title">
+                        @if (thumb is not null)
+                        {
+                            <img src="@thumb" alt="" loading="lazy" />
+                        }
+                        else
+                        {
+                            <span class="home-showcase-thumb__ph" aria-hidden="true">▶</span>
+                        }
+                        <span class="home-showcase-thumb__label">@d.Title</span>
+                    </a>
+                }
             </div>
         }
-
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <span>🌟 Studio Showcase &amp; Film Gallery</span>
-                <a href="/demo" class="btn btn-sm btn-outline-info">View All Demos →</a>
-            </div>
-            <div class="card-body">
-                <p class="small text-muted mb-3">
-                    Explore film adaptations produced with PageToMovie. Select any story from the project menu to start editing, or create a new project.
-                </p>
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="border border-secondary rounded p-3 bg-dark bg-opacity-50 h-100 d-flex flex-column justify-content-between">
-                            <div>
-                                <div class="badge bg-danger mb-2">Gothic Drama</div>
-                                <h6 class="fw-bold text-white mb-1">The Tell-Tale Heart</h6>
-                                <p class="small text-muted mb-2">Edgar Allan Poe's chilling masterpiece adapted into cinematic video with orchestrations by Suno AI.</p>
-                            </div>
-                            <a href="/demo" class="btn btn-sm btn-outline-light w-100 mt-2">Watch Demo Film</a>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="border border-secondary rounded p-3 bg-dark bg-opacity-50 h-100 d-flex flex-column justify-content-between">
-                            <div>
-                                <div class="badge bg-primary mb-2">Animation / Storybook</div>
-                                <h6 class="fw-bold text-white mb-1">Buster &amp; Nick</h6>
-                                <p class="small text-muted mb-2">Character-locked visual story featuring hero animals and stylized continuous video clips.</p>
-                            </div>
-                            <a href="/demo" class="btn btn-sm btn-outline-light w-100 mt-2">Watch Demo Film</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
+
 
 <ProjectCollaboratorsModal IsOpen="_showCollaboratorsModal" ProjectId="_collaboratorsProjectId" OnClose="CloseCollaboratorsModal" />
 
 @code {
+    /// <summary>Show Setup keys only while personal BYOK studio keys are missing.</summary>
+    private bool NeedsApiSetup =>
+        ActiveProject.Status is { XaiConfigured: false };
+
+    /// <summary>Default home = easy start. Full studio hides easy cards and shows project picker.</summary>
+    private bool ShowEasyHome => !_fullStudioHome;
+
+    /// <summary>Only the real current step is highlighted. Setup (0) until keys exist, then pipeline.</summary>
+    private string HomeActiveStep
+    {
+        get
+        {
+            if (ActiveProject.Status is { XaiConfigured: false })
+                return "setup";
+            if (!ActiveProject.HasProject) return "book";
+            if (!ActiveProject.CanCharacters) return "book";
+            if (!ActiveProject.CanEstimate) return "cast";
+            if (!ActiveProject.CanScenes) return "estimate";
+            return "film";
+        }
+    }
+
     private bool? _healthOk;
     private bool _busy;
     private string? _error;
@@ -403,6 +569,14 @@
     private JobSnapshot? _job;
     private List<JobSnapshot> _myJobs = new();
     private bool _showNew;
+    private bool _showRename;
+    private string _renameName = "";
+    /// <summary>Home defaults to a one-row project picker; full project management
+    /// (visibility, collaborate, delete, fork/sync) is opt-in via "Manage".</summary>
+    private bool _manageExpanded;
+    /// <summary>When true, show project picker / active project; hide easy-start card.</summary>
+    private bool _fullStudioHome;
+
     private string _newName = "";
     private ElementReference _nameInputRef;
     private string? _deleteId;
@@ -412,6 +586,31 @@
     private bool _jobsExpanded;
     /// <summary>Null = follow auto rules; otherwise honor last user click.</summary>
     private bool? _jobsUserPreference;
+    /// <summary>Titles of real public demos (never invented marketing names).</summary>
+    private string _demoShowcaseHint = "Loading gallery…";
+    private List<DemoListItem> _publicDemos = new();
+
+    /// <summary>Planning estimate for the full film (draft path) from cost report.</summary>
+    private double? _costEstimateUsd;
+    /// <summary>Ledger actual spend for this project (catalog list rates).</summary>
+    private double? _costActualUsd;
+    private string? _costResolution;
+    private double? _costVideoRate;
+    private bool _costLoading;
+
+    private void EnterFullStudio()
+    {
+        _fullStudioHome = true;
+        _manageExpanded = false;
+    }
+
+    private void ExitFullStudio()
+    {
+        _fullStudioHome = false;
+        _manageExpanded = false;
+        _showNew = false;
+        _showRename = false;
+    }
 
     private async Task ToggleNewProjectAsync()
     {
@@ -425,6 +624,89 @@
         }
     }
 
+    /// <summary>"+ New" in the compact bar: opens Manage and the create-project form together.</summary>
+    private async Task OpenNewProjectAsync()
+    {
+        _fullStudioHome = true;
+        _manageExpanded = true;
+        if (!_showNew)
+            await ToggleNewProjectAsync();
+        else
+            StateHasChanged();
+    }
+
+    /// <summary>Compact picker &lt;select&gt; — switches the active project without navigating away.</summary>
+    private async Task OnPickerChangedAsync(ChangeEventArgs e)
+    {
+        var id = e.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(id))
+            await SelectProjectAsync(id);
+    }
+
+    private static string VisibilityBadgeClass(string? mode) => mode?.Trim().ToLowerInvariant() switch
+    {
+        "open" => "bg-success",
+        "public" => "bg-info text-dark",
+        _ => "bg-dark border border-secondary text-muted",
+    };
+
+    private static string VisibilityBadgeText(string? mode) => mode?.Trim().ToLowerInvariant() switch
+    {
+        "open" => "🍴 Forkable",
+        "public" => "👁️ Public",
+        _ => "🔒 Private",
+    };
+
+    private static string FormatUsd(double? amount)
+    {
+        if (amount is null) return "—";
+        return amount.Value.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+    }
+
+    private async Task RefreshProjectCostAsync()
+    {
+        var pid = ActiveProject.ProjectId ?? _projects?.Active?.Id;
+        if (string.IsNullOrWhiteSpace(pid) || !Session.IsLoggedIn)
+        {
+            _costEstimateUsd = null;
+            _costActualUsd = null;
+            _costResolution = null;
+            _costVideoRate = null;
+            _costLoading = false;
+            return;
+        }
+
+        _costLoading = true;
+        try
+        {
+            // Match film resolution so Home estimate tracks 480p / 720p / 1080p rates.
+            string? draftRes = null;
+            try
+            {
+                var cfg = await Engine.GetConfigAsync(pid);
+                if (cfg?.Config is not null &&
+                    cfg.Config.TryGetValue("resolution", out var resEl) &&
+                    resEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                    draftRes = resEl.GetString();
+            }
+            catch { /* use server default */ }
+
+            var dto = await Engine.GetCostAsync(pid, draftResolution: draftRes);
+            var s = dto?.Cost?.Summary;
+            _costEstimateUsd = s?.FullFilmAllDraftUsd;
+            _costActualUsd = s?.ActualUsd;
+            _costResolution = dto?.Cost?.DraftResolution ?? draftRes;
+            _costVideoRate = dto?.Cost?.OutputRateDraft;
+        }
+        catch
+        {
+            // Keep prior numbers if refresh fails mid-session
+        }
+        finally
+        {
+            _costLoading = false;
+        }
+    }
 
     private bool CanConfirmDelete => _deleteId is not null;
 
@@ -453,6 +735,7 @@
         Hub.JobLog += OnJobLog;
         try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
         await LoadAsync();
+        await LoadDemoShowcaseAsync();
         try
         {
             await Hub.StartAsync();
@@ -480,6 +763,12 @@
             }
             catch { /* ignore */ }
             SyncJobsExpandedFromJob();
+            // Jobs write cost_ledger on completion — keep home spend fresh.
+            if (snap.Status is "done" or "error" or "cancelled")
+            {
+                try { await RefreshProjectCostAsync(); }
+                catch { /* ignore */ }
+            }
             StateHasChanged();
         });
     }
@@ -504,6 +793,43 @@
             l.Contains("[Grok] Submit", StringComparison.OrdinalIgnoreCase) ||
             l.Contains("video-extend", StringComparison.OrdinalIgnoreCase) ||
             l.Contains("reference-to-video", StringComparison.OrdinalIgnoreCase));
+
+
+    /// <summary>Fill the home gallery blurb from real public demos only.</summary>
+    private async Task LoadDemoShowcaseAsync()
+    {
+        try
+        {
+            // ListDemos triggers throttled channel sync — cards are real YouTube uploads only.
+            var all = await Engine.ListDemosAsync(12, "new");
+            _publicDemos = all
+                .Where(d => !string.IsNullOrWhiteSpace(d.YoutubeId) && !string.IsNullOrWhiteSpace(d.Title))
+                .Take(4)
+                .ToList();
+            if (_publicDemos.Count == 0)
+            {
+                _demoShowcaseHint = "No films on the Page to Movie channel yet";
+            }
+            else
+            {
+                var titles = _publicDemos
+                    .Select(d => (d.Title ?? d.ProjectId ?? "").Trim())
+                    .Where(s => s.Length > 0)
+                    .Take(4)
+                    .ToList();
+                if (titles.Count == 0)
+                    _demoShowcaseHint = $"{_publicDemos.Count} film{(_publicDemos.Count == 1 ? "" : "s")} on the wall";
+                else if (_publicDemos.Count > titles.Count)
+                    _demoShowcaseHint = string.Join(", ", titles) + $" · +{_publicDemos.Count - titles.Count} more";
+                else
+                    _demoShowcaseHint = string.Join(", ", titles);
+            }
+        }
+        catch
+        {
+            _demoShowcaseHint = "Community films made with PageToMovie";
+        }
+    }
 
     private async Task LoadAsync()
     {
@@ -536,6 +862,7 @@
 
             _projects = await Engine.GetProjectsAsync();
             await ActiveProject.RefreshFromApiAsync(Engine);
+            await RefreshProjectCostAsync();
 
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -584,6 +911,53 @@
             await CreateProjectAsync();
     }
 
+
+    private void BeginRenameAsync()
+    {
+        _showRename = true;
+        _manageExpanded = true;
+        _showNew = false;
+        _renameName = ActiveProject.Label
+            ?? _projects?.Active?.Label
+            ?? _projects?.Active?.Title
+            ?? ActiveProject.ProjectId
+            ?? "";
+    }
+
+    private void OnRenameNameInput(ChangeEventArgs e) => _renameName = e.Value?.ToString() ?? "";
+
+    private void CancelRename()
+    {
+        _showRename = false;
+        _renameName = "";
+    }
+
+    private async Task ConfirmRenameAsync()
+    {
+        var id = _projects?.Active?.Id ?? ActiveProject.ProjectId;
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(_renameName)) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var updated = await Engine.RenameProjectAsync(id, _renameName.Trim());
+            _showRename = false;
+            _message = $"Renamed to “{updated?.Label ?? _renameName.Trim()}”.";
+            await LoadAsync();
+            if (ActiveProject.HasProject)
+                await ActiveProject.RefreshFromApiAsync(Engine);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private async Task CreateProjectAsync()
     {
         if (string.IsNullOrWhiteSpace(_newName)) return;
@@ -603,8 +977,9 @@
             var created = _projects?.Active;
             if (created?.Id is { Length: > 0 } cid)
             {
-                ActiveProject.Set(cid, created.Label ?? created.Title ?? cid);
+                ActiveProject.Set(cid, created.Label ?? created.Title ?? cid, created.ParentProjectId, created.StudioPath);
                 await ActiveProject.RefreshReadinessAsync(Engine);
+            await RefreshProjectCostAsync();
             }
             else
                 await ActiveProject.RefreshFromApiAsync(Engine);
@@ -632,9 +1007,11 @@
         {
             await Engine.ActivateProjectAsync(id);
             _projects = await Engine.GetProjectsAsync();
-            var a = _projects?.Active;
-            ActiveProject.Set(id, a?.Label ?? a?.Title ?? id);
+            var a = _projects?.Active ?? _projects?.Projects.FirstOrDefault(p =>
+                string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+            ActiveProject.Set(id, a?.Label ?? a?.Title ?? id, a?.ParentProjectId, a?.StudioPath);
             await ActiveProject.RefreshReadinessAsync(Engine);
+            await RefreshProjectCostAsync();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

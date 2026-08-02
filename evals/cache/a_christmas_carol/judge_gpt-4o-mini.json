@@ -1,0 +1,100 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A maintains high fidelity to the source material, with strong character introductions and engaging dialogue, making it suitable for production."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B effectively captures the essence of the original text, though it has minor pacing issues that could be improved."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C is a solid adaptation but lacks some clarity in character introductions and pacing, which affects its overall impact."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.33,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Inconsistent character descriptions",
+        "Pacing issues"
+      ],
+      "rationale": "Screenplay D has some adaptation strengths but suffers from inconsistent character descriptions and pacing issues that hinder its readiness for production."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E effectively captures the narrative and character essence, though it could benefit from tighter pacing."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.33,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Inconsistent character descriptions",
+        "Pacing issues"
+      ],
+      "rationale": "Screenplay F presents a decent adaptation but has issues with character clarity and pacing that make it unsuitable for production."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay C",
+    "Screenplay D",
+    "Screenplay F"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it excels in adaptation fidelity and dialogue authenticity. Weakest: Screenplay D because it has inconsistent character descriptions and pacing issues that hinder its effectiveness.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "DD0D45DB8BC6D745A8E3940275AACA04B1B253EAF3A9AE7CEE75A03864A0208B"
+}

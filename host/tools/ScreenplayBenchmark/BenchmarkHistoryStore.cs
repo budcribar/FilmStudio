@@ -14,6 +14,39 @@ public sealed class HistoricalBenchmarkRun
     public string BookTitle { get; set; } = "";
     public string BookPath { get; set; } = "";
     public bool IsMockRun { get; set; }
+
+    /// <summary>
+    /// The --reasoning-effort value this run was invoked with ("low"/"medium"/"high"/"max"),
+    /// or "" for the provider's default (no reasoningEffort passed). Applies uniformly to every
+    /// candidate and judge in the run — it's a single CLI flag, not per-model. Runs at different
+    /// effort levels are not directly comparable, so this must stay visible in history/dashboard
+    /// rather than silently blending a "default effort" score with a "max effort" one.
+    /// </summary>
+    public string ReasoningEffort { get; set; } = "";
+
+    /// <summary>Sampling temperature used for screenplay generation.</summary>
+    public double SamplingTemperature { get; set; } = 0.2;
+
+    /// <summary>
+    /// Sampling temperature used for peer judging — deliberately independent of
+    /// <see cref="SamplingTemperature"/>. Judge repeatability (temp 0 recommended) is a separate
+    /// question from what temperature best generates a screenplay; a v5 comparison found generation
+    /// results at temp 0 mixed (helped one model, hurt another on the same book), so the two must
+    /// never be forced to the same value.
+    /// </summary>
+    public double JudgeTemperature { get; set; } = 0.0;
+
+    /// <summary>
+    /// Short Git revision of the commit that last changed prompts/book_to_fountain.txt. Benchmark
+    /// startup rejects an uncommitted prompt, so every newly-recorded run is reproducible from the
+    /// repository history rather than from an untracked content checksum.
+    /// </summary>
+    public string PromptVersion { get; set; } = "";
+
+    /// <summary>True when a legacy untagged run was mapped to the prompt revision inferred from
+    /// its timestamp, rather than recorded directly by the benchmark runner.</summary>
+    public bool PromptVersionInferred { get; set; }
+
     public List<ModelScoreSummary> ModelScores { get; set; } = new();
     public Dictionary<string, Dictionary<string, double>> JudgeMatrix { get; set; } = new();
     public List<string> SelfBiasNotes { get; set; } = new();

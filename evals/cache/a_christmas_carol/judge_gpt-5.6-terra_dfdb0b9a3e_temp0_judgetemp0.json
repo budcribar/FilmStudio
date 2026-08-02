@@ -1,0 +1,52 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 6.5,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 6,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 5.92,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invents named merchant characters not present in the source (MR. HALES, MR. CHISWICK, MR. LUTTRIDGE), triggering the rubric\u0027s severe fidelity penalty.",
+        "The screenplay does not follow the mandated Fountain element-spacing syntax, making downstream parsing unreliable.",
+        "The required VISION_META sidecar is absent.",
+        "Several headings and beats are not clip-directable as written, especially the combined \u0022EXT. BLEAK MOOR / LIGHTHOUSE / SHIP - NIGHT\u0022 sequence, which contains multiple locations and events in one scene.",
+        "Multiple dialogue turns substantially exceed the shared prompt\u0027s 35-word maximum."
+      ],
+      "rationale": "This is the more complete adaptation of the two: it preserves nearly the entire emotional and narrative spine, including the charitable collectors, Marley, all three spirits, Fan, Fezziwig, Belle, the Cratchit celebration and bereavement, the debtors\u0027 relief, Old Joe, the grave, and Scrooge\u0027s redemption. However, invented named merchants impose a severe fidelity score cap under the stated rubric. Its visual descriptions are generally vivid and useful, with clear age separation for BOY SCROOGE and YOUNG SCROOGE, but recurring supporting characters are unevenly reintroduced and some collective or generic character identities are weak reference-image keys. The script is often highly cinematic, yet several enormous scenes compress too many beats for 5\u201310 second clips, notably the Cratchit dinner, the Past bedroom-to-memory progression, and the moor/lighthouse/ship/Fred montage. Dialogue is largely faithful Dickens, but long uninterrupted speeches are impractical at the required clip duration. Sound coverage is the strongest category: cues are specific, atmospheric, and particularly effective in the ghost scenes and emotional peaks.",
+      "promptImprovementSuggestion": "Add a hard per-scene clip-density rule: each scene may contain no more than three distinct visual beats or one location-specific dramatic turn; split any montage, travel sequence, meal progression, or revelation that crosses locations into separate headed scenes."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 2.5,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 6.5,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invents several named source characters, including MR. HARKER, MR. WELLS, MR. BLAKE, MR. PIPER, and MR. GRANT, triggering the rubric\u0027s severe fidelity penalty.",
+        "Drops the future debtors/Caroline sequence, a major source beat that demonstrates the relief caused by Scrooge\u0027s death.",
+        "Uses unstable or noncompliant dialogue identities, including BELLE\u0027S HUSBAND and the collective cue THE CRATCHITS, rather than independent stable cast tokens.",
+        "The screenplay does not follow the mandated Fountain element-spacing syntax, making downstream parsing unreliable.",
+        "The required VISION_META sidecar is absent."
+      ],
+      "rationale": "B is more disciplined in scene construction and is generally better suited to short AI-video clips. It gives most principal recurring characters concrete, stable visual anchors, divides the story into clearer physical locations, and uses concise visual action with consistently useful sound beds. The pacing is stronger than A\u0027s because it reduces sprawling montage material and gives the major ghosts, Cratchits, grave reveal, and redemption clean turns. Its central adaptation problem is serious: it omits the Caroline/debtors sequence, which is a distinct and important proof that Scrooge\u0027s death brings relief rather than grief. It also invents multiple proper names for otherwise unnamed source figures, which the rubric expressly identifies as a severe fidelity failure. Dialogue is more clip-manageable than A\u0027s but occasionally paraphrases or adds material, and the collective CRATCHITS cue is not cast-safe. The sound work is consistently concrete and emotionally appropriate, though a few major scenes rely on a single general ambience rather than a more developed progression of sound and music beats.",
+      "promptImprovementSuggestion": "Change the closed-cast naming rule so unnamed source speakers must use stable neutral role tokens rather than invented proper names, and explicitly prohibit collective dialogue cues; require each individual speaker to have one reusable non-possessive token."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because its scene segmentation, concise visual beats, character look-locking, and sound integration are materially more production-oriented for 5\u201310 second clips, despite its severe fidelity failures. Weakest: Screenplay A because, while it covers more of Dickens\u0027s plot, its overloaded scenes, multi-location heading, excessive dialogue lengths, and invalid downstream formatting make it less directly producible as an AI-clip screenplay.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "1C6A4CCA8A33A15E8A1862495F63E201F8536C5DE65A604A693B6F31E4EF77B4"
+}

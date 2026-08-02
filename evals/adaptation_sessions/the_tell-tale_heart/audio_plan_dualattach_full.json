@@ -1,0 +1,160 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "score_intent": "Gothic psychological horror underscore, low strings and sparse piano in a dim minor key, opening hushed and oppressive around 70 BPM with a nervous pulse under the confessional address, gradually thickening with dissonant mid-register strings and a thin high harmonic as the narrator insists he is not mad, tempo and tension climb through the middle as he describes disease-sharpened senses and acute hearing with subtle metallic overtones and heartbeat-like low percussion, peaking in a taut sustained string cluster on the claim that he hears all things in heaven and earth, then easing back to a calmer but still uneasy persuasive hush with restrained cello as he invites the listener to hearken, never fully resolving",
+      "dynamics_arc": "Intensity rises from clip 1 through clips 2\u20133, holds a sustained peak across clips 4\u20137 on the sharpened senses and hearing, then releases on clip 8 into forced calm.",
+      "peak_clip_number": 6,
+      "timing": "Continuous underscore across ~45s; swell through mid-scene hearing monologue; soft landing on final calm delivery",
+      "diegetic_sound": "Faint old-house creaks, distant wood settling, subtle room tone of a shuttered corridor; no crowd or street noise",
+      "silence_or_exclusions": "Avoid melodic heroism, bright major keys, and any cheerful resolution; keep percussion minimal until later scenes",
+      "alternatives": [
+        "Solo low clarinet and dry strings only",
+        "Almost silent bed of room tone with occasional dissonant piano stabs"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "score_intent": "Dark chamber horror cue, very sparse at first with near-silence and a single low drone under the pitch-dark bedroom, tempo slow around 60\u201375 BPM, idea-motif enters as a quiet obsessive repeating figure on muted strings and prepared piano as the murderous thought is conceived and begins to haunt, remaining cool and passionless through the denial of gold and insult, then darkening sharply in the final third with a cold high string scrape and sinking bass as the vulture eye is named, blood-running-cold stinger without full orchestral explosion",
+      "dynamics_arc": "Starts minimal on clip 1, rises through clips 2\u20133 as the idea takes hold, dips slightly on clips 4\u20135, then peaks hard on clip 6 with the eye revelation.",
+      "peak_clip_number": 6,
+      "timing": "Sparse open, obsessive motif mid-scene, cold stinger in final seconds on the eye",
+      "diegetic_sound": "Heavy silence of fastened shutters, faint breath of sleeping old man, wood bed creak, no exterior night life",
+      "silence_or_exclusions": "No romantic or sentimental strings on \u0027I loved the old man\u0027; no treasure-glitter sparkle cues",
+      "alternatives": [
+        "Only sub-bass drone and intermittent high harmonic",
+        "Music box warped into minor for the haunting idea"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "score_intent": "Daylight mask of kindness over the same gothic palette: warmer but slightly false major-tinged chamber strings and soft woodwinds at a gentle walking tempo around 80 BPM, polite and hearty on the surface as morning light enters and the narrator greets the old man, never fully shedding a thin uneasy undercurrent in the low strings so the kindness feels performed, remaining modest and restrained without climax, fading politely as he withdraws",
+      "dynamics_arc": "Gentle rise into clip 2 on the hearty greeting, then soft plateau and slight release through clips 3\u20134.",
+      "peak_clip_number": 2,
+      "timing": "Brief ~25s cue; light swell on entrance and greeting only",
+      "diegetic_sound": "Soft morning room tone, unshuttered light ambience, floorboards under bold footsteps, old man\u2019s frail bed shift",
+      "silence_or_exclusions": "No night-horror drones or heartbeat; avoid irony stingers that telegraph the lie too hard",
+      "alternatives": [
+        "Solo warm cello with faint dissonant aftertaste",
+        "Near-diegetic silence with only light domestic ambience"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "score_intent": "Stealth thriller underscore, extremely quiet and meticulous, slow tempo near 50\u201360 BPM built from held string harmonics, soft leather-friction textures, and barely-there timpani skin, tension ratchets as the latch turns and the door cracks, building through a long controlled crescendo of close-miked creaks and tightening dissonant intervals while the head and closed lantern take an hour to enter, peaking on a proud cold wisdom motif\u2014still hushed, never loud\u2014as he boasts a madman would not be so wise, precision over volume throughout",
+      "dynamics_arc": "Clip 1 establishes taut quiet, clip 2 raises stakes at midnight latch, clips 3\u20135 sustain the highest stealth intensity through the slow head entry and wise-madman boast.",
+      "peak_clip_number": 5,
+      "timing": "Long slow build across ~35s matching the hour-long head placement; peak late without a crash",
+      "diegetic_sound": "Metal latch turning oh-so-gently, aged door fiber creak, tin lantern scrape, narrator\u2019s controlled breath",
+      "silence_or_exclusions": "No sudden hits, no full orchestra, no melody that breaks stealth; exclude any heartbeat yet",
+      "alternatives": [
+        "Pure foley-led tension with only a single sustained cello harmonic",
+        "Clockwork-slow pizzicato pulse under the latch work"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "score_intent": "Ritual night cue, hushed gothic suspense at slow tempo, thin high strings and a cautious hinge-creak motif as the lantern is undone and a single ray falls, brief tense peak on the creak and ray, then flattening into frustrated stasis and hollow unresolved chords when the eye remains closed and the work is impossible, seven-nights sense of repetition suggested by a circling minor ostinato that never resolves, withdrawing into near silence with the lantern",
+      "dynamics_arc": "Clip 1 medium tension on the sleeping figure, peaks on clip 2 lantern undo and creak, then settles lower through clips 3\u20135 on the failed ritual and Evil Eye motive.",
+      "peak_clip_number": 2,
+      "timing": "Peak early-mid on lantern open; long quiet tail for the seven-night impossibility",
+      "diegetic_sound": "Lantern hinge creak once, thin mechanical click, sleeping breath, door closing without sound",
+      "silence_or_exclusions": "No triumph, no eye-open stinger; keep ray moment delicate not shocking",
+      "alternatives": [
+        "Ostinato only on muted viola",
+        "Almost no score\u2014hinge creak and breath carry the scene"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "score_intent": "Return of the false-daylight kindness cue, soft chamber warmth and gentle tempo around 80 BPM, bold but light entrance music with polite woodwind courtesy over a barely audible uneasy bass, hearty inquiry colored as sincere, remaining modest and unsuspicious through the profound-old-man irony, no build to horror, clean polite fade as daytime reassurance closes",
+      "dynamics_arc": "Slight lift on clip 2 greeting, otherwise even and low across clips 1, 3, and 4.",
+      "peak_clip_number": 2,
+      "timing": "Short ~25s; small swell only on the morning inquiry",
+      "diegetic_sound": "Daybreak room tone, bold footsteps, bedclothes rustle, ordinary domestic quiet",
+      "silence_or_exclusions": "No carry-over of night stealth drones; no foreshadowing stingers",
+      "alternatives": [
+        "Same motif as S3 slightly thinner",
+        "Diegetic-only morning ambience with no score"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "score_intent": "Eighth-night escalation of stealth horror, slower than a watch hand, ultra-controlled low strings and suppressed breath rhythm around 45\u201355 BPM, private triumph enters as a stifled chuckle-colored woodwind flicker over mounting power, tension stays high as the door pushes steadily into pitch black, then spikes in the final moments with a sharp metallic slip accent on the tin fastening\u2014dry, close, startling but not yet the murder climax\u2014leaving a frozen held dissonance into the next scene",
+      "dynamics_arc": "Opens already high on clips 1\u20132 extreme caution and power, dips slightly on clips 3\u20134 chuckle and bed startle, climbs again on clip 5 steady push, peaks on clip 6 thumb slip.",
+      "peak_clip_number": 6,
+      "timing": "Continuous high tension ~40s; sharp accent in last seconds on lantern slip",
+      "diegetic_sound": "Latch slower than a minute hand, suppressed chuckle, bed movement, tin fastening slip click, pitch-dark room silence",
+      "silence_or_exclusions": "No full yell or heartbeat tattoo yet; save orchestral explosion for S8",
+      "alternatives": [
+        "Breath and foley only until the metallic slip stinger",
+        "Sub-bass power drone with single piano slip note"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "score_intent": "Full Tell-Tale Heart murder climax score in gothic orchestral horror: opens on a sudden frozen silence after the old man\u2019s cry, then a long almost-still hour of terror with only a low dread drone, stifled groans colored by distant mournful strings, and Death\u2019s shadow as a cold expanding cluster; spider-thread ray on the open Evil Eye brings a piercing high sustained tone and rising fury; introduce a muffled heartbeat tattoo\u2014low drum or muted timpani wrapped in cotton\u2014that starts quiet and slow then quickens and loudens like a war drum through the middle third, driving tempo from near-stillness up past 120 BPM; fury crest breaks into a violent full orchestral hit and brass-scream stab as the narrator yells and throws the lantern open, chaotic percussion and shrieking strings through the leap, single shriek, and smothering under the bed; after the kill, music collapses to a ghastly relieved gaiety\u2014thin major flicker over residual muffled heartbeats that gradually slow and cease\u2014ending on hollow near-silence and a final cold unresolved string as the eye will trouble him no more",
+      "dynamics_arc": "Clip 1 shock peak on \u201CWho\u2019s there?\u201D, sustained high dread through clips 2\u201310 stillness and listening, eye-open spike on clip 11, heartbeat-driven climb through clips 12\u201317, absolute climax on clips 18\u201319 yell and murder, then release through clips 20\u201322 as the heart ceases and death is confirmed.",
+      "peak_clip_number": 18,
+      "timing": "Long ~150s arc: freeze and hour-long creep, heartbeat acceleration mid-to-late, explosive hit on yell/lantern/leap, extended decay after death",
+      "diegetic_sound": "Old man cry \u201CWho\u2019s there?\u201D, bed creaks, stifled groan, lantern crevice open, muffled heartbeat growing, loud yell, single shriek, bed dragged and dropped, residual muffled beats dying out, final silence of the chamber",
+      "silence_or_exclusions": "Preserve true stillness in the hour-long freeze\u2014no busy scoring; do not romanticize the kill; cut heroic or redemptive tones after death; heartbeat must feel diegetic then merge with score",
+      "alternatives": [
+        "Heartbeat-only engine under sparse strings until the yell stinger",
+        "Full orchestra from eye-open onward with choir cluster on the smothering"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "score_intent": "Dark gothic psychological horror underscore, sparse low strings, muted bass clarinet and dry wooden ticks at a hushed 70 BPM, clinical and methodical rather than gory, opens nearly silent under lantern-lit labor, stays restrained and surgical through the dismemberment and plank work with only thin dissonant harmonics, warms into a brief sly self-satisfied swell of low strings and a soft ironic chuckle-color on the cunning board replacement and tub ha-ha, then thins to cold near-silence broken by a distant four-o\u0027clock bell partial and a hollow remote door-knock motif",
+      "dynamics_arc": "Restrained dread holds through clips 1-4, rises to a quiet smug peak at clips 5-6, then releases into sparse unease at clip 7.",
+      "peak_clip_number": 6,
+      "timing": "Sparse bed under full ~60s; slight swell only on board-replacement and ha-ha third; cut thin before distant bell and knock",
+      "diegetic_sound": "lantern hiss, soft wet cutting implied not lingered, plank scrapes, boards seating flush, tub drip, distant bell toll, firm street-door knocking below",
+      "silence_or_exclusions": "no melodic themes, no jump-scare stingers, no lush romance strings; keep blood work dry and unsensational",
+      "alternatives": [
+        "solo prepared piano with body-tap rhythms",
+        "almost-silent foley bed with only sub-bass dread tone"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "score_intent": "Period gothic night underscore, restrained strings and soft low piano at a deceptively calm 80 BPM, opens sparse and pre-dawn cold on the heavy street door, brightens into false lightness and ordered composure as the narrator descends with a light heart, stays suave and controlled under the officers\u0027 entrance and the dream-excuse, firms into confident inviting resolve on search-search well without ever dropping the thin undercurrent of dread",
+      "dynamics_arc": "Low nocturnal open at clip 1, lifts with false ease through clips 2-4, peaks on confident invitation at clips 5-6.",
+      "peak_clip_number": 6,
+      "timing": "Gentle rise across ~40s; brightest and firmest in final third on the invitation to search",
+      "diegetic_sound": "heavy period door unlatch and creak, night street hush, footsteps on stair, officers\u0027 calm entry, coat cloth and boot scuffs",
+      "silence_or_exclusions": "no triumphant fanfare, no comedy cues; keep politeness slightly uncanny",
+      "alternatives": [
+        "solo clarinet and pizzicato bass, courtly but hollow",
+        "drone-free quiet with only door and foot foley plus faint harmonic pad"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "score_intent": "Quiet gothic house-tour underscore, soft sustained strings and muted harp at a composed walking 75 BPM, confident and almost serene as the narrator leads officers through corridors and undisturbed rooms, singular ease in the harmony with only a hairline of unresolved dissonance beneath, gently settles softer as the officers remain convinced and at ease",
+      "dynamics_arc": "Steady moderate ease through clips 1-2, soft release as conviction settles at clip 3.",
+      "peak_clip_number": 2,
+      "timing": "Even bed across ~30s; slight soften in final third when officers look convinced",
+      "diegetic_sound": "corridor footsteps, lantern or candle soft move, door latches, quiet room tone, officers\u0027 measured steps",
+      "silence_or_exclusions": "no suspense stingers, no heartbeat yet, no sharp accents; avoid telegraphing later breakdown",
+      "alternatives": [
+        "solo viola long tones with soft wood creaks",
+        "near-silent ambient house tone only"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "score_intent": "Psychological gothic horror score in one continuous arc: opens with polite restrained chamber strings and low woodwinds at a calm 70 BPM as officers are seated in wild audacity of triumph above the corpse, a low dull quick heartbeat-like timpani tattoo enters softly and grows more distinct and relentless beneath forced cheer, tempo and density climb through the middle as strings turn dissonant and agitated and the narrator pales and gasps, builds into frantic pacing figures, foaming brass stabs and grating chair-drag percussion through the raving, then explodes into a shattering fortissimo orchestral confession hit on villains dissemble no more and tear up the planks, then cuts abruptly to stunned near-silence with only a dying heartbeat echo under the officers\u0027 freeze",
+      "dynamics_arc": "Controlled triumph clips 1-3, mounting ringing dread clips 4-6, escalating breakdown clips 7-11, absolute peak confession clips 12-13, collapse to stunned quiet clip 14.",
+      "peak_clip_number": 13,
+      "timing": "Slow fuse first third of ~90s, steady climb second third, full detonation final third then hard cut to near silence on freeze",
+      "diegetic_sound": "chair legs on boards, pleasant officer chatter underscored then ignored, narrator breath and gasp, heavy pacing strides, chair swing and grate on floorboards, final shrieking confession, sudden room freeze silence",
+      "silence_or_exclusions": "no score after confession hit beyond dying heartbeat echo; officers must seem to hear nothing until the end; avoid generic jump stingers before the true peak",
+      "alternatives": [
+        "heartbeat-centric percussion ensemble with strings only at climax",
+        "minimal piano cluster build into full orchestra scream then silence"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,425 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
+  "Timestamp": "2026-07-31 06:02:50 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "claude-opus-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 10,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 45,
+        "AvgWordsPerDialogue": 25.3,
+        "MaxWordsInSingleDialogue": 68,
+        "LongMonologueCount": 8,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "THE OLD MAN",
+          "OFFICER MULLEN",
+          "OFFICER DACE"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "8 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.5,
+      "AvgCharacterDisambiguation": 9.2,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": [
+        "grok-4: Invented asylum cell frame not present in source"
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 86,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 11,
+      "AvgJudgeRank": 2.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93.8,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 43,
+        "AvgWordsPerDialogue": 21.4,
+        "MaxWordsInSingleDialogue": 42,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "THE OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.2,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8.2,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.1,
+      "DisqualifyingFlags": [
+        "grok-4: Invented magistrate\u0027s chamber frame"
+      ]
+    },
+    {
+      "ModelId": "grok-4.20-reasoning",
+      "AnonymousLabel": "",
+      "CompositeScore": 82,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 10,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 5,
+        "TotalDialogueBlocks": 18,
+        "AvgWordsPerDialogue": 57.2,
+        "MaxWordsInSingleDialogue": 117,
+        "LongMonologueCount": 12,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "High average dialogue length (57.2 words/turn); speech beats risk clip overrun.",
+          "12 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 6.8,
+      "AvgAiVideoDirectibility": 7,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 7,
+      "AvgOverallQualitative": 7.5,
+      "DisqualifyingFlags": [
+        "grok-4.5: Multi-night rituals and multi-step concealment crammed into single Action paragraphs unsuited to 5-10s clip breakdown",
+        "grok-4.5: Recurring characters lack consistent re-stated wardrobe/build locks on reappearance"
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-luna",
+      "AnonymousLabel": "",
+      "CompositeScore": 81.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 10,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 91.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 7,
+        "TotalDialogueBlocks": 58,
+        "AvgWordsPerDialogue": 30.4,
+        "MaxWordsInSingleDialogue": 64,
+        "LongMonologueCount": 20,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "THE OLD MAN"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "High average dialogue length (30.4 words/turn); speech beats risk clip overrun.",
+          "20 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.8,
+      "AvgCharacterDisambiguation": 4.5,
+      "AvgAiVideoDirectibility": 7,
+      "AvgDramaticPacing": 7.8,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 7.5,
+      "DisqualifyingFlags": [
+        "grok-4.5: Narrator is deliberately never fully seen (sleeve/hands only) with no lockable full-body/face wardrobe description, so AI reference images cannot be stabilized",
+        "grok-4.5: Heavy stacked V.O. over minimal observable action makes many beats unusable as 5-10s clips"
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 80.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 6,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 7,
+        "TotalDialogueBlocks": 38,
+        "AvgWordsPerDialogue": 21.4,
+        "MaxWordsInSingleDialogue": 38,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MR. VALE"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.2,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 7.2,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 7.5,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 7.1,
+      "DisqualifyingFlags": [
+        "grok-4: Invented character name MR. VALE for the unnamed old man"
+      ]
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 77.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 5,
+      "AvgJudgeRank": 5.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 37,
+        "AvgWordsPerDialogue": 19.3,
+        "MaxWordsInSingleDialogue": 70,
+        "LongMonologueCount": 7,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS",
+          "OFFICER CARTER",
+          "OFFICER DAVIS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "7 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 4.2,
+      "AvgCharacterDisambiguation": 8,
+      "AvgAiVideoDirectibility": 7.2,
+      "AvgDramaticPacing": 6.8,
+      "AvgDialogueAuthenticity": 5.5,
+      "AvgSoundDesignMusic": 7.8,
+      "AvgOverallQualitative": 6.6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Severe invented dialogue throughout (Old Man breakfast banter; multi-line officer small talk; modernized chat) violating dialogue-fidelity hard rules",
+        "grok-4.5: Source summarized \u2018they chatted\u2019 beats expanded into multiple non-book spoken lines",
+        "grok-4: Invented asylum cell frame not in source"
+      ]
+    },
+    {
+      "ModelId": "gemini-3.1-pro-preview",
+      "AnonymousLabel": "",
+      "CompositeScore": 73.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 32,
+        "AvgWordsPerDialogue": 23.4,
+        "MaxWordsInSingleDialogue": 59,
+        "LongMonologueCount": 7,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS",
+          "OFFICER MILLER"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "7 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 4.2,
+      "AvgCharacterDisambiguation": 6.5,
+      "AvgAiVideoDirectibility": 6.5,
+      "AvgDramaticPacing": 6,
+      "AvgDialogueAuthenticity": 6,
+      "AvgSoundDesignMusic": 7,
+      "AvgOverallQualitative": 6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Incomplete/malformed Fountain title page (missing proper Credit/Source pattern)",
+        "grok-4.5: Substantial invented officer and narrator chit-chat beyond the source",
+        "grok-4.5: Thin unstable visual descriptions for recurring supporting cast",
+        "grok-4: Invented asylum cell frame",
+        "grok-4: Inconsistent use of NARRATOR vs THE NARRATOR token"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-luna": 7.33,
+      "gpt-5.6-terra": 7.5,
+      "claude-opus-5": 9.17,
+      "gemini-3.6-flash": 6,
+      "grok-4.20-reasoning": 6.5,
+      "gpt-5.6-sol": 8.58,
+      "gemini-3.1-pro-preview": 5.83
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 6.75,
+      "grok-4.20-reasoning": 8.42,
+      "claude-opus-5": 7.33,
+      "gemini-3.1-pro-preview": 6.25,
+      "gemini-3.6-flash": 7.17,
+      "gpt-5.6-sol": 7.58,
+      "gpt-5.6-luna": 7.67
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "claude-opus-5": 1,
+      "gpt-5.6-sol": 2,
+      "gpt-5.6-terra": 3,
+      "gpt-5.6-luna": 4,
+      "grok-4.20-reasoning": 5,
+      "gemini-3.1-pro-preview": 6,
+      "gemini-3.6-flash": 7
+    },
+    "grok-4": {
+      "grok-4.20-reasoning": 1,
+      "gpt-5.6-luna": 2,
+      "gpt-5.6-sol": 3,
+      "gemini-3.6-flash": 4,
+      "claude-opus-5": 5,
+      "gemini-3.1-pro-preview": 6,
+      "gpt-5.6-terra": 7
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Extremely faithful to Poe\u2019s wording and spine beats, with strong confession climax and clear heartbeat escalation. Catastrophically weak on cast locking: the protagonist is defined as unseen, which breaks the AI clip pipeline\u2019s need for a stable character reference. Directibility suffers from long V.O. blocks riding thin visuals (hands, ray, door crack) without enough discrete filmable micro-actions per clip.",
+      "gpt-5.6-terra": "Solid, filmable closed-cast adaptation with clear looks for Narrator, Mr. Vale, and three officers. Fidelity is good but not elite: period name for the old man is allowed, yet several connective spoken lines and compressions thin iconic texture. Action is generally clip-sized; some V.O. stacks still run long. Ending formatting glitch is minor. Production-ready as a workable draft with revision, not a showcase.",
+      "claude-opus-5": "Best overall package: stable confession-frame (bare stone cell) with mandated returns, dense peak interleaving of book voice and filmable micro-beats, locked looks for Narrator/Old Man/officers, and near-quotation dialogue. One brief invented officer pleasantry is the only notable blemish. Heartbeat, deathwatch, lantern, and board sounds are staged so short AI clips can carry tension without internal monologue dumps.",
+      "gemini-3.6-flash": "Visually competent and cast-clear, with usable heartbeat SFX writing, but fidelity collapses under invented conversational padding the book never speaks. Iconic lines are diluted by movie-ized exchanges and on-camera whispers that replace narration. That single dimension failure is disqualifying regardless of mid-pack averages.",
+      "grok-4.20-reasoning": "Wording stays close to Poe and the plot spine is complete, but craft is montage-heavy and description-thin. Seven nights, kill, and burial are summarized in blocks a director cannot schedule as discrete short clips. Officers are named yet barely visualized; sound beds are mostly left to V.O. rather than staged Action.",
+      "gpt-5.6-sol": "Strong second place: magistrate-chamber frame, precise cast looks, excellent diegetic sound writing (creak, deathwatch, thud, grate), and disciplined peak density. Slight fidelity ding where the old man\u2019s private self-soothing becomes on-camera dialogue. Minor end-marker formatting noise. Highly directable for short AI clips and greenlight-ready with light polish.",
+      "gemini-3.1-pro-preview": "Covers the spine but with weaker craft: broken title page, invented multi-line police banter, thinner identity locks, and less disciplined clip-sized staging than C/F. Heartbeat sound is present but structure and fidelity are not production-grade."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Severe fidelity penalty for inventing MR. VALE; otherwise solid descriptions and book dialogue but long V.O. blocks hurt directibility and pacing for short clips.",
+      "grok-4.20-reasoning": "Highest fidelity with no invented names or frames, consistent OLD MAN and NARRATOR descriptions, book-accurate dialogue, and concrete visual actions suitable for clips.",
+      "claude-opus-5": "Strong character descriptions and book dialogue but major fidelity hit from adding an unmentioned cell frame and multiple on-camera narration scenes.",
+      "gemini-3.1-pro-preview": "Multiple invented elements including cell frame plus inconsistent character tokens and some paraphrased dialogue reduce scores across fidelity and disambiguation.",
+      "gemini-3.6-flash": "Good use of book dialogue and visual actions but fidelity lowered by added cell frame; pacing works for clips but invented element disqualifies.",
+      "gpt-5.6-sol": "Excellent consistent descriptions and directible actions but fidelity penalty from invented frame location used for narration.",
+      "gpt-5.6-luna": "Strong fidelity and dialogue with no invented names or frames but low disambiguation score because NARRATOR is never fully seen, violating filmable identity requirement."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay C because it best unites book-faithful diction, a stable on-camera confession frame with proper returns, lockable cast looks, and short-clip-directable micro-beats at the murder and police climax. Weakest: Screenplay D because extensive invented Old Man and officer dialogue is a severe fidelity breach that makes the draft unusable despite competent visuals and sound.",
+    "grok-4": "Strongest: Screenplay B because it achieves the highest fidelity without any invented names, frames, or locations while delivering consistent character descriptions and clip-friendly visual actions. Weakest: Screenplay A because the invention of MR. VALE constitutes a severe source fidelity violation that immediately disqualifies the draft."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Require that the first on-screen appearance of every named speaking character include a complete lockable visual description (age/build/hair/face/wardrobe colors) and forbid \u2018never fully seen\u2019 protagonists unless the entire piece is strictly POV with no reverse angle on that character.",
+      "gpt-5.6-terra": "Mandate a concrete visual or diegetic-sound micro-beat (one short Action line) between every two consecutive V.O. blocks and cap unbroken V.O. runs at roughly two short cues before cutting back to picture.",
+      "claude-opus-5": "Require each scene to include at least one explicit diegetic sound cue written inside Action (not only implied by V.O.) plus an optional one-line music-bed mood so clip-level sound design does not rely on inference.",
+      "gemini-3.6-flash": "Add a hard rule that any dialogue not a near-quotation of words the source presents as spoken or clearly recited must be deleted or folded into Action; summarized \u2018they chatted/pleasantries\u2019 beats default to zero invented lines (Action only).",
+      "grok-4.20-reasoning": "Forbid multi-day or multi-step montages inside one Action paragraph; each 5\u201310 second filmable unit must be its own Action line, and any clear time/location purpose change must get a new scene heading.",
+      "gpt-5.6-sol": "Clarify that when the source reports what a character \u2018had been saying to himself\u2019 or only attributes inner supposition, those lines stay NARRATOR V.O. or Action\u2014not on-camera dialogue\u2014unless the book presents them as audible speech.",
+      "gemini-3.1-pro-preview": "Hard-require a complete Fountain title page (Title, Credit, Author, Source, Draft date) before any scene, and auto-flag drafts that give supporting roles multi-line invented conversations when the source only summarizes that people talked."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule that no names may be invented for any character not named in the source text; unnamed protagonists must use stable tokens like THE NARRATOR or THE OLD MAN.",
+      "grok-4.20-reasoning": "Add a rule requiring every V.O. passage longer than two sentences to be interleaved with at least one distinct visual or sound micro-beat action line.",
+      "claude-opus-5": "Add an explicit rule that no on-camera frame or location may be invented if it does not appear in the source text; all narration must use existing book locations or V.O. only.",
+      "gemini-3.1-pro-preview": "Add a rule requiring every recurring speaker to use the exact same ALL-CAPS token on every appearance with no variation.",
+      "gemini-3.6-flash": "Add a rule that any frame or recurring narration location must be justified by explicit source text or else default to V.O. without visual presence.",
+      "gpt-5.6-sol": "Add a rule prohibiting any new recurring location for narration unless the source text explicitly describes such a setting.",
+      "gpt-5.6-luna": "Add a rule that every named character must receive at least one concrete visual description of build, clothing, and defining features that remains consistent on every reappearance."
+    }
+  }
+}

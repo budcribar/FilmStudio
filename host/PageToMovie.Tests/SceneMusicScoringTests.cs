@@ -16,7 +16,7 @@ public class SceneMusicScoringTests
             string model,
             double temperature = 0.2,
             CancellationToken ct = default,
-            string? mode = null)
+            string? mode = null, string? reasoningEffort = null)
         {
             return Task.FromResult("Dramatic orchestral music with low cellos at 90 BPM");
         }

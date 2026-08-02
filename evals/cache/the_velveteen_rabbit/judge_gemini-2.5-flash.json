@@ -1,0 +1,108 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A provides a solid adaptation, covering key narrative beats without major deviations. Character descriptions are clear and consistent. However, its reliance on narration to summarize events, and occasional internal thoughts in action lines (\u0027feeling loved\u0027, \u0027feels ashamed\u0027), slightly reduces its AI video directibility and pacing for short, distinct clips. The lack of explicit sound/music cues is a minor missed opportunity."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B offers a faithful adaptation with good character disambiguation and consistent descriptions. The pacing is well-suited for short clips, breaking down the story into clear beats. While generally directible, some action lines lean slightly into internal states (\u0027quiet satisfaction glowing in his eyes\u0027, \u0027somber mood fills the room\u0027), which could be challenging for AI generation. Dialogue is authentic, and the overall structure is strong."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 10,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9.5,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 9.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C is an exceptional adaptation, demonstrating high fidelity to the source material, including specific minor characters and details. Character disambiguation is outstanding with vivid, consistent descriptions. The directibility is very strong, with mostly concrete action lines, and the pacing is excellent, breaking the story into distinct, impactful beats. Dialogue is authentic and well-structured. The only minor area for improvement is the absence of explicit sound/music cues."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D covers the main story beats but simplifies some details, leading to slightly lower fidelity. Character descriptions are adequate, though the \u0027WILD RABBITS\u0027 then \u0027WILD RABBIT\u0027 usage is a minor inconsistency. The primary weakness is in AI video directibility, with several action lines describing internal states (\u0027longing to become Real\u0027, \u0027feeling the warmth of love\u0027, \u0027Rabbit\u0027s heart sinks\u0027) that are difficult to visualize directly. Pacing is quick but sometimes feels summarized by narration."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 10,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 9.5,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 9.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E provides an excellent, highly faithful adaptation, incorporating many specific details from the book. Character disambiguation and visual consistency are outstanding. The pacing is superb, with granular scene breakdowns ideal for short video clips, and the narrative momentum is strong. Dialogue is authentic and well-preserved. While generally directible, a few action lines still contain internal thoughts (\u0027Rabbit endures, missing...\u0027, \u0027Joy breaks through him\u0027), which are minor points for refinement."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.58,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay F delivers a very good adaptation with strong fidelity and clear character descriptions. The pacing is effective, breaking the story into manageable beats for short clips. Dialogue is authentic and well-integrated. However, similar to other candidates, some action lines describe internal states (\u0027knows the nursery magic has happened\u0027, \u0027He has no hind legs\u0027) rather than purely observable actions, slightly impacting its AI video directibility score."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 10,
+      "characterDisambiguation": 10,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 10,
+      "dialogueAuthenticity": 10,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 9.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay G is an exceptional adaptation, demonstrating perfect fidelity to the source material, highly detailed and consistent character descriptions, and perfectly paced, directible beats for short video clips. Dialogue is verbatim and authentic, and the narrative flow is seamless. The \u0027Notes\u0027 section also indicates a strong visual approach. The only minor area for improvement is the absence of explicit sound/music cues, which is a common omission across all candidates."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay G",
+    "Screenplay C",
+    "Screenplay E",
+    "Screenplay F",
+    "Screenplay B",
+    "Screenplay A",
+    "Screenplay D"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay G because it demonstrates exceptional fidelity to the source material, highly detailed and consistent character descriptions, and perfectly paced, directible beats for short video clips. Weakest: Screenplay D because it frequently relies on internal monologues or mood descriptions that are difficult to translate into concrete visual actions for AI video generation, and its fidelity is slightly less precise.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "BA4AF8E59100C49AEC27EC8D1C63E9C6EB3245CF7939A65AAB9010913A4A4F64"
+}

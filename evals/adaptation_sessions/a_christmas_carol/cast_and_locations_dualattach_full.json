@@ -1,0 +1,1128 @@
+{
+  "cast_seeds": {
+    "characters": [
+      {
+        "key": "SCROOGE",
+        "display_name": "Ebenezer Scrooge",
+        "age_link": null,
+        "identity_anchors": "Elderly thin man; pointed nose; shrivelled cheek; stiffened gait; red-rimmed eyes; thin blue-tinged lips; frosty white rime on head, eyebrows and wiry chin; hard sharp flint-like features; cold self-contained solitary bearing; often carries low personal temperature in posture and expression.",
+        "source_evidence": "P25: squeezing wrenching grasping scraping clutching covetous old sinner; hard and sharp as flint; cold within froze old features, nipped pointed nose, shrivelled cheek, stiffened gait; eyes red, thin lips blue; frosty rime on head eyebrows wiry chin. P26-P28 solitary, iced office, avoided even by blind men\u0027s dogs.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "grating cold elderly male; caustic then later warm broken with emotion",
+        "wardrobe_variants": [
+          {
+            "key": "SCROOGE_COUNTING_HOUSE",
+            "description": "Dark severe day clothes of a City moneylender; great-coat buttoned to the chin when outdoors; sombre waistcoat and breeches; no ornament; severe practical winter layers against fog and frost.",
+            "source_facts": [
+              "P96 buttoning his great-coat to the chin",
+              "P25 tight-fisted hand at the grind-stone",
+              "P29 sat busy in counting-house Christmas Eve"
+            ],
+            "creative_direction": "Muted black/charcoal wool, high collar, worn but meticulously kept; no colour or cheer; thin frame emphasised by severe cut.",
+            "beats": [
+              "B1",
+              "B2",
+              "B3",
+              "B4",
+              "B5"
+            ]
+          },
+          {
+            "key": "SCROOGE_NIGHT_HOME",
+            "description": "Dressing-gown, slippers and nightcap; prepares gruel by low fire; later double-locked in chambers.",
+            "source_facts": [
+              "P108 took off cravat; put on dressing-gown and slippers and nightcap; sat down before the fire to take his gruel",
+              "P107 small fire; spoon and basin; little saucepan of gruel"
+            ],
+            "creative_direction": "Faded dark dressing-gown, plain nightcap, worn slippers; sparse domestic night look matching gloomy chambers.",
+            "beats": [
+              "B6",
+              "B7",
+              "B8",
+              "B9",
+              "B12",
+              "B13",
+              "B19",
+              "B26"
+            ]
+          },
+          {
+            "key": "SCROOGE_BOYHOOD",
+            "description": "Solitary neglected schoolboy; reading alone near feeble fire in bare schoolroom; later greeted by little sister Fan.",
+            "source_facts": [
+              "P244 solitary child neglected by friends left at school",
+              "P247 lonely boy reading near feeble fire",
+              "P260 little girl much younger addressed him as dear brother"
+            ],
+            "creative_direction": "Plain worn schoolboy clothes of early 19th century; thin, lonely, undersized for age; no luxury.",
+            "beats": [
+              "B9",
+              "B10"
+            ]
+          },
+          {
+            "key": "SCROOGE_APPRENTICE",
+            "description": "Young man apprentice at Fezziwig\u0027s; brisk with fellow-\u0027prentice Dick; joins Christmas Eve warehouse ball.",
+            "source_facts": [
+              "P280 Scrooge\u0027s former self now grown a young man came briskly in accompanied by fellow-\u0027prentice",
+              "P275 Was I apprenticed here"
+            ],
+            "creative_direction": "Simple apprentice waistcoat and shirtsleeves suitable for warehouse work then dancing; youthful energy before avarice sets in.",
+            "beats": [
+              "B10"
+            ]
+          },
+          {
+            "key": "SCROOGE_PRIME_BELLE",
+            "description": "Man in prime of life; face beginning to wear signs of care and avarice; eager greedy restless eye; seated with fair young girl in mourning-dress.",
+            "source_facts": [
+              "P303 older now man in prime of life; face begun to wear signs of care and avarice; eager greedy restless motion in the eye",
+              "P304 sat by side of fair young girl in mourning-dress"
+            ],
+            "creative_direction": "Respectable dark City clothes of rising man of business; still handsome but hardening; contrast with Belle\u0027s simplicity.",
+            "beats": [
+              "B11"
+            ]
+          },
+          {
+            "key": "SCROOGE_REFORMED_CHRISTMAS",
+            "description": "Best clothes; glowing laughing crying; light as feather; later early at office in accustomed clothes but transformed manner.",
+            "source_facts": [
+              "P696 dressed himself all in his best",
+              "P667 as light as a feather happy as an angel merry as a schoolboy",
+              "P697 walking with hands behind him regarded every one with delighted smile"
+            ],
+            "creative_direction": "Same silhouette as counting-house clothes but fresher, better brushed, open cheerful posture; Christmas morning brightness in face and step.",
+            "beats": [
+              "B26",
+              "B27",
+              "B28",
+              "B29",
+              "B30",
+              "B31"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MARLEY_GHOST",
+        "display_name": "Jacob Marley",
+        "age_link": null,
+        "identity_anchors": "Transparent ghost of Scrooge\u0027s dead partner; same face as in life; pigtail; ghostly spectacles turned up on forehead; livid colour; death-cold eyes; lower jaw that can drop to breast when bandage removed; body see-through so coat buttons visible behind.",
+        "source_evidence": "P100 Marley\u0027s face dismal light like bad lobster; spectacles on forehead; hair curiously stirred; eyes wide open motionless; livid. P116 same face pigtail usual waistcoat tights boots; chain clasped about middle of cash-boxes keys padlocks ledgers deeds heavy purses; body transparent. P142 bandage off jaw dropped.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "hollow sepulchral male; Marley\u0027s voice no doubt; cries of remorse",
+        "wardrobe_variants": [
+          {
+            "key": "MARLEY_GHOST_CHAINED",
+            "description": "Pigtail, usual waistcoat, tights and boots with bristling tassels; coat-skirts; folded kerchief/bandage bound about head and chin; long heavy chain wound about middle like a tail made of cash-boxes, keys, padlocks, ledgers, deeds and steel purses; transparent throughout.",
+            "source_facts": [
+              "P116 Marley in pigtail usual waistcoat tights and boots; tassels bristling; chain of cash-boxes keys padlocks ledgers deeds heavy purses wrought in steel; body transparent",
+              "P118 folded kerchief bound about head and chin",
+              "P142 taking off the bandage round its head jaw dropped"
+            ],
+            "creative_direction": "Spectral blue-livid skin; chain dull iron and brass with ledger and cash-box links clearly readable as business tools; hair and skirts agitated as by hot vapour; infernal atmosphere of own.",
+            "beats": [
+              "B6",
+              "B7",
+              "B8"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "BOB_CRATCHIT",
+        "display_name": "Bob Cratchit",
+        "age_link": null,
+        "identity_anchors": "Thin underpaid clerk; threadbare clothes; long white comforter; mild cheerful father; carries Tiny Tim on shoulder; darned brushed garments made to look seasonable.",
+        "source_evidence": "P30 clerk in dismal little cell Tank copying letters; white comforter; tried to warm at candle. P62 fifteen shillings a week wife and family. P97 long ends of white comforter dangling; no great-coat; ran home to Camden Town. P395 little Bob threadbare clothes darned up and brushed; Tiny Tim upon his shoulder; three feet of comforter exclusive of fringe.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "mild warm lower-middle London clerk; tremulous with feeling for Tim",
+        "wardrobe_variants": [
+          {
+            "key": "BOB_OFFICE",
+            "description": "Threadbare clerk\u0027s clothes; long white comforter dangling below waist; no great-coat; perched on stool in Tank with tiny fire.",
+            "source_facts": [
+              "P30 white comforter tried to warm himself at the candle",
+              "P97 long ends of his white comforter dangling below his waist for he boasted no great-coat"
+            ],
+            "creative_direction": "Faded ink-stained dark coat, thin waistcoat, darned elbows; comforter the only warmth splash of off-white.",
+            "beats": [
+              "B2",
+              "B3",
+              "B5",
+              "B30"
+            ]
+          },
+          {
+            "key": "BOB_CHRISTMAS_HOME",
+            "description": "Threadbare clothes darned and brushed to look seasonable; at least three feet of comforter exclusive of fringe; carries Tiny Tim; later mourning quiet.",
+            "source_facts": [
+              "P395 threadbare clothes darned up and brushed to look seasonable; Tiny Tim upon his shoulder; comforter exclusive of the fringe",
+              "P613 little Bob in his comforter"
+            ],
+            "creative_direction": "Same poor suit brushed; comforter prominent; Christmas Day modest dignity; later subdued mourning layers same clothes.",
+            "beats": [
+              "B15",
+              "B24"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "FRED",
+        "display_name": "Fred",
+        "age_link": null,
+        "identity_anchors": "Scrooge\u0027s nephew; young adult male; ruddy handsome face; sparkling eyes; cheerful glowing from cold walk; hearty contagious laugh; kind persistent good humour.",
+        "source_evidence": "P31 cheerful voice Scrooge\u0027s nephew. P33 heated with rapid walking in fog and frost all in a glow; face ruddy and handsome; eyes sparkled; breath smoked. P442 hearty laugh recognised as nephew\u0027s. P443 man more blest in a laugh.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "warm hearty young gentleman; laughing easily",
+        "wardrobe_variants": [
+          {
+            "key": "FRED_CHRISTMAS_EVE_VISIT",
+            "description": "Outdoor winter clothes suitable for rapid walking in fog and frost; cheerful nephew calling on uncle in counting-house.",
+            "source_facts": [
+              "P33 heated himself with rapid walking in the fog and frost; all in a glow"
+            ],
+            "creative_direction": "Good middle-class winter coat, scarf, gloves; healthy colour from cold; open friendly appearance opposite Scrooge.",
+            "beats": [
+              "B2",
+              "B3"
+            ]
+          },
+          {
+            "key": "FRED_PARTY",
+            "description": "Festive evening clothes at own bright dry gleaming dining-room party; host of games music and toast.",
+            "source_facts": [
+              "P441 bright dry gleaming room",
+              "P454 clustered round the fire by lamplight with dessert"
+            ],
+            "creative_direction": "Smart but not ostentatious evening wear; warm indoor layers; laughing host energy.",
+            "beats": [
+              "B16",
+              "B17",
+              "B29"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "GHOST_PAST",
+        "display_name": "Ghost of Christmas Past",
+        "age_link": null,
+        "identity_anchors": "Strange figure like a child yet not so like a child as like an old man viewed through supernatural medium diminished to child\u0027s proportions; white hair as if with age but unwrinkled face with tenderest bloom; long muscular arms and hands; delicately formed bare legs and feet; bright clear jet of light springing from crown of head; fluctuates in distinctness (one arm, one leg, twenty legs, head without body).",
+        "source_evidence": "P213 strange figure like a child yet like old man diminished; hair white as age yet face no wrinkle tenderest bloom; arms long muscular hands same; legs feet delicately formed bare; tunic purest white; lustrous belt; branch fresh green holly; dress trimmed summer flowers; jet of light from crown; extinguisher cap under arm. P214 fluctuated distinctness.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "soft gentle singularly low as if at a distance",
+        "wardrobe_variants": [
+          {
+            "key": "GHOST_PAST_APPARITION",
+            "description": "Tunic of purest white; lustrous sparkling belt; dress trimmed with summer flowers in contradiction of wintry holly branch held in hand; great extinguisher cap held under arm; bare limbs; light from head.",
+            "source_facts": [
+              "P213 tunic of the purest white; lustrous belt; branch of fresh green holly; dress trimmed with summer flowers; extinguisher for a cap which it now held under its arm; jet of light from crown"
+            ],
+            "creative_direction": "Ethereal white fabric catching own head-light; flowers vivid against holly; cap large conical extinguisher; body parts can dissolve and reform in gloom.",
+            "beats": [
+              "B9",
+              "B10",
+              "B11",
+              "B12"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "GHOST_PRESENT",
+        "display_name": "Ghost of Christmas Present",
+        "age_link": null,
+        "identity_anchors": "Jolly Giant glorious to see; dark brown long free curls; genial face sparkling eye open hand cheery voice unconstrained demeanour joyful air; bare capacious breast; bare feet; ages to grey hair by end of night.",
+        "source_evidence": "P350 jolly Giant glorious to see; glowing torch shape not unlike Plenty\u0027s horn. P354 clothed in one simple green robe or mantle bordered with white fur; capacious breast bare; feet bare; holly wreath set with shining icicles; dark brown curls long and free; genial face sparkling eye open hand cheery voice; antique scabbard no sword eaten with rust. P476 Ghost grew older hair grey.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "cheery booming genial giant; later sorrowful when showing Ignorance and Want",
+        "wardrobe_variants": [
+          {
+            "key": "GHOST_PRESENT_THRONE",
+            "description": "Simple green robe or mantle bordered with white fur hanging loosely bare breast; bare feet; holly wreath with icicles on head; antique rusted empty scabbard girded; holds glowing torch like Plenty\u0027s horn; later hair greys; two wretched children emerge from robe folds.",
+            "source_facts": [
+              "P354 green robe or mantle bordered with white fur; breast bare; feet bare; holly wreath shining icicles; scabbard eaten up with rust",
+              "P350 glowing torch",
+              "P483-P484 from foldings of its robe two children"
+            ],
+            "creative_direction": "Rich holly green velvet-like robe with thick white fur edge; monumental cheerful bulk; torch casts ruddy blessing light; scabbard visibly empty and rusted; children yellow meagre ragged wolfish when revealed.",
+            "beats": [
+              "B13",
+              "B14",
+              "B15",
+              "B16",
+              "B17",
+              "B18"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "GHOST_YET_TO_COME",
+        "display_name": "Ghost of Christmas Yet to Come",
+        "age_link": null,
+        "identity_anchors": "Tall stately Phantom; shrouded in deep black garment concealing head face form; nothing visible save one outstretched hand; mysterious presence fills solemn dread; silent; does not speak.",
+        "source_evidence": "P495 Phantom slowly gravely silently approached; scatter gloom and mystery. P496 shrouded in deep black garment concealed head face form left nothing visible save one outstretched hand. P497 tall and stately; mysterious presence solemn dread; neither spoke nor moved.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "silent; no voice",
+        "wardrobe_variants": [
+          {
+            "key": "GHOST_FUTURE_SHROUD",
+            "description": "Deep black garment/hooded shroud concealing all but one outstretched pointing hand; merges with night; dress bears Scrooge along.",
+            "source_facts": [
+              "P496 deep black garment which concealed its head its face its form and left nothing of it visible save one outstretched hand",
+              "P507 followed in the shadow of its dress which bore him up"
+            ],
+            "creative_direction": "Featureless black void of fabric; hand pale skeletal or gloved in black; movement slow grave; no face ever revealed; towering over Scrooge.",
+            "beats": [
+              "B19",
+              "B20",
+              "B21",
+              "B22",
+              "B23",
+              "B24",
+              "B25"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "TINY_TIM",
+        "display_name": "Tiny Tim",
+        "age_link": null,
+        "identity_anchors": "Very young crippled boy; little crutch; limbs supported by iron frame; withered little hand; thoughtful; plaintive little voice; fragile light to carry.",
+        "source_evidence": "P395 Alas for Tiny Tim he bore a little crutch and had his limbs supported by an iron frame. P401 as good as gold; hoped people saw him in church because he was a cripple. P413 God bless us every one. P414 withered little hand. P612 very light to carry.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "plaintive frail child\u0027s voice",
+        "wardrobe_variants": [
+          {
+            "key": "TIM_CHRISTMAS",
+            "description": "Poor child\u0027s clothes; little crutch; iron frame supporting limbs; carried on Bob\u0027s shoulder; later absent (vacant seat) or remembered in mourning.",
+            "source_facts": [
+              "P395 little crutch; limbs supported by an iron frame",
+              "P414 sat very close to father\u0027s side upon little stool; withered little hand"
+            ],
+            "creative_direction": "Patched but clean poor boy clothes; visible brace/crutch; pale delicate face; small stature emphasised.",
+            "beats": [
+              "B15",
+              "B24",
+              "B31"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MRS_CRATCHIT",
+        "display_name": "Mrs. Cratchit",
+        "age_link": null,
+        "identity_anchors": "Bob\u0027s wife; dressed poorly but brave in ribbons; proud loving mother; resents Scrooge; capable housekeeper of goose and pudding.",
+        "source_evidence": "P387 dressed out but poorly in a twice-turned gown but brave in ribbons which are cheap and make a goodly show for sixpence. P423 wish I had him here I\u0027d give him a piece of my mind; odious stingy hard unfeeling man. P405 made the gravy; P407 pudding like speckled cannon-ball.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "brisk warm working-class mother; sharp when naming Scrooge",
+        "wardrobe_variants": [
+          {
+            "key": "MRS_CRATCHIT_CHRISTMAS",
+            "description": "Twice-turned gown poor but brave in cheap ribbons; apron for cooking; later sewing mourning things for Tim.",
+            "source_facts": [
+              "P387 poorly in a twice-turned gown but brave in ribbons",
+              "P600 mother and daughters engaged in sewing"
+            ],
+            "creative_direction": "Faded turned dress with bright ribbon trim for Christmas show; practical apron; flushed from cooking; later subdued same gown for mourning.",
+            "beats": [
+              "B15",
+              "B24"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "BELLE",
+        "display_name": "Belle",
+        "age_link": null,
+        "identity_anchors": "Fair young woman; gentle steady; later comely matron with daughter; released Scrooge when gold became his idol.",
+        "source_evidence": "P304 fair young girl in a mourning-dress; eyes tears. P305 another idol has displaced me; golden one. P329 beautiful young girl so like that last until saw her now a comely matron sitting opposite her daughter.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "soft gentle firm young woman",
+        "wardrobe_variants": [
+          {
+            "key": "BELLE_BREAK_ENGAGEMENT",
+            "description": "Mourning-dress; fair young girl releasing Scrooge from engagement.",
+            "source_facts": [
+              "P304 fair young girl in a mourning-dress"
+            ],
+            "creative_direction": "Simple dark mourning gown of modest means; no jewellery; dignified restraint.",
+            "beats": [
+              "B11"
+            ]
+          },
+          {
+            "key": "BELLE_MATRON",
+            "description": "Comely matron in comfortable modest home; winter fire; surrounded by noisy happy children; daughter beside her.",
+            "source_facts": [
+              "P329 comely matron sitting opposite her daughter; room full of comfort; more children than Scrooge could count"
+            ],
+            "creative_direction": "Warm modest matron dress; domestic comfort; maternal glow opposite earlier mourning.",
+            "beats": [
+              "B11"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "FEZZIWIG",
+        "display_name": "Mr. Fezziwig",
+        "age_link": null,
+        "identity_anchors": "Old gentleman; Welsh wig; capacious waistcoat; comfortable oily rich fat jovial voice; laughs all over himself from shoes to organ of benevolence; wonderful agility; calves shine like moons in dance.",
+        "source_evidence": "P276 old gentleman in a Welsh wig sitting behind such a high desk. P278 rubbed hands; adjusted capacious waistcoat; laughed all over himself from his shoes to his organ of benevolence; comfortable oily rich fat jovial voice. P288 positive light appeared to issue from Fezziwig\u0027s calves; shone like moons; cut so deftly appeared to wink with his legs.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "comfortable oily rich fat jovial elderly master",
+        "wardrobe_variants": [
+          {
+            "key": "FEZZIWIG_BALL",
+            "description": "Welsh wig; capacious waistcoat; clothes of prosperous jovial warehouse master; dances Sir Roger de Coverley with Mrs Fezziwig.",
+            "source_facts": [
+              "P276 Welsh wig",
+              "P278 capacious waistcoat",
+              "P288 Fezziwig cut so deftly"
+            ],
+            "creative_direction": "Bright prosperous 18th/early 19th merchant clothes; full waistcoat; wig slightly askew with energy; infectious physical comedy in dance.",
+            "beats": [
+              "B10"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "FAN",
+        "display_name": "Fan",
+        "age_link": null,
+        "identity_anchors": "Little girl much younger than boy Scrooge; tiny hands; delicate creature a breath might have withered; large heart; mother of Fred.",
+        "source_evidence": "P260 little girl much younger than the boy came darting in putting her arms about his neck often kissing him dear dear brother. P261 bring you home. P267 always a delicate creature whom a breath might have withered but she had a large heart. P271 Your nephew.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "bright childish eager girl",
+        "wardrobe_variants": [
+          {
+            "key": "FAN_SCHOOL_VISIT",
+            "description": "Child\u0027s winter travel clothes; little girl arriving by coach to fetch brother from school for Christmas.",
+            "source_facts": [
+              "P260 little girl much younger",
+              "P263 sent me in a coach to bring you"
+            ],
+            "creative_direction": "Simple period girl\u0027s cloak and dress; small stature; glowing with affection.",
+            "beats": [
+              "B10"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "PORTLY_GENTLEMEN",
+        "display_name": "Portly gentlemen",
+        "age_link": null,
+        "identity_anchors": "Two portly gentlemen pleasant to behold; books and papers; hats off; seeking provision for Poor and destitute at festive season.",
+        "source_evidence": "P63 two other people in; portly gentlemen pleasant to behold; stood with their hats off; books and papers in their hands bowed. P68 at this festive season more than usually desirable slight provision for the Poor and destitute.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "civil earnest middle-aged charitable gentlemen",
+        "wardrobe_variants": [
+          {
+            "key": "PORTLY_CHARITY_CALL",
+            "description": "Respectable outdoor coats; hats (held off); credentials and subscription books/papers in hands.",
+            "source_facts": [
+              "P63 portly gentlemen pleasant to behold; hats off; books and papers",
+              "P66 presenting his credentials"
+            ],
+            "creative_direction": "Dark respectable City coats of the period; well-fed pleasant faces; one slightly leading; later same men met on Christmas morning for donation.",
+            "beats": [
+              "B4",
+              "B28"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "OLD_JOE",
+        "display_name": "Old Joe",
+        "age_link": null,
+        "identity_anchors": "Grey-haired rascal nearly seventy; smokes pipe; deals in iron old rags bottles bones greasy offal; screens himself with frousy tattered curtain; calm luxury of retirement among wares.",
+        "source_evidence": "P536 grey-haired rascal nearly seventy years of age; screened from cold by frousy curtaining of miscellaneous tatters; smoked his pipe in all the luxury of calm retirement. P539 old Joe removing his pipe.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "wheezy cunning elderly fence",
+        "wardrobe_variants": [
+          {
+            "key": "OLD_JOE_SHOP",
+            "description": "Ragged warm layers of a marine-store/fence dealer; pipe; among heaps of rusty metal and rags.",
+            "source_facts": [
+              "P536 grey-haired rascal nearly seventy; frousy curtaining of miscellaneous tatters; smoked his pipe"
+            ],
+            "creative_direction": "Greasy layered waistcoat and coat; fingerless gloves optional; calculating eyes; charcoal stove glow on face.",
+            "beats": [
+              "B21"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "MRS_DILBER",
+        "display_name": "Mrs. Dilber",
+        "age_link": null,
+        "identity_anchors": "Laundress; one of three scavengers selling dead man\u0027s effects; bold; practical about stripping corpse.",
+        "source_evidence": "P538 let the laundress alone to be the second. P542 What odds then What odds Mrs. Dilber. P553 Mrs. Dilber was next; sheets and towels little wearing apparel two old-fashioned silver teaspoons sugar-tongs few boots.",
+        "render_style_lock": "photorealistic live-action",
+        "voice_label": "coarse practical working woman",
+        "wardrobe_variants": [
+          {
+            "key": "MRS_DILBER_SCAVENGER",
+            "description": "Poor working woman\u0027s outdoor clothes; heavy bundle of scavenged sheets towels apparel; bold defiant manner in Old Joe\u0027s parlour.",
+            "source_facts": [
+              "P538 laundress",
+              "P541 woman who had already spoken threw her bundle on the floor sat down in a flaunting manner",
+              "P553 sheets and towels little wearing apparel"
+            ],
+            "creative_direction": "Faded shawl and worn dress of laundress; bundle prominent; unapologetic posture.",
+            "beats": [
+              "B21"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "location_bible": {
+    "locations": [
+      {
+        "key": "LOCATION_COUNTING_HOUSE",
+        "canonical_name": "Scrooge and Marley\u0027s counting-house",
+        "source_evidence": "P24 name stood years afterwards above warehouse door Scrooge and Marley. P29-P30 door open to keep eye on clerk; Scrooge very small fire; clerk\u0027s fire one coal; coal-box in master\u0027s room. P89 hour of shutting up.",
+        "layout_anchors": [
+          "outer office with Scrooge\u0027s stool and desk",
+          "open door to dismal little cell beyond (the Tank)",
+          "warehouse door with both names",
+          "coal-box kept in Scrooge\u0027s room",
+          "small fireplaces"
+        ],
+        "lighting_states": [
+          "Christmas Eve afternoon foggy dark already candles flaring like ruddy smears on brown air",
+          "tiny mean fires",
+          "next morning Boxing Day ordinary office light"
+        ],
+        "persistent_props": [
+          "ledgers",
+          "Scrooge\u0027s stool",
+          "ruler",
+          "coal-box",
+          "door sign Scrooge and Marley"
+        ],
+        "image_brief": "Cramped cold City counting-house; fog pressing at windows; mean fires; open sightline from master to clerk\u0027s tank; severe commercial greys and browns.",
+        "beats": [
+          "B1",
+          "B2",
+          "B3",
+          "B4",
+          "B5",
+          "B30"
+        ]
+      },
+      {
+        "key": "LOCATION_TANK",
+        "canonical_name": "the Tank (clerk\u0027s cell)",
+        "source_evidence": "P30 clerk who in a dismal little cell beyond a sort of tank was copying letters; fire so very much smaller it looked like one coal.",
+        "layout_anchors": [
+          "small cell beyond open door from Scrooge\u0027s room",
+          "copying desk",
+          "tiny fireplace",
+          "stool"
+        ],
+        "lighting_states": [
+          "one-coal fire glow",
+          "candle attempt at warmth",
+          "cold daylight from small window if any"
+        ],
+        "persistent_props": [
+          "copying letters",
+          "white comforter on Bob",
+          "shovel for coal denied"
+        ],
+        "image_brief": "Cramped tank-like clerk cell; freezing; single coal; Bob in comforter trying to write.",
+        "beats": [
+          "B2",
+          "B3",
+          "B5",
+          "B30"
+        ]
+      },
+      {
+        "key": "LOCATION_LONDON_STREETS_EVE",
+        "canonical_name": "London streets and court on Christmas Eve",
+        "source_evidence": "P29 cold bleak biting weather foggy; people wheezing beating hands stamping feet; court narrow houses opposite phantoms; fog pouring chink and keyhole. P85 fog darkness thickened; flaring links; church tower bell; labourers gas-pipes brazier; shops holly; Lord Mayor Mansion House. P97 Cornhill slide.",
+        "layout_anchors": [
+          "narrow court outside counting-house",
+          "main street corner",
+          "Cornhill lane of boys",
+          "church with Gothic window",
+          "shops with holly sprigs berries"
+        ],
+        "lighting_states": [
+          "dense brown fog palpable",
+          "candles flaring ruddy smears",
+          "brazier fire",
+          "early dark afternoon"
+        ],
+        "persistent_props": [
+          "fog",
+          "frost",
+          "gas-pipes brazier",
+          "holly in shop windows"
+        ],
+        "image_brief": "Fog-choked Victorian London court and streets; biting cold; phantom opposite houses; cheerful shop light fighting gloom.",
+        "beats": [
+          "B2",
+          "B5",
+          "B27",
+          "B28"
+        ]
+      },
+      {
+        "key": "LOCATION_SCROOGE_CHAMBERS",
+        "canonical_name": "Scrooge\u0027s gloomy chambers (sitting-room, bedroom, lumber-room)",
+        "source_evidence": "P98 chambers once belonged to deceased partner; gloomy suite in lowering pile up a yard; other rooms offices; dark yard groping. P107 sitting-room bedroom lumber-room; small fire; spoon basin gruel on hob; nobody under table sofa bed closet. P108 double-locked. P109 old fireplace Dutch tiles Scriptures.",
+        "layout_anchors": [
+          "dark yard and black old gateway",
+          "stairs wide enough for hearse",
+          "sitting-room with low fire and Dutch-tile fireplace",
+          "bedroom with bed curtains",
+          "lumber-room old fire-guard shoes fish-baskets washing-stand poker",
+          "disused bell communicating to highest story",
+          "window that opens for ghosts"
+        ],
+        "lighting_states": [
+          "fog and frost on gateway",
+          "Scrooge\u0027s dip candle",
+          "very low fire",
+          "dying flame leap at Marley\u0027s entry",
+          "ruddy blaze of Present later",
+          "Christmas morning clear bright from window"
+        ],
+        "persistent_props": [
+          "large door knocker",
+          "gruel saucepan",
+          "dressing-gown nightcap",
+          "bed with curtains",
+          "extinguisher cap later",
+          "Dutch tiles"
+        ],
+        "image_brief": "Gloomy suite once Marley\u0027s; sparse mean comfort; Dutch tiles; low fire; heavy door; wide dark stair; atmosphere of long neglect and cold.",
+        "beats": [
+          "B5",
+          "B6",
+          "B7",
+          "B8",
+          "B9",
+          "B12",
+          "B13",
+          "B18",
+          "B19",
+          "B26"
+        ]
+      },
+      {
+        "key": "LOCATION_MARLEY_ROOMS",
+        "canonical_name": "Marley\u0027s former rooms",
+        "source_evidence": "P98 lived in chambers which had once belonged to his deceased partner; gloomy suite.",
+        "layout_anchors": [
+          "same as Scrooge\u0027s chambers - inherited suite"
+        ],
+        "lighting_states": [
+          "same gloomy states"
+        ],
+        "persistent_props": [
+          "knocker that shows Marley\u0027s face",
+          "wine-merchant cellars below with casks"
+        ],
+        "image_brief": "Identical to Scrooge chambers; emphasise residual presence of dead partner in layout and knocker.",
+        "beats": [
+          "B6",
+          "B7"
+        ]
+      },
+      {
+        "key": "LOCATION_BOYHOOD_COUNTRY",
+        "canonical_name": "country road and market-town of Scrooge\u0027s boyhood",
+        "source_evidence": "P233 open country road fields either hand; city vanished; clear cold winter day snow upon ground. P241 every gate post tree; little market-town in distance bridge church winding river; shaggy ponies boys country gigs carts.",
+        "layout_anchors": [
+          "open country road snow",
+          "fields either hand",
+          "gates posts trees",
+          "distant market-town bridge church river",
+          "cross-roads bye-ways"
+        ],
+        "lighting_states": [
+          "clear cold winter daylight",
+          "snow brightness",
+          "crisp air"
+        ],
+        "persistent_props": [
+          "snow",
+          "ponies",
+          "farm carts"
+        ],
+        "image_brief": "Bright cold snowy countryside of memory; merry boys on ponies; town with church and bridge in distance; contrast to London fog.",
+        "beats": [
+          "B9"
+        ]
+      },
+      {
+        "key": "LOCATION_BOARDING_SCHOOL",
+        "canonical_name": "dreary boarding school",
+        "source_evidence": "P246 mansion dull red brick weathercock-surmounted cupola bell; broken fortunes; spacious offices little used walls damp mossy windows broken gates decayed; fowls in stables; coach-houses grass; dreary hall poorly furnished cold vast; earthy savour chilly bareness. P247 long bare melancholy room lines of plain deal forms and desks; lonely boy feeble fire.",
+        "layout_anchors": [
+          "dull red brick mansion cupola bell",
+          "decayed gates offices stables",
+          "dreary hall many rooms",
+          "long bare schoolroom deal forms desks",
+          "feeble fire",
+          "best-parlour maps globes waxy with cold"
+        ],
+        "lighting_states": [
+          "feeble fire",
+          "winter daylight through cracked windows",
+          "candle-light association"
+        ],
+        "persistent_props": [
+          "deal forms and desks",
+          "feeble fire",
+          "maps celestial terrestrial globes",
+          "Master Scrooge\u0027s box/trunk"
+        ],
+        "image_brief": "Decayed red-brick school of broken fortunes; bare cold schoolroom; solitary child; later Fan and chaise at door.",
+        "beats": [
+          "B9",
+          "B10"
+        ]
+      },
+      {
+        "key": "LOCATION_FEZZIWIG_WAREHOUSE",
+        "canonical_name": "Fezziwig\u0027s warehouse",
+        "source_evidence": "P274 certain warehouse door. P276 old gentleman high desk almost to ceiling. P282 shutters up. P285 floor swept watered lamps trimmed fuel heaped; snug warm dry bright ball-room. P286 fiddler on lofty desk; Mrs Fezziwig three Miss Fezziwigs followers employees housemaid baker cook milkman. P289 beds under counter back-shop.",
+        "layout_anchors": [
+          "warehouse door",
+          "high desk for Fezziwig",
+          "shuttered street front",
+          "cleared floor for dancing",
+          "lofty desk as orchestra",
+          "back-shop counters for beds",
+          "door where Fezziwigs shake hands out"
+        ],
+        "lighting_states": [
+          "lamps trimmed bright",
+          "fire heaped",
+          "Christmas Eve festive indoor glow"
+        ],
+        "persistent_props": [
+          "fiddle",
+          "porter pot",
+          "cold roast boiled mince-pies beer negus cake",
+          "shutters"
+        ],
+        "image_brief": "Transformed warehouse ballroom; bright warm; fiddler on desk; throng of apprentices and neighbours dancing under Fezziwig\u0027s jovial eye.",
+        "beats": [
+          "B10"
+        ]
+      },
+      {
+        "key": "LOCATION_BELLE_HOME",
+        "canonical_name": "Belle\u0027s modest comfortable home",
+        "source_evidence": "P329 room not very large or handsome but full of comfort; near winter fire beautiful girl then comely matron opposite daughter; tumultuous children; later father home with man laden Christmas toys.",
+        "layout_anchors": [
+          "modest comfortable parlour",
+          "winter fire",
+          "door for father and porter with toys",
+          "stairs to upper rooms where children subside"
+        ],
+        "lighting_states": [
+          "winter firelight",
+          "cheerful domestic evening"
+        ],
+        "persistent_props": [
+          "Christmas toys presents",
+          "fire",
+          "children\u0027s clutter"
+        ],
+        "image_brief": "Warm modest parlour overflowing with children and Christmas joy; contrast to Scrooge\u0027s solitary office glimpsed in dialogue.",
+        "beats": [
+          "B11"
+        ]
+      },
+      {
+        "key": "LOCATION_CITY_STREETS_MORNING",
+        "canonical_name": "city streets on Christmas morning",
+        "source_evidence": "P365 city streets Christmas morning; severe weather; people scraping snow pavement and roofs; boys artificial snow-storms. P366 house fronts black windows blacker; white sheet snow roofs; furrows yellow mud icy water; gloomy sky dingy mist sooty atoms. P367 poulterers half open fruiterers radiant; chestnuts onions pears apples grapes filberts Norfolk Biffins. P368 Grocers nearly closed glimpses scales twine canisters tea coffee raisins almonds spices. P369 steeples church chapel best clothes gayest faces; dinners to bakers.",
+        "layout_anchors": [
+          "snowy streets and housetops",
+          "poulterers fruiterers grocers",
+          "baker\u0027s shops",
+          "church and chapel steeples",
+          "bye-streets lanes"
+        ],
+        "lighting_states": [
+          "Christmas morning despite gloomy sky",
+          "shop radiance",
+          "churchgoing brightness",
+          "Spirit torch"
+        ],
+        "persistent_props": [
+          "snow",
+          "chestnuts in baskets",
+          "hung mistletoe",
+          "dinner covers",
+          "Spirit\u0027s torch"
+        ],
+        "image_brief": "Snowy bustling Christmas morning London; black houses white roofs; radiant food shops; cheerful crowds despite cold; genial Spirit blessing.",
+        "beats": [
+          "B14",
+          "B27"
+        ]
+      },
+      {
+        "key": "LOCATION_BAKERS_DOORWAY",
+        "canonical_name": "baker\u0027s shop doorway",
+        "source_evidence": "P369 Spirit stood with Scrooge beside him in a baker\u0027s doorway; taking off covers sprinkled incense on dinners from torch; drops of water restore good humour.",
+        "layout_anchors": [
+          "baker\u0027s doorway",
+          "passers with dinner covers",
+          "oven warmth implied by thawed blotch wet above"
+        ],
+        "lighting_states": [
+          "torch glow",
+          "street Christmas morning",
+          "steam from dinners"
+        ],
+        "persistent_props": [
+          "dinner covers",
+          "Spirit torch",
+          "poor people\u0027s dinners"
+        ],
+        "image_brief": "Baker doorway vantage; poor carrying dinners; Spirit sprinkling blessing; good humour restored.",
+        "beats": [
+          "B14"
+        ]
+      },
+      {
+        "key": "LOCATION_CRATCHIT_HOUSE",
+        "canonical_name": "Bob Cratchit\u0027s four-roomed house in Camden Town",
+        "source_evidence": "P386 four-roomed house; Spirit blessed dwelling. P387 cloth laid; potatoes saucepan; fire. P395 wash-house pudding copper. P409 hearth swept fire made up; apples oranges chestnuts; circle half one; two tumblers custard-cup without handle. P599 entered poor Bob Cratchit\u0027s house; mother children round fire. P618 room above lighted cheerfully hung with Christmas; chair beside child.",
+        "layout_anchors": [
+          "four rooms",
+          "main living/parlour with hearth",
+          "wash-house with copper for pudding",
+          "door for Martha hide and Bob entry",
+          "upper room where Tim laid",
+          "table for goose and pudding"
+        ],
+        "lighting_states": [
+          "cheerful fire",
+          "Christmas cooking steam",
+          "later quiet mourning firelight",
+          "upper room cheerful Christmas hangings despite grief"
+        ],
+        "persistent_props": [
+          "goose",
+          "pudding like speckled cannon-ball holly brandy",
+          "crutch",
+          "iron frame",
+          "custard-cup without handle",
+          "two tumblers",
+          "chestnuts",
+          "Tiny Tim\u0027s stool"
+        ],
+        "image_brief": "Small poor four-room Camden house; brave ribbons and Christmas effort; goose and blazing pudding; later hushed mourning with vacant corner for Tim.",
+        "beats": [
+          "B15",
+          "B24"
+        ]
+      },
+      {
+        "key": "LOCATION_BLEAK_MOOR",
+        "canonical_name": "bleak moor and miners\u0027 hut",
+        "source_evidence": "P433 bleak desert moor; monstrous masses rude stone burial-place of giants; water frost-held; moss furze coarse rank grass; setting sun streak fiery red then thick gloom. P435 place where Miners live bowels of earth. P436 light from window of hut; cheerful company glowing fire; old man woman children generations holiday attire; Christmas song.",
+        "layout_anchors": [
+          "bleak moor rude stones",
+          "miners\u0027 hut mud and stone",
+          "glowing fire inside",
+          "generations around fire"
+        ],
+        "lighting_states": [
+          "sullen red sunset then darkest night",
+          "hut window light",
+          "glowing interior fire"
+        ],
+        "persistent_props": [
+          "fire",
+          "holiday attire",
+          "song"
+        ],
+        "image_brief": "Desolate moor at dusk; solitary lit miners\u0027 hut; multi-generation family singing Christmas against howling waste.",
+        "beats": [
+          "B16"
+        ]
+      },
+      {
+        "key": "LOCATION_LIGHTHOUSE",
+        "canonical_name": "solitary lighthouse on reef",
+        "source_evidence": "P438 built upon dismal reef sunken rocks some league from shore; waters chafed dashed wild year; solitary lighthouse; heaps sea-weed base; storm-birds. P439 two men watched light; fire through loophole thick stone wall ray on awful sea; horny hands rough table; can of grog; sturdy song.",
+        "layout_anchors": [
+          "reef sunken rocks",
+          "lighthouse thick stone",
+          "loophole",
+          "rough table inside",
+          "fire"
+        ],
+        "lighting_states": [
+          "ray of brightness on awful sea",
+          "fire through loophole",
+          "storm gloom outside"
+        ],
+        "persistent_props": [
+          "grog can",
+          "fire",
+          "horny hands joined"
+        ],
+        "image_brief": "Storm-lashed solitary lighthouse on black reef; two keepers sharing grog and song; thin ray against raging sea.",
+        "beats": [
+          "B16"
+        ]
+      },
+      {
+        "key": "LOCATION_SHIP_AT_SEA",
+        "canonical_name": "ship at sea",
+        "source_evidence": "P440 far away from any shore lighted on a ship; helmsman at wheel look-out bow officers watch; dark ghostly figures; every man hummed Christmas tune or thought or spoke of bygone Christmas; kinder word that day.",
+        "layout_anchors": [
+          "deck",
+          "helm",
+          "bow look-out",
+          "officers\u0027 watch stations"
+        ],
+        "lighting_states": [
+          "lonely darkness over unknown abyss",
+          "ship lanterns minimal"
+        ],
+        "persistent_props": [
+          "wheel",
+          "sea"
+        ],
+        "image_brief": "Dark ship on black heaving sea; ghostly crew at stations each holding private Christmas thought or tune.",
+        "beats": [
+          "B16"
+        ]
+      },
+      {
+        "key": "LOCATION_FRED_DINING_ROOM",
+        "canonical_name": "Fred\u0027s bright dining-room",
+        "source_evidence": "P441 bright dry gleaming room; Spirit smiling; nephew. P454 dessert upon table clustered round fire by lamplight. P462 blind-man\u0027s buff; piano curtains fire-irons chairs. P463 niece large chair footstool snug corner.",
+        "layout_anchors": [
+          "bright dining-room",
+          "table dessert",
+          "fire",
+          "piano",
+          "curtains",
+          "chairs",
+          "snug corner with large chair footstool"
+        ],
+        "lighting_states": [
+          "lamplight",
+          "firelight",
+          "gleaming cheerful"
+        ],
+        "persistent_props": [
+          "dessert",
+          "mulled wine",
+          "harp",
+          "fire-irons",
+          "blindfold for buff"
+        ],
+        "image_brief": "Bright warm middle-class dining-room full of laughter games music; pretty niece; Topper chasing plump sister; contagious good humour.",
+        "beats": [
+          "B16",
+          "B17",
+          "B29"
+        ]
+      },
+      {
+        "key": "LOCATION_OLD_JOE_SHOP",
+        "canonical_name": "obscure foul quarter of town / Old Joe\u0027s shop",
+        "source_evidence": "P535 obscure part of town bad repute; ways foul narrow; shops houses wretched; people half-naked drunken slipshod ugly; alleys archways cesspools; reeked crime filth misery. P536 low-browed beetling shop below pent-house roof; iron old rags bottles bones greasy offal; floor heaps rusty keys nails chains hinges files scales weights refuse iron; mountains unseemly rags corrupted fat sepulchres bones; charcoal stove old bricks; frousy tattered curtain screen; grey-haired rascal pipe. P540 parlour space behind screen of rags.",
+        "layout_anchors": [
+          "foul narrow streets alleys",
+          "low-browed beetling shop pent-house",
+          "interior heaps of metal rags bones",
+          "charcoal stove",
+          "frousy curtain screen",
+          "parlour behind screen",
+          "door that skreeks"
+        ],
+        "lighting_states": [
+          "night",
+          "smoky lamp",
+          "charcoal stove glow"
+        ],
+        "persistent_props": [
+          "pipe",
+          "charcoal stove",
+          "rusty metal heaps",
+          "bundles of scavenged goods",
+          "bed-curtains blankets shirt",
+          "flannel money bag",
+          "chalk on wall for accounts"
+        ],
+        "image_brief": "Squalid thieves\u0027 quarter; beetling rag-and-bone shop; three scavengers and Old Joe appraising dead man\u0027s curtains blankets shirt by smoky lamp.",
+        "beats": [
+          "B21"
+        ]
+      },
+      {
+        "key": "LOCATION_DEAD_MAN_ROOM",
+        "canonical_name": "dark bare room with uncurtained bed",
+        "source_evidence": "P572 bare uncurtained bed; ragged sheet; something covered up. P573 room very dark; pale light rising outer air fell straight upon bed; plundered bereft unwatched unwept uncared for body. P577 dark empty house; cat tearing at door; gnawing rats beneath hearth-stone.",
+        "layout_anchors": [
+          "dark room",
+          "bare uncurtained bed",
+          "hearth-stone",
+          "door"
+        ],
+        "lighting_states": [
+          "very dark",
+          "pale light from outside on bed only"
+        ],
+        "persistent_props": [
+          "ragged sheet covering body",
+          "plundered bed",
+          "rats",
+          "cat at door"
+        ],
+        "image_brief": "Almost lightless plundered bedroom; single pale shaft on covered corpse; no mourner; vermin; ultimate lonely death.",
+        "beats": [
+          "B22"
+        ]
+      },
+      {
+        "key": "LOCATION_CAROLINE_HOME",
+        "canonical_name": "debtors\u0027 modest home (Caroline)",
+        "source_evidence": "P583 room by daylight mother and children. P584 walked up and down; started every sound; looked out window; glanced clock; needlework. P585 long-expected knock; husband careworn depressed young; serious delight ashamed. P586 dinner hoarding by fire.",
+        "layout_anchors": [
+          "modest room",
+          "window to street",
+          "clock",
+          "fire with hoarded dinner",
+          "door"
+        ],
+        "lighting_states": [
+          "daylight",
+          "anxious domestic"
+        ],
+        "persistent_props": [
+          "needlework",
+          "clock",
+          "children",
+          "dinner by fire"
+        ],
+        "image_brief": "Anxious poor but decent room; mother pacing; relief when husband brings news creditor is dead; lighter hearts.",
+        "beats": [
+          "B23"
+        ]
+      },
+      {
+        "key": "LOCATION_CHURCHYARD",
+        "canonical_name": "churchyard with neglected grave",
+        "source_evidence": "P642 iron gate. P643 churchyard; walled in by houses; overrun grass weeds growth of vegetation\u0027s death not life; choked up with too much burying; fat with repleted appetite. P644 Spirit among graves pointed down to One. P649 stone of neglected grave his own name EBENEZER SCROOGE.",
+        "layout_anchors": [
+          "iron gate entry",
+          "churchyard walled by houses",
+          "overgrown neglected graves",
+          "one specific neglected stone"
+        ],
+        "lighting_states": [
+          "future gloom",
+          "solemn dread light"
+        ],
+        "persistent_props": [
+          "gravestone EBENEZER SCROOGE",
+          "weeds grass",
+          "iron gate"
+        ],
+        "image_brief": "Cramped overgrown urban churchyard; neglected stone; Spirit pointing; Scrooge reading his own name on knees.",
+        "beats": [
+          "B25"
+        ]
+      },
+      {
+        "key": "LOCATION_POULTERERS",
+        "canonical_name": "poulterer\u0027s shop",
+        "source_evidence": "P680 Poulterer\u0027s in the next street but one at the corner. P682 prize Turkey hanging; not little prize Turkey the big one. P683 one as big as me. P685 hanging there now. P693 Turkey never could have stood upon his legs.",
+        "layout_anchors": [
+          "corner shop next street but one",
+          "hanging prize turkeys",
+          "counter for purchase"
+        ],
+        "lighting_states": [
+          "Christmas morning shop"
+        ],
+        "persistent_props": [
+          "enormous prize turkey",
+          "other poultry"
+        ],
+        "image_brief": "Corner poulterer\u0027s; huge prize turkey still hanging; boy sent to buy it for Camden Town delivery.",
+        "beats": [
+          "B27"
+        ]
+      },
+      {
+        "key": "LOCATION_FRED_HOUSE_VISIT",
+        "canonical_name": "Fred\u0027s house (Christmas Day visit)",
+        "source_evidence": "P708 turned steps towards his nephew\u0027s house. P709 passed door dozen times; dash knock. P710 girl at door. P714 dining-room lock. P715 table spread great array. P720 at home in five minutes; wonderful party wonderful games wonderful unanimity wonderful happiness.",
+        "layout_anchors": [
+          "street door",
+          "stairs",
+          "dining-room with table in great array",
+          "same bright house as party"
+        ],
+        "lighting_states": [
+          "Christmas Day afternoon/evening festive"
+        ],
+        "persistent_props": [
+          "dining table spread",
+          "door Scrooge sidles"
+        ],
+        "image_brief": "Nephew\u0027s welcoming house; Scrooge shyly entering dining-room; explosion of hearty welcome; continuation of earlier party warmth.",
+        "beats": [
+          "B29"
+        ]
+      },
+      {
+        "key": "LOCATION_OFFICE_NEXT_MORNING",
+        "canonical_name": "Scrooge\u0027s office next morning",
+        "source_evidence": "P721 early at the office next morning; catch Bob coming late. P722 door wide open see him come into Tank; clock struck nine; quarter past; eighteen minutes and a half behind. P728 leaping from stool dig in waistcoat; raise salary; Christmas bowl smoking bishop; make up fires buy another coal-scuttle.",
+        "layout_anchors": [
+          "same counting-house",
+          "Scrooge\u0027s stool door wide open to Tank",
+          "clock"
+        ],
+        "lighting_states": [
+          "next morning ordinary",
+          "fires to be made up generously"
+        ],
+        "persistent_props": [
+          "stool",
+          "ruler Bob eyes",
+          "clock",
+          "coal-scuttle to be bought"
+        ],
+        "image_brief": "Same counting-house transformed by Scrooge\u0027s new spirit; early arrival; comic feigned anger then joyous salary raise; warmer fires ordered.",
+        "beats": [
+          "B30"
+        ]
+      }
+    ]
+  }
+}

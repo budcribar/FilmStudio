@@ -1,0 +1,69 @@
+{
+  "schema_version": "adaptation_package.v1",
+  "pipeline_variant": "dual_attach_full",
+  "book_slug": "the_velveteen_rabbit",
+  "book_sha256": "01c84466faf26379e7b49f364d2452d14da26fcbc9378d751b5caf3cf2580bfb",
+  "provider": "xai",
+  "model": "grok-4.5",
+  "judge_models": [
+    "grok-4",
+    "grok-4.20-reasoning"
+  ],
+  "temperature": 0.2,
+  "judge_temperature": 0,
+  "target_runtime_minutes": 20,
+  "generated_at_utc": "2026-08-02T02:17:44.9084792Z",
+  "validation_status": "fail",
+  "scene_count": 14,
+  "clip_count": 104,
+  "artifacts": [
+    {
+      "key": "cast_and_locations",
+      "path": "cast_and_locations_dualattach_full.json",
+      "exists": true,
+      "sha256": "444cf4e9b9678ad00cfafb4fc9afe1c7920ff99e362bf39f1442567f18172df3"
+    },
+    {
+      "key": "screenplay",
+      "path": "screenplay_dualattach_full.fountain",
+      "exists": true,
+      "sha256": "aacccc4c62f4d835ad90d31c7ade8c61837f8953452cf86e5c5c8b925d887ca7"
+    },
+    {
+      "key": "edit_decision_list",
+      "path": "edit_decision_list_dualattach_full.json",
+      "exists": true,
+      "sha256": "9e795d1dbde05d139a27653b0627270d5ef0bdaa075118cac443abef71637c7b"
+    },
+    {
+      "key": "clip_shot_plan",
+      "path": "clip_shot_plan_dualattach_full.json",
+      "exists": true,
+      "sha256": "5cf6a35cdcd30a14bd43ab44c6066ece1f5988cc4270c5874294ae3e8b89e440"
+    },
+    {
+      "key": "audio_plan",
+      "path": "audio_plan_dualattach_full.json",
+      "exists": true,
+      "sha256": "16f16dede81246ad22dc4478915b481a0dc1a2aec460fd25235ab8ae8b43ad95"
+    },
+    {
+      "key": "validation_report",
+      "path": "validation_report_dualattach_full.json",
+      "exists": true,
+      "sha256": "1881ef7d54c18cdaf1042362467ccd6fac012bd74dce8001d7b7d88fec2fc315"
+    },
+    {
+      "key": "judge_review_grok-4",
+      "path": "judge_review_dualattach_full.grok-4.json",
+      "exists": true,
+      "sha256": "01b1ef921915cdf269b574cd4ed4c7706501e8b6eba22756936b7a3c1a7cb80b"
+    },
+    {
+      "key": "judge_review_grok-4.20-reasoning",
+      "path": "judge_review_dualattach_full.grok-4.20-reasoning.json",
+      "exists": true,
+      "sha256": "bf842e77c9e1953f52dbbb77172eef7b393fb1da4b846b396538688d6d6d128a"
+    }
+  ]
+}

@@ -259,5 +259,369 @@ window.PageToMovieExport = {
                 resolve({ success: false, error: err.message || String(err) });
             }
         });
-    }
+    },
+
+    /**
+     * Stage 2 of full-project export: take the server zip (ArrayBuffer), merge in
+     * client media-folder files (MP4/MP3/etc. under {projectId}/…), download one zip.
+     * Server entries win only when local is missing; local media always overwrites empty/missing.
+     */
+    mergeServerZipWithLocalMediaAsync: async function (fileName, contentStreamReference, projectId) {
+        try {
+            const serverBuf = await contentStreamReference.arrayBuffer();
+            const entries = await this._zipReadAllAsync(new Uint8Array(serverBuf));
+            const byPath = new Map();
+            for (const e of entries) {
+                if (e.name.endsWith("/")) continue;
+                byPath.set(e.name.replace(/\\/g, "/"), e.data);
+            }
+
+            let clientAdded = 0;
+            let clientSkipped = 0;
+            let mediaError = null;
+            const pid = (projectId || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+
+            if (window.PageToMovieMedia && window.PageToMovieMedia._root && pid) {
+                const listed = await window.PageToMovieMedia.listMediaTreeAsync(pid);
+                if (!listed.success) {
+                    mediaError = listed.error || "Could not list local media";
+                } else {
+                    for (const f of listed.files || []) {
+                        // f.relativePath is like "owner/slug/assets/video/x.mp4"
+                        const rel = (f.relativePath || "").replace(/\\/g, "/");
+                        if (!rel) continue;
+                        const zipPath = rel; // matches server zip layout {projectId}/…
+                        try {
+                            const got = await window.PageToMovieMedia.getBytesAsync(rel, 0);
+                            if (!got.success || !got.bytes) {
+                                clientSkipped++;
+                                continue;
+                            }
+                            const bytes = got.bytes instanceof Uint8Array
+                                ? got.bytes
+                                : new Uint8Array(got.bytes);
+                            // Prefer client media when present (source of truth for gen clips/audio)
+                            byPath.set(zipPath, bytes);
+                            clientAdded++;
+                        } catch (_) {
+                            clientSkipped++;
+                        }
+                    }
+                }
+            }
+
+            // Annotate export meta if present (keep projectSchemaVersion; bump package fields)
+            const metaKey = [...byPath.keys()].find(k => k.endsWith("/_export_meta.json") || k === "_export_meta.json");
+            if (metaKey) {
+                try {
+                    const prev = new TextDecoder().decode(byPath.get(metaKey));
+                    const obj = JSON.parse(prev);
+                    obj.package = obj.package || "PageToMovie.project_export";
+                    obj.exportFormatVersion = 2;
+                    obj.schema = "PageToMovie.project_export.v2";
+                    obj.clientMediaMerged = true;
+                    obj.clientMediaFilesAdded = clientAdded;
+                    obj.clientMediaListError = mediaError || undefined;
+                    obj.clientMergedAtUtc = new Date().toISOString();
+                    obj.note = "Server project folder + client media folder (MP4/MP3/etc.). " +
+                        "projectSchemaVersion drives ProjectMigrationService on import; " +
+                        "exportFormatVersion is the zip package shape.";
+                    byPath.set(metaKey, new TextEncoder().encode(JSON.stringify(obj, null, 2)));
+                } catch (_) { /* keep original meta */ }
+            }
+
+            const out = this._zipWriteAll(byPath);
+            const blob = new Blob([out], { type: "application/zip" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName || "PageToMovie_project.zip";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            const msgParts = [`Downloaded ${fileName || "zip"}`];
+            if (clientAdded > 0) msgParts.push(`${clientAdded} local media file(s) merged`);
+            else if (!window.PageToMovieMedia || !window.PageToMovieMedia._root)
+                msgParts.push("server files only — connect media folder to include MP4/MP3");
+            else if (mediaError)
+                msgParts.push(`local media: ${mediaError}`);
+            else
+                msgParts.push("no local media files found under project folder");
+
+            return {
+                success: true,
+                clientMediaAdded: clientAdded,
+                clientMediaSkipped: clientSkipped,
+                mediaError,
+                message: msgParts.join(" · "),
+            };
+        } catch (err) {
+            console.error("mergeServerZipWithLocalMediaAsync failed:", err);
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+
+    /**
+     * Stage 2 of project import: from a full export zip, write media files into the
+     * connected client media folder under {targetProjectId}/assets/…
+     * Server import should already have received the zip (stage 1).
+     */
+    importZipMediaToClientFolderAsync: async function (contentStreamReference, targetProjectId) {
+        try {
+            if (!window.PageToMovieMedia) {
+                return { success: false, error: "PageToMovieMedia not loaded", written: 0 };
+            }
+            if (!window.PageToMovieMedia._root) {
+                const c = await window.PageToMovieMedia.connectFolderAsync();
+                if (!c.success) {
+                    return {
+                        success: false,
+                        error: c.error || "Connect a local media folder to restore MP4/MP3 files",
+                        written: 0,
+                        needsMediaFolder: true,
+                    };
+                }
+            }
+
+            const targetId = (targetProjectId || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+            if (!targetId) {
+                return { success: false, error: "Project id required", written: 0 };
+            }
+
+            const buf = await contentStreamReference.arrayBuffer();
+            const entries = await this._zipReadAllAsync(new Uint8Array(buf));
+            const mediaExt = new Set([
+                ".mp4", ".webm", ".mov", ".mkv", ".m4v",
+                ".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac", ".opus",
+                ".png", ".jpg", ".jpeg", ".webp", ".gif",
+            ]);
+
+            let written = 0;
+            let skipped = 0;
+            const errors = [];
+
+            for (const e of entries) {
+                let name = (e.name || "").replace(/\\/g, "/");
+                if (!name || name.endsWith("/")) continue;
+                // strip leading ./
+                name = name.replace(/^\.\//, "");
+                const base = name.split("/").pop() || "";
+                const dot = base.lastIndexOf(".");
+                const ext = dot >= 0 ? base.slice(dot).toLowerCase() : "";
+                if (!mediaExt.has(ext)) {
+                    skipped++;
+                    continue;
+                }
+
+                // Map zip entry → media folder path under target project id
+                // Forms: "{anyPrefix}/assets/…", "assets/…", or "{targetId}/…"
+                let clientRel;
+                const assetsIdx = name.toLowerCase().indexOf("/assets/");
+                if (assetsIdx >= 0) {
+                    clientRel = `${targetId}${name.slice(assetsIdx)}`; // keeps /assets/...
+                } else if (name.toLowerCase().startsWith("assets/")) {
+                    clientRel = `${targetId}/${name}`;
+                } else if (name.toLowerCase().startsWith(targetId.toLowerCase() + "/")) {
+                    clientRel = name; // already correct prefix
+                } else {
+                    // Loose media at zip root of project folder
+                    clientRel = `${targetId}/${base}`;
+                }
+
+                try {
+                    const res = await window.PageToMovieMedia.saveBytesAsync(e.data, clientRel);
+                    if (res && res.success) written++;
+                    else {
+                        skipped++;
+                        if (res && res.error && errors.length < 5)
+                            errors.push(`${clientRel}: ${res.error}`);
+                    }
+                } catch (err) {
+                    skipped++;
+                    if (errors.length < 5)
+                        errors.push(`${clientRel}: ${err.message || err}`);
+                }
+            }
+
+            return {
+                success: true,
+                written,
+                skipped,
+                errors,
+                message: written > 0
+                    ? `Restored ${written} media file(s) to local folder`
+                    : (errors[0] || "No media files found in zip to restore locally"),
+            };
+        } catch (err) {
+            console.error("importZipMediaToClientFolderAsync failed:", err);
+            return { success: false, error: err.message || String(err), written: 0 };
+        }
+    },
+
+    /** @returns {Promise<{name:string, data:Uint8Array}[]>} */
+    _zipReadAllAsync: async function (u8) {
+        const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+        // Find EOCD
+        let eocd = -1;
+        for (let i = u8.byteLength - 22; i >= 0; i--) {
+            if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+        }
+        if (eocd < 0) throw new Error("Not a zip (EOCD missing)");
+        const cdOffset = view.getUint32(eocd + 16, true);
+        const cdCount = view.getUint16(eocd + 10, true);
+        const entries = [];
+        let p = cdOffset;
+        for (let n = 0; n < cdCount; n++) {
+            if (view.getUint32(p, true) !== 0x02014b50)
+                throw new Error("Bad central directory");
+            const method = view.getUint16(p + 10, true);
+            const compSize = view.getUint32(p + 20, true);
+            const uncompSize = view.getUint32(p + 24, true);
+            const nameLen = view.getUint16(p + 28, true);
+            const extraLen = view.getUint16(p + 30, true);
+            const commentLen = view.getUint16(p + 32, true);
+            const localHeaderOffset = view.getUint32(p + 42, true);
+            const nameBytes = u8.subarray(p + 46, p + 46 + nameLen);
+            const name = new TextDecoder().decode(nameBytes);
+            p += 46 + nameLen + extraLen + commentLen;
+
+            // Local header
+            const lp = localHeaderOffset;
+            if (view.getUint32(lp, true) !== 0x04034b50)
+                throw new Error("Bad local header for " + name);
+            const lNameLen = view.getUint16(lp + 26, true);
+            const lExtraLen = view.getUint16(lp + 28, true);
+            const dataStart = lp + 30 + lNameLen + lExtraLen;
+            const comp = u8.subarray(dataStart, dataStart + compSize);
+            let data;
+            if (method === 0) {
+                data = comp.slice();
+            } else if (method === 8) {
+                data = await this._inflateRawAsync(comp, uncompSize);
+            } else {
+                console.warn("zip: skip unsupported method", method, name);
+                continue;
+            }
+            entries.push({ name, data });
+        }
+        return entries;
+    },
+
+    _inflateRawAsync: async function (comp, uncompSize) {
+        if (typeof DecompressionStream === "undefined")
+            throw new Error("Browser cannot inflate zip entries (no DecompressionStream)");
+        const ds = new DecompressionStream("deflate-raw");
+        const stream = new Blob([comp]).stream().pipeThrough(ds);
+        const ab = await new Response(stream).arrayBuffer();
+        const out = new Uint8Array(ab);
+        if (uncompSize && out.byteLength !== uncompSize && uncompSize !== 0xffffffff) {
+            // allow mismatch for zip64 edge; still return data
+        }
+        return out;
+    },
+
+    /**
+     * Write zip with STORE (no compression) — fine for already-compressed media + small JSON.
+     * @param {Map<string, Uint8Array>} byPath
+     * @returns {Uint8Array}
+     */
+    _zipWriteAll: function (byPath) {
+        const enc = new TextEncoder();
+        const locals = [];
+        const central = [];
+        let offset = 0;
+        const sorted = [...byPath.keys()].sort((a, b) => a.localeCompare(b));
+        for (const name of sorted) {
+            const data = byPath.get(name);
+            if (!data) continue;
+            const nameBytes = enc.encode(name);
+            const crc = this._crc32(data);
+            const size = data.byteLength;
+
+            // Local file header
+            const local = new Uint8Array(30 + nameBytes.length + size);
+            const lv = new DataView(local.buffer);
+            lv.setUint32(0, 0x04034b50, true);
+            lv.setUint16(4, 20, true); // version needed
+            lv.setUint16(6, 0, true); // flags
+            lv.setUint16(8, 0, true); // method STORE
+            lv.setUint16(10, 0, true);
+            lv.setUint16(12, 0, true);
+            lv.setUint32(14, crc, true);
+            lv.setUint32(18, size, true);
+            lv.setUint32(22, size, true);
+            lv.setUint16(26, nameBytes.length, true);
+            lv.setUint16(28, 0, true);
+            local.set(nameBytes, 30);
+            local.set(data, 30 + nameBytes.length);
+            locals.push(local);
+
+            // Central directory header
+            const cen = new Uint8Array(46 + nameBytes.length);
+            const cv = new DataView(cen.buffer);
+            cv.setUint32(0, 0x02014b50, true);
+            cv.setUint16(4, 20, true);
+            cv.setUint16(6, 20, true);
+            cv.setUint16(8, 0, true);
+            cv.setUint16(10, 0, true); // STORE
+            cv.setUint16(12, 0, true);
+            cv.setUint16(14, 0, true);
+            cv.setUint32(16, crc, true);
+            cv.setUint32(20, size, true);
+            cv.setUint32(24, size, true);
+            cv.setUint16(28, nameBytes.length, true);
+            cv.setUint16(30, 0, true);
+            cv.setUint16(32, 0, true);
+            cv.setUint16(34, 0, true);
+            cv.setUint16(36, 0, true);
+            cv.setUint32(38, 0, true);
+            cv.setUint32(42, offset, true);
+            cen.set(nameBytes, 46);
+            central.push(cen);
+
+            offset += local.byteLength;
+        }
+
+        const cdSize = central.reduce((s, c) => s + c.byteLength, 0);
+        const cdOffset = offset;
+        const eocd = new Uint8Array(22);
+        const ev = new DataView(eocd.buffer);
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(4, 0, true);
+        ev.setUint16(6, 0, true);
+        ev.setUint16(8, central.length, true);
+        ev.setUint16(10, central.length, true);
+        ev.setUint32(12, cdSize, true);
+        ev.setUint32(16, cdOffset, true);
+        ev.setUint16(20, 0, true);
+
+        const total = offset + cdSize + 22;
+        const out = new Uint8Array(total);
+        let o = 0;
+        for (const l of locals) { out.set(l, o); o += l.byteLength; }
+        for (const c of central) { out.set(c, o); o += c.byteLength; }
+        out.set(eocd, o);
+        return out;
+    },
+
+    _crc32: function (u8) {
+        if (!this._crcTable) {
+            const table = new Uint32Array(256);
+            for (let n = 0; n < 256; n++) {
+                let c = n;
+                for (let k = 0; k < 8; k++)
+                    c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+                table[n] = c >>> 0;
+            }
+            this._crcTable = table;
+        }
+        let crc = 0 ^ (-1);
+        for (let i = 0; i < u8.length; i++)
+            crc = (crc >>> 8) ^ this._crcTable[(crc ^ u8[i]) & 0xff];
+        return (crc ^ (-1)) >>> 0;
+    },
+
 };

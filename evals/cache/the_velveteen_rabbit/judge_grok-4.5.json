@@ -1,0 +1,156 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 4,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 2,
+      "overallQualitativeScore": 3.83,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major dropped narrative beats (illness details, doctor order, sack loneliness, full fairy transformation)",
+        "Over-condensed structure that crams or skips source events",
+        "Insufficient recurring visual character locks"
+      ],
+      "rationale": "Severely abridged summary that omits core source sequences and reduces the story to thin narrator bridges; scenes are not broken into discrete 5-10s visual beats and character re-appearances lack locked descriptions, rendering it unusable for clip production."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 8.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Nearly complete, accurate translation of every major book beat and line of dialogue with concrete, single-location visual actions ideal for short AI clips; character looks are established early and held; only weakness is total absence of explicit music/sound-bed prompts."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9.5,
+      "dramaticPacing": 9.5,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 4,
+      "overallQualitativeScore": 8.58,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Most exhaustive and precise adaptation: every source beat, sensory detail and line is preserved as discrete, camera-ready actions with consistent, lockable character descriptions (Boy fair hair/nightshirt, Nana starched apron, Rabbit progressive shabbiness); emotional arcs are crystal-clear for later music scoring even without explicit cues."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 3.5,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 6,
+      "soundDesignMusic": 2.5,
+      "overallQualitativeScore": 5.42,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented named character (Master William)",
+        "Invented toy dialogue and spoken tear monologue",
+        "Re-ordered and partially dropped Christmas/Skin-Horse setup"
+      ],
+      "rationale": "Invented proper names and dialogue plus structural reordering trigger severe fidelity penalty; remaining visuals are serviceable but the script cannot be green-lit as a faithful adaptation."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 3.5,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 4.5,
+      "dialogueAuthenticity": 6,
+      "soundDesignMusic": 2,
+      "overallQualitativeScore": 4.42,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major dropped beats (full Skin Horse speech, detailed illness, complete fairy sequence)",
+        "Overly skeletal scenes that collapse multiple source events"
+      ],
+      "rationale": "Bare-bones condensation that loses most of the book\u2019s emotional texture and visual specificity; too many multi-beat summaries and missing character locks make it unsuitable for per-clip AI generation."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Faithful, well-paced coverage of virtually all source incidents with clear visual staging and authentic dialogue; character descriptions are solid and recurring; only minor shortfall is lack of music/sound prompts and slightly less granular action lines than top contenders."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 2,
+      "characterDisambiguation": 3,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 2.5,
+      "dialogueAuthenticity": 3.5,
+      "soundDesignMusic": 1.5,
+      "overallQualitativeScore": 2.58,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Jumbled chronology and wrong locations (wild rabbits appear in spring garden)",
+        "Major invented/reordered events and incomplete transformation/ending",
+        "Near-total drop of source coverage and character visual locks"
+      ],
+      "rationale": "Broken structure that misplaces key scenes, invents dialogue and truncates the climax; unusable as either faithful adaptation or clip-ready screenplay."
+    },
+    {
+      "screenplayId": "Screenplay H",
+      "adaptationFidelity": 2.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 3,
+      "overallQualitativeScore": 6.42,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented named characters (Bracken, Thistle, Doctor Bell)",
+        "Multiple invented dialogue expansions and plot flourishes"
+      ],
+      "rationale": "Visually rich and clip-friendly staging is undermined by severe fidelity violation through invented proper names and non-source dialogue; cannot be green-lit as an adaptation of the book."
+    },
+    {
+      "screenplayId": "Screenplay I",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 6.83,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented named character (Bramble)"
+      ],
+      "rationale": "Otherwise strong visual storytelling and near-complete beat coverage are disqualified by the introduction of an invented proper name for a wild rabbit, triggering the mandated severe fidelity penalty."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay C",
+    "Screenplay B",
+    "Screenplay F",
+    "Screenplay I",
+    "Screenplay H",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay C because it delivers the most exhaustive, visually precise and clip-ready translation of every source beat with locked character descriptions. Weakest: Screenplay G because it jumbles chronology, invents events and collapses the narrative into an unusable fragment.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "CDECC7C429F2C3FF5C70D2CD70646A1D71F5197BF9BB2F43D2916F632203BBF4"
+}

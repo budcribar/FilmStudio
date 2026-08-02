@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.DataProtection;
@@ -24,6 +25,7 @@ public class UserDatabaseService
     private readonly string _dbPath;
     private readonly IDataProtector? _protector;
     private readonly ILogger<UserDatabaseService> _logger;
+    private readonly BillingOptions _billing;
     private readonly object _initLock = new();
     private bool _initialized;
 
@@ -34,6 +36,7 @@ public class UserDatabaseService
     {
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<UserDatabaseService>.Instance;
         _protector = dataProtection?.CreateProtector("PageToMovie.UserApiKeys");
+        _billing = options?.Value?.Billing ?? new BillingOptions();
 
         var workspace = options?.Value?.WorkspaceRoot;
         var dataDir = ResolveDataDirectory(workspace);
@@ -68,10 +71,55 @@ public class UserDatabaseService
         if (Directory.Exists("/app/data"))
             return "/app/data";
 
+        // Local Visual Studio / Windows: keep tokens & users outside the repo so Clean/Rebuild
+        // never deletes OAuth (YouTube) or personal API keys. Workspace still holds projects.
+        try
+        {
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (!string.IsNullOrWhiteSpace(local))
+            {
+                var stable = Path.Combine(local, "PageToMovie", "data");
+                Directory.CreateDirectory(stable);
+                // One-time: copy legacy workspace/data DB if stable is empty.
+                TryMigrateLegacyWorkspaceData(workspace, stable);
+                return stable;
+            }
+        }
+        catch { /* fall through */ }
+
         if (!string.IsNullOrWhiteSpace(workspace))
             return Path.Combine(workspace.Trim(), "data");
 
         return Path.Combine(Path.GetTempPath(), "PageToMovie", "data");
+    }
+
+
+    /// <summary>
+    /// Copy <c>pagetomovie.db</c> from repo workspace/data into LocalAppData when the
+    /// stable store has no DB yet (preserves YouTube OAuth after the path change).
+    /// </summary>
+    static void TryMigrateLegacyWorkspaceData(string? workspace, string stableDir)
+    {
+        try
+        {
+            var destDb = Path.Combine(stableDir, "pagetomovie.db");
+            if (File.Exists(destDb))
+                return;
+            if (string.IsNullOrWhiteSpace(workspace))
+                return;
+            var srcDb = Path.Combine(workspace.Trim(), "data", "pagetomovie.db");
+            if (!File.Exists(srcDb))
+                return;
+            File.Copy(srcDb, destDb, overwrite: false);
+            foreach (var name in new[] { "pagetomovie.db-wal", "pagetomovie.db-shm" })
+            {
+                var s = Path.Combine(workspace.Trim(), "data", name);
+                var d = Path.Combine(stableDir, name);
+                if (File.Exists(s) && !File.Exists(d))
+                    File.Copy(s, d, overwrite: false);
+            }
+        }
+        catch { /* best effort */ }
     }
 
     private static bool IsIsolatedTestWorkspace(string? workspace)
@@ -200,6 +248,17 @@ public class UserDatabaseService
                         setVer3.ExecuteNonQuery();
                         _logger.LogInformation("Migrated SQLite schema to user_version 3 (unified dynamic user_api_keys table)");
                     }
+
+                    if (curVer < 4)
+                    {
+                        // Migration v3 -> v4: generation_errors table created unconditionally below
+                        // (CREATE TABLE IF NOT EXISTS, same idempotent style as user_api_calls) —
+                        // this block only advances the version marker + logs the migration event.
+                        using var setVer4 = conn.CreateCommand();
+                        setVer4.CommandText = "PRAGMA user_version = 4;";
+                        setVer4.ExecuteNonQuery();
+                        _logger.LogInformation("Migrated SQLite schema to user_version 4 (added generation_errors table)");
+                    }
                 }
 
                 // User billing credits (list-rate USD; 1 credit = $0.01).
@@ -267,6 +326,117 @@ public class UserDatabaseService
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
+                        CREATE TABLE IF NOT EXISTS user_api_calls (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id TEXT NOT NULL,
+                            ts TEXT NOT NULL,
+                            project_id TEXT,
+                            job_id TEXT,
+                            kind TEXT NOT NULL,
+                            mode TEXT,
+                            provider TEXT,
+                            model TEXT,
+                            endpoint TEXT,
+                            http_status INTEGER,
+                            ok INTEGER NOT NULL DEFAULT 1,
+                            duration_ms INTEGER,
+                            estimated_usd REAL,
+                            currency TEXT NOT NULL DEFAULT 'USD',
+                            scene INTEGER,
+                            clip INTEGER,
+                            char_key TEXT,
+                            resolution TEXT,
+                            duration_sec REAL,
+                            input_tokens INTEGER,
+                            output_tokens INTEGER,
+                            prompt_chars INTEGER,
+                            response_chars INTEGER,
+                            request_id TEXT,
+                            error TEXT,
+                            purpose TEXT,
+                            fakes INTEGER NOT NULL DEFAULT 0
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_user_ts ON user_api_calls(user_id, ts);
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_project ON user_api_calls(project_id);
+                        CREATE INDEX IF NOT EXISTS idx_user_api_calls_kind ON user_api_calls(kind);
+                    ";
+                    cmd.ExecuteNonQuery();
+                }
+
+                // User-facing cost bucket (screenplay / characters / video / voice / music / other).
+                EnsureColumn(conn, "user_api_calls", "category", "TEXT");
+                // Customer charge (list × admin multiplier) — per-user actual charges.
+                EnsureColumn(conn, "user_api_calls", "charge_usd", "REAL");
+                EnsureColumn(conn, "user_api_calls", "charge_multiplier", "REAL");
+                try
+                {
+                    using var idxCmd = conn.CreateCommand();
+                    idxCmd.CommandText =
+                        "CREATE INDEX IF NOT EXISTS idx_user_api_calls_category ON user_api_calls(category);";
+                    idxCmd.ExecuteNonQuery();
+                }
+                catch { /* ignore */ }
+
+                // generation_errors (v4): partial-coverage / structural-gate / transient-retry
+                // events — a different concept from user_api_calls (which logs every call,
+                // success or failure). See GenerationErrorLogger.
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        CREATE TABLE IF NOT EXISTS generation_errors (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            ts TEXT NOT NULL,
+                            user_id TEXT,
+                            project_id TEXT,
+                            job_id TEXT,
+                            scene INTEGER,
+                            clip INTEGER,
+                            stage TEXT NOT NULL,
+                            provider TEXT,
+                            model TEXT,
+                            error_type TEXT NOT NULL,
+                            error_message TEXT,
+                            http_status INTEGER,
+                            requested_count INTEGER,
+                            returned_count INTEGER,
+                            missing_ids_json TEXT,
+                            attempt INTEGER NOT NULL DEFAULT 1,
+                            resolved INTEGER NOT NULL DEFAULT 0,
+                            request_summary TEXT,
+                            response_summary TEXT
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_generation_errors_project_ts ON generation_errors(project_id, ts);
+                        CREATE INDEX IF NOT EXISTS idx_generation_errors_type_ts ON generation_errors(error_type, ts);
+                    ";
+                    cmd.ExecuteNonQuery();
+                }
+
+                // v5: attribute orphaned cost rows (no user / no project) to Bud Cribar + development.
+                // Also backfill charge_usd. Detects old DBs via PRAGMA user_version < 5 (Railway).
+                using (var vCmd5 = conn.CreateCommand())
+                {
+                    vCmd5.CommandText = "PRAGMA user_version;";
+                    var verAfterTables = Convert.ToInt32(vCmd5.ExecuteScalar() ?? 0);
+                    if (verAfterTables < 5)
+                    {
+                        MigrateLegacyCostAttributionV5(conn, _billing);
+                        using var setVer5 = conn.CreateCommand();
+                        setVer5.CommandText = "PRAGMA user_version = 5;";
+                        setVer5.ExecuteNonQuery();
+                        _logger.LogInformation(
+                            "Migrated SQLite schema to user_version 5 (legacy cost attribution → {User}/{Project})",
+                            string.IsNullOrWhiteSpace(_billing.LegacyCostOwnerUserId)
+                                ? "budcribar"
+                                : _billing.LegacyCostOwnerUserId.Trim(),
+                            string.IsNullOrWhiteSpace(_billing.LegacyCostProjectId)
+                                ? "development"
+                                : _billing.LegacyCostProjectId.Trim());
+                    }
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
                         INSERT INTO users (user_id, username, password_hash, role, created_at, email_confirmed_at)
                         VALUES ('admin', 'admin', @hash, 'Admin', @created, @created)
                         ON CONFLICT(user_id) DO UPDATE SET
@@ -288,6 +458,153 @@ public class UserDatabaseService
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    /// One-shot migration for Railway / old DBs: rows with missing user and/or project
+    /// are assigned to the legacy owner (Bud Cribar / <c>budcribar</c>) and project <c>development</c>.
+    /// Also backfills <c>charge_usd</c> from list rate × current charge multiplier when null.
+    /// </summary>
+    private void MigrateLegacyCostAttributionV5(SqliteConnection conn, BillingOptions billing)
+    {
+        var ownerId = string.IsNullOrWhiteSpace(billing.LegacyCostOwnerUserId)
+            ? "budcribar"
+            : billing.LegacyCostOwnerUserId.Trim();
+        var ownerName = string.IsNullOrWhiteSpace(billing.LegacyCostOwnerUsername)
+            ? "Bud Cribar"
+            : billing.LegacyCostOwnerUsername.Trim();
+        var projectId = string.IsNullOrWhiteSpace(billing.LegacyCostProjectId)
+            ? "development"
+            : billing.LegacyCostProjectId.Trim();
+        var mult = PageToMovie.Core.Billing.ChargePricing.ClampMultiplier(billing.ChargeMultiplier);
+
+        // Ensure owner user exists so spend summaries resolve a real account.
+        using (var ensureUser = conn.CreateCommand())
+        {
+            ensureUser.CommandText = @"
+                INSERT INTO users (user_id, username, password_hash, role, created_at, email_confirmed_at)
+                VALUES (@id, @name, '', 'User', @created, @created)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    username = CASE
+                        WHEN users.username IS NULL OR TRIM(users.username) = '' OR LOWER(users.username) = LOWER(users.user_id)
+                        THEN @name
+                        ELSE users.username
+                    END;";
+            ensureUser.Parameters.AddWithValue("@id", ownerId);
+            ensureUser.Parameters.AddWithValue("@name", ownerName);
+            ensureUser.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
+            ensureUser.ExecuteNonQuery();
+        }
+
+        // Placeholders used before real BYOK attribution (empty, local default, unknown).
+        // Does NOT reassign costs already owned by real signed-in users.
+        const string orphanUserSql = @"
+            user_id IS NULL
+            OR TRIM(user_id) = ''
+            OR LOWER(TRIM(user_id)) IN ('local', 'unknown', 'none', 'system', 'anonymous')";
+
+        int apiUser = 0, apiProj = 0, apiCharge = 0, genUser = 0, genProj = 0, creditUser = 0, creditProj = 0;
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $@"
+                UPDATE user_api_calls
+                SET user_id = @owner
+                WHERE {orphanUserSql};";
+            cmd.Parameters.AddWithValue("@owner", ownerId);
+            apiUser = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE user_api_calls
+                SET project_id = @project
+                WHERE project_id IS NULL OR TRIM(project_id) = '';";
+            cmd.Parameters.AddWithValue("@project", projectId);
+            apiProj = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE user_api_calls
+                SET charge_usd = ROUND(estimated_usd * @mult, 6),
+                    charge_multiplier = @mult
+                WHERE estimated_usd IS NOT NULL
+                  AND estimated_usd > 0
+                  AND (charge_usd IS NULL OR charge_usd <= 0);";
+            cmd.Parameters.AddWithValue("@mult", mult);
+            apiCharge = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $@"
+                UPDATE generation_errors
+                SET user_id = @owner
+                WHERE {orphanUserSql};";
+            cmd.Parameters.AddWithValue("@owner", ownerId);
+            genUser = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE generation_errors
+                SET project_id = @project
+                WHERE project_id IS NULL OR TRIM(project_id) = '';";
+            cmd.Parameters.AddWithValue("@project", projectId);
+            genProj = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $@"
+                UPDATE credit_ledger
+                SET user_id = @owner
+                WHERE {orphanUserSql};";
+            cmd.Parameters.AddWithValue("@owner", ownerId);
+            creditUser = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE credit_ledger
+                SET project_id = @project
+                WHERE project_id IS NULL OR TRIM(project_id) = '';";
+            cmd.Parameters.AddWithValue("@project", projectId);
+            creditProj = cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                INSERT INTO credit_ledger (user_id, ts, kind, amount_usd, balance_after_usd, project_id, note, meta_kind)
+                VALUES (
+                    @owner,
+                    @ts,
+                    'adjust',
+                    0,
+                    COALESCE((SELECT credits_balance_usd FROM users WHERE user_id = @owner), 0),
+                    @project,
+                    @note,
+                    'legacy_cost_attribution_v5');";
+            cmd.Parameters.AddWithValue("@owner", ownerId);
+            cmd.Parameters.AddWithValue("@ts", DateTime.UtcNow.ToString("o"));
+            cmd.Parameters.AddWithValue("@project", projectId);
+            cmd.Parameters.AddWithValue("@note",
+                $"v5 migrate: api_user={apiUser} api_project={apiProj} api_charge={apiCharge} " +
+                $"gen_user={genUser} gen_project={genProj} credit_user={creditUser} credit_project={creditProj}");
+            cmd.ExecuteNonQuery();
+        }
+
+        _logger.LogInformation(
+            "Legacy cost attribution v5: owner={Owner} project={Project} mult={Mult} " +
+            "api_user={ApiUser} api_project={ApiProj} api_charge={ApiCharge} " +
+            "gen_user={GenUser} gen_project={GenProj} credit_user={CreditUser} credit_project={CreditProj}",
+            ownerId, projectId, mult, apiUser, apiProj, apiCharge, genUser, genProj, creditUser, creditProj);
     }
 
     private static void EnsureColumn(SqliteConnection conn, string table, string column, string typeSql)
@@ -478,6 +795,507 @@ public class UserDatabaseService
         }
     }
 
+
+    /// <summary>
+    /// Append one API call for BYOK cost attribution. Never throws to callers — telemetry must not break gen.
+    /// </summary>
+
+    public async Task<List<UserApiCallRow>> ListUserApiCallsAsync(
+        string userId,
+        int take = 100,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var list = new List<UserApiCallRow>();
+        if (string.IsNullOrWhiteSpace(userId)) return list;
+        take = Math.Clamp(take, 1, 500);
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT id, user_id, ts, project_id, job_id, kind, mode, category, provider, model, endpoint,
+                   http_status, ok, duration_ms, estimated_usd, currency, scene, clip, char_key,
+                   resolution, duration_sec, input_tokens, output_tokens, purpose, error, fakes
+            FROM user_api_calls
+            WHERE user_id = @userId
+            ORDER BY id DESC
+            LIMIT @take";
+        cmd.Parameters.AddWithValue("@userId", userId.Trim());
+        cmd.Parameters.AddWithValue("@take", take);
+        using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await r.ReadAsync(ct).ConfigureAwait(false))
+        {
+            list.Add(new UserApiCallRow
+            {
+                Id = r.GetInt64(0),
+                UserId = r.GetString(1),
+                Ts = r.GetString(2),
+                ProjectId = r.IsDBNull(3) ? null : r.GetString(3),
+                JobId = r.IsDBNull(4) ? null : r.GetString(4),
+                Kind = r.GetString(5),
+                Mode = r.IsDBNull(6) ? null : r.GetString(6),
+                Category = r.IsDBNull(7) || string.IsNullOrWhiteSpace(r.GetString(7))
+                    ? CostCategories.Resolve(r.GetString(5), r.IsDBNull(6) ? null : r.GetString(6))
+                    : CostCategories.Resolve(r.GetString(5), r.IsDBNull(6) ? null : r.GetString(6), r.GetString(7)),
+                Provider = r.IsDBNull(8) ? null : r.GetString(8),
+                Model = r.IsDBNull(9) ? null : r.GetString(9),
+                Endpoint = r.IsDBNull(10) ? null : r.GetString(10),
+                HttpStatus = r.IsDBNull(11) ? null : r.GetInt32(11),
+                Ok = r.GetInt32(12) != 0,
+                DurationMs = r.IsDBNull(13) ? null : r.GetInt64(13),
+                EstimatedUsd = r.IsDBNull(14) ? null : r.GetDouble(14),
+                Currency = r.IsDBNull(15) ? "USD" : r.GetString(15),
+                Scene = r.IsDBNull(16) ? null : r.GetInt32(16),
+                Clip = r.IsDBNull(17) ? null : r.GetInt32(17),
+                CharKey = r.IsDBNull(18) ? null : r.GetString(18),
+                Resolution = r.IsDBNull(19) ? null : r.GetString(19),
+                DurationSec = r.IsDBNull(20) ? null : r.GetDouble(20),
+                InputTokens = r.IsDBNull(21) ? null : r.GetInt32(21),
+                OutputTokens = r.IsDBNull(22) ? null : r.GetInt32(22),
+                Purpose = r.IsDBNull(23) ? null : r.GetString(23),
+                Error = r.IsDBNull(24) ? null : r.GetString(24),
+                Fakes = r.GetInt32(25) != 0,
+            });
+        }
+        return list;
+    }
+
+
+    /// <summary>
+    /// Aggregate list-rate spend from user_api_calls for estimate refinement.
+    /// When <paramref name="userId"/> is null/empty, uses all users (portfolio prior).
+    /// </summary>
+    public async Task<ApiCostHistoryStats> GetApiCostHistoryStatsAsync(
+        string? userId = null,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var stats = new ApiCostHistoryStats();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT
+                    COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
+                    COUNT(*),
+                    COALESCE(SUM(estimated_usd), 0),
+                    COALESCE(AVG(estimated_usd), 0)
+                FROM user_api_calls
+                WHERE ok = 1
+                  AND estimated_usd IS NOT NULL
+                  AND estimated_usd > 0
+                  AND (@userId = '' OR user_id = @userId)
+                  AND (@projectId = '' OR project_id = @projectId)
+                GROUP BY cat
+                """;
+            cmd.Parameters.AddWithValue("@userId", string.IsNullOrWhiteSpace(userId) ? "" : userId.Trim());
+            cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                var cat = CostCategories.Resolve(r.GetString(0), null, r.GetString(0));
+                var count = r.GetInt32(1);
+                var sum = r.GetDouble(2);
+                var avg = r.GetDouble(3);
+                stats.TotalCalls += count;
+                stats.TotalUsd += sum;
+                if (!stats.ByCategory.TryGetValue(cat, out var row))
+                {
+                    row = new CategoryCostStats { Category = cat };
+                    stats.ByCategory[cat] = row;
+                }
+                row.Count += count;
+                row.TotalUsd += sum;
+                row.AvgUsd = row.Count > 0 ? row.TotalUsd / row.Count : 0;
+                _ = avg;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "GetApiCostHistoryStatsAsync failed");
+        }
+        return stats;
+    }
+
+    /// <summary>
+    /// Actual spend grouped by provider (then category). Returns both list-rate (COGS) and
+    /// customer charge amounts. <paramref name="userId"/> null/empty = all users;
+    /// <paramref name="projectId"/> null/empty = all projects.
+    /// </summary>
+    public async Task<ApiCostByProviderStats> GetApiCostByProviderAsync(
+        string? userId = null,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var stats = new ApiCostByProviderStats();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            // charge_usd may be null on legacy rows → fall back to estimated_usd (list rate).
+            cmd.CommandText = """
+                SELECT
+                    COALESCE(NULLIF(TRIM(provider), ''), 'unknown') AS prov,
+                    COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
+                    COUNT(*),
+                    COALESCE(SUM(estimated_usd), 0),
+                    COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
+                FROM user_api_calls
+                WHERE ok = 1
+                  AND estimated_usd IS NOT NULL
+                  AND estimated_usd > 0
+                  AND (@userId = '' OR user_id = @userId)
+                  AND (@projectId = '' OR project_id = @projectId)
+                GROUP BY prov, cat
+                """;
+            cmd.Parameters.AddWithValue("@userId", string.IsNullOrWhiteSpace(userId) ? "" : userId.Trim());
+            cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                var provider = r.GetString(0);
+                var cat = CostCategories.Resolve(r.GetString(1), null, r.GetString(1));
+                var count = r.GetInt32(2);
+                var listSum = r.GetDouble(3);
+                var chargeSum = r.GetDouble(4);
+
+                if (!stats.ByProvider.TryGetValue(provider, out var prow))
+                {
+                    prow = new ProviderCostStats { Provider = provider };
+                    stats.ByProvider[provider] = prow;
+                }
+                prow.Count += count;
+                prow.TotalListUsd += listSum;
+                prow.TotalChargeUsd += chargeSum;
+                prow.TotalUsd += chargeSum; // customer-facing default
+                if (!prow.ByCategory.TryGetValue(cat, out var crow))
+                {
+                    crow = new CategoryCostStats { Category = cat };
+                    prow.ByCategory[cat] = crow;
+                }
+                crow.Count += count;
+                crow.TotalListUsd += listSum;
+                crow.TotalChargeUsd += chargeSum;
+                crow.TotalUsd += chargeSum;
+                crow.AvgUsd = crow.Count > 0 ? crow.TotalChargeUsd / crow.Count : 0;
+
+                stats.TotalCalls += count;
+                stats.TotalListUsd += listSum;
+                stats.TotalChargeUsd += chargeSum;
+                stats.TotalUsd += chargeSum;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "GetApiCostByProviderAsync failed");
+        }
+        return stats;
+    }
+
+    /// <summary>
+    /// Per-user spend: grand total, by project, by vendor (provider), by category.
+    /// Source of truth: <c>user_api_calls</c> (requires UserId on every API log).
+    /// </summary>
+    public async Task<UserSpendSummary> GetUserSpendSummaryAsync(
+        string userId,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var summary = new UserSpendSummary
+        {
+            UserId = string.IsNullOrWhiteSpace(userId) ? "" : userId.Trim(),
+        };
+        if (string.IsNullOrWhiteSpace(summary.UserId))
+            return summary;
+
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+
+            // Totals + by project
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT
+                        COALESCE(NULLIF(TRIM(project_id), ''), '(no project)') AS proj,
+                        COUNT(*),
+                        COALESCE(SUM(estimated_usd), 0),
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
+                    FROM user_api_calls
+                    WHERE ok = 1
+                      AND user_id = @userId
+                      AND estimated_usd IS NOT NULL
+                      AND estimated_usd > 0
+                      AND (@projectId = '' OR project_id = @projectId)
+                    GROUP BY proj
+                    ORDER BY 4 DESC
+                    """;
+                cmd.Parameters.AddWithValue("@userId", summary.UserId);
+                cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    var proj = r.GetString(0);
+                    var count = r.GetInt32(1);
+                    var listSum = r.GetDouble(2);
+                    var chargeSum = r.GetDouble(3);
+                    summary.ByProject.Add(new ProjectSpendRow
+                    {
+                        ProjectId = proj,
+                        Calls = count,
+                        ListUsd = Math.Round(listSum, 4),
+                        ChargeUsd = Math.Round(chargeSum, 4),
+                    });
+                    summary.TotalCalls += count;
+                    summary.TotalListUsd += listSum;
+                    summary.TotalChargeUsd += chargeSum;
+                }
+            }
+
+            summary.TotalListUsd = Math.Round(summary.TotalListUsd, 4);
+            summary.TotalChargeUsd = Math.Round(summary.TotalChargeUsd, 4);
+
+            // By provider (reuse filter)
+            var byProv = await GetApiCostByProviderAsync(summary.UserId, projectId, ct).ConfigureAwait(false);
+            summary.ByProvider = byProv.ByProvider
+                .OrderByDescending(kv => kv.Value.TotalChargeUsd)
+                .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+
+            // By category (user-facing buckets)
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT
+                        COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
+                        COUNT(*),
+                        COALESCE(SUM(estimated_usd), 0),
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
+                    FROM user_api_calls
+                    WHERE ok = 1
+                      AND user_id = @userId
+                      AND estimated_usd IS NOT NULL
+                      AND estimated_usd > 0
+                      AND (@projectId = '' OR project_id = @projectId)
+                    GROUP BY cat
+                    """;
+                cmd.Parameters.AddWithValue("@userId", summary.UserId);
+                cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    var cat = CostCategories.Resolve(r.GetString(0), null, r.GetString(0));
+                    var count = r.GetInt32(1);
+                    var listSum = r.GetDouble(2);
+                    var chargeSum = r.GetDouble(3);
+                    summary.ByCategory[cat] = new CategoryCostStats
+                    {
+                        Category = cat,
+                        Count = count,
+                        TotalListUsd = Math.Round(listSum, 4),
+                        TotalChargeUsd = Math.Round(chargeSum, 4),
+                        TotalUsd = Math.Round(chargeSum, 4),
+                        AvgUsd = count > 0 ? Math.Round(chargeSum / count, 4) : 0,
+                    };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "GetUserSpendSummaryAsync failed for {UserId}", summary.UserId);
+        }
+
+        return summary;
+    }
+
+    public async Task InsertUserApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
+    {
+        if (rec is null || string.IsNullOrWhiteSpace(rec.UserId))
+            return;
+
+        EnsureDatabaseInitialized();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT INTO user_api_calls (
+                    user_id, ts, project_id, job_id, kind, mode, category, provider, model, endpoint,
+                    http_status, ok, duration_ms, estimated_usd, charge_usd, charge_multiplier, currency,
+                    scene, clip, char_key, resolution, duration_sec,
+                    input_tokens, output_tokens, prompt_chars, response_chars,
+                    request_id, error, purpose, fakes)
+                VALUES (
+                    @userId, @ts, @projectId, @jobId, @kind, @mode, @category, @provider, @model, @endpoint,
+                    @httpStatus, @ok, @durationMs, @estimatedUsd, @chargeUsd, @chargeMultiplier, @currency,
+                    @scene, @clip, @charKey, @resolution, @durationSec,
+                    @inputTokens, @outputTokens, @promptChars, @responseChars,
+                    @requestId, @error, @purpose, @fakes)";
+            var ts = (rec.Ts ?? DateTimeOffset.UtcNow).ToString("o");
+            var purpose = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
+            if (!string.IsNullOrWhiteSpace(rec.Mode))
+                purpose = $"{purpose}:{rec.Mode}";
+            cmd.Parameters.AddWithValue("@userId", rec.UserId.Trim());
+            cmd.Parameters.AddWithValue("@ts", ts);
+            cmd.Parameters.AddWithValue("@projectId", (object?)rec.ProjectId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@jobId", (object?)rec.JobId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@kind", rec.Kind ?? "");
+            cmd.Parameters.AddWithValue("@mode", (object?)rec.Mode ?? DBNull.Value);
+            var category = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
+            cmd.Parameters.AddWithValue("@category", category);
+            cmd.Parameters.AddWithValue("@provider", (object?)rec.Provider ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@model", (object?)rec.Model ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@endpoint", (object?)rec.Endpoint ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@httpStatus", (object?)rec.HttpStatus ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ok", rec.Ok ? 1 : 0);
+            cmd.Parameters.AddWithValue("@durationMs", (object?)rec.DurationMs ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@estimatedUsd", (object?)rec.EstimatedUsd ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@chargeUsd", (object?)rec.ChargeUsd ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@chargeMultiplier", (object?)rec.ChargeMultiplier ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@currency", "USD");
+            cmd.Parameters.AddWithValue("@scene", (object?)rec.Scene ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@clip", (object?)rec.Clip ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@charKey", (object?)rec.CharKey ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@resolution", (object?)rec.Resolution ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@durationSec", (object?)rec.DurationSec ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@inputTokens", (object?)rec.InputTokens ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@outputTokens", (object?)rec.OutputTokens ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@promptChars", (object?)rec.PromptChars ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@responseChars", (object?)rec.ResponseChars ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@requestId", (object?)rec.RequestId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@error", string.IsNullOrWhiteSpace(rec.Error) ? DBNull.Value : (rec.Error!.Length > 500 ? rec.Error[..500] : rec.Error));
+            cmd.Parameters.AddWithValue("@purpose", purpose ?? "");
+            cmd.Parameters.AddWithValue("@fakes", rec.Fakes ? 1 : 0);
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "InsertUserApiCallAsync failed for {UserId}", rec.UserId);
+        }
+    }
+
+    /// <summary>
+    /// Append one generation-error row (partial coverage / structural gate / transient retry).
+    /// Never throws to callers — same swallow-and-warn contract as <see cref="InsertUserApiCallAsync"/>.
+    /// Prefer <see cref="GenerationErrorLogger"/> over calling this directly.
+    /// </summary>
+    public async Task InsertGenerationErrorAsync(GenerationErrorRecord rec, CancellationToken ct = default)
+    {
+        if (rec is null) return;
+        EnsureDatabaseInitialized();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT INTO generation_errors (
+                    ts, user_id, project_id, job_id, scene, clip, stage, provider, model,
+                    error_type, error_message, http_status, requested_count, returned_count,
+                    missing_ids_json, attempt, resolved, request_summary, response_summary)
+                VALUES (
+                    @ts, @userId, @projectId, @jobId, @scene, @clip, @stage, @provider, @model,
+                    @errorType, @errorMessage, @httpStatus, @requestedCount, @returnedCount,
+                    @missingIdsJson, @attempt, @resolved, @requestSummary, @responseSummary)";
+            var ts = (rec.Ts ?? DateTimeOffset.UtcNow).ToString("o");
+            static string? Trunc500(string? s) => string.IsNullOrEmpty(s) ? s : (s.Length > 500 ? s[..500] : s);
+            cmd.Parameters.AddWithValue("@ts", ts);
+            cmd.Parameters.AddWithValue("@userId", (object?)rec.UserId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@projectId", (object?)rec.ProjectId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@jobId", (object?)rec.JobId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@scene", (object?)rec.Scene ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@clip", (object?)rec.Clip ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@stage", rec.Stage ?? "");
+            cmd.Parameters.AddWithValue("@provider", (object?)rec.Provider ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@model", (object?)rec.Model ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@errorType", rec.ErrorType ?? "");
+            cmd.Parameters.AddWithValue("@errorMessage", (object?)Trunc500(rec.ErrorMessage) ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@httpStatus", (object?)rec.HttpStatus ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@requestedCount", (object?)rec.RequestedCount ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@returnedCount", (object?)rec.ReturnedCount ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@missingIdsJson",
+                rec.MissingIds is { Count: > 0 } ids ? JsonSerializer.Serialize(ids) : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@attempt", rec.Attempt);
+            cmd.Parameters.AddWithValue("@resolved", rec.Resolved ? 1 : 0);
+            cmd.Parameters.AddWithValue("@requestSummary", (object?)Trunc500(rec.RequestSummary) ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@responseSummary", (object?)Trunc500(rec.ResponseSummary) ?? DBNull.Value);
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "InsertGenerationErrorAsync failed (stage={Stage})", rec.Stage);
+        }
+    }
+
+    /// <summary>Admin panel read: recent generation_errors rows, optionally filtered.</summary>
+    public async Task<List<GenerationErrorRow>> ListGenerationErrorsAsync(
+        string? errorType = null,
+        string? projectId = null,
+        int take = 100,
+        CancellationToken ct = default)
+    {
+        EnsureDatabaseInitialized();
+        var list = new List<GenerationErrorRow>();
+        take = Math.Clamp(take, 1, 500);
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT id, ts, user_id, project_id, job_id, scene, clip, stage, provider, model,
+                       error_type, error_message, http_status, requested_count, returned_count,
+                       missing_ids_json, attempt, resolved, request_summary, response_summary
+                FROM generation_errors
+                WHERE (@errorType = '' OR error_type = @errorType)
+                  AND (@projectId = '' OR project_id = @projectId)
+                ORDER BY id DESC
+                LIMIT @take";
+            cmd.Parameters.AddWithValue("@errorType", string.IsNullOrWhiteSpace(errorType) ? "" : errorType.Trim());
+            cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            cmd.Parameters.AddWithValue("@take", take);
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                list.Add(new GenerationErrorRow
+                {
+                    Id = r.GetInt64(0),
+                    Ts = r.GetString(1),
+                    UserId = r.IsDBNull(2) ? null : r.GetString(2),
+                    ProjectId = r.IsDBNull(3) ? null : r.GetString(3),
+                    JobId = r.IsDBNull(4) ? null : r.GetString(4),
+                    Scene = r.IsDBNull(5) ? null : r.GetInt32(5),
+                    Clip = r.IsDBNull(6) ? null : r.GetInt32(6),
+                    Stage = r.GetString(7),
+                    Provider = r.IsDBNull(8) ? null : r.GetString(8),
+                    Model = r.IsDBNull(9) ? null : r.GetString(9),
+                    ErrorType = r.GetString(10),
+                    ErrorMessage = r.IsDBNull(11) ? null : r.GetString(11),
+                    HttpStatus = r.IsDBNull(12) ? null : r.GetInt32(12),
+                    RequestedCount = r.IsDBNull(13) ? null : r.GetInt32(13),
+                    ReturnedCount = r.IsDBNull(14) ? null : r.GetInt32(14),
+                    MissingIdsJson = r.IsDBNull(15) ? null : r.GetString(15),
+                    Attempt = r.GetInt32(16),
+                    Resolved = r.GetInt32(17) != 0,
+                    RequestSummary = r.IsDBNull(18) ? null : r.GetString(18),
+                    ResponseSummary = r.IsDBNull(19) ? null : r.GetString(19),
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "ListGenerationErrorsAsync failed");
+        }
+        return list;
+    }
+
     public async Task<string?> GetDecryptedXaiApiKeyAsync(string userId, CancellationToken ct = default) =>
         await GetDecryptedProviderApiKeyAsync(userId, "grok", ct).ConfigureAwait(false);
 
@@ -553,49 +1371,20 @@ public class UserDatabaseService
         if (!personalKeys.ContainsKey("anthropic") && DecryptOptional(user?.EncryptedAnthropicApiKey) is { } a) personalKeys["anthropic"] = a;
         if (!personalKeys.ContainsKey("fal") && DecryptOptional(user?.EncryptedFalApiKey) is { } f) personalKeys["fal"] = f;
 
-        // Dynamically discover all unique providers defined in SupportedModelCatalog (driven by models_catalog.json!)
-        var catalogEntries = SupportedModelCatalog.Entries;
-        var providerGroups = catalogEntries.GroupBy(e => NormalizeProvider(e.ProviderId));
-
-        var providers = new List<ProviderKeyStatusDto>();
-        foreach (var group in providerGroups)
+        // Dynamically discover providers from models_catalog.json (enabled models + requiredEnvKeys).
+        var providers = SupportedModelCatalog.BuildProviderKeyRows();
+        foreach (var row in providers)
         {
-            var pId = group.Key;
-            var sample = group.First();
-            var familyName = sample.Provider.ToString();
-            var displayName = sample.Provider switch
-            {
-                ModelProviderFamily.Xai => "xAI / Grok",
-                ModelProviderFamily.Google => "Google Gemini",
-                ModelProviderFamily.Anthropic => "Anthropic Claude",
-                ModelProviderFamily.Fal => "Fal.ai",
-                _ => char.ToUpperInvariant(pId[0]) + pId[1..],
-            };
-
-            var requiredKeys = group.SelectMany(m => m.RequiredEnvKeys).Distinct().ToList();
-            var hasServer = requiredKeys.Any(EnvPresent);
+            var pId = NormalizeProvider(row.ProviderId);
+            row.ProviderId = pId;
             personalKeys.TryGetValue(pId, out var personal);
-
-            var supportsVideoGen = group.Any(m => m.Capability == ModelCapability.Video && m.SupportsVideoContinue);
-            var supportsVideoReview = group.Any(m => m.SupportsVideoReview);
-            var supportsImageGen = group.Any(m => m.Capability == ModelCapability.Image);
-            var supportsScriptPlanning = group.Any(m => m.Capability == ModelCapability.Chat);
-            var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
-
-            var notes = string.Join("; ", group.Select(m => m.Notes).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Take(2));
-
-            providers.Add(BuildProviderStatus(
-                providerId: pId,
-                displayName: displayName,
-                family: familyName,
-                personal: personal,
-                hasServer: hasServer,
-                supportsVideoGen: supportsVideoGen,
-                supportsVideoReview: supportsVideoReview,
-                supportsImageGen: supportsImageGen,
-                supportsScriptPlanning: supportsScriptPlanning,
-                supportsImageVision: supportsImageVision,
-                notes: notes));
+            var hasPersonal = !string.IsNullOrWhiteSpace(personal);
+            var hasServer = row.RequiredEnvKeys.Any(EnvPresent);
+            row.HasPersonalKey = hasPersonal;
+            row.MaskedPersonalKey = MaskKey(personal);
+            row.HasServerKey = hasServer;
+            // BYOK: "Active" means personal key only; server env is shown but not active spend.
+            row.ActiveSource = hasPersonal ? "personal" : "none";
         }
 
         return new UserSettingsDto
@@ -1135,7 +1924,11 @@ public class UserDatabaseService
             "xai" or "grok" => "grok",
             "google" or "gemini" => "gemini",
             "claude" or "anthropic" => "anthropic",
-            "fal" => "fal",
+            "fal" or "fal.ai" => "fal",
+            "openai" or "oai" => "openai",
+            "suno" => "suno",
+            "aimusicapi" or "ai-music-api" => "aimusicapi",
+            "elevenlabs" or "eleven" => "elevenlabs",
             _ => p,
         };
     }
@@ -1415,4 +2208,128 @@ public class UserDatabaseService
             EmailConfirmedAt = confirmed,
         };
     }
+}
+
+/// <summary>One row from user_api_calls (list-rate cost attribution).</summary>
+public sealed class UserApiCallRow
+{
+    public long Id { get; set; }
+    public string UserId { get; set; } = "";
+    public string Ts { get; set; } = "";
+    public string? ProjectId { get; set; }
+    public string? JobId { get; set; }
+    public string Kind { get; set; } = "";
+    public string? Mode { get; set; }
+    /// <summary>User-facing cost bucket (<see cref="CostCategories"/>).</summary>
+    public string Category { get; set; } = CostCategories.Other;
+    public string? Provider { get; set; }
+    public string? Model { get; set; }
+    public string? Endpoint { get; set; }
+    public int? HttpStatus { get; set; }
+    public bool Ok { get; set; }
+    public long? DurationMs { get; set; }
+    public double? EstimatedUsd { get; set; }
+    public string Currency { get; set; } = "USD";
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public string? CharKey { get; set; }
+    public string? Resolution { get; set; }
+    public double? DurationSec { get; set; }
+    public int? InputTokens { get; set; }
+    public int? OutputTokens { get; set; }
+    public string? Purpose { get; set; }
+    public string? Error { get; set; }
+    public bool Fakes { get; set; }
+}
+
+/// <summary>One row from generation_errors (admin panel read model). See <see cref="GenerationErrorRecord"/> for the write side.</summary>
+public sealed class GenerationErrorRow
+{
+    public long Id { get; set; }
+    public string Ts { get; set; } = "";
+    public string? UserId { get; set; }
+    public string? ProjectId { get; set; }
+    public string? JobId { get; set; }
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public string Stage { get; set; } = "";
+    public string? Provider { get; set; }
+    public string? Model { get; set; }
+    public string ErrorType { get; set; } = "";
+    public string? ErrorMessage { get; set; }
+    public int? HttpStatus { get; set; }
+    public int? RequestedCount { get; set; }
+    public int? ReturnedCount { get; set; }
+    public string? MissingIdsJson { get; set; }
+    public int Attempt { get; set; }
+    public bool Resolved { get; set; }
+    public string? RequestSummary { get; set; }
+    public string? ResponseSummary { get; set; }
+}
+
+
+/// <summary>Portfolio / user API spend aggregates for cost estimate refinement (list rates).</summary>
+public sealed class ApiCostHistoryStats
+{
+    public int TotalCalls { get; set; }
+    /// <summary>List-rate sum (COGS / refinement). Not customer charge.</summary>
+    public double TotalUsd { get; set; }
+    public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class CategoryCostStats
+{
+    public string Category { get; set; } = CostCategories.Other;
+    public int Count { get; set; }
+    /// <summary>Customer charge (or list rate when charge not tracked). Prefer <see cref="TotalChargeUsd"/>.</summary>
+    public double TotalUsd { get; set; }
+    public double TotalListUsd { get; set; }
+    public double TotalChargeUsd { get; set; }
+    public double AvgUsd { get; set; }
+}
+
+/// <summary>Spend grouped by vendor/provider (xAI, Google, ElevenLabs, …).</summary>
+public sealed class ApiCostByProviderStats
+{
+    public int TotalCalls { get; set; }
+    /// <summary>Customer charge total (default for UI).</summary>
+    public double TotalUsd { get; set; }
+    public double TotalListUsd { get; set; }
+    public double TotalChargeUsd { get; set; }
+    public Dictionary<string, ProviderCostStats> ByProvider { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class ProviderCostStats
+{
+    public string Provider { get; set; } = "unknown";
+    public int Count { get; set; }
+    public double TotalUsd { get; set; }
+    public double TotalListUsd { get; set; }
+    public double TotalChargeUsd { get; set; }
+    public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+/// <summary>Signed-in user spend: total, per project, per vendor, per category.</summary>
+public sealed class UserSpendSummary
+{
+    public string UserId { get; set; } = "";
+    public int TotalCalls { get; set; }
+    public double TotalListUsd { get; set; }
+    public double TotalChargeUsd { get; set; }
+    public List<ProjectSpendRow> ByProject { get; set; } = new();
+    public Dictionary<string, ProviderCostStats> ByProvider { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, CategoryCostStats> ByCategory { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class ProjectSpendRow
+{
+    public string ProjectId { get; set; } = "";
+    public int Calls { get; set; }
+    public double ListUsd { get; set; }
+    public double ChargeUsd { get; set; }
 }

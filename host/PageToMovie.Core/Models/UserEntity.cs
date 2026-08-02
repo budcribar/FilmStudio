@@ -60,7 +60,8 @@ public sealed class ProviderKeyStatusDto
     public bool HasServerKey { get; set; }
 
     /// <summary>True if personal or server key can be used for API calls.</summary>
-    public bool IsConfigured => HasPersonalKey || HasServerKey;
+    /// <summary>Active for BYOK when a personal key is saved (server env alone is not enough).</summary>
+    public bool IsConfigured => HasPersonalKey;
 
     /// <summary>Where the active key comes from: personal, server, or none.</summary>
     public string ActiveSource { get; set; } = "none";
@@ -81,6 +82,9 @@ public sealed class ProviderKeyStatusDto
 
     /// <summary>Limitations users need before picking this provider (video continue, OCR, etc.).</summary>
     public string? Notes { get; set; }
+
+    /// <summary>Env key names from models_catalog.json <c>requiredEnvKeys</c> (e.g. XAI_API_KEY).</summary>
+    public List<string> RequiredEnvKeys { get; set; } = new();
 }
 
 /// <summary>

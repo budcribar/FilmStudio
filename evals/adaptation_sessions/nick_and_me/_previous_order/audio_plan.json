@@ -1,0 +1,741 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "score_intent": "Low Midwest establishing drone; hint of family myth under V.O.",
+      "timing": "Bed under opening shot; dip for Trans Am idle; hold through V.O.",
+      "diegetic_sound": "City traffic bed; distant bus air-brakes; Trans Am V8 idle rumble",
+      "silence_or_exclusions": "No score stings; no interior bleed",
+      "alternatives": [
+        "lean diegetic-only traffic bed",
+        "sparse guitar figure under V.O."
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "score_intent": "Domestic warmth edged by Nick\u0027s dominance",
+      "timing": "Soft pad under Ma TV; swell slightly on Nick entrance; settle on kiss/keys",
+      "diegetic_sound": "Game-show applause from TV; floorboards creak; grocery bags rustle; keys drop in basket; boot steps",
+      "silence_or_exclusions": "Mute street once door closes",
+      "alternatives": [
+        "TV louder as comic bed",
+        "minimal score; emphasize boots and bags"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "score_intent": "Bright childhood memory turning sharp on glass break",
+      "timing": "Playful percussion with kickball; hard cut on smash; thin hold under blame line",
+      "diegetic_sound": "Rubber ball thud; kids yelling; window glass smash; neighbor shout bed",
+      "silence_or_exclusions": "No adult-present score language",
+      "alternatives": [
+        "full playground roar then sudden hush on smash",
+        "memory filter high-pass wind"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "score_intent": "Intimidation pulse; alpha arrival",
+      "timing": "Enter with door; hit on bar drop; rhythmic clanks under fifty rack",
+      "diegetic_sound": "Gym door; iron plates clank; bar drop thud; gym echo voices dull",
+      "silence_or_exclusions": "No music radio competing with clanks",
+      "alternatives": [
+        "pure industrial gym bed",
+        "low brass hit on drop"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "score_intent": "Working-class power montage into freedom car",
+      "timing": "Factory bed through crane/line; handoff to V8 peel-out stinger",
+      "diegetic_sound": "Factory horn; metal line clatter; crane motors; Trans Am V8 roar T-top air",
+      "silence_or_exclusions": "No lyrical song over peel-out",
+      "alternatives": [
+        "diegetic factory only then pure car",
+        "rock guitar sting on exit"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "score_intent": "Stagnant daily grind; soft resignation under V.O.",
+      "timing": "Loopable oven bed whole scene; VO sits above",
+      "diegetic_sound": "Oven doors slam; ticket printer; dough slap; hood fans; street murmur through glass",
+      "silence_or_exclusions": "No romantic cue yet",
+      "alternatives": [
+        "hotter kitchen noise focus",
+        "thin lonely pad under V.O."
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "score_intent": "Meet-cute lift; curious soft wonder on eye lock",
+      "timing": "Neutral street until trip; gentle motif on eyes; trail on her footsteps fade",
+      "diegetic_sound": "Bike lock click; shoe scuff on cement; street noise; backpack shift; footsteps fade on pavement",
+      "silence_or_exclusions": "Duck traffic under first dialogue",
+      "alternatives": [
+        "almost silent eye-lock beat",
+        "light high strings on glance back"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "score_intent": "Unease and cognitive slip; fragile domestic night",
+      "timing": "Sparse tones under pill hunt; resolve slightly on snap-back",
+      "diegetic_sound": "Pill bottles rattle; fridge hum; Ma pacing mutter; soft night apartment",
+      "silence_or_exclusions": "No TV from other room unless bleed intentional soft",
+      "alternatives": [
+        "fridge hum only bed",
+        "dissonant glass-harmonica color"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "score_intent": "Bar camaraderie collapsing into threat",
+      "timing": "Crowd/TV bed; thin tension under nursing-home lecture; cut cold on exit air",
+      "diegetic_sound": "Crowd roar from Packers-Bears TV; billiard crack; rock under talk; back slap; glass set; door to cold",
+      "silence_or_exclusions": "Score should not drown TV callouts",
+      "alternatives": [
+        "diegetic rock louder",
+        "heartbeat-low under Nick look"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "score_intent": "Seeking quiet refuge; transitional breath",
+      "timing": "Wind bed 0-10s; door thud lands silence ahead",
+      "diegetic_sound": "Cold wind; hurried footsteps; heavy library door thud; interior hush spill",
+      "silence_or_exclusions": "Kill bar residue",
+      "alternatives": [
+        "footsteps only",
+        "brief hopeful chime on door"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "score_intent": "Hushed discovery; free knowledge awe",
+      "timing": "Near-silent bed; tiny lift on book pull",
+      "diegetic_sound": "Wood floor creaks; chain lamp tick; stamp on card; pages riffle; librarian murmur low",
+      "silence_or_exclusions": "No phones; preserve library quiet",
+      "alternatives": [
+        "absolute whisper bed",
+        "soft choir pad far under stacks"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "score_intent": "Lull into literary sleep; dream threshold",
+      "timing": "Page turns slow; wash into dream at end",
+      "diegetic_sound": "Distant traffic; page turns; bed settle; radiator soft",
+      "silence_or_exclusions": "No Ma snore comic",
+      "alternatives": [
+        "only pages and breath",
+        "music box fragment dissolving"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "score_intent": "Romantic dream wind; Catherine/Sionna blur",
+      "timing": "Enter full dream score with wind; ride through laugh",
+      "diegetic_sound": "Wind howl on heather; hoofbeats; fabric flap",
+      "silence_or_exclusions": "No modern city bleed",
+      "alternatives": [
+        "period-ish strings only",
+        "wind-only abstract"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "score_intent": "Hard wake cut from dream romance",
+      "timing": "Score snip on jolt; residual ring 2-3s",
+      "diegetic_sound": "Sharp breath; book shift on chest; radiator knock",
+      "silence_or_exclusions": "No continuing moor music after jolt",
+      "alternatives": [
+        "silence after gasp",
+        "single piano stop"
+      ]
+    },
+    {
+      "scene_id": "S15",
+      "score_intent": "Intellectual warmth; attraction through talk; bittersweet Dad VO tail",
+      "timing": "Indie cafe bed under chat; dip for love-destroys line; cooler pad on exit VO",
+      "diegetic_sound": "Espresso machine hiss; cup clinks; low indie music; college murmur; chair scrape; later street bus stop air",
+      "silence_or_exclusions": "Keep cafe music under dialogue not over",
+      "alternatives": [
+        "no source music; pure ambience",
+        "stronger romantic theme early"
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "score_intent": "Second dream descent",
+      "timing": "Bed creak into forest birds crossfade full",
+      "diegetic_sound": "Soft bed creak; breath slow; birds bloom",
+      "silence_or_exclusions": "No alarm clocks",
+      "alternatives": [
+        "pure crossfade no score",
+        "heartbeat decelerate"
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "score_intent": "Lush past-life romance peak; first kiss sacred",
+      "timing": "Pastoral score through forest; swell on dismount/kiss; cut hard on Hold whisper",
+      "diegetic_sound": "Hooves soft on moss; wind in grass; fabric linen; kiss breath; whisper Hold",
+      "silence_or_exclusions": "No comic underscoring",
+      "alternatives": [
+        "choir-light kiss",
+        "diegetic nature only until kiss pad"
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "score_intent": "Panic wake after bliss",
+      "timing": "Stinger on bolt upright; residual thump heartbeat",
+      "diegetic_sound": "Gasp; heartbeat thump in quiet; bed springs; cold room air",
+      "silence_or_exclusions": "Drop all dream music instantly",
+      "alternatives": [
+        "silence after gasp line",
+        "sub bass hit only"
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "score_intent": "Effort to calm; serene after corpse pose; carry calm into oven",
+      "timing": "Soft drone through class; open space in savasana; warm bed into pizza insert",
+      "diegetic_sound": "Instructor calm count; collective breath; mat hand slides; soft yoga music drone; later pizza oven roar under calm smile",
+      "silence_or_exclusions": "No mockery stings on shirt fail",
+      "alternatives": [
+        "breath-only class",
+        "upbeat exit sting into parlor"
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "score_intent": "Sudden domestic violence energy without blow yet",
+      "timing": "Tight strings on stomp; spike on door slam",
+      "diegetic_sound": "Door slam echo; stomps; TV low; fists clench cloth; temple rub breath",
+      "silence_or_exclusions": "Ma TV should not comedy-cut the fight",
+      "alternatives": [
+        "diegetic only rage",
+        "heartbeat under priorities lecture"
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "score_intent": "Quiet mental expansion",
+      "timing": "Still pad whole read",
+      "diegetic_sound": "Chair scrape; distant copier; page underline scratch; library hush",
+      "silence_or_exclusions": "No phone buzz",
+      "alternatives": [
+        "absolute quiet with pages",
+        "temple bell far color"
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "score_intent": "Ordinary call turning medical alarm",
+      "timing": "Neutral under phone; sharp shift on chest clutch",
+      "diegetic_sound": "TV buzzer; phone line; filtered Sionna voice; Ma breath hitch; body shift in chair",
+      "silence_or_exclusions": "Don\u0027t score over emergency breath",
+      "alternatives": [
+        "phone filter heavy",
+        "subtle alarm tone under clutch"
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "score_intent": "Clinical gravity",
+      "timing": "Low sustained under diagnosis; hold on ER order",
+      "diegetic_sound": "Wall clock tick; hallway pager; paper pad; chair creak",
+      "silence_or_exclusions": "No sentimental strings on stroke risk",
+      "alternatives": [
+        "clock-only bed",
+        "documentaries-style room tone"
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "score_intent": "Urgent transit spike",
+      "timing": "Screech hit open; doors whoosh end button",
+      "diegetic_sound": "Trans Am screech idle V8; automatic doors whoosh; Ma labored breath; clothing load",
+      "silence_or_exclusions": "No rock needle-drop",
+      "alternatives": [
+        "siren distant prelap ER",
+        "pure car and doors"
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "score_intent": "Vigil lull into nightmare gate",
+      "timing": "Monitor beep steady then morph to battle clang end",
+      "diegetic_sound": "Monitor beep; Ma soft sleep breath; chair creak; hallway far",
+      "silence_or_exclusions": "No upbeat hospital TV",
+      "alternatives": [
+        "beep-only into clang hard cut",
+        "low drone under sleep"
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "score_intent": "Violent betrayal nightmare peak",
+      "timing": "Full chaos bed; isolate Save her; knife impact stinger",
+      "diegetic_sound": "Battle yells; steel clash; blood wet; dying gurgle; knife into chest impact; Nick hiss",
+      "silence_or_exclusions": "No modern guns; keep blades era",
+      "alternatives": [
+        "desaturated mute chaos then knife only",
+        "choir scream cluster"
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "score_intent": "Aftermath nausea; reality reassert",
+      "timing": "Gasp cut score; monitor returns steady",
+      "diegetic_sound": "Ragged breath; monitor steady beep; hand on fabric sternum; Ma sleep",
+      "silence_or_exclusions": "No residual battle bed after 1s",
+      "alternatives": [
+        "long silence after gasp",
+        "single dissonant hold fade"
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "score_intent": "Fragile hope / competence",
+      "timing": "Light positive bed under organizer buy",
+      "diegetic_sound": "Pharmacy intercom; bag rustle; plastic organizer click compartments; register beep",
+      "silence_or_exclusions": "No ironic dark cue",
+      "alternatives": [
+        "diegetic retail only",
+        "soft hopeful piano"
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "score_intent": "Mockery to violence; slap as hard peak",
+      "timing": "Smirk tension build; WHACK impact; door crash tail; ear-ring tone",
+      "diegetic_sound": "TV cop-show siren; boot thud footstool; slap crack; door crash; ear-ring tone; breath shock",
+      "silence_or_exclusions": "Brief near-mute after slap except ring",
+      "alternatives": [
+        "no score full diegetic fight",
+        "sub hit under slap"
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "score_intent": "Nostalgic protectiveness bittersweet",
+      "timing": "Bright recess open; hush on Stark; warm close on hair muss promise",
+      "diegetic_sound": "Recess roar; then hush; lilac wind soft; footsteps; hair muss cloth",
+      "silence_or_exclusions": "No dark foreshadow sting on promise",
+      "alternatives": [
+        "period playground diegetic only",
+        "gentle guitar memory theme"
+      ]
+    },
+    {
+      "scene_id": "S31",
+      "score_intent": "False truce; control under smile",
+      "timing": "Warm Ma/Sionna; cool under college debate; oily under bros before hos",
+      "diegetic_sound": "TV low; keys tossed basket; boot settle; low conspiracy lean-in voice bed",
+      "silence_or_exclusions": "Ma must not clearly hear mafia bit",
+      "alternatives": [
+        "no score; dialogue knife",
+        "low two-note threat motif"
+      ]
+    },
+    {
+      "scene_id": "S32",
+      "score_intent": "Open-hearted love theme arrival",
+      "timing": "Skate noise comic; calm her line; kiss swell; love lines intimate dry",
+      "diegetic_sound": "Skateboard wheels; distant traffic; kids laugh; kiss soft; footsteps continue",
+      "silence_or_exclusions": "Duck boards under kiss dialogue",
+      "alternatives": [
+        "silence on kiss only breath",
+        "full romantic strings"
+      ]
+    },
+    {
+      "scene_id": "S33",
+      "score_intent": "Toxic male lounge comedy souring",
+      "timing": "Muffled classic rock bed whole; no heroic cue for Narrator retort",
+      "diegetic_sound": "Classic rock muffled; lighter flint; wet cough-laughs; pipe bubble; Bud can; rocker creak",
+      "silence_or_exclusions": "Smoke coughs not cartoon",
+      "alternatives": [
+        "thicker weed comedy bed",
+        "uneasy drone under laughs"
+      ]
+    },
+    {
+      "scene_id": "S34",
+      "score_intent": "Bar peak tension; slow-mo fist; chaos scramble",
+      "timing": "AC/DC diegetic start; hush drop on confrontation; slow-mo thin score on fist draw; explode on bouncer rush",
+      "diegetic_sound": "AC/DC Have a Drink on Me; pool crack; room hush; fist leather creak; shouts pile-up; glass rattle; head-butt; feet scramble",
+      "silence_or_exclusions": "Duck music under key dialogue lines then slam back",
+      "alternatives": [
+        "kill source music at hush for pure tension",
+        "heartbeat slow-mo only"
+      ]
+    },
+    {
+      "scene_id": "S35",
+      "score_intent": "Panic flight; body as percussion",
+      "timing": "Propulsive run bed whole; land hard at door",
+      "diegetic_sound": "Shoes pounding pavement; heaving breath; heartbeat; cold air rush; traffic whoosh; door reach thud",
+      "silence_or_exclusions": "No lyrical song",
+      "alternatives": [
+        "breath and feet only",
+        "synth pulse chase"
+      ]
+    },
+    {
+      "scene_id": "S36",
+      "score_intent": "Safety and intimacy after terror",
+      "timing": "Breath residual open; soften to clock tick cradle; drift end",
+      "diegetic_sound": "Residual pant; apartment hush; clock tick; sofa leather/suede; scalp massage soft; fabric",
+      "silence_or_exclusions": "No bar bleed",
+      "alternatives": [
+        "score lullaby thin",
+        "pure clock and breath"
+      ]
+    },
+    {
+      "scene_id": "S37",
+      "score_intent": "Mythic good vs evil dream; triumph serenity",
+      "timing": "B\u0026W thin; color bloom with water rise; mace chains threat; force push resolve; embrace warm",
+      "diegetic_sound": "Wind symphony; water lap; mace chains clang then fall silent; fabric sleeves; embrace breath",
+      "silence_or_exclusions": "No comedy on giant shrink",
+      "alternatives": [
+        "choir angelic",
+        "elemental water/wind only"
+      ]
+    },
+    {
+      "scene_id": "S38",
+      "score_intent": "Gentle comic wake; settle to sleep",
+      "timing": "Clock loud open; soft exit to bed",
+      "diegetic_sound": "Clock tick loud in dark; jolt couch; sleepy voices; shuffle footsteps hall; sheets later soft",
+      "silence_or_exclusions": "No nightmare residual",
+      "alternatives": [
+        "silence after clock",
+        "warm pad under bed line"
+      ]
+    },
+    {
+      "scene_id": "S39",
+      "score_intent": "Montage domestic peace fragile; intellectual VO",
+      "timing": "Light montage bed; casserole and pages; Descartes VO cool color",
+      "diegetic_sound": "Casserole dish set; soft page turns; game-show theme; pill box clicks; quiet kitchen",
+      "silence_or_exclusions": "No Nick motif presence",
+      "alternatives": [
+        "diegetic kitchen montage only",
+        "soft piano days-pass"
+      ]
+    },
+    {
+      "scene_id": "S40",
+      "score_intent": "Life-altering notification; world drops out",
+      "timing": "Station wall noise open; near-silence under death lines; breath break; distant siren",
+      "diegetic_sound": "Wall of voices; phones; radio squelch; styrofoam cup shake; water pour; phone dial; breath breaking; siren through stone",
+      "silence_or_exclusions": "Score almost absent under Dupuis key sentences",
+      "alternatives": [
+        "high ringing tinnitus after passed away",
+        "documentary room tone only"
+      ]
+    },
+    {
+      "scene_id": "S41",
+      "score_intent": "Clinical horror; emotional shutdown",
+      "timing": "Monitor symphony wall; cut dryer on turn-away line",
+      "diegetic_sound": "Multi-monitor beeps; shoe squeaks waxed floor; ventilator whoosh through glass; muffled ICU",
+      "silence_or_exclusions": "No sentimental bedside theme",
+      "alternatives": [
+        "muffled underwater hall",
+        "single long beep color"
+      ]
+    },
+    {
+      "scene_id": "S42",
+      "score_intent": "Raw grief explosion then held",
+      "timing": "Empty chair air; sobbing full; scream peak; Sionna hold dampens to breath",
+      "diegetic_sound": "Raw sobbing; fists on floor; hair pull fabric; scream; door enter; rocking hold cloth",
+      "silence_or_exclusions": "No music under Die jackass scream",
+      "alternatives": [
+        "score enters only on hold",
+        "neighbor thump ceiling ignored"
+      ]
+    },
+    {
+      "scene_id": "S43",
+      "score_intent": "Ritual mourning restrained",
+      "timing": "Somber bed arrangements to graveside; dirt thunk isolated",
+      "diegetic_sound": "Quiet parlor murmur; rosary soft; wind cemetery trees; dirt handful muted thunk on maple lid",
+      "silence_or_exclusions": "No choir overpowering; keep thunk dry and clear",
+      "alternatives": [
+        "single organ note",
+        "wind and thunk only"
+      ]
+    },
+    {
+      "scene_id": "S44",
+      "score_intent": "Cold confrontation; trapped brother",
+      "timing": "Oxygen bed; tears without sweet strings; dry exit footsteps",
+      "diegetic_sound": "Oxygen hiss; remote click; hallway cart; TV off silence; voice weak; footsteps leave",
+      "silence_or_exclusions": "No reunion hug theme",
+      "alternatives": [
+        "pressure drone under Whose fault",
+        "pure medical diegetic"
+      ]
+    },
+    {
+      "scene_id": "S45",
+      "score_intent": "Quiet elegy; faith without preaching",
+      "timing": "Wind bed; VO verse soft; mums place button",
+      "diegetic_sound": "Wind in dry leaves; far highway; water bottle pour; metal vase turn; footsteps grass",
+      "silence_or_exclusions": "No church organ unless very distant thin",
+      "alternatives": [
+        "silence with wind only",
+        "solo horn far"
+      ]
+    },
+    {
+      "scene_id": "S46",
+      "score_intent": "Work as numb therapy; mentor warmth",
+      "timing": "Oven roar bed; comic beat Tommy; keys jingle lift; shoulder grip warm",
+      "diegetic_sound": "Oven roar; door chime; keys jingle; ticket slap; car cold start implied return; shoulder pat cloth",
+      "silence_or_exclusions": "Don\u0027t score over Tony condolence lines heavily",
+      "alternatives": [
+        "kitchen chaos only",
+        "soft hope motif end"
+      ]
+    },
+    {
+      "scene_id": "S47",
+      "score_intent": "Intimate comic dream aftercare; idea spark",
+      "timing": "Night quiet; jolt; shared laugh; VO idea light bulb color",
+      "diegetic_sound": "Sheet jolt; sleepy murmur; soft laugh; bed creak; night room tone",
+      "silence_or_exclusions": "No horror sting on pizza face",
+      "alternatives": [
+        "whimsical pluck on idea",
+        "pure pillow talk dry"
+      ]
+    },
+    {
+      "scene_id": "S48",
+      "score_intent": "Confrontation heat; boundary set",
+      "timing": "Door bell entry; boil under not-okay monologue; retreat air",
+      "diegetic_sound": "Street bell on door; kitchen clatter; Bob animated voice; hands raise cloth; door exit",
+      "silence_or_exclusions": "Oven may duck under monologue",
+      "alternatives": [
+        "tension ostinato",
+        "diegetic kitchen pressure only"
+      ]
+    },
+    {
+      "scene_id": "S49",
+      "score_intent": "Nick POV bile and paranoia",
+      "timing": "Restless pace bed; lighter hits; monologue dry venom",
+      "diegetic_sound": "Lighter flint; floor pace limp; traffic through thin glass; paper shuffle court; smoke exhale",
+      "silence_or_exclusions": "No sympathetic strings for Nick",
+      "alternatives": [
+        "industrial drone",
+        "smoke and pace only"
+      ]
+    },
+    {
+      "scene_id": "S50",
+      "score_intent": "Grim transit predator approach",
+      "timing": "Bus bed whole; cold wind on alight; boots grit walk",
+      "diegetic_sound": "Bus pneumatic doors; engine rumble; riders mutter; cold wind; boots on grit; dead leaf pot scrape",
+      "silence_or_exclusions": "No chase music yet",
+      "alternatives": [
+        "low pulse walk",
+        "pure bus realism"
+      ]
+    },
+    {
+      "scene_id": "S51",
+      "score_intent": "Central violent peak; interleave terror detail",
+      "timing": "Cat mew false calm; rising voice; blade snick isolate; choke squeaks; door WHAM; struggle chaos; wet blade sink; run boots exit",
+      "diegetic_sound": "Door chain; cat soft mew; rising voice; blade snick; choked squeaks; fridge hum far; door WHAM; body struggle; wet gasp; blade wipe cloth; running boots; door bang",
+      "silence_or_exclusions": "At least two distinct peaks: snick and sink; no glam fight score",
+      "alternatives": [
+        "heartbeat \u002B blade only in choke",
+        "full orchestra stabs sparingly"
+      ]
+    },
+    {
+      "scene_id": "S52",
+      "score_intent": "Desperate save; emergency flood",
+      "timing": "Panic breath open; pressure efforts; sirens rise; paramedic takeover bed; cop Q dry",
+      "diegetic_sound": "Panicked breath; blood drip wood; rising sirens; radio walkie; monitor beep start; gurney wheels; cop voice; fabric rip flannel",
+      "silence_or_exclusions": "Keep names lines intelligible over sirens",
+      "alternatives": [
+        "sirens duck for McAllister name",
+        "score pulse under pressure hands"
+      ]
+    },
+    {
+      "scene_id": "S53",
+      "score_intent": "Long recovery ache into breakup hollow",
+      "timing": "Wait TV murmur; time-jump thin; zombie home clock; breakup near-dry; free-fall low empty on exit",
+      "diegetic_sound": "Waiting-room TV murmur into home clock tick; chair rock; foam pillow rustle; bedroom door; footsteps leave early",
+      "silence_or_exclusions": "No swelling goodbye strings over can\u0027t feel me",
+      "alternatives": [
+        "clock-dominated breakup",
+        "single held note void end"
+      ]
+    },
+    {
+      "scene_id": "S54",
+      "score_intent": "Years-later reset; gray success loneliness",
+      "timing": "Mist bed; busker color; ferry horn punctuation; VO above",
+      "diegetic_sound": "Light rain on hoods; ferry horn distant; keyboard disco/jazz busker; foot traffic; soft city",
+      "silence_or_exclusions": "Busker present but not licensed hit song required; original-like riff",
+      "alternatives": [
+        "rain-only Seattle freeze",
+        "melancholy guitar under VO"
+      ]
+    },
+    {
+      "scene_id": "S55",
+      "score_intent": "Memory ache over view beauty",
+      "timing": "Ferry/market bed; plate set; memory flash wet brief; return room tone",
+      "diegetic_sound": "Ferry horn; plate set down; market crowd below; cutlery far; coffee pour",
+      "silence_or_exclusions": "No appetite comedy",
+      "alternatives": [
+        "near silence at uneaten roll",
+        "low cello under flash"
+      ]
+    },
+    {
+      "scene_id": "S56",
+      "score_intent": "Practiced calm with residual void",
+      "timing": "Chant/exhale bed; VO interior over soft",
+      "diegetic_sound": "Soft chant; collective exhale; clothing mat shifts; candle-room hush",
+      "silence_or_exclusions": "No upbeat fitness mix",
+      "alternatives": [
+        "breath and room only",
+        "singing bowls"
+      ]
+    },
+    {
+      "scene_id": "S57",
+      "score_intent": "Domestic solitude gateway to insight dream",
+      "timing": "Rain glass lull; purr; read; drift crossfade",
+      "diegetic_sound": "Rain on glass; cat purr; page; lamp click; couch settle",
+      "silence_or_exclusions": "No TV",
+      "alternatives": [
+        "purr and rain only",
+        "soft ambient electronic"
+      ]
+    },
+    {
+      "scene_id": "S58",
+      "score_intent": "Revelation clarity; judgment release joy",
+      "timing": "Clean wind open; stern sage dialogue dry-clear; joy bloom when box/sage gone",
+      "diegetic_sound": "Clean wind; footsteps dirt; stern voice; joy breath; ambient birds optional",
+      "silence_or_exclusions": "No cartoon poof on vanish",
+      "alternatives": [
+        "temple drone under sage",
+        "silence after truth line then joy pad"
+      ]
+    },
+    {
+      "scene_id": "S59",
+      "score_intent": "Resolve and action; light determined",
+      "timing": "Wake smile lift; pen scratch rhythm; laptop click book end",
+      "diegetic_sound": "Pen scratch; rain soft; cat shift stomach; laptop keys; click confirm",
+      "silence_or_exclusions": "No ominous Nick motif yet",
+      "alternatives": [
+        "pure pen and keys",
+        "hopeful motif seed of prison visit"
+      ]
+    },
+    {
+      "scene_id": "S60",
+      "score_intent": "Gentle new-life spark; sun break",
+      "timing": "Cafe bed; lift when sun breaks drizzle",
+      "diegetic_sound": "Milk steamer; street laugh; cup set down; light traffic; door chime",
+      "silence_or_exclusions": "Not a full romance theme replacement for Sionna",
+      "alternatives": [
+        "steamer-only charm",
+        "acoustic sunny button"
+      ]
+    },
+    {
+      "scene_id": "S61",
+      "score_intent": "Return home hollow then set purpose",
+      "timing": "Engine bed; stroller wheels; emotional dip then firm",
+      "diegetic_sound": "Rental engine; stroller wheels; door close; distant city; dumpster ambient",
+      "silence_or_exclusions": "No childhood music sting forced",
+      "alternatives": [
+        "engine and silence interior car",
+        "thin memory wind"
+      ]
+    },
+    {
+      "scene_id": "S62",
+      "score_intent": "Nostalgic irony soft",
+      "timing": "Wind weeds bed; almost-smile button",
+      "diegetic_sound": "Wind in weeds; distant traffic; sign creak light; footsteps stop",
+      "silence_or_exclusions": "No big nostalgia swell",
+      "alternatives": [
+        "silence looking at dark glass",
+        "single pizza-oven ghost whoosh creative only if subtle"
+      ]
+    },
+    {
+      "scene_id": "S63",
+      "score_intent": "Warm recognition comedy-emotion",
+      "timing": "Deli buzz open; cackle; hug thump; proud lines dry-warm",
+      "diegetic_sound": "Deli buzz; plate clink; cackle; burger paper; chair scrape; bear-hug thump; patrons murmur",
+      "silence_or_exclusions": "Duck crowd under proud of you",
+      "alternatives": [
+        "no score buddy comedy",
+        "soft reunion pad"
+      ]
+    },
+    {
+      "scene_id": "S64",
+      "score_intent": "Letting go without contact",
+      "timing": "Idle engine hold; kids/dog life around; VO soft resolve",
+      "diegetic_sound": "Kids on bikes; German shepherd bark; engine idle; light wind porch empty",
+      "silence_or_exclusions": "No knock SFX; no her voice ghost",
+      "alternatives": [
+        "engine off pure quiet stare",
+        "thin unresolved chord"
+      ]
+    },
+    {
+      "scene_id": "S65",
+      "score_intent": "Institutional dread approach",
+      "timing": "Gravel walk; metal security bed; pulse under coffee wait",
+      "diegetic_sound": "Keys jangle; steel doors lock-unlock; fluorescent hum; metal detector; gravel steps; distant shouts muffled",
+      "silence_or_exclusions": "No heroic entry theme",
+      "alternatives": [
+        "industrial percussion light",
+        "hum and keys only"
+      ]
+    },
+    {
+      "scene_id": "S66",
+      "score_intent": "Confession and forgiveness catharsis; release",
+      "timing": "Hall roar muffled open; phone click; sparse under asshole catalog; open warmth on forgive; tears shelf; love exchange; proud lift on President Olson; long exhale button",
+      "diegetic_sound": "Muffled hall roar; phone plastic pickup click; breath on glass; tears plap shelf; guard time call; door buzz; phone settle; long exhale",
+      "silence_or_exclusions": "Keep phone-filtered voices clear; minimal score under forgive sentence",
+      "alternatives": [
+        "near-silent booth with hall roar only",
+        "strings enter only after I forgive you"
+      ]
+    },
+    {
+      "scene_id": "S67",
+      "score_intent": "Liberation coda; name seal; gentle finality",
+      "timing": "Tire hum hills; terminal throng; scanner beep; whisper intimate dry; jetway rumble to engines spool quiet into black",
+      "diegetic_sound": "Tire hum asphalt; terminal murmur; boarding scanner beep; nuts bag; whisper self; jetway rumble; engines spooling toward quiet",
+      "silence_or_exclusions": "No end-credits song start before THE END card unless planned post; hold space after last VO",
+      "alternatives": [
+        "score theme full resolution under jet bridge",
+        "diegetic travel only then silence on name whisper"
+      ]
+    }
+  ]
+}

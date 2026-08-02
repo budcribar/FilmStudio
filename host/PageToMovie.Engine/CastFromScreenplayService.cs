@@ -1,3 +1,4 @@
+using PageToMovie.Core.Models;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -70,7 +71,7 @@ public sealed class CastFromScreenplayService
     /// </summary>
     public async Task<ExtractResult> ExtractAsync(
         string projectId,
-        string model = "grok-4.5",
+        string? model = null,
         bool force = false,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
@@ -78,15 +79,11 @@ public sealed class CastFromScreenplayService
         if (!_chat.IsConfigured)
             throw new InvalidOperationException("Connect service (API key) to build cast from the screenplay.");
 
-        if (string.IsNullOrWhiteSpace(model) || string.Equals(model, "grok-4.5", StringComparison.OrdinalIgnoreCase))
         {
-            try
-            {
-                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-                if (cfg.TryGetValue("planning_model_name", out var pEl) && pEl.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(pEl.GetString()))
-                    model = pEl.GetString()!.Trim();
-            }
-            catch { }
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            model = string.IsNullOrWhiteSpace(model)
+                ? ProjectModelSelection.RequirePlanning(cfg, "Cast from screenplay")
+                : ProjectModelSelection.RequireExplicit(model, ModelCapability.Chat, "Cast from screenplay");
         }
 
         ScreenplayService.EnsureCanonicalDraft(_projects, projectId);
@@ -241,6 +238,11 @@ public sealed class CastFromScreenplayService
                 _projectRules.EnsureStyleRuleFromRenderLock(projectId, rsl, approvedBy: "cast_extract"))
                 onProgress?.Invoke("Project style rule updated from book/screenplay medium.");
 
+            // Persist structured medium for portraits (prefer adaptation vision_meta if already set).
+            var rslText = normalized.TryGetValue("render_style_lock", out var rslV) ? rslV?.ToString() : null;
+            var perfText = normalized.TryGetValue("performance_lock", out var plV) ? plV?.ToString() : null;
+            ProjectVisionMeta.UpsertFromCast(_projects.GetProjectDir(projectId), rslText, perfText);
+
             if (normalized.TryGetValue("performance_lock", out var perfObj) &&
                 perfObj?.ToString() is { Length: > 0 } perf &&
                 _projectRules.EnsurePerformanceRuleFromLock(projectId, perf, approvedBy: "cast_extract"))
@@ -286,7 +288,10 @@ public sealed class CastFromScreenplayService
     private static string BuildUserPrompt(string fountain, string? book)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("You are the closed-cast authority. Read the FOUNTAIN and BOOK and decide the cast.");
+        sb.AppendLine("You are the closed-cast authority.");
+        sb.AppendLine("SOURCE OF TRUTH: the FOUNTAIN screenplay. It must describe the story world,");
+        sb.AppendLine("including visual medium and on-screen cast. BOOK text is supporting detail only");
+        sb.AppendLine("when Fountain is thin — never override Fountain medium or cast with book-only invention.");
         sb.AppendLine("There is NO external name list and NO forced candidate list — membership is your judgment only.");
         sb.AppendLine("Include every person or animal who appears on screen or speaks (including silent leads");
         sb.AppendLine("named only in action lines, and titled beings from the book/title when they are story roles).");
@@ -299,6 +304,9 @@ public sealed class CastFromScreenplayService
         sb.AppendLine("Never use stubs like \"as described in the screenplay\".");
         sb.AppendLine("On-camera POV/confessor narrators = ok_anytime (not voice-only).");
         sb.AppendLine("Set species_kind from the story (human/animal/etc.) — do not guess from word lists.");
+        sb.AppendLine("REQUIRED: render_style_lock from the FOUNTAIN medium (title Notes / early Action /");
+        sb.AppendLine("story register). The screenplay must carry the book's visual medium; do not choose");
+        sb.AppendLine("cartoon vs photoreal from file type. One medium for all cast.");
         sb.AppendLine("Return JSON only (schema_version cast_seeds.v1, character_seed_tokens).");
         sb.AppendLine();
         sb.AppendLine("--- BEGIN FOUNTAIN ---");
@@ -417,15 +425,16 @@ public sealed class CastFromScreenplayService
                 !string.Equals(keyCore, display, StringComparison.OrdinalIgnoreCase))
                 queryNames.Add(keyCore);
 
+            // Fountain is source of truth; book only fills gaps.
             var look = "";
-            if (!string.IsNullOrWhiteSpace(bookText))
+            if (!string.IsNullOrWhiteSpace(fountainText))
             {
-                look = HarvestNameLookExcerpts(bookText, queryNames, maxChars: 1_200);
+                look = HarvestNameLookExcerpts(fountainText, queryNames, maxChars: 1_200);
                 look = CollapseLookExcerptToSentence(look, display);
             }
-            if (string.IsNullOrWhiteSpace(look) && !string.IsNullOrWhiteSpace(fountainText))
+            if (string.IsNullOrWhiteSpace(look) && !string.IsNullOrWhiteSpace(bookText))
             {
-                look = HarvestNameLookExcerpts(fountainText, queryNames, maxChars: 800);
+                look = HarvestNameLookExcerpts(bookText, queryNames, maxChars: 800);
                 look = CollapseLookExcerptToSentence(look, display);
             }
             if (string.IsNullOrWhiteSpace(look)) continue;
@@ -717,20 +726,10 @@ public sealed class CastFromScreenplayService
 
         if (parsed.TryGetValue("render_style_lock", out var rsl) && rsl is not null && !string.IsNullOrWhiteSpace(rsl.ToString()))
         {
-            var style = rsl.ToString()!;
-            if (!string.IsNullOrWhiteSpace(bookText) && PhotorealMediumRegex.IsMatch(style))
-            {
-                outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
-            }
-            else
-            {
-                outDoc["render_style_lock"] = style;
-            }
+            // Medium comes from cast model reading the screenplay — never from file type.
+            outDoc["render_style_lock"] = rsl.ToString()!.Trim();
         }
-        else if (!string.IsNullOrWhiteSpace(bookText))
-        {
-            outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
-        }
+        // If omitted, leave unset; CharacterDesignService reads Fountain Notes as fallback.
 
         // Film-level audience/performance conventions inferred from book (not hardcoded gaze recipes)
         if (parsed.TryGetValue("performance_lock", out var pl) && pl is not null &&

@@ -19,6 +19,9 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.Contains("--self-test", StringComparer.OrdinalIgnoreCase))
+            return SelfTest.Run();
+
         TryLoadDotEnv();
 
         Console.WriteLine("==========================================================================");
@@ -32,11 +35,32 @@ public static class Program
         string? bookSlug = null;
         List<string>? requestedModels = null;
         List<string>? requestedJudges = null;
+        string? reasoningEffort = null;
         bool dryRun = false;
         bool showLeaderboardOnly = false;
         bool showJudgeLeaderboardOnly = false;
         bool retryFailed = false;
         bool syntaxOnly = false;
+        bool adaptationSessionPilot = false;
+        string adaptationModel = "grok-4.5";
+        int targetRuntimeMinutes = 10;
+        string? judgeModel = null;
+        string? judgeModel2 = null;
+        string? videoModel = null;
+        double adaptationJudgeTemperature = 0.0;
+        bool adaptationClipShotPlan = false;
+        bool adaptationDualAttachClipPlan = false;
+        // Default true: dual-attach (no chaining) is the committed pipeline, not an opt-in experiment
+        // anymore — pass --chained-only to skip it and run only the older chained reference path.
+        bool adaptationDualAttachAll = true;
+        bool refreshDashboard = false;
+        bool reviewPrompt = false;
+        List<string>? reviewModels = null;
+        bool sidecarPilot = false;
+        string? sidecarPilotModel = null;
+        string? validateSidecarDirectory = null;
+        double samplingTemperature = 0.2;
+        bool bypassCache = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -44,6 +68,50 @@ public static class Program
             if (arg.Equals("--book", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 bookPath = args[++i];
+            }
+            else if (arg.Equals("--adaptation-session-pilot", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationSessionPilot = true;
+            }
+            else if (arg.Equals("--model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                adaptationModel = args[++i].Trim();
+            }
+            else if (arg.Equals("--target-runtime-minutes", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                if (int.TryParse(args[++i], out var trm) && trm > 0) targetRuntimeMinutes = trm;
+            }
+            else if (arg.Equals("--judge-model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                judgeModel = args[++i].Trim();
+            }
+            else if (arg.Equals("--judge-model-2", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                judgeModel2 = args[++i].Trim();
+            }
+            else if (arg.Equals("--video-model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                videoModel = args[++i].Trim();
+            }
+            else if (arg.Equals("--judge-temperature", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                if (double.TryParse(args[++i], out var jt)) adaptationJudgeTemperature = jt;
+            }
+            else if (arg.Equals("--clip-shot-plan", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationClipShotPlan = true;
+            }
+            else if (arg.Equals("--dual-attach-clip-plan", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationDualAttachClipPlan = true;
+            }
+            else if (arg.Equals("--dual-attach-all", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationDualAttachAll = true;
+            }
+            else if (arg.Equals("--chained-only", StringComparison.OrdinalIgnoreCase))
+            {
+                adaptationDualAttachAll = false;
             }
             else if (arg.Equals("--suite", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
@@ -65,6 +133,20 @@ public static class Program
             {
                 requestedJudges = args[++i].Split(',').Select(m => m.Trim()).Where(m => m.Length > 0).ToList();
             }
+            else if (arg.Equals("--reasoning-effort", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                reasoningEffort = args[++i].Trim();
+            }
+            else if (arg.Equals("--temperature", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length
+                     && double.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsedTemperature)
+                     && parsedTemperature is >= 0 and <= 2)
+            {
+                samplingTemperature = parsedTemperature;
+            }
+            else if (arg.Equals("--no-cache", StringComparison.OrdinalIgnoreCase))
+            {
+                bypassCache = true;
+            }
             else if (arg.Equals("--dry-run", StringComparison.OrdinalIgnoreCase))
             {
                 dryRun = true;
@@ -85,13 +167,84 @@ public static class Program
             {
                 syntaxOnly = true;
             }
+            else if (arg.Equals("--refresh-dashboard", StringComparison.OrdinalIgnoreCase))
+            {
+                refreshDashboard = true;
+            }
+            else if (arg.Equals("--review-prompt", StringComparison.OrdinalIgnoreCase))
+            {
+                reviewPrompt = true;
+            }
+            else if (arg.Equals("--review-models", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                reviewModels = args[++i].Split(',').Select(m => m.Trim()).Where(m => m.Length > 0).ToList();
+            }
+            else if (arg.Equals("--sidecar-pilot", StringComparison.OrdinalIgnoreCase))
+            {
+                sidecarPilot = true;
+            }
+            else if (arg.Equals("--sidecar-pilot-model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                sidecarPilotModel = args[++i].Trim();
+            }
+            else if (arg.Equals("--validate-sidecar-pilot", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                validateSidecarDirectory = args[++i].Trim();
+            }
         }
 
         var (chat, workspaceRoot) = BuildServices();
         Console.WriteLine($"📂 Workspace root: {workspaceRoot}");
 
+        if (adaptationSessionPilot)
+        {
+            if (string.IsNullOrWhiteSpace(bookPath) || !File.Exists(bookPath))
+            {
+                Console.WriteLine("❌ Error: --adaptation-session-pilot requires --book <path/to/book.txt>.");
+                return 1;
+            }
+            if (!TryGetCommittedPromptRevision(workspaceRoot, out var pilotPromptRevision, out var pilotPromptError))
+            {
+                Console.Error.WriteLine($"❌ Adaptation-session pilot not started: {pilotPromptError}");
+                Console.Error.WriteLine("   Commit prompts/book_to_fountain.txt, then run the pilot again.");
+                return 1;
+            }
+            return await AdaptationSessionPilot.RunAsync(
+                bookPath, bookSlug, adaptationModel, targetRuntimeMinutes, workspaceRoot, pilotPromptRevision, CancellationToken.None,
+                judgeModel, samplingTemperature, adaptationJudgeTemperature, adaptationClipShotPlan,
+                adaptationDualAttachClipPlan, adaptationDualAttachAll, judgeModel2, videoModel);
+        }
+
         var historyFilePath = Path.Combine(workspaceRoot, "evals", "benchmark_history.json");
         var historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
+        if (BackfillLegacyPromptRevisions(historyStore, workspaceRoot))
+            BenchmarkHistoryStore.SaveHistory(historyStore, historyFilePath);
+
+        if (reviewPrompt)
+        {
+            var models = reviewModels is { Count: > 0 }
+                ? reviewModels
+                : new List<string> { "gpt-5.6-terra", "grok-4.5" };
+            return await PromptImprovementReview.RunAsync(workspaceRoot, chat, models);
+        }
+
+        if (sidecarPilot)
+        {
+            if (string.IsNullOrWhiteSpace(bookPath))
+            {
+                Console.Error.WriteLine("--sidecar-pilot requires --book <path/to/book.txt>.");
+                return 1;
+            }
+            return await SidecarPlanningPilot.RunAsync(workspaceRoot, bookPath, sidecarPilotModel ?? "grok-4.5", chat);
+        }
+
+        if (!string.IsNullOrWhiteSpace(validateSidecarDirectory))
+        {
+            var validation = await SidecarArtifactValidator.ValidateDirectoryAsync(validateSidecarDirectory);
+            Console.WriteLine($"🧪 Validation: {validation["status"]} ({validation["summary"]?["failure_count"]} repair target(s))");
+            Console.WriteLine($"📄 Report: {Path.Combine(validateSidecarDirectory, "validation_report.json")}");
+            return validation["status"]?.GetValue<string>() == "passed" ? 0 : 2;
+        }
 
         if (showLeaderboardOnly)
         {
@@ -105,10 +258,29 @@ public static class Program
             return 0;
         }
 
+        if (refreshDashboard)
+        {
+            var currentPromptCommit = TryGetCommittedPromptRevision(workspaceRoot, out var revision, out _)
+                ? revision
+                : null;
+            var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, null, currentPromptCommit);
+            var dashboardFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
+            await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
+            Console.WriteLine($"✅ Dashboard refreshed: {Path.GetFullPath(dashboardFile)}");
+            return 0;
+        }
+
         if (syntaxOnly)
         {
             await RegradeSyntaxOnlyAsync(historyFilePath, workspaceRoot);
             return 0;
+        }
+
+        if (!TryGetCommittedPromptRevision(workspaceRoot, out var promptRevision, out var promptError))
+        {
+            Console.Error.WriteLine($"❌ Benchmark not started: {promptError}");
+            Console.Error.WriteLine("   Commit prompts/book_to_fountain.txt, then run the benchmark again.");
+            return 1;
         }
 
         outDir ??= Path.Combine(workspaceRoot, "evals", "results", $"screenplay_benchmark_{DateTime.Now:yyyyMMdd_HHmmss}");
@@ -137,12 +309,12 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature);
             }
 
             // Generate updated HTML Dashboard after suite execution
             historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
-            var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+            var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, null, promptRevision);
             var dashboardFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
             await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
 
@@ -159,11 +331,11 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
-        var html = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+        var html = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, null, promptRevision);
         var dashFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
         await File.WriteAllTextAsync(dashFile, html);
 
@@ -181,7 +353,12 @@ public static class Program
         bool retryFailed,
         string historyFilePath,
         IChatClient chat,
-        string workspaceRoot)
+        string workspaceRoot,
+        string promptRevision,
+        string? reasoningEffort = null,
+        double samplingTemperature = 0.2,
+        bool bypassCache = false,
+        double judgeTemperature = 0.0)
     {
         var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
         Directory.CreateDirectory(screenplaysDir);
@@ -232,19 +409,32 @@ public static class Program
             Path.GetFileNameWithoutExtension(bookPath), BookToFountainConverter.NormalizeBookText(bookText), "Author");
         var generationFallbacks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        // Effort suffix keeps a max-effort run from silently reusing (or clobbering) a cached
+        // screenplay/judge verdict generated at default effort, and vice versa — they're not
+        // interchangeable and must never be compared or averaged as if they were.
+        var effortSuffix = string.IsNullOrWhiteSpace(reasoningEffort) ? "" : $"_{SanitizeFileName(reasoningEffort)}";
+        var temperatureKey = samplingTemperature.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture).Replace('.', '_');
+        // Judge temperature is deliberately decoupled from generation temperature — a repeatable
+        // (temp 0) judge is desirable even while experimenting with generation temperature, so the
+        // judge cache must not collide with or be invalidated by a generation-only temperature change.
+        var judgeTemperatureKey = judgeTemperature.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture).Replace('.', '_');
+
         // Phase 1 & 2: Generation & C# Audits
         foreach (var modelId in candidateModels)
         {
             Console.Write($"  [Adaptation] Model '{modelId}'... ");
             string screenplayText;
 
-            var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}.fountain");
-            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}.fountain");
+            var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
+            // A screenplay cache must be scoped to the committed prompt revision as well as the
+            // model and reasoning effort. Otherwise a V4 benchmark could silently reuse a V3
+            // draft and make the prompt comparison meaningless.
+            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}_temp{temperatureKey}.fountain");
 
             var diskCached = File.Exists(cacheFile) ? await File.ReadAllTextAsync(cacheFile) : null;
             var localCached = File.Exists(screenplayFile) ? await File.ReadAllTextAsync(screenplayFile) : null;
 
-            if (diskCached is not null && !string.Equals(diskCached, canonicalFallbackText, StringComparison.Ordinal))
+            if (!bypassCache && diskCached is not null && !string.Equals(diskCached, canonicalFallbackText, StringComparison.Ordinal))
             {
                 screenplayText = diskCached;
                 Console.WriteLine("(reused from disk cache)");
@@ -275,7 +465,8 @@ public static class Program
                         model: modelId,
                         onProgress: msg => Console.WriteLine($"    · {msg}"),
                         onHeuristicFallback: reason => generationFallbacks[modelId] = reason,
-                        budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId));
+                        budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId),
+                reasoningEffort: reasoningEffort, temperature: samplingTemperature);
 
                     if (generationFallbacks.TryGetValue(modelId, out var fallbackReason))
                     {
@@ -308,6 +499,13 @@ public static class Program
         // Phase 3 & 4: Blind Cross-Evaluation
         var judgeEvaluations = new Dictionary<string, JudgeEvaluationPayload>(StringComparer.OrdinalIgnoreCase);
         var random = new Random(42);
+
+        // Same shared prompt every candidate was generated from (workspaceRoot is ignored by
+        // PromptFiles.ReadAsync — it always resolves PAGETOMOVIE_PROMPTS_DIR or the embedded
+        // prompts/book_to_fountain.txt, so this is the exact text every model above just ran
+        // under, not an approximation). Judges need to see this to suggest a REAL prompt fix
+        // instead of guessing blind at what the prompt might already say.
+        var generationSystemPrompt = await BookToFountainConverter.BuildSystemPromptAsync(outDir, totalRuntimeMinutes: 10);
 
         // Fallback-poisoned screenplays are already excluded from scoring (IsGenerationFallback) —
         // don't also make every judge read them. They're near-duplicates of the raw book text, so
@@ -344,10 +542,14 @@ public static class Program
                 anonScreenplays[label] = generatedScreenplays[keys[i]];
             }
 
-            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}.json");
+            // Same effort-suffix reasoning as the generation cache above: a judge verdict formed
+            // at boosted reasoning effort is not interchangeable with one at default effort, even
+            // when ScreenplaysHash matches (the candidates could be unchanged while only the
+            // judge's own effort level changed).
+            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}_{promptRevision}_temp{temperatureKey}_judgetemp{judgeTemperatureKey}.json");
             JudgeEvaluationPayload? cachedJudge = null;
 
-            if (File.Exists(judgeCacheFile))
+            if (!bypassCache && File.Exists(judgeCacheFile))
             {
                 try
                 {
@@ -383,13 +585,14 @@ public static class Program
             {
                 try
                 {
-                    var userPrompt = ScreenplayJudgmentRubric.BuildPrompt(bookText, anonScreenplays);
+                    var userPrompt = ScreenplayJudgmentRubric.BuildPrompt(bookText, anonScreenplays, generationSystemPrompt);
                     var raw = await chat.CompleteAsync(
                         systemPrompt: "Respond with ONLY the JSON object described in the instructions. No prose, no markdown code fences.",
                         userPrompt: userPrompt,
                         model: judgeModelId,
-                        temperature: 0.2,
-                        mode: "screenplay_benchmark_judge");
+                        temperature: judgeTemperature,
+                        mode: "screenplay_benchmark_judge",
+                        reasoningEffort: reasoningEffort);
                     evalPayload = ParseJudgePayload(raw, anonMapping.Keys);
                     evalPayload.IsMock = false;
                     evalPayload.RubricVersion = ScreenplayJudgmentRubric.RubricVersion;
@@ -422,6 +625,10 @@ public static class Program
             BookTitle = Path.GetFileNameWithoutExtension(bookPath),
             BookPath = bookPath,
             IsMockRun = isMockRun,
+            ReasoningEffort = reasoningEffort ?? "",
+            SamplingTemperature = samplingTemperature,
+            JudgeTemperature = judgeTemperature,
+            PromptVersion = promptRevision,
             ModelScores = runData.Leaderboard,
             JudgeMatrix = runData.JudgeMatrix,
             SelfBiasNotes = runData.SelfBiasNotes,
@@ -654,6 +861,97 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
         return Convert.ToHexString(bytes);
     }
 
+    /// <summary>
+    /// A benchmark is only comparable when its generation prompt is a committed revision. The
+    /// revision returned is the commit that last changed the prompt, rather than HEAD, so unrelated
+    /// application commits do not create artificial prompt-version buckets in benchmark history.
+    /// </summary>
+    private static bool TryGetCommittedPromptRevision(string workspaceRoot, out string revision, out string error)
+    {
+        const string promptPath = "prompts/book_to_fountain.txt";
+        revision = "";
+        error = "";
+        try
+        {
+            static string RunGit(string workingDirectory, string arguments)
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "git",
+                    Arguments = arguments,
+                    WorkingDirectory = workingDirectory,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                };
+                using var process = System.Diagnostics.Process.Start(psi);
+                if (process is null) throw new InvalidOperationException("Could not start git.");
+                var output = process.StandardOutput.ReadToEnd();
+                var standardError = process.StandardError.ReadToEnd();
+                process.WaitForExit(5000);
+                if (process.ExitCode != 0) throw new InvalidOperationException(standardError.Trim());
+                return output.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(RunGit(workspaceRoot, $"status --porcelain -- {promptPath}")))
+            {
+                error = "prompts/book_to_fountain.txt has uncommitted changes.";
+                return false;
+            }
+
+            var commit = RunGit(workspaceRoot, $"log -1 --format=%H -- {promptPath}");
+            if (commit.Length < 10)
+            {
+                error = "prompts/book_to_fountain.txt has no committed revision.";
+                return false;
+            }
+            revision = commit[..10];
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"could not verify the committed prompt revision ({ex.Message})";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Legacy runs predate prompt revision tracking. Their timestamp can still identify the most
+    /// recent prompt commit that existed when the run was made, so preserve that provenance rather
+    /// than leaving the dashboard's revision column unknown.
+    /// </summary>
+    private static bool BackfillLegacyPromptRevisions(HistoricalStoreContainer history, string workspaceRoot)
+    {
+        var changed = false;
+        foreach (var run in history.Runs.Where(r => string.IsNullOrWhiteSpace(r.PromptVersion)))
+        {
+            if (string.IsNullOrWhiteSpace(run.Timestamp))
+                continue;
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "git",
+                    Arguments = $"rev-list -1 --before=\"{run.Timestamp}\" HEAD -- prompts/book_to_fountain.txt",
+                    WorkingDirectory = workspaceRoot,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                };
+                using var process = System.Diagnostics.Process.Start(psi);
+                if (process is null) continue;
+                var commit = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit(5000);
+                if (process.ExitCode != 0 || commit.Length < 10) continue;
+                run.PromptVersion = commit[..10];
+                run.PromptVersionInferred = true;
+                changed = true;
+            }
+            catch { /* legacy history remains safely untagged if Git metadata is unavailable */ }
+        }
+        return changed;
+    }
+
     private static string SanitizeFileName(string name) =>
         string.Concat(name.Split(Path.GetInvalidFileNameChars())).Replace(' ', '_').Replace('/', '_');
 
@@ -715,6 +1013,7 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 ProductionReady = entry.ProductionReady,
                 DisqualifyingIssues = entry.DisqualifyingIssues,
                 Rationale = entry.Rationale,
+                PromptImprovementSuggestion = entry.PromptImprovementSuggestion,
             });
         }
         return result;
@@ -743,10 +1042,13 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             runData.JudgeRankMatrix[judgeId] = new Dictionary<string, int>();
             runData.JudgeSummaries[judgeId] = payload.JudgeSummaryNotes;
             runData.JudgeRationale[judgeId] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            runData.JudgePromptSuggestions[judgeId] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var eval in payload.Evaluations)
             {
                 if (!string.IsNullOrWhiteSpace(eval.Rationale))
                     runData.JudgeRationale[judgeId][eval.ScreenplayId] = eval.Rationale; // last-wins if a malformed judge response repeats a screenplayId
+                if (!string.IsNullOrWhiteSpace(eval.PromptImprovementSuggestion))
+                    runData.JudgePromptSuggestions[judgeId][eval.ScreenplayId] = eval.PromptImprovementSuggestion;
             }
 
             if (payload.IsMock)
@@ -979,10 +1281,18 @@ FADE OUT.";
             return;
         }
 
+        var archivedScreenplayDirectories = FindArchivedScreenplayDirectories(workspaceRoot);
+
         foreach (var run in historyStore.Runs)
         {
             var bookSlug = run.BookSlug;
             Console.WriteLine($"\n📖 Story: '{run.BookTitle}' ({bookSlug}) — Date: {run.Timestamp}");
+
+            if (!archivedScreenplayDirectories.TryGetValue(MakeArchivedRunKey(run.Timestamp, bookSlug), out var screenplaysDirectory))
+            {
+                Console.WriteLine("  Archived screenplay files not found for this historical run; left unchanged to preserve score provenance.");
+                continue;
+            }
 
             string? canonicalFallbackText = null;
             if (File.Exists(run.BookPath))
@@ -994,10 +1304,11 @@ FADE OUT.";
             foreach (var m in run.ModelScores)
             {
                 var modelId = m.ModelId;
-                var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}.fountain");
-                if (File.Exists(cacheFile))
+                var effortSuffix = string.IsNullOrWhiteSpace(run.ReasoningEffort) ? "" : $"_{SanitizeFileName(run.ReasoningEffort)}";
+                var screenplayFile = Path.Combine(screenplaysDirectory, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
+                if (File.Exists(screenplayFile))
                 {
-                    var screenplayText = await File.ReadAllTextAsync(cacheFile);
+                    var screenplayText = await File.ReadAllTextAsync(screenplayFile);
                     var newSyntax = DeterministicSyntaxScorer.Evaluate(screenplayText);
                     m.SyntaxAudit = newSyntax;
                     m.IsGenerationFallback = canonicalFallbackText is not null
@@ -1014,18 +1325,56 @@ FADE OUT.";
                 }
                 else
                 {
-                    Console.WriteLine($"  Model '{modelId,-15}' -> Screenplay cache file not found on disk.");
+                    Console.WriteLine($"  Model '{modelId,-15}' -> Archived screenplay file not found; left unchanged.");
                 }
             }
         }
 
         BenchmarkHistoryStore.SaveHistory(historyStore, historyFilePath);
 
-        var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+        var currentPromptCommit = TryGetCommittedPromptRevision(workspaceRoot, out var revision, out _)
+            ? revision
+            : null;
+        var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, null, currentPromptCommit);
         var dashboardFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
         await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
 
         Console.WriteLine("\n✅ Syntax re-grading completed! Global Dashboard updated at:");
         Console.WriteLine($"   🌐 {Path.GetFullPath(dashboardFile)}");
     }
+
+    private static Dictionary<string, string> FindArchivedScreenplayDirectories(string workspaceRoot)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var resultsRoot = Path.Combine(workspaceRoot, "evals", "results");
+        if (!Directory.Exists(resultsRoot)) return result;
+
+        foreach (var runDataFile in Directory.EnumerateFiles(resultsRoot, "run_data.json", SearchOption.AllDirectories))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(runDataFile));
+                if (!document.RootElement.TryGetProperty("Timestamp", out var timestampElement)) continue;
+
+                var timestamp = timestampElement.GetString();
+                var bookDirectory = Path.GetDirectoryName(runDataFile);
+                if (string.IsNullOrWhiteSpace(timestamp) || string.IsNullOrWhiteSpace(bookDirectory)) continue;
+
+                var screenplaysDirectory = Path.Combine(bookDirectory, "screenplays");
+                if (!Directory.Exists(screenplaysDirectory)) continue;
+
+                var bookSlug = new DirectoryInfo(bookDirectory).Name;
+                result[MakeArchivedRunKey(timestamp, bookSlug)] = screenplaysDirectory;
+            }
+            catch (JsonException)
+            {
+                // Ignore malformed archived artifacts; the matching history entry stays untouched.
+            }
+        }
+
+        return result;
+    }
+
+    private static string MakeArchivedRunKey(string timestamp, string bookSlug) =>
+        $"{timestamp}\u001F{bookSlug}";
 }

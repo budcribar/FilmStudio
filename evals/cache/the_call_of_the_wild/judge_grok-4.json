@@ -1,0 +1,140 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highly faithful with strong visual descriptions and consistent character details; minor VO overuse but no invented beats or characters."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Tightest fidelity and most camera-ready action lines; excellent short-clip pacing with no invented elements."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 6.5,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 6,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 6.25,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Heavy narrator voice-over and invented transitional scenes dilute source beats"
+      ],
+      "rationale": "Fidelity drops due to added scenes and excessive VO; pacing suffers for short clips."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong source coverage and visual action; consistent descriptions with only minor pacing compression."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Faithful and well-described; slightly slower pacing in later acts but no disqualifiers."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Solid coverage but some scene compression and less visual specificity than top entries."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 2,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 4,
+      "dramaticPacing": 3.5,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 4,
+      "overallQualitativeScore": 3.75,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented named characters (Mr. Quincy, Mr. Kelly) and severe source compression"
+      ],
+      "rationale": "Major fidelity violation from invented characters and missing key beats; unusable."
+    },
+    {
+      "screenplayId": "Screenplay H",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Good fidelity and descriptions; minor pacing issues in trail montages."
+    },
+    {
+      "screenplayId": "Screenplay I",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Excellent visual consistency and source fidelity; strong short-clip suitability."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A",
+    "Screenplay I",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay H",
+    "Screenplay F",
+    "Screenplay C",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it delivers the highest fidelity with the most camera-ready short-clip action lines and no invented elements. Weakest: Screenplay G because invented named characters and extreme compression violate adaptation fidelity at a deal-breaker level.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "F8A9E2E9CD9803C70C81B7C4020A6BD5E8EADCACB947B2F7E76EEB3A7027EE4C"
+}

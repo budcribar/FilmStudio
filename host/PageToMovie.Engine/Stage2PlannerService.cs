@@ -99,23 +99,18 @@ public sealed class Stage2PlannerService
     }
 
     /// <summary>
-    /// Reads the project's configured video model (same <c>model_name</c> config key
-    /// <see cref="FilmJobService"/> resolves at generation time) so planning clamps duration/dialogue
-    /// splits against that model's actual limits instead of assuming Grok's.
+    /// Project video model from Settings (<c>model_name</c>) — required for duration bounds.
     /// </summary>
-    private async Task<string?> ResolveVideoModelIdAsync(string projectId, CancellationToken ct)
+    private async Task<string> ResolveVideoModelIdAsync(string projectId, CancellationToken ct)
     {
-        try
-        {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("model_name", out var el) && el.ValueKind == JsonValueKind.String)
-                return el.GetString();
-        }
-        catch
-        {
-            /* use default */
-        }
-        return null;
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequireVideo(cfg, "Shot plan / Stage 2");
+    }
+
+    private async Task<string> ResolvePlanningModelIdAsync(string projectId, CancellationToken ct)
+    {
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequirePlanning(cfg, "Shot plan classifiers");
     }
 
     public async Task<Stage2PlanResult> PlanAsync(
@@ -130,7 +125,13 @@ public sealed class Stage2PlannerService
         // Clip-duration bounds for whichever video model this project is actually configured to
         // generate with — planning must not assume Grok's limits when a different model is selected.
         var videoModelId = await ResolveVideoModelIdAsync(projectId, ct).ConfigureAwait(false);
+        var planningModel = await ResolvePlanningModelIdAsync(projectId, ct).ConfigureAwait(false);
         var (durMinSeconds, durMaxSeconds, durAbsMaxSeconds) = ClipDurationEstimator.ResolveBoundsForModel(videoModelId);
+        // Tighter cap for clips that will extend from the previous one (some providers, e.g. Grok,
+        // allow a longer fresh clip than the "new portion" of a reference/continue call) — used so
+        // beat-coalescing plans against the RIGHT ceiling for whichever mode a clip ends up in,
+        // instead of always using the looser fresh-generation max.
+        var durExtensionMaxSeconds = ClipDurationEstimator.ResolveExtensionMaxForModel(videoModelId, durMaxSeconds);
 
         // Fountain is the only screenplay source of truth.
         ScreenplayService.EnsureCanonicalDraft(_projects, projectId);
@@ -151,37 +152,38 @@ public sealed class Stage2PlannerService
         // Overlay plate/voice edits from cast_seeds.json when present
         MergeCastSeedsOverlay(_projects, projectId, stage1);
 
-        // AI enrichments (each: chat preferred → retry → heuristic fallback)
+        // AI enrichments (each: chat preferred → retry → heuristic fallback).
+        // All use the Settings Script & planning model — no host option invent defaults.
         SilentBeatClassifyResult? classifyMeta = null;
         var enrichMeta = new Dictionary<string, object?>();
         if (_silentBeatClassifier is not null)
         {
             classifyMeta = await _silentBeatClassifier
-                .ClassifyStage1Async(stage1, onProgress, ct)
+                .ClassifyStage1Async(stage1, onProgress, ct, overrideModel: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["silent_beat"] = classifyMeta.ToMetaDict();
         }
         if (_ambientSfxClassifier is not null)
         {
-            var amb = await _ambientSfxClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+            var amb = await _ambientSfxClassifier.ClassifyStage1Async(stage1, onProgress, ct, overrideModel: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["ambient_sfx"] = amb.ToMetaDict();
         }
         if (_speciesKindClassifier is not null)
         {
-            var sp = await _speciesKindClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+            var sp = await _speciesKindClassifier.ClassifyStage1Async(stage1, onProgress, ct, model: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["species_kind"] = sp.ToMetaDict();
         }
         if (_onScreenCastClassifier is not null)
         {
-            var osc = await _onScreenCastClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+            var osc = await _onScreenCastClassifier.ClassifyStage1Async(stage1, onProgress, ct, model: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["onscreen_cast"] = osc.ToMetaDict();
         }
         if (_extendCutClassifier is not null)
         {
-            var ext = await _extendCutClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+            var ext = await _extendCutClassifier.ClassifyStage1Async(stage1, onProgress, ct, model: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["extend_hardcut"] = ext.ToMetaDict();
         }
@@ -218,31 +220,31 @@ public sealed class Stage2PlannerService
             // sets auth per-request now (not on shared HttpClient.DefaultRequestHeaders), so
             // this fan-out is safe there too.
             var pacingTask = _beatPacingClassifier is not null
-                ? _beatPacingClassifier.ClassifyScenePacingAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _beatPacingClassifier.ClassifyScenePacingAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, int>?>(null);
             var lightingTask = _lightingClassifier is not null
-                ? _lightingClassifier.ClassifySceneLightingAsync(s, onProgress, ct)
+                ? _lightingClassifier.ClassifySceneLightingAsync(s, onProgress, ct, model: planningModel)
                 : Task.FromResult<string?>(null);
             var cameraTask = _cameraClassifier is not null
-                ? _cameraClassifier.ClassifySceneCameraAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _cameraClassifier.ClassifySceneCameraAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, CameraDirective>?>(null);
             var negativeTask = _negativeClassifier is not null
-                ? _negativeClassifier.ClassifySceneNegativeAsync(s, onProgress, ct)
+                ? _negativeClassifier.ClassifySceneNegativeAsync(s, onProgress, ct, model: planningModel)
                 : Task.FromResult<string?>(null);
             var wardrobeTask = _wardrobeClassifier is not null
-                ? _wardrobeClassifier.ClassifySceneWardrobeAsync(s, UnionCharactersOnScreen(s), onProgress, ct)
+                ? _wardrobeClassifier.ClassifySceneWardrobeAsync(s, UnionCharactersOnScreen(s), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, string>?>(null);
             var emotionTask = _emotionClassifier is not null
-                ? _emotionClassifier.ClassifySceneEmotionAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _emotionClassifier.ClassifySceneEmotionAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, EmotionDirective>?>(null);
             var soundTask = _soundComposerClassifier is not null
-                ? _soundComposerClassifier.ClassifySceneSoundDesignAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _soundComposerClassifier.ClassifySceneSoundDesignAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, SoundDesignDirective>?>(null);
             var dofTask = _dofClassifier is not null
-                ? _dofClassifier.ClassifySceneDepthOfFieldAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _dofClassifier.ClassifySceneDepthOfFieldAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, DepthOfFieldDirective>?>(null);
             var colorTask = _colorGradingClassifier is not null
-                ? _colorGradingClassifier.ClassifySceneColorGradingAsync(s, onProgress, ct)
+                ? _colorGradingClassifier.ClassifySceneColorGradingAsync(s, onProgress, ct, model: planningModel)
                 : Task.FromResult<ColorGradingDirective?>(null);
 
             await Task.WhenAll(
@@ -258,7 +260,7 @@ public sealed class Stage2PlannerService
             var aiSound = soundTask.Result;
             var aiDof = dofTask.Result;
             var aiColor = colorTask.Result;
-            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof, aiColor, durMinSeconds, durMaxSeconds, durAbsMaxSeconds);
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof, aiColor, durMinSeconds, durMaxSeconds, durAbsMaxSeconds, durExtensionMaxSeconds);
             // Skip transition-only phantoms (e.g. FADE IN before first heading)
             if (plannedScene is null)
             {
@@ -267,7 +269,7 @@ public sealed class Stage2PlannerService
             }
             if (_shotPlanRefiner is not null)
             {
-                await _shotPlanRefiner.RefinePlannedSceneAsync(plannedScene, onProgress, ct).ConfigureAwait(false);
+                await _shotPlanRefiner.RefinePlannedSceneAsync(plannedScene, onProgress, ct, model: planningModel).ConfigureAwait(false);
             }
             planned.Add(plannedScene);
         }
@@ -341,7 +343,7 @@ public sealed class Stage2PlannerService
             ["schema_version"] = "stage2.v1",
             ["movie_title"] = stage1.TryGetValue("movie_title", out var mt) ? mt : null,
             ["source_book_title"] = stage1.TryGetValue("source_book_title", out var sbt) ? sbt : null,
-            ["video_provider_profile"] = "grok",
+            ["video_provider_profile"] = ResolveVideoProviderProfile(stage1),
             ["global_production_variables"] = gpv,
             ["scenes"] = planned.Cast<object?>().ToList(),
             ["stage2_meta"] = MakeMeta(stage1, planned, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta),
@@ -377,7 +379,7 @@ public sealed class Stage2PlannerService
             : existing.TryGetValue("movie_title", out var emt) ? emt : null;
         existing["source_book_title"] = stage1.TryGetValue("source_book_title", out var sbt) ? sbt
             : existing.TryGetValue("source_book_title", out var esbt) ? esbt : null;
-        existing["video_provider_profile"] = "grok";
+        existing["video_provider_profile"] = ResolveVideoProviderProfile(stage1);
         existing["global_production_variables"] = gpv;
         existing["scenes"] = all.Cast<object?>().ToList();
         existing["stage2_meta"] = MakeMeta(stage1, all, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta);
@@ -539,8 +541,10 @@ public sealed class Stage2PlannerService
         ColorGradingDirective? aiColor = null,
         int minSeconds = ClipDurationEstimator.MinSeconds,
         int maxSeconds = ClipDurationEstimator.MaxSeconds,
-        int absMaxSeconds = ClipDurationEstimator.AbsMaxSeconds)
+        int absMaxSeconds = ClipDurationEstimator.AbsMaxSeconds,
+        int? extensionMaxSeconds = null)
     {
+        var effectiveExtensionMax = extensionMaxSeconds ?? maxSeconds;
         var sceneInput = new Dictionary<string, object?>(scene);
         if (!string.IsNullOrWhiteSpace(aiLighting))
         {
@@ -549,14 +553,24 @@ public sealed class Stage2PlannerService
         var beats = GetList(sceneInput, "story_beats").OfType<Dictionary<string, object?>>()
             .Where(b => !IsNoopTransitionBeat(b))
             .ToList();
-        // Idempotent: monologues already split at fountain import stay; legacy long cues expand here
-        beats = ClipDurationEstimator.ExpandLongDialogueBeats(beats, modelMaxSeconds: maxSeconds);
-        beats = CoalesceSilentPreludeBeats(beats);
-        beats = CoalesceShortMonologueBeats(beats, maxSeconds);
-        beats = CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds);
+        // Moved ahead of coalescing (was computed after) — PrecomputeExtendsFromPrevious needs the
+        // same location fallback chain the final per-clip loop uses, and this is scene-only data
+        // that doesn't depend on the beat list.
         var lids = GetList(scene, "location_ids").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToList();
         var primary = CoerceString(scene.TryGetValue("primary_location_id", out var pl) ? pl : null)
                       ?? (lids.Count > 0 ? lids[0] : null);
+
+        // Idempotent: monologues already split at fountain import stay; legacy long cues expand here
+        beats = ClipDurationEstimator.ExpandLongDialogueBeats(beats, modelMaxSeconds: maxSeconds);
+        beats = CoalesceSilentPreludeBeats(beats);
+        // Recomputed fresh before each coalescing pass (not carried through) since the beat list's
+        // indices shift as beats get merged — cheap, pure local computation either way. See
+        // PrecomputeExtendsFromPrevious's doc comment for why using each merge group's first beat
+        // is equivalent to the final per-clip ForceNone decision.
+        beats = CoalesceShortMonologueBeats(
+            beats, maxSeconds, effectiveExtensionMax, PrecomputeExtendsFromPrevious(beats, primary, lids));
+        beats = CoalesceCrossSpeakerDialogueBeats(
+            beats, maxSeconds, effectiveExtensionMax, PrecomputeExtendsFromPrevious(beats, primary, lids));
         var cast = UnionCharactersOnScreen(scene);
 
         // Entire scene was only FADE IN / CUT TO — omit (no empty clip)
@@ -663,6 +677,14 @@ public sealed class Stage2PlannerService
             // Continuity + resolution/fps are owned by ClipVideoPromptBuilder at gen time —
             // keep blueprint visual_prompt declarative (action/style only).
             var vp = BuildVisualPrompt(beat, sceneWork, locSeeds, charSeeds, wardrobe, i);
+
+            // AI cinematic lighting/mood token (locks lighting style across the scene's shots) —
+            // previously computed by CinematicLightingClassifier and stored on the scene as
+            // lighting_continuity_token, but never appended to any clip's visual_prompt, so it
+            // never reached the actual video-generation call. Appended here the same way camera/
+            // performance/optics/color directives already are below.
+            if (!string.IsNullOrWhiteSpace(aiLighting))
+                vp = $"{vp} {PromptTags.Wrap("Lighting", PromptTags.SanitizeValue(aiLighting))}";
 
             // Story-specific negatives only; provider global negatives applied at gen time.
             var neg = BuildStoryNegativePrompt(beat, wardrobe, clipCast);
@@ -800,7 +822,7 @@ public sealed class Stage2PlannerService
         ["veo_clips"] = clips,
         ["stage1_scene_number"] = scene.TryGetValue("scene_number", out var s1) ? s1 : null,
         ["stage1_beat_map"] = beatMap,
-        ["video_provider_profile"] = "grok",
+        ["video_provider_profile"] = ResolveVideoProviderProfile(null),
         ["spoiler_constraints"] = scene.TryGetValue("spoiler_constraints", out var sp) ? sp : new List<object?>(),
         ["source_book_refs"] = scene.TryGetValue("source_book_refs", out var sbr) ? sbr : new List<object?>(),
     };
@@ -874,6 +896,37 @@ public sealed class Stage2PlannerService
     }
 
     /// <summary>
+    /// Per-beat proxy for "would this beat, if it became the first beat of a new clip, extend from
+    /// whatever immediately precedes it" — using the exact same <see cref="ForceNone"/> logic the
+    /// final per-clip loop uses to decide each clip's real continuation field, just computed here,
+    /// before coalescing, so beat-coalescing can plan against the ceiling that will actually apply
+    /// (the model's normal fresh-generation max, or its tighter extension-mode max) instead of
+    /// always assuming a fresh cut. Using each merge group's FIRST beat is equivalent to using the
+    /// group's true predecessor for this purpose: <see cref="CoalesceShortMonologueBeats"/> and
+    /// <see cref="CoalesceCrossSpeakerDialogueBeats"/> only ever merge beats that already share the
+    /// same location/action-class/delivery identity as the group's first beat (merging breaks
+    /// immediately otherwise), so that identity — the only thing <see cref="ForceNone"/> actually
+    /// inspects — never changes as more beats join a group.
+    /// </summary>
+    private static bool[] PrecomputeExtendsFromPrevious(
+        List<Dictionary<string, object?>> beats, string? primary, List<string> lids)
+    {
+        var result = new bool[beats.Count];
+        Dictionary<string, object?>? prevBeat = null;
+        string? prevLid = null;
+        for (var i = 0; i < beats.Count; i++)
+        {
+            var beat = beats[i];
+            var lid = CoerceString(beat.TryGetValue("location_id", out var bl) ? bl : null)
+                      ?? primary ?? (lids.Count > 0 ? lids[0] : null);
+            result[i] = !ForceNone(beat, i, prevBeat, prevLid, lid);
+            prevBeat = beat;
+            prevLid = lid;
+        }
+        return result;
+    }
+
+    /// <summary>
     /// Coalesce consecutive short monologue beats (same speaker, same delivery, same location)
     /// aiming for 6–8 second target durations per clip rather than 3–4 second micro-cuts.
     /// Reduces clip transitions and lowers API costs per scene by ~30–40%.
@@ -881,9 +934,23 @@ public sealed class Stage2PlannerService
     /// <param name="maxSeconds">Resolved per-model clip duration max (see
     /// <see cref="ClipDurationEstimator.ResolveBoundsForModel"/>) — the merge ceiling, so a tighter
     /// or looser model doesn't get a merge limit disconnected from what it can actually generate.</param>
+    /// <param name="extensionMaxSeconds">
+    /// Tighter ceiling to use instead of <paramref name="maxSeconds"/> when the merge group being
+    /// built will itself be generated as an extend-from-previous continuation (some providers, e.g.
+    /// Grok, cap the "new portion" of a reference/continue call shorter than a fresh clip). Null or
+    /// omitted behaves exactly as before (always <paramref name="maxSeconds"/>).
+    /// </param>
+    /// <param name="extendsFromPrevious">
+    /// Per-beat (index-aligned to <paramref name="beats"/>) precomputed "would this beat, as the
+    /// start of a new clip, extend from whatever precedes it" — see
+    /// <see cref="PrecomputeExtendsFromPrevious"/>. Only the flag at each merge GROUP's first index
+    /// matters, since coalescing never changes a group's effective location/action/speaker identity.
+    /// </param>
     public static List<Dictionary<string, object?>> CoalesceShortMonologueBeats(
         List<Dictionary<string, object?>> beats,
-        int maxSeconds = ClipDurationEstimator.MaxSeconds)
+        int maxSeconds = ClipDurationEstimator.MaxSeconds,
+        int? extensionMaxSeconds = null,
+        IReadOnlyList<bool>? extendsFromPrevious = null)
     {
         if (beats is null || beats.Count < 2) return beats ?? new List<Dictionary<string, object?>>();
 
@@ -891,6 +958,11 @@ public sealed class Stage2PlannerService
         var i = 0;
         while (i < beats.Count)
         {
+            var groupStart = i;
+            var effectiveMax =
+                extendsFromPrevious is not null && groupStart < extendsFromPrevious.Count && extendsFromPrevious[groupStart]
+                    ? (extensionMaxSeconds ?? maxSeconds)
+                    : maxSeconds;
             var cur = new Dictionary<string, object?>(beats[i]);
             var d1 = CoerceString(cur.TryGetValue("dialogue", out var v1) ? v1 : null);
             var sp1 = CoerceString(cur.TryGetValue("speaker", out var s1) ? s1 : null);
@@ -922,7 +994,7 @@ public sealed class Stage2PlannerService
 
                     var combinedDlg = $"{d1.Trim()} {d2.Trim()}";
                     var estCombined = ClipDurationEstimator.EstimateUncapped(combinedDlg, "", "dialogue", del1);
-                    if (estCombined > maxSeconds)
+                    if (estCombined > effectiveMax)
                     {
                         break;
                     }
@@ -959,18 +1031,30 @@ public sealed class Stage2PlannerService
     /// </summary>
     /// <param name="maxSeconds">Resolved per-model clip duration max — combined estimated speech
     /// time for both lines (each with its own head/tail pause) must fit within this.</param>
+    /// <param name="extensionMaxSeconds">
+    /// Tighter ceiling in place of <paramref name="maxSeconds"/> when the pair being considered will
+    /// itself extend from the previous clip — see the identical parameter on
+    /// <see cref="CoalesceShortMonologueBeats"/>.
+    /// </param>
+    /// <param name="extendsFromPrevious">Per-beat precomputed extend flag — see
+    /// <see cref="PrecomputeExtendsFromPrevious"/>.</param>
     public static List<Dictionary<string, object?>> CoalesceCrossSpeakerDialogueBeats(
         List<Dictionary<string, object?>> beats,
-        int maxSeconds = ClipDurationEstimator.MaxSeconds)
+        int maxSeconds = ClipDurationEstimator.MaxSeconds,
+        int? extensionMaxSeconds = null,
+        IReadOnlyList<bool>? extendsFromPrevious = null)
     {
         if (beats is null || beats.Count < 2) return beats ?? new List<Dictionary<string, object?>>();
-
-        var perLineCap = maxSeconds / 2.0;
 
         var result = new List<Dictionary<string, object?>>();
         var i = 0;
         while (i < beats.Count)
         {
+            var effectiveMax =
+                extendsFromPrevious is not null && i < extendsFromPrevious.Count && extendsFromPrevious[i]
+                    ? (extensionMaxSeconds ?? maxSeconds)
+                    : maxSeconds;
+            var perLineCap = effectiveMax / 2.0;
             var cur = new Dictionary<string, object?>(beats[i]);
             var d1 = CoerceString(cur.TryGetValue("dialogue", out var v1) ? v1 : null);
             var sp1 = CoerceString(cur.TryGetValue("speaker", out var s1) ? s1 : null);
@@ -1002,7 +1086,7 @@ public sealed class Stage2PlannerService
                     var est1 = ClipDurationEstimator.EstimateUncapped(d1, "", "dialogue", del1);
                     var est2 = ClipDurationEstimator.EstimateUncapped(d2, "", "dialogue", del2);
 
-                    if (est1 <= perLineCap && est2 <= perLineCap && (est1 + est2) <= maxSeconds)
+                    if (est1 <= perLineCap && est2 <= perLineCap && (est1 + est2) <= effectiveMax)
                     {
                         cur["secondary_speaker"] = sp2;
                         cur["secondary_dialogue"] = d2;
@@ -1101,6 +1185,17 @@ public sealed class Stage2PlannerService
         if (ac == "big_action" &&
             !ve.Contains("continuous", StringComparison.OrdinalIgnoreCase))
             ve = $"{ve}. ONE continuous take no cut; unbroken cause-to-effect motion";
+
+        // Establishing shots otherwise describe only a static composition — a known AI-video
+        // failure mode where the "opening wide shot" of a scene looks like a frozen photo. Nudge
+        // in setting-appropriate ambient background life (the model invents specifics; no new
+        // classifier call), mirroring how big_action gets its own action_class-specific guidance.
+        if (ac == "establishing" &&
+            !ve.Contains("subtle", StringComparison.OrdinalIgnoreCase) &&
+            !ve.Contains("ambient motion", StringComparison.OrdinalIgnoreCase))
+            ve = $"{ve}. Include subtle background motion appropriate to this setting (e.g. distant " +
+                 "traffic or passersby, a sign or light flickering, wind moving debris/foliage/fabric) " +
+                 "so the shot feels alive, not a still photo";
 
         var speech = SpeechClause(beat, cast);
         var mustNot = GetList(beat, "must_not").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).Take(3).ToList();
@@ -1866,6 +1961,32 @@ public sealed class Stage2PlannerService
     {
         null => null, string s => s, _ => v.ToString(),
     };
+
+    /// <summary>
+    /// Catalog provider id for the project's video model. Empty when not yet selected —
+    /// never invents "grok".
+    /// </summary>
+    private static string ResolveVideoProviderProfile(Dictionary<string, object?>? stage1)
+    {
+        // Prefer explicit stamp already on stage1 / plan if a prior step wrote a catalog id.
+        if (stage1 is not null
+            && stage1.TryGetValue("video_provider_profile", out var existing)
+            && CoerceString(existing) is { Length: > 0 } prior
+            && SupportedModelCatalog.IsKnownProviderId(prior))
+        {
+            return SupportedModelCatalog.NormalizeProviderId(prior);
+        }
+
+        if (stage1 is not null
+            && stage1.TryGetValue("video_model", out var vmObj)
+            && CoerceString(vmObj) is { Length: > 0 } videoModel)
+        {
+            var pid = SupportedModelCatalog.CatalogProviderId(videoModel, "video");
+            if (!string.IsNullOrWhiteSpace(pid)) return pid;
+        }
+
+        return "";
+    }
 }
 
 public sealed class Stage2PlanResult

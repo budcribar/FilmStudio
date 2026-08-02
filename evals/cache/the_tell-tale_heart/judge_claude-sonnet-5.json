@@ -1,0 +1,108 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 4,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 5.5,
+      "overallQualitativeScore": 6,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Covers the core beats but compresses the seven-night ritual and the morning-visit beat into brief V.O. summary rather than dramatized action, weakening coverage. The odd choice of putting the opening narration in parentheses (as if stage direction rather than spoken dialogue) is a formatting misstep. Neither the Narrator nor the Old Man receive any physical/wardrobe description, and named officers (Reynolds, Merrick, Davis) are never visually distinguished, hurting castability. Actions are mostly filmable but some scenes stack multiple beats (pacing \u002B dialogue \u002B heartbeat) into one heading. Sound design is only lightly sketched (creaks, muffled heart) with no real escalation architecture."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Extremely thorough coverage of the text with almost every original beat dramatized (seven-night ritual, morning cheerfulness, chair-grating climax). Strong, consistent physical descriptions for Narrator, Old Man, and each named officer (stern/older, young/observant, burly/quiet) that hold up on reappearance. Scene breakdown is granular and mostly filmable in short clips, though some blocks still lean on dense V.O. paragraphs. Sound design explicitly escalates the heartbeat (THUMP-THUMP-THUMP) and chair-screech, giving strong cues for a sound designer, though no distinct musical/score direction is offered."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong bookend structure (candlelit confession room) and generally faithful adaptation, but adds an invented daytime tea-pouring scene and invented Old Man dialogue not present in the source \u2014 a minor but real embellishment that slightly dings fidelity. Narrator description is good (lean, pale, threadbare waistcoat) but the parenthetical note \u0027(younger coat, same man)\u0027 introduces ambiguity about visual continuity across time. Directibility is strong with clear, single-action beats. Pacing benefits from the added quiet scene as contrast before escalation. Sound cues (bell, hinges, heartbeat) are present but not tightly escalated compared to B/E."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 6.5,
+      "characterDisambiguation": 3,
+      "aiVideoDirectibility": 6,
+      "dramaticPacing": 5,
+      "dialogueAuthenticity": 5.5,
+      "soundDesignMusic": 4,
+      "overallQualitativeScore": 5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Technically hits most plot beats but does so with almost no dramatization \u2014 nearly every scene is a repeated \u0027INT. OLD MAN\u0027S BEDROOM - NIGHT\u0027 slug with a single flat description, and the morning-visit beat is dropped. No physical descriptions are given for Narrator or Old Man, and officers are entirely generic/unnamed, making casting reference images impossible. Directibility is workable purely because beats are short, but the lack of visual specificity leaves too much to interpretation. Pacing feels flat and rushed with no escalation architecture, and sound design is essentially unaddressed beyond naming the heartbeat sound."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "The most cinematically confident adaptation: vivid, consistent character descriptions (gaunt Narrator in buttoned dark coat, frail white-haired Old Man, individually distinct officers Moran/Duffy/Kelly) that hold throughout. Bookend \u0027Confession Room\u0027 framing gives strong structure and closure. Action lines are consistently concrete, single-beat, and camera-observable (hand trembling on lantern, palm pressing floor seams smooth), ideal for short-clip generation. Added minor officer small talk (\u0027It has stood longer than I have\u0027) is a tasteful, low-risk embellishment that enhances subtext without inventing plot. Sound design is the most developed of all candidates, with heartbeat, chair-scrape, and candle-guttering cues building a clear emotional arc."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 4.5,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 5.5,
+      "soundDesignMusic": 4.5,
+      "overallQualitativeScore": 5.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Covers the major plot points but relies on explicit montage language (\u0027Seven nights pass in quick succession\u0027) which is fundamentally at odds with the one-beat-per-clip constraint, since it describes repeated action rather than a single filmable moment. Minimal descriptions for Narrator (\u0027lean man in dark coat\u0027) and none for the Old Man beyond the eye; officers are unnamed and undifferentiated. Dialogue is sparse, mostly compressed V.O., limiting performability. Sound cues are present but underdeveloped compared to top-tier candidates."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 6.5,
+      "characterDisambiguation": 3.5,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 4.5,
+      "overallQualitativeScore": 5.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Adds an invented shriek line for the Old Man (\u0027Ahhh!\u0027) and repeatedly has the Narrator\u0027s dialogue restate the action just shown on screen (double-telling), which weakens the show-don\u0027t-tell requirement. No physical description is given for the Narrator beyond \u0027eyes wide with fear and excitement,\u0027 and the Old Man and officers (only one named, Reynolds) are essentially undifferentiated, making consistent casting difficult. Scene headers repeat generically (\u0027NIGHT - LATER\u0027, \u0027MOMENTS LATER\u0027) without strong escalation, and sound design/heartbeat cues are present but thin and unscored for musical arc."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay E",
+    "Screenplay B",
+    "Screenplay C",
+    "Screenplay A",
+    "Screenplay F",
+    "Screenplay G",
+    "Screenplay D"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay E, because it combines the most consistent, castable character descriptions, the most escalation-driven sound design, and the cleanest single-action-per-clip breakdown while adding only tasteful, low-risk dialogue embellishments. Weakest: Screenplay D, because it reduces nearly every beat to a flat, repeated slugline with no character description, no named/distinguished officers, and no escalation architecture, making it unusable for consistent AI casting or paced clip generation despite technically touching all plot points.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "88517034D4CA38BDC2DCED0379F639E178C5775039FAE9AC6B2B7CB5B82E07F9"
+}

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -249,9 +250,8 @@ public sealed class VoicePreviewService
             "Single continuous take, natural performance, no music, no captions, no on-screen text.");
 
         var prompt = sb.ToString().Trim();
-        var model = string.IsNullOrWhiteSpace(_opts.DefaultModel)
-            ? "grok-imagine-video"
-            : _opts.DefaultModel;
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        var model = ProjectModelSelection.RequireVideo(cfg, "Voice preview");
         var duration = PreviewDurationSeconds;
         var resolution = PreviewResolution;
 

@@ -21,7 +21,7 @@ public sealed class SilentBeatActionClassifier
     /// </summary>
     public const string PromptVersion = "v2_pp";
 
-    public const string DefaultModel = "grok-4.5";
+    public const string DefaultModel = "";
     public const double DefaultTemperature = 0.0;
     public const int DefaultMaxAttempts = 3; // 1 try + 2 retries
     public const int DefaultBatchSize = 40;
@@ -54,9 +54,10 @@ public sealed class SilentBeatActionClassifier
         string? overrideModel = null)
     {
         var model = !string.IsNullOrWhiteSpace(overrideModel)
-            ? overrideModel
+            ? overrideModel!.Trim()
             : (string.IsNullOrWhiteSpace(_opts.SilentBeatClassifyModel)
-                ? DefaultModel
+                ? throw new InvalidOperationException(
+                    "Silent beat classify: no model configured. Set the project Script & planning model in Settings, or SilentBeatClassifyModel.")
                 : _opts.SilentBeatClassifyModel.Trim());
         var temp = _opts.SilentBeatClassifyTemperature;
         if (double.IsNaN(temp) || temp < 0)
@@ -101,88 +102,51 @@ public sealed class SilentBeatActionClassifier
         var byId = targets.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
         var aiLabels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var maxAttempts = Math.Clamp(_opts.SilentBeatClassifyMaxAttempts, 1, 5);
+        var backoffBaseMs = Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs);
         var totalAttempts = 0;
 
-        // Chunk all silent beats; per chunk: try/retry then leave unlabeled → heuristic
+        // Chunk all silent beats; per chunk: retry-until-covered via AiRetryPolicy, then leave
+        // whatever's still unlabeled → heuristic.
         for (var offset = 0; offset < targets.Count; offset += DefaultBatchSize)
         {
             ct.ThrowIfCancellationRequested();
             var chunk = targets.Skip(offset).Take(DefaultBatchSize).ToList();
-            var missing = chunk.Select(t => t.Id).ToList();
+            var chunkIds = chunk.Select(t => t.Id).ToList();
+            // Mutable: shrinks to only still-missing ids so each retry re-asks (and re-pays
+            // tokens for) fewer beats — mirrors the pre-refactor hand-rolled loop exactly.
+            var currentIds = new List<string>(chunkIds);
 
-            for (var attempt = 1; attempt <= maxAttempts && missing.Count > 0; attempt++)
-            {
-                totalAttempts++;
-                var batch = missing.Select(id => byId[id]).ToList();
-                try
+            onProgress?.Invoke(
+                $"  Chat batch {chunk.Count} beat(s) ({offset + 1}–{offset + chunk.Count}/{targets.Count})…");
+
+            var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<string>(
+                chunkIds,
+                callChat: async () =>
                 {
-                    onProgress?.Invoke(
-                        attempt == 1
-                            ? $"  Chat batch {batch.Count} beat(s) ({offset + 1}–{offset + chunk.Count}/{targets.Count})…"
-                            : $"  Retry {attempt - 1}/{maxAttempts - 1} for {batch.Count} beat(s)…");
-
+                    var batch = currentIds.Select(id => byId[id]).ToList();
                     var raw = await CallChatAsync(batch, stage1, model, temp, ct).ConfigureAwait(false);
                     result.ChatCalls++;
+                    return raw;
+                },
+                parseResponse: raw =>
+                {
                     var parsed = ParseLabels(raw);
-                    var newly = 0;
-                    foreach (var id in missing.ToList())
-                    {
-                        if (!parsed.TryGetValue(id, out var cls)) continue;
-                        aiLabels[id] = cls;
-                        newly++;
-                    }
-                    missing = missing.Where(id => !aiLabels.ContainsKey(id)).ToList();
+                    currentIds.RemoveAll(id => parsed.ContainsKey(id));
+                    return parsed;
+                },
+                maxAttempts,
+                backoffBaseMs,
+                ct).ConfigureAwait(false);
 
-                    if (missing.Count == 0)
-                        break;
-
-                    if (newly == 0)
-                    {
-                        _log.LogWarning(
-                            "SilentBeat classify attempt {Attempt}: no usable labels for {N} beats",
-                            attempt, batch.Count);
-                        await BackoffAsync(attempt, ct).ConfigureAwait(false);
-                        continue;
-                    }
-
-                    // Partial success: one fill-in pass for remaining ids (counts as an attempt)
-                    if (missing.Count > 0 && attempt < maxAttempts)
-                    {
-                        totalAttempts++;
-                        result.ChatCalls++;
-                        onProgress?.Invoke($"  Fill-in {missing.Count} missing label(s)…");
-                        try
-                        {
-                            var fillBatch = missing.Select(id => byId[id]).ToList();
-                            var fillRaw = await CallChatAsync(fillBatch, stage1, model, temp, ct)
-                                .ConfigureAwait(false);
-                            foreach (var kv in ParseLabels(fillRaw))
-                                aiLabels[kv.Key] = kv.Value;
-                            missing = missing.Where(id => !aiLabels.ContainsKey(id)).ToList();
-                        }
-                        catch (Exception ex)
-                        {
-                            _log.LogWarning(ex, "SilentBeat fill-in failed");
-                            result.LastError = Trim(ex.Message, 240);
-                            await BackoffAsync(attempt, ct).ConfigureAwait(false);
-                        }
-                    }
-                    else if (missing.Count > 0)
-                    {
-                        await BackoffAsync(attempt, ct).ConfigureAwait(false);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    _log.LogWarning(ex, "SilentBeat classify attempt {Attempt} failed", attempt);
-                    result.LastError = Trim(ex.Message, 240);
-                    await BackoffAsync(attempt, ct).ConfigureAwait(false);
-                }
+            totalAttempts += retry.Attempts;
+            if (retry.LastError is not null)
+            {
+                _log.LogWarning("SilentBeat classify chunk failed: {Error}", retry.LastError);
+                result.LastError = Trim(retry.LastError, 240);
             }
+            if (retry.Result is not null)
+                foreach (var kv in retry.Result)
+                    aiLabels[kv.Key] = kv.Value;
         }
 
         result.Attempts = totalAttempts;
@@ -271,14 +235,6 @@ public sealed class SilentBeatActionClassifier
             temperature,
             ct,
             ChatCallModes.SilentBeatClassify).ConfigureAwait(false);
-    }
-
-    private async Task BackoffAsync(int attempt, CancellationToken ct)
-    {
-        var baseMs = Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs);
-        if (baseMs == 0) return;
-        var ms = Math.Min(4000, baseMs * attempt * attempt);
-        await Task.Delay(ms, ct).ConfigureAwait(false);
     }
 
     internal static List<SilentTarget> CollectSilentBeats(Dictionary<string, object?> stage1)

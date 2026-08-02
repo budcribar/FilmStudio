@@ -19,15 +19,18 @@ public sealed class BeatPacingClassifier
     private readonly IChatClient _chat;
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<BeatPacingClassifier> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public BeatPacingClassifier(
         IChatClient chat,
         IOptions<PageToMovieOptions> opts,
-        ILogger<BeatPacingClassifier> log)
+        ILogger<BeatPacingClassifier> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _chat = chat;
         _opts = opts.Value;
         _log = log;
+        _errorLogger = errorLogger;
     }
 
     public bool IsEnabled => _opts.ClassifyBeatPacingWithChat && _chat.IsConfigured;
@@ -75,19 +78,38 @@ public sealed class BeatPacingClassifier
         {
             var userPrompt = BuildUserPrompt(scene, beats);
             var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.BeatPacingClassifyModel;
-            var response = await _chat.CompleteAsync(
-                SystemPrompt(),
-                userPrompt,
-                effectiveModel,
-                // 0, not 0.2: this is a categorical labeling task (same input should get the
-                // same label), and 0 is what makes CachingChatClient treat it as cacheable by
-                // default — a cancelled/retried Stage2 job re-hits already-classified scenes
-                // instead of re-querying and re-billing them.
-                temperature: 0,
-                ct: ct,
-                mode: ChatCallModes.BeatPacingClassify).ConfigureAwait(false);
+            var requestedIds = beats
+                .Select(b => b.GetValueOrDefault("beat_id")?.ToString() ?? "")
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToList();
 
-            return ParsePacingResponse(response);
+            var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
+                requestedIds,
+                () => _chat.CompleteAsync(
+                    SystemPrompt(),
+                    userPrompt,
+                    effectiveModel,
+                    // 0, not 0.2: this is a categorical labeling task (same input should get the
+                    // same label), and 0 is what makes CachingChatClient treat it as cacheable by
+                    // default — a cancelled/retried Stage2 job re-hits already-classified scenes
+                    // instead of re-querying and re-billing them.
+                    temperature: 0,
+                    ct: ct,
+                    mode: ChatCallModes.BeatPacingClassify),
+                ParsePacingResponse,
+                maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
+                ct: ct).ConfigureAwait(false);
+
+            if (_errorLogger is not null)
+            {
+                var sceneNum = ToIntOrNull(scene.GetValueOrDefault("scene_number"));
+                await _errorLogger.LogCoverageResultAsync(
+                    "beat_pacing_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
+                    requestedIds, retry, ct).ConfigureAwait(false);
+            }
+
+            return retry.Result;
         }
         catch (Exception ex)
         {
@@ -95,6 +117,18 @@ public sealed class BeatPacingClassifier
             return null;
         }
     }
+
+    private static int? ToIntOrNull(object? val) => val switch
+    {
+        int i => i,
+        long l => (int)l,
+        double d => (int)d,
+        string s when int.TryParse(s, out var p) => p,
+        _ => null,
+    };
+
+    private static string? ResolveProvider(string? model) =>
+        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
 
     private static string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
     {

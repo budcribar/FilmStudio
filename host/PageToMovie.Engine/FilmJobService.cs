@@ -67,6 +67,9 @@ public sealed class FilmJobService
     private readonly IAudioClient _audio;
     private readonly SceneMusicScoringService _musicScoring;
     private readonly MusicSidecarService? _musicSidecars;
+    private readonly GenerationErrorLogger? _errorLogger;
+    private readonly IVoiceClient _voiceClient;
+    private readonly IVoiceCloneClient _voiceClone;
 
     public FilmJobService(
         ProjectStore projects,
@@ -100,12 +103,15 @@ public sealed class FilmJobService
         IHttpClientFactory httpFactory,
         IAudioClient audio,
         SceneMusicScoringService musicScoring,
+        IVoiceClient voiceClient,
+        IVoiceCloneClient voiceClone,
         ClipSidecarService? sidecars = null,
         ClipDialogueVerificationService? dialogueVerification = null,
         GlobalTimingCalibrationService? timingCalibration = null,
         ActionCameraOverheadLedger? timingLedger = null,
         AiActionOverheadClassifier? timingClassifier = null,
-        MusicSidecarService? musicSidecars = null)
+        MusicSidecarService? musicSidecars = null,
+        GenerationErrorLogger? errorLogger = null)
     {
         _httpFactory = httpFactory;
         _projects = projects;
@@ -138,12 +144,15 @@ public sealed class FilmJobService
         _keys = keys;
         _audio = audio;
         _musicScoring = musicScoring;
+        _voiceClient = voiceClient;
+        _voiceClone = voiceClone;
         _sidecars = sidecars;
         _dialogueVerification = dialogueVerification;
         _timingCalibration = timingCalibration;
         _timingLedger = timingLedger;
         _timingClassifier = timingClassifier;
         _musicSidecars = musicSidecars;
+        _errorLogger = errorLogger;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -462,6 +471,7 @@ public sealed class FilmJobService
         var falKey = _keys.GetKey(userId, "fal");
         var sunoKey = _keys.GetKey(userId, "suno");
         var aiMusicApiKey = _keys.GetKey(userId, "aimusicapi");
+        var elevenLabsKey = _keys.GetKey(userId, "elevenlabs");
 
         var queuedAt = DateTimeOffset.UtcNow;
         var cts = new CancellationTokenSource();
@@ -489,6 +499,7 @@ public sealed class FilmJobService
             FalApiKey = falKey,
             SunoApiKey = sunoKey,
             AiMusicApiKey = aiMusicApiKey,
+            ElevenLabsApiKey = elevenLabsKey,
             QueuedAt = queuedAt,
             Cts = cts,
             ActiveJobId = rec.JobId,
@@ -512,7 +523,9 @@ public sealed class FilmJobService
                 ["fal"] = run.FalApiKey,
                 ["suno"] = run.SunoApiKey,
                 ["aimusicapi"] = run.AiMusicApiKey,
+                ["elevenlabs"] = run.ElevenLabsApiKey,
             }))
+            using (UserApiCallScope.Push(run.UserId))
             {
                 var startedAt = DateTimeOffset.UtcNow;
                 var success = false;
@@ -750,6 +763,48 @@ public sealed class FilmJobService
             failIfLocked: req.FailIfLocked);
     }
 
+    /// <summary>
+    /// Batch TTS for re-voice: synthesize dialogue with the character's stored clone voice id.
+    /// Writes <c>assets/audio/revoice/scene_XX_clip_YY.*</c> and hands each file to the client via
+    /// <see cref="JobSnapshot.ClientMediaUrl"/> (SignalR). Provider keys stay on the server.
+    /// </summary>
+    public Task<JobSnapshot> StartSpeakBatchAsync(StartSpeakBatchRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.ProjectId) && string.IsNullOrWhiteSpace(_projects.ActiveProjectId))
+            throw new InvalidOperationException("projectId required");
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId.Trim();
+        var charKey = string.IsNullOrWhiteSpace(req.CharKey) ? "Character_Narrator" : req.CharKey.Trim();
+
+        // Locks: character seed (voice) + any scenes we know up front; full scene set may expand
+        // after blueprint load inside the runner.
+        var locks = new List<string> { LockKeys.Character(projectId, charKey) };
+        if (req.Clips is { Count: > 0 })
+        {
+            foreach (var sn in req.Clips.Select(c => c.Scene).Where(s => s > 0).Distinct())
+                locks.Add(LockKeys.Scene(projectId, sn));
+        }
+
+        var n = req.Clips?.Count ?? 0;
+        var queuedMsg = n > 0
+            ? $"Queued speak-batch ({n} clip(s)) for {charKey}…"
+            : $"Queued speak-batch (auto lines) for {charKey}…";
+
+        return StartBackgroundJobAsync(
+            ct => RunSpeakBatchAsync(req, projectId, charKey, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "speak-batch",
+                ProjectId = projectId,
+                CharKey = charKey,
+                Message = queuedMsg,
+            },
+            lockResources: locks,
+            lockReason: $"speak-batch {charKey}",
+            failIfLocked: req.FailIfLocked);
+    }
+
     /// <summary>Book → Fountain draft + approve. Requires XAI_API_KEY.</summary>
     public Task<JobSnapshot> StartStage1Async(StartStage1Request req)
     {
@@ -837,6 +892,7 @@ public sealed class FilmJobService
         public string? FalApiKey { get; set; }
         public string? SunoApiKey { get; set; }
         public string? AiMusicApiKey { get; set; }
+        public string? ElevenLabsApiKey { get; set; }
         public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? StartedAt { get; set; }
         public List<string> HeldLocks { get; set; } = new();
@@ -1060,7 +1116,9 @@ public sealed class FilmJobService
                             s.Index = Math.Max(s.Index, 6);
                     });
                 },
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                errorLogger: _errorLogger,
+                jobId: Snapshot.JobId).ConfigureAwait(false);
 
             if (!save.Ok)
             {
@@ -1243,7 +1301,7 @@ public sealed class FilmJobService
             var detail = await _projects.GetSceneDetailAsync(projectId, scene, probeDurations: false, ct: ct).ConfigureAwait(false);
             var totalDuration = Math.Max(1, (int)Math.Ceiling(detail?.DurationSeconds ?? 10));
             var screenplay = detail?.Setting ?? "";
-            var planningModel = SceneMusicScoringService.GetConfigStr(cfg, "planning_model_name", "grok-4.5");
+            var planningModel = ProjectModelSelection.RequirePlanning(cfg, "Scene music composition");
 
             var prompt = await _musicScoring.GetOrComposeMusicPromptAsync(
                 pDir, scene, screenplay, totalDuration, planningModel, ct).ConfigureAwait(false);
@@ -2198,6 +2256,453 @@ public sealed class FilmJobService
         }
     }
 
+    private async Task RunSpeakBatchAsync(
+        StartSpeakBatchRequest req,
+        string projectId,
+        string charKey,
+        CancellationToken ct)
+    {
+        await _projects.RequireProjectAsync(projectId, ct).ConfigureAwait(false);
+
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "speak-batch",
+            ProjectId = projectId,
+            CharKey = charKey,
+            Message = "Speak-batch: building work list…",
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync().ConfigureAwait(false);
+
+        try
+        {
+            var voiceId = _projects.GetVoiceCloneProviderId(projectId, charKey);
+            if (string.IsNullOrWhiteSpace(voiceId))
+            {
+                await FinishAsync(
+                    "error",
+                    "No cloned voice on this character — record and apply a sample first.",
+                    "No cloned voice").ConfigureAwait(false);
+                return;
+            }
+
+            var seedProvider = _projects.GetVoiceProviderId(projectId, charKey) ?? "";
+            string? model = req.Model;
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfg.TryGetValue("voice_model_name", out var vm) && vm.ValueKind == JsonValueKind.String)
+                    model = vm.GetString();
+            }
+
+            SupportedModelEntry? entry = null;
+            if (!string.IsNullOrWhiteSpace(model))
+                entry = SupportedModelCatalog.Find(model, ModelCapability.Voice)
+                        ?? SupportedModelCatalog.Find(model);
+            if (entry is { IsVoiceCloneStep: true })
+            {
+                entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                    .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Enabled &&
+                        string.Equals(m.ProviderId, entry.ProviderId, StringComparison.OrdinalIgnoreCase));
+                model = entry?.Id;
+            }
+            if (entry is null)
+            {
+                entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
+                    .FirstOrDefault(m => !m.IsVoiceCloneStep && m.Enabled &&
+                        (string.IsNullOrWhiteSpace(seedProvider) ||
+                         string.Equals(m.ProviderId, seedProvider, StringComparison.OrdinalIgnoreCase)));
+                model = entry?.Id ?? model;
+            }
+
+            var providerId = entry?.ProviderId
+                             ?? (string.IsNullOrWhiteSpace(seedProvider) ? null : seedProvider)
+                             ?? "unknown";
+            var useEleven = providerId.Equals("elevenlabs", StringComparison.OrdinalIgnoreCase)
+                            || entry?.Provider == ModelProviderFamily.ElevenLabs
+                            || voiceId.StartsWith("mock_", StringComparison.OrdinalIgnoreCase);
+
+            if (useEleven && !_voiceClient.IsConfigured && !voiceId.StartsWith("mock_", StringComparison.OrdinalIgnoreCase))
+            {
+                await FinishAsync("error", "ElevenLabs key is not configured.", "ElevenLabs not configured")
+                    .ConfigureAwait(false);
+                return;
+            }
+            if (!useEleven && !_voiceClone.IsConfigured)
+            {
+                await FinishAsync("error", "Voice provider (Fal) is not configured.", "Fal not configured")
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            var work = await BuildSpeakBatchWorkAsync(req, projectId, charKey, ct).ConfigureAwait(false);
+            if (work.Count == 0)
+            {
+                await AppendLogAsync("Speak-batch: nothing to synthesize (only_missing or no dialogue).")
+                    .ConfigureAwait(false);
+                await FinishAsync("done", "No lines to speak").ConfigureAwait(false);
+                return;
+            }
+
+            var maxParallel = Math.Clamp(req.MaxParallel <= 0 ? 3 : req.MaxParallel, 1, 8);
+            var maxLen = entry?.MaxPromptLength ?? 5000;
+
+            await UpdateAsync(s =>
+            {
+                s.Total = work.Count;
+                s.Index = 0;
+                s.Message = $"Speak-batch: {work.Count} line(s) · parallel {maxParallel} · {providerId}";
+            }).ConfigureAwait(false);
+            await AppendLogAsync(Snapshot.Message!).ConfigureAwait(false);
+
+            var done = 0;
+            var failed = 0;
+            var handoffGate = new SemaphoreSlim(1, 1);
+            var gate = new SemaphoreSlim(maxParallel, maxParallel);
+
+            async Task ProcessOneAsync(SpeakWorkItem item)
+            {
+                await gate.WaitAsync(ct).ConfigureAwait(false);
+                try
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var text = item.Text.Trim();
+                    if (text.Length == 0)
+                    {
+                        Interlocked.Increment(ref done);
+                        return;
+                    }
+                    if (text.Length > maxLen)
+                    {
+                        await handoffGate.WaitAsync(ct).ConfigureAwait(false);
+                        try
+                        {
+                            await AppendLogAsync(
+                                    $"  S{item.Scene:D2}C{item.Clip:D2}: text {text.Length} chars exceeds model limit {maxLen} — skip")
+                                .ConfigureAwait(false);
+                        }
+                        finally { handoffGate.Release(); }
+                        Interlocked.Increment(ref failed);
+                        Interlocked.Increment(ref done);
+                        return;
+                    }
+
+                    byte[]? audioBytes = null;
+                    string ext = ".mp3";
+                    string? err = null;
+
+                    if (useEleven)
+                    {
+                        var speakModelId = entry?.Id
+                                           ?? SupportedModelCatalog.Find("eleven_multilingual_v2", ModelCapability.Voice)?.Id
+                                           ?? model
+                                           ?? "eleven_multilingual_v2";
+                        var tts = await _voiceClient.TextToSpeechAsync(voiceId!, text, speakModelId, ct)
+                            .ConfigureAwait(false);
+                        if (!tts.Ok || tts.AudioBytes is not { Length: > 0 })
+                            err = tts.Error ?? "TTS failed";
+                        else
+                        {
+                            audioBytes = tts.AudioBytes;
+                            ext = tts.FileExtension ?? ".mp3";
+                        }
+
+                        if (_telemetry is not null)
+                        {
+                            var estimatedUsd = entry?.CostPerThousandCharsUsd is { } rate
+                                ? Math.Round(rate * text.Length / 1000.0, 4)
+                                : (double?)null;
+                            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+                            {
+                                ProjectId = projectId,
+                                Kind = "tts",
+                                Mode = "speak_batch",
+                                Model = speakModelId,
+                                Provider = providerId,
+                                CharKey = charKey,
+                                PromptChars = text.Length,
+                                EstimatedUsd = estimatedUsd,
+                                Ok = audioBytes is { Length: > 0 },
+                                Error = err,
+                            }, ct).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        var speakModelId = entry?.Id
+                                           ?? SupportedModelCatalog.Find("fal-ai/minimax/speech-02-hd", ModelCapability.Voice)?.Id
+                                           ?? model;
+                        var audioUrl = await _voiceClone.SynthesizeSpeechAsync(text, voiceId!, speakModelId, ct)
+                            .ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(audioUrl))
+                            err = "Speech synthesis failed";
+                        else
+                        {
+                            try
+                            {
+                                var http = _httpFactory.CreateClient();
+                                using var resp = await http.GetAsync(audioUrl, ct).ConfigureAwait(false);
+                                if (resp.IsSuccessStatusCode)
+                                {
+                                    audioBytes = await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+                                    var ctHeader = resp.Content.Headers.ContentType?.MediaType ?? "";
+                                    if (ctHeader.Contains("wav", StringComparison.OrdinalIgnoreCase))
+                                        ext = ".wav";
+                                    else if (ctHeader.Contains("mp4", StringComparison.OrdinalIgnoreCase) ||
+                                             ctHeader.Contains("m4a", StringComparison.OrdinalIgnoreCase))
+                                        ext = ".m4a";
+                                    else
+                                        ext = ".mp3";
+                                }
+                                else
+                                    err = $"Download TTS failed ({(int)resp.StatusCode})";
+                            }
+                            catch (Exception ex)
+                            {
+                                err = ex.Message;
+                            }
+                        }
+
+                        if (_telemetry is not null)
+                        {
+                            var estimatedUsd = entry?.CostPerThousandCharsUsd is { } rate
+                                ? Math.Round(rate * text.Length / 1000.0, 4)
+                                : (double?)null;
+                            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+                            {
+                                ProjectId = projectId,
+                                Kind = "tts",
+                                Mode = "speak_batch",
+                                Model = speakModelId,
+                                Provider = providerId,
+                                CharKey = charKey,
+                                PromptChars = text.Length,
+                                EstimatedUsd = estimatedUsd,
+                                Ok = audioBytes is { Length: > 0 },
+                                Error = err,
+                            }, ct).ConfigureAwait(false);
+                        }
+                    }
+
+                    if (audioBytes is not { Length: > 0 })
+                    {
+                        await handoffGate.WaitAsync(ct).ConfigureAwait(false);
+                        try
+                        {
+                            await AppendLogAsync(
+                                    $"  S{item.Scene:D2}C{item.Clip:D2}: fail — {err ?? "no audio"}")
+                                .ConfigureAwait(false);
+                        }
+                        finally { handoffGate.Release(); }
+                        Interlocked.Increment(ref failed);
+                        Interlocked.Increment(ref done);
+                        return;
+                    }
+
+                    var relPath = MediaRegistryService.RevoiceAudioRelativePath(item.Scene, item.Clip, ext);
+                    var projectDir = _projects.GetProjectDir(projectId);
+                    var absPath = Path.Combine(
+                        projectDir,
+                        relPath.Replace('/', Path.DirectorySeparatorChar));
+                    Directory.CreateDirectory(Path.GetDirectoryName(absPath)!);
+                    await File.WriteAllBytesAsync(absPath, audioBytes, ct).ConfigureAwait(false);
+
+                    // Ticket form used by GET /api/projects/{id}/media/file
+                    var ticket = _mediaProxy.Issue($"{projectId}:{relPath}", TimeSpan.FromMinutes(45));
+                    var clientUrl =
+                        $"/api/projects/{Uri.EscapeDataString(projectId)}/media/file" +
+                        $"?path={Uri.EscapeDataString(relPath)}&ticket={ticket}";
+
+                    await handoffGate.WaitAsync(ct).ConfigureAwait(false);
+                    try
+                    {
+                        var idx = Interlocked.Increment(ref done);
+                        await UpdateAsync(s =>
+                        {
+                            s.Index = idx;
+                            s.Scene = item.Scene;
+                            s.Clip = item.Clip;
+                            s.ClientMediaUrl = clientUrl;
+                            s.ClientRelativePath = relPath;
+                            s.Message = $"Speak-batch: S{item.Scene:D2} C{item.Clip} ({idx}/{work.Count})…";
+                        }).ConfigureAwait(false);
+                        await AppendLogAsync(
+                                $"  S{item.Scene:D2}C{item.Clip:D2}: ready → {relPath} ({audioBytes.Length / 1024} KB)")
+                            .ConfigureAwait(false);
+                    }
+                    finally { handoffGate.Release(); }
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    await handoffGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+                    try
+                    {
+                        await AppendLogAsync($"  S{item.Scene:D2}C{item.Clip:D2}: exception — {ex.Message}")
+                            .ConfigureAwait(false);
+                    }
+                    finally { handoffGate.Release(); }
+                    Interlocked.Increment(ref failed);
+                    Interlocked.Increment(ref done);
+                }
+                finally
+                {
+                    gate.Release();
+                }
+            }
+
+            var tasks = work.Select(ProcessOneAsync).ToArray();
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            if (failed == 0)
+                await FinishAsync("done", $"Speak-batch complete — {work.Count} line(s)").ConfigureAwait(false);
+            else if (failed >= work.Count)
+                await FinishAsync("error", $"Speak-batch failed — all {failed} line(s) failed", "all failed")
+                    .ConfigureAwait(false);
+            else
+                await FinishAsync(
+                        "partial",
+                        $"Speak-batch partial — {work.Count - failed} ok, {failed} failed")
+                    .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Speak-batch cancelled").ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Speak-batch failed for {ProjectId}", projectId);
+            await FinishAsync("error", ex.Message, ex.Message).ConfigureAwait(false);
+        }
+    }
+
+    private sealed class SpeakWorkItem
+    {
+        public int Scene { get; init; }
+        public int Clip { get; init; }
+        public string Text { get; init; } = "";
+    }
+
+    private async Task<List<SpeakWorkItem>> BuildSpeakBatchWorkAsync(
+        StartSpeakBatchRequest req,
+        string projectId,
+        string charKey,
+        CancellationToken ct)
+    {
+        var list = new List<SpeakWorkItem>();
+        var projectDir = _projects.GetProjectDir(projectId);
+
+        // Explicit clips: text override or pull from blueprint
+        if (req.Clips is { Count: > 0 })
+        {
+            using var bp = await _projects.LoadBlueprintAsync(projectId, ct).ConfigureAwait(false);
+            foreach (var c in req.Clips.OrderBy(x => x.Scene).ThenBy(x => x.Clip))
+            {
+                if (c.Scene <= 0 || c.Clip <= 0) continue;
+                var text = (c.Text ?? "").Trim();
+                if (text.Length == 0 && bp is not null)
+                    text = FindClipDialogue(bp.RootElement, c.Scene, c.Clip);
+                text = ClipVideoPromptBuilder.SanitizeSpokenDialogue(text);
+                if (text.Length == 0) continue;
+
+                var rel = MediaRegistryService.RevoiceAudioRelativePath(c.Scene, c.Clip);
+                if (req.OnlyMissing && File.Exists(Path.Combine(projectDir, rel.Replace('/', Path.DirectorySeparatorChar))))
+                    continue;
+
+                list.Add(new SpeakWorkItem { Scene = c.Scene, Clip = c.Clip, Text = text });
+            }
+            return list;
+        }
+
+        // Auto: all blueprint clips (optionally narrator-only)
+        using var blueprint = await _projects.LoadBlueprintAsync(projectId, ct).ConfigureAwait(false);
+        if (blueprint is null)
+            throw new InvalidOperationException(
+                $"No Stage 2 blueprint for project {projectId}. Run Stage 2 first.");
+
+        if (!blueprint.RootElement.TryGetProperty("scenes", out var scenesEl) ||
+            scenesEl.ValueKind != JsonValueKind.Array)
+            return list;
+
+        foreach (var s in scenesEl.EnumerateArray())
+        {
+            var sn = s.TryGetProperty("scene_number", out var snEl) && snEl.TryGetInt32(out var n) ? n : 0;
+            if (sn <= 0) continue;
+            if (!s.TryGetProperty("veo_clips", out var clipsEl) || clipsEl.ValueKind != JsonValueKind.Array)
+                continue;
+            foreach (var c in clipsEl.EnumerateArray())
+            {
+                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var cv) ? cv : 0;
+                if (cn <= 0) continue;
+
+                string? speaker = null;
+                var dialogue = "";
+                if (c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object)
+                {
+                    if (ap.TryGetProperty("dialogue", out var d))
+                        dialogue = d.GetString() ?? "";
+                    if (ap.TryGetProperty("speaker", out var sp))
+                        speaker = sp.GetString();
+                }
+                if (string.IsNullOrWhiteSpace(dialogue) && c.TryGetProperty("dialogue", out var rootD))
+                    dialogue = rootD.GetString() ?? "";
+                if (string.IsNullOrWhiteSpace(speaker) && c.TryGetProperty("speaker", out var rootSp))
+                    speaker = rootSp.GetString();
+
+                dialogue = ClipVideoPromptBuilder.SanitizeSpokenDialogue(dialogue);
+                if (string.IsNullOrWhiteSpace(dialogue)) continue;
+
+                if (req.NarratorOnly && !IsNarratorSpeaker(speaker, charKey))
+                    continue;
+
+                var rel = MediaRegistryService.RevoiceAudioRelativePath(sn, cn);
+                if (req.OnlyMissing &&
+                    File.Exists(Path.Combine(projectDir, rel.Replace('/', Path.DirectorySeparatorChar))))
+                    continue;
+
+                list.Add(new SpeakWorkItem { Scene = sn, Clip = cn, Text = dialogue });
+            }
+        }
+
+        return list.OrderBy(x => x.Scene).ThenBy(x => x.Clip).ToList();
+    }
+
+    private static bool IsNarratorSpeaker(string? speaker, string narratorKey)
+    {
+        if (string.IsNullOrWhiteSpace(speaker)) return false;
+        if (!string.IsNullOrWhiteSpace(narratorKey) &&
+            string.Equals(speaker.Trim(), narratorKey.Trim(), StringComparison.OrdinalIgnoreCase))
+            return true;
+        return speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FindClipDialogue(JsonElement root, int scene, int clip)
+    {
+        if (!root.TryGetProperty("scenes", out var scenes) || scenes.ValueKind != JsonValueKind.Array)
+            return "";
+        foreach (var s in scenes.EnumerateArray())
+        {
+            var sn = s.TryGetProperty("scene_number", out var snEl) && snEl.TryGetInt32(out var n) ? n : 0;
+            if (sn != scene) continue;
+            if (!s.TryGetProperty("veo_clips", out var clips) || clips.ValueKind != JsonValueKind.Array)
+                return "";
+            foreach (var c in clips.EnumerateArray())
+            {
+                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var cv) ? cv : 0;
+                if (cn != clip) continue;
+                if (c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
+                    ap.TryGetProperty("dialogue", out var d))
+                    return d.GetString() ?? "";
+                if (c.TryGetProperty("dialogue", out var rootD))
+                    return rootD.GetString() ?? "";
+            }
+        }
+        return "";
+    }
+
     private async Task RunBatchGenAsync(StartBatchGenRequest req, string projectId, CancellationToken ct)
     {
         await _projects.RequireProjectAsync(projectId, ct);
@@ -2480,6 +2985,37 @@ public sealed class FilmJobService
             });
             await AppendLogAsync(startMsg);
 
+            // Admin-only quality gate: after dialogue QA fails, auto-regen up to qa_max_retries.
+            var qaRetryOnFail = false;
+            var qaMaxRetries = 1;
+            try
+            {
+                var cfgMap = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfgMap.TryGetValue("qa_retry_on_fail", out var qe))
+                {
+                    if (qe.ValueKind is JsonValueKind.True) qaRetryOnFail = true;
+                    else if (qe.ValueKind is JsonValueKind.False) qaRetryOnFail = false;
+                    else if (qe.ValueKind == JsonValueKind.String &&
+                             bool.TryParse(qe.GetString(), out var qb))
+                        qaRetryOnFail = qb;
+                }
+                else
+                    qaRetryOnFail = true; // match Configuration default
+
+                if (cfgMap.TryGetValue("qa_max_retries", out var qm) && qm.TryGetInt32(out var qmi))
+                    qaMaxRetries = Math.Clamp(qmi, 0, 5);
+            }
+            catch { /* keep defaults */ }
+
+            var adminQaRetry = qaRetryOnFail && _user.IsAdmin &&
+                               _dialogueVerification is not null &&
+                               _dialogueVerification.IsConfigured;
+            if (qaRetryOnFail && !_user.IsAdmin)
+                await AppendLogAsync("Quality gate retry is on, but auto-regen runs in admin mode only.");
+            else if (adminQaRetry)
+                await AppendLogAsync(
+                    $"Admin quality gate retry ON (max {qaMaxRetries} re-gen(s) per clip on dialogue fail).");
+
             var done = 0;
             var failed = 0;
             var lastGeneratedClipNum = 0;
@@ -2516,6 +3052,60 @@ public sealed class FilmJobService
                         previousClipEl: prevClipEl,
                         blueprintRoot: bp.RootElement,
                         incomingDurationPaddingSec: incomingPadding);
+
+                    if (adminQaRetry && ClipHasSpokenAudio(clip))
+                    {
+                        for (var qaAttempt = 1; qaAttempt <= qaMaxRetries; qaAttempt++)
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            ClipDialogueVerificationResult? ver = null;
+                            try
+                            {
+                                ver = await _dialogueVerification!
+                                    .VerifyClipDialogueAsync(projectId, req.Scene, cn, force: true, ct: ct)
+                                    .ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                await AppendLogAsync(
+                                    $"  [QA] dialogue check failed to run S{req.Scene:D2}C{cn}: {ex.Message}");
+                                break;
+                            }
+
+                            if (ver is null || !DialogueQaNeedsRegen(ver))
+                            {
+                                if (ver is not null)
+                                    await AppendLogAsync(
+                                        $"  [QA] S{req.Scene:D2}C{cn} ok ({ver.Status})");
+                                break;
+                            }
+
+                            await AppendLogAsync(
+                                $"  [QA] S{req.Scene:D2}C{cn} {ver.Status} — auto-regen {qaAttempt}/{qaMaxRetries} (admin)…");
+                            try
+                            {
+                                await _learning.AppendAsync(new ReviewLearningEvent
+                                {
+                                    ProjectId = projectId,
+                                    Type = "qa_auto_retry",
+                                    Scene = req.Scene,
+                                    Clip = cn,
+                                    Note = ver.Status,
+                                    Outcome = $"attempt_{qaAttempt}",
+                                    JobId = Snapshot.JobId,
+                                    ActionTaken = "admin_dialogue_qa_regen",
+                                }).ConfigureAwait(false);
+                            }
+                            catch { /* non-fatal */ }
+
+                            carryoverPaddingSec = await GenerateOneClipAsync(
+                                projectId, projectDir, req.Scene, cn, clip, resolution, ct,
+                                previousClipEl: prevClipEl,
+                                blueprintRoot: bp.RootElement,
+                                incomingDurationPaddingSec: incomingPadding);
+                        }
+                    }
+
                     lastGeneratedClipNum = cn;
                     done++;
                     // Fresh clips x/y + status pills while scene gen is still running.
@@ -2677,11 +3267,9 @@ public sealed class FilmJobService
         var overrunSec = 0.0;
 
         // Previous clip in this scene — Imagine /videos/extensions continues from that video.
-        // Clip 2+ requires previous on disk (no gaps). Cast-set changes reseed fresh+refs (PR2).
+        // Cast-set changes reseed fresh+refs (PR2).
         string? prevVisual = null;
         string? prevVideoPath = null;
-        // Disposable working copy of prev for silence-trim / extend — never rewrite clip N-1 on disk.
-        string? prevExtendWorkTemp = null;
         var reseedFresh = false;
         var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
             ? (ce.GetString() ?? "none")
@@ -2692,27 +3280,24 @@ public sealed class FilmJobService
 
         var model = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
         var modelEntry = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
-        string? prevOnDisk = null;
+
+        // Real video-extend: the browser client prepares and uploads this file — its own copy of
+        // the previous clip's display video, tail-trimmed to ≤ the model's max input length —
+        // before requesting this clip (server has no native ffmpeg to do that trim itself, and
+        // Grok's /videos/extensions rejects input video over its max). Presence is the only
+        // signal; a missing file (client didn't prepare one, an older/manual regenerate, or a
+        // model that doesn't support continue) always falls back to fresh gen + locked refs,
+        // exactly as before this feature existed — never blocks clip generation.
+        string? extendSourcePath = null;
         if (clip > 1 && modelEntry.SupportsVideoContinue)
         {
-            var resolvedPrevPath = _projects.ResolveClipVideoPath(projectId, scene, clip - 1);
-            if (!string.IsNullOrEmpty(resolvedPrevPath) && File.Exists(resolvedPrevPath) && new FileInfo(resolvedPrevPath).Length >= 1024)
-            {
-                prevOnDisk = resolvedPrevPath;
-                // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
-                // permanently shorten a finished clip when this job then failed/cancelled before C_N
-                // was written (no backup of N-1). Work on a throwaway copy instead.
-                prevExtendWorkTemp = Path.Combine(
-                    projectDir, "assets", "video", $"_prev_extend_s{scene:D2}c{clip:D2}.mp4");
-                File.Copy(prevOnDisk, prevExtendWorkTemp, overwrite: true);
-                prevVideoPath = prevExtendWorkTemp;
-            }
-            else
-            {
-                throw new InvalidOperationException(
-                    $"Generate Scene {scene:D2}, Clip {clip - 1:D2} first — Clip {clip:D2} requires the previous clip for video extension.");
-            }
+            var candidate = Path.Combine(
+                projectDir, "assets", "video", $"_extend_src_s{scene:D2}c{clip:D2}.mp4");
+            if (File.Exists(candidate) && new FileInfo(candidate).Length >= 1024)
+                extendSourcePath = candidate;
         }
+        if (extendSourcePath is not null)
+            prevVideoPath = extendSourcePath;
 
         if (previousClipEl is { } prevEl &&
             prevEl.TryGetProperty("visual_prompt", out var pvp))
@@ -2722,22 +3307,9 @@ public sealed class FilmJobService
             prevVisual = FindClipVisualInBlueprint(root, scene, clip - 1);
 
         // PR2: reseed with locked refs when on-screen cast set changes (API drops refs on extend).
-        // Imagine /videos/extensions rejects input video longer than 15s.
-        // Bad extension-tail trims (or re-extend chains) can leave a prev clip over that cap —
-        // clamp to the last ≤15s so continuity still uses the ending frames.
-        string? extendInputTemp = null;
+        string? extendInputTemp = extendSourcePath;
         try
         {
-            // No native ffmpeg: never video-extend (cannot split prev+new). Fresh gen + locked plates.
-            if (prevVideoPath is not null)
-            {
-                reseedFresh = true;
-                prevVideoPath = null;
-                await AppendLogAsync(
-                    $"  [Continuity] S{scene:D2}C{clip:D2} fresh gen with locked refs " +
-                    "(no server video-extend; browser stitch for play/export)");
-            }
-
             if (prevVideoPath is not null && _opts.IdentityReseedOnCastChange)
             {
                 var curKeys = ClipVideoPromptBuilder.ResolveOnScreenCharacterKeys(clipEl)
@@ -2788,7 +3360,7 @@ public sealed class FilmJobService
                     $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
                     $"({Path.GetFileName(prevVideoPath)})");
             }
-            else if (reseedFresh && prevOnDisk is not null)
+            else if (reseedFresh && extendSourcePath is not null)
             {
                 await AppendLogAsync(
                     $"  [Identity] Reseed S{scene:D2}C{clip:D2} after S{scene:D2}C{clip - 1:D2} " +
@@ -2816,9 +3388,11 @@ public sealed class FilmJobService
                 previousClipVisualPrompt: prevVisual,
                 previousClipVideoPath: prevVideoPath,
                 startFrameImagePath: null,
-                maxRefs: 5,
+                // Model-aware, not a hardcoded 5 — Grok's real max is 7; Wan/Hunyuan only take a
+                // single init/reference image; Veo doesn't implement reference conditioning at all.
+                maxRefs: modelEntry.MaxReferenceImages ?? 5,
                 styleHead: styleHead,
-                resolution: resolution);
+                videoModel: model);
 
             if (string.IsNullOrWhiteSpace(built.Prompt))
                 throw new InvalidOperationException("clip missing visual_prompt");
@@ -2892,9 +3466,11 @@ public sealed class FilmJobService
                 duration = padded;
             }
             await AppendLogAsync($"  [Duration] estimated {duration}s (dialogue-aware, max {durMax}s, model={model})");
-            // Extension / ref: new portion typically max 10s
+            // Reference-conditioned / continuation generation is bounded by the model's own
+            // tighter extension cap (catalog MaxExtensionSeconds), not a bare hardcoded 10 — keeps
+            // this correct if a future model's real ref-conditioned max differs from Grok's ~10s.
             if (prevVideoPath is not null || built.ReferenceImagePaths.Count > 0)
-                duration = Math.Min(duration, 10);
+                duration = ClipDurationEstimator.ResolveActualDurationForModel(model, duration, isExtensionMode: true);
 
             var modeLabel = prevVideoPath is not null ? "video-extend" : built.Mode;
             await AppendLogAsync(
@@ -2963,6 +3539,19 @@ public sealed class FilmJobService
                     {
                         var projId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
 
+                        // Attribute evaluator to project Video review / planning model (Settings), never invent.
+                        var evaluatorModelId = "";
+                        try
+                        {
+                            var evalCfg = await _projects.GetConfigAsync(projId, ct).ConfigureAwait(false);
+                            evaluatorModelId = ProjectModelSelection.TryGet(
+                                evalCfg,
+                                ProjectModelSelection.QualityConfigKey,
+                                ProjectModelSelection.PlanningConfigKey,
+                                ProjectModelSelection.ChatConfigKey) ?? "";
+                        }
+                        catch { /* telemetry only */ }
+
                         // 1. Extract dialogue text & word count from clip blueprint
                         string dialogueText = "";
                         if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
@@ -3013,7 +3602,7 @@ public sealed class FilmJobService
                                     sceneNumber: scene,
                                     videoModelId: model,
                                     videoModelVersion: "v1",
-                                    evaluatorModelId: "grok-4.5",
+                                    evaluatorModelId: evaluatorModelId,
                                     evaluatorModelVersion: "v1",
                                     cameraCategory: camCat,
                                     actionCategory: actCat,
@@ -3059,7 +3648,7 @@ public sealed class FilmJobService
                         projDir,
                         scene,
                         clip,
-                        prompt: built.Prompt,
+                        prompt: built.Prompt ?? "",
                         scriptText: "",
                         model: model,
                         resolution: resolution,
@@ -3103,13 +3692,11 @@ public sealed class FilmJobService
         }
         finally
         {
+            // Single-use: consumed extend-source is deleted so a later plain regenerate (no fresh
+            // upload) falls back to fresh gen instead of silently reusing stale continuity data.
             if (extendInputTemp is not null)
             {
                 try { File.Delete(extendInputTemp); } catch { /* ignore */ }
-            }
-            if (prevExtendWorkTemp is not null)
-            {
-                try { File.Delete(prevExtendWorkTemp); } catch { /* ignore */ }
             }
         }
 
@@ -3401,6 +3988,22 @@ public sealed class FilmJobService
         return null;
     }
 
+
+    /// <summary>Admin quality-gate: regenerate when dialogue QA says mismatch / swap / truncated.</summary>
+    private static bool DialogueQaNeedsRegen(ClipDialogueVerificationResult ver)
+    {
+        var status = (ver.Status ?? "").Trim().ToLowerInvariant();
+        if (status is "mismatch" or "speaker_swap")
+            return true;
+        if (ClipDialogueVerificationService.LooksTruncated(ver))
+            return true;
+        if (!string.IsNullOrWhiteSpace(ver.ExpectedDialogue) &&
+            ver.DialogueAccuracyScore < 0.5 &&
+            status is not "no_speech" and not "verified")
+            return true;
+        return false;
+    }
+
     /// <summary>
     /// True when the clip has spoken dialogue or VO text (not silent establish).
     /// </summary>
@@ -3572,53 +4175,28 @@ public sealed class FilmJobService
     }
 
     /// <summary>
-    /// Project <c>model_name</c> → catalog (endpoint/keys), else host <see cref="PageToMovieOptions.DefaultModel"/>.
+    /// Project <c>model_name</c> only — Settings selection required (no host DefaultModel invent).
     /// </summary>
     private async Task<string> ResolveVideoModelAsync(string projectId, CancellationToken ct)
     {
-        string? fromCfg = null;
-        try
-        {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("model_name", out var el) && el.ValueKind == JsonValueKind.String)
-                fromCfg = el.GetString();
-        }
-        catch
-        {
-            /* use default */
-        }
-
-        var resolved = SupportedModelCatalog.ResolveOrDefault(
-            fromCfg,
-            ModelCapability.Video,
-            fallbackId: _opts.DefaultModel);
-        return resolved.Id;
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequireVideo(cfg, "Video generation");
     }
 
     private async Task<string> ResolvePlanningModelAsync(string projectId, string? requestedModel, CancellationToken ct)
     {
-        if (!string.IsNullOrWhiteSpace(requestedModel)) return requestedModel.Trim();
-        try
-        {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("planning_model_name", out var el) && el.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(el.GetString()))
-                return el.GetString()!.Trim();
-        }
-        catch { }
-        return "grok-4.5";
+        if (!string.IsNullOrWhiteSpace(requestedModel))
+            return ProjectModelSelection.RequireExplicit(requestedModel, ModelCapability.Chat, "Script & planning");
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequirePlanning(cfg, "Script & planning");
     }
 
     private async Task<string> ResolveVisionModelAsync(string projectId, string? requestedModel, CancellationToken ct)
     {
-        if (!string.IsNullOrWhiteSpace(requestedModel)) return requestedModel.Trim();
-        try
-        {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("vision_model_name", out var el) && el.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(el.GetString()))
-                return el.GetString()!.Trim();
-        }
-        catch { }
-        return "grok-4.5";
+        if (!string.IsNullOrWhiteSpace(requestedModel))
+            return ProjectModelSelection.RequireExplicit(requestedModel, ModelCapability.Vision, "Image vision");
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequireVision(cfg, "Image vision");
     }
 
     private static string NormalizeResolution(string? value)

@@ -5,9 +5,11 @@ using Microsoft.Extensions.Logging;
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Demo gallery under <c>{WorkspaceRoot}/_demos/{id}/</c> (meta.json + movie.mp4).
-/// Public wall shows only <see cref="DemoStatuses.Public"/> entries after human review.
-/// No ML / API moderation — publish → pending → admin approve/reject.
+/// Demo gallery under <c>{WorkspaceRoot}/_demos/{id}/</c> (meta.json + optional staged movie.mp4).
+/// <b>YouTube is the source of truth for playback</b>: the public wall lists demos that have a
+/// <see cref="DemoEntry.YoutubeId"/> (after upload). Local movie.mp4 is only a staging file and
+/// is deleted once YouTube accepts the upload. No admin content-approval queue — YouTube
+/// (and the user's own publish) gates what appears.
 /// </summary>
 public sealed class DemoCatalogService
 {
@@ -22,7 +24,7 @@ public sealed class DemoCatalogService
     public const long MinUploadBytes = 1024;
     /// <summary>Max demos a user may submit per rolling 24h window.</summary>
     public const int MaxPublishesPerUserPerDay = 20;
-    /// <summary>Max simultaneous pending demos per user.</summary>
+    /// <summary>Legacy cap (no longer used for admin review queues).</summary>
     public const int MaxPendingPerUser = 5;
     /// <summary>Max open report notes stored on one demo.</summary>
     public const int MaxReportNotes = 20;
@@ -92,8 +94,8 @@ public sealed class DemoCatalogService
         public DateTimeOffset CreatedAt { get; set; }
         public long SizeBytes { get; set; }
         public string? ContentType { get; set; }
-        /// <summary>pending | public | rejected | removed</summary>
-        public string Status { get; set; } = DemoStatuses.Pending;
+        /// <summary>public | rejected | removed (pending legacy only)</summary>
+        public string Status { get; set; } = DemoStatuses.Public;
         public bool AcceptedGuidelines { get; set; }
         public int ReportCount { get; set; }
         public List<string> ReportNotes { get; set; } = new();
@@ -107,6 +109,9 @@ public sealed class DemoCatalogService
         public bool IsAiSyntheticContent { get; set; } = true;
         public string PrivacyStatus { get; set; } = "public";
         public List<string>? Tags { get; set; }
+
+        /// <summary>Studio-only taxonomy (e.g. storybook, horror). Not from YouTube — kept across channel sync.</summary>
+        public string? Category { get; set; }
 
         /// <summary>none | uploading | done | failed. "done" means the video now lives on YouTube
         /// and <see cref="Id"/>'s local movie.mp4 has been deleted (server footprint goal).</summary>
@@ -147,9 +152,25 @@ public sealed class DemoCatalogService
         }
     }
 
-    /// <summary>Public gallery: only approved public demos.</summary>
-    public IReadOnlyList<DemoEntry> ListPublic(int take = 50) =>
-        List(take, DemoStatuses.Public);
+    /// <summary>
+    /// Public gallery: demos that live on YouTube (source of truth for the film).
+    /// Removed/rejected are excluded; pending-without-YouTube never appear.
+    /// </summary>
+    public IReadOnlyList<DemoEntry> ListPublic(int take = 50)
+    {
+        take = Math.Clamp(take, 1, 200);
+        lock (_lock)
+        {
+            return LoadAllUnlocked()
+                .Where(e =>
+                    !string.Equals(e.Status, DemoStatuses.Removed, StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(e.Status, DemoStatuses.Rejected, StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(e.YoutubeId))
+                .OrderByDescending(e => e.CreatedAt)
+                .Take(take)
+                .ToList();
+        }
+    }
 
     public DemoEntry? TryGet(string id)
     {
@@ -304,9 +325,12 @@ public sealed class DemoCatalogService
     /// Whether anonymous/public viewers may stream this demo.
     /// Pending/rejected/removed are not world-readable.
     /// </summary>
+    /// <summary>World-visible: not removed/rejected and has a YouTube id (gallery SoT).</summary>
     public bool IsPubliclyStreamable(DemoEntry? e) =>
         e is not null
-        && string.Equals(e.Status, DemoStatuses.Public, StringComparison.OrdinalIgnoreCase);
+        && !string.Equals(e.Status, DemoStatuses.Removed, StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(e.Status, DemoStatuses.Rejected, StringComparison.OrdinalIgnoreCase)
+        && !string.IsNullOrWhiteSpace(e.YoutubeId);
 
     public bool CanUserViewVideo(DemoEntry e, string? userId, bool isAdmin)
     {
@@ -321,7 +345,7 @@ public sealed class DemoCatalogService
         return false;
     }
 
-    /// <summary>Enforce publish rate / pending caps before accepting a new demo.</summary>
+    /// <summary>Enforce publish rate before accepting a new demo (no admin review queue).</summary>
     public void EnsureUserMayPublish(string? userId, bool isAdmin)
     {
         if (isAdmin)
@@ -331,17 +355,16 @@ public sealed class DemoCatalogService
 
         lock (_lock)
         {
-            var mine = LoadAllUnlocked()
-                .Where(e => string.Equals(e.CreatedBy, userId, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            var pending = mine.Count(e =>
-                string.Equals(e.Status, DemoStatuses.Pending, StringComparison.OrdinalIgnoreCase));
-            if (pending >= MaxPendingPerUser)
+            var since = DateTimeOffset.UtcNow.AddHours(-24);
+            var mineToday = LoadAllUnlocked()
+                .Where(e =>
+                    string.Equals(e.CreatedBy, userId, StringComparison.OrdinalIgnoreCase)
+                    && e.CreatedAt >= since)
+                .Count();
+            if (mineToday >= MaxPublishesPerUserPerDay)
             {
                 throw new InvalidOperationException(
-                    $"You already have {pending} demos waiting for review (max {MaxPendingPerUser}). " +
-                    "Wait for admin approval before submitting more.");
+                    $"Publish limit reached ({MaxPublishesPerUserPerDay} demos per 24 hours). Try again later.");
             }
         }
     }
@@ -408,7 +431,7 @@ public sealed class DemoCatalogService
             await WriteMetaAsync(dir, entry, ct).ConfigureAwait(false);
 
             _log.LogInformation(
-                "Demo {Id} submitted pending review ({Bytes} bytes) project={Project} by={User}",
+                "Demo {Id} published (awaiting YouTube) ({Bytes} bytes) project={Project} by={User}",
                 id, entry.SizeBytes, projectId, createdBy);
             return entry;
         }
@@ -462,7 +485,7 @@ public sealed class DemoCatalogService
                 JsonSerializer.Serialize(entry, JsonOpts) + "\n");
 
             _log.LogInformation(
-                "Demo {Id} submitted pending review from file ({Bytes} bytes) project={Project} by={User}",
+                "Demo {Id} published from file (awaiting YouTube) ({Bytes} bytes) project={Project} by={User}",
                 id, entry.SizeBytes, projectId, createdBy);
             return entry;
         }
@@ -496,13 +519,13 @@ public sealed class DemoCatalogService
             while (entry.ReportNotes.Count > MaxReportNotes)
                 entry.ReportNotes.RemoveAt(0);
 
-            // Auto-hide after enough community reports until admin re-reviews.
+            // Auto-hide after enough community reports (no admin approval queue).
             if (entry.ReportCount >= 3
                 && string.Equals(entry.Status, DemoStatuses.Public, StringComparison.OrdinalIgnoreCase))
             {
-                entry.Status = DemoStatuses.Pending;
-                entry.ReviewNote = $"Auto-queued after {entry.ReportCount} reports";
-                _log.LogWarning("Demo {Id} auto-pending after {N} reports", id, entry.ReportCount);
+                entry.Status = DemoStatuses.Removed;
+                entry.ReviewNote = $"Auto-removed after {entry.ReportCount} reports";
+                _log.LogWarning("Demo {Id} auto-removed after {N} reports", id, entry.ReportCount);
             }
 
             SaveUnlocked(entry);
@@ -637,7 +660,8 @@ public sealed class DemoCatalogService
             CreatedAt = DateTimeOffset.UtcNow,
             SizeBytes = sizeBytes,
             ContentType = "video/mp4",
-            Status = DemoStatuses.Pending,
+            // Public metadata immediately; gallery lists only after YouTube id is set.
+            Status = DemoStatuses.Public,
             AcceptedGuidelines = acceptedGuidelines,
             MadeForKids = madeForKids,
             IsAiSyntheticContent = isAiSyntheticContent,
@@ -668,6 +692,13 @@ public sealed class DemoCatalogService
                 entry.YoutubeId = youtubeId;
             if (!string.IsNullOrWhiteSpace(youtubeUrl))
                 entry.YoutubeUrl = youtubeUrl;
+            // YouTube success is the gate for the public wall — mark public, clear errors.
+            if (string.Equals(status, "done", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(entry.YoutubeId))
+            {
+                entry.Status = DemoStatuses.Public;
+                entry.YoutubeUploadError = null;
+            }
 
             SaveUnlocked(entry);
 
@@ -693,6 +724,187 @@ public sealed class DemoCatalogService
             return entry;
         }
     }
+
+    /// <summary>
+    /// Admin: put an existing YouTube video on the public gallery without uploading a local MP4.
+    /// YouTube remains the source of truth for playback.
+    /// </summary>
+    public DemoEntry RegisterFromYouTube(
+        string youtubeIdOrUrl,
+        string title,
+        string? description,
+        string? createdBy,
+        string? projectId = null,
+        bool fromChannel = false)
+    {
+        var ytId = ExtractYouTubeVideoId(youtubeIdOrUrl)
+            ?? throw new InvalidOperationException(
+                "Could not parse a YouTube video id. Paste a watch URL, youtu.be link, or 11-char id.");
+        if (string.IsNullOrWhiteSpace(title))
+            throw new InvalidOperationException("Title is required.");
+
+        lock (_lock)
+        {
+            // Match by YouTube id — channel is playback SoT; studio fields (category/tags/project) stay local.
+            var existing = LoadAllUnlocked()
+                .FirstOrDefault(e =>
+                    string.Equals(e.YoutubeId, ytId, StringComparison.OrdinalIgnoreCase));
+            if (existing is not null)
+            {
+                // Title/description always from YouTube when channel-syncing (or when provided).
+                existing.Title = title.Trim();
+                if (fromChannel || !string.IsNullOrWhiteSpace(description))
+                    existing.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+                existing.Status = DemoStatuses.Public;
+                existing.YoutubeUploadStatus = "done";
+                existing.YoutubeUploadError = null;
+                existing.YoutubeUrl = $"https://www.youtube.com/watch?v={ytId}";
+                // ProjectId / Category / Tags / CreatedBy are studio-owned — only set if empty or explicit projectId
+                if (!string.IsNullOrWhiteSpace(projectId) && string.IsNullOrWhiteSpace(existing.ProjectId))
+                    existing.ProjectId = projectId.Trim();
+                if (string.IsNullOrWhiteSpace(existing.CreatedBy) && !string.IsNullOrWhiteSpace(createdBy))
+                    existing.CreatedBy = createdBy;
+                SaveUnlocked(existing);
+                _log.LogInformation("Demo {Id} matched YouTube {Yt} (title refreshed from channel)", existing.Id, ytId);
+                return existing;
+            }
+
+            var id = GenerateId();
+            var entry = NewPendingEntry(
+                id,
+                title.Trim(),
+                description,
+                projectId,
+                createdBy,
+                sizeBytes: 0,
+                acceptedGuidelines: true);
+            entry.YoutubeId = ytId;
+            entry.YoutubeUrl = $"https://www.youtube.com/watch?v={ytId}";
+            entry.YoutubeUploadStatus = "done";
+            entry.Status = DemoStatuses.Public;
+            SaveUnlocked(entry);
+            _log.LogInformation(
+                "Demo {Id} registered from YouTube {Yt} title={Title} by={User}",
+                id, ytId, entry.Title, createdBy);
+            return entry;
+        }
+    }
+
+    /// <summary>
+    /// After a channel sync: hide public demos whose YouTube id is no longer on the channel
+    /// (stale manual entries / renamed ghosts). Studio category/tags kept if they return later.
+    /// </summary>
+    /// <summary>
+    /// Undo accidental gallery wipe when sync listed 0 videos (channel-hidden only).
+    /// </summary>
+    public int RestoreChannelHiddenDemos()
+    {
+        var restored = 0;
+        lock (_lock)
+        {
+            foreach (var e in LoadAllUnlocked())
+            {
+                if (!string.Equals(e.Status, DemoStatuses.Removed, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (string.IsNullOrWhiteSpace(e.YoutubeId))
+                    continue;
+                var note = e.ReviewNote ?? "";
+                if (!note.Contains("not on connected", StringComparison.OrdinalIgnoreCase)
+                    && !note.Contains("Hidden: video not on", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                e.Status = DemoStatuses.Public;
+                e.ReviewNote = null;
+                e.YoutubeUploadStatus = "done";
+                SaveUnlocked(e);
+                restored++;
+            }
+        }
+        if (restored > 0)
+            _log.LogInformation("Restored {N} gallery demos previously hidden by empty channel sync", restored);
+        return restored;
+    }
+
+    /// <param name="listIsAuthoritative">
+    /// True only when YouTube returned a successful list (including empty). False on glitch/error —
+    /// never hide in that case. A successful empty list means the channel has no videos; hide all
+    /// gallery rows that pointed at channel ids no longer present.
+    /// </param>
+    public int HideDemosNotOnChannel(
+        IReadOnlyCollection<string> channelYoutubeIds,
+        bool listIsAuthoritative = true)
+    {
+        if (!listIsAuthoritative)
+        {
+            _log.LogWarning("Skip hide-not-on-channel: channel list was not authoritative (glitch/error)");
+            return 0;
+        }
+
+        var set = new HashSet<string>(
+            (channelYoutubeIds ?? Array.Empty<string>()).Where(s => !string.IsNullOrWhiteSpace(s)),
+            StringComparer.OrdinalIgnoreCase);
+        // set.Count == 0 is valid: last video deleted from channel → hide remaining gallery rows.
+        var hidden = 0;
+        lock (_lock)
+        {
+            foreach (var e in LoadAllUnlocked())
+            {
+                if (string.IsNullOrWhiteSpace(e.YoutubeId))
+                    continue;
+                if (string.Equals(e.Status, DemoStatuses.Removed, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(e.Status, DemoStatuses.Rejected, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (set.Contains(e.YoutubeId))
+                    continue;
+                e.Status = DemoStatuses.Removed;
+                e.ReviewNote = "Hidden: video not on connected Page to Movie channel";
+                SaveUnlocked(e);
+                hidden++;
+            }
+        }
+        if (hidden > 0)
+            _log.LogInformation("Hid {N} gallery demos not present on YouTube channel", hidden);
+        return hidden;
+    }
+
+    /// <summary>
+    /// Upsert public gallery entries for every channel upload. Returns counts.
+    /// Skips videos already removed/rejected intentionally? — re-public if still on channel.
+    /// </summary>
+    public (int Added, int Updated, int Total) SyncFromChannelUploads(
+        IReadOnlyList<YouTubeAuthService.ChannelUploadVideo> videos,
+        string? createdBy = "youtube-channel")
+    {
+        if (videos is null || videos.Count == 0)
+            return (0, 0, 0);
+
+        var added = 0;
+        var updated = 0;
+        foreach (var v in videos)
+        {
+            if (string.IsNullOrWhiteSpace(v.VideoId))
+                continue;
+            bool existed;
+            lock (_lock)
+            {
+                existed = LoadAllUnlocked().Any(e =>
+                    string.Equals(e.YoutubeId, v.VideoId, StringComparison.OrdinalIgnoreCase));
+            }
+            RegisterFromYouTube(
+                v.VideoId,
+                v.Title,
+                v.Description,
+                createdBy,
+                fromChannel: true);
+            if (existed) updated++;
+            else added++;
+        }
+        return (added, updated, added + updated);
+    }
+
+    /// <summary>Parse watch / youtu.be / embed / raw 11-char ids.</summary>
+    public static string? ExtractYouTubeVideoId(string? input) =>
+        PageToMovie.Core.Util.YouTubeVideoId.Extract(input);
+
 
     private List<DemoEntry> LoadAllUnlocked()
     {

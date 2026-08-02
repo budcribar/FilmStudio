@@ -1,0 +1,46 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 4,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 7.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major source beats dropped (Marley knocker transformation, Ignorance and Want, debtors\u0027 family relief at the death)",
+        "Relational/possessive character cues FRED\u0027S WIFE and BELLE\u0027S HUSBAND violate stable independent token rule"
+      ],
+      "rationale": "Fidelity is severely damaged by omission of multiple iconic beats required for a recognizable Carol (knocker face, Present\u0027s children, Caroline scene), even though the three-spirit spine remains; character looks are mostly locked on first appearance and Young Scrooge is visually aged, but relational cues and thin re-entry restatements weaken casting clarity. Directibility is strong\u2014single concrete locations, observable actions, short clip-friendly beats\u2014while pacing is tight for runtime yet feels rushed where cuts land. Dialogue keeps many book phrases but shortens speeches and routes some spoken lines through NARRATOR V.O. Sound cues are consistently present and useful. Not greenlight-ready due to the fidelity holes and cast-token violations.",
+      "promptImprovementSuggestion": "Add an explicit retention rule: iconic set-pieces and thematic reveals (prop transformations, ghost arrivals, pair-of-children or equivalent moral emblems) must appear as distinct filmed beats even under the 10-minute cap; compression may drop only pure connective or travel paragraphs."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 6,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.25,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invalid multi-location heading \u0027EXT. BLEAK MOOR / LIGHTHOUSE / SHIP - NIGHT\u0027 joins places with slashes",
+        "Unstable supporting tokens CHARWOMAN, FAT MAN, UNDERTAKER\u0027S MAN instead of proper independent names"
+      ],
+      "rationale": "Highest fidelity: nearly every essential beat and quotable line is present (knocker, full Marley, Fezziwig, Belle, Cratchits, Ignorance/Want, Old Joe, debtors, grave, turkey, salary raise) with only light runtime compression. Character introductions supply strong visual locks and clear YOUNG / YOUNG MAN SCROOGE splits, though a few supporting cues remain generic. Directibility suffers from the slash-joined heading and \u0027quick visions\u0027 summary that cram multiple locations and actions into non-clip-sized units. Pacing and dialogue are excellent\u2014book cadence preserved, short enough for clips, tension builds cleanly. Sound/music cues are dense and diegetic at peaks. Structure and cast-token defects prevent an immediate greenlight.",
+      "promptImprovementSuggestion": "Strengthen the single-place heading rule with a positive example: for brief multi-setting montages issue separate concrete headings per micro-location or confine Action to one continuous observable shot; never allow slash/AND joins or \u0027quick visions\u0027 summary language under one slug."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it delivers near-complete source coverage, iconic dialogue, and superior emotional arc while still hitting runtime. Weakest: Screenplay A because severe omissions of major beats collapse fidelity and relational cast cues create downstream identity failures.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "ACFF03ED024FBF0B690061920E1403D81F64F9E882C4AFA428D176B08281D668"
+}

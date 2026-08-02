@@ -54,7 +54,7 @@ public sealed class GrokVisionClient : IVisionClient
     public async Task<string> TranscribePageAsync(
         string imagePath,
         int page,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default)
     {
         FileInfo? fi = null;
@@ -101,7 +101,7 @@ public sealed class GrokVisionClient : IVisionClient
         string imagePath,
         int page,
         IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default)
     {
         if (cast.Count == 0)
@@ -353,16 +353,28 @@ public sealed class GrokVisionClient : IVisionClient
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "grok-4.5",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(prompt))
             throw new ArgumentException("prompt required", nameof(prompt));
-        var paths = (imagePaths ?? Array.Empty<string>())
-            .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p) && AllowedImageExtensions.Contains(Path.GetExtension(p)))
+        var requested = (imagePaths ?? Array.Empty<string>())
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .ToList();
+        var paths = requested
+            .Where(p => File.Exists(p) && AllowedImageExtensions.Contains(Path.GetExtension(p)))
             .Take(8)
             .ToList();
+        if (requested.Count > 0 && paths.Count == 0)
+        {
+            var sample = requested[0];
+            var ext = Path.GetExtension(sample);
+            var exists = File.Exists(sample);
+            throw new InvalidOperationException(
+                $"Vision call received {requested.Count} image path(s) but none were attachable " +
+                $"(exists={exists}, ext='{ext}'). Use png/jpg/webp.");
+        }
 
         var content = new List<object?>();
         foreach (var path in paths)

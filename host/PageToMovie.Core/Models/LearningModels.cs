@@ -48,6 +48,8 @@ public sealed class LearningInsightsDto
 
 public sealed class ProposeLearningRulesRequest
 {
+    /// <summary>Optional catalog chat model. Empty → offline proposal (no invented default).</summary>
+    public string? Model { get; set; }
     public int LastNFails { get; set; } = 50;
     public string? ProjectId { get; set; }
     public string? Category { get; set; }

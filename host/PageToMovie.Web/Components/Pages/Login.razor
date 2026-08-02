@@ -26,11 +26,11 @@
                 }
                 else if (_isSignup)
                 {
-                    <text>Create your account to start generating films</text>
+                    <text>Create an account — drop a book, cast, estimate, film.</text>
                 }
                 else
                 {
-                    <text>Sign in with your handle or email</text>
+                    <text>Sign in to continue your film studio projects</text>
                 }
 
             </p>
@@ -369,30 +369,55 @@
         font-size: 1.1rem;
     }
 
-    .form-control {
-        background: #0f172a;
-        border: 1.5px solid #475569;
-        color: #ffffff !important;
+    /* Beat global app.css placeholder dimming (same !important) with .auth-card scope */
+    .auth-card .form-control {
+        background: #1e293b;
+        border: 1.5px solid #64748b;
+        color: #f8fafc !important;
         font-size: 1rem;
         font-weight: 500;
+        caret-color: #f8fafc;
     }
 
-    .form-control::placeholder,
-    .form-control::-webkit-input-placeholder,
-    .form-control::-moz-placeholder,
-    .form-control:-ms-input-placeholder {
-        color: #cbd5e1 !important;
-        opacity: 1 !important;
+    .auth-card .form-control::placeholder,
+    .auth-card .form-control::-webkit-input-placeholder,
+    .auth-card .form-control::-moz-placeholder,
+    .auth-card .form-control:-ms-input-placeholder {
+        /* Near-white — same brightness band as labels / typed text (user: still unreadable before) */
+        color: #f8fafc !important;
+        opacity: 0.92 !important;
         font-style: normal;
         font-weight: 500;
+        -webkit-text-fill-color: #f8fafc !important;
     }
 
+    /* Chrome/Edge autofill can paint dark-on-dark; force light text inside the group */
+    .auth-card .form-control:-webkit-autofill,
+    .auth-card .form-control:-webkit-autofill:hover,
+    .auth-card .form-control:-webkit-autofill:focus {
+        -webkit-text-fill-color: #f8fafc !important;
+        caret-color: #f8fafc;
+        transition: background-color 99999s ease-out 0s;
+        box-shadow: 0 0 0 1000px #1e293b inset !important;
+    }
 
-    .form-control:focus {
-        background: #0f172a;
+    .auth-card .form-control:focus {
+        background: #1e293b;
         border-color: #818cf8;
         box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.35);
-        color: #ffffff !important;
+        color: #f8fafc !important;
+    }
+
+    .auth-card .input-group-text {
+        background: #1e293b;
+        border-color: #64748b;
+        color: #e2e8f0;
+    }
+
+    .auth-card .password-toggle {
+        border-color: #64748b;
+        color: #f1f5f9;
+        background: #334155;
     }
 
     .btn-gradient {

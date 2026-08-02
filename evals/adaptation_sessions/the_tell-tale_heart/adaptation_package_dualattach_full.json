@@ -1,0 +1,69 @@
+{
+  "schema_version": "adaptation_package.v1",
+  "pipeline_variant": "dual_attach_full",
+  "book_slug": "the_tell-tale_heart",
+  "book_sha256": "73e702a481dc99a55ba1ba3e9c237a17595e915c6bc1f1b5d3f2e7d4a06d38c4",
+  "provider": "xai",
+  "model": "grok-4.5",
+  "judge_models": [
+    "grok-4",
+    "grok-4.20-reasoning"
+  ],
+  "temperature": 0.2,
+  "judge_temperature": 0,
+  "target_runtime_minutes": 16,
+  "generated_at_utc": "2026-08-01T18:21:41.7014954Z",
+  "validation_status": "pass",
+  "scene_count": 12,
+  "clip_count": 90,
+  "artifacts": [
+    {
+      "key": "cast_and_locations",
+      "path": "cast_and_locations_dualattach_full.json",
+      "exists": true,
+      "sha256": "cfb730d6d778623df874b5db230a0e3e7b92c39bda3cab474ced65047acfe73a"
+    },
+    {
+      "key": "screenplay",
+      "path": "screenplay_dualattach_full.fountain",
+      "exists": true,
+      "sha256": "988d5bf3a5076d2cff4824279f8a00c1eb66f8683b8cc5f932174865b0ba0f8a"
+    },
+    {
+      "key": "edit_decision_list",
+      "path": "edit_decision_list_dualattach_full.json",
+      "exists": true,
+      "sha256": "51c1a6c4fd4df18ffcc628aeb8e174fe4935a30acc5868713306b48aa0c532a8"
+    },
+    {
+      "key": "clip_shot_plan",
+      "path": "clip_shot_plan_dualattach_full.json",
+      "exists": true,
+      "sha256": "5ceb62851ec2224016eafe7b8005b26b4872c26f619fd83b3c1a57acf8a9fb4f"
+    },
+    {
+      "key": "audio_plan",
+      "path": "audio_plan_dualattach_full.json",
+      "exists": true,
+      "sha256": "402ad5388c1df196840a90e58b213126754877aaac59e9353ecbb74cc6f3429d"
+    },
+    {
+      "key": "validation_report",
+      "path": "validation_report_dualattach_full.json",
+      "exists": true,
+      "sha256": "4dd80f607a008a444c8a0c54aafc1e3d77ec081e4c3c23bcb81a08adc41d23e8"
+    },
+    {
+      "key": "judge_review_grok-4",
+      "path": "judge_review_dualattach_full.grok-4.json",
+      "exists": true,
+      "sha256": "0ddeb02a99405f42497f00668af1b6bd7963323c25511752c3f298cdfb4a38d2"
+    },
+    {
+      "key": "judge_review_grok-4.20-reasoning",
+      "path": "judge_review_dualattach_full.grok-4.20-reasoning.json",
+      "exists": true,
+      "sha256": "bf1a0347c59cf740561df51981815c4677e6f21761c8e4364a3558453b7cdb65"
+    }
+  ]
+}

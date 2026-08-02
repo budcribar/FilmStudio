@@ -1,0 +1,3223 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Wide exterior of big brick fifth-floor walk-up building under cold Milwaukee daylight",
+          "camera_directive": "wide establishing shot, 24mm",
+          "performance_intensity": 2,
+          "performance_note": "static empty street presence",
+          "dialogue_or_vo": "",
+          "sound": "distant traffic, wind off the lake",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Tilt down alley to dented dumpsters and fire-escape stairs",
+          "camera_directive": "slow tilt down, 35mm",
+          "performance_intensity": 2,
+          "performance_note": "observational",
+          "dialogue_or_vo": "",
+          "sound": "wind rattle metal dumpster lids",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Low angle up the brick facade toward fifth-floor windows",
+          "camera_directive": "low-angle medium, 28mm",
+          "performance_intensity": 3,
+          "performance_note": "imposing height",
+          "dialogue_or_vo": "Big brother was mine. Not that stupid book.",
+          "sound": "wind continues under VO",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Hold on cold gray sky above the roofline",
+          "camera_directive": "static wide sky, 35mm",
+          "performance_intensity": 3,
+          "performance_note": "quiet resolve",
+          "dialogue_or_vo": "My real Big Brother.",
+          "sound": "traffic fade under VO",
+          "beat_id": "B1"
+        }
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Harsh fluorescent gym interior; sweat and iron racks; GUY mid preacher curl with 40-pound bar",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "routine strain",
+          "dialogue_or_vo": "",
+          "sound": "weights clank, heavy breath",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 7,
+          "visual_description": "NICK enters frame: tall heavily muscled, scars chin and left eyebrow, reddish-brown messy hair, pox-marked, black intense eyes, work boots jeans t-shirt; people step aside",
+          "camera_directive": "tracking medium shot, 40mm",
+          "performance_intensity": 7,
+          "performance_note": "commanding entrance, zero effort",
+          "dialogue_or_vo": "",
+          "sound": "boots on rubber floor, room quiets",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Close on guy\u0027s face as he sees Nick; he drops the 40-pound bar and offers the bench",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "sudden deference fear",
+          "dialogue_or_vo": "",
+          "sound": "bar slam metal floor",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Nick nods once, takes over, loads 50-pound bar for warm-ups; scars and hair detail",
+          "camera_directive": "medium close-up profile, 50mm",
+          "performance_intensity": 8,
+          "performance_note": "casual dominance",
+          "dialogue_or_vo": "Nick had a pair on him the size of steel wrecking balls.",
+          "sound": "plates slide onto bar",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Nick begins warm-up curl; gym watches; puzzle-piece face held by scars",
+          "camera_directive": "slow push-in close-up, 85mm",
+          "performance_intensity": 8,
+          "performance_note": "effortless power",
+          "dialogue_or_vo": "Face like a puzzle held with glue-gun sticky stuff.",
+          "sound": "weights clank under VO, heavy breath",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Wide of gym floor cleared around Nick as he owns the space",
+          "camera_directive": "wide shot, 24mm",
+          "performance_intensity": 7,
+          "performance_note": "territorial calm",
+          "dialogue_or_vo": "",
+          "sound": "ambient gym hush",
+          "beat_id": "B1"
+        }
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Cramped living room; MA aging tired brown eyes brown hair house dress afghan sits near TV game show",
+          "camera_directive": "medium shot, 35mm",
+          "performance_intensity": 3,
+          "performance_note": "passive vacant watch",
+          "dialogue_or_vo": "",
+          "sound": "TV game-show chatter, floorboards creak",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "NARRATOR average build worn t-shirt jeans hauls grocery bags through door; NICK loads six bags like strongman one trip",
+          "camera_directive": "medium two-shot, 40mm",
+          "performance_intensity": 5,
+          "performance_note": "Nick effortless bulk vs narrator strain",
+          "dialogue_or_vo": "",
+          "sound": "bags rustle, boots",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Nick turns to narrator, serious; Ma still on TV behind",
+          "camera_directive": "over-shoulder medium, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "protective command",
+          "dialogue_or_vo": "You got to keep an eye on her. She shouldn\u0027t be sleeping in the middle of the day.",
+          "sound": "TV under dialogue",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator nods, earnest ordinary face",
+          "camera_directive": "close-up, 85mm",
+          "performance_intensity": 4,
+          "performance_note": "dutiful acceptance",
+          "dialogue_or_vo": "I will. I promise.",
+          "sound": "floorboard creak",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Wide of cramped fifth-floor apartment; bags on counter; family triangle",
+          "camera_directive": "wide interior, 28mm",
+          "performance_intensity": 3,
+          "performance_note": "lived-in confinement",
+          "dialogue_or_vo": "We lived downtown after dad took off when I was eight.",
+          "sound": "TV continues soft",
+          "beat_id": "B1"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Hold on stairwell suggestion through open door; narrator glance",
+          "camera_directive": "medium insert doorway, 35mm",
+          "performance_intensity": 3,
+          "performance_note": "weary memory",
+          "dialogue_or_vo": "Fifth-floor walk-up. Pain in the ass.",
+          "sound": "distant street through window",
+          "beat_id": "B1"
+        }
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Burnt-orange 1980 Pontiac Trans Am with yellow flames and big eagle on hood, T-top glinting",
+          "camera_directive": "low hero wide, 24mm",
+          "performance_intensity": 5,
+          "performance_note": "car as status idol",
+          "dialogue_or_vo": "",
+          "sound": "V8 rumble idle, street noise",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Nick leans on the car, keys in hand, brown suede jacket, messy hair",
+          "camera_directive": "medium shot, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "casual ownership smirk",
+          "dialogue_or_vo": "",
+          "sound": "V8 idle throb",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Detail of eagle hood and flame paint; keys dangle",
+          "camera_directive": "tight detail insert, 85mm",
+          "performance_intensity": 4,
+          "performance_note": "pride object",
+          "dialogue_or_vo": "He got a great deal. Twelve grand.",
+          "sound": "engine idle under VO",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Nick glances toward street lights as if traffic notices him",
+          "camera_directive": "medium close-up, 65mm",
+          "performance_intensity": 6,
+          "performance_note": "expected attention",
+          "dialogue_or_vo": "People always look up when he pulls to the lights.",
+          "sound": "street noise swell",
+          "beat_id": "B2"
+        }
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Industrial assembly line; big metal pieces moving past under overhead lights",
+          "camera_directive": "wide tracking, 28mm",
+          "performance_intensity": 4,
+          "performance_note": "mechanical rhythm",
+          "dialogue_or_vo": "",
+          "sound": "machinery roar, metal clang",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Nick runs the line, boots planted, hair helter-skelter, separates pieces",
+          "camera_directive": "medium side tracking, 40mm",
+          "performance_intensity": 6,
+          "performance_note": "competent control",
+          "dialogue_or_vo": "",
+          "sound": "drill press whine, clang",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Big crane lifts metal load to higher level; Nick watches from below",
+          "camera_directive": "low angle crane rise, 24mm",
+          "performance_intensity": 5,
+          "performance_note": "easy mastery",
+          "dialogue_or_vo": "He said it\u0027s pretty easy for the money.",
+          "sound": "crane motor whine",
+          "beat_id": "B2"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Close on Nick\u0027s boots and stance; factory haze",
+          "camera_directive": "low close-up boots to face tilt, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "rooted presence",
+          "dialogue_or_vo": "He comes over a lot. Feels like he still lives here.",
+          "sound": "machinery under VO fade",
+          "beat_id": "B2"
+        }
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Night living room; Ma in chair afghan glassy empty eyes; pill bottles lined on counter",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "confused drift",
+          "dialogue_or_vo": "",
+          "sound": "TV low, fridge hum",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator in rumpled t-shirt watches her from doorway, worried",
+          "camera_directive": "medium shot, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "quiet dread",
+          "dialogue_or_vo": "",
+          "sound": "fridge hum",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Close on Ma\u0027s glassy eyes and vacant face as she speaks",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "lost disorientation",
+          "dialogue_or_vo": "Did we go to church today? Did you see Mrs. Canasta there?",
+          "sound": "TV murmur under",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator steps in, gentle firm, points to pill box",
+          "camera_directive": "over-shoulder medium, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "careful patience",
+          "dialogue_or_vo": "Ma, we don\u0027t go to church anymore. Your pills are right in front of you.",
+          "sound": "soft floor creak",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Ma snaps back; empty look fades; she sees the bottles",
+          "camera_directive": "close-up reaction, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "brief return then fade",
+          "dialogue_or_vo": "",
+          "sound": "TV low",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 5,
+          "visual_description": "Narrator alone in frame watching her; burden settles",
+          "camera_directive": "medium close-up, 65mm",
+          "performance_intensity": 6,
+          "performance_note": "heavy responsibility",
+          "dialogue_or_vo": "Somebody has to be here with Ma. She\u0027s getting older. Hard for her to see.",
+          "sound": "fridge hum under VO",
+          "beat_id": "B5"
+        }
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Warm oven glow; counter phone; narrator in apron flour-dusted t-shirt spins dough",
+          "camera_directive": "medium shot, 40mm",
+          "performance_intensity": 4,
+          "performance_note": "automatic labor",
+          "dialogue_or_vo": "",
+          "sound": "oven doors, dough slap, street traffic",
+          "beat_id": "B3"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Window on street; narrator glance out while working",
+          "camera_directive": "over-shoulder to window, 35mm",
+          "performance_intensity": 3,
+          "performance_note": "trapped routine",
+          "dialogue_or_vo": "I can\u0027t afford school.",
+          "sound": "dough slap under VO",
+          "beat_id": "B3"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Close on hands spinning dough; flour dust motes in oven light",
+          "camera_directive": "tight insert hands, 85mm",
+          "performance_intensity": 3,
+          "performance_note": "mindless skill",
+          "dialogue_or_vo": "Nick says you don\u0027t need a degree. All you need is to know somebody.",
+          "sound": "oven hum",
+          "beat_id": "B3"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator face reacts to off-screen Nick voice; slight flinch",
+          "camera_directive": "close-up, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "stung resignation",
+          "dialogue_or_vo": "You\u0027re not gonna be a doctor. Hell, you\u0027re too old anyway.",
+          "sound": "street traffic under O.S. line",
+          "beat_id": "B3"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Wide parlor; narrator alone at counter under warm glow continues work",
+          "camera_directive": "wide interior, 28mm",
+          "performance_intensity": 4,
+          "performance_note": "stuck in place",
+          "dialogue_or_vo": "",
+          "sound": "oven doors close",
+          "beat_id": "B3"
+        }
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Cement sidewalk outside parlor; narrator steps out into daylight",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 3,
+          "performance_note": "ordinary exit",
+          "dialogue_or_vo": "",
+          "sound": "shoe scuff, city ambient",
+          "beat_id": "B4"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "SIONNA short brown hair pale skin watery blue eyes black V-neck jeans blue tennis backpack fish necklace trips and brushes his shoulder",
+          "camera_directive": "medium two-shot catch, 40mm",
+          "performance_intensity": 6,
+          "performance_note": "sudden collision surprise",
+          "dialogue_or_vo": "",
+          "sound": "shoe scuff impact",
+          "beat_id": "B4"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Close on their faces as he steadies her; her light blue eyes",
+          "camera_directive": "tight two-shot close-up, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "startled then soft",
+          "dialogue_or_vo": "Are you okay?",
+          "sound": "city ambient soft",
+          "beat_id": "B4"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Sionna brushes shirt; fish necklace catches light; they look at each other",
+          "camera_directive": "medium close-up, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "quiet curiosity",
+          "dialogue_or_vo": "Yes.",
+          "sound": "fabric brush",
+          "beat_id": "B4"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator awkward smile; Sionna calm intense",
+          "camera_directive": "shot-reverse medium, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "nervous hope vs cool ease",
+          "dialogue_or_vo": "I work here. What is your name?",
+          "sound": "city ambient",
+          "beat_id": "B4"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Sionna answers; gives number; walks away smooth as waves; glances back over shoulder",
+          "camera_directive": "tracking medium then slow push on glance, 65mm",
+          "performance_intensity": 7,
+          "performance_note": "mysterious pull; lingering look",
+          "dialogue_or_vo": "Sionna. Irish goddess. River Shannon. If you want coffee sometime, you can call me.",
+          "sound": "footsteps fade soft",
+          "beat_id": "B4"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Narrator stands frozen watching her go; city soft behind; internal tide feeling",
+          "camera_directive": "slow push-in close-up, 85mm",
+          "performance_intensity": 8,
+          "performance_note": "awestruck recognition",
+          "dialogue_or_vo": "It was like I knew her. Intense. Like tides coming in and I didn\u0027t want to move my feet.",
+          "sound": "city ambient swell under VO",
+          "beat_id": "B4"
+        }
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Night kitchen counter; Ma mumbles searching among pill bottles, glassy confused",
+          "camera_directive": "medium shot, 40mm",
+          "performance_intensity": 5,
+          "performance_note": "agitated lost search",
+          "dialogue_or_vo": "",
+          "sound": "bottles rattle, distant siren",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Close on Ma\u0027s empty eyes as she turns to narrator",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "disoriented plea",
+          "dialogue_or_vo": "I can\u0027t find my pain pills. Did we go to church?",
+          "sound": "bottles settle",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator finds day\u0027s pill box, places it gently in front of her",
+          "camera_directive": "over-shoulder medium, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "patient care",
+          "dialogue_or_vo": "They\u0027re right here, Ma.",
+          "sound": "plastic box set down",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator grabs coat from chair and heads for door, escaping",
+          "camera_directive": "medium tracking to door, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "need to get out",
+          "dialogue_or_vo": "",
+          "sound": "coat fabric, door latch",
+          "beat_id": "B5"
+        }
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Night exterior old brick library; big glowing windows; cold wind",
+          "camera_directive": "wide establishing, 24mm",
+          "performance_intensity": 3,
+          "performance_note": "refuge ahead",
+          "dialogue_or_vo": "",
+          "sound": "wind, distant traffic",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator hurries up steps from cold and pulls heavy door open",
+          "camera_directive": "medium tracking push-in, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "urgent escape into warmth",
+          "dialogue_or_vo": "",
+          "sound": "door heavy close, wind cut",
+          "beat_id": "B5"
+        }
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Interior: wood floors a hundred years old; lights hanging on metal chains; quiet tables",
+          "camera_directive": "wide slow pan, 28mm",
+          "performance_intensity": 3,
+          "performance_note": "awed entry",
+          "dialogue_or_vo": "",
+          "sound": "quiet footsteps, chain lights hum",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator at front desk; desk lady; he writes on temporary card form",
+          "camera_directive": "medium two-shot, 40mm",
+          "performance_intensity": 4,
+          "performance_note": "nervous first-timer",
+          "dialogue_or_vo": "How do I take a book home?",
+          "sound": "pen on paper",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Desk lady looks up, practical",
+          "camera_directive": "close-up reverse, 85mm",
+          "performance_intensity": 3,
+          "performance_note": "routine clerk",
+          "dialogue_or_vo": "Library card?",
+          "sound": "pages turn nearby",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "He receives temporary paper card; walks classic literature stacks under chain lights",
+          "camera_directive": "tracking medium through aisles, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "curious wonder",
+          "dialogue_or_vo": "",
+          "sound": "footsteps wood floor, pages",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Hand pulls Wuthering Heights from shelf; thin smile from desk lady at checkout",
+          "camera_directive": "tight insert then medium, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "small triumph",
+          "dialogue_or_vo": "",
+          "sound": "book slide off shelf",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Narrator holds book walking out under warm chain lights; free knowledge feeling",
+          "camera_directive": "medium close-up slow push, 65mm",
+          "performance_intensity": 6,
+          "performance_note": "quiet revelation",
+          "dialogue_or_vo": "Who needed school when everything is right here free?",
+          "sound": "chain lights hum under VO",
+          "beat_id": "B5"
+        }
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Dark bedroom door ajar; Ma already asleep in bed",
+          "camera_directive": "medium doorway shot, 35mm",
+          "performance_intensity": 2,
+          "performance_note": "quiet house",
+          "dialogue_or_vo": "",
+          "sound": "building pipes, soft snore hint",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator at lamp reading Wuthering Heights; Heathcliff and Catherine pages",
+          "camera_directive": "medium lamp-lit, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "absorbed",
+          "dialogue_or_vo": "",
+          "sound": "page turns",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Close on book pages then his face softening with recognition",
+          "camera_directive": "tight insert to close-up, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "emotional link forming",
+          "dialogue_or_vo": "It was a little like a soap opera. These two really loved each other.",
+          "sound": "page turn under VO",
+          "beat_id": "B5"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Hold on his eyes remembering Sionna; lamp glow",
+          "camera_directive": "extreme close-up eyes, 100mm",
+          "performance_intensity": 6,
+          "performance_note": "tender association",
+          "dialogue_or_vo": "Reminded me of Sionna.",
+          "sound": "building pipes soft",
+          "beat_id": "B5"
+        }
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Java Hut interior; college crowd backpacks textbooks; steam; small table near back wall",
+          "camera_directive": "wide establishing, 24mm",
+          "performance_intensity": 3,
+          "performance_note": "outsider enters cool space",
+          "dialogue_or_vo": "",
+          "sound": "espresso machine hiss, low student talk",
+          "beat_id": "B6"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Sionna at table: washed jeans soft leather shoes long-sleeved loose green hooded top; watery blue eyes; narrator opposite cleaner long-sleeve",
+          "camera_directive": "medium two-shot, 40mm",
+          "performance_intensity": 5,
+          "performance_note": "nervous vs calm presence",
+          "dialogue_or_vo": "",
+          "sound": "cup clink",
+          "beat_id": "B6"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sionna leans in curious; narrator answers about book",
+          "camera_directive": "shot-reverse close-ups, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "opening up",
+          "dialogue_or_vo": "What are you reading right now?",
+          "sound": "espresso hiss soft",
+          "beat_id": "B6"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Narrator earnest; Sionna knowing smile",
+          "camera_directive": "medium close-up reverse, 65mm",
+          "performance_intensity": 5,
+          "performance_note": "slightly embarrassed pride",
+          "dialogue_or_vo": "Wuthering Heights. Guy and girl grew apart but were really in love.",
+          "sound": "student murmur",
+          "beat_id": "B6"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Sionna talks animated about symbols ghosts moors; hands move; narrator rapt",
+          "camera_directive": "medium push-in on Sionna, 50mm",
+          "performance_intensity": 7,
+          "performance_note": "passionate teaching",
+          "dialogue_or_vo": "I know. I read it.",
+          "sound": "cup set down",
+          "beat_id": "B6"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 12,
+          "visual_description": "Tight on Sionna\u0027s watery blue eyes delivering the line; narrator absorbs",
+          "camera_directive": "extreme close-up eyes then reverse, 100mm",
+          "performance_intensity": 8,
+          "performance_note": "piercing calm truth",
+          "dialogue_or_vo": "A love that never changes will destroy you.",
+          "sound": "room tone drop under line",
+          "beat_id": "B6"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 14,
+          "visual_description": "They smile plan Friday dinner; narrator walks away outside feeling awake; her eyes linger in memory",
+          "camera_directive": "medium two-shot then slow push on his face exit, 40mm to 85mm",
+          "performance_intensity": 7,
+          "performance_note": "awakening joy",
+          "dialogue_or_vo": "Something inside me was coming awake. She made me feel smarter just by being around her.",
+          "sound": "door chime, street under VO",
+          "beat_id": "B6"
+        }
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Lush deciduous forest dream; moss on oak maple; wood sorrel trillium bleeding hearts; dappled light",
+          "camera_directive": "wide gliding, 24mm",
+          "performance_intensity": 4,
+          "performance_note": "dream immersion",
+          "dialogue_or_vo": "",
+          "sound": "hooves soft on forest floor, birds, wind in leaves",
+          "beat_id": "B7"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator in white ballooning sleeves embroidered red tunic brown hose rides close behind woman long brown hair on dappled mare",
+          "camera_directive": "medium tracking beside horse, 35mm",
+          "performance_intensity": 6,
+          "performance_note": "intimate ride closeness",
+          "dialogue_or_vo": "",
+          "sound": "hooves, fabric rustle",
+          "beat_id": "B7"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "He leans to her neck; rose and warm grass scent suggested; her hair",
+          "camera_directive": "tight close-up over shoulder, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "vulnerable desire",
+          "dialogue_or_vo": "",
+          "sound": "wind leaves soft",
+          "beat_id": "B7"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Emerge to open sunny field; long grass; he jumps down helps her from mare",
+          "camera_directive": "wide to medium, 28mm",
+          "performance_intensity": 6,
+          "performance_note": "chivalric care",
+          "dialogue_or_vo": "",
+          "sound": "hooves stop, grass hush",
+          "beat_id": "B7"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 9,
+          "visual_description": "First kiss; her face fair heart-shaped; eyes lightest blue like early morning",
+          "camera_directive": "tight two-shot close-up, 85mm",
+          "performance_intensity": 9,
+          "performance_note": "complete surrender",
+          "dialogue_or_vo": "I surrender completely.",
+          "sound": "wind swell then soft",
+          "beat_id": "B7"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Embrace hold; luminous dream color; charge between them",
+          "camera_directive": "slow orbit medium close, 50mm",
+          "performance_intensity": 8,
+          "performance_note": "falling in love peak",
+          "dialogue_or_vo": "",
+          "sound": "birds distant, wind fade",
+          "beat_id": "B7"
+        }
+      ]
+    },
+    {
+      "scene_id": "S15",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Dark cold bedroom; narrator bolts upright in bed sweating",
+          "camera_directive": "medium abrupt, 35mm",
+          "performance_intensity": 9,
+          "performance_note": "shock jolt awake",
+          "dialogue_or_vo": "",
+          "sound": "bed springs, sharp breath",
+          "beat_id": "B7"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Close on his face chest pounding; sweat; eyes wide",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 8,
+          "performance_note": "terror confusion",
+          "dialogue_or_vo": "Hold!",
+          "sound": "his sharp breath, cold room silence",
+          "beat_id": "B7"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "He stares into dark; hand on chest; processing dream clothes and Sionna",
+          "camera_directive": "medium close-up, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "disoriented wonder",
+          "dialogue_or_vo": "What the hell was that? Clothes like old kings.",
+          "sound": "room silence under VO",
+          "beat_id": "B7"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Hold on his eyes in dark; question hangs",
+          "camera_directive": "extreme close-up, 100mm",
+          "performance_intensity": 6,
+          "performance_note": "haunted recognition",
+          "dialogue_or_vo": "It was Sionna. Did I insert her into the book?",
+          "sound": "faint building creak",
+          "beat_id": "B7"
+        }
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Yoga studio; purple rectangle mats; twenty people; soft light",
+          "camera_directive": "wide establishing, 24mm",
+          "performance_intensity": 3,
+          "performance_note": "out of place entry",
+          "dialogue_or_vo": "",
+          "sound": "instructor soft counts, mat rustle",
+          "beat_id": "B8"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator in t-shirt shorts; shirt falls over face in upside-down pose; he tucks it; Sionna beside in stretch clothes",
+          "camera_directive": "medium two-shot, 40mm",
+          "performance_intensity": 5,
+          "performance_note": "awkward humiliation",
+          "dialogue_or_vo": "",
+          "sound": "collective breath, fabric flop",
+          "beat_id": "B8"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Downward dog struggle; narrator dizzy face red; groins strain",
+          "camera_directive": "low angle medium, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "painful effort out of shape",
+          "dialogue_or_vo": "",
+          "sound": "heavy breath, instructor count",
+          "beat_id": "B8"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Savasana; he lies corpse pose eyes soft; calm washes over",
+          "camera_directive": "high angle slow push, 50mm",
+          "performance_intensity": 3,
+          "performance_note": "release into peace",
+          "dialogue_or_vo": "",
+          "sound": "collective breath slow, room hush",
+          "beat_id": "B8"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 7,
+          "visual_description": "After class; Sionna smiles at him",
+          "camera_directive": "medium close-up, 65mm",
+          "performance_intensity": 5,
+          "performance_note": "warm encouragement",
+          "dialogue_or_vo": "You were really great at that.",
+          "sound": "mats roll soft",
+          "beat_id": "B8"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Narrator self-conscious shrug",
+          "camera_directive": "close-up reverse, 85mm",
+          "performance_intensity": 4,
+          "performance_note": "embarrassed honesty",
+          "dialogue_or_vo": "I felt so dumb.",
+          "sound": "studio ambient",
+          "beat_id": "B8"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Sionna gentle; then his face calm walking out; nothing bothers him",
+          "camera_directive": "two-shot to close-up exit, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "newfound calm",
+          "dialogue_or_vo": "Your practice is your practice. Pretty soon you won\u0027t notice anyone else.",
+          "sound": "door soft, street under final VO calm",
+          "beat_id": "B8"
+        }
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Day living room; door slams open; Nick stomps in boots brown suede jacket face red fists clenching; Ma in chair; narrator freezes",
+          "camera_directive": "medium wide, 28mm",
+          "performance_intensity": 8,
+          "performance_note": "explosive entrance rage",
+          "dialogue_or_vo": "",
+          "sound": "door slam, boots heavy, TV",
+          "beat_id": "B9"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Close on Nick\u0027s red face and clenched fists as he advances",
+          "camera_directive": "tight close-up push-in, 85mm",
+          "performance_intensity": 9,
+          "performance_note": "barely controlled fury",
+          "dialogue_or_vo": "Ma missed her doctor\u0027s appointment yesterday, you ass. Where the hell were you?",
+          "sound": "boots stop, TV under",
+          "beat_id": "B9"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator backs slightly, defensive ordinary face",
+          "camera_directive": "medium close-up reverse, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "scared honesty",
+          "dialogue_or_vo": "I totally forgot. I was with someone. I met a girl.",
+          "sound": "floorboard creak",
+          "beat_id": "B9"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Nick sneers priority line; turns and slams door hard; narrator alone stunned",
+          "camera_directive": "medium two-shot to door slam insert, 40mm",
+          "performance_intensity": 8,
+          "performance_note": "contempt then exit violence",
+          "dialogue_or_vo": "A girl. That\u0027s worth all this. Try looking at your priorities, Bro.",
+          "sound": "door slam crash",
+          "beat_id": "B9"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 11,
+          "visual_description": "Hold on narrator face after slam; Ma still vacant in chair behind",
+          "camera_directive": "slow push close-up, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "fearful resignation",
+          "dialogue_or_vo": "I hardly ever get into it with Nick. You just don\u0027t know what he is going to do.",
+          "sound": "TV resumes, silence after slam",
+          "beat_id": "B9"
+        }
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Clinical office; Dr. Carson white coat serious eyes paper pad; narrator stands; Ma in gown holding chest",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "tense professional",
+          "dialogue_or_vo": "",
+          "sound": "monitor beep, hallway pager, fluorescent hum",
+          "beat_id": "B10"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Dr. Carson looks straight at narrator with serious stare",
+          "camera_directive": "close-up, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "grave authority",
+          "dialogue_or_vo": "Your mother\u0027s blood pressure is dangerously high. Risk of stroke. Take her directly to the emergency room.",
+          "sound": "monitor beep steady",
+          "beat_id": "B10"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator stunned reaction",
+          "camera_directive": "medium close-up reverse, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "disbelief shock",
+          "dialogue_or_vo": "Whoa man. Are you sure?",
+          "sound": "fluorescent hum",
+          "beat_id": "B10"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Dr. Carson writing pad; Ma small in gown holding chest",
+          "camera_directive": "over-shoulder to Ma, 40mm",
+          "performance_intensity": 6,
+          "performance_note": "clinical urgency",
+          "dialogue_or_vo": "Confused. Chest pressure. We admit her for observation. IV medicine until stabilized.",
+          "sound": "pager distant, pen scratch",
+          "beat_id": "B10"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Nick arrives later face pissed; they load Ma toward ER",
+          "camera_directive": "medium tracking group, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "Nick angry arrival; Ma frail",
+          "dialogue_or_vo": "",
+          "sound": "gurney wheels, hallway noise",
+          "beat_id": "B10"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Ma on gurney holding chest; fluorescent corridor stretch",
+          "camera_directive": "low angle tracking, 28mm",
+          "performance_intensity": 5,
+          "performance_note": "vulnerable patient",
+          "dialogue_or_vo": "",
+          "sound": "monitor portable beep, doors",
+          "beat_id": "B10"
+        }
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Night hospital room; Ma dozing in bed monitors soft glow",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 2,
+          "performance_note": "exhausted sleep",
+          "dialogue_or_vo": "",
+          "sound": "hospital monitor steady",
+          "beat_id": "B11"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Narrator asleep slumped in chair beside bed; dream begins to bleed",
+          "camera_directive": "medium close-up slow push, 50mm",
+          "performance_intensity": 2,
+          "performance_note": "deep exhausted sleep",
+          "dialogue_or_vo": "",
+          "sound": "monitor beep, distant code start",
+          "beat_id": "B11"
+        }
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Battlefield chaos dream; yelling blood on ground shining blades thrust",
+          "camera_directive": "handheld wide chaotic, 24mm",
+          "performance_intensity": 8,
+          "performance_note": "war panic",
+          "dialogue_or_vo": "",
+          "sound": "yelling, steel clash",
+          "beat_id": "B11"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator stands over dying man; blood bubbles from mouth",
+          "camera_directive": "high angle medium, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "exhausted horror",
+          "dialogue_or_vo": "",
+          "sound": "battle roar under",
+          "beat_id": "B11"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Dying man\u0027s face close; last word",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 8,
+          "performance_note": "desperate final breath",
+          "dialogue_or_vo": "Save her.",
+          "sound": "blood gurgle, battle fade",
+          "beat_id": "B11"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Nick runs toward him eyes of fire longest knife raised",
+          "camera_directive": "tracking low angle, 28mm",
+          "performance_intensity": 9,
+          "performance_note": "murderous brother",
+          "dialogue_or_vo": "That you are, little brother.",
+          "sound": "boots thunder, blade ring",
+          "beat_id": "B11"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Knife stabs into narrator chest; cut to hospital chair gasp awake heart pounding",
+          "camera_directive": "impact close-up then smash cut close-up awake, 85mm",
+          "performance_intensity": 10,
+          "performance_note": "death shock to waking terror",
+          "dialogue_or_vo": "",
+          "sound": "stab impact, his gasp, monitor steady, distant code",
+          "beat_id": "B11"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Narrator in chair gasping; Ma still dozing; betrayal settles",
+          "camera_directive": "medium close-up, 50mm",
+          "performance_intensity": 8,
+          "performance_note": "raw betrayal",
+          "dialogue_or_vo": "Nick had killed me. Feeling of betrayal by my closest family. Worst of all.",
+          "sound": "monitor beep under VO",
+          "beat_id": "B11"
+        }
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Night apartment; Ma home; blue weekly pill container on table; Nick in overstuffed brown chair boots on footstool beet-red face hair wild",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 6,
+          "performance_note": "smoldering mockery ready",
+          "dialogue_or_vo": "",
+          "sound": "TV cop show, container plastic rattle",
+          "beat_id": "B12"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator hands blue container; Nick takes it smirking",
+          "camera_directive": "medium two-shot, 40mm",
+          "performance_intensity": 7,
+          "performance_note": "condescending laugh",
+          "dialogue_or_vo": "Aren\u0027t you nurse Nancy! How did you come up with this?",
+          "sound": "plastic rattle",
+          "beat_id": "B12"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator defends; Nick leans forward wrapped-around-finger jab",
+          "camera_directive": "shot-reverse close-ups, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "rising heat both sides",
+          "dialogue_or_vo": "Sionna helped me. She\u0027s really smart.",
+          "sound": "TV under",
+          "beat_id": "B12"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Nick stands giant red Viking; narrator yells back",
+          "camera_directive": "low angle on Nick high on narrator, 35mm",
+          "performance_intensity": 9,
+          "performance_note": "escalating scream fight",
+          "dialogue_or_vo": "This chick sure has you wrapped around her finger.",
+          "sound": "chair scrape",
+          "beat_id": "B12"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Exchange bastard lines; Nick\u0027s hand slaps across narrator head; ear ring visual",
+          "camera_directive": "tight two-shot slap impact, 50mm",
+          "performance_intensity": 10,
+          "performance_note": "violent peak slap",
+          "dialogue_or_vo": "Don\u0027t you talk to me like that, you little bastard.",
+          "sound": "open-hand slap, ear ring",
+          "beat_id": "B12"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Narrator staggers ear ringing; Nick stomps out door slam; narrator alone decides",
+          "camera_directive": "medium close-up then door slam, 40mm",
+          "performance_intensity": 8,
+          "performance_note": "shock then cold resolve",
+          "dialogue_or_vo": "I\u0027m not a bastard!",
+          "sound": "door crash",
+          "beat_id": "B12"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Hold on narrator face after violence; quiet vow about Sionna",
+          "camera_directive": "slow push extreme close-up, 100mm",
+          "performance_intensity": 7,
+          "performance_note": "bitter protective decision",
+          "dialogue_or_vo": "In that split second I knew I never wanted Sionna to meet that prick.",
+          "sound": "TV cop show distant after slam",
+          "beat_id": "B12"
+        }
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Late 70s grade school yard; lilac bushes; YOUNG NARRATOR and BOBBY doubled over laughing; JENNIFER braids red bows glares",
+          "camera_directive": "wide sunny, 28mm",
+          "performance_intensity": 6,
+          "performance_note": "uncontrollable kid joy",
+          "dialogue_or_vo": "",
+          "sound": "kids yelling, recess bell distant",
+          "beat_id": "B13"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Young narrator red-faced tears of laughter chanting",
+          "camera_directive": "medium close-up, 50mm",
+          "performance_intensity": 7,
+          "performance_note": "raucous mockery",
+          "dialogue_or_vo": "Learn some responsibility!",
+          "sound": "kid laughter",
+          "beat_id": "B13"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "YOUNG NICK big sixth-grader messy hair walks up; MRS STARK strides glasses on beaded necklace",
+          "camera_directive": "medium tracking group, 35mm",
+          "performance_intensity": 6,
+          "performance_note": "alpha arrival; teacher stern",
+          "dialogue_or_vo": "",
+          "sound": "recess noise",
+          "beat_id": "B13"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Mrs Stark confronts; Young Nick steps in smooth",
+          "camera_directive": "medium three-shot, 40mm",
+          "performance_intensity": 7,
+          "performance_note": "protective charm",
+          "dialogue_or_vo": "Mr. Olsen! Explain yourself before I send you to Mr. Pauls.",
+          "sound": "kids quiet watching",
+          "beat_id": "B13"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Young Nick guarantees; Mrs Stark softens then warns young narrator",
+          "camera_directive": "close-up reverse Nick then Stark, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "confident savior",
+          "dialogue_or_vo": "He didn\u0027t mean anything. I\u0027ll talk to him. He\u0027ll never act up again.",
+          "sound": "soft wind lilacs",
+          "beat_id": "B13"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Later bedroom; Young Nick musses little brother\u0027s hair",
+          "camera_directive": "medium intimate, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "tender big-brother",
+          "dialogue_or_vo": "I\u0027ll always take care of you. Don\u0027t forget that.",
+          "sound": "quiet room",
+          "beat_id": "B13"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Young narrator looks up trusting",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "devoted little brother",
+          "dialogue_or_vo": "I won\u0027t, Nick.",
+          "sound": "soft ambient",
+          "beat_id": "B13"
+        }
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Present night; Nick visits keys in basket; Ma on cop show; narrator sits",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "uneasy normal",
+          "dialogue_or_vo": "",
+          "sound": "TV, keys in basket",
+          "beat_id": "B14"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Narrator announces college plan earnest",
+          "camera_directive": "medium close-up, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "hopeful resolve",
+          "dialogue_or_vo": "I\u0027m going to community college. Bachelor\u0027s in business. Student loan.",
+          "sound": "TV under",
+          "beat_id": "B14"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Nick eyes fire roll; incredulous lean",
+          "camera_directive": "close-up, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "mocking disbelief",
+          "dialogue_or_vo": "Whoa. This chick telling you what to do? It ain\u0027t gonna be me helping when you finish with huge debt.",
+          "sound": "TV cop show",
+          "beat_id": "B14"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Narrator steady plea for support",
+          "camera_directive": "medium reverse, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "controlled need",
+          "dialogue_or_vo": "It would mean a lot if you could be on my side for once. You are my brother.",
+          "sound": "soft room",
+          "beat_id": "B14"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Nick thin greasy smile bros before hos",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "possessive warning",
+          "dialogue_or_vo": "Bros before ho\u0027s. You get me?",
+          "sound": "TV",
+          "beat_id": "B14"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator forces smile swallows it",
+          "camera_directive": "close-up, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "forced truce mask",
+          "dialogue_or_vo": "Sure, Nick. I get you.",
+          "sound": "TV continues",
+          "beat_id": "B14"
+        }
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Joe\u0027s bar night; loud rock; pool room left quarters stacked; bar packed smoke; waitresses jeans white blouses; Nick Bob Sammy narrator with Bud",
+          "camera_directive": "wide establishing pan, 24mm",
+          "performance_intensity": 5,
+          "performance_note": "working-class night energy",
+          "dialogue_or_vo": "",
+          "sound": "AC/DC Have a Drink on Me, pool crack, bar roar, bottles",
+          "beat_id": "B15"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Nick spots Lindsey with dark-haired man; approaches; room tension rises quiet",
+          "camera_directive": "medium tracking Nick, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "territorial approach",
+          "dialogue_or_vo": "What\u0027s up, Lindsey? Who\u0027s this asshole?",
+          "sound": "music continue room hush start",
+          "beat_id": "B15"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Dark-haired man steps up protective; Nick nostrils flare fists clench",
+          "camera_directive": "tight two-shot confront, 50mm",
+          "performance_intensity": 9,
+          "performance_note": "mutual challenge peak",
+          "dialogue_or_vo": "You got a problem with me? You\u0027re in my face like a little bitch!",
+          "sound": "music under, pin-drop tension",
+          "beat_id": "B15"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Narrator steps in front of Nick pleading; Nick eyes glued past him",
+          "camera_directive": "over-shoulder medium, 40mm",
+          "performance_intensity": 8,
+          "performance_note": "brave intervention fear",
+          "dialogue_or_vo": "Nick, leave it. You don\u0027t even know this guy.",
+          "sound": "crowd murmur",
+          "beat_id": "B15"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 12,
+          "visual_description": "Nick right fist draws back slow-motion toward narrator face; time stretch",
+          "camera_directive": "slow-motion close-up fist and faces, 85mm",
+          "performance_intensity": 10,
+          "performance_note": "imminent brother violence",
+          "dialogue_or_vo": "Keep out of it! You\u0027re next if you don\u0027t get out of my face.",
+          "sound": "fist whoosh cut short, music swell",
+          "beat_id": "B15"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 14,
+          "visual_description": "Joe and bouncer rush; head-butt; chaos; narrator runs out door into night pavement",
+          "camera_directive": "handheld chaotic wide to tracking run, 28mm",
+          "performance_intensity": 9,
+          "performance_note": "escape panic",
+          "dialogue_or_vo": "",
+          "sound": "head-butt thud, shouts, door bang, running feet on pavement",
+          "beat_id": "B15"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 15,
+          "visual_description": "Narrator running hard night street chest exploding cold air; away from bar lights",
+          "camera_directive": "handheld tracking behind then side, 35mm",
+          "performance_intensity": 8,
+          "performance_note": "flight for life",
+          "dialogue_or_vo": "",
+          "sound": "boots pounding, heartbeat in ears, night traffic",
+          "beat_id": "B15"
+        }
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Night street; narrator runs hard jumping obstacles darting past people; bar lights recede behind",
+          "camera_directive": "handheld tracking side, 35mm",
+          "performance_intensity": 9,
+          "performance_note": "panic flight full sprint",
+          "dialogue_or_vo": "",
+          "sound": "boots pounding, heartbeat in ears, night traffic",
+          "beat_id": "B15"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Close on his face chest heaving cold air rushing into lungs; eyes wild",
+          "camera_directive": "tight handheld close-up running, 50mm",
+          "performance_intensity": 9,
+          "performance_note": "exhaustion terror",
+          "dialogue_or_vo": "",
+          "sound": "heartbeat loud, breath ragged",
+          "beat_id": "B15"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 6,
+          "visual_description": "He turns corner toward Sionna\u0027s duplex lights ahead",
+          "camera_directive": "medium tracking push, 28mm",
+          "performance_intensity": 8,
+          "performance_note": "desperate destination",
+          "dialogue_or_vo": "",
+          "sound": "boots slow slightly, night traffic fade",
+          "beat_id": "B15"
+        }
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sionna duplex night; green suede sofa gray cat lamp; door opens; narrator collapses into Sionna",
+          "camera_directive": "medium doorway two-shot, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "collapse into safety",
+          "dialogue_or_vo": "",
+          "sound": "door close, cat soft mew, his ragged breath",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sionna strokes his face; calm watery eyes; he still shaking",
+          "camera_directive": "tight two-shot close-up, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "gentle grounding",
+          "dialogue_or_vo": "Your brother tried to hit you. No one who really cares does that.",
+          "sound": "soft breath settle",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator defends Nick weakly; Sionna steady",
+          "camera_directive": "shot-reverse medium, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "conflicted loyalty",
+          "dialogue_or_vo": "He does care. I can\u0027t just ignore him.",
+          "sound": "cat mew distant",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Sionna holds his gaze compassionate; purpose talk",
+          "camera_directive": "close-up Sionna then reverse, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "wise calm intensity",
+          "dialogue_or_vo": "You are becoming a bravely compassionate being. You can\u0027t let him stop you from your purpose.",
+          "sound": "lamp hum soft",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Narrator searches her face; she answers true self",
+          "camera_directive": "intimate two-shot, 65mm",
+          "performance_intensity": 6,
+          "performance_note": "vulnerable question to answer",
+          "dialogue_or_vo": "What is my purpose?",
+          "sound": "room quiet",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 11,
+          "visual_description": "Sionna soft smile; they settle on green suede sofa toward sleep; gray cat curls",
+          "camera_directive": "medium slow pull back, 40mm",
+          "performance_intensity": 4,
+          "performance_note": "safe exhaustion",
+          "dialogue_or_vo": "To find the true self within you and honor it.",
+          "sound": "breathing slow, cat purr",
+          "beat_id": "B16"
+        }
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Dream lake shore black and white; narrator exhausted soldier boots tunic mud; walks to reeds",
+          "camera_directive": "wide desaturated, 28mm",
+          "performance_intensity": 5,
+          "performance_note": "battle-worn empty",
+          "dialogue_or_vo": "",
+          "sound": "wind howl, water lap",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Woman rises from water slow motion: long brown hair light blue eyes white gown sleeves like wings; world gains color",
+          "camera_directive": "slow-motion medium rise, 50mm",
+          "performance_intensity": 7,
+          "performance_note": "angelic emergence",
+          "dialogue_or_vo": "",
+          "sound": "water swirl, wind",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Nick emerges woods giant teeth eyes of fire whirling mace chains; earth shakes",
+          "camera_directive": "low angle giant approach, 24mm",
+          "performance_intensity": 9,
+          "performance_note": "monstrous threat",
+          "dialogue_or_vo": "",
+          "sound": "mace chain rattle, footsteps boom",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 10,
+          "visual_description": "She spreads arms sleeves flying; invisible force pushes Nick back shrinking until he vanishes",
+          "camera_directive": "wide force confrontation, 35mm",
+          "performance_intensity": 8,
+          "performance_note": "protective power peak",
+          "dialogue_or_vo": "",
+          "sound": "wind roar then silence as Nick gone",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 12,
+          "visual_description": "They embrace; total serenity; color vibrant; she smiles",
+          "camera_directive": "medium close orbit, 65mm",
+          "performance_intensity": 6,
+          "performance_note": "relief love",
+          "dialogue_or_vo": "",
+          "sound": "silence then soft water lap",
+          "beat_id": "B16"
+        }
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "3 a.m. duplex; they bolt awake on green suede sofa almost colliding; disoriented",
+          "camera_directive": "medium abrupt, 35mm",
+          "performance_intensity": 6,
+          "performance_note": "startled shared wake",
+          "dialogue_or_vo": "",
+          "sound": "clock tick, sofa creak",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sionna rubs eyes sleepy smile; they shuffle dark hallway",
+          "camera_directive": "medium tracking, 40mm",
+          "performance_intensity": 3,
+          "performance_note": "soft aftershock",
+          "dialogue_or_vo": "Let\u0027s get some sleep. We\u0027ve had an interesting day.",
+          "sound": "clock tick, footsteps soft",
+          "beat_id": "B16"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Climb into queen bed crisp fragrant sheets; lights out; still",
+          "camera_directive": "medium high angle bed, 50mm",
+          "performance_intensity": 2,
+          "performance_note": "safe rest",
+          "dialogue_or_vo": "",
+          "sound": "sheets rustle, quiet",
+          "beat_id": "B16"
+        }
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Day apartment montage; Sionna cooks butternut squash casserole kitchen steam",
+          "camera_directive": "medium kitchen, 40mm",
+          "performance_intensity": 4,
+          "performance_note": "warm domestic care",
+          "dialogue_or_vo": "",
+          "sound": "oven timer, utensils",
+          "beat_id": "B17"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sionna reads to Ma; Ma afghan arms folded soft laugh",
+          "camera_directive": "medium two-shot living, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "gentle family",
+          "dialogue_or_vo": "",
+          "sound": "page turns, Ma soft laugh",
+          "beat_id": "B17"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator fills blue pill container carefully; studies at table exhausted but purposeful; Nick absent",
+          "camera_directive": "medium insert pills then study, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "responsible focus",
+          "dialogue_or_vo": "",
+          "sound": "pills rattle, pencil on paper",
+          "beat_id": "B17"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Wide of three together table; warm light; purpose settled",
+          "camera_directive": "wide slow push, 28mm",
+          "performance_intensity": 5,
+          "performance_note": "found family calm",
+          "dialogue_or_vo": "Ma saw me as the leader now. Sionna became family. Every day I woke with purpose.",
+          "sound": "oven timer soft under VO",
+          "beat_id": "B17"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Hold on empty doorway where Nick never appears",
+          "camera_directive": "static medium doorway, 40mm",
+          "performance_intensity": 3,
+          "performance_note": "absence noted",
+          "dialogue_or_vo": "",
+          "sound": "apartment quiet hum",
+          "beat_id": "B17"
+        }
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Day church street; Nick heavy coat helps Ma modest church coat into car; slightly unsteady",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "dutiful but impaired",
+          "dialogue_or_vo": "",
+          "sound": "car door, engine start",
+          "beat_id": "B18"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Car pulls away; Nick driving; three Jack and Cokes implied by loose grip",
+          "camera_directive": "side tracking car, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "dangerous calm",
+          "dialogue_or_vo": "",
+          "sound": "engine, street",
+          "beat_id": "B18"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sudden SCREECH metal crunch glass explode; crash impact abstract",
+          "camera_directive": "abrupt handheld impact cuts, 28mm",
+          "performance_intensity": 10,
+          "performance_note": "violent end",
+          "dialogue_or_vo": "",
+          "sound": "SCREECH, metal crunch, glass explode, then silence",
+          "beat_id": "B18"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Later empty Kirk apartment; narrator stares at Ma\u0027s empty chair afghan",
+          "camera_directive": "medium wide static, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "hollow shock",
+          "dialogue_or_vo": "",
+          "sound": "empty room hum",
+          "beat_id": "B18"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Narrator screams raw pulling hair water falling; collapses",
+          "camera_directive": "tight close-up handheld, 85mm",
+          "performance_intensity": 10,
+          "performance_note": "grief rage breakdown",
+          "dialogue_or_vo": "Die you fucking jackass. Die!",
+          "sound": "his raw scream, empty room",
+          "beat_id": "B18"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Sionna holds him on floor; he bawls; she pats head",
+          "camera_directive": "medium high angle, 40mm",
+          "performance_intensity": 8,
+          "performance_note": "shattered comfort",
+          "dialogue_or_vo": "",
+          "sound": "sobbing, her soft shush",
+          "beat_id": "B18"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Hold on empty chair and afghan; cops toxicology implied off",
+          "camera_directive": "static insert chair, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "absence final",
+          "dialogue_or_vo": "",
+          "sound": "room hum after sobs",
+          "beat_id": "B18"
+        }
+      ]
+    },
+    {
+      "scene_id": "S31",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Funeral home; modest maple casket; few people; Father Joseph clerical collar",
+          "camera_directive": "wide somber, 28mm",
+          "performance_intensity": 4,
+          "performance_note": "sparse mourning",
+          "dialogue_or_vo": "",
+          "sound": "soft sobs, quiet room",
+          "beat_id": "B19"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Graveside hilltop near trees; narrator throws handful dirt; muted thunk on lid",
+          "camera_directive": "medium close dirt throw, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "reluctant final act",
+          "dialogue_or_vo": "",
+          "sound": "dirt on wood muted thunk, wind in trees",
+          "beat_id": "B19"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Father Joseph speaks at graveside",
+          "camera_directive": "medium, 40mm",
+          "performance_intensity": 4,
+          "performance_note": "pastoral measured",
+          "dialogue_or_vo": "I have fought the good fight...",
+          "sound": "wind soft",
+          "beat_id": "B19"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Flat stone close: Olivia Anne Olsen August 28 1933 to September 7 1998 2 Timothy 4:7",
+          "camera_directive": "tight insert stone, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "name revealed quiet",
+          "dialogue_or_vo": "",
+          "sound": "wind in trees",
+          "beat_id": "B19"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator alone at grave; Sionna nearby; only son",
+          "camera_directive": "medium wide hilltop, 35mm",
+          "performance_intensity": 6,
+          "performance_note": "isolated grief",
+          "dialogue_or_vo": "I was the only son there. Rightly so. He killed her.",
+          "sound": "wind under VO",
+          "beat_id": "B19"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Hold on stone and trees late light",
+          "camera_directive": "static wide, 28mm",
+          "performance_intensity": 3,
+          "performance_note": "final rest",
+          "dialogue_or_vo": "",
+          "sound": "wind fade",
+          "beat_id": "B19"
+        }
+      ]
+    },
+    {
+      "scene_id": "S32",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 9,
+          "visual_description": "ICU day; Nick gown chest tube to plastic box oxygen IV right leg huge under bedspread; sallow black-purple bruises green; hair sticking up",
+          "camera_directive": "medium wide bed, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "diminished wreck",
+          "dialogue_or_vo": "",
+          "sound": "monitor beep, oxygen hiss, hallway cart",
+          "beat_id": "B20"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Nick weak voice tears well; narrator stands cold at foot",
+          "camera_directive": "medium two-shot, 40mm",
+          "performance_intensity": 6,
+          "performance_note": "weak remorse vs ice",
+          "dialogue_or_vo": "I guess I really fucked up. Can\u0027t believe Ma\u0027s gone.",
+          "sound": "monitor beep",
+          "beat_id": "B20"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator flat delivery no warmth",
+          "camera_directive": "close-up narrator, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "cold controlled",
+          "dialogue_or_vo": "They took care of it. She\u0027s at peace. Plot at the top of the hill.",
+          "sound": "oxygen hiss",
+          "beat_id": "B20"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Nick defensive tears; manslaughter fear",
+          "camera_directive": "close-up Nick bruised, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "self-pity rising",
+          "dialogue_or_vo": "Cops say vehicular manslaughter. I was almost killed too.",
+          "sound": "monitor",
+          "beat_id": "B20"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Narrator dead-on stare; turns and walks out leaving Nick",
+          "camera_directive": "close-up then tracking exit, 50mm",
+          "performance_intensity": 8,
+          "performance_note": "final cold judgment",
+          "dialogue_or_vo": "Whose fault was it, Nick?",
+          "sound": "footsteps leave, door",
+          "beat_id": "B20"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 11,
+          "visual_description": "Hallway; narrator walks away; Nick alone in frame behind glass; no more shits",
+          "camera_directive": "over-shoulder hallway then reverse empty, 35mm",
+          "performance_intensity": 6,
+          "performance_note": "severed bond",
+          "dialogue_or_vo": "I no longer gave two shits about Nick.",
+          "sound": "hallway cart, monitor fade",
+          "beat_id": "B20"
+        }
+      ]
+    },
+    {
+      "scene_id": "S33",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Catholic cemetery hilltop late fall sun; flat stone; bike nearby; narrator kneels",
+          "camera_directive": "wide establishing, 28mm",
+          "performance_intensity": 4,
+          "performance_note": "quiet grief visit",
+          "dialogue_or_vo": "",
+          "sound": "wind, distant traffic",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Hands place golden mums into inverted metal vase; pour water from bottle",
+          "camera_directive": "tight insert hands, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "tender ritual",
+          "dialogue_or_vo": "",
+          "sound": "water pour from bottle, wind",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Narrator stands looking down at stone; late sun on face",
+          "camera_directive": "medium close-up, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "weary acceptance",
+          "dialogue_or_vo": "I hope she\u0027s finally happy. Leave the work and worry to me.",
+          "sound": "wind under VO",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Hold on mums and stone; bike waiting; he turns to leave",
+          "camera_directive": "static medium, 40mm",
+          "performance_intensity": 3,
+          "performance_note": "duty resumes",
+          "dialogue_or_vo": "",
+          "sound": "wind fade, distant traffic",
+          "beat_id": "B21"
+        }
+      ]
+    },
+    {
+      "scene_id": "S34",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Night pizza parlor; warm oven glow; Tony work shirt throws car keys; narrator catches",
+          "camera_directive": "medium two-shot, 40mm",
+          "performance_intensity": 5,
+          "performance_note": "quick trust handoff",
+          "dialogue_or_vo": "",
+          "sound": "oven roar, keys jingle, door chime",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator returns fast from delivery; stands warm by ovens; Tommy struggles with map background",
+          "camera_directive": "medium tracking return, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "efficient competence",
+          "dialogue_or_vo": "",
+          "sound": "door chime, oven roar, phone ring",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Tony hits shoulder approving; offers more deliveries",
+          "camera_directive": "medium close-up Tony, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "fatherly pride",
+          "dialogue_or_vo": "Man, that was quick. How would you like to do more deliveries?",
+          "sound": "oven hum",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator nods simple; Tony softer worry for ma and tired look",
+          "camera_directive": "two-shot close, 65mm",
+          "performance_intensity": 5,
+          "performance_note": "surrogate care",
+          "dialogue_or_vo": "Sure.",
+          "sound": "phone ring distant",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Tony sincere; narrator accepts the concern with small nod",
+          "camera_directive": "close-up reverse narrator, 85mm",
+          "performance_intensity": 4,
+          "performance_note": "grateful quiet",
+          "dialogue_or_vo": "I\u0027m sorry for your ma. You look tired. I worry.",
+          "sound": "oven roar soft",
+          "beat_id": "B21"
+        }
+      ]
+    },
+    {
+      "scene_id": "S35",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Dream farm sun chickens dogs yard; dad pot smoke laughing; mom hands Tupperware piles",
+          "camera_directive": "wide bright dream, 24mm",
+          "performance_intensity": 4,
+          "performance_note": "surreal abundance",
+          "dialogue_or_vo": "",
+          "sound": "chickens, laugh, car engine dream",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator driving country roads delivering food; pregnant Sionna beside huge belly",
+          "camera_directive": "medium car interior dream, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "odd mission",
+          "dialogue_or_vo": "",
+          "sound": "car engine, chickens fade",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Newborn on seat; pizza face instead of human; surreal close",
+          "camera_directive": "tight insert pizza-face baby, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "bizarre omen",
+          "dialogue_or_vo": "",
+          "sound": "dream whoosh wake",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Wake dark bedroom; Sionna beside; he tells dream",
+          "camera_directive": "medium bed two-shot, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "amused confusion",
+          "dialogue_or_vo": "You had a baby. Face was a pizza.",
+          "sound": "sheets, soft laugh start",
+          "beat_id": "B21"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sionna laughs soft squeezes arm; idea spark in his eyes",
+          "camera_directive": "close-up two-shot, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "playful insight",
+          "dialogue_or_vo": "Means you\u0027re giving birth to a new idea. Fast delivery guarantee?",
+          "sound": "soft laugh, night quiet",
+          "beat_id": "B21"
+        }
+      ]
+    },
+    {
+      "scene_id": "S36",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Day parlor; Bob enters pupils wide animated; narrator at counter",
+          "camera_directive": "medium doorway to counter, 35mm",
+          "performance_intensity": 6,
+          "performance_note": "stoned urgency",
+          "dialogue_or_vo": "",
+          "sound": "door, oven, street",
+          "beat_id": "B22"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Bob leans in animated news about Nick",
+          "camera_directive": "medium close-up Bob, 50mm",
+          "performance_intensity": 7,
+          "performance_note": "agitated messenger",
+          "dialogue_or_vo": "Little brother. Nick barely survived. Cops hounding him. Might lock him up.",
+          "sound": "oven under",
+          "beat_id": "B22"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Narrator face turns red boiling; erupts not okay",
+          "camera_directive": "tight close-up push-in, 85mm",
+          "performance_intensity": 9,
+          "performance_note": "pent-up hatred release",
+          "dialogue_or_vo": "He accidentally killed one person. I\u0027m not okay with Nick. I\u0027m not okay with Ma dead. I\u0027m not okay with anything.",
+          "sound": "street under rising voice",
+          "beat_id": "B22"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Bob backs up hands raised weak smile; energy visible",
+          "camera_directive": "medium wide retreat, 28mm",
+          "performance_intensity": 5,
+          "performance_note": "scared retreat",
+          "dialogue_or_vo": "",
+          "sound": "door open street",
+          "beat_id": "B22"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Narrator alone at counter after; oven glow on tense face",
+          "camera_directive": "medium close-up static, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "simmering aftermath",
+          "dialogue_or_vo": "",
+          "sound": "oven, phone quiet",
+          "beat_id": "B22"
+        }
+      ]
+    },
+    {
+      "scene_id": "S37",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Night duplex; Sionna massages narrator neck from behind; rose and cookie smell suggested",
+          "camera_directive": "medium intimate, 40mm",
+          "performance_intensity": 4,
+          "performance_note": "soothing care",
+          "dialogue_or_vo": "",
+          "sound": "soft knead, distant traffic",
+          "beat_id": "B22"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Close on her hands and his easing face; she speaks wisdom",
+          "camera_directive": "tight close-up hands to faces, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "gentle authority",
+          "dialogue_or_vo": "Someone said not to trip over things behind you. This is your life. Your play.",
+          "sound": "knead soft",
+          "beat_id": "B22"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 7,
+          "visual_description": "She leans kiss side of face; I love you; he softens",
+          "camera_directive": "close two-shot, 65mm",
+          "performance_intensity": 6,
+          "performance_note": "tender love",
+          "dialogue_or_vo": "I love you.",
+          "sound": "distant traffic soft",
+          "beat_id": "B22"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 5,
+          "visual_description": "Hold on them quiet; her skin rose scent; his eyes close",
+          "camera_directive": "static medium close, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "safe harbor",
+          "dialogue_or_vo": "",
+          "sound": "room quiet",
+          "beat_id": "B22"
+        }
+      ]
+    },
+    {
+      "scene_id": "S38",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Nick POV hospital gown then changing to street clothes; alone ranting room",
+          "camera_directive": "medium handheld restless, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "bitter pacing",
+          "dialogue_or_vo": "",
+          "sound": "hospital distant then door",
+          "beat_id": "B23"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "City bus interior; bag ladies crippled walkers kids green blue hair pants hanging; Nick scowls",
+          "camera_directive": "wide bus then medium Nick, 28mm",
+          "performance_intensity": 6,
+          "performance_note": "contempt for riders",
+          "dialogue_or_vo": "",
+          "sound": "bus hiss, coughs",
+          "beat_id": "B23"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Nick lights cigarette under no-smoking sign; smoke above head; rant VO",
+          "camera_directive": "close-up lighter face, 85mm",
+          "performance_intensity": 8,
+          "performance_note": "defiant blame",
+          "dialogue_or_vo": "That little bitch. It\u0027s all her fault.",
+          "sound": "lighter, exhale smoke",
+          "beat_id": "B23"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Bus window gray city; his reflection angry; one job line",
+          "camera_directive": "profile medium window, 50mm",
+          "performance_intensity": 7,
+          "performance_note": "obsessive grievance",
+          "dialogue_or_vo": "He had one job. Take care of Ma.",
+          "sound": "bus rumble under VO",
+          "beat_id": "B23"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Hold on smoke and his eyes; destination resolve forming",
+          "camera_directive": "tight close-up eyes, 100mm",
+          "performance_intensity": 8,
+          "performance_note": "dangerous focus",
+          "dialogue_or_vo": "",
+          "sound": "bus brakes hint",
+          "beat_id": "B23"
+        }
+      ]
+    },
+    {
+      "scene_id": "S39",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Flashback school cafeteria; Young Nick approaches tiny curly-blonde JOHN JOHANSSON table",
+          "camera_directive": "medium tracking, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "predator calm",
+          "dialogue_or_vo": "",
+          "sound": "cafeteria roar",
+          "beat_id": "B24"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "At goalpost outside; Young Nick towers threatening hang upside down",
+          "camera_directive": "low angle two-shot, 28mm",
+          "performance_intensity": 9,
+          "performance_note": "terrifying dominance",
+          "dialogue_or_vo": "You talk to my brother again, you hang upside down till you pass out and die.",
+          "sound": "wind, kid terror breath",
+          "beat_id": "B24"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Later sidewalk; Dad blue puffy coat red hair fat nose drags young Nick hard",
+          "camera_directive": "medium tracking drag, 40mm",
+          "performance_intensity": 8,
+          "performance_note": "paternal rage",
+          "dialogue_or_vo": "",
+          "sound": "boots scrape cement",
+          "beat_id": "B24"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Bedroom; Dad unbuckles belt snaps; Lean over; belt hits",
+          "camera_directive": "medium then tight belt impact, 50mm",
+          "performance_intensity": 10,
+          "performance_note": "violent punishment",
+          "dialogue_or_vo": "Lean over.",
+          "sound": "belt crack, child sob",
+          "beat_id": "B24"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Young Nick face down pillow crying; red welts implied; door slam",
+          "camera_directive": "high angle medium bed, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "broken child",
+          "dialogue_or_vo": "",
+          "sound": "child sob, door slam",
+          "beat_id": "B24"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Hold on young Nick alone tears; cycle of violence seed",
+          "camera_directive": "slow push close-up, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "hurt becoming hard",
+          "dialogue_or_vo": "",
+          "sound": "sob fade room quiet",
+          "beat_id": "B24"
+        }
+      ]
+    },
+    {
+      "scene_id": "S40",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Gray cold day; Nick heavy coat switchblade pocket rides bus route 10; losers around him",
+          "camera_directive": "medium bus seat, 40mm",
+          "performance_intensity": 7,
+          "performance_note": "menacing travel",
+          "dialogue_or_vo": "",
+          "sound": "bus brakes, traffic",
+          "beat_id": "B25"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Duplex exterior; Nick knocks hard; Sionna opens crack; gray cat; he steps in no seat",
+          "camera_directive": "medium doorway, 35mm",
+          "performance_intensity": 8,
+          "performance_note": "forced entry tension",
+          "dialogue_or_vo": "You\u0027re the reason I\u0027m probably going to jail.",
+          "sound": "knock hard, door creak, cat",
+          "beat_id": "B25"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Sionna tries calm; Nick backs her to hallway wall",
+          "camera_directive": "medium push hallway, 40mm",
+          "performance_intensity": 8,
+          "performance_note": "cornering prey",
+          "dialogue_or_vo": "Let\u0027s talk rationally.",
+          "sound": "footsteps, her breath",
+          "beat_id": "B25"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 12,
+          "visual_description": "Left hand on her neck; right flicks switchblade open; edge to collarbone; her eyes huge squeak",
+          "camera_directive": "tight two-shot blade detail, 85mm",
+          "performance_intensity": 10,
+          "performance_note": "lethal threat peak",
+          "dialogue_or_vo": "Break it off tonight. Cash in one week. Or this blade. Friends who don\u0027t care if your parents live.",
+          "sound": "blade snick, her squeak, his breath",
+          "beat_id": "B25"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 12,
+          "visual_description": "Front door thunks open; narrator bursts in; Holy shit; struggle grab arm",
+          "camera_directive": "handheld chaotic wide, 28mm",
+          "performance_intensity": 10,
+          "performance_note": "shock intervention",
+          "dialogue_or_vo": "Holy shit, Nick, what the fuck are you doing?",
+          "sound": "door bang, scuffle",
+          "beat_id": "B26"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 18,
+          "visual_description": "Knife sinks; red flies; Sionna sinks weird noises; Nick elbows narrator; wipes blade on her shirt; flees running",
+          "camera_directive": "rapid handheld cuts impact to flee, 35mm",
+          "performance_intensity": 10,
+          "performance_note": "violence chaos escape",
+          "dialogue_or_vo": "",
+          "sound": "wet knife sound, her gasp, running feet",
+          "beat_id": "B26"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 18,
+          "visual_description": "Sionna on floor blood; narrator stunned then moves; Nick gone into gray cold",
+          "camera_directive": "high angle victim then empty door, 40mm",
+          "performance_intensity": 9,
+          "performance_note": "horror aftermath",
+          "dialogue_or_vo": "",
+          "sound": "her weak noise, distant run fade",
+          "beat_id": "B26"
+        }
+      ]
+    },
+    {
+      "scene_id": "S41",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Hallway day; narrator rips flannel off Sionna; brown camisole wet with blood; stacks both hands on left shoulder wound",
+          "camera_directive": "tight handheld medium, 35mm",
+          "performance_intensity": 9,
+          "performance_note": "frantic life-saving pressure",
+          "dialogue_or_vo": "",
+          "sound": "his shout, fabric rip, wet blood",
+          "beat_id": "B27"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Blood everywhere on his shirt hands pants; he crawls to phone dials 911; sirens approach",
+          "camera_directive": "medium chaotic pan, 28mm",
+          "performance_intensity": 9,
+          "performance_note": "desperate call",
+          "dialogue_or_vo": "",
+          "sound": "siren approach, phone buttons",
+          "beat_id": "B27"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Paramedics stomp in box defibrillator; cop pulls him aside; he reports",
+          "camera_directive": "handheld wide then close-up, 40mm",
+          "performance_intensity": 8,
+          "performance_note": "shock report",
+          "dialogue_or_vo": "My brother stabbed her. Sionna. Nick Olson. He ran.",
+          "sound": "radio crackle, boots, monitor beep start",
+          "beat_id": "B27"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Paramedics work; monitors beep good; Sionna pale but alive shoulder and lung",
+          "camera_directive": "medium medical cluster, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "tense relief beginning",
+          "dialogue_or_vo": "",
+          "sound": "monitor beep steady good",
+          "beat_id": "B27"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Narrator blood-soaked watches gurney; she lives; tears start",
+          "camera_directive": "close-up his face, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "shattered savior",
+          "dialogue_or_vo": "",
+          "sound": "gurney wheels, siren fade",
+          "beat_id": "B27"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Hallway empty blood on floor; aftermath still",
+          "camera_directive": "static wide high angle, 24mm",
+          "performance_intensity": 4,
+          "performance_note": "crime scene quiet",
+          "dialogue_or_vo": "",
+          "sound": "distant radio, drip",
+          "beat_id": "B27"
+        }
+      ]
+    },
+    {
+      "scene_id": "S42",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Months later February duplex day; Sionna loose shirt foam pillow under left arm blank zombie stare eyes without light",
+          "camera_directive": "medium wide, 35mm",
+          "performance_intensity": 3,
+          "performance_note": "empty shell",
+          "dialogue_or_vo": "",
+          "sound": "clock, distant traffic, her shallow breath",
+          "beat_id": "B28"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Narrator opposite leaning in; she stares floor",
+          "camera_directive": "medium two-shot, 40mm",
+          "performance_intensity": 6,
+          "performance_note": "desperate reach",
+          "dialogue_or_vo": "Are you depressed? I feel like you\u0027re blaming me.",
+          "sound": "clock tick",
+          "beat_id": "B28"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 12,
+          "visual_description": "Close on Sionna blank eyes welling; can\u0027t feel me speech",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "hollow truth",
+          "dialogue_or_vo": "I can\u0027t feel me. I can\u0027t feel myself anymore. As long as there is any doubt, I can\u0027t go on with you. Maybe a break. Mom and Dad\u0027s.",
+          "sound": "shallow breath",
+          "beat_id": "B28"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator plea; she rises walks to bedroom without looking",
+          "camera_directive": "medium reverse then track her exit, 50mm",
+          "performance_intensity": 8,
+          "performance_note": "begging then abandoned",
+          "dialogue_or_vo": "Stay. We can work it out.",
+          "sound": "footsteps bedroom",
+          "beat_id": "B28"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 9,
+          "visual_description": "He leaves house early for work; free fall feeling; empty doorway",
+          "camera_directive": "medium doorway exit slow, 35mm",
+          "performance_intensity": 7,
+          "performance_note": "collapse inside",
+          "dialogue_or_vo": "My fingers slipped off the rocky cliff. I had no one now.",
+          "sound": "door close, traffic",
+          "beat_id": "B28"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Hold on empty living room foam pillow left behind; clock",
+          "camera_directive": "static wide, 28mm",
+          "performance_intensity": 3,
+          "performance_note": "void after love",
+          "dialogue_or_vo": "",
+          "sound": "clock tick only",
+          "beat_id": "B28"
+        }
+      ]
+    },
+    {
+      "scene_id": "S43",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Seven years later Seattle Belltown; gray blanket sky mist; narrator filled-out shoulders quality sweater rain jacket calmer eyes walks",
+          "camera_directive": "wide tracking street, 28mm",
+          "performance_intensity": 3,
+          "performance_note": "settled solitude",
+          "dialogue_or_vo": "",
+          "sound": "light rain, ferry horn distant",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Keyboard player felt hat ear flaps open bag; dogs pass; narrator keeps walking",
+          "camera_directive": "medium street detail, 40mm",
+          "performance_intensity": 3,
+          "performance_note": "city texture",
+          "dialogue_or_vo": "",
+          "sound": "keyboard disco-jazz, rain",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Tony\u0027s Boy\u0027s Pizza storefront under medical building next to theater; GPS delivery bike hint",
+          "camera_directive": "medium storefront hero, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "quiet pride",
+          "dialogue_or_vo": "Many years. Pain and growth. Thanks to Tony I had my own chain.",
+          "sound": "ferry horn, light rain",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator pauses looking at his sign; calmer eyes",
+          "camera_directive": "medium close-up, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "earned success",
+          "dialogue_or_vo": "Tony\u0027s Boy\u0027s Pizza. Still delivered. GPS now.",
+          "sound": "keyboard under VO fade",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Gray sky mist over street; he walks on",
+          "camera_directive": "wide reverse, 24mm",
+          "performance_intensity": 3,
+          "performance_note": "forward motion",
+          "dialogue_or_vo": "",
+          "sound": "rain light",
+          "beat_id": "B29"
+        }
+      ]
+    },
+    {
+      "scene_id": "S44",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Lowell\u0027s window table; Puget Sound ferry cruise ship gray; cinnamon roll on plate",
+          "camera_directive": "wide window view, 28mm",
+          "performance_intensity": 3,
+          "performance_note": "reflective seat",
+          "dialogue_or_vo": "",
+          "sound": "market crowd, ferry horn, plate set down",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Narrator stares at cinnamon roll frosting; memory flash blood hallway",
+          "camera_directive": "close-up face to roll, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "haunted memory",
+          "dialogue_or_vo": "",
+          "sound": "market murmur",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 10,
+          "visual_description": "His eyes distant; seven years hatred; wounds stubborn",
+          "camera_directive": "slow push close-up, 100mm",
+          "performance_intensity": 6,
+          "performance_note": "unresolved pain",
+          "dialogue_or_vo": "Seven years of hatred for my brother. Wounds stubborn as a fly on watermelon.",
+          "sound": "ferry horn under VO",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sound view ferry moves; he doesn\u0027t eat the roll",
+          "camera_directive": "over-shoulder window, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "appetite gone",
+          "dialogue_or_vo": "",
+          "sound": "market crowd soft",
+          "beat_id": "B29"
+        }
+      ]
+    },
+    {
+      "scene_id": "S45",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Seattle yoga studio night; candles citrus lavender; ten people mats; narrator among them",
+          "camera_directive": "wide dark candlelit, 24mm",
+          "performance_intensity": 3,
+          "performance_note": "seeking calm",
+          "dialogue_or_vo": "",
+          "sound": "soft chant, breath, mat roll",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator in savasana or seated; eyes soft but void remains",
+          "camera_directive": "medium high angle, 40mm",
+          "performance_intensity": 4,
+          "performance_note": "practice with residue",
+          "dialogue_or_vo": "",
+          "sound": "collective breath",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Close on his face during gratefulness; Shakespeare thought",
+          "camera_directive": "tight close-up, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "intellectual peace incomplete",
+          "dialogue_or_vo": "Shakespeare: things neither good nor bad but thinking makes it so.",
+          "sound": "chant soft under VO",
+          "beat_id": "B29"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Class ends bow; he still feels void and sorrow for Nick",
+          "camera_directive": "medium rise, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "unresolved sorrow",
+          "dialogue_or_vo": "I still felt the void. And sorrow for him.",
+          "sound": "mat roll, feet",
+          "beat_id": "B29"
+        }
+      ]
+    },
+    {
+      "scene_id": "S46",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Warm Belltown apartment night; Bozo orange-white cat on couch; rain window",
+          "camera_directive": "medium wide cozy, 35mm",
+          "performance_intensity": 3,
+          "performance_note": "solitary home",
+          "dialogue_or_vo": "",
+          "sound": "rain on window, cat purr",
+          "beat_id": "B30"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator writes notebook after dream; pen scratch; smile forming",
+          "camera_directive": "medium desk lamp, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "inspired recording",
+          "dialogue_or_vo": "",
+          "sound": "pen scratch, rain",
+          "beat_id": "B30"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Dream residue flash: Indian sage white wrap dirty pizza box green road",
+          "camera_directive": "soft-focus insert dream, 40mm",
+          "performance_intensity": 6,
+          "performance_note": "visionary message",
+          "dialogue_or_vo": "Stop judging. All things illusion. You create your own reality. Start living the truth.",
+          "sound": "ethereal under sage VO",
+          "beat_id": "B30"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Back present; narrator smiles alive vibrant; decision",
+          "camera_directive": "close-up smile, 85mm",
+          "performance_intensity": 7,
+          "performance_note": "joyful resolve",
+          "dialogue_or_vo": "I have to see Nick. I have to forgive.",
+          "sound": "rain soft, cat purr",
+          "beat_id": "B30"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Laptop open books flight; screen glow on face",
+          "camera_directive": "over-shoulder laptop, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "committed action",
+          "dialogue_or_vo": "",
+          "sound": "keyboard clicks, rain",
+          "beat_id": "B30"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Bozo watches; narrator leans back free",
+          "camera_directive": "medium cat and him, 40mm",
+          "performance_intensity": 5,
+          "performance_note": "lightness begins",
+          "dialogue_or_vo": "",
+          "sound": "cat purr, rain",
+          "beat_id": "B30"
+        }
+      ]
+    },
+    {
+      "scene_id": "S47",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Milwaukee return day; same timeless brick Kirk Street; dumpsters now green-brown; Hispanic couple stroller",
+          "camera_directive": "wide establishing, 24mm",
+          "performance_intensity": 3,
+          "performance_note": "unchanged past",
+          "dialogue_or_vo": "",
+          "sound": "street, stroller wheel",
+          "beat_id": "B31"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator Seattle layers stares at building hollow chocolate-Santa feeling",
+          "camera_directive": "medium close-up, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "hollow nostalgia",
+          "dialogue_or_vo": "",
+          "sound": "his quiet breath, street",
+          "beat_id": "B31"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Alley playland memory dumpsters; he was serf now grown man",
+          "camera_directive": "over-shoulder alley, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "reckoning self",
+          "dialogue_or_vo": "Nothing changed. I had been his serf. Now a grown man.",
+          "sound": "street under VO",
+          "beat_id": "B31"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 6,
+          "visual_description": "Hold on brick facade fifth-floor windows; he turns away",
+          "camera_directive": "static low angle, 28mm",
+          "performance_intensity": 4,
+          "performance_note": "release place",
+          "dialogue_or_vo": "",
+          "sound": "stroller fade, street",
+          "beat_id": "B31"
+        }
+      ]
+    },
+    {
+      "scene_id": "S48",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 7,
+          "visual_description": "Former pizza parlor street; weeds grown; new sign Central Cosmetology pink scissors powder puff",
+          "camera_directive": "wide facade, 28mm",
+          "performance_intensity": 3,
+          "performance_note": "transformed landmark",
+          "dialogue_or_vo": "",
+          "sound": "wind in weeds, distant car",
+          "beat_id": "B31"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Narrator looks at dark window same lookout; slight laugh",
+          "camera_directive": "medium profile, 50mm",
+          "performance_intensity": 4,
+          "performance_note": "ironic amusement",
+          "dialogue_or_vo": "Tony\u0027s son sold it. I laughed.",
+          "sound": "wind weeds",
+          "beat_id": "B31"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Close on his face remembering old career ceiling; now owns chain",
+          "camera_directive": "slow push close-up, 85mm",
+          "performance_intensity": 5,
+          "performance_note": "full-circle smile",
+          "dialogue_or_vo": "I used to think owning one place was the top.",
+          "sound": "wind under VO, distant car",
+          "beat_id": "B31"
+        }
+      ]
+    },
+    {
+      "scene_id": "S49",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Deli day; narrator with Reuben; Bob graying thinning hair thicker waist carved lines factory clothes at window greasy burger looks up",
+          "camera_directive": "medium wide two tables, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "sudden recognition shock",
+          "dialogue_or_vo": "",
+          "sound": "deli chatter, plate clink",
+          "beat_id": "B32"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Bob cackles slams burger; rises; patrons turn",
+          "camera_directive": "medium push on Bob, 40mm",
+          "performance_intensity": 7,
+          "performance_note": "elfish delight loud",
+          "dialogue_or_vo": "Holy shit. Is that you, bro? You came back, you son of a bitch.",
+          "sound": "his cackle, plate clink",
+          "beat_id": "B32"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Bear hug; Bob hangs on arm; narrator grown shoulders; patrons stare",
+          "camera_directive": "medium two-shot hug, 50mm",
+          "performance_intensity": 6,
+          "performance_note": "emotional reunion",
+          "dialogue_or_vo": "You look so grown up. Big shoulders. I took over his apartment. Factory now. Proud of you. You got out.",
+          "sound": "deli chatter under hug",
+          "beat_id": "B32"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 10,
+          "visual_description": "They sit; narrator calm purpose; Bob eye wrinkles",
+          "camera_directive": "close two-shot, 65mm",
+          "performance_intensity": 5,
+          "performance_note": "mutual respect",
+          "dialogue_or_vo": "I need to let the shit go.",
+          "sound": "soft chatter",
+          "beat_id": "B32"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Bob nods wise; final proud look; they part",
+          "camera_directive": "medium reverse Bob then wide, 40mm",
+          "performance_intensity": 5,
+          "performance_note": "blessing release",
+          "dialogue_or_vo": "Let it go. You\u0027re a wise man.",
+          "sound": "deli ambient fade",
+          "beat_id": "B32"
+        }
+      ]
+    },
+    {
+      "scene_id": "S50",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Sionna duplex day grayer; naked porch no chairs no plants; weeds gravel; narrator in car engine off",
+          "camera_directive": "wide exterior car, 28mm",
+          "performance_intensity": 4,
+          "performance_note": "quiet stakeout memory",
+          "dialogue_or_vo": "",
+          "sound": "engine tick, kids on bikes distant",
+          "beat_id": "B33"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 9,
+          "visual_description": "Memory overlay: bamboo rockers Smiley cat air kiss porch full life",
+          "camera_directive": "soft dissolve medium porch memory, 50mm",
+          "performance_intensity": 5,
+          "performance_note": "tender past",
+          "dialogue_or_vo": "",
+          "sound": "his exhale, memory soft",
+          "beat_id": "B33"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Present empty porch; narrator face in car; love and release VO",
+          "camera_directive": "close-up through windshield, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "bittersweet acceptance",
+          "dialogue_or_vo": "I love her so much. I just want her to be happy. Leave her alone. Move forward.",
+          "sound": "engine tick under VO",
+          "beat_id": "B33"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "He starts engine; car pulls away; porch recedes empty",
+          "camera_directive": "tracking car leave wide, 35mm",
+          "performance_intensity": 4,
+          "performance_note": "forward choice",
+          "dialogue_or_vo": "",
+          "sound": "engine start, kids bikes fade",
+          "beat_id": "B33"
+        }
+      ]
+    },
+    {
+      "scene_id": "S51",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 12,
+          "visual_description": "Green Bay prison exterior oppressive brick; metal detectors waiting double-locked doors; narrator sits booth plexiglass yellow receiver Formica; guard nearby",
+          "camera_directive": "wide exterior to booth medium, 28mm",
+          "performance_intensity": 5,
+          "performance_note": "tense arrival",
+          "dialogue_or_vo": "",
+          "sound": "locks clank, amplified voices, phone pickup",
+          "beat_id": "B34"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 12,
+          "visual_description": "Nick enters opposite orange jumpsuit scrawny graying thinning hair forehead wrinkles watery bagged eyes older; weak smile; they stare",
+          "camera_directive": "medium two-shot through glass, 40mm",
+          "performance_intensity": 6,
+          "performance_note": "mutual shock age",
+          "dialogue_or_vo": "Hi, bro. Glad you came.",
+          "sound": "phone line open, room hum",
+          "beat_id": "B34"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 12,
+          "visual_description": "Small talk holding up; parole maybe; narrator leans in serious",
+          "camera_directive": "shot-reverse close-ups, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "careful open",
+          "dialogue_or_vo": "How are you holding up?",
+          "sound": "distant door lock",
+          "beat_id": "B34"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 15,
+          "visual_description": "Narrator delivers full asshole indictment calm firm; Nick listens",
+          "camera_directive": "tight close-up narrator then Nick, 100mm",
+          "performance_intensity": 8,
+          "performance_note": "controlled truth bomb",
+          "dialogue_or_vo": "You\u0027re an asshole. You killed my mother drunk. You held me down my whole life. You tried to kill the love of my life and drove her away.",
+          "sound": "his breath, Nick quiet cry start",
+          "beat_id": "B34"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 15,
+          "visual_description": "Forgiveness line; Nick tears flow onto Formica; apology",
+          "camera_directive": "close-up tears Formica, 85mm",
+          "performance_intensity": 9,
+          "performance_note": "release peak both",
+          "dialogue_or_vo": "I forgive you. It sets me free. Releases your control forever.",
+          "sound": "tears soft, breath",
+          "beat_id": "B34"
+        },
+        {
+          "clip_number": 6,
+          "estimated_duration_seconds": 18,
+          "visual_description": "Nick owns it huge asshole; guard time; love exchange; pizza chain pride; President Olson",
+          "camera_directive": "medium two-shot glass, 50mm",
+          "performance_intensity": 7,
+          "performance_note": "mutual love pride",
+          "dialogue_or_vo": "I want you to get better. I still believe in you. I still love you for being my brother.",
+          "sound": "guard voice, phone",
+          "beat_id": "B34"
+        },
+        {
+          "clip_number": 7,
+          "estimated_duration_seconds": 18,
+          "visual_description": "Nick proud smile shuffled away; narrator sits yellow receiver light free; weight gone",
+          "camera_directive": "close-up receiver then his light face, 65mm",
+          "performance_intensity": 6,
+          "performance_note": "exonerated calm",
+          "dialogue_or_vo": "President Olson. That\u0027s fucking amazing. I am so proud of you.",
+          "sound": "locks clank, phone hang, quiet",
+          "beat_id": "B34"
+        }
+      ]
+    },
+    {
+      "scene_id": "S52",
+      "clips": [
+        {
+          "clip_number": 1,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Airport terminal day; narrator walks maze of people floating above throng; mixed nuts tea",
+          "camera_directive": "wide tracking float feel, 24mm",
+          "performance_intensity": 4,
+          "performance_note": "weightless freedom",
+          "dialogue_or_vo": "",
+          "sound": "airport murmur, boarding call",
+          "beat_id": "B35"
+        },
+        {
+          "clip_number": 2,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Boarding queue; scans pass; name visible to him",
+          "camera_directive": "medium over-shoulder scan, 40mm",
+          "performance_intensity": 5,
+          "performance_note": "final threshold",
+          "dialogue_or_vo": "",
+          "sound": "scanner beep, murmur",
+          "beat_id": "B35"
+        },
+        {
+          "clip_number": 3,
+          "estimated_duration_seconds": 10,
+          "visual_description": "Close on his face walking; thirty years weight gone; send love never see again",
+          "camera_directive": "slow push close-up, 85mm",
+          "performance_intensity": 6,
+          "performance_note": "complete release",
+          "dialogue_or_vo": "Weight of thirty years gone. Free of fear, guilt, sadness, judgment. I send him love and hope. I will never see him again by choice.",
+          "sound": "airport soft under VO",
+          "beat_id": "B35"
+        },
+        {
+          "clip_number": 4,
+          "estimated_duration_seconds": 8,
+          "visual_description": "Looks at name on boarding pass; whispers own name first time",
+          "camera_directive": "tight insert pass then lips, 100mm",
+          "performance_intensity": 7,
+          "performance_note": "self-naming triumph",
+          "dialogue_or_vo": "That\u0027s me. President Peter Olson.",
+          "sound": "soft airport",
+          "beat_id": "B35"
+        },
+        {
+          "clip_number": 5,
+          "estimated_duration_seconds": 6,
+          "visual_description": "He walks down jetway light; final VO title close",
+          "camera_directive": "wide jetway back view, 35mm",
+          "performance_intensity": 5,
+          "performance_note": "story complete",
+          "dialogue_or_vo": "This has been Nick and me.",
+          "sound": "boarding call fade to silence",
+          "beat_id": "B35"
+        }
+      ]
+    }
+  ]
+}

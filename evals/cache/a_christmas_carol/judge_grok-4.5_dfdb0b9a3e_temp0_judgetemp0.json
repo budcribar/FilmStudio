@@ -1,0 +1,43 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.58,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong, tight adaptation that hits every spine beat (counting-house, Marley, three spirits, Cratchit dinner, grave, redemption) with locked visual descriptions and YOUNG EBENEZER / FAN age splits restated on re-entry. Action lines are single-location, camera-concrete micro-beats ideal for 5-10 s clips; iconic dialogue is preserved but split to clip length; every scene carries explicit (SOUND:) or (MUSIC:) cues with peaks doubled. Minor compression drops the debtors/Caroline reaction and the miners-lighthouse ship tour, slightly lowering pure coverage, yet nothing invented breaks the plot and the result remains fully greenlightable.",
+      "promptImprovementSuggestion": "Add an explicit retention rule: when compressing for runtime, never wholly omit a secondary emotional-reaction beat that the source attaches to a death or fate reveal (list and keep at least one such beat if present) before cutting travel or montage material."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.33,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Scene headings that join multiple locations with slashes (EXT. BLEAK MOOR / LIGHTHOUSE / SHIP) and vague placeholders (INT. OPEN PLACE) violate the single-concrete-place HARD rule and make clip scheduling impossible",
+        "Multiple dialogue turns exceed the 35-word hard limit without intervening action/sound micro-beats, breaking the short-clip constraint"
+      ],
+      "rationale": "Highest source coverage of the two\u2014retains Caroline debtors, miners/lighthouse/ship, fuller Marley and Fezziwig text, and more Present travel\u2014yet fatally undermines AI-video usability. Multi-location and vague headings cram distinct places into one slug; long unbroken speeches and summary Action paragraphs cannot be filmed as discrete 5-10 s clips; character tokens are mostly stable but supporting roles receive thinner re-entry descriptions. Sound cues are present and often strong, but the structural violations are deal-breakers.",
+      "promptImprovementSuggestion": "Strengthen the compliance check to auto-reject any scene heading containing \u0027/\u0027, \u0027AND\u0027, or multiple place names and to enforce splitting of every dialogue turn over 35 words with an intervening concrete Action or (SOUND:) line before output is accepted."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it alone delivers single-location, clip-length action and dialogue while remaining production-clean and highly faithful. Weakest: Screenplay B because multi-location headings and over-length dialogue turns render it unusable for the short-clip AI pipeline without a full rewrite.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "1C6A4CCA8A33A15E8A1862495F63E201F8536C5DE65A604A693B6F31E4EF77B4"
+}

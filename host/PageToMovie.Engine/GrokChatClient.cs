@@ -20,29 +20,46 @@ public sealed class GrokChatClient : IChatClient
     private readonly ProjectTelemetryService _telemetry;
     private readonly IUserApiKeyProvider? _keyProvider;
     private readonly ILogger<GrokChatClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public GrokChatClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
         ILogger<GrokChatClient> log,
-        IUserApiKeyProvider? keyProvider = null)
+        IUserApiKeyProvider? keyProvider = null,
+        GenerationErrorLogger? errorLogger = null)
     {
         _http = http;
         _telemetry = telemetry;
         _keyProvider = keyProvider;
         _log = log;
+        _errorLogger = errorLogger;
     }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
+    /// <summary>Maps the provider-neutral <c>reasoningEffort</c> scale to OpenAI/xAI's
+    /// <c>reasoning_effort</c> values (confirmed live: OpenAI accepts none/low/medium/high/xhigh;
+    /// xAI accepts the same set without erroring).</summary>
+    private static string? MapReasoningEffort(string? effort) => effort?.Trim().ToLowerInvariant() switch
+    {
+        null or "" => null,
+        "max" or "xhigh" => "xhigh",
+        "high" => "high",
+        "medium" => "medium",
+        "low" => "low",
+        var other => other,
+    };
+
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "grok-4.5",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null)
+        string? mode = null,
+        string? reasoningEffort = null)
     {
         var key = ResolveApiKey(model);
         var modeTag = string.IsNullOrWhiteSpace(mode) ? null : mode.Trim();
@@ -52,7 +69,9 @@ public sealed class GrokChatClient : IChatClient
             ? $"{entry.ApiBase.TrimEnd('/')}/{(string.IsNullOrWhiteSpace(entry.EndpointPath) ? "chat/completions" : entry.EndpointPath).TrimStart('/')}"
             : "https://api.x.ai/v1/chat/completions";
 
-        Dictionary<string, object?> BuildPayload(bool includeTemperature)
+        var mappedEffort = MapReasoningEffort(reasoningEffort);
+
+        Dictionary<string, object?> BuildPayload(bool includeTemperature, bool includeReasoningEffort)
         {
             var p = new Dictionary<string, object?>
             {
@@ -65,6 +84,8 @@ public sealed class GrokChatClient : IChatClient
             };
             if (includeTemperature)
                 p["temperature"] = temperature;
+            if (includeReasoningEffort && mappedEffort is not null)
+                p["reasoning_effort"] = mappedEffort;
             return p;
         }
 
@@ -73,41 +94,22 @@ public sealed class GrokChatClient : IChatClient
         // they only run at the implicit default. This client is shared OpenAI-compatible plumbing
         // for xAI/OpenAI/Gemini-OpenAI-compat models, so omit the key only for that id pattern.
         var includeTemperature = !IsOpenAiReasoningModel(model);
-        var payload = BuildPayload(includeTemperature);
+        var includeReasoningEffort = mappedEffort is not null;
 
         var sw = Stopwatch.StartNew();
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Post, targetUrl)
-            {
-                Content = JsonContent.Create(payload),
-            };
-            if (!string.IsNullOrWhiteSpace(key))
-                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
-            using var resp = await _http.SendAsync(req, ct);
-            var body = await resp.Content.ReadAsStringAsync(ct);
-
-            // Newer reasoning-family models beyond the o-series (e.g. gpt-5.6-sol/-terra) also
-            // reject a non-default temperature, but with different naming each release cycle —
-            // rather than growing the regex forever, self-heal: on this specific 400, retry once
-            // with temperature omitted, mirroring AnthropicChatClient's deprecated-param retry.
-            if (!resp.IsSuccessStatusCode && includeTemperature
-                && (int)resp.StatusCode == 400 && body.Contains("temperature", StringComparison.OrdinalIgnoreCase))
-            {
-                var retryPayload = BuildPayload(includeTemperature: false);
-                using var retryReq = new HttpRequestMessage(HttpMethod.Post, targetUrl)
-                {
-                    Content = JsonContent.Create(retryPayload),
-                };
-                if (!string.IsNullOrWhiteSpace(key))
-                    retryReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
-                using var retryResp = await _http.SendAsync(retryReq, ct);
-                var retryBody = await retryResp.Content.ReadAsStringAsync(ct);
-                resp.Dispose();
-                return await FinishAsync(retryResp, retryBody);
-            }
-
-            return await FinishAsync(resp, body);
+            // Transient-retry wraps the outside of the existing param-shape self-heal loop below
+            // (400 due to unsupported temperature/reasoning_effort) — that loop is unmodified;
+            // this only retries the whole call again on 429/5xx or a network/timeout failure,
+            // which previously propagated to the caller immediately with zero retries.
+            return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                _ => DoRequestAsync(),
+                isTransient: AiRetryPolicy.IsTransientChatFailure,
+                maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                onRetry: (attemptNum, ex) => LogTransientRetryAsync(attemptNum, ex),
+                ct: ct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not InvalidOperationException)
         {
@@ -124,6 +126,65 @@ public sealed class GrokChatClient : IChatClient
                 Ok = false,
             });
             throw;
+        }
+
+        async Task<string> DoRequestAsync()
+        {
+            // Up to 3 attempts: models vary on whether they accept temperature, reasoning_effort,
+            // both, or neither — rather than hardcoding a capability matrix per model id, self-heal
+            // by stripping whichever param the API just told us is unsupported and retrying, same
+            // pattern as the single-param retries elsewhere in this client and AnthropicChatClient.
+            for (var attempt = 0; ; attempt++)
+            {
+                var payload = BuildPayload(includeTemperature, includeReasoningEffort);
+                using var req = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+                {
+                    Content = JsonContent.Create(payload),
+                };
+                if (!string.IsNullOrWhiteSpace(key))
+                    req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
+                using var resp = await _http.SendAsync(req, ct);
+                var body = await resp.Content.ReadAsStringAsync(ct);
+
+                if (!resp.IsSuccessStatusCode && (int)resp.StatusCode == 400 && attempt < 2)
+                {
+                    // Error text varies by provider: OpenAI echoes the request field verbatim
+                    // ("reasoning_effort"), xAI reports it camelCase with no underscore
+                    // ("reasoningEffort", e.g. grok-4.20-reasoning: "does not support parameter
+                    // reasoningEffort") — match both spellings rather than the one we sent.
+                    if (includeReasoningEffort
+                        && (body.Contains("reasoning_effort", StringComparison.OrdinalIgnoreCase)
+                            || body.Contains("reasoningeffort", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        includeReasoningEffort = false;
+                        continue;
+                    }
+                    if (includeTemperature && body.Contains("temperature", StringComparison.OrdinalIgnoreCase))
+                    {
+                        includeTemperature = false;
+                        continue;
+                    }
+                }
+
+                return await FinishAsync(resp, body);
+            }
+        }
+
+        async Task LogTransientRetryAsync(int attemptNum, Exception ex)
+        {
+            if (_errorLogger is null) return;
+            var httpStatus = ex is ChatHttpStatusException hse ? hse.StatusCode : (int?)null;
+            await _errorLogger.LogAsync(new GenerationErrorRecord
+            {
+                Stage = "grok_chat_completion",
+                Model = model,
+                ErrorType = httpStatus is not null ? "http_error" : "exception",
+                ErrorMessage = ex.Message,
+                HttpStatus = httpStatus,
+                Attempt = attemptNum,
+                Resolved = false, // this row is the failed attempt; a later attempt may still succeed
+                RequestSummary = $"mode={modeTag}; promptChars={(systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0)}",
+            }, ct).ConfigureAwait(false);
         }
 
         async Task<string> FinishAsync(HttpResponseMessage resp, string body)
@@ -144,7 +205,7 @@ public sealed class GrokChatClient : IChatClient
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
+                throw new ChatHttpStatusException((int)resp.StatusCode,
                     $"Chat HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 

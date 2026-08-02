@@ -3,6 +3,7 @@
 @inject EngineApiClient Engine
 @inject JobHubClient Hub
 @inject ActiveProjectState ActiveProject
+@inject StudioCapabilityState Caps
 @inject AdminSessionService Session
 @inject ClientVideoStitchService Stitch
 @inject ClientMediaFolderService MediaFolder
@@ -11,9 +12,33 @@
 @using PageToMovie.Core.Models
 @using PageToMovie.Web.Services
 
-<PageTitle>Scenes &amp; Clips</PageTitle>
+<PageTitle>@(IsSimpleFilm ? "Movie" : "Film · Scenes & clips")</PageTitle>
 
-<h1>Scenes &amp; Clips</h1>
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">@(IsSimpleFilm ? "Easiest start · Movie" : "Studio · Step 5 · Film")</span>
+    <h1 class="ptm-adapt-title mb-1">@(IsSimpleFilm ? "Make your movie" : "Scenes & clips")</h1>
+    <p class="ptm-adapt-lede mb-0">
+        @if (IsSimpleFilm)
+        {
+            <text>Generate every scene with your narrator voice. Stock pictures stay as-is.</text>
+        }
+        else
+        {
+            <text>Generate and stitch clips on your machine where possible. Check Estimate before a full render if you are watching credits.</text>
+        }
+    </p>
+</div>
+
+<StudioProcessStrip Active="film" SimpleMode="@IsSimpleFilm" FullStudio="@(!IsSimpleFilm)" />
+
+@if (IsSimpleFilm)
+{
+    <div class="alert alert-primary border-primary border-opacity-50 py-2 small mb-3" data-testid="simple-film-banner">
+        <strong>Simple path.</strong>
+        Your voice is ready — use <strong>Generate missing</strong> (or the batch control below) to film all scenes.
+        <a href="simple-voice" class="alert-link">Back to story & voice</a>
+    </div>
+}
 
 @if (_gateChecked && !ActiveProject.CanScenes)
 {
@@ -26,9 +51,6 @@
 }
 else
 {
-
-
-
 
 @* Feature 8: clip finished but not saved to a local media folder *@
 @if (!string.IsNullOrEmpty(MediaFolder.LocalSaveWarning))
@@ -631,9 +653,14 @@ else
                         @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Clip Dialogue")
                     </button>
                 }
+                <CapabilityLockedControl Enabled="@Caps.MusicReady"
+                                         BlockedReason="@Caps.MusicBlockedReason"
+                                         SettingsHref="@Caps.MusicSettingsHref"
+                                         TitleWhenEnabled="Background music for this scene"
+                                         TestId="scene-music-gate">
                 <div class="d-inline-flex align-items-center gap-1 border rounded px-2 py-1">
                     <select class="form-select form-select-sm" style="width:auto"
-                            disabled="@(_busy || JobRunning || _scoringMusic)"
+                            disabled="@(_busy || JobRunning || _scoringMusic || !Caps.MusicReady)"
                             value="@_selectedAudioModel"
                             @onchange="@(e => _selectedAudioModel = e.Value?.ToString() ?? _selectedAudioModel)"
                             title="Audio model for music generation">
@@ -644,15 +671,15 @@ else
                     </select>
                     <div class="form-check form-switch m-0" title="@(SelectedAudioModelCanSing ? "Generate sung vocals instead of instrumental" : "The selected model has no vocal capability")">
                         <input class="form-check-input" type="checkbox" id="wantVocalSwitch"
-                               disabled="@(_busy || JobRunning || _scoringMusic || !SelectedAudioModelCanSing)"
+                               disabled="@(_busy || JobRunning || _scoringMusic || !SelectedAudioModelCanSing || !Caps.MusicReady)"
                                checked="@(_wantVocal && SelectedAudioModelCanSing)"
                                @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
                         <label class="form-check-label small" for="wantVocalSwitch">Sing</label>
                     </div>
                     <button type="button"
                             class="btn btn-sm btn-warning text-black fw-bold px-3 shadow-sm"
-                            disabled="@(_busy || JobRunning || _scoringMusic)"
-                            title="@(_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene (auto-composed lyrics)" : "Generate AI background music score with automatic dialogue ducking")"
+                            disabled="@(_busy || JobRunning || _scoringMusic || !Caps.MusicReady)"
+                            title="@(Caps.MusicReady ? (_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene (auto-composed lyrics)" : "Generate AI background music score with automatic dialogue ducking") : Caps.MusicBlockedReason)"
                             @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
                         @(_wantVocal && SelectedAudioModelCanSing ? "🎤 Generate Singing" : "🎵 Score Background Music")
                     </button>
@@ -667,6 +694,7 @@ else
                         </button>
                     }
                 </div>
+                </CapabilityLockedControl>
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
                 {
                     <button type="button"
@@ -1957,6 +1985,10 @@ else
 }
 
 @code {
+    private bool IsSimpleFilm =>
+        ActiveProject.IsSimpleVoice
+        || (Nav.ToAbsoluteUri(Nav.Uri).Query?.Contains("simple=1", StringComparison.OrdinalIgnoreCase) ?? false);
+
     private bool _busy;
     private bool _gateChecked;
     private string? _error;
@@ -2526,6 +2558,9 @@ else
 
             await ActiveProject.RefreshReadinessAsync(Engine);
             _gateChecked = true;
+            if (!string.IsNullOrEmpty(_projectId))
+                await Caps.RefreshAsync(Engine, _projectId);
+
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanScenes)
                 return;
 
@@ -3060,6 +3095,11 @@ else
             return d;
         }
 
+        // Video-extend continuity (see FilmJobService.GenerateOneClipAsync + ClientMediaFolderService.
+        // PrepareExtendSourceAsync): resolved once per batch, not per target, since it's the same
+        // active project setting for every clip here.
+        var extendModel = await ResolveActiveVideoExtendModelAsync();
+
         foreach (var (sn, cn) in targets)
         {
             if (cn <= 1) continue;
@@ -3083,6 +3123,45 @@ else
                     await Engine.UploadClipAsync(_projectId, sn, prevClipNum, localBytes);
                 }
             }
+
+            if (extendModel is { } maxInputSeconds)
+            {
+                var wantsExtend = string.Equals(
+                    sceneDetail?.Clips?.FirstOrDefault(c => c.ClipNumber == cn)?.Continuation,
+                    "extend_previous", StringComparison.OrdinalIgnoreCase);
+                if (wantsExtend)
+                {
+                    // Best-effort: a false return just means no extend-source file appears on the
+                    // server, so it falls back to today's fresh-gen behavior — never blocks generation.
+                    await MediaFolder.PrepareExtendSourceAsync(_projectId, sn, cn, maxInputSeconds);
+                }
+            }
+        }
+    }
+
+    /// <summary>Active project video model's max input length for a real video-extend call, or
+    /// null when the model doesn't support real continuity (today: only Grok's video model does)
+    /// or lookup fails.</summary>
+    private async Task<double?> ResolveActiveVideoExtendModelAsync()
+    {
+        try
+        {
+            var cfg = await Engine.GetConfigAsync(_projectId);
+            var modelId = cfg?.Config is { } c && c.TryGetValue("model_name", out var el) &&
+                          el.ValueKind == System.Text.Json.JsonValueKind.String
+                ? el.GetString()
+                : null;
+            if (string.IsNullOrWhiteSpace(modelId)) return null;
+
+            var models = await Engine.GetSupportedModelsAsync(capability: "video");
+            var entry = models.FirstOrDefault(m => string.Equals(m.Id, modelId, StringComparison.OrdinalIgnoreCase));
+            if (entry is not { SupportsVideoContinue: true }) return null;
+
+            return entry.AbsMaxClipDurationSeconds ?? entry.MaxClipDurationSeconds ?? 15;
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -4025,7 +4104,13 @@ else
 
     private async Task ScoreSceneBackgroundMusicAsync(int sceneNum)
     {
-        if (string.IsNullOrWhiteSpace(_projectId)) return;
+        
+        if (!Caps.MusicReady)
+        {
+            _error = Caps.MusicBlockedReason;
+            return;
+        }
+if (string.IsNullOrWhiteSpace(_projectId)) return;
 
         var isVocal = _wantVocal && SelectedAudioModelCanSing;
         _busy = true;

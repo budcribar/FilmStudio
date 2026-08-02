@@ -1,0 +1,65 @@
+{
+  "BookPath": "books/Nick_and_Me.txt",
+  "Timestamp": "2026-07-30 23:18:17 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 76.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 1,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 67.2,
+        "FormatComplianceScore": 35,
+        "SceneBudgetScore": 60,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 0,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+          "No valid INT./EXT. scene headings detected by FountainParser.",
+          "Too few scene headings (0); story lacks visual scene progression.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "o3-mini": {
+      "o3-mini": 8.25
+    }
+  },
+  "JudgeRankMatrix": {
+    "o3-mini": {
+      "o3-mini": 1
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "o3-mini": {
+      "o3-mini": "Screenplay A efficiently translates key narrative beats from the source, uses clear and consistent character descriptions, and structures scenes into distinct, filmable beats, though its dramatic pacing could be tightened for short AI-generated video clips."
+    }
+  },
+  "JudgeSummaries": {
+    "o3-mini": "Strongest: Screenplay A because it shows high fidelity to the source and clear character disambiguation while offering concrete, filmable action beats; Weakest: Screenplay A because despite its overall strength, some scene transitions and pacing feel a bit uneven for the strict short-clip format."
+  }
+}

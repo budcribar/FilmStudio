@@ -1,0 +1,9 @@
+{
+  "Status": "pass",
+  "SceneCount": 12,
+  "ClipCount": 90,
+  "Failures": [],
+  "Warnings": [
+    "2 clip dialogue_or_vo fragment(s) don\u0027t appear verbatim in their scene\u0027s Fountain text \u2014 check for invented or paraphrased lines."
+  ]
+}

@@ -7,8 +7,12 @@
     return;
 }
 
-<div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
-    <h1 class="mb-0">Adaptation</h1>
+<div class="ptm-adapt-header d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
+    <div>
+        <span class="ptm-adapt-kicker">Studio · Book pipeline</span>
+        <h1 class="mb-0 ptm-adapt-title">Book & screenplay</h1>
+        <p class="ptm-adapt-lede mb-0">Import source → screenplay → cast (voice optional) → shot plan. Then film on Scenes.</p>
+    </div>
     <div class="d-flex align-items-center gap-2">
         @if (!string.IsNullOrEmpty(Host.ProjectLabel))
         {
@@ -21,26 +25,61 @@
     </div>
 </div>
 
-@* ---- Step navigation bar ---- *@
+@* ---- Step strip (unlock logic unchanged; prototype look-feel) ---- *@
 @{
     var stepsLocked = Host.JobRunning;
+    var importActive = Step == "import" || Step == "book";
+    var screenplayActive = Step == "screenplay";
+    var castActive = Step == "characters";
+    var shotsActive = Step == "shots";
+    var screenplayOff = !OutlineEnabled || stepsLocked;
+    var castOff = !ShotsEnabled || stepsLocked;
+    var shotsOff = !ShotsEnabled || stepsLocked;
 }
-<nav class="nav nav-pills flex-wrap gap-2 mb-4" aria-label="Adaptation steps">
-    <a class="nav-link @(Step == "import" || Step == "book" ? "active" : "") @(stepsLocked ? "disabled" : "")"
+<nav class="ptm-step-strip" aria-label="Book pipeline steps">
+    <a class="ptm-step @(importActive ? "is-active" : "") @(stepsLocked ? "is-disabled" : "")"
        href="@(stepsLocked ? "javascript:void(0)" : "adaptation/import")"
-       @onclick:preventDefault="stepsLocked">Import</a>
-    <a class="nav-link @(Step == "screenplay" ? "active" : "") @(!OutlineEnabled || stepsLocked ? "disabled" : "")"
-       href="@(!OutlineEnabled || stepsLocked ? "javascript:void(0)" : "adaptation/screenplay")"
-       @onclick:preventDefault="@(!OutlineEnabled || stepsLocked)"
-       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? null : "Import a source first")">Screenplay</a>
-    <a class="nav-link @(Step == "characters" ? "active" : "") @(!ShotsEnabled || stepsLocked ? "disabled" : "")"
-       href="@(!ShotsEnabled || stepsLocked ? "javascript:void(0)" : "characters")"
-       @onclick:preventDefault="@(!ShotsEnabled || stepsLocked)"
-       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness before clips" : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")">Characters</a>
-    <a class="nav-link @(Step == "shots" ? "active" : "") @(!ShotsEnabled || stepsLocked ? "disabled" : "")"
-       href="@(!ShotsEnabled || stepsLocked ? "javascript:void(0)" : "adaptation/shots")"
-       @onclick:preventDefault="@(!ShotsEnabled || stepsLocked)"
-       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")">Shot plan</a>
+       @onclick:preventDefault="stepsLocked"
+       data-testid="adapt-step-import">
+        <span class="ptm-step__num">1</span>
+        <span class="ptm-step__body">
+            <span class="ptm-step__label">Book</span>
+            <span class="ptm-step__hint">PDF · text · fountain</span>
+        </span>
+    </a>
+    <a class="ptm-step @(screenplayActive ? "is-active" : "") @(screenplayOff ? "is-disabled" : "")"
+       href="@(screenplayOff ? "javascript:void(0)" : "adaptation/screenplay")"
+       @onclick:preventDefault="screenplayOff"
+       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? null : "Import a source first")"
+       data-testid="adapt-step-screenplay">
+        <span class="ptm-step__num">2</span>
+        <span class="ptm-step__body">
+            <span class="ptm-step__label">Screenplay</span>
+            <span class="ptm-step__hint">Edit · approve</span>
+        </span>
+    </a>
+    <a class="ptm-step @(castActive ? "is-active" : "") @(castOff ? "is-disabled" : "")"
+       href="@(castOff ? "javascript:void(0)" : "characters")"
+       @onclick:preventDefault="castOff"
+       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness and optional voice before clips" : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")"
+       data-testid="adapt-step-cast">
+        <span class="ptm-step__num">3</span>
+        <span class="ptm-step__body">
+            <span class="ptm-step__label">Cast & voice</span>
+            <span class="ptm-step__hint">Looks · optional clone</span>
+        </span>
+    </a>
+    <a class="ptm-step @(shotsActive ? "is-active" : "") @(shotsOff ? "is-disabled" : "")"
+       href="@(shotsOff ? "javascript:void(0)" : "adaptation/shots")"
+       @onclick:preventDefault="shotsOff"
+       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")"
+       data-testid="adapt-step-shots">
+        <span class="ptm-step__num">4</span>
+        <span class="ptm-step__body">
+            <span class="ptm-step__label">Shot plan</span>
+            <span class="ptm-step__hint">Then film on Scenes</span>
+        </span>
+    </a>
 </nav>
 
 @if (!string.IsNullOrEmpty(Host.Error))

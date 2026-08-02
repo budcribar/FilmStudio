@@ -1,0 +1,42 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.5,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Protagonist NARRATOR never receives a locked full face/build/wardrobe description on first appearance or re-entry; only a pale hand is shown, so cast portrait generation cannot lock a stable identity"
+      ],
+      "rationale": "Strong book-faithful VO spine and iconic lines (opening nervous monologue, Evil Eye motive, Who\u0027s there?, final confession) with no major invented plot. Sound beds track the heartbeat arc well. Directibility is workable but several stretches stack multiple V.O. blocks over thin static action, and the murder/concealment peaks are thinner than ideal for 5\u201310s clips. Fatal production gap: the Narrator is never visually specified beyond a hand, while the Old Man is adequately locked; silent generic POLICE OFFICERS are acceptable under closed-cast rules but give no individual casting anchors.",
+      "promptImprovementSuggestion": "Add a HARD rule: the first Action line that introduces any recurring speaking character must lock at least species/age/build/hair/face plus wardrobe colors in one filmable sentence, and restate 2\u20133 of those traits on every re-entry after a time or location gap\u2014reject drafts that only show a body part or prop stand-in for the protagonist."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.9,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Most complete and filmable adaptation: Narrator locked as middle-years/gaunt/pale/dark hollow eyes/black waistcoat over white shirt and restated on re-entry; Old Man and three named officers (Reynolds/Hale/Briggs) similarly stable. Beats interleave short book-voice V.O. with concrete micro-actions (tin slip, spider-thread ray, hand on heart, chair grate) ideal for 5\u201310s AI clips. Peak kill and confession have proper multi-cue sound/music density. One brief officer line is within the summarized-exchange allowance; no major invented plot. Minor note only: a fleeting memory-flash of the eye is slightly non-diegetic but readable.",
+      "promptImprovementSuggestion": "Require that any non-diegetic insert (memory flash, subjective overlay, hallucination) be labeled in Action as a brief subjective insert of at most one shot and tied to a simultaneous diegetic anchor in the same scene, so clip pipelines do not treat it as a new location or costume change."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it locks every cast look, interleaves book diction with clip-sized visual/sound micro-beats through the kill and confession, and is production-ready as-is. Weakest: Screenplay A because the protagonist Narrator never receives a usable full visual identity lock, which is a hard blocker for downstream portrait and clip consistency despite otherwise solid fidelity.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "65EBF9D79EE43D8796A00206BB9F4FDDCE9730A0662BF0D88116EF9F365AC833"
+}

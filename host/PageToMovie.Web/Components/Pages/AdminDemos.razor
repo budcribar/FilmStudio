@@ -3,19 +3,21 @@
 @inject AdminSessionService Session
 @inject NavigationManager Nav
 
-<PageTitle>Demo moderation — Admin</PageTitle>
+<PageTitle>Demo gallery admin — PageToMovie</PageTitle>
 
 <div class="container-fluid py-3">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <h1 class="h3 mb-0">Demo moderation</h1>
+            <h1 class="h3 mb-0">Demo gallery</h1>
             <p class="text-muted small mb-0">
-                Human review only — no AI scanning. Approve films for the public wall or reject them.
+                The private <strong>Page to Movie</strong> YouTube channel is the source of truth.
+                Creators publish only through the app UI (server OAuth). Connect the channel once, then
+                <strong>Sync channel → gallery</strong> (or open /demo for a throttled auto-sync).
             </p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-            <a class="btn btn-sm btn-outline-primary" href="/demo" target="_blank">Public gallery</a>
-            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadAsync">Refresh</button>
+            <a class="btn btn-sm btn-outline-primary" href="/demo">Public gallery</a>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadAllAsync">Refresh</button>
         </div>
     </div>
 
@@ -36,6 +38,94 @@
             <div class="alert alert-info py-2">@_message</div>
         }
 
+        @* --- YouTube channel --- *@
+        <div class="card mb-3 border-secondary">
+            <div class="card-body py-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <div class="fw-semibold">YouTube channel</div>
+                        <div class="small text-muted">
+                            @if (_yt is null)
+                            {
+                                <span>Checking status…</span>
+                            }
+                            else if (!_yt.Configured)
+                            {
+                                <span class="text-warning">
+                                    OAuth not configured. Set <code>PageToMovie__YouTube__ClientId</code>,
+                                    <code>ClientSecret</code>, and <code>RedirectUri</code> on the API, then restart.
+                                </span>
+                            }
+                            else if (_yt.Connected)
+                            {
+                                <span class="text-success">Connected — gallery can list this channel’s uploads (sync or open /demo).</span>
+                            }
+                            else
+                            {
+                                <span>Configured, but not connected yet. Connect once as admin.</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if (_yt is { Configured: true, Connected: true })
+                        {
+                            <button type="button" class="btn btn-primary btn-sm fw-semibold"
+                                    disabled="@_busy" @onclick="SyncChannelAsync"
+                                    title="List every upload on the connected channel and put them on the public gallery">
+                                Sync channel → gallery
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    disabled="@_busy" @onclick="DisconnectYouTubeAsync">
+                                Disconnect
+                            </button>
+                        }
+                        else if (_yt is { Configured: true, Connected: false })
+                        {
+                            <button type="button" class="btn btn-warning btn-sm fw-semibold"
+                                    disabled="@_busy" @onclick="ConnectYouTubeAsync">
+                                Connect YouTube
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* --- Register existing YouTube video --- *@
+        <div class="card mb-3 border-secondary">
+            <div class="card-body py-3">
+                <div class="fw-semibold mb-1">Add existing YouTube film to the gallery</div>
+                <p class="small text-muted mb-3">
+                    For demos already on YouTube — paste the watch URL or video id. No finished project required.
+                </p>
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-5">
+                        <label class="form-label small mb-1" for="admin-yt-url">YouTube URL or id</label>
+                        <input id="admin-yt-url" class="form-control form-control-sm"
+                               placeholder="https://www.youtube.com/watch?v=… or 11-char id"
+                               @bind="_ytUrl" @bind:event="oninput" disabled="@_busy" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small mb-1" for="admin-yt-title">Title</label>
+                        <input id="admin-yt-title" class="form-control form-control-sm"
+                               placeholder="Film title" @bind="_ytTitle" @bind:event="oninput" disabled="@_busy" />
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="form-label small mb-1" for="admin-yt-desc">Description</label>
+                        <input id="admin-yt-desc" class="form-control form-control-sm"
+                               placeholder="Optional" @bind="_ytDesc" @bind:event="oninput" disabled="@_busy" />
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <button type="button" class="btn btn-primary btn-sm w-100"
+                                disabled="@(_busy || string.IsNullOrWhiteSpace(_ytUrl) || string.IsNullOrWhiteSpace(_ytTitle))"
+                                @onclick="RegisterFromYouTubeAsync">
+                            Add to gallery
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
             <span class="small text-muted">Filter:</span>
             @foreach (var f in _filters)
@@ -45,10 +135,6 @@
                         disabled="@_busy"
                         @onclick="() => SetFilterAsync(f.Key)">
                     @f.Label
-                    @if (f.Key == "pending" && _pendingCount > 0)
-                    {
-                        <span class="badge text-bg-warning ms-1">@_pendingCount</span>
-                    }
                 </button>
             }
         </div>
@@ -59,21 +145,31 @@
         }
         else if (_demos.Count == 0)
         {
-            <div class="alert alert-secondary">No demos in this filter.</div>
+            <div class="alert alert-secondary">
+                No demos in this filter. Link a YouTube video above — the public gallery only lists entries with a YouTube id.
+            </div>
         }
         else
         {
             <div class="row g-3">
                 <Virtualize TItem="DemoListItem" Items="_demos" Context="d">
-                    <div class="col-12 col-xl-6" @key="@($"{d.Id}:{d.Status}")">
+                    <div class="col-12 col-xl-6" @key="@($"{d.Id}:{d.Status}:{d.YoutubeId}")">
                         <div class="card h-100 border-secondary">
                             <div class="card-header py-2 d-flex flex-wrap justify-content-between gap-2">
                                 <div>
                                     <strong>@d.Title</strong>
                                     <span class="badge ms-1 @StatusBadgeClass(d.Status)">@(d.Status ?? "?")</span>
+                                    @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
+                                    {
+                                        <span class="badge text-bg-danger ms-1">YouTube</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary ms-1">no YT id</span>
+                                    }
                                     @if (d.ReportCount > 0)
                                     {
-                                        <span class="badge text-bg-danger ms-1">@d.ReportCount reports</span>
+                                        <span class="badge text-bg-warning ms-1">@d.ReportCount reports</span>
                                     }
                                 </div>
                                 <span class="small text-muted">@d.CreatedAt.ToLocalTime().ToString("g")</span>
@@ -90,43 +186,39 @@
                                 {
                                     <p class="small">@d.Description</p>
                                 }
-                                <video controls playsinline preload="metadata"
-                                       class="w-100 rounded mb-2"
-                                       style="max-height: 40vh; background: #000;"
-                                       src="@Api.DemoVideoUrl(d.Id)">
-                                </video>
-                                @if (d.ReportNotes is { Count: > 0 })
+                                @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
                                 {
-                                    <details class="small mb-2">
-                                        <summary>Reports (@d.ReportNotes.Count)</summary>
-                                        <ul class="mb-0 mt-1">
-                                            @foreach (var n in d.ReportNotes.TakeLast(8))
-                                            {
-                                                <li class="text-muted">@n</li>
-                                            }
-                                        </ul>
-                                    </details>
+                                    var embed = $"https://www.youtube.com/embed/{d.YoutubeId}?rel=0";
+                                    var watch = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+                                        ? d.YoutubeUrl
+                                        : $"https://www.youtube.com/watch?v={d.YoutubeId}";
+                                    <div class="ratio ratio-16x9 mb-2 rounded overflow-hidden bg-black">
+                                        <iframe src="@embed" title="@d.Title" loading="lazy"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                allowfullscreen></iframe>
+                                    </div>
+                                    <a class="small" href="@watch" target="_blank" rel="noopener">Open on YouTube ↗</a>
                                 }
-                                @if (!string.IsNullOrWhiteSpace(d.ReviewNote))
+                                else
                                 {
-                                    <p class="small text-muted mb-2">Last review note: @d.ReviewNote</p>
+                                    <p class="small text-muted mb-2">No YouTube id — not visible on the public wall.</p>
                                 }
-                                <div class="d-flex flex-wrap gap-2">
-                                    <button type="button" class="btn btn-sm btn-success" disabled="@_busy"
-                                            @onclick="@(() => ReviewAsync(d.Id, "public"))">
-                                        Approve (public)
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-warning" disabled="@_busy"
-                                            @onclick="@(() => ReviewAsync(d.Id, "rejected"))">
-                                        Reject
-                                    </button>
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    @if (string.IsNullOrWhiteSpace(d.YoutubeId) == false
+                                         && !string.Equals(d.Status, "public", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <button type="button" class="btn btn-sm btn-success" disabled="@_busy"
+                                                @onclick="@(() => ReviewAsync(d.Id, "public"))">
+                                            Mark public
+                                        </button>
+                                    }
                                     <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
-                                            @onclick="@(() => ReviewAsync(d.Id, "pending"))">
-                                        Re-queue
+                                            @onclick="@(() => ReviewAsync(d.Id, "removed"))">
+                                        Remove from gallery
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger" disabled="@_busy"
                                             @onclick="@(() => HardDeleteAsync(d.Id))">
-                                        Delete files
+                                        Delete entry
                                     </button>
                                 </div>
                             </div>
@@ -143,29 +235,62 @@
     private bool _busy;
     private string? _error;
     private string? _message;
-    private string? _statusFilter = "pending";
-    private int _pendingCount;
+    private string? _statusFilter = "";
     private List<DemoListItem> _demos = new();
+    private YouTubeStatusDto? _yt;
+    private string _ytUrl = "";
+    private string _ytTitle = "";
+    private string _ytDesc = "";
 
     private readonly (string Key, string Label)[] _filters =
     {
-        ("pending", "Pending"),
-        ("public", "Public"),
-        ("rejected", "Rejected"),
-        ("removed", "Removed"),
         ("", "All"),
+        ("public", "Public"),
+        ("removed", "Removed"),
+        ("rejected", "Rejected"),
+        ("pending", "Pending (legacy)"),
     };
 
     protected override async Task OnInitializedAsync()
     {
         try { await Session.EnsureHydratedAsync(); } catch { /* */ }
+        HandleYouTubeQuery();
         if (!Session.IsAdmin)
         {
             _loading = false;
             return;
         }
-        await Api.EnsureMediaAccessAsync();
+        await ReloadAllAsync();
+    }
+
+    private void HandleYouTubeQuery()
+    {
+        try
+        {
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            var q = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (q.TryGetValue("youtube", out var yt))
+            {
+                if (string.Equals(yt.ToString(), "connected", StringComparison.OrdinalIgnoreCase))
+                    _message = "YouTube channel connected.";
+                else if (string.Equals(yt.ToString(), "error", StringComparison.OrdinalIgnoreCase)
+                         && q.TryGetValue("message", out var m))
+                    _error = "YouTube connect failed: " + m.ToString();
+            }
+        }
+        catch { /* ignore */ }
+    }
+
+    private async Task ReloadAllAsync()
+    {
+        await RefreshYouTubeAsync();
         await ReloadAsync();
+    }
+
+    private async Task RefreshYouTubeAsync()
+    {
+        try { _yt = await Api.GetYouTubeStatusAsync(); }
+        catch { _yt = null; }
     }
 
     private async Task SetFilterAsync(string key)
@@ -184,8 +309,6 @@
             var st = string.IsNullOrEmpty(_statusFilter) ? null : _statusFilter;
             var env = await Api.ListAdminDemosAsync(st, 100);
             _demos = env?.Demos ?? new();
-            _pendingCount = env?.PendingCount ?? _demos.Count(d =>
-                string.Equals(d.Status, "pending", StringComparison.OrdinalIgnoreCase));
         }
         catch (Exception ex)
         {
@@ -198,6 +321,85 @@
         }
     }
 
+    private async Task ConnectYouTubeAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var url = await Api.GetYouTubeConnectUrlAsync("/admin/demos");
+            if (string.IsNullOrWhiteSpace(url))
+                throw new InvalidOperationException("No connect URL returned.");
+            Nav.NavigateTo(url, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _busy = false;
+        }
+    }
+
+    private async Task DisconnectYouTubeAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Api.DisconnectYouTubeAsync();
+            _message = "YouTube channel disconnected.";
+            await RefreshYouTubeAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task SyncChannelAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var (ok, msg, err, added, updated, total) = await Api.SyncYouTubeChannelDemosAsync();
+            if (!ok)
+            {
+                _error = err ?? msg ?? "Channel sync failed.";
+                return;
+            }
+            _message = msg ?? $"Synced {total} video(s) ({added} new, {updated} updated).";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task RegisterFromYouTubeAsync()
+    {
+        if (_busy) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var (ok, msg, err) = await Api.RegisterDemoFromYouTubeAsync(
+                _ytUrl.Trim(),
+                _ytTitle.Trim(),
+                string.IsNullOrWhiteSpace(_ytDesc) ? null : _ytDesc.Trim());
+            if (!ok)
+            {
+                _error = err ?? "Could not add film.";
+                return;
+            }
+            _message = msg ?? "Added to public gallery.";
+            _ytUrl = "";
+            _ytTitle = "";
+            _ytDesc = "";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
     private async Task ReviewAsync(string id, string status)
     {
         if (_busy) return;
@@ -208,21 +410,14 @@
             await Api.ReviewDemoAsync(id, status);
             _message = status switch
             {
-                "public" => "Approved — now on the public Demo page.",
-                "rejected" => "Rejected — hidden from public gallery.",
-                "pending" => "Status set to pending.",
+                "public" => "Marked public.",
+                "removed" => "Removed from public gallery.",
                 _ => "Status updated.",
             };
             await ReloadAsync();
         }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
     private async Task HardDeleteAsync(string id)
@@ -233,17 +428,11 @@
         try
         {
             await Api.DeleteDemoAsync(id);
-            _message = "Demo files deleted.";
+            _message = "Demo entry deleted.";
             await ReloadAsync();
         }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
     private static string StatusBadgeClass(string? status) =>

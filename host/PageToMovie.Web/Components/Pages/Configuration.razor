@@ -1,4 +1,5 @@
 @page "/configuration"
+@implements IAsyncDisposable
 @implements IDisposable
 @using System.Text.Json
 @using PageToMovie.Core.Models
@@ -11,15 +12,23 @@
 @inject NavigationManager Nav
 @inject ClientMediaFolderService MediaFolder
 
-<PageTitle>Configuration</PageTitle>
+<PageTitle>Settings</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-        <h1 class="mb-1">Configuration</h1>
+        <div class="mb-2">
+            <a href="/" class="btn btn-sm btn-outline-secondary" data-testid="settings-back">← Back to Studio</a>
+        </div>
+        <span class="ptm-adapt-kicker">Account & providers</span>
+        <h1 class="mb-1 ptm-adapt-title">Settings</h1>
         <p class="text-muted mb-0">
             @if (!string.IsNullOrWhiteSpace(_projectId))
             {
                 <span>Settings for active project: <strong class="text-primary">@_projectId</strong></span>
+                @if (!string.IsNullOrWhiteSpace(_saveStatus))
+                {
+                    <span class="ms-2 small @(_saveStatus == "Saved" ? "text-success" : "text-muted")" data-testid="settings-autosave-status">· @_saveStatus</span>
+                }
             }
             else
             {
@@ -49,143 +58,379 @@
 {
     <div class="alert alert-success mb-3">@_message</div>
 }
-    <!-- ACCOUNT & API KEYS (ALWAYS ACCESSIBLE AT TOP) -->
-    <div class="card mb-4 border-secondary shadow-sm">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>🔑 Account &amp; API keys (Global Services)</span>
-            <div class="d-flex flex-wrap gap-1">
-                @foreach (var p in ProviderRows)
-                {
-                    @if (p.IsConfigured)
-                    {
-                        <span class="badge bg-success">@p.DisplayName: @(p.ActiveSource == "personal" ? "personal" : "server")</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">@p.DisplayName: none</span>
-                    }
-                }
-            </div>
+    <!-- STUDIO COVERAGE FIRST: change model, add/remove key just-in-time -->
+    <div class="card mb-4 border-primary border-opacity-50 shadow-sm" id="api-keys" data-testid="studio-coverage-card">
+        <div class="card-header bg-dark text-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>Studio coverage</span>
+            @{
+                var cov = BuildCoverageRows();
+                var needed = cov.Count(c => c.Required && !c.OptionalOff);
+                var ready = cov.Count(c => c.Required && !c.OptionalOff && c.KeyReady);
+                var missing = cov.Where(c => c.Required && !c.OptionalOff && !c.KeyReady).ToList();
+            }
+            @if (missing.Count == 0)
+            {
+                <span class="badge text-bg-success">@ready/@needed required ready</span>
+            }
+            else
+            {
+                <span class="badge text-bg-warning text-dark">@missing.Count missing · @ready/@needed ready</span>
+            }
         </div>
         <div class="card-body">
             <p class="small text-muted mb-3">
-                Personal keys are encrypted at rest (AES-256) and used only for your account.
-                Server keys (env vars) apply when you have not attached a personal key for that provider.
-                <strong>Claude does not generate video or images</strong> — use Grok or Gemini for those.
+                For each job: choose a <strong>provider</strong> (who holds the key), then a <strong>model</strong> from that provider.
+                Add a provider only when you need another key. Model lists only show what that provider can run.
             </p>
-
-            <div class="row g-3">
-                @foreach (var p in ProviderRows)
-                {
-                    <div class="col-lg-4">
-                        <div class="border rounded p-3 h-100">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <div class="fw-semibold">@p.DisplayName</div>
-                                    <div class="small text-muted">@p.CapabilitiesSummary</div>
-                                </div>
-                                @if (p.IsConfigured)
-                                {
-                                    <span class="badge bg-success">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-warning text-dark">Not set</span>
-                                }
-                            </div>
-
-                            <div class="mb-2 d-flex flex-wrap gap-1">
-                                @if (p.SupportsVideoGen || (p.SupportsVideo && !p.SupportsVideoReview))
-                                {
-                                    <span class="badge text-bg-primary">Video Gen (Output)</span>
-                                }
-                                @if (p.SupportsVideoReview)
-                                {
-                                    <span class="badge text-bg-info text-dark fw-bold">Video Review (Multimodal Input)</span>
-                                }
-                                @if (p.SupportsImageGen || p.SupportsImage)
-                                {
-                                    <span class="badge text-bg-primary">Image Gen (Output)</span>
-                                }
-                                @if (p.SupportsScriptPlanning || p.SupportsChat)
-                                {
-                                    <span class="badge text-bg-secondary">Script &amp; Planning</span>
-                                }
-                                @if (p.SupportsImageVision || p.SupportsVision)
-                                {
-                                    <span class="badge text-bg-secondary">Image Vision / OCR</span>
-                                }
-                            </div>
-
-                            @if (!string.IsNullOrWhiteSpace(p.Notes))
-                            {
-                                <p class="small text-muted mb-2">@p.Notes</p>
-                            }
-
-                            <div class="small mb-2">
-                                @if (p.HasPersonalKey)
-                                {
-                                    <div><strong>Personal key:</strong> <code>@p.MaskedPersonalKey</code></div>
-                                }
-                                else
-                                {
-                                    <div class="text-muted">No personal key saved.</div>
-                                }
-                                @if (p.HasServerKey)
-                                {
-                                    <div class="text-muted">Server env key available as fallback.</div>
-                                }
-                            </div>
-
-                            <label class="form-label small mb-1">
-                                @(p.HasPersonalKey ? "Replace personal key" : "Add personal key")
-                            </label>
-                            <div class="input-group input-group-sm mb-2">
-                                <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
-                                       class="form-control font-monospace"
-                                       placeholder="@ProviderPlaceholder(p.ProviderId)"
-                                       value="@GetKeyInput(p.ProviderId)"
-                                       @oninput="e => SetKeyInput(p.ProviderId, e.Value?.ToString())"
-                                       disabled="@(_busy || _apiKeySaving)" />
-                                <button class="btn btn-outline-secondary"
-                                        type="button"
-                                        title="@(IsKeyVisible(p.ProviderId) ? "Hide key" : "Show key")"
-                                        @onclick="() => ToggleKeyVisible(p.ProviderId)">
-                                    @(IsKeyVisible(p.ProviderId) ? "🙈" : "👁️")
-                                </button>
-                                <button class="btn btn-primary"
-                                        type="button"
-                                        disabled="@(_busy || _apiKeySaving || string.IsNullOrWhiteSpace(GetKeyInput(p.ProviderId)))"
-                                        @onclick="() => SaveProviderKeyAsync(p.ProviderId)">
-                                    @if (_apiKeySaving && string.Equals(_savingProviderId, p.ProviderId, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    }
-                                    else
-                                    {
-                                        <span>Save</span>
-                                    }
-                                </button>
-                            </div>
-                            @if (p.HasPersonalKey)
-                            {
-                                <button class="btn btn-link btn-sm text-danger p-0"
-                                        type="button"
-                                        disabled="@(_busy || _apiKeySaving)"
-                                        @onclick="() => ClearProviderKeyAsync(p.ProviderId)">
-                                    Remove personal key
-                                </button>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
 
             @if (!string.IsNullOrEmpty(_apiKeyFeedback))
             {
-                <div class="alert alert-success py-2 px-3 mt-3 mb-0 small d-flex align-items-center gap-2">
-                    <span>@_apiKeyFeedback</span>
-                </div>
+                <div class="alert alert-success py-2 px-3 small">@_apiKeyFeedback</div>
+            }
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0" data-testid="capability-coverage">
+                    <thead>
+                        <tr class="small text-muted">
+                            <th style="min-width:9rem">Job</th>
+                            <th style="min-width:10rem">Provider</th>
+                            <th style="min-width:12rem">Model</th>
+                            <th>Status</th>
+                            <th style="min-width:10rem">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in cov)
+                        {
+                            var allModels = ModelsForCoverage(c.Id);
+                            var providers = ProvidersForCoverage(c.Id).ToList();
+                            var providerModels = ModelsForCoverageProvider(c.Id, c.ProviderId).ToList();
+                            var editing = string.Equals(_coverageEditId, c.Id, StringComparison.OrdinalIgnoreCase);
+                            <tr @key="@($"cov-row-{c.Id}")" class="@(c.OptionalOff ? "opacity-75" : "")" data-testid="coverage-@c.Id">
+                                <td>
+                                    <div class="fw-semibold small">@c.Label</div>
+                                    <div class="text-muted" style="font-size:0.75rem;">@c.Hint</div>
+                                </td>
+                                <td>
+                                    @if (c.OptionalOff)
+                                    {
+                                        <span class="small text-muted">—</span>
+                                    }
+                                    else if (providers.Count > 0)
+                                    {
+                                        var provSelected = SupportedModelCatalog.NormalizeProviderId(c.ProviderId);
+                                        @* Stable key per job only — do not include selection in @key (remount mid-diff
+                                           with keyed <option>s caused "return wrong pooled instance"). *@
+                                        <select class="form-select form-select-sm"
+                                                @key="@($"cov-prov-{c.Id}")"
+                                                data-testid="coverage-provider-@c.Id"
+                                                disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
+                                                value="@provSelected"
+                                                @onchange="e => OnCoverageProviderChangedAsync(c.Id, e.Value?.ToString())">
+                                            @if (string.IsNullOrWhiteSpace(provSelected)
+                                                 || !providers.Any(pr => string.Equals(
+                                                     SupportedModelCatalog.NormalizeProviderId(pr.ProviderId),
+                                                     provSelected, StringComparison.OrdinalIgnoreCase)))
+                                            {
+                                                <option value="">Choose provider…</option>
+                                            }
+                                            @foreach (var pr in providers)
+                                            {
+                                                var pid = SupportedModelCatalog.NormalizeProviderId(pr.ProviderId);
+                                                <option value="@pid">
+                                                    @FriendlyProviderLabel(pid)@(pr.IsConfigured ? "" : " · no key")
+                                                </option>
+                                            }
+                                        </select>
+                                    }
+                                    else
+                                    {
+                                        <span class="small text-muted">@FriendlyProviderLabel(c.ProviderId)</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (c.OptionalOff)
+                                    {
+                                        <span class="small text-muted">Off</span>
+                                    }
+                                    else if (providerModels.Count > 0)
+                                    {
+                                        var modelSelected = GetCoverageModelId(c.Id);
+                                        @* Remount model list only when the provider (option set) changes. *@
+                                        <select class="form-select form-select-sm"
+                                                @key="@($"cov-model-{c.Id}-{SupportedModelCatalog.NormalizeProviderId(c.ProviderId)}")"
+                                                data-testid="coverage-model-@c.Id"
+                                                disabled="@(_busy || string.IsNullOrEmpty(_projectId) || string.IsNullOrWhiteSpace(c.ProviderId))"
+                                                value="@modelSelected"
+                                                @onchange="e => OnCoverageModelChangedAsync(c.Id, e.Value?.ToString())">
+                                            @foreach (var m in providerModels)
+                                            {
+                                                <option value="@m.Id">
+                                                    @ModelOptionLabel(m)
+                                                </option>
+                                            }
+                                        </select>
+                                        @if (string.IsNullOrEmpty(_projectId))
+                                        {
+                                            <div class="form-text">Select a project to save.</div>
+                                        }
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(c.ProviderId))
+                                    {
+                                        <span class="small text-muted">No models for this provider</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="small text-muted">Pick a provider first</span>
+                                    }
+                                </td>
+                                <td class="small">
+                                    @if (c.OptionalOff)
+                                    {
+                                        <span class="badge text-bg-secondary">Off</span>
+                                    }
+                                    else if (c.KeyReady)
+                                    {
+                                        <span class="badge text-bg-success">Ready</span>
+                                    }
+                                    else if (string.IsNullOrWhiteSpace(c.ProviderId))
+                                    {
+                                        <span class="badge text-bg-secondary">—</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-danger">Need key</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary"
+                                                data-testid="coverage-add-provider-@c.Id"
+                                                disabled="@_busy"
+                                                title="Add another provider key for this job"
+                                                @onclick="() => BeginAddProvider(c.Id)">
+                                            Add provider
+                                        </button>
+                                        @if (!c.OptionalOff && !c.KeyReady && !string.IsNullOrWhiteSpace(c.ProviderId))
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-primary"
+                                                    data-testid="coverage-add-key-@c.Id"
+                                                    disabled="@_busy"
+                                                    @onclick="() => BeginAddKeyForProvider(c.Id, c.ProviderId)">
+                                                Add key
+                                            </button>
+                                        }
+                                        else if (!c.OptionalOff && c.KeyReady && !string.IsNullOrWhiteSpace(c.ProviderId))
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    data-testid="coverage-change-key-@c.Id"
+                                                    disabled="@_busy"
+                                                    title="Replace only the @FriendlyProviderLabel(c.ProviderId) key"
+                                                    @onclick="() => BeginReplaceKey(c.Id, c.ProviderId)">
+                                                Replace key
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-testid="coverage-remove-key-@c.Id"
+                                                    disabled="@_busy"
+                                                    title="Remove personal key for this provider"
+                                                    @onclick="() => ClearProviderKeyAsync(c.ProviderId)">
+                                                Remove key
+                                            </button>
+                                        }
+                                        @if (c.Id is "music" or "voice")
+                                        {
+                                            @if (!c.OptionalOff)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm btn-link text-muted px-1"
+                                                        disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
+                                                        @onclick="() => TurnOffOptionalAsync(c.Id)">
+                                                    Turn off
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            @if (editing)
+                            {
+                                <tr @key="@($"cov-edit-{c.Id}")" class="table-active" data-testid="coverage-key-panel-@c.Id">
+                                    <td colspan="5" class="bg-dark bg-opacity-25">
+                                        <div class="p-2">
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                                <div class="small fw-semibold">
+                                                    @if (_coverageKeyMode == "replace")
+                                                    {
+                                                        <span>Replace key · <span class="text-primary">@FriendlyProviderLabel(_coverageKeyProviderId)</span></span>
+                                                    }
+                                                    else if (_coverageKeyMode == "add-key")
+                                                    {
+                                                        <span>Add key · <span class="text-primary">@FriendlyProviderLabel(_coverageKeyProviderId)</span></span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Add provider for <span class="text-primary">@c.Label</span></span>
+                                                    }
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-link" @onclick="CancelAddKey">Cancel</button>
+                                            </div>
+                                            <p class="small text-muted mb-2">
+                                                @if (_coverageKeyMode is "replace" or "add-key")
+                                                {
+                                                    <span>Only this provider — paste a new key or remove the saved one.</span>
+                                                }
+                                                else if (c.Id == "music")
+                                                {
+                                                    <span>
+                                                        Pick a provider for this job.
+                                                        <strong>Suno API (sunoapi.org)</strong> and <strong>AI Music API (aimusicapi.ai)</strong> are different keys
+                                                        (Suno is the model family).
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Pick a provider that can run this job, then paste its key (or use a saved one).</span>
+                                                }
+                                            </p>
+                                            <div class="row g-2">
+                                                @foreach (var p in ProvidersForKeyPanel(c.Id))
+                                                {
+                                                    var selected = string.Equals(_coverageKeyProviderId, p.ProviderId, StringComparison.OrdinalIgnoreCase);
+                                                    <div class="col-md-6 col-lg-4">
+                                                        <div class="border rounded p-2 h-100 @(selected ? "border-primary" : "")"
+                                                             data-testid="coverage-provider-@p.ProviderId">
+                                                            <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+                                                                <div class="fw-semibold small">@FriendlyProviderLabel(p.ProviderId)</div>
+                                                                @if (p.IsConfigured)
+                                                                {
+                                                                    <span class="badge text-bg-success">Has key</span>
+                                                                }
+                                                            </div>
+                                                            @if (!selected)
+                                                            {
+                                                                <button type="button"
+                                                                        class="btn btn-sm @(p.IsConfigured ? "btn-primary" : "btn-outline-primary")"
+                                                                        data-testid="coverage-pick-@p.ProviderId"
+                                                                        @onclick="() => ChooseProviderForCoverageAsync(p.ProviderId, c.Id)">
+                                                                    @(p.IsConfigured ? "Use this key" : "Select")
+                                                                </button>
+                                                                @if (p.IsConfigured)
+                                                                {
+                                                                    <div class="form-text">Uses your saved @FriendlyProviderLabel(p.ProviderId) key and switches the model to match.</div>
+                                                                }
+                                                            }
+                                                            else if (p.IsConfigured)
+                                                            {
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-primary mb-2"
+                                                                        data-testid="coverage-use-saved-@p.ProviderId"
+                                                                        disabled="@_busy"
+                                                                        @onclick="() => UseSavedProviderForCoverageAsync(p.ProviderId, c.Id)">
+                                                                    Use saved key
+                                                                </button>
+                                                                <div class="form-text mb-2">Already on file — no need to paste again unless you want to replace it.</div>
+                                                                <label class="form-label small mb-1">Replace API key (optional)</label>
+                                                                <div class="input-group input-group-sm mb-1">
+                                                                    <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
+                                                                           class="form-control font-monospace"
+                                                                           placeholder="@ProviderPlaceholder(p.ProviderId)"
+                                                                           value="@GetKeyInput(p.ProviderId)"
+                                                                           @oninput="e => SetKeyInput(p.ProviderId, e.Value?.ToString())"
+                                                                           disabled="@(_busy || _apiKeySaving)" />
+                                                                    <button class="btn btn-outline-secondary" type="button"
+                                                                            @onclick="() => ToggleKeyVisible(p.ProviderId)">
+                                                                        @(IsKeyVisible(p.ProviderId) ? "Hide" : "Show")
+                                                                    </button>
+                                                                    <button class="btn btn-outline-primary" type="button"
+                                                                            disabled="@(_busy || _apiKeySaving || string.IsNullOrWhiteSpace(GetKeyInput(p.ProviderId)))"
+                                                                            @onclick="() => SaveCoverageKeyAsync(p.ProviderId, c.Id)">
+                                                                        Replace
+                                                                    </button>
+                                                                </div>
+                                                                <button type="button" class="btn btn-link btn-sm text-danger p-0"
+                                                                        disabled="@_busy"
+                                                                        @onclick="() => ClearProviderKeyAsync(p.ProviderId)">
+                                                                    Remove saved key
+                                                                </button>
+                                                            }
+                                                            else
+                                                            {
+                                                                <label class="form-label small mb-1">API key</label>
+                                                                <div class="input-group input-group-sm mb-1">
+                                                                    <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
+                                                                           class="form-control font-monospace"
+                                                                           placeholder="@ProviderPlaceholder(p.ProviderId)"
+                                                                           value="@GetKeyInput(p.ProviderId)"
+                                                                           @oninput="e => SetKeyInput(p.ProviderId, e.Value?.ToString())"
+                                                                           disabled="@(_busy || _apiKeySaving)" />
+                                                                    <button class="btn btn-outline-secondary" type="button"
+                                                                            @onclick="() => ToggleKeyVisible(p.ProviderId)">
+                                                                        @(IsKeyVisible(p.ProviderId) ? "Hide" : "Show")
+                                                                    </button>
+                                                                    <button class="btn btn-primary" type="button"
+                                                                            disabled="@(_busy || _apiKeySaving || string.IsNullOrWhiteSpace(GetKeyInput(p.ProviderId)))"
+                                                                            @onclick="() => SaveCoverageKeyAsync(p.ProviderId, c.Id)">
+                                                                        Save
+                                                                    </button>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                            @if (!ProvidersForKeyPanel(c.Id).Any())
+                                            {
+                                                <div class="alert alert-warning py-2 small mb-0">No providers available for this job in the catalog.</div>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @{
+                var savedKeys = ProviderRows.Where(pr => pr.HasPersonalKey).ToList();
+            }
+            @if (savedKeys.Count > 0)
+            {
+                <details class="mt-3" data-testid="manage-saved-keys">
+                    <summary class="small text-muted" style="cursor:pointer">Manage saved keys (@savedKeys.Count)</summary>
+                    <div class="row g-2 mt-2">
+                        @foreach (var p in savedKeys)
+                        {
+                            var used = CoverageUsesForProvider(p.ProviderId);
+                            <div class="col-md-6 col-lg-4">
+                                <div class="border rounded p-2 small">
+                                    <div class="fw-semibold">@p.DisplayName</div>
+                                    @if (used.Count > 0)
+                                    {
+                                        <div class="text-success">In use: @string.Join(" · ", used)</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-muted">Not used by current models</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(p.MaskedPersonalKey))
+                                    {
+                                        <div class="text-muted"><code>@p.MaskedPersonalKey</code></div>
+                                    }
+                                    <button type="button" class="btn btn-link btn-sm text-danger p-0 mt-1"
+                                            disabled="@_busy"
+                                            @onclick="() => ClearProviderKeyAsync(p.ProviderId)">
+                                        Remove key
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </details>
             }
         </div>
     </div>
@@ -215,48 +460,51 @@
         <div class="card-body py-3">
             <div class="row align-items-stretch g-3">
                 <div class="col-md-7">
-                    <div class="fw-semibold mb-1">Local Computer Media Folder</div>
+                    <div class="fw-semibold mb-1">Local media folder</div>
+                    <p class="small text-muted mb-2">Project media files are written here</p>
                     @if (MediaFolder.IsConnected)
                     {
-                        <div class="d-flex flex-column gap-2 mb-2">
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1 text-break" data-testid="config-media-full-path">
-                                    📁 <strong>Full Path:</strong> @(MediaFolder.FullPath ?? MediaFolder.FolderName ?? "Local Media Directory")
-                                </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1 text-break" data-testid="config-media-folder-name">
+                                @(MediaFolder.FullPath ?? MediaFolder.FolderName ?? "Selected folder")
                             </div>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <button type="button" class="btn btn-sm btn-outline-info" @onclick="OpenFileExplorerForMediaFolderAsync" title="Open this folder in Windows File Explorer" data-testid="config-open-media-explorer">
-                                    📂 Open in File Explorer
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PromptEditMediaFolderPathAsync">
-                                    ✏️ Edit Path
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ConnectMediaFolderAsync">
-                                    Change folder…
-                                </button>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            All video clips for <strong>@_projectId</strong> are saved directly to this folder on your computer.
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0"
+                                    data-testid="config-select-media-folder"
+                                    disabled="@_busy"
+                                    @onclick="ConnectMediaFolderAsync">
+                                Change folder
+                            </button>
                         </div>
                     }
                     else if (MediaFolder.NeedsReconnect)
                     {
-                        <div class="alert alert-warning py-2 small mb-2 d-flex justify-content-between align-items-center gap-2">
-                            <span>Re-grant permission to reconnect <strong>@(MediaFolder.PendingReconnectFolderName ?? "local folder")</strong></span>
-                            <button type="button" class="btn btn-sm btn-warning" @onclick="ReconnectMediaFolderAsync">
-                                1-Click Reconnect
-                            </button>
+                        <div class="alert alert-warning py-2 small mb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <span>Browser needs permission again for <strong>@(MediaFolder.PendingReconnectFolderName ?? "your folder")</strong>.</span>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-warning" data-testid="config-reconnect-media-folder" @onclick="ReconnectMediaFolderAsync">
+                                    Reconnect
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-testid="config-select-media-folder" @onclick="ConnectMediaFolderAsync">
+                                    Choose different folder
+                                </button>
+                            </div>
                         </div>
                     }
                     else
                     {
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <button type="button" class="btn btn-sm btn-primary" @onclick="ConnectMediaFolderAsync">
-                                📁 Connect Local Media Folder
-                            </button>
-                            <span class="small text-muted">Select a folder on your computer to save MP4 video clips directly to disk.</span>
-                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-primary"
+                                data-testid="config-select-media-folder"
+                                disabled="@_busy"
+                                @onclick="ConnectMediaFolderAsync">
+                            Select folder
+                        </button>
+                        <div class="form-text">Opens your system folder picker.</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(MediaFolder.LastStatus))
+                    {
+                        <div class="small text-muted mt-2" data-testid="config-media-status">@MediaFolder.LastStatus</div>
                     }
                 </div>
                 <div class="col-md-5 border-start border-secondary ps-md-4">
@@ -275,18 +523,18 @@
         <div class="card-body row g-3">
             <div class="col-md-4">
                 <label class="form-label">Theme</label>
-                <select class="form-select" data-testid="config-theme" @bind="_uiTheme" @bind:after="PreviewThemeAsync" disabled="@_busy">
+                <select class="form-select" data-testid="config-theme" @bind="_uiTheme" @bind:after="OnThemeChangedAsync" disabled="@_busy">
                     <option value="dark">Dark</option>
                     <option value="light">Light</option>
                     <option value="system">Use system</option>
                 </select>
                 <div class="form-text">
-                    Saved with this project's settings. Previews immediately; click Save to persist.
+                    Previews immediately and saves with this project.
                 </div>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Preferred External Video Editor</label>
-                <input type="text" class="form-control" list="video-editor-suggestions" @bind="_preferredVideoEditor" placeholder="ClipChamp" disabled="@_busy" />
+                <input type="text" class="form-control" list="video-editor-suggestions" @bind="_preferredVideoEditor" @bind:after="ScheduleAutoSaveAsync" placeholder="ClipChamp" disabled="@_busy" />
                 <datalist id="video-editor-suggestions">
                     <option value="ClipChamp" />
                     <option value="DaVinci Resolve" />
@@ -300,143 +548,21 @@
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header fw-bold">Models</div>
+    <div class="card mb-3" id="background-music-options">
+        <div class="card-header">Background music options</div>
         <div class="card-body">
-            <p class="small text-muted mb-3">
-                Select models for each stage of production. These choices correspond directly to the 5 capabilities in <strong>Account &amp; API Keys</strong>.
-            </p>
-            <div class="row g-3">
-                <div class="col-md-6 col-xl-4">
-                    <label class="form-label fw-semibold">Video Generation</label>
-                    <select class="form-select" @bind="_modelName" disabled="@_busy">
-                        @foreach (var m in _videoModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_videoModels.All(m => !string.Equals(m.Id, _modelName, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_modelName">@_modelName (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_modelName, "video") is { } vh)
-                    {
-                        <div class="form-text">@vh</div>
-                    }
-                    <div class="form-text text-muted">Generates MP4 video clips from prompts and character plates.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4">
-                    <label class="form-label fw-semibold">Portrait / Image Generation</label>
-                    <select class="form-select" @bind="_imageModel" disabled="@_busy">
-                        @foreach (var m in _imageModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_imageModels.All(m => !string.Equals(m.Id, _imageModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_imageModel">@_imageModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_imageModel, "image") is { } ih)
-                    {
-                        <div class="form-text">@ih</div>
-                    }
-                    <div class="form-text text-muted">Creates character reference portraits and book plate graphics.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4">
-                    <label class="form-label fw-semibold">Script &amp; Planning</label>
-                    <select class="form-select" @bind="_planningModel" disabled="@_busy">
-                        @foreach (var m in _planningModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_planningModels.All(m => !string.Equals(m.Id, _planningModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_planningModel">@_planningModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_planningModel, "chat") is { } ph)
-                    {
-                        <div class="form-text">@ph</div>
-                    }
-                    <div class="form-text text-muted">Screenplay reasoning, shot planning, and cast analysis.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4">
-                    <label class="form-label fw-semibold">Image Vision &amp; OCR</label>
-                    <select class="form-select" @bind="_visionModel" disabled="@_busy">
-                        @foreach (var m in _visionModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_visionModels.All(m => !string.Equals(m.Id, _visionModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_visionModel">@_visionModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_visionModel, "vision") is { } vish)
-                    {
-                        <div class="form-text">@vish</div>
-                    }
-                    <div class="form-text text-muted">Book page OCR, cast-on-image classification, and frame inspection.</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4">
-                    <label class="form-label fw-semibold">Video &amp; Clip Review (Multimodal)</label>
-                    <select class="form-select" @bind="_qualityModel" disabled="@_busy">
-                        @foreach (var m in _videoReviewModels)
-                        {
-                            var tag = m.SupportsVideoReview ? " [⭐ Native MP4 Video Review]" : " [Image Stills Only]";
-                            <option value="@m.Id">@ModelOptionLabel(m)@tag</option>
-                        }
-                        @if (_videoReviewModels.All(m => !string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_qualityModel">@_qualityModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_qualityModel, "chat") is { } qh)
-                    {
-                        <div class="form-text">@qh</div>
-                    }
-                    <div class="form-text text-muted">Evaluates dialogue &amp; lip sync (Google Gemini natively analyzes MP4 video files).</div>
-                </div>
-
-                <div class="col-md-6 col-xl-4">
-                    <label class="form-label fw-semibold">Audio &amp; Music Generation</label>
-                    <select class="form-select" @bind="_audioModel" disabled="@_busy">
-                        @foreach (var m in _audioModels)
-                        {
-                            <option value="@m.Id">@ModelOptionLabel(m)</option>
-                        }
-                        @if (_audioModels.All(m => !string.Equals(m.Id, _audioModel, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <option value="@_audioModel">@_audioModel (not in list)</option>
-                        }
-                    </select>
-                    @if (ModelHint(_audioModel, "audio") is { } ah)
-                    {
-                        <div class="form-text">@ah</div>
-                    }
-                    <div class="form-text text-muted">Generates beat-aligned background music scores and audio soundscapes.</div>
-                </div>
-            </div>
-
-            <div class="border-top pt-3 mt-3">
-                <div class="row align-items-center g-3">
-                    <div class="col-md-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="enableBgMusicSwitch" @bind="_enableBackgroundMusic" disabled="@_busy" />
-                            <label class="form-check-label fw-semibold" for="enableBgMusicSwitch">Enable Background Music Generation</label>
-                        </div>
-                        <div class="form-text text-muted">Automatically score and remux background music for completed scenes.</div>
+            <div class="row align-items-center g-3">
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="enableBgMusicSwitch" @bind="_enableBackgroundMusic" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
+                        <label class="form-check-label fw-semibold" for="enableBgMusicSwitch">Enable background music generation</label>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold mb-1">Background Music Volume (@_backgroundMusicVolumePercent%)</label>
-                        <input type="range" class="form-range" min="5" max="100" step="5" @bind="_backgroundMusicVolumePercent" disabled="@(!_enableBackgroundMusic || _busy)" />
-                        <div class="form-text text-muted">Volume ratio under character dialogue (default 20%).</div>
-                    </div>
+                    <div class="form-text text-muted">Score and remux music for completed scenes (provider/model above under Studio coverage).</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold mb-1">Background music volume (@_backgroundMusicVolumePercent%)</label>
+                    <input type="range" class="form-range" min="5" max="100" step="5" @bind="_backgroundMusicVolumePercent" @bind:after="ScheduleAutoSaveAsync" disabled="@(!_enableBackgroundMusic || _busy)" />
+                    <div class="form-text text-muted">Under dialogue (default 20%).</div>
                 </div>
             </div>
         </div>
@@ -447,7 +573,7 @@
         <div class="card-body row g-2">
             <div class="col-md-4">
                 <label class="form-label">Aspect ratio</label>
-                <select class="form-select" @bind="_aspect" disabled="@_busy">
+                <select class="form-select" @bind="_aspect" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy">
                     <option value="16:9">16:9</option>
                     <option value="9:16">9:16</option>
                     <option value="1:1">1:1</option>
@@ -455,7 +581,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Resolution</label>
-                <select class="form-select" @bind="_resolution" disabled="@_busy">
+                <select class="form-select" @bind="_resolution" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy">
                     <option value="480p">480p</option>
                     <option value="720p">720p</option>
                     <option value="1080p">1080p</option>
@@ -463,7 +589,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Duration (seconds)</label>
-                <input type="number" class="form-control" min="1" max="15" @bind="_durationSeconds" disabled="@_busy" />
+                <input type="number" class="form-control" min="1" max="15" @bind="_durationSeconds" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
             </div>
         </div>
     </div>
@@ -472,22 +598,24 @@
         <div class="card-header">Pipeline Behavior</div>
         <div class="card-body row g-3">
             <div class="col-md-6 form-check">
-                <input class="form-check-input" type="checkbox" id="smart" @bind="_smartContinuation" disabled="@_busy" />
+                <input class="form-check-input" type="checkbox" id="smart" @bind="_smartContinuation" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="smart">Smart Continuation</label>
                 <div class="form-text">Seamlessly extend visual prompts across consecutive clips in a scene.</div>
             </div>
             <div class="col-md-6 form-check">
-                <input class="form-check-input" type="checkbox" id="qaRetry" @bind="_qaRetry" disabled="@_busy" />
+                <input class="form-check-input" type="checkbox" id="qaRetry" @bind="_qaRetry" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="qaRetry">Quality Gate Retry</label>
-                <div class="form-text">Automatically retry video clip generation if quality checks fail.</div>
+                <div class="form-text">
+                    When dialogue QA fails, auto-regenerate the clip (admin mode).
+                </div>
             </div>
             <div class="col-md-6 form-check">
-                <input class="form-check-input" type="checkbox" id="regenSilent" @bind="_regenSilent" disabled="@_busy" />
+                <input class="form-check-input" type="checkbox" id="regenSilent" @bind="_regenSilent" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="regenSilent">Regenerate Silent Beats</label>
                 <div class="form-text">Re-synthesize audio for silent action beats during scene updates.</div>
             </div>
             <div class="col-md-6 form-check">
-                <input class="form-check-input" type="checkbox" id="useDur" @bind="_useDurationDefaults" disabled="@_busy" />
+                <input class="form-check-input" type="checkbox" id="useDur" @bind="_useDurationDefaults" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                 <label class="form-check-label fw-semibold" for="useDur">Use Default Clip Durations</label>
                 <div class="form-text">Fall back to standard duration budgeting when shot plan timing is unspecified.</div>
             </div>
@@ -498,93 +626,40 @@
                 <summary class="text-muted role-button py-1 fw-semibold" style="cursor: pointer;">⚙️ Advanced QA Tuning</summary>
                 <div class="row g-2 mt-2 pt-2 border-top">
                     <div class="col-md-6 form-check">
-                        <input class="form-check-input" type="checkbox" id="merge" @bind="_mergeAfterClip" disabled="@_busy" />
+                        <input class="form-check-input" type="checkbox" id="merge" @bind="_mergeAfterClip" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                         <label class="form-check-label" for="merge">Auto-merge scene after each clip</label>
                     </div>
                     <div class="col-md-6 form-check">
-                        <input class="form-check-input" type="checkbox" id="rebuildWip" @bind="_rebuildWip" disabled="@_busy" />
+                        <input class="form-check-input" type="checkbox" id="rebuildWip" @bind="_rebuildWip" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                         <label class="form-check-label" for="rebuildWip">Auto-rebuild WIP movie after scene</label>
                     </div>
                     <div class="col-md-4 mt-3">
                         <label class="form-label">QA Max Retries</label>
-                        <input type="number" class="form-control form-control-sm" min="0" max="5" @bind="_qaMaxRetries" disabled="@_busy" />
+                        <input type="number" class="form-control form-control-sm" min="0" max="5" @bind="_qaMaxRetries" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                     </div>
                     <div class="col-md-4 mt-3">
                         <label class="form-label">QA Sample Frames</label>
-                        <input type="number" class="form-control form-control-sm" min="1" max="8" @bind="_qaFrameCount" disabled="@_busy" />
+                        <input type="number" class="form-control form-control-sm" min="1" max="8" @bind="_qaFrameCount" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                     </div>
                     <div class="col-md-4 mt-3">
                         <label class="form-label">Composite Audio Gain (dB)</label>
-                        <input type="number" step="0.5" class="form-control form-control-sm" @bind="_audioGain" disabled="@_busy" />
+                        <input type="number" step="0.5" class="form-control form-control-sm" @bind="_audioGain" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
                     </div>
                 </div>
             </details>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Cost estimates (vendor list rates)</div>
-        <div class="card-body">
-            <p class="small text-muted mb-3">
-                Planning rates come from the <strong>selected models</strong> above (supported-model catalog),
-                not free-form dollars. Change the video or portrait model to update these.
-                Ledger “actuals” use the same list rates — not provider invoices.
-            </p>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="fw-semibold mb-1">Video · @VendorLabel(_modelName, "video")</div>
-                    <div class="small text-muted mb-2"><code>@_modelName</code></div>
-                    <div class="row g-2">
-                        <div class="col-4">
-                            <div class="form-control-plaintext border rounded px-2 py-1">
-                                <span class="small text-muted">480p</span><br />
-                                <strong>@UsdRate(CatalogVideoRate("480p"))</strong><span class="small">/sec</span>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-control-plaintext border rounded px-2 py-1">
-                                <span class="small text-muted">720p</span><br />
-                                <strong>@UsdRate(CatalogVideoRate("720p"))</strong><span class="small">/sec</span>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-control-plaintext border rounded px-2 py-1">
-                                <span class="small text-muted">1080p</span><br />
-                                <strong>@UsdRate(CatalogVideoRate("1080p"))</strong><span class="small">/sec</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="fw-semibold mb-1">Image · @VendorLabel(_imageModel, "image")</div>
-                    <div class="small text-muted mb-2"><code>@_imageModel</code></div>
-                    <div class="form-control-plaintext border rounded px-2 py-1">
-                        <span class="small text-muted">Per image</span><br />
-                        <strong>@UsdRate(CatalogImageRate())</strong>
-                    </div>
-                    <div class="small text-muted mt-2">
-                        Planning / quality chat models also have per-token catalog rates used in telemetry;
-                        video spend dominates most film budgets.
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mt-3 mb-4 p-3 border rounded card">
-            <span class="text-muted small">Configuring active project: <strong>@_projectId</strong></span>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary" disabled="@(_busy || string.IsNullOrEmpty(_projectId))" @onclick="LoadAsync">Reload settings</button>
-                <button class="btn btn-primary" disabled="@(_busy || _cfg is null || string.IsNullOrEmpty(_projectId))" @onclick="SaveAsync">
-                    @(_busy ? "Saving…" : $"Save settings for {_projectId}")
-                </button>
-            </div>
-        </div>
-    </div>
 }
 
 @code {
     private bool _busy;
     private string? _error;
     private string? _message;
+    private string? _saveStatus;
+    private bool _dirty;
+    private CancellationTokenSource? _autoSaveCts;
+    private int _autoSaveEpoch;
     private string _projectId = "";
     private List<string> _projectIds = new();
     private Dictionary<string, JsonElement>? _cfg;
@@ -593,12 +668,15 @@
     private string _uiTheme = "dark";
     private string _preferredVideoEditor = "ClipChamp";
     private string _blueprintFile = "blueprint.clips.grok.json";
-    private string _modelName = "grok-imagine-video";
-    private string _imageModel = "grok-imagine-image-quality";
-    private string _planningModel = "grok-4.5";
-    private string _visionModel = "grok-4.5";
-    private string _qualityModel = "gemini-2.5-flash";
-    private string _audioModel = "fal-ai/stable-audio";
+    private string _modelName = "";
+    private string _imageModel = "";
+    private string _planningModel = "";
+    private string _visionModel = "";
+    private string _qualityModel = "";
+    private string _audioModel = "none";
+    private string _voiceModel = "none";
+    /// <summary>Deep-link from gated features: music | voice | review | video | …</summary>
+    private string? _focusCapability;
     private bool _enableBackgroundMusic = true;
     private int _backgroundMusicVolumePercent = 20;
     private string _aspect = "16:9";
@@ -622,9 +700,11 @@
     private List<SupportedModelDto> _visionModels = new();
     private List<SupportedModelDto> _videoReviewModels = new();
     private List<SupportedModelDto> _audioModels = new();
+    private List<SupportedModelDto> _voiceModels = new();
 
     protected override async Task OnInitializedAsync()
     {
+        ParseFocusFromUri();
         try
         {
             try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
@@ -663,6 +743,10 @@
 
             if (!string.IsNullOrEmpty(_projectId))
                 await LoadAsync();
+
+            // Deep-link ?focus=voice|music|… opens just-in-time key panel for that coverage row.
+            if (FocusActive)
+                BeginAddKey(_focusCapability!);
         }
         catch (Exception ex)
         {
@@ -681,67 +765,119 @@
 
     private async Task LoadCatalogAsync()
     {
+        // Catalog is the only source of truth — never invent models in UI code.
+        _allModels = new();
+        _videoModels = new();
+        _imageModels = new();
+        _planningModels = new();
+        _visionModels = new();
+        _videoReviewModels = new();
+        _audioModels = new();
+        _voiceModels = new();
+
         try
         {
+            try
+            {
+                var raw = await Engine.GetModelsCatalogJsonAsync();
+                if (!string.IsNullOrWhiteSpace(raw))
+                    SupportedModelCatalog.TryLoadFromJson(raw);
+            }
+            catch (Exception ex)
+            {
+                _error = $"Could not load models catalog: {ex.Message}";
+            }
+
             var list = await Engine.GetSupportedModelsAsync();
-            _allModels = list.ToList();
-            _videoModels = _allModels.Where(m => m.Capability == "video").ToList();
-            _imageModels = _allModels.Where(m => m.Capability == "image").ToList();
-            _planningModels = _allModels.Where(m => m.Capability == "chat").ToList();
-            _visionModels = _allModels.Where(m => m.Capability == "vision").ToList();
-            _audioModels = _allModels.Where(m => m.Capability == "audio").ToList();
-            _videoReviewModels = _allModels.Where(m => m.SupportsVideoReview || m.Capability is "chat" or "vision")
-                .GroupBy(m => m.Id)
-                .Select(g => g.First()).ToList();
+            _allModels = list?.ToList() ?? new List<SupportedModelDto>();
+            bool Cap(SupportedModelDto m, string c) =>
+                string.Equals(m.Capability, c, StringComparison.OrdinalIgnoreCase);
 
-            if (_videoModels.Count == 0)
-                _videoModels.Add(new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video", Provider = "Xai" });
-            if (_imageModels.Count == 0)
-                _imageModels.Add(new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image", Provider = "Xai" });
-            if (_planningModels.Count == 0)
-                _planningModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5", Provider = "Xai" });
-            if (_visionModels.Count == 0)
-                _visionModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" });
+            _videoModels = _allModels.Where(m => Cap(m, "video")).ToList();
+            _imageModels = _allModels.Where(m => Cap(m, "image")).ToList();
+            _planningModels = _allModels.Where(m => Cap(m, "chat")).ToList();
+            _visionModels = _allModels.Where(m => Cap(m, "vision")).ToList();
+            _audioModels = _allModels.Where(m => Cap(m, "audio")).ToList();
+            _voiceModels = _allModels.Where(m => Cap(m, "voice")).ToList();
+            // Review: only models the catalog marks SupportsVideoReview, else chat/vision from catalog.
+            _videoReviewModels = _allModels.Where(m => m.SupportsVideoReview).ToList();
             if (_videoReviewModels.Count == 0)
-                _videoReviewModels.Add(new SupportedModelDto { Id = "gemini-2.5-flash", DisplayName = "Gemini 2.5 Flash", Provider = "Google", SupportsVideoReview = true });
-            if (_audioModels.Count == 0)
-                _audioModels.Add(new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" });
+                _videoReviewModels = _allModels.Where(m => Cap(m, "chat") || Cap(m, "vision")).ToList();
 
+            // Optional "off" rows are UI state, not providers — not catalog models.
             if (!_audioModels.Any(m => m.Id == "none"))
-                _audioModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" });
+                _audioModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None", ProviderId = "none" });
+            _voiceModels = _voiceModels
+                .OrderBy(m => string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(m => m.IsVoiceCloneStep ? 0 : 1)
+                .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (!_voiceModels.Any(m => m.Id == "none"))
+                _voiceModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (no voice clone)", Provider = "None", ProviderId = "none" });
+
+            ApplyCatalogDefaultsIfEmpty();
         }
-        catch
+        catch (Exception ex)
         {
-            _videoModels = [new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video", Provider = "Xai" }];
-            _imageModels = [new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image", Provider = "Xai" }];
-            _planningModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5", Provider = "Xai" }];
-            _visionModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" }];
-            _videoReviewModels = [new SupportedModelDto { Id = "gemini-2.5-flash", DisplayName = "Gemini 2.5 Flash", Provider = "Google", SupportsVideoReview = true }];
-            _audioModels = [
-                new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" },
-                new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" }
-            ];
+            _error = $"Models catalog unavailable: {ex.Message}";
         }
     }
 
-    private string? ModelHint(string modelId, string capability)
+    /// <summary>If project has not chosen models yet, use capability defaultModelId from the catalog only.</summary>
+    private void ApplyCatalogDefaultsIfEmpty()
     {
-        var m = _allModels.FirstOrDefault(x =>
-            string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(x.Capability, capability, StringComparison.OrdinalIgnoreCase))
-            ?? _allModels.FirstOrDefault(x =>
-                string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase));
-        if (m is null) return null;
-        var keys = m.RequiredEnvKeys is { Count: > 0 }
-            ? string.Join(", ", m.RequiredEnvKeys)
-            : "—";
-        var ep = string.IsNullOrEmpty(m.EndpointPath) ? "" : $" · {m.EndpointPath}";
-        var baseHint = $"{m.Provider}{ep} · key: {keys}";
-        // Surface catalog limitations (e.g. Veo: no clip continue / no locked plates).
-        if (!string.IsNullOrWhiteSpace(m.Notes))
-            return $"{baseHint} — {m.Notes}";
-        return baseHint;
+        if (string.IsNullOrWhiteSpace(_modelName))
+            _modelName = SupportedModelCatalog.DefaultModelIdForCapability("video") ?? "";
+        if (string.IsNullOrWhiteSpace(_imageModel))
+            _imageModel = SupportedModelCatalog.DefaultModelIdForCapability("image") ?? "";
+        if (string.IsNullOrWhiteSpace(_planningModel))
+            _planningModel = SupportedModelCatalog.DefaultModelIdForCapability("chat") ?? "";
+        if (string.IsNullOrWhiteSpace(_visionModel))
+            _visionModel = SupportedModelCatalog.DefaultModelIdForCapability("vision") ?? "";
+        if (string.IsNullOrWhiteSpace(_qualityModel))
+            _qualityModel = SupportedModelCatalog.DefaultModelIdForCapability("video-review")
+                            ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
+                            ?? "";
+        if (string.IsNullOrWhiteSpace(_audioModel))
+            _audioModel = "none";
+        if (string.IsNullOrWhiteSpace(_voiceModel))
+            _voiceModel = "none";
     }
+
+
+    private void ParseFocusFromUri()
+    {
+        try
+        {
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            var q = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (q.TryGetValue("focus", out var f) && !string.IsNullOrWhiteSpace(f))
+                _focusCapability = NormalizeFocus(f.ToString());
+        }
+        catch { _focusCapability = null; }
+    }
+
+    private static string? NormalizeFocus(string? raw)
+    {
+        var s = (raw ?? "").Trim().ToLowerInvariant();
+        return s switch
+        {
+            "music" or "audio" or "bgm" => "music",
+            "voice" or "voice_clone" or "clone" or "tts" => "voice",
+            "review" or "qa" or "video_review" or "quality" => "review",
+            "video" or "film" => "video",
+            "image" or "portrait" or "characters" => "image",
+            "planning" or "script" or "chat" or "screenplay" => "planning",
+            "vision" or "ocr" => "vision",
+            _ => string.IsNullOrWhiteSpace(s) ? null : s,
+        };
+    }
+
+    private bool FocusActive => !string.IsNullOrWhiteSpace(_focusCapability);
+
+
+
+
 
     private UserSettingsDto? _userSettings;
     private readonly Dictionary<string, string?> _keyInputs = new(StringComparer.OrdinalIgnoreCase)
@@ -764,58 +900,571 @@
     private bool _apiKeySaving;
     private string? _savingProviderId;
     private string? _apiKeyFeedback;
+    /// <summary>Coverage row open for just-in-time key entry.</summary>
+    private string? _coverageEditId;
+    private string? _coverageKeyProviderId;
+    /// <summary>replace | add-key | add-provider</summary>
+    private string _coverageKeyMode = "add-provider";
 
-    private IReadOnlyList<ProviderKeyStatusDto> ProviderRows =>
-        _userSettings?.Providers is { Count: > 0 } list
-            ? list
-            : DefaultProviderRows;
+    private sealed class CoverageRow
+    {
+        public string Id { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string Hint { get; set; } = "";
+        public string ModelId { get; set; } = "";
+        public string ProviderId { get; set; } = "";
+        public string ProviderDisplay { get; set; } = "";
+        public bool Required { get; set; } = true;
+        public bool OptionalOff { get; set; }
+        public bool KeyReady { get; set; }
+    }
 
-    private static readonly IReadOnlyList<ProviderKeyStatusDto> DefaultProviderRows =
-    [
-        new()
+    private IReadOnlyList<CoverageRow> BuildCoverageRows()
+    {
+        var rows = new List<CoverageRow>
         {
-            ProviderId = "grok", DisplayName = "xAI / Grok", Family = "Xai",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = true, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Video Gen, Image Gen, Script & Planning, Image Vision / OCR",
-            Notes = "Full generation & planning pipeline (Video Gen, Image Gen, Script Planning, Image Vision / OCR).",
-            ActiveSource = "none",
-        },
-        new()
+            MakeCoverage("video", "Video generation", "Clips / film", _modelName, "video", required: true),
+            MakeCoverage("image", "Character portraits", "Image gen", _imageModel, "image", required: true),
+            MakeCoverage("planning", "Script & planning", "Screenplay, cast, shot plan", _planningModel, "chat", required: true),
+            MakeCoverage("vision", "Image vision / OCR", "Book pages & image understanding", _visionModel, "vision", required: true),
+            MakeCoverage("review", "Video review (QA)", "Dialogue check & auto-review", _qualityModel, "chat", required: true, preferVideoReview: true),
+            MakeCoverage("music", "Background music", "Optional scores", _audioModel, "audio", required: false),
+            MakeCoverage("voice", "Voice clone", "Optional character voice sample", _voiceModel, "voice", required: false),
+        };
+        return rows;
+    }
+
+    private CoverageRow MakeCoverage(
+        string id,
+        string label,
+        string hint,
+        string modelId,
+        string capability,
+        bool required,
+        bool preferVideoReview = false,
+        string? forceProviderId = null)
+    {
+        // Optional stage turned off (music "none", etc.).
+        var off = string.IsNullOrWhiteSpace(modelId)
+                  || modelId.Equals("none", StringComparison.OrdinalIgnoreCase)
+                  || modelId.Equals("disabled", StringComparison.OrdinalIgnoreCase);
+
+
+        string providerId;
+        if (!string.IsNullOrWhiteSpace(forceProviderId))
+            providerId = SupportedModelCatalog.NormalizeProviderId(forceProviderId);
+        else if (off)
+            providerId = "";
+        else
+            providerId = ResolveProviderIdForModel(modelId, capability, preferVideoReview);
+
+        var providerRow = ProviderRows.FirstOrDefault(pr =>
+            string.Equals(
+                SupportedModelCatalog.NormalizeProviderId(pr.ProviderId),
+                providerId,
+                StringComparison.OrdinalIgnoreCase));
+        var display = string.IsNullOrWhiteSpace(providerId) ? "" : FriendlyProviderLabel(providerId);
+        var keyReady = off || string.IsNullOrWhiteSpace(providerId) || (providerRow?.IsConfigured ?? false);
+
+        return new CoverageRow
         {
-            ProviderId = "gemini", DisplayName = "Google Gemini", Family = "Google",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = true, SupportsVideoReview = true, SupportsImageGen = true, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Video Review (Multimodal MP4 Input), Video Gen (Veo), Image Gen, Script & Planning, Image Vision / OCR",
-            Notes = "Supports native Multimodal Video Review (inputs MP4 files directly for automated clip quality scoring) and Video Gen via Veo.",
-            ActiveSource = "none",
-        },
-        new()
+            Id = id,
+            Label = label,
+            Hint = hint,
+            ModelId = off ? "Off" : modelId,
+            ProviderId = providerId,
+            ProviderDisplay = display,
+            Required = required,
+            OptionalOff = !required && off,
+            // Optional + off counts as "ready" for the checklist (nothing missing).
+            KeyReady = keyReady || (!required && off),
+        };
+    }
+
+    private string ResolveProviderIdForModel(string modelId, string capability, bool preferVideoReview)
+    {
+        if (string.IsNullOrWhiteSpace(modelId)
+            || modelId.Equals("none", StringComparison.OrdinalIgnoreCase)
+            || modelId.Equals("disabled", StringComparison.OrdinalIgnoreCase))
+            return "";
+
+        // Only models that exist in the loaded catalog (or catalog static after hydrate).
+        var m = _allModels.FirstOrDefault(x =>
+            string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase) &&
+            (preferVideoReview
+                ? (x.SupportsVideoReview || string.Equals(x.Capability, capability, StringComparison.OrdinalIgnoreCase))
+                : string.Equals(x.Capability, capability, StringComparison.OrdinalIgnoreCase)))
+            ?? _allModels.FirstOrDefault(x => string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase));
+
+        if (m is not null)
+            return ModelProviderId(m);
+
+        // Server-side catalog (if WASM hydrated SupportedModelCatalog).
+        var cap = capability.ToLowerInvariant() switch
         {
-            ProviderId = "fal", DisplayName = "Fal.ai", Family = "Fal",
-            SupportsVideo = true, SupportsImage = true, SupportsChat = false, SupportsVision = false,
-            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = true, SupportsScriptPlanning = false, SupportsImageVision = false,
-            CapabilitiesSummary = "Video Gen (HunyuanVideo), Image Gen (Flux.1)",
-            Notes = "Serverless open-source video (HunyuanVideo ~$0.025/clip) and image (Flux.1 Dev / Schnell ~$0.003/img) generation.",
-            ActiveSource = "none",
-        },
-        new()
+            "video" => ModelCapability.Video,
+            "image" => ModelCapability.Image,
+            "vision" => ModelCapability.Vision,
+            "audio" => ModelCapability.Audio,
+            "voice" => ModelCapability.Voice,
+            _ => ModelCapability.Chat,
+        };
+        var entry = SupportedModelCatalog.Find(modelId, cap) ?? SupportedModelCatalog.Find(modelId);
+        if (entry is null || !entry.Enabled)
+            return ""; // not in catalog → not real
+        return SupportedModelCatalog.NormalizeProviderId(entry.ProviderId);
+    }
+
+    private List<string> CoverageUsesForProvider(string providerId)
+    {
+        return BuildCoverageRows()
+            .Where(c => !c.OptionalOff
+                        && !string.IsNullOrWhiteSpace(c.ProviderId)
+                        && string.Equals(c.ProviderId, providerId, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Label)
+            .Distinct()
+            .ToList();
+    }
+
+
+    private void BeginAddKey(string coverageId, string? preferredProviderId = null)
+    {
+        // Legacy entry — treat as add-provider unless a specific provider is required.
+        if (!string.IsNullOrWhiteSpace(preferredProviderId))
+            BeginAddKeyForProvider(coverageId, preferredProviderId);
+        else
+            BeginAddProvider(coverageId);
+    }
+
+    /// <summary>Replace key for one provider only (no multi-provider grid).</summary>
+    private void BeginReplaceKey(string coverageId, string providerId)
+    {
+        _coverageEditId = coverageId;
+        _coverageKeyProviderId = SupportedModelCatalog.NormalizeProviderId(providerId);
+        _coverageKeyMode = "replace";
+        _apiKeyFeedback = null;
+        _keyInputs[_coverageKeyProviderId] = null;
+    }
+
+    /// <summary>Add/paste key for the provider currently on this coverage row only.</summary>
+    private void BeginAddKeyForProvider(string coverageId, string providerId)
+    {
+        _coverageEditId = coverageId;
+        _coverageKeyProviderId = SupportedModelCatalog.NormalizeProviderId(providerId);
+        _coverageKeyMode = "add-key";
+        _apiKeyFeedback = null;
+        _keyInputs[_coverageKeyProviderId] = null;
+    }
+
+    /// <summary>Choose among all providers that can run this job.</summary>
+    private void BeginAddProvider(string coverageId)
+    {
+        _coverageEditId = coverageId;
+        _coverageKeyMode = "add-provider";
+        _apiKeyFeedback = null;
+        var list = ProvidersForCoverage(coverageId).ToList();
+        // Prefer first without a key so “Add provider” lands on something useful.
+        _coverageKeyProviderId = list.FirstOrDefault(p => !p.IsConfigured)?.ProviderId
+                                 ?? list.FirstOrDefault()?.ProviderId;
+    }
+
+    private void CancelAddKey()
+    {
+        _coverageEditId = null;
+        _coverageKeyProviderId = null;
+        _coverageKeyMode = "add-provider";
+    }
+
+    /// <summary>
+    /// Providers shown in the open key panel.
+    /// Replace / Add key → only the target provider. Add provider → full list for the job.
+    /// </summary>
+    private IEnumerable<ProviderKeyStatusDto> ProvidersForKeyPanel(string coverageId)
+    {
+        var all = ProvidersForCoverage(coverageId);
+        if (_coverageKeyMode is "replace" or "add-key"
+            && !string.IsNullOrWhiteSpace(_coverageKeyProviderId))
         {
-            ProviderId = "anthropic", DisplayName = "Anthropic Claude", Family = "Anthropic",
-            SupportsVideo = false, SupportsImage = false, SupportsChat = true, SupportsVision = true,
-            SupportsVideoGen = false, SupportsVideoReview = false, SupportsImageGen = false, SupportsScriptPlanning = true, SupportsImageVision = true,
-            CapabilitiesSummary = "Script & Planning, Image Vision / OCR",
-            Notes = "Script & Shot Planning + Image Vision / OCR frame review.",
-            ActiveSource = "none",
-        },
-    ];
+            var only = all.Where(p =>
+                string.Equals(p.ProviderId, _coverageKeyProviderId, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (only.Count > 0)
+                return only;
+            // Provider might not be in job list yet — synthesize a row from ProviderRows.
+            var row = ProviderRows.FirstOrDefault(p =>
+                string.Equals(p.ProviderId, _coverageKeyProviderId, StringComparison.OrdinalIgnoreCase));
+            if (row is not null)
+                return new[] { row };
+        }
+        return all;
+    }
+
+    private void SelectKeyProvider(string providerId) => _coverageKeyProviderId = providerId;
+
+    /// <summary>
+    /// Click on a provider card. If a personal key is already saved, use it and align the model.
+    /// Otherwise open the paste form for that provider only.
+    /// </summary>
+    private async Task ChooseProviderForCoverageAsync(string providerId, string coverageId)
+    {
+        var row = ProviderRows.FirstOrDefault(pr =>
+            string.Equals(pr.ProviderId, providerId, StringComparison.OrdinalIgnoreCase));
+        if (row?.IsConfigured == true)
+        {
+            await UseSavedProviderForCoverageAsync(providerId, coverageId);
+            return;
+        }
+        SelectKeyProvider(providerId);
+    }
+
+    /// <summary>
+    /// User already saved this provider key — point the coverage model at it and close the panel.
+    /// Fixes: model is aimusicapi-suno but Suno (sunoapi) key exists → switch to suno-v5-5.
+    /// </summary>
+    private async Task UseSavedProviderForCoverageAsync(string providerId, string coverageId)
+    {
+        _error = null;
+        _apiKeyFeedback = null;
+        var label = FriendlyProviderLabel(providerId);
+
+        if (string.Equals(coverageId, "music", StringComparison.OrdinalIgnoreCase))
+            EnsureMusicModelForProvider(providerId);
+        else if (string.Equals(coverageId, "voice", StringComparison.OrdinalIgnoreCase))
+            EnsureVoiceModelForProvider(providerId);
+        else
+        {
+            // Required stages (video, image, …): switch selected model to one from this provider if possible.
+            AlignCoverageModelToProvider(coverageId, providerId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
+        {
+            try { await PersistProjectConfigAsync(); }
+            catch (Exception ex) { _error = ex.Message; return; }
+        }
+
+        var ready = BuildCoverageRows().FirstOrDefault(c =>
+            string.Equals(c.Id, coverageId, StringComparison.OrdinalIgnoreCase));
+        if (ready?.KeyReady == true)
+        {
+            _apiKeyFeedback = $"{label}: using your saved key · model set to match.";
+            _message = _apiKeyFeedback;
+            CancelAddKey();
+        }
+        else
+        {
+            // Still not ready — open paste (key missing or model couldn't align).
+            SelectKeyProvider(providerId);
+            _apiKeyFeedback = $"{label}: could not mark ready — paste a key for this provider or pick another model.";
+        }
+    }
+
+    private void AlignCoverageModelToProvider(string coverageId, string providerId)
+    {
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var models = ModelsForCoverage(coverageId);
+        static string PidOf(SupportedModelDto m) =>
+            !string.IsNullOrWhiteSpace(m.ProviderId)
+                ? SupportedModelCatalog.NormalizeProviderId(m.ProviderId)
+                : SupportedModelCatalog.NormalizeProviderId(m.Provider);
+
+        var pick = models.FirstOrDefault(m =>
+            !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(PidOf(m), pid, StringComparison.OrdinalIgnoreCase));
+        if (pick is not null)
+            SetCoverageModelId(coverageId, pick.Id);
+    }
+
+    private async Task SaveCoverageKeyAsync(string providerId, string coverageId)
+    {
+        await SaveProviderKeyAsync(providerId);
+        var row = BuildCoverageRows().FirstOrDefault(c => string.Equals(c.Id, coverageId, StringComparison.OrdinalIgnoreCase));
+        if (row?.KeyReady == true)
+            CancelAddKey();
+    }
+
+    private string GetCoverageModelId(string coverageId) => coverageId switch
+    {
+        "video" => _modelName,
+        "image" => _imageModel,
+        "planning" => _planningModel,
+        "vision" => _visionModel,
+        "review" => _qualityModel,
+        "music" => _audioModel,
+        "voice" => _voiceModel,
+        _ => "",
+    };
+
+    private void SetCoverageModelId(string coverageId, string modelId)
+    {
+        switch (coverageId)
+        {
+            case "video": _modelName = modelId; break;
+            case "image": _imageModel = modelId; break;
+            case "planning": _planningModel = modelId; break;
+            case "vision": _visionModel = modelId; break;
+            case "review": _qualityModel = modelId; break;
+            case "music": _audioModel = modelId; break;
+            case "voice": _voiceModel = modelId; break;
+        }
+    }
+
+    private IReadOnlyList<SupportedModelDto> ModelsForCoverage(string coverageId) => coverageId switch
+    {
+        "video" => _videoModels,
+        "image" => _imageModels,
+        "planning" => _planningModels,
+        "vision" => _visionModels,
+        "review" => _videoReviewModels,
+        "music" => _audioModels,
+        "voice" => _voiceModels,
+        _ => Array.Empty<SupportedModelDto>(),
+    };
+
+    private static string ModelProviderId(SupportedModelDto m)
+    {
+        // Catalog fields only (providerId / provider). Never guess from model id.
+        if (!string.IsNullOrWhiteSpace(m.ProviderId))
+            return SupportedModelCatalog.NormalizeProviderId(m.ProviderId);
+        if (!string.IsNullOrWhiteSpace(m.Provider))
+            return SupportedModelCatalog.NormalizeProviderId(m.Provider);
+        return "";
+    }
+
+    /// <summary>Models for a coverage job limited to one provider (second-stage dropdown).</summary>
+    private IReadOnlyList<SupportedModelDto> ModelsForCoverageProvider(string coverageId, string? providerId)
+    {
+        var all = ModelsForCoverage(coverageId);
+        if (string.IsNullOrWhiteSpace(providerId))
+            return Array.Empty<SupportedModelDto>();
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var list = all
+            .Where(m => !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase))
+            .Where(m => string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(m => m.IsVoiceCloneStep ? 0 : 1)
+            .ThenBy(m => ModelOptionLabel(m), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return list;
+    }
+
+    private async Task OnCoverageProviderChangedAsync(string coverageId, string? providerId)
+    {
+        if (string.IsNullOrWhiteSpace(providerId))
+            return;
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var models = ModelsForCoverageProvider(coverageId, pid);
+        var current = GetCoverageModelId(coverageId);
+        var stillValid = models.Any(m => string.Equals(m.Id, current, StringComparison.OrdinalIgnoreCase));
+        if (!stillValid)
+        {
+            // Prefer clone-step for voice; otherwise first model for this provider.
+            var pick = models.FirstOrDefault(m => m.IsVoiceCloneStep) ?? models.FirstOrDefault();
+            if (pick is not null)
+                SetCoverageModelId(coverageId, pick.Id);
+            else if (coverageId is "music" or "voice")
+                SetCoverageModelId(coverageId, "none");
+        }
+
+        _coverageEditId = null;
+        _message = null;
+        if (!string.IsNullOrEmpty(_projectId) && _cfg is not null)
+        {
+            try
+            {
+                await SaveAsync();
+                _message = $"Provider set to {FriendlyProviderLabel(pid)}.";
+            }
+            catch (Exception ex)
+            {
+                _error = ex.Message;
+            }
+        }
+
+        var row = BuildCoverageRows().FirstOrDefault(c =>
+            string.Equals(c.Id, coverageId, StringComparison.OrdinalIgnoreCase));
+        if (row is { KeyReady: false, OptionalOff: false } && !string.IsNullOrWhiteSpace(row.ProviderId))
+            BeginAddKey(coverageId, row.ProviderId);
+    }
+
+    private IEnumerable<ProviderKeyStatusDto> ProvidersForCoverage(string coverageId)
+    {
+        var models = ModelsForCoverage(coverageId);
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var m in models)
+        {
+            if (string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)) continue;
+            var pid = ModelProviderId(m);
+            if (!string.IsNullOrWhiteSpace(pid) && !pid.Equals("none", StringComparison.OrdinalIgnoreCase))
+                ids.Add(pid);
+        }
+
+        if (ids.Count == 0)
+        {
+            foreach (var pr in ProviderRows)
+            {
+                var ok = coverageId switch
+                {
+                    "video" => pr.SupportsVideoGen || pr.SupportsVideo,
+                    "image" => pr.SupportsImageGen || pr.SupportsImage,
+                    "planning" => pr.SupportsScriptPlanning || pr.SupportsChat,
+                    "vision" => pr.SupportsImageVision || pr.SupportsVision,
+                    "review" => pr.SupportsVideoReview || pr.SupportsChat,
+                    "music" => string.Equals(pr.ProviderId, "fal", StringComparison.OrdinalIgnoreCase)
+                               || string.Equals(pr.ProviderId, "suno", StringComparison.OrdinalIgnoreCase)
+                               || string.Equals(pr.ProviderId, "aimusicapi", StringComparison.OrdinalIgnoreCase),
+                    "voice" => string.Equals(pr.ProviderId, "elevenlabs", StringComparison.OrdinalIgnoreCase)
+                               || string.Equals(pr.ProviderId, "fal", StringComparison.OrdinalIgnoreCase),
+                    _ => false,
+                };
+                if (ok) ids.Add(pr.ProviderId);
+            }
+        }
+
+        // Include any provider id we discovered from models even if ProviderRows lacks it (e.g. OpenAI).
+        var rows = ProviderRows
+            .Select(pr => new ProviderKeyStatusDto
+            {
+                ProviderId = SupportedModelCatalog.NormalizeProviderId(pr.ProviderId),
+                DisplayName = pr.DisplayName,
+                Family = pr.Family,
+                HasPersonalKey = pr.HasPersonalKey,
+                MaskedPersonalKey = pr.MaskedPersonalKey,
+                HasServerKey = pr.HasServerKey,
+                ActiveSource = pr.ActiveSource,
+                CapabilitiesSummary = pr.CapabilitiesSummary,
+                SupportsVideo = pr.SupportsVideo,
+                SupportsImage = pr.SupportsImage,
+                SupportsChat = pr.SupportsChat,
+                SupportsVision = pr.SupportsVision,
+                SupportsVideoGen = pr.SupportsVideoGen,
+                SupportsVideoReview = pr.SupportsVideoReview,
+                SupportsImageGen = pr.SupportsImageGen,
+                SupportsScriptPlanning = pr.SupportsScriptPlanning,
+                SupportsImageVision = pr.SupportsImageVision,
+                RequiredEnvKeys = pr.RequiredEnvKeys,
+                Notes = pr.Notes,
+            })
+            .Where(pr => ids.Contains(pr.ProviderId))
+            .GroupBy(pr => pr.ProviderId, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+        foreach (var id in ids)
+        {
+            if (rows.Any(r => string.Equals(r.ProviderId, id, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            rows.Add(new ProviderKeyStatusDto
+            {
+                ProviderId = id,
+                DisplayName = FriendlyProviderLabel(id),
+                ActiveSource = "none",
+                CapabilitiesSummary = "—",
+                RequiredEnvKeys = new List<string>(),
+            });
+        }
+
+        // Selected provider (from model) first so the <select> cannot fall back to a random first option.
+        var currentModelId = GetCoverageModelId(coverageId);
+        var currentPid = "";
+        if (!string.IsNullOrWhiteSpace(currentModelId)
+            && !string.Equals(currentModelId, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            var cap = coverageId switch
+            {
+                "video" => "video",
+                "image" => "image",
+                "planning" => "chat",
+                "vision" => "vision",
+                "review" => "chat",
+                "music" => "audio",
+                "voice" => "voice",
+                _ => "chat",
+            };
+            currentPid = ResolveProviderIdForModel(currentModelId, cap, preferVideoReview: coverageId == "review");
+            if (!string.IsNullOrWhiteSpace(currentPid)
+                && !rows.Any(r => string.Equals(r.ProviderId, currentPid, StringComparison.OrdinalIgnoreCase)))
+            {
+                rows.Insert(0, new ProviderKeyStatusDto
+                {
+                    ProviderId = currentPid,
+                    DisplayName = FriendlyProviderLabel(currentPid),
+                    ActiveSource = "none",
+                    CapabilitiesSummary = "—",
+                    RequiredEnvKeys = new List<string>(),
+                });
+            }
+        }
+
+        return rows
+            .OrderBy(pr => string.Equals(pr.ProviderId, currentPid, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(pr => pr.IsConfigured ? 0 : 1)
+            .ThenBy(pr => FriendlyProviderLabel(pr.ProviderId));
+    }
+
+    private async Task OnCoverageModelChangedAsync(string coverageId, string? modelId)
+    {
+        if (string.IsNullOrWhiteSpace(modelId)) return;
+        SetCoverageModelId(coverageId, modelId);
+        _coverageEditId = null;
+        _message = null;
+        if (!string.IsNullOrEmpty(_projectId) && _cfg is not null)
+        {
+            try
+            {
+                await SaveAsync();
+                _message = "Model saved.";
+            }
+            catch (Exception ex)
+            {
+                _error = ex.Message;
+            }
+        }
+        var row = BuildCoverageRows().FirstOrDefault(c => string.Equals(c.Id, coverageId, StringComparison.OrdinalIgnoreCase));
+        if (row is { KeyReady: false, OptionalOff: false } && !string.IsNullOrWhiteSpace(row.ProviderId))
+            BeginAddKey(coverageId, row.ProviderId);
+    }
+
+    private async Task TurnOffOptionalAsync(string coverageId)
+    {
+        if (coverageId == "music")
+        {
+            _audioModel = "none";
+            _enableBackgroundMusic = false;
+        }
+        else if (coverageId == "voice")
+        {
+            _voiceModel = "none";
+        }
+        CancelAddKey();
+        if (!string.IsNullOrEmpty(_projectId) && _cfg is not null)
+        {
+            try { await SaveAsync(); }
+            catch (Exception ex) { _error = ex.Message; }
+        }
+    }
+
+    private IReadOnlyList<ProviderKeyStatusDto> ProviderRows
+    {
+        get
+        {
+            // Prefer server DTO (includes personal/server key status). Fall back to catalog so
+            // Settings always shows key slots even if the settings API fails or is offline.
+            if (_userSettings?.Providers is { Count: > 0 } list)
+                return list;
+            try { return SupportedModelCatalog.BuildProviderKeyRows(); }
+            catch { return Array.Empty<ProviderKeyStatusDto>(); }
+        }
+    }
 
     private static string ProviderPlaceholder(string providerId) => providerId.ToLowerInvariant() switch
     {
-        "grok" => "xai-...",
-        "gemini" => "AIza...",
-        "fal" => "fal-...",
-        "anthropic" => "sk-ant-...",
+        "grok" => "xai-... (XAI_API_KEY)",
+        "gemini" => "AIza... (GEMINI_API_KEY)",
+        "fal" => "key... (FAL_KEY)",
+        "anthropic" => "sk-ant-... (ANTHROPIC_API_KEY)",
+        "openai" => "sk-... (OPENAI_API_KEY)",
+        "suno" => "SUNO_API_KEY",
+        "aimusicapi" => "AIMUSICAPI_API_KEY",
+        "elevenlabs" => "Paste your voice API key",
         _ => "api key",
     };
 
@@ -825,11 +1474,13 @@
     private void SetKeyInput(string providerId, string? value) =>
         _keyInputs[providerId] = value;
 
-    private static string ModelOptionLabel(SupportedModelDto m)
-    {
-        var prov = string.IsNullOrWhiteSpace(m.ProviderId) ? m.Provider : m.ProviderId;
-        return $"{m.DisplayName} · {prov} ({m.Id})";
-    }
+    /// <summary>Provider UI label — catalog providers[] only.</summary>
+    private static string FriendlyProviderLabel(string? providerId) =>
+        SupportedModelCatalog.ProviderLabelFor(providerId);
+
+    /// <summary>Model product name from catalog displayName only.</summary>
+    private static string ModelOptionLabel(SupportedModelDto m) =>
+        string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName.Trim();
 
     private string VendorLabel(string modelId, string capability)
     {
@@ -852,33 +1503,42 @@
 
     private double CatalogVideoRate(string resolution)
     {
-        var entry = SupportedModelCatalog.ResolveOrDefault(_modelName, ModelCapability.Video);
-        var table = entry.VideoCostPerSecondByResolution;
-        if (table is not null && table.TryGetValue(resolution, out var exact))
-            return exact;
-        // Same nearest-tier fill as CostReportService for missing res (e.g. Veo has no 480p).
-        if (table is { Count: > 0 })
+        try
         {
-            foreach (var prefer in new[] { "720p", "1080p", "480p" })
+            var entry = SupportedModelCatalog.ResolveOrDefault(_modelName, ModelCapability.Video);
+            var table = entry.VideoCostPerSecondByResolution;
+            if (table is not null && table.TryGetValue(resolution, out var exact))
+                return exact;
+            // Same nearest-tier fill as CostReportService for missing res (e.g. Veo has no 480p).
+            if (table is { Count: > 0 })
             {
-                if (table.TryGetValue(prefer, out var v))
-                    return v;
+                foreach (var prefer in new[] { "720p", "1080p", "480p" })
+                {
+                    if (table.TryGetValue(prefer, out var v))
+                        return v;
+                }
+                return table.Values.Min();
             }
-            return table.Values.Min();
         }
-        return resolution switch
+        catch (Exception)
         {
-            "480p" => 0.05,
-            "1080p" => 0.25,
-            _ => 0.07,
-        };
+            // Catalog not loaded (rare after embedded fallback) — use list defaults.
+        }
+        return 0;
     }
 
     private double CatalogImageRate()
     {
-        var entry = SupportedModelCatalog.Find(_imageModel, ModelCapability.Image)
-                    ?? SupportedModelCatalog.ResolveOrDefault(_imageModel, ModelCapability.Image);
-        return entry.ImageCostPerImage ?? 0.05;
+        try
+        {
+            var entry = SupportedModelCatalog.Find(_imageModel, ModelCapability.Image)
+                        ?? SupportedModelCatalog.ResolveOrDefault(_imageModel, ModelCapability.Image);
+            return entry.ImageCostPerImage ?? 0;
+        }
+        catch (Exception)
+        {
+            return 0;
+        }
     }
 
     private static string UsdRate(double v) =>
@@ -920,14 +1580,27 @@
             else
             {
                 _apiKeyFeedback = $"{label}: personal key encrypted and saved.";
-                // When attaching a Grok key, default this project's models to Grok if a project is open.
-                if ((providerId is "grok" or "xai") &&
-                    !string.IsNullOrWhiteSpace(_projectId) &&
-                    _cfg is not null)
+                // Fill empty required slots with this provider's first catalog models (if any).
+                if (!string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
                 {
-                    ApplyGrokModelDefaults();
-                    await PersistProjectConfigAsync();
-                    _apiKeyFeedback += " Project models defaulted to Grok (video, image, planning, quality).";
+                    ApplyProviderModelDefaults(providerId);
+                    try { await PersistProjectConfigAsync(); } catch { /* optional */ }
+                }
+                // Music key: if coverage model is none/unknown, pick a model for this provider so Ready lights up.
+                if (providerId is "fal" or "suno" or "aimusicapi")
+                {
+                    EnsureMusicModelForProvider(providerId);
+                }
+                // Voice key (ElevenLabs) or Fal while adding voice coverage: pick clone-step model, not TTS-only.
+                if (providerId is "elevenlabs"
+                    || (providerId is "fal" && string.Equals(_coverageEditId, "voice", StringComparison.OrdinalIgnoreCase)))
+                {
+                    EnsureVoiceModelForProvider(providerId);
+                }
+                if ((providerId is "fal" or "suno" or "aimusicapi" or "elevenlabs")
+                    && !string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
+                {
+                    try { await PersistProjectConfigAsync(); } catch { /* optional */ }
                 }
             }
 
@@ -946,13 +1619,74 @@
         }
     }
 
-    /// <summary>Set all model slots to the standard Grok defaults after attaching an xAI key.</summary>
-    private void ApplyGrokModelDefaults()
+
+
+    /// <summary>After saving a voice-provider key, pick a clone-step model from the catalog for that provider.</summary>
+    private void EnsureVoiceModelForProvider(string providerId)
     {
-        _modelName = "grok-imagine-video";
-        _imageModel = "grok-imagine-image-quality";
-        _planningModel = "grok-4.5";
-        _qualityModel = "grok-4.5";
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var currentProvider = ResolveProviderIdForModel(_voiceModel, "voice", preferVideoReview: false);
+        var off = string.IsNullOrWhiteSpace(_voiceModel)
+                  || _voiceModel.Equals("none", StringComparison.OrdinalIgnoreCase)
+                  || _voiceModel.Equals("disabled", StringComparison.OrdinalIgnoreCase);
+
+        if (!off && string.Equals(currentProvider, pid, StringComparison.OrdinalIgnoreCase))
+        {
+            var cur = _voiceModels.FirstOrDefault(m => string.Equals(m.Id, _voiceModel, StringComparison.OrdinalIgnoreCase));
+            if (cur is { IsVoiceCloneStep: true })
+                return;
+            // Prefer clone-step over TTS-only when switching within same provider.
+        }
+
+        var pick = _voiceModels.FirstOrDefault(m =>
+            !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
+            && m.IsVoiceCloneStep
+            && string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase))
+            ?? _voiceModels.FirstOrDefault(m =>
+                !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase));
+
+        if (pick is not null)
+            _voiceModel = pick.Id;
+        // else leave as-is — no invented model id
+    }
+
+    /// <summary>After saving a music-provider key, pick a matching music model from the catalog.</summary>
+    private void EnsureMusicModelForProvider(string providerId)
+    {
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        var currentProvider = ResolveProviderIdForModel(_audioModel, "audio", preferVideoReview: false);
+        var off = string.IsNullOrWhiteSpace(_audioModel)
+                  || _audioModel.Equals("none", StringComparison.OrdinalIgnoreCase)
+                  || _audioModel.Equals("disabled", StringComparison.OrdinalIgnoreCase);
+        if (!off && string.Equals(currentProvider, pid, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var pick = _audioModels.FirstOrDefault(m =>
+            !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase));
+        if (pick is not null)
+            _audioModel = pick.Id;
+    }
+
+    /// <summary>After attaching a provider key, set empty required slots to that provider's first catalog model.</summary>
+    private void ApplyProviderModelDefaults(string providerId)
+    {
+        var pid = SupportedModelCatalog.NormalizeProviderId(providerId);
+        void Prefer(ref string slot, IReadOnlyList<SupportedModelDto> models)
+        {
+            if (!string.IsNullOrWhiteSpace(slot) && !slot.Equals("none", StringComparison.OrdinalIgnoreCase))
+                return;
+            var hit = models.FirstOrDefault(m =>
+                !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(ModelProviderId(m), pid, StringComparison.OrdinalIgnoreCase));
+            if (hit is not null) slot = hit.Id;
+        }
+        Prefer(ref _modelName, _videoModels);
+        Prefer(ref _imageModel, _imageModels);
+        Prefer(ref _planningModel, _planningModels);
+        Prefer(ref _visionModel, _visionModels);
+        Prefer(ref _qualityModel, _videoReviewModels);
     }
 
     private async Task LoadAsync()
@@ -983,6 +1717,28 @@
             _visionModel = GetStr("vision_model_name", _visionModel);
             _qualityModel = GetStr("quality_model_name", _qualityModel);
             _audioModel = GetStr("audio_model_name", _audioModel);
+            _voiceModel = GetStr("voice_model_name", _voiceModel);
+            // Drop ids that are not in the catalog (stale project config).
+            if (!string.IsNullOrWhiteSpace(_modelName) && !_videoModels.Any(m => string.Equals(m.Id, _modelName, StringComparison.OrdinalIgnoreCase)))
+                _modelName = SupportedModelCatalog.DefaultModelIdForCapability("video") ?? "";
+            if (!string.IsNullOrWhiteSpace(_imageModel) && !_imageModels.Any(m => string.Equals(m.Id, _imageModel, StringComparison.OrdinalIgnoreCase)))
+                _imageModel = SupportedModelCatalog.DefaultModelIdForCapability("image") ?? "";
+            if (!string.IsNullOrWhiteSpace(_planningModel) && !_planningModels.Any(m => string.Equals(m.Id, _planningModel, StringComparison.OrdinalIgnoreCase)))
+                _planningModel = SupportedModelCatalog.DefaultModelIdForCapability("chat") ?? "";
+            if (!string.IsNullOrWhiteSpace(_visionModel) && !_visionModels.Any(m => string.Equals(m.Id, _visionModel, StringComparison.OrdinalIgnoreCase)))
+                _visionModel = SupportedModelCatalog.DefaultModelIdForCapability("vision") ?? "";
+            if (!string.IsNullOrWhiteSpace(_qualityModel) && !_videoReviewModels.Any(m => string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))
+                _qualityModel = SupportedModelCatalog.DefaultModelIdForCapability("video-review")
+                                ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
+                                ?? "";
+            if (!string.IsNullOrWhiteSpace(_audioModel)
+                && !_audioModel.Equals("none", StringComparison.OrdinalIgnoreCase)
+                && !_audioModels.Any(m => string.Equals(m.Id, _audioModel, StringComparison.OrdinalIgnoreCase)))
+                _audioModel = "none";
+            if (!string.IsNullOrWhiteSpace(_voiceModel)
+                && !_voiceModel.Equals("none", StringComparison.OrdinalIgnoreCase)
+                && !_voiceModels.Any(m => string.Equals(m.Id, _voiceModel, StringComparison.OrdinalIgnoreCase)))
+                _voiceModel = "none";
             _enableBackgroundMusic = GetBool("enable_background_music", _enableBackgroundMusic);
             _backgroundMusicVolumePercent = GetInt("background_music_volume_percent", _backgroundMusicVolumePercent);
             _aspect = GetStr("aspect_ratio", _aspect);
@@ -1061,6 +1817,7 @@
             ["vision_model_name"] = _visionModel,
             ["quality_model_name"] = _qualityModel,
             ["audio_model_name"] = _audioModel,
+            ["voice_model_name"] = _voiceModel,
             ["enable_background_music"] = _enableBackgroundMusic,
             ["background_music_volume_percent"] = _backgroundMusicVolumePercent,
             ["model_selections"] = new Dictionary<string, string>
@@ -1128,7 +1885,7 @@
             ["image_model"] = image.Id,
             ["image_provider"] = image.ProviderId,
             ["video_output_per_sec"] = table,
-            ["image_output_quality"] = image.ImageCostPerImage ?? 0.05,
+            ["image_output_quality"] = image.ImageCostPerImage ?? 0,
             ["assume_avg_retries"] = assumeRetries,
             ["assume_ref_image_per_clip"] = assumeRef,
             ["notes"] =
@@ -1180,20 +1937,108 @@
         _ = InvokeAsync(StateHasChanged);
     }
 
+    private async Task OnThemeChangedAsync()
+    {
+        await PreviewThemeAsync();
+        await ScheduleAutoSaveAsync();
+    }
+
+    /// <summary>Debounced project-settings save — no bottom Save button.</summary>
+    private async Task ScheduleAutoSaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_projectId) || _cfg is null)
+            return;
+
+        _dirty = true;
+        var epoch = ++_autoSaveEpoch;
+        _autoSaveCts?.Cancel();
+        _autoSaveCts?.Dispose();
+        _autoSaveCts = new CancellationTokenSource();
+        var token = _autoSaveCts.Token;
+
+        _saveStatus = "Saving…";
+        try { await InvokeAsync(StateHasChanged); } catch { /* ignore */ }
+
+        try
+        {
+            await Task.Delay(450, token);
+            if (token.IsCancellationRequested || epoch != _autoSaveEpoch)
+                return;
+
+            await PersistProjectConfigAsync();
+            if (token.IsCancellationRequested || epoch != _autoSaveEpoch)
+                return;
+
+            _dirty = false;
+            _saveStatus = "Saved";
+            try { await InvokeAsync(StateHasChanged); } catch { /* ignore */ }
+
+            // Fade the Saved label after a moment.
+            _ = ClearSaveStatusLaterAsync(epoch);
+        }
+        catch (TaskCanceledException)
+        {
+            // newer edit superseded this save
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _saveStatus = "Save failed";
+            try { await InvokeAsync(StateHasChanged); } catch { /* ignore */ }
+        }
+    }
+
+    private async Task ClearSaveStatusLaterAsync(int epoch)
+    {
+        try
+        {
+            await Task.Delay(2000);
+            if (epoch == _autoSaveEpoch && _saveStatus == "Saved")
+            {
+                _saveStatus = null;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch { /* ignore */ }
+    }
+
     public void Dispose()
     {
         MediaFolder.Changed -= OnMediaFolderChanged;
+        try { _autoSaveCts?.Cancel(); } catch { /* ignore */ }
+        _autoSaveCts?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        MediaFolder.Changed -= OnMediaFolderChanged;
+        try { _autoSaveCts?.Cancel(); } catch { /* ignore */ }
+        _autoSaveCts?.Dispose();
+        // Flush any pending edits when leaving the page.
+        if (_dirty && !string.IsNullOrWhiteSpace(_projectId) && _cfg is not null)
+        {
+            try { await PersistProjectConfigAsync(); }
+            catch { /* best-effort on navigate away */ }
+            _dirty = false;
+        }
     }
 
     private async Task ConnectMediaFolderAsync()
     {
+        _error = null;
+        _message = null;
         try
         {
-            await MediaFolder.ConnectFolderAsync();
-            if (MediaFolder.IsConnected && !string.IsNullOrWhiteSpace(_projectId))
+            var ok = await MediaFolder.ConnectFolderAsync();
+            if (!ok)
             {
-                await MediaFolder.SyncProjectMediaToClientAsync(_projectId);
+                _error = MediaFolder.LastStatus
+                         ?? "Could not open the folder picker. Use Chrome or Edge and allow folder access.";
+                return;
             }
+            _message = $"Media folder set to “{MediaFolder.FolderName ?? "selected folder"}”.";
+            if (!string.IsNullOrWhiteSpace(_projectId))
+                await MediaFolder.SyncProjectMediaToClientAsync(_projectId);
         }
         catch (Exception ex)
         {
@@ -1203,54 +2048,24 @@
 
     private async Task ReconnectMediaFolderAsync()
     {
+        _error = null;
+        _message = null;
         try
         {
-            await MediaFolder.ReconnectAsync();
-            if (MediaFolder.IsConnected && !string.IsNullOrWhiteSpace(_projectId))
+            var ok = await MediaFolder.ReconnectAsync();
+            if (!ok)
             {
+                _error = MediaFolder.LastStatus
+                         ?? "Could not reconnect. Use Select folder to pick again.";
+                return;
+            }
+            _message = $"Reconnected “{MediaFolder.FolderName ?? "folder"}”.";
+            if (!string.IsNullOrWhiteSpace(_projectId))
                 await MediaFolder.SyncProjectMediaToClientAsync(_projectId);
-            }
         }
         catch (Exception ex)
         {
             _error = ex.Message;
         }
-    }
-
-    private async Task OpenFileExplorerForMediaFolderAsync()
-    {
-        var path = MediaFolder.FullPath ?? MediaFolder.FolderName;
-        if (string.IsNullOrWhiteSpace(path)) return;
-        try
-        {
-            var res = await Engine.OpenFolderAsync(path, _projectId);
-            if (res.Ok)
-            {
-                _message = $"📂 Opened “{res.Opened}” in File Explorer.";
-            }
-            else
-            {
-                _error = res.Error ?? "Could not open folder.";
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task PromptEditMediaFolderPathAsync()
-    {
-        try
-        {
-            var current = MediaFolder.FullPath ?? MediaFolder.FolderName ?? "";
-            var input = await Js.InvokeAsync<string?>("prompt", "Enter full computer path for your local media folder (e.g. C:\\Users\\Name\\Videos\\PageToMovie):", current);
-            if (input is not null)
-            {
-                await MediaFolder.SetFullPathAsync(input);
-                _message = "Local media folder full path updated.";
-            }
-        }
-        catch { /* prompt cancelled */ }
     }
 }

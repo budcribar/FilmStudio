@@ -1,0 +1,81 @@
+{
+  "schema_version": "adaptation_package.v1",
+  "pipeline_variant": "chained",
+  "book_slug": "the_velveteen_rabbit",
+  "book_sha256": "01c84466faf26379e7b49f364d2452d14da26fcbc9378d751b5caf3cf2580bfb",
+  "provider": "xai",
+  "model": "grok-4.5",
+  "judge_models": [
+    "grok-4",
+    "grok-4.20-reasoning"
+  ],
+  "temperature": 0.2,
+  "judge_temperature": 0,
+  "target_runtime_minutes": 20,
+  "generated_at_utc": "2026-08-02T02:19:54.3628991Z",
+  "validation_status": "pass",
+  "scene_count": 13,
+  "clip_count": null,
+  "artifacts": [
+    {
+      "key": "beat_plan",
+      "path": "adaptation_plan.json",
+      "exists": true,
+      "sha256": "713606fc6a4d71bd6b497e8f85f665686174c167cb18735ec6d6b043129c433d"
+    },
+    {
+      "key": "cast_and_locations",
+      "path": "cast_and_locations.json",
+      "exists": true,
+      "sha256": "ac615b1752150e126da63bb2083c070d08e73873f54e61fb8137b4dc2fb81404"
+    },
+    {
+      "key": "screenplay",
+      "path": "screenplay.fountain",
+      "exists": true,
+      "sha256": "25dc1c1decb714e6260ec32b6009ebae9920e23fac7e4ab7dff0ccb1ee2a8a35"
+    },
+    {
+      "key": "edit_decision_list",
+      "path": "edit_decision_list.json",
+      "exists": true,
+      "sha256": "2b0be2ef318475fd434b5ac56c4eebf81b24f1b9b9d84f148259fa07579c313c"
+    },
+    {
+      "key": "audio_plan",
+      "path": "audio_plan.json",
+      "exists": true,
+      "sha256": "68b7d682e7e120d883caef596fb2f27bd3154e249f2395c8e8bbde129b272b10"
+    },
+    {
+      "key": "source_book_indexed",
+      "path": "book_indexed.txt",
+      "exists": true,
+      "sha256": "b6dfdda625b7356671796a982c34c8443e3a2d927e5d0197cffedc09a1a30977"
+    },
+    {
+      "key": "source_book_annotated",
+      "path": "source_book_annotated.txt",
+      "exists": true,
+      "sha256": "bbc25fd928f790ddf05812cc56ec3a4c0ec977b613f6217a2518585b7bb9f3f8"
+    },
+    {
+      "key": "validation_report",
+      "path": "validation_report.json",
+      "exists": true,
+      "sha256": "7e83bf065d3698cf6eb8662cd7eec2fa8620c42aff51ab37e24c21c89bc9d532"
+    },
+    {
+      "key": "judge_review_grok-4",
+      "path": "judge_review.grok-4.json",
+      "exists": true,
+      "sha256": "603676467961d21e621a0a14e0f7db102541d7c2ce5b2e34d712e7e1e0b65265"
+    },
+    {
+      "key": "judge_review_grok-4.20-reasoning",
+      "path": "judge_review.grok-4.20-reasoning.json",
+      "exists": true,
+      "sha256": "b317f05febc56039ae83e245152057738cd112a6b66fd57eb9fe4a48b1bc3b44"
+    }
+  ]
+}

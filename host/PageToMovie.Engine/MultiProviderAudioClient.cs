@@ -35,13 +35,17 @@ public sealed class MultiProviderAudioClient : IAudioClient
         bool isVocal = false,
         string? lyrics = null)
     {
-        var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Audio).Provider;
+        var entry = SupportedModelCatalog.Find(model, ModelCapability.Audio)
+                    ?? SupportedModelCatalog.Find(model)
+                    ?? throw new InvalidOperationException(
+                        "Background music: no model selected. Open Settings → Studio coverage and choose a music model.");
+        var provider = entry.Provider;
         IAudioClient client = provider switch
         {
             ModelProviderFamily.Suno => _suno,
             ModelProviderFamily.AiMusicApi => _aiMusicApi,
             _ => _fal,
         };
-        return client.GenerateMusicTrackAsync(prompt, durationSeconds, model, ct, onProgress, isVocal, lyrics);
+        return client.GenerateMusicTrackAsync(prompt, durationSeconds, entry.Id, ct, onProgress, isVocal, lyrics);
     }
 }

@@ -1,0 +1,72 @@
+{
+  "BookPath": "books/Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 00:57:58 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 1,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 33,
+        "AvgWordsPerDialogue": 15.8,
+        "MaxWordsInSingleDialogue": 30,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MA",
+          "NICK",
+          "YOUNG WOMAN",
+          "SIONNA",
+          "DOCTOR",
+          "OFFICER DUPUIS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG WOMAN"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. YOUNG WOMAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "o3-mini": {
+      "o3-mini": 8.25
+    }
+  },
+  "JudgeRankMatrix": {
+    "o3-mini": {
+      "o3-mini": 1
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "o3-mini": {
+      "o3-mini": "Screenplay A effectively adapts key narrative beats and characters from the source while presenting distinct visual cues, though some internal monologues and bundled narrative beats slightly reduce its directability in short AI video clips."
+    }
+  },
+  "JudgeSummaries": {
+    "o3-mini": "Strongest: Screenplay A because it translates the source material with clear visuals and consistent character descriptions that aid directibility; Weakest: Screenplay A because its occasional internal narrative exposition challenges the strict \u0027show, don\u2019t tell\u0027 brevity required for short clip execution."
+  }
+}

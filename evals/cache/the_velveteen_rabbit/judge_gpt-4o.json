@@ -1,0 +1,108 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A maintains a strong fidelity to the source material, capturing the essence of the story and characters effectively. The character descriptions are consistent and clear, aiding in visual continuity. The screenplay is directible with clear, filmable actions, though some scenes could benefit from tighter pacing. Dialogue is authentic and captures the emotional depth of the characters. Sound design and music complement the scenes well, enhancing the emotional impact."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B excels in adaptation fidelity, closely following the book\u0027s narrative and themes without unnecessary deviations. Character descriptions are mostly consistent, though there are minor lapses in visual continuity. The screenplay is highly directible, with clear, concise action lines that fit the short-clip format. Pacing is well-managed, maintaining narrative momentum. Dialogue is natural and fitting for the characters, and the sound design effectively supports the emotional tone of each scene."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.58,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C maintains good fidelity to the source material but occasionally lacks clarity in character descriptions, which could affect visual consistency. The screenplay is generally directible, though some scenes are overly descriptive, hindering the short-clip format. Pacing could be improved to enhance narrative flow. Dialogue is mostly authentic but sometimes lacks subtext. Sound design is adequate but could be more dynamic to better support the scenes."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D offers a faithful adaptation with clear character descriptions that support visual continuity. The screenplay is effectively directible, with well-defined actions suitable for short clips. Pacing is solid, maintaining engagement throughout. Dialogue is authentic and captures the characters\u0027 voices well. Sound design and music are well-integrated, enhancing the emotional resonance of the scenes."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E maintains good adaptation fidelity but occasionally lacks clarity in character descriptions, affecting visual consistency. The screenplay is generally directible, though some scenes are overly descriptive, hindering the short-clip format. Pacing is adequate but could be more dynamic. Dialogue is mostly authentic but sometimes lacks depth. Sound design is functional but could be more engaging to better support the scenes."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay F captures the essence of the source material but occasionally deviates from key narrative beats. Character descriptions are somewhat inconsistent, affecting visual continuity. The screenplay is directible, though some scenes are overly descriptive, hindering the short-clip format. Pacing could be improved to enhance narrative flow. Dialogue is mostly authentic but sometimes lacks subtext. Sound design is adequate but could be more dynamic to better support the scenes."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay G maintains good adaptation fidelity but occasionally lacks clarity in character descriptions, affecting visual consistency. The screenplay is generally directible, though some scenes are overly descriptive, hindering the short-clip format. Pacing is adequate but could be more dynamic. Dialogue is mostly authentic but sometimes lacks depth. Sound design is functional but could be more engaging to better support the scenes."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay D",
+    "Screenplay A",
+    "Screenplay C",
+    "Screenplay E",
+    "Screenplay G",
+    "Screenplay F"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it excels in adaptation fidelity and is highly directible with clear, concise action lines. Weakest: Screenplay F because it occasionally deviates from key narrative beats and has inconsistent character descriptions affecting visual continuity.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "BA4AF8E59100C49AEC27EC8D1C63E9C6EB3245CF7939A65AAB9010913A4A4F64"
+}

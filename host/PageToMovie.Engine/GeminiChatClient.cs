@@ -23,17 +23,20 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     private readonly HttpClient _http;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<GeminiChatClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public GeminiChatClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
-        ILogger<GeminiChatClient> log)
+        ILogger<GeminiChatClient> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _ = opts; // reserved — no Gemini-specific options today
         _http = http;
         _telemetry = telemetry;
         _log = log;
+        _errorLogger = errorLogger;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
         if (_http.Timeout < TimeSpan.FromSeconds(180))
@@ -45,22 +48,37 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     private static readonly AsyncLocal<string?> _lastResolvedModel = new();
 
     /// <summary>
-    /// The model id that actually served the most recently completed call on this async flow —
-    /// differs from the requested model when a 404 (e.g. a deprecated/retired model like
-    /// gemini-2.5-pro) triggered the gemini-2.5-flash fallback below. Callers that need to report
-    /// or attribute results by model (benchmarks, telemetry dashboards) should check this rather
-    /// than assume the requested id is what generated the response.
+    /// The model id that actually served the most recently completed call on this async flow.
+    /// Callers that need to report or attribute results by model (benchmarks, telemetry) should
+    /// check this rather than assume the requested id is what generated the response.
     /// </summary>
     public static string? LastResolvedModel => _lastResolvedModel.Value;
+
+    /// <summary>Maps the provider-neutral <c>reasoningEffort</c> scale to Gemini's
+    /// <c>thinkingConfig.thinkingLevel</c>. Confirmed live: "high" is Gemini's ceiling — "max"/
+    /// "xhigh"/"maximum" all 400. Falls through to "high" for anything at or above it.</summary>
+    private static string? MapThinkingLevel(string? effort) => effort?.Trim().ToLowerInvariant() switch
+    {
+        null or "" => null,
+        "low" => "low",
+        "medium" => "medium",
+        _ => "high",
+    };
 
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "gemini-2.5-flash",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null)
+        string? mode = null,
+        string? reasoningEffort = null)
     {
+        var generationConfig = new Dictionary<string, object?> { ["temperature"] = temperature };
+        var thinkingLevel = MapThinkingLevel(reasoningEffort);
+        if (thinkingLevel is not null)
+            generationConfig["thinkingConfig"] = new Dictionary<string, object?> { ["thinkingLevel"] = thinkingLevel };
+
         var payload = new Dictionary<string, object?>
         {
             ["system_instruction"] = new Dictionary<string, object?>
@@ -75,20 +93,22 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                     ["parts"] = new object[] { new Dictionary<string, object?> { ["text"] = userPrompt } },
                 },
             },
-            ["generationConfig"] = new Dictionary<string, object?> { ["temperature"] = temperature },
+            ["generationConfig"] = generationConfig,
         };
-        return await SendAsync(
-            payload, model, "chat", mode,
-            systemPrompt, userPrompt,
-            (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
-            ct).ConfigureAwait(false);
+        return await SendWithTransientRetryAsync(
+            () => SendAsync(
+                payload, model, "chat", mode,
+                systemPrompt, userPrompt,
+                (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
+                ct),
+            model, mode, ct).ConfigureAwait(false);
     }
 
     /// <summary>Multi-image completion for clip auto-review (prev tail + current frames).</summary>
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "gemini-2.5-flash",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default)
     {
@@ -110,10 +130,48 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                 new Dictionary<string, object?> { ["role"] = "user", ["parts"] = parts },
             },
         };
-        return await SendAsync(
-            payload, model, "vision", "clip_auto_review",
-            prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
-            prompt.Length, ct).ConfigureAwait(false);
+        return await SendWithTransientRetryAsync(
+            () => SendAsync(
+                payload, model, "vision", "clip_auto_review",
+                prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
+                prompt.Length, ct),
+            model, "clip_auto_review", ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Retries the whole <see cref="SendAsync"/> call (including its internal 404-model-fallback
+    /// and param-shape self-heal recursion, untouched) on 429/5xx or a network/timeout failure.
+    /// Logs each failed attempt via <see cref="GenerationErrorLogger"/> before backing off.
+    /// </summary>
+    private async Task<string> SendWithTransientRetryAsync(
+        Func<Task<string>> call,
+        string model,
+        string? mode,
+        CancellationToken ct)
+    {
+        return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+            _ => call(),
+            isTransient: AiRetryPolicy.IsTransientChatFailure,
+            maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+            backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+            onRetry: async (attemptNum, ex) =>
+            {
+                if (_errorLogger is null) return;
+                var httpStatus = ex is ChatHttpStatusException hse2 ? hse2.StatusCode : (int?)null;
+                await _errorLogger.LogAsync(new GenerationErrorRecord
+                {
+                    Stage = "gemini_chat_completion",
+                    Provider = SupportedModelCatalog.CatalogProviderId(model, "chat"),
+                    Model = model,
+                    ErrorType = httpStatus is not null ? "http_error" : "exception",
+                    ErrorMessage = ex.Message,
+                    HttpStatus = httpStatus,
+                    Attempt = attemptNum,
+                    Resolved = false,
+                    RequestSummary = $"mode={mode}",
+                }, ct).ConfigureAwait(false);
+            },
+            ct: ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -122,36 +180,26 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     /// returning a wrong answer if ever routed here.
     /// </summary>
     public Task<string> TranscribePageAsync(
-        string imagePath, int page, string model = "gemini-2.5-flash", CancellationToken ct = default) =>
+        string imagePath, int page, string model = "", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Book-page transcription is not implemented for Gemini yet — route this call to Grok.");
 
     /// <inheritdoc cref="TranscribePageAsync"/>
     public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(
         string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "gemini-2.5-flash", CancellationToken ct = default) =>
+        string model = "", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Character-page classification is not implemented for Gemini yet — route this call to Grok.");
 
     private static string NormalizeModelName(string? model)
     {
-        if (string.IsNullOrWhiteSpace(model)) return "gemini-2.5-flash";
+        if (string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException(
+                "Gemini: model is required. Open Settings and choose a model (no silent default).");
         var trimmed = model.Trim();
         if (trimmed.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
-        {
             trimmed = trimmed["models/".Length..];
-        }
-        if (trimmed.Equals("gemini-3-pro", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-3.0-pro", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-3-pro-image", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-1.5-pro", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-1.5-flash", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("grok-4.5", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("grok-4", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("claude-sonnet-5", StringComparison.OrdinalIgnoreCase))
-        {
-            return "gemini-2.5-flash";
-        }
+        // Strip provider prefix only — never rewrite to a different model id.
         return trimmed;
     }
 
@@ -185,10 +233,20 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
-                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound && targetModel != "gemini-2.5-flash")
+                // Not every Gemini model supports thinkingConfig (confirmed live: gemini-2.5-flash
+                // 400s with "Thinking level is not supported for this model"). Self-heal by
+                // stripping it and retrying rather than maintaining a model-capability list.
+                if (resp.StatusCode == System.Net.HttpStatusCode.BadRequest
+                    && payload.TryGetValue("generationConfig", out var gc)
+                    && gc is Dictionary<string, object?> genConfig
+                    && genConfig.ContainsKey("thinkingConfig")
+                    && body.Contains("hinking", StringComparison.OrdinalIgnoreCase))
                 {
-                    _log.LogWarning("Gemini model {Model} returned 404 — retrying with gemini-2.5-flash", targetModel);
-                    return await SendAsync(payload, "gemini-2.5-flash", kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                    var retryPayload = new Dictionary<string, object?>(payload);
+                    var retryGenConfig = new Dictionary<string, object?>(genConfig);
+                    retryGenConfig.Remove("thinkingConfig");
+                    retryPayload["generationConfig"] = retryGenConfig;
+                    return await SendAsync(retryPayload, model, kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
                 }
 
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry
@@ -205,7 +263,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
+                throw new ChatHttpStatusException((int)resp.StatusCode,
                     $"Gemini {endpoint} HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 

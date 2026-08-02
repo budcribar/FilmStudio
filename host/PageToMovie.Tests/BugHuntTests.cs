@@ -1478,7 +1478,7 @@ public class BugHuntTests
         public bool IsConfigured => false;
         public Task<string> CompleteAsync(
             string systemPrompt, string userPrompt, string model = "grok-4.5",
-            double temperature = 0.2, CancellationToken ct = default, string? mode = null) =>
+            double temperature = 0.2, CancellationToken ct = default, string? mode = null, string? reasoningEffort = null) =>
             Task.FromResult("- offline");
     }
 }

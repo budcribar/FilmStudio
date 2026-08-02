@@ -1,0 +1,582 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 01:15:52 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 90.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 30,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 41,
+        "TotalDialogueBlocks": 90,
+        "AvgWordsPerDialogue": 11.2,
+        "MaxWordsInSingleDialogue": 30,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "NICK",
+          "SIONNA",
+          "MA",
+          "DR. CARSON",
+          "DREAM NICK",
+          "OFFICER DUPUIS",
+          "NURSE",
+          "SAGE",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.1,
+      "AvgCharacterDisambiguation": 9.4,
+      "AvgAiVideoDirectibility": 8.9,
+      "AvgDramaticPacing": 8.7,
+      "AvgDialogueAuthenticity": 8.9,
+      "AvgSoundDesignMusic": 7.3,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 32,
+      "AvgJudgeRank": 1.6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 90.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 75,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 32,
+        "TotalDialogueBlocks": 151,
+        "AvgWordsPerDialogue": 13.1,
+        "MaxWordsInSingleDialogue": 98,
+        "LongMonologueCount": 5,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "NICK",
+          "SIONNA",
+          "LIBRARIAN",
+          "DR. CARSON",
+          "MA",
+          "RAY",
+          "ANSWERING MACHINE",
+          "OFFICER DUPUIS",
+          "NURSE",
+          "SAGE",
+          "BOB",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "5 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.3,
+      "AvgCharacterDisambiguation": 9.1,
+      "AvgAiVideoDirectibility": 8.8,
+      "AvgDramaticPacing": 8.7,
+      "AvgDialogueAuthenticity": 9.1,
+      "AvgSoundDesignMusic": 7.5,
+      "AvgOverallQualitative": 8.8,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-2.5-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 23,
+      "AvgJudgeRank": 3.4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 89.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 23,
+        "TotalDialogueBlocks": 124,
+        "AvgWordsPerDialogue": 21.2,
+        "MaxWordsInSingleDialogue": 77,
+        "LongMonologueCount": 18,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "YOUNG MARK",
+          "YOUNG NICK",
+          "MA",
+          "NICK",
+          "LIBRARIAN",
+          "SIONNA",
+          "DR. CARSON",
+          "DYING MAN",
+          "OFFICER DUPUIS",
+          "NURSE OWENS",
+          "BOB",
+          "SAGE",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG MARK",
+          "YOUNG NICK"
+        ],
+        "DiagnosticWarnings": [
+          "18 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 2 age-qualified character header(s) (e.g. YOUNG MARK, YOUNG NICK).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.9,
+      "AvgCharacterDisambiguation": 8.9,
+      "AvgAiVideoDirectibility": 8.3,
+      "AvgDramaticPacing": 8.3,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 7,
+      "AvgOverallQualitative": 8.3,
+      "DisqualifyingFlags": [
+        "gpt-4o-mini: Inconsistent character development and pacing issues."
+      ]
+    },
+    {
+      "ModelId": "grok-4",
+      "AnonymousLabel": "",
+      "CompositeScore": 73.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 21,
+      "AvgJudgeRank": 3.8,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 79.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 71,
+        "TotalDialogueBlocks": 279,
+        "AvgWordsPerDialogue": 15.4,
+        "MaxWordsInSingleDialogue": 114,
+        "LongMonologueCount": 16,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "JAKE",
+          "SIONNA",
+          "MA",
+          "LIBRARIAN",
+          "DR. CARSON",
+          "JENNIFER BALES",
+          "BOBBY SWENSON",
+          "MRS. STARK",
+          "DARK-HAIRED MAN",
+          "TEACHER",
+          "KEVIN MCCLEARY",
+          "BOB",
+          "OFFICER MIKE DUPUIS",
+          "NURSE PATRICIA OWENS",
+          "FATHER JOSEPH",
+          "COP",
+          "SAGE",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
+          "16 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.5,
+      "AvgCharacterDisambiguation": 7.3,
+      "AvgAiVideoDirectibility": 7.2,
+      "AvgDramaticPacing": 6.7,
+      "AvgDialogueAuthenticity": 7.5,
+      "AvgSoundDesignMusic": 6.2,
+      "AvgOverallQualitative": 6.9,
+      "DisqualifyingFlags": [
+        "grok-4.5: Invented protagonist first name \u0027Jake\u0027 used from page 1 (book withholds until final \u0027Peter Olson\u0027 reveal)",
+        "grok-4.5: Dialogue misattributions and minor invented exchanges",
+        "gemini-2.5-flash: Major dropped beats (bar fight where Nick tries to hit Peter, angel/demon dream, Sionna meeting Nick, Nick taking Ma to Mass, Indian Sage dream, final prison visit).",
+        "gemini-2.5-flash: Significant reordering of narrative events (schoolyard flashback, Nick/Peter reconciliation scene).",
+        "gemini-2.5-flash: Invented name for the protagonist (\u0027Jake\u0027 instead of \u0027Peter Olson\u0027).",
+        "gemini-2.5-flash: The ending is completely altered, missing the core resolution of Peter\u0027s journey and forgiveness, and ending abruptly with Nick\u0027s internal monologue.",
+        "gemini-2.5-flash: Heavy reliance on unfilmable internal monologue and abstract descriptions."
+      ]
+    },
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 70.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 15,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 33,
+        "AvgWordsPerDialogue": 15.8,
+        "MaxWordsInSingleDialogue": 30,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MA",
+          "NICK",
+          "YOUNG WOMAN",
+          "SIONNA",
+          "DOCTOR",
+          "OFFICER DUPUIS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG WOMAN"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. YOUNG WOMAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 4.5,
+      "AvgCharacterDisambiguation": 5.9,
+      "AvgAiVideoDirectibility": 5.5,
+      "AvgDramaticPacing": 5.1,
+      "AvgDialogueAuthenticity": 5.6,
+      "AvgSoundDesignMusic": 5.1,
+      "AvgOverallQualitative": 5.3,
+      "DisqualifyingFlags": [
+        "grok-4.5: Major invented plot resolution (Sionna remains romantically with narrator in Seattle happy ending)",
+        "grok-4.5: Dropped or elided core beats (detailed stabbing/PTSD separation, yoga/Buddhism arc, precise bar and crash sequences)",
+        "grok-4.5: Montage-heavy structure unusable for 5-10s one-beat clips",
+        "grok-4.5: Vague non-locked character descriptions",
+        "grok-4: Major invented plot events and dropped beats",
+        "grok-4: Summarized structure unsuitable for short clips",
+        "grok-4: Inconsistent character descriptions",
+        "gemini-2.5-flash: Major invented plot events (Ma\u0027s death, Narrator\u0027s confrontation with Nick after Ma\u0027s death, Sionna\u0027s continued presence in Seattle).",
+        "gemini-2.5-flash: Dropped major beats (Nick\u0027s attack on Sionna, Sionna\u0027s departure due to PTSD, Narrator\u0027s final name reveal).",
+        "gemini-2.5-flash: Fundamental alteration of character arcs (Sionna\u0027s relationship with Narrator, Narrator\u0027s journey of forgiveness).",
+        "gemini-2.5-flash: Heavy reliance on unfilmable internal monologue and abstract descriptions, making many beats undirectible."
+      ]
+    },
+    {
+      "ModelId": "gpt-4o-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 66.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 14,
+      "AvgJudgeRank": 5.2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 90.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 80,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 55,
+        "TotalDialogueBlocks": 213,
+        "AvgWordsPerDialogue": 7,
+        "MaxWordsInSingleDialogue": 20,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "YOUNG MAN",
+          "SIONNA",
+          "MA",
+          "DR. CARSON",
+          "OFFICER DUPUIS",
+          "JUDGE",
+          "REPORTER"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (55 scenes); high micro-scene density inflates video gen budget.",
+          "Detected 1 age-qualified character header(s) (e.g. YOUNG MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 5,
+      "AvgCharacterDisambiguation": 5.9,
+      "AvgAiVideoDirectibility": 5.3,
+      "AvgDramaticPacing": 4.6,
+      "AvgDialogueAuthenticity": 5.2,
+      "AvgSoundDesignMusic": 4.4,
+      "AvgOverallQualitative": 5.1,
+      "DisqualifyingFlags": [
+        "gpt-4o-mini: Pacing issues and some character inconsistencies.",
+        "grok-4.5: Extensive invented sequences (present-tense lighter-fluid arson, full courtroom, extended filler monologues)",
+        "grok-4.5: Broken mid-to-late structure that loses source arc",
+        "grok-4.5: Dropped or mangled major beats (Sionna growth, precise accident/stabbing aftermath, clean forgiveness)",
+        "grok-4.5: Protagonist reduced to generic \u0027YOUNG MAN\u0027 with no casting lock",
+        "grok-4: Major invented plot events and dropped beats",
+        "grok-4: Over-condensed scenes unsuitable for short clips",
+        "gemini-2.5-flash: Major dropped beats (Narrator\u0027s first date with Sionna, Ma\u0027s health crisis and ER visit, Nick\u0027s confrontation with Lindsey\u0027s boyfriend, Sionna\u0027s verbal showdown with Nick, Ma\u0027s death and Nick\u0027s accident, Sionna\u0027s stabbing and departure, Narrator\u0027s move to Seattle and success, Indian Sage dream, final prison visit).",
+        "gemini-2.5-flash: Significant reordering and invention of plot events, particularly in the latter half of the story, leading to a completely different narrative arc and ending.",
+        "gemini-2.5-flash: The Narrator is never named, even at the end, which deviates from the source\u0027s final reveal.",
+        "gemini-2.5-flash: Heavy reliance on V.O. and internal monologue, making many beats unfilmable for AI video clips.",
+        "gemini-2.5-flash: The script ends abruptly without a clear resolution to the main conflicts or character arcs."
+      ]
+    },
+    {
+      "ModelId": "gpt-4o",
+      "AnonymousLabel": "",
+      "CompositeScore": 29.7,
+      "IsGenerationFallback": true,
+      "GenerationFallbackReason": "Chat HTTP 429: {\n    \u0022error\u0022: {\n        \u0022message\u0022: \u0022Rate limit reached for gpt-4o in organization org-Lrf5VruXklblpVn0yFliJuPl on tokens per min (TPM): Limit 30000, Used 20568, Requested 11106. Please try again in 3.348s. Visit https://platform.openai.com/account/rate-limits to learn more.\u0022,\n        \u0022type\u0022: \u0022tokens\u0022,\n        \u0022param\u0022: null,\n        \u0022code\u0022: \u0022rate_limit_exceeded\u0022\n    }\n}\n",
+      "BordaPoints": 0,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 74.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 566,
+        "TotalDialogueBlocks": 566,
+        "AvgWordsPerDialogue": 56.9,
+        "MaxWordsInSingleDialogue": 90,
+        "LongMonologueCount": 415,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
+          "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
+          "415 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 0,
+      "AvgCharacterDisambiguation": 0,
+      "AvgAiVideoDirectibility": 0,
+      "AvgDramaticPacing": 0,
+      "AvgDialogueAuthenticity": 0,
+      "AvgSoundDesignMusic": 0,
+      "AvgOverallQualitative": 0,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-4o": {
+      "grok-4.5": -1,
+      "o3-mini": -1,
+      "claude-sonnet-5": -1,
+      "gemini-2.5-flash": -1,
+      "grok-4": -1,
+      "gpt-4o-mini": -1
+    },
+    "gpt-4o-mini": {
+      "grok-4.5": 8.25,
+      "claude-sonnet-5": 8.67,
+      "gemini-2.5-flash": 7.25,
+      "o3-mini": 7.83,
+      "gpt-4o-mini": 7.67,
+      "grok-4": 8.25
+    },
+    "o3-mini": {
+      "gemini-2.5-flash": 8.25,
+      "grok-4": 7.75,
+      "o3-mini": 8.83,
+      "grok-4.5": 8.92,
+      "gpt-4o-mini": 7.25,
+      "claude-sonnet-5": 9.17
+    },
+    "grok-4.5": {
+      "claude-sonnet-5": 8,
+      "grok-4": 7.08,
+      "grok-4.5": 8.92,
+      "o3-mini": 3.08,
+      "gemini-2.5-flash": 8.5,
+      "gpt-4o-mini": 3.67
+    },
+    "grok-4": {
+      "grok-4.5": 8.42,
+      "claude-sonnet-5": 8.92,
+      "o3-mini": 3.25,
+      "grok-4": 7.83,
+      "gpt-4o-mini": 3.25,
+      "gemini-2.5-flash": 8.83
+    },
+    "claude-sonnet-5": {
+      "grok-4": -1,
+      "grok-4.5": -1,
+      "claude-sonnet-5": -1,
+      "o3-mini": -1,
+      "gemini-2.5-flash": -1,
+      "gpt-4o-mini": -1
+    },
+    "gemini-2.5-flash": {
+      "o3-mini": 3.33,
+      "gemini-2.5-flash": 8.83,
+      "grok-4.5": 9.08,
+      "claude-sonnet-5": 9.08,
+      "grok-4": 3.5,
+      "gpt-4o-mini": 3.5
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-4o": {
+      "grok-4.5": -1,
+      "o3-mini": -1,
+      "claude-sonnet-5": -1,
+      "gemini-2.5-flash": -1,
+      "grok-4": -1,
+      "gpt-4o-mini": -1
+    },
+    "gpt-4o-mini": {
+      "claude-sonnet-5": 1,
+      "grok-4": 2,
+      "grok-4.5": 3,
+      "o3-mini": 4,
+      "gpt-4o-mini": 5,
+      "gemini-2.5-flash": 6
+    },
+    "o3-mini": {
+      "claude-sonnet-5": 1,
+      "grok-4.5": 2,
+      "o3-mini": 3,
+      "gemini-2.5-flash": 4,
+      "grok-4": 5,
+      "gpt-4o-mini": 6
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gemini-2.5-flash": 2,
+      "claude-sonnet-5": 3,
+      "grok-4": 4,
+      "gpt-4o-mini": 5,
+      "o3-mini": 6
+    },
+    "grok-4": {
+      "claude-sonnet-5": 1,
+      "gemini-2.5-flash": 2,
+      "grok-4.5": 3,
+      "grok-4": 4,
+      "gpt-4o-mini": 5,
+      "o3-mini": 6
+    },
+    "claude-sonnet-5": {
+      "grok-4": -1,
+      "grok-4.5": -1,
+      "claude-sonnet-5": -1,
+      "o3-mini": -1,
+      "gemini-2.5-flash": -1,
+      "gpt-4o-mini": -1
+    },
+    "gemini-2.5-flash": {
+      "grok-4.5": 1,
+      "claude-sonnet-5": 2,
+      "gemini-2.5-flash": 3,
+      "grok-4": 4,
+      "gpt-4o-mini": 5,
+      "o3-mini": 6
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F gpt-4o-mini rated its own screenplay 7.7/10 vs. a 4.4/10 average from 4 other judge(s) (\u002B3.3) \u2014 possible self-preference bias.",
+    "\u26A0\uFE0F o3-mini rated its own screenplay 8.8/10 vs. a 4.4/10 average from 4 other judge(s) (\u002B4.5) \u2014 possible self-preference bias.",
+    "\u26A0\uFE0F grok-4 rated its own screenplay 7.8/10 vs. a 6.6/10 average from 4 other judge(s) (\u002B1.2) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-4o": {
+      "grok-4.5": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay A\u0027.",
+      "o3-mini": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay B\u0027.",
+      "claude-sonnet-5": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay C\u0027.",
+      "gemini-2.5-flash": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay D\u0027.",
+      "grok-4": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay E\u0027.",
+      "gpt-4o-mini": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay F\u0027."
+    },
+    "gpt-4o-mini": {
+      "grok-4.5": "Screenplay A effectively captures the essence of the source material while maintaining character consistency and providing directable scenes, though some pacing could be improved.",
+      "claude-sonnet-5": "Screenplay B excels in adaptation fidelity and dialogue authenticity, effectively translating the book\u0027s themes and character dynamics into a cinematic format.",
+      "gemini-2.5-flash": "Screenplay C struggles with pacing and character development, making it less effective in conveying the source material\u0027s emotional weight.",
+      "o3-mini": "Screenplay D maintains a solid adaptation of the source material but lacks some depth in dialogue and pacing.",
+      "gpt-4o-mini": "Screenplay E has a good foundation but suffers from pacing issues and lacks the emotional resonance found in the source material.",
+      "grok-4": "Screenplay F effectively captures the narrative and character dynamics, providing a strong visual and emotional experience."
+    },
+    "o3-mini": {
+      "gemini-2.5-flash": "Screenplay A faithfully covers many narrative beats from the book and offers clear flashbacks and voiceovers, though its pacing can feel a bit uneven and some dialogue is overly expository.",
+      "grok-4": "Screenplay B covers most beats with a natural tone and clear visuals but suffers slightly from a name change (Jake instead of Peter) and a somewhat less engaging overall cinematic execution.",
+      "o3-mini": "Screenplay C is visually rich and faithful to the source, with strong montage sequences and a wide scope of narrative beats that lend themselves well to AI video clip generation.",
+      "grok-4.5": "Screenplay D achieves a tight, contemporary structure with clearly delineated flashbacks and present-day scenes, strong character descriptions, and natural dialogue that make it highly directable for AI-generated video clips.",
+      "gpt-4o-mini": "Screenplay E retells many of the book\u2019s events but tends to be overly summary and expository, lacking the cinematic details and crisp dialogue necessary for effective short video clip adaptation.",
+      "claude-sonnet-5": "Screenplay F offers the most polished, continuous narrative with clear age and time disambiguation, detailed visual directions, and authentic dialogue that perfectly translate the book\u2019s complex emotional beats into filmable short clips."
+    },
+    "grok-4.5": {
+      "claude-sonnet-5": "Strong source coverage of core beats (Sionna meet, dreams, slap, bar chaos, crash, stabbing, Seattle frame, prison forgiveness, late Peter reveal) with minimal invention. Characters have usable visual hooks (Nick scars/reddish hair/Trans Am, Sionna blue eyes/fish necklace) though Narrator locking is lighter early. Scenes mostly clip-sized and visual; dialogue tracks book closely. Sound beds implied via TV/rock/rain but few explicit cues. Solid and greenlightable with light polish.",
+      "grok-4": "Covers most plot spine and lifts large verbatim dialogue blocks, but inventing the lead\u0027s name as Jake is a fidelity violation per instructions; some dream/yoga compression and attribution errors further ding it. Age tags and physicals (Nick scars, Sionna eyes/necklace) are present and mostly consistent. Beats are generally short and filmable. Pacing holds until later compression. Sound mostly absent. Usable bones but not production-ready as-is.",
+      "grok-4.5": "Highest-fidelity translation: all major beats (kickball/window, gym takeover, Sionna collision \u002B eyes/necklace, Wuthering/dreams, yoga, slap, Lindsey bar, Sionna-Nick pie debate, drunk crash, stabbing, separation, sage dream, prison \u0027President Peter\u0027) with Seattle frame and closed cast. Explicit age/visual locks (PETER mid-30s vs early-20s lean; YOUNG NICK; Nick scars/reddish; Sionna pale/blue/fish) stay consistent. Action lines are pure short-clip observables. Dialogue is performable and book-true. Sound implied well via rain/AC-DC/TV. Exceptional for AI clip pipeline.",
+      "o3-mini": "Severely unfaithful: invents continued Sionna relationship and triumphant couple ending, collapses key trauma into vague montage and generic confrontation, drops growth/spiritual beats. Characters lack distinct recurring visuals or age tags. Heavy tell-V.O. and multi-location montages violate short-clip directibility. Dialogue is generic and non-book. Sound nearly nonexistent. Unusable.",
+      "gemini-2.5-flash": "Near-complete beat coverage matching book (grocery/gym/kickball young, Ma confusion, library/Wuthering/horse dream, Java themes, hospital knife dream, pill-box slap, pie intellectual duel, crash/funeral, Nick-to-Sionna stabbing, separation, 7-yr Seattle/Bozo/sage, prison forgiveness \u002B President Peter). Strong YOUNG/adult disambiguation and consistent physicals (Nick puzzle-face/scars, Sionna blue eyes). Scenes largely single-action and visual. Dialogue highly authentic. Minor sound-cue sparsity. Excellent and ready.",
+      "gpt-4o-mini": "Early pages track source then derail into invented courtroom, arson staging, and meandering filler while dropping spiritual/relationship depth. Character labels stay vague (\u0027YOUNG MAN\u0027) with weak recurring visuals. Choppy CUT-TO style still buries action under V.O. tell; pacing collapses. Dialogue starts book-like then becomes generic. Virtually no sound design. Not viable."
+    },
+    "grok-4": {
+      "grok-4.5": "Strong fidelity with tight coverage of major beats, consistent visual character descriptions, and filmable action lines; minor weakness in explicit sound cues.",
+      "claude-sonnet-5": "Exceptional fidelity and character clarity with unnamed narrator until reveal; highly directible short-clip scenes and natural dialogue.",
+      "o3-mini": "Severe fidelity failures from invented content and condensation; unusable for production.",
+      "grok-4": "Solid fidelity and visual actions but slightly less consistent character re-descriptions and pacing compression than top entries.",
+      "gpt-4o-mini": "Severe fidelity and structure failures; unusable for production.",
+      "gemini-2.5-flash": "Near-perfect fidelity with highly filmable short-clip beats, consistent visuals, and authentic dialogue."
+    },
+    "claude-sonnet-5": {
+      "grok-4": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay A\u0027.",
+      "grok-4.5": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay B\u0027.",
+      "claude-sonnet-5": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay C\u0027.",
+      "o3-mini": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay D\u0027.",
+      "gemini-2.5-flash": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay E\u0027.",
+      "gpt-4o-mini": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay F\u0027."
+    },
+    "gemini-2.5-flash": {
+      "o3-mini": "Screenplay A fundamentally alters the core narrative, inventing major plot points and character outcomes (e.g., Ma\u0027s death, Sionna\u0027s continued relationship with the Narrator in Seattle, the nature of the final confrontation with Nick). It also drops several critical beats from the source. The heavy reliance on internal monologue and abstract descriptions makes many scenes unfilmable for AI video clips, and the dialogue often feels generic or out of character compared to the source. The pacing is rushed and disjointed due to the high-level summaries rather than distinct beats.",
+      "gemini-2.5-flash": "Screenplay B is an exceptionally faithful adaptation, retaining almost all major plot points, character arcs, and dialogue directly from the source. The character disambiguation is clear and consistent, and the action lines are generally concrete and directible for short AI video clips. The pacing effectively builds tension and emotion, and the dialogue maintains the authentic voice of the book. The only minor point is the early naming of Peter, which is a practical choice for a screenplay and doesn\u0027t detract from the overall fidelity.",
+      "grok-4.5": "Screenplay C is an outstanding adaptation, demonstrating exceptional fidelity to the source material, including precise dialogue and narrative beats. Character descriptions are consistently clear and well-disambiguated across different time periods. The script excels in AI video directibility, with concise, camera-observable action lines and effective use of \u0027beat\u0027 for short clips. The dramatic pacing is expertly managed, and the dialogue is authentic and cinematic. The \u0027Seattle frame\u0027 effectively structures the narrative, and the narrator\u0027s name reveal is handled perfectly.",
+      "claude-sonnet-5": "Screenplay D is an exceptionally strong adaptation, mirroring the source text with remarkable fidelity in plot, character, and dialogue. It correctly maintains the narrator\u0027s unnamed status until the very end, a key detail. Character descriptions are consistently clear and well-disambiguated. The action lines are highly directible, supporting the short-clip constraint, and the dramatic pacing is excellent. The dialogue is authentic and impactful, making it a top-tier candidate for adaptation.",
+      "grok-4": "Screenplay E suffers from numerous fidelity issues, including dropping several major plot points, significantly reordering others, and inventing a name for the protagonist. The ending is completely different from the source, lacking the crucial resolution and forgiveness arc. Directibility is hampered by frequent internal monologues and abstract descriptions, and the pacing is disjointed due to the missing and reordered scenes. The dialogue, while sometimes direct from the source, is often presented out of context due to the structural changes.",
+      "gpt-4o-mini": "Screenplay F is a highly incomplete adaptation, omitting numerous critical plot points and character developments from the source text, especially in the latter half of the story. The narrative arc is severely truncated, and the ending is entirely different, lacking the resolution of the original. The script relies excessively on V.O. and internal thoughts, making it difficult to direct visually for short clips. Character disambiguation is inconsistent, and the pacing is fragmented due to the missing content and abrupt transitions."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-4o": "\u26A0\uFE0F Mock judge evaluation returned for gpt-4o.",
+    "gpt-4o-mini": "Strongest: Screenplay B because it excels in adaptation fidelity and dialogue authenticity, effectively translating the book\u0027s themes. Weakest: Screenplay C because it struggles with pacing and character development, making it less effective in conveying the source material\u0027s emotional weight.",
+    "o3-mini": "Strongest: Screenplay F because it delivers an exceptionally clear, cinematic, and coherent adaptation with precise visuals and character continuity; Weakest: Screenplay E because its overly summary style and lack of detailed, directable visual and dialogue cues detract from full production readiness.",
+    "grok-4.5": "Strongest: Screenplay C because it delivers near-perfect fidelity, the clearest age/visual character locks, and the most consistently short, camera-ready beats optimized for 5-10s AI clips. Weakest: Screenplay D because it invents a contrary happy-ending with Sionna, drops core trauma and growth beats, and relies on unfilmable montages that break the short-clip format.",
+    "grok-4": "Strongest: Screenplay B because it achieves the highest fidelity, clearest character disambiguation, and most consistently filmable short-clip structure. Weakest: Screenplay C because it contains major invented content, drops key beats, and is too summarized to support the required short-clip format.",
+    "claude-sonnet-5": "\u26A0\uFE0F Mock judge evaluation returned for claude-sonnet-5.",
+    "gemini-2.5-flash": "Strongest: Screenplay C because it demonstrates exceptional fidelity, character clarity, and directibility, capturing the full narrative arc and emotional depth of the source with precise execution. Weakest: Screenplay A because it fundamentally invents and alters major plot points and character outcomes, resulting in a narrative that deviates significantly from the source material and is largely unfilmable."
+  }
+}

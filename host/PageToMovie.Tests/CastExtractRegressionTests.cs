@@ -281,7 +281,7 @@ public sealed class CastExtractRegressionTests
             string model = "grok-4.5",
             double temperature = 0.2,
             CancellationToken ct = default,
-            string? mode = null)
+            string? mode = null, string? reasoningEffort = null)
         {
             if (string.Equals(mode, ChatCallModes.CastFromScreenplay, StringComparison.OrdinalIgnoreCase) ||
                 userPrompt.Contains("BEGIN FOUNTAIN", StringComparison.OrdinalIgnoreCase))

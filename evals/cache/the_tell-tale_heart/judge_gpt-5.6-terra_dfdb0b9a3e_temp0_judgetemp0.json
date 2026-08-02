@@ -1,0 +1,46 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 8.7,
+      "aiVideoDirectibility": 8.3,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.2,
+      "soundDesignMusic": 9.1,
+      "overallQualitativeScore": 7.55,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invents three individually named police characters\u2014OFFICER REYNOLDS, OFFICER HALE, and OFFICER BRIGGS\u2014despite the source identifying only three unnamed officers.",
+        "Gives an invented spoken police line and individualized officer characterization where the source merely summarizes their arrival and conversation.",
+        "Omits the required machine-readable VISION_META sidecar specified as a hard output requirement."
+      ],
+      "rationale": "This is visually polished, comprehensive, and exceptionally strong on sound-driven suspense. It preserves nearly every major source beat, especially the prolonged bedside standoff, escalating heartbeat, concealment, and confession. The recurring NARRATOR and OLD MAN are clearly and consistently described, and the murder and confession sequences are broken into highly filmable micro-actions. However, fidelity is severely disqualified by the invention of three named officers and their dialogue, a direct violation of the source and of the instruction against inventing named characters or expanded summarized exchanges. Its scene density is generally effective, though the early surveillance material is somewhat repetitive for short-clip pacing. The missing required sidecar also prevents technical delivery readiness.",
+      "promptImprovementSuggestion": "Add: \u0022Do not assign invented personal names, individual traits, or dialogue to source-unnamed group characters; when the source only summarizes their presence or conversation, retain them as a non-speaking collective in Action unless a source-quoted line makes a stable speaker token strictly necessary.\u0022"
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.7,
+      "characterDisambiguation": 5.4,
+      "aiVideoDirectibility": 8.1,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 7.6,
+      "overallQualitativeScore": 7.88,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Omits the required machine-readable VISION_META sidecar specified as a hard output requirement."
+      ],
+      "rationale": "This is the strongest adaptation on source fidelity: it covers the complete dramatic spine without adding named characters, new plot turns, or expanded officer dialogue, and it retains Poe\u0027s distinctive language with disciplined compression. Its streamlined scene progression is effective for 5\u201310 second clips, moving cleanly from nightly ritual to discovery, murder, concealment, inspection, and breakdown. The principal weakness is casting clarity: the OLD MAN is adequately locked, but the physically active NARRATOR is never properly introduced beyond a pale hand, making a consistent performer reference difficult if the figure is shown beyond a hand or silhouette. Sound beds are concrete and well integrated throughout, but the draft uses no music cues despite the prompt\u0027s emphasis on scoring emotional peaks. The absent VISION_META sidecar is a technical delivery failure even though the screenplay body is otherwise near-ready.",
+      "promptImprovementSuggestion": "Add: \u0022Any recurring character who is physically visible in more than one clip\u2014even if they speak only in V.O.\u2014must receive a complete locked visual description on first visible appearance; reserve the pure voice-only narrator exception for characters never shown on screen.\u0022"
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it delivers the full source arc with disciplined compression, highly authentic Poe dialogue, and no invented named characters or plot material. Weakest: Screenplay A because its otherwise excellent cinematic execution is critically undermined by inventing three named officers and expanded officer dialogue, triggering the stated severe fidelity penalty.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "65EBF9D79EE43D8796A00206BB9F4FDDCE9730A0662BF0D88116EF9F365AC833"
+}

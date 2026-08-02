@@ -1,0 +1,1340 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "heading": "EXT. KIRK STREET APARTMENT BUILDING - DAY",
+      "purpose": "Establish Milwaukee home exterior and Nick\u0027s Trans Am signature",
+      "location_key": "LOCATION_KIRK_STREET_EXTERIOR",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR adult lean late-twenties V.O. only"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "tall brick fifth-floor walk-up",
+        "burnt-orange Trans Am with yellow flames and hood eagle idling",
+        "city traffic ambience"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. KIRK STREET APARTMENT - LIVING ROOM - DAY",
+      "purpose": "Introduce Ma, Narrator, and dominant Nick in family unit",
+      "location_key": "LOCATION_KIRK_LIVING_ROOM",
+      "cast": [
+        "MA",
+        "NARRATOR",
+        "NICK"
+      ],
+      "wardrobe_or_age_variant": [
+        "MA sixties cardigan tired brown eyes",
+        "NARRATOR late-twenties lean pizza-work shoes",
+        "NICK thirties scarred chin eyebrow scar boots suede jacket"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Ma half-dozing before game show",
+        "Narrator with grocery bags",
+        "Nick hauls six bags one-armed",
+        "Nick kisses Ma drops keys in basket"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "heading": "EXT. ALLEY BEHIND KIRK STREET - DAY (FLASHBACK)",
+      "purpose": "Childhood beat: Nick takes blame for broken window",
+      "location_key": "LOCATION_KIRK_ALLEY",
+      "cast": [
+        "YOUNG NARRATOR",
+        "YOUNG NICK",
+        "LITTLE MARK",
+        "OLD MRS. ENGEL"
+      ],
+      "wardrobe_or_age_variant": [
+        "YOUNG NARRATOR about eight",
+        "YOUNG NICK twelve already big wild hair"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "kickball and dented can-lid bases",
+        "ball smashes Mrs. Engel kitchen glass",
+        "Mark freezes",
+        "Young Nick claims fault"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "heading": "EXT. MOXIE\u0027S GYM - DAY",
+      "purpose": "Show Nick\u0027s intimidation power in public space",
+      "location_key": "LOCATION_MOXIES_GYM",
+      "cast": [
+        "NICK"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK steel-worker build gym entry"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "curler drops forty-pound bar for Nick",
+        "Nick racks fifty for warm-ups",
+        "plates clank"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "heading": "EXT. METAL FACTORY - DAY",
+      "purpose": "Establish Nick\u0027s job money and car status",
+      "location_key": "LOCATION_METAL_FACTORY",
+      "cast": [
+        "NICK"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK hard hat crane/line worker"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "Nick in crane cab then on assembly line",
+        "peels out in T-top Trans Am"
+      ]
+    },
+    {
+      "scene_id": "S6",
+      "heading": "INT. PIZZA PARLOR - DAY",
+      "purpose": "Narrator\u0027s stalled life and duty to Ma",
+      "location_key": "LOCATION_PIZZA_PARLOR",
+      "cast": [
+        "NARRATOR",
+        "TONY"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR flour-dusted work clothes",
+        "TONY older owner"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "dough spinning under heat lamps",
+        "Tony at counter",
+        "sidewalk through front glass"
+      ]
+    },
+    {
+      "scene_id": "S7",
+      "heading": "EXT. PIZZA PARLOR SIDEWALK - DAY",
+      "purpose": "Meet-cute: Sionna trips into Narrator",
+      "location_key": "LOCATION_PIZZA_SIDEWALK",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA short brown hair black V-neck fish necklace jeans blue tennis shoes backpack"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "bike lock",
+        "shoulder brush fall",
+        "eye lock watery blue",
+        "number exchange",
+        "over-shoulder glance back"
+      ]
+    },
+    {
+      "scene_id": "S8",
+      "heading": "INT. KIRK STREET APARTMENT - KITCHEN - NIGHT",
+      "purpose": "Ma\u0027s cognitive slip with pills and church memory",
+      "location_key": "LOCATION_KIRK_KITCHEN",
+      "cast": [
+        "MA",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "MA glassy-eyed cardigan night"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "pill bottles lined on counter",
+        "Ma pacing hunting",
+        "empty stare then snap-back"
+      ]
+    },
+    {
+      "scene_id": "S9",
+      "heading": "INT. JOE\u0027S BAR AND GRILL - NIGHT",
+      "purpose": "Nick rage-lectures about Ma and nursing-home cost",
+      "location_key": "LOCATION_JOES_BAR",
+      "cast": [
+        "NARRATOR",
+        "NICK"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK Jack and Coke bar night"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "Packers-Bears TV",
+        "back slap greeting",
+        "Nick threatening look",
+        "Narrator pays and exits cold"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "heading": "EXT. MILWAUKEE PUBLIC LIBRARY - NIGHT",
+      "purpose": "Narrator seeks refuge after bar",
+      "location_key": "LOCATION_LIBRARY_EXTERIOR",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR cold-night hurry"
+      ],
+      "estimated_duration_seconds": 15,
+      "visual_beats": [
+        "hurries under old lights",
+        "heavy door entry"
+      ]
+    },
+    {
+      "scene_id": "S11",
+      "heading": "INT. MILWAUKEE PUBLIC LIBRARY - NIGHT",
+      "purpose": "Gets library card and Wuthering Heights",
+      "location_key": "LOCATION_LIBRARY_INTERIOR",
+      "cast": [
+        "NARRATOR",
+        "LIBRARIAN"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR among classic stacks"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "wood floors chain lamps",
+        "form and temporary card",
+        "pulls Wuthering Heights"
+      ]
+    },
+    {
+      "scene_id": "S12",
+      "heading": "INT. KIRK STREET APARTMENT - BEDROOM - NIGHT",
+      "purpose": "Reading into sleep; bridge to first dream",
+      "location_key": "LOCATION_KIRK_BEDROOM",
+      "cast": [
+        "NARRATOR",
+        "MA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR reading under lamp"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Ma already abed",
+        "Heathcliff/Catherine pages",
+        "sleep takes him"
+      ]
+    },
+    {
+      "scene_id": "S13",
+      "heading": "EXT. ENGLISH MOOR - DAY (DREAM)",
+      "purpose": "Dream conflates Sionna with Catherine",
+      "location_key": "LOCATION_DREAM_MOOR",
+      "cast": [
+        "SIONNA",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA old-period clothes riding"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "wind on heather",
+        "Sionna face in old clothes riding laughing"
+      ]
+    },
+    {
+      "scene_id": "S14",
+      "heading": "INT. KIRK STREET APARTMENT - BEDROOM - NIGHT",
+      "purpose": "Wake from moor dream",
+      "location_key": "LOCATION_KIRK_BEDROOM",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR half-awake book on chest"
+      ],
+      "estimated_duration_seconds": 15,
+      "visual_beats": [
+        "jolt half-awake",
+        "book on chest",
+        "stare at ceiling"
+      ]
+    },
+    {
+      "scene_id": "S15",
+      "heading": "INT. JAVA HUT - DAY",
+      "purpose": "First coffee date; book symbols; dinner set",
+      "location_key": "LOCATION_JAVA_HUT",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA loose green hooded top backpack"
+      ],
+      "estimated_duration_seconds": 60,
+      "visual_beats": [
+        "college backpacks tables",
+        "hand-talk symbols moors",
+        "destructive unchanging love beat",
+        "Friday dinner plan",
+        "bus stop exit"
+      ]
+    },
+    {
+      "scene_id": "S16",
+      "heading": "INT. KIRK STREET APARTMENT - BEDROOM - NIGHT",
+      "purpose": "Sleep into medieval horseback dream",
+      "location_key": "LOCATION_KIRK_BEDROOM",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR asleep"
+      ],
+      "estimated_duration_seconds": 12,
+      "visual_beats": [
+        "asleep in bed",
+        "soft bed creak into dream sound"
+      ]
+    },
+    {
+      "scene_id": "S17",
+      "heading": "EXT. DECIDUOUS FOREST / OPEN FIELD - DAY (DREAM)",
+      "purpose": "Past-life style first kiss with Sionna",
+      "location_key": "LOCATION_DREAM_FOREST_FIELD",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR white balloon sleeves red embroidered tunic",
+        "SIONNA long brown hair period gown"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "moss trillium bleeding hearts",
+        "dappled mare ride",
+        "dismount high grass",
+        "first kiss early-morning blue eyes",
+        "whisper Hold"
+      ]
+    },
+    {
+      "scene_id": "S18",
+      "heading": "INT. KIRK STREET APARTMENT - BEDROOM - NIGHT",
+      "purpose": "Bolt awake from kiss dream",
+      "location_key": "LOCATION_KIRK_BEDROOM",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR sweating cold room"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "bolts upright sweating",
+        "hand on chest",
+        "What the hell was that"
+      ]
+    },
+    {
+      "scene_id": "S19",
+      "heading": "INT. YOGA STUDIO - NIGHT",
+      "purpose": "First yoga; calm carries into work",
+      "location_key": "LOCATION_YOGA_STUDIO",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR t-shirt shorts shirt-tucking",
+        "SIONNA easy practice clothes"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "purple mats crowd",
+        "downward dog shirt over face",
+        "tuck shirt corpse pose",
+        "post-practice calm",
+        "pizza work smiling insert"
+      ]
+    },
+    {
+      "scene_id": "S20",
+      "heading": "INT. KIRK STREET APARTMENT - LIVING ROOM - DAY",
+      "purpose": "Nick erupts over missed doctor for girl",
+      "location_key": "LOCATION_KIRK_LIVING_ROOM",
+      "cast": [
+        "NICK",
+        "NARRATOR",
+        "MA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK face red fists clenched",
+        "MA blank in chair"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "Nick stomps",
+        "girl confession",
+        "priorities lecture",
+        "door slam",
+        "temple rub"
+      ]
+    },
+    {
+      "scene_id": "S21",
+      "heading": "INT. MILWAUKEE PUBLIC LIBRARY - DAY",
+      "purpose": "Buddhism/attachment reading growth",
+      "location_key": "LOCATION_LIBRARY_INTERIOR",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR underlining paperbacks"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "yoga book and Buddhism paperback",
+        "underlining at table"
+      ]
+    },
+    {
+      "scene_id": "S22",
+      "heading": "INT. KIRK STREET APARTMENT - LIVING ROOM - DAY",
+      "purpose": "Invite Sionna; Ma chest crisis begins",
+      "location_key": "LOCATION_KIRK_LIVING_ROOM",
+      "cast": [
+        "NARRATOR",
+        "SIONNA",
+        "MA"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA phone-filtered voice only",
+        "MA clutching chest"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "phone to ear",
+        "Ma confused game show",
+        "chest clutch dizziness"
+      ]
+    },
+    {
+      "scene_id": "S23",
+      "heading": "INT. DR. CARSON\u0027S OFFICE - DAY",
+      "purpose": "Dangerously high BP; ER order",
+      "location_key": "LOCATION_DR_CARSON_OFFICE",
+      "cast": [
+        "DR. CARSON",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "DR. CARSON gray temples serious"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "doctor faces Narrator",
+        "stroke-risk diagnosis",
+        "IV stabilize order"
+      ]
+    },
+    {
+      "scene_id": "S24",
+      "heading": "EXT. HOSPITAL ENTRANCE - DAY",
+      "purpose": "Nick angry pickup; Ma to ER",
+      "location_key": "LOCATION_HOSPITAL_ENTRANCE",
+      "cast": [
+        "NICK",
+        "NARRATOR",
+        "MA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK furious at Trans Am",
+        "MA holding chest"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Trans Am screech",
+        "load Ma",
+        "automatic doors",
+        "ringing ears line"
+      ]
+    },
+    {
+      "scene_id": "S25",
+      "heading": "INT. HOSPITAL ROOM - NIGHT",
+      "purpose": "Vigil sleep into betrayal dream",
+      "location_key": "LOCATION_HOSPITAL_ROOM",
+      "cast": [
+        "MA",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "MA dozing hospital bed",
+        "NARRATOR chair sleep"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "Ma dozes",
+        "Narrator asleep in chair",
+        "monitor beep into battle clang"
+      ]
+    },
+    {
+      "scene_id": "S26",
+      "heading": "EXT. MEDIEVAL BATTLEFIELD - DAY (DREAM)",
+      "purpose": "Dream Nick stabs Narrator after Save her",
+      "location_key": "LOCATION_DREAM_BATTLEFIELD",
+      "cast": [
+        "NARRATOR",
+        "DYING MAN",
+        "NICK"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK eyes of fire battlefield",
+        "NARRATOR soldier exhausted"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "chaos blood steel",
+        "dying man Save her",
+        "Nick knife into chest"
+      ]
+    },
+    {
+      "scene_id": "S27",
+      "heading": "INT. HOSPITAL ROOM - NIGHT",
+      "purpose": "Wake from stab dream with betrayal nausea",
+      "location_key": "LOCATION_HOSPITAL_ROOM",
+      "cast": [
+        "NARRATOR",
+        "MA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR hand on sternum"
+      ],
+      "estimated_duration_seconds": 18,
+      "visual_beats": [
+        "gasp awake",
+        "hand on sternum",
+        "Ma still sleeping"
+      ]
+    },
+    {
+      "scene_id": "S28",
+      "heading": "INT. DRUGSTORE - DAY",
+      "purpose": "Sionna helps get weekly pill organizer",
+      "location_key": "LOCATION_DRUGSTORE",
+      "cast": [
+        "SIONNA",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "pair at pharmacy counter"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "blue plastic day-labeled organizer",
+        "hopeful things going right"
+      ]
+    },
+    {
+      "scene_id": "S29",
+      "heading": "INT. KIRK STREET APARTMENT - LIVING ROOM - NIGHT",
+      "purpose": "Nick mocks nurse Nancy; slap fight",
+      "location_key": "LOCATION_KIRK_LIVING_ROOM",
+      "cast": [
+        "NARRATOR",
+        "NICK",
+        "MA"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK boots on footstool beet-red smirk"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "show organizer",
+        "wrapped-around-finger mock",
+        "screaming exchange",
+        "open-hand slap",
+        "Nick storms out"
+      ]
+    },
+    {
+      "scene_id": "S30",
+      "heading": "EXT. SCHOOL PLAYGROUND - DAY (FLASHBACK)",
+      "purpose": "Young Nick protects brother from teacher",
+      "location_key": "LOCATION_SCHOOL_PLAYGROUND",
+      "cast": [
+        "YOUNG NARRATOR",
+        "BOBBY SWENSON",
+        "MRS. STARK",
+        "YOUNG NICK"
+      ],
+      "wardrobe_or_age_variant": [
+        "YOUNG NICK sixth-grader inch taller than Stark",
+        "MRS. STARK glasses on beaded chain"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "lilacs end-of-year laugh",
+        "Nick smooth-talks Stark",
+        "later musses hair I\u0027ll always take care of you"
+      ]
+    },
+    {
+      "scene_id": "S31",
+      "heading": "INT. KIRK STREET APARTMENT - LIVING ROOM - NIGHT (MONTHS LATER)",
+      "purpose": "College plan; bros before hos ultimatum",
+      "location_key": "LOCATION_KIRK_LIVING_ROOM",
+      "cast": [
+        "MA",
+        "SIONNA",
+        "NICK",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR calmer meditative eyes",
+        "NICK rare visit suede jacket boots"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "Ma lights up with Sionna",
+        "business degree loan news",
+        "mafia-bluff Donny story",
+        "bros before ho\u0027s",
+        "forced thin smile"
+      ]
+    },
+    {
+      "scene_id": "S32",
+      "heading": "EXT. CITY SIDEWALK - DAY",
+      "purpose": "Loving-kindness and mutual I love you",
+      "location_key": "LOCATION_CITY_SIDEWALK",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "couple walking day clothes"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "skateboard kids laugh",
+        "she unbothered",
+        "slow kiss",
+        "mutual love declaration"
+      ]
+    },
+    {
+      "scene_id": "S33",
+      "heading": "INT. NICK\u0027S APARTMENT - NIGHT",
+      "purpose": "Friends mock Narrator as whipped",
+      "location_key": "LOCATION_NICK_APARTMENT",
+      "cast": [
+        "NICK",
+        "BOB",
+        "SAMMY",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "smoke session pipe Buds"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "smoke cloud",
+        "rocker endurance",
+        "pussy-whipped jabs",
+        "class retort"
+      ]
+    },
+    {
+      "scene_id": "S34",
+      "heading": "INT. JOE\u0027S BAR AND GRILL - POOL ROOM - NIGHT",
+      "purpose": "Lindsey confrontation; Nick almost punches brother",
+      "location_key": "LOCATION_JOES_POOL_ROOM",
+      "cast": [
+        "NICK",
+        "LINDSEY",
+        "DARK-HAIRED MAN",
+        "NARRATOR",
+        "BOB",
+        "SAMMY",
+        "JOE",
+        "BOUNCER"
+      ],
+      "wardrobe_or_age_variant": [
+        "LINDSEY blonde pink sweater",
+        "DARK-HAIRED MAN protective arm"
+      ],
+      "estimated_duration_seconds": 70,
+      "visual_beats": [
+        "AC/DC under packed room",
+        "Nick spies Lindsey with new man",
+        "narrator blocks",
+        "fist draws slow-mo",
+        "bouncer scramble head-butt"
+      ]
+    },
+    {
+      "scene_id": "S35",
+      "heading": "EXT. MILWAUKEE STREETS - NIGHT",
+      "purpose": "Flight from bar to Sionna",
+      "location_key": "LOCATION_MILWAUKEE_STREETS",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR full-out night run"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "sprinting sidewalks obstacles",
+        "cold air lungs",
+        "reaches her door"
+      ]
+    },
+    {
+      "scene_id": "S36",
+      "heading": "INT. SIONNA\u0027S APARTMENT - LIVING ROOM - NIGHT",
+      "purpose": "Aftermath counsel; purpose; sleep",
+      "location_key": "LOCATION_SIONNA_LIVING_ROOM",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "green suede sofa comfort"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "story pour",
+        "holds his face",
+        "true self purpose",
+        "head in lap scalp massage drift"
+      ]
+    },
+    {
+      "scene_id": "S37",
+      "heading": "EXT. LAKE SHORE - DAY (DREAM)",
+      "purpose": "Angel Sionna repels giant Nick mace",
+      "location_key": "LOCATION_DREAM_LAKE",
+      "cast": [
+        "SIONNA",
+        "NICK",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA white winged sleeves from water",
+        "NICK giant mace fire eyes then shrinks"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "B\u0026W to color",
+        "rises from lake",
+        "invisible force pushes Nick away",
+        "embrace"
+      ]
+    },
+    {
+      "scene_id": "S38",
+      "heading": "INT. SIONNA\u0027S APARTMENT - LIVING ROOM - NIGHT",
+      "purpose": "Wake 3 a.m.; go to bed",
+      "location_key": "LOCATION_SIONNA_LIVING_ROOM",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "tangled on couch"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "jolt awake couch",
+        "kitchen clock 3 a.m.",
+        "angel line",
+        "shuffle to bed"
+      ]
+    },
+    {
+      "scene_id": "S39",
+      "heading": "INT. KIRK STREET APARTMENT - LIVING ROOM - DAY",
+      "purpose": "Domestic grind montage; Nick absent; Descartes VO",
+      "location_key": "LOCATION_KIRK_LIVING_ROOM",
+      "cast": [
+        "NARRATOR",
+        "SIONNA",
+        "MA"
+      ],
+      "wardrobe_or_age_variant": [
+        "routine months compressed"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "pill box filled",
+        "butternut casserole",
+        "Ma listens then forgets words keeps feeling",
+        "Nick absence covered"
+      ]
+    },
+    {
+      "scene_id": "S40",
+      "heading": "INT. POLICE STATION - DAY",
+      "purpose": "Ma dead; Nick critical; drunk-driving pending",
+      "location_key": "LOCATION_POLICE_STATION",
+      "cast": [
+        "NARRATOR",
+        "OFFICER DUPUIS"
+      ],
+      "wardrobe_or_age_variant": [
+        "OFFICER DUPUIS big graying thin mustache",
+        "NARRATOR shaking styrofoam cup"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "1898 stone lion carvings",
+        "chest-high counter",
+        "death notification",
+        "water phone voicemail"
+      ]
+    },
+    {
+      "scene_id": "S41",
+      "heading": "INT. HOSPITAL ICU HALLWAY - DAY",
+      "purpose": "Refuse to enter Nick\u0027s ICU room",
+      "location_key": "LOCATION_HOSPITAL_ICU_HALL",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR viewing through glass only"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "Nick wild hair bandages wires chest tube huge leg",
+        "one look turn away"
+      ]
+    },
+    {
+      "scene_id": "S42",
+      "heading": "INT. KIRK STREET APARTMENT - LIVING ROOM - DAY",
+      "purpose": "Grief collapse; Sionna comforts",
+      "location_key": "LOCATION_KIRK_LIVING_ROOM",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "empty Ma chair afghan"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "empty chair",
+        "floor sobbing hair pull",
+        "Die jackass scream",
+        "Sionna holds rocks"
+      ]
+    },
+    {
+      "scene_id": "S43",
+      "heading": "INT. SACRED HEART FUNERAL HOME - DAY",
+      "purpose": "Arrangements and graveside dirt throw",
+      "location_key": "LOCATION_FUNERAL_HOME_CEMETERY",
+      "cast": [
+        "NARRATOR",
+        "SIONNA",
+        "FATHER JOSEPH",
+        "BOB"
+      ],
+      "wardrobe_or_age_variant": [
+        "maple casket funeral attire"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "casket choice",
+        "small service neighbors coworkers Bob",
+        "dirt handful muted thunk on lid"
+      ]
+    },
+    {
+      "scene_id": "S44",
+      "heading": "INT. HOSPITAL ROOM - DAY",
+      "purpose": "Confront hospitalized Nick; walk out",
+      "location_key": "LOCATION_HOSPITAL_ROOM",
+      "cast": [
+        "NICK",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK sallow black-green bruises oxygen chest tube IV"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "TV off",
+        "tearful Jack-and-Cokes regret",
+        "manslaughter fear",
+        "Whose fault stare",
+        "Narrator leaves trapped Nick"
+      ]
+    },
+    {
+      "scene_id": "S45",
+      "heading": "EXT. ST. MARY\u0027S CEMETERY - DAY",
+      "purpose": "Grave visit mums and faith verse VO",
+      "location_key": "LOCATION_ST_MARYS_CEMETERY",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "late fall coat water bottle mums"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "sun on marker",
+        "golden mums in metal vase",
+        "highway wind"
+      ]
+    },
+    {
+      "scene_id": "S46",
+      "heading": "INT. PIZZA PARLOR - NIGHT",
+      "purpose": "Tony mentors; more deliveries offered",
+      "location_key": "LOCATION_PIZZA_PARLOR",
+      "cast": [
+        "NARRATOR",
+        "TONY",
+        "TOMMY"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR head pie man cold-flushed from run"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Tommy fumbles Friday order",
+        "keys tossed",
+        "fast return",
+        "Tony shoulder grip help offer"
+      ]
+    },
+    {
+      "scene_id": "S47",
+      "heading": "INT. SIONNA\u0027S BEDROOM - NIGHT",
+      "purpose": "Pizza-baby dream sparks delivery idea",
+      "location_key": "LOCATION_SIONNA_BEDROOM",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "couple in bed night"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "startle awake",
+        "pizza-faced baby recount",
+        "new idea laugh",
+        "Domino-style thought VO"
+      ]
+    },
+    {
+      "scene_id": "S48",
+      "heading": "INT. PIZZA PARLOR - DAY",
+      "purpose": "Bob warns Nick may be locked up; cold refusal",
+      "location_key": "LOCATION_PIZZA_PARLOR",
+      "cast": [
+        "BOB",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOB pupils wide animated"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "door bell Bob entry",
+        "not okay monologue",
+        "Bob hands-up retreat"
+      ]
+    },
+    {
+      "scene_id": "S49",
+      "heading": "INT. NICK\u0027S APARTMENT - DAY (NICK\u0027S WORLD)",
+      "purpose": "Nick POV blames Sionna for collapse",
+      "location_key": "LOCATION_NICK_APARTMENT",
+      "cast": [
+        "NICK"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK thinner limping gray-edged smoking"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "pace court papers",
+        "lighter smoke",
+        "little bitch monologue"
+      ]
+    },
+    {
+      "scene_id": "S50",
+      "heading": "INT. BUS - DAY",
+      "purpose": "Nick rides to Sionna\u0027s duplex",
+      "location_key": "LOCATION_BUS_ROUTE_10",
+      "cast": [
+        "NICK"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK jaw set among riders"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "bag ladies kids on bus",
+        "off into gray freeze",
+        "walk dead summer pots"
+      ]
+    },
+    {
+      "scene_id": "S51",
+      "heading": "INT. SIONNA\u0027S APARTMENT - LIVING ROOM - DAY",
+      "purpose": "Nick threatens and stabs Sionna; Narrator intervenes",
+      "location_key": "LOCATION_SIONNA_LIVING_ROOM",
+      "cast": [
+        "SIONNA",
+        "NICK",
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK switchblade Swiss Army",
+        "SIONNA throat-held cornered"
+      ],
+      "estimated_duration_seconds": 80,
+      "visual_beats": [
+        "door crack gray cat",
+        "crowd wall hand throat",
+        "blade to collarbone",
+        "front door WHAM",
+        "struggle elbow blade sinks red",
+        "wipe blade bolt"
+      ]
+    },
+    {
+      "scene_id": "S52",
+      "heading": "INT. SIONNA\u0027S APARTMENT - HALLWAY - DAY",
+      "purpose": "Direct pressure 911; name Sionna McAllister to cop",
+      "location_key": "LOCATION_SIONNA_HALLWAY",
+      "cast": [
+        "NARRATOR",
+        "SIONNA",
+        "COP"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR blood-soaked hands flannel ripped",
+        "SIONNA pale camisole wet"
+      ],
+      "estimated_duration_seconds": 50,
+      "visual_beats": [
+        "stacked hands on shoulder wound",
+        "sirens rising",
+        "paramedics gurney",
+        "cop interview names"
+      ]
+    },
+    {
+      "scene_id": "S53",
+      "heading": "INT. HOSPITAL WAITING AREA - NIGHT",
+      "purpose": "Survival then breakup; she leaves",
+      "location_key": "LOCATION_HOSPITAL_WAIT_HOME",
+      "cast": [
+        "NARRATOR",
+        "SIONNA"
+      ],
+      "wardrobe_or_age_variant": [
+        "SIONNA foam pillow zombie stare recovery months"
+      ],
+      "estimated_duration_seconds": 55,
+      "visual_beats": [
+        "hours wait lives",
+        "rocking-chair blank stare",
+        "can\u0027t feel me break speech",
+        "walks to bedroom",
+        "he free-falls out"
+      ]
+    },
+    {
+      "scene_id": "S54",
+      "heading": "EXT. SEATTLE BELLTOWN STREET - DAY (YEARS LATER)",
+      "purpose": "Time jump: pizza chain owner life",
+      "location_key": "LOCATION_SEATTLE_BELLTOWN",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR mid-thirties fuller shoulders cleaner coat"
+      ],
+      "estimated_duration_seconds": 35,
+      "visual_beats": [
+        "gray mist hoods",
+        "keyboard busker",
+        "TONY\u0027S BOY\u0027S PIZZA signage"
+      ]
+    },
+    {
+      "scene_id": "S55",
+      "heading": "INT. LOWELL\u0027S RESTAURANT - DAY",
+      "purpose": "Cinnamon-roll memory of wound and blame",
+      "location_key": "LOCATION_LOWELLS",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR alone second-floor Sound view"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "ferry cruise view",
+        "uneaten cinnamon halo roll",
+        "flash blood hallway leave"
+      ]
+    },
+    {
+      "scene_id": "S56",
+      "heading": "INT. SEATTLE YOGA STUDIO - NIGHT",
+      "purpose": "Gratefulness practice; void remains",
+      "location_key": "LOCATION_SEATTLE_YOGA",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "mat among ten candles citrus-lavender"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "eyes closed chant",
+        "Shakespeare thinking VO"
+      ]
+    },
+    {
+      "scene_id": "S57",
+      "heading": "INT. SEATTLE APARTMENT - NIGHT",
+      "purpose": "Home with Bozo; drift to sage dream",
+      "location_key": "LOCATION_SEATTLE_APARTMENT",
+      "cast": [
+        "NARRATOR",
+        "BOZO"
+      ],
+      "wardrobe_or_age_variant": [
+        "orange-and-white cat on couch"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "warm apartment read",
+        "cat on couch",
+        "rain glass drift sleep"
+      ]
+    },
+    {
+      "scene_id": "S58",
+      "heading": "EXT. GREEN HILLS ROAD - DAY (DREAM)",
+      "purpose": "Sage teaches non-judgment via pizza box",
+      "location_key": "LOCATION_DREAM_GREEN_HILLS",
+      "cast": [
+        "NARRATOR",
+        "SAGE"
+      ],
+      "wardrobe_or_age_variant": [
+        "SAGE dark skin white flowing wrap Indian"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "hyper color grass",
+        "dirty pizza box judged",
+        "sage rebuke illusion truth",
+        "joy light box gone"
+      ]
+    },
+    {
+      "scene_id": "S59",
+      "heading": "INT. SEATTLE APARTMENT - NIGHT",
+      "purpose": "Wake decide forgive; book Milwaukee flight",
+      "location_key": "LOCATION_SEATTLE_APARTMENT",
+      "cast": [
+        "NARRATOR",
+        "BOZO"
+      ],
+      "wardrobe_or_age_variant": [
+        "notebook laptop night"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "smile wake write fast",
+        "Bozo on stomach",
+        "flight Milwaukee Denver booked"
+      ]
+    },
+    {
+      "scene_id": "S60",
+      "heading": "EXT. COFFEE SHOP - DAY",
+      "purpose": "Ask Chris out; sun breaks",
+      "location_key": "LOCATION_SEATTLE_COFFEE",
+      "cast": [
+        "NARRATOR",
+        "CHRIS"
+      ],
+      "wardrobe_or_age_variant": [
+        "CHRIS blonde messy bun hoop earrings stained apron"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "name ask play date set",
+        "sun breaks drizzle"
+      ]
+    },
+    {
+      "scene_id": "S61",
+      "heading": "INT. RENTAL CAR / EXT. KIRK STREET - DAY",
+      "purpose": "Return to unchanged brick fortress",
+      "location_key": "LOCATION_KIRK_STREET_RETURN",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR older return traveler"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "same brick dumpsters",
+        "Hispanic couple stroller",
+        "hollow then set face"
+      ]
+    },
+    {
+      "scene_id": "S62",
+      "heading": "EXT. OLD PIZZA PARLOR BLOCK - DAY",
+      "purpose": "Parlor now cosmetology school",
+      "location_key": "LOCATION_OLD_PIZZA_BLOCK",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "observer on weeded block"
+      ],
+      "estimated_duration_seconds": 20,
+      "visual_beats": [
+        "CENTRAL COSMETOLOGY pink scissors sign",
+        "dark inside almost-smile"
+      ]
+    },
+    {
+      "scene_id": "S63",
+      "heading": "INT. DELI - DAY",
+      "purpose": "Bob reunion; proud of escape",
+      "location_key": "LOCATION_DELI",
+      "cast": [
+        "NARRATOR",
+        "BOB"
+      ],
+      "wardrobe_or_age_variant": [
+        "BOB grayer thicker carved lines grease mouth"
+      ],
+      "estimated_duration_seconds": 40,
+      "visual_beats": [
+        "Reuben fries double-take",
+        "bear hug",
+        "Seattle chain news",
+        "proud line"
+      ]
+    },
+    {
+      "scene_id": "S64",
+      "heading": "EXT. SIONNA\u0027S OLD DUPLEX - DAY",
+      "purpose": "Silent goodbye to her house; move on",
+      "location_key": "LOCATION_SIONNA_OLD_DUPLEX",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "parked observer no knock"
+      ],
+      "estimated_duration_seconds": 25,
+      "visual_beats": [
+        "grayer naked porch weeds",
+        "kids bikes dog",
+        "engine idle no approach"
+      ]
+    },
+    {
+      "scene_id": "S65",
+      "heading": "EXT. GREEN BAY CORRECTIONAL INSTITUTE - DAY",
+      "purpose": "Arrive prison; security brief",
+      "location_key": "LOCATION_GREEN_BAY_EXTERIOR",
+      "cast": [
+        "NARRATOR",
+        "OFFICER"
+      ],
+      "wardrobe_or_age_variant": [
+        "flabby officer glass rules",
+        "Narrator coffee pulse up"
+      ],
+      "estimated_duration_seconds": 30,
+      "visual_beats": [
+        "oppressive brick gravel",
+        "metal detectors",
+        "keys steel doors"
+      ]
+    },
+    {
+      "scene_id": "S66",
+      "heading": "INT. PRISON VISITING BOOTH - DAY",
+      "purpose": "Confront forgive love; President Olson pride",
+      "location_key": "LOCATION_PRISON_BOOTH",
+      "cast": [
+        "NICK",
+        "NARRATOR",
+        "GUARD"
+      ],
+      "wardrobe_or_age_variant": [
+        "NICK scrawny gray sides thin top watery bags prison scrubs vs former bulk"
+      ],
+      "estimated_duration_seconds": 90,
+      "visual_beats": [
+        "plexiglass phones stare",
+        "asshole catalog then forgive",
+        "Nick tears on shelf",
+        "mutual I love you",
+        "pizza chain reveal",
+        "President Olson proud",
+        "receiver light chest"
+      ]
+    },
+    {
+      "scene_id": "S67",
+      "heading": "EXT. WISCONSIN HIGHWAY / AIRPORT TERMINAL - DAY",
+      "purpose": "Freedom close; name reveal Peter Olson",
+      "location_key": "LOCATION_HIGHWAY_AIRPORT",
+      "cast": [
+        "NARRATOR"
+      ],
+      "wardrobe_or_age_variant": [
+        "NARRATOR boarding-pass whisper finale"
+      ],
+      "estimated_duration_seconds": 45,
+      "visual_beats": [
+        "rolling hills rental window",
+        "terminal float nuts tea",
+        "boarding pass look",
+        "whisper That\u0027s me President Peter Olson",
+        "jet bridge into light"
+      ]
+    }
+  ]
+}

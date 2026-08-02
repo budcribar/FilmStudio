@@ -67,6 +67,16 @@ public sealed class MediaRegistryService
     public static string ClipRelativePath(int scene, int clip) =>
         $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
 
+    /// <summary>
+    /// Per-clip TTS audio for narrator re-voice (server speak-batch → client media folder).
+    /// </summary>
+    public static string RevoiceAudioRelativePath(int scene, int clip, string ext = ".mp3")
+    {
+        var e = string.IsNullOrWhiteSpace(ext) ? ".mp3" : ext.Trim();
+        if (!e.StartsWith('.')) e = "." + e;
+        return $"assets/audio/revoice/scene_{scene:D2}_clip_{clip:D2}{e.ToLowerInvariant()}";
+    }
+
     /// <summary>One background-music segment (IAudioClient.MaxSegmentDurationSeconds-sized) for a
     /// scene — most scenes need only segment 1; longer scenes concatenate client-side.</summary>
     public static string MusicSegmentRelativePath(int scene, int segment) =>

@@ -20,6 +20,11 @@ public sealed class ClientMediaFolderService
     /// <summary>Completed saves keyed by projectId|relativePath — a later notification for the same
     /// path (e.g. a single-clip job's "done" tick after its "running" tick already saved it) is a no-op.</summary>
     private readonly HashSet<string> _savedKeys = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Video-extend continuation-source duration (seconds), keyed by projectId|scene|clip,
+    /// set by <see cref="PrepareExtendSourceAsync"/> right before requesting that clip's generation
+    /// and consumed once by <see cref="SaveJobMediaAsync"/> to know where the new content starts
+    /// inside the combined video Grok returns for a real video-extend call.</summary>
+    private readonly Dictionary<string, double> _pendingExtendSourceSeconds = new(StringComparer.OrdinalIgnoreCase);
 
     public ClientMediaFolderService(IJSRuntime js, EngineApiClient api, JobHubClient hub, ActiveProjectState activeProject)
     {
@@ -150,9 +155,27 @@ public sealed class ClientMediaFolderService
             if (r is { Success: true })
             {
                 FolderName = r.FolderName;
-                await RefreshFullPathAsync();
+                // Prefer path returned from JS (or previously stored full path if still valid).
+                if (!string.IsNullOrWhiteSpace(r.FullPath))
+                    FullPath = r.FullPath.Trim();
+                else
+                    await RefreshFullPathAsync();
+                // Drop stale full path when its last segment no longer matches the folder name.
+                if (!string.IsNullOrWhiteSpace(FullPath) && !string.IsNullOrWhiteSpace(FolderName))
+                {
+                    var normalized = FullPath.Replace('/', '\\').TrimEnd('\\');
+                    var idx = normalized.LastIndexOf('\\');
+                    var last = idx >= 0 ? normalized[(idx + 1)..] : normalized;
+                    if (!string.Equals(last, FolderName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        FullPath = null;
+                        try { await _js.InvokeVoidAsync("PageToMovieMedia.setFullPath", (string?)null); } catch { /* ignore */ }
+                    }
+                }
                 LastStatus = $"Media folder: {FullPath ?? FolderName}";
-                LocalSaveWarning = null; // folder connected — clear fallback warning
+                LocalSaveWarning = null;
+                NeedsReconnect = false;
+                PendingReconnectFolderName = null;
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
                 TriggerAutoSyncIfConnected();
@@ -299,6 +322,40 @@ public sealed class ClientMediaFolderService
 
             var url = snap.ClientMediaUrl!;
 
+            // Real video-extend (see FilmJobService.GenerateOneClipAsync + PrepareExtendSourceAsync
+            // above): this job's video is Grok's combined [continuation-input + new content]
+            // response, not a plain fresh generation. Slice out just the new tail before it ever
+            // becomes this clip's saved/registered file — shipping the raw combined video would
+            // reintroduce the exact "clip contains pieces of the previous clip" bug this feature
+            // exists to fix, so on ANY failure here we surface it and return without saving,
+            // rather than silently falling through to save the un-sliced video.
+            var extendKey = $"{snap.ProjectId}|{snap.Scene}|{snap.Clip}";
+            double? extendSourceSec = null;
+            lock (_pendingExtendSourceSeconds)
+            {
+                if (_pendingExtendSourceSeconds.Remove(extendKey, out var sec))
+                    extendSourceSec = sec;
+            }
+            string? extendSliceBlobUrl = null;
+            if (extendSourceSec is { } srcSec)
+            {
+                var probe = await _js.InvokeAsync<JsProbeResult>("PageToMovieFfmpeg.probeDurationAsync", url);
+                var combinedSec = probe is { Success: true, Seconds: > 0 } ? probe.Seconds : (double?)null;
+                var newDurationSec = combinedSec is { } c && c > srcSec + 0.1 ? c - srcSec : (double?)null;
+                var slice = newDurationSec is { } nd
+                    ? await _js.InvokeAsync<JsTrimTailResult>("PageToMovieFfmpeg.trimTailAsync", url, nd, null)
+                    : null;
+                if (slice is not { Success: true } || string.IsNullOrWhiteSpace(slice.Url))
+                {
+                    LastStatus = $"Video-extend slice failed for {snap.ClientRelativePath} " +
+                                 $"({slice?.Error ?? "duration probe failed"}) — retry the clip.";
+                    Changed?.Invoke();
+                    return;
+                }
+                extendSliceBlobUrl = slice.Url;
+                url = slice.Url;
+            }
+
             // Silence-trim in browser (ffmpeg.wasm) before write. Decision logic
             // (where to cut) lives once in ClipSilenceTrimmer (Core) — JS only does
             // the ffmpeg I/O. Longer breath tail for speech-style clips; lead trim on clip 2+.
@@ -308,6 +365,7 @@ public sealed class ClientMediaFolderService
                             snap.Scene == 18 ||
                             string.Equals(snap.Kind, "credits", StringComparison.OrdinalIgnoreCase);
             var isMusic = string.Equals(snap.Kind, "music", StringComparison.OrdinalIgnoreCase);
+            var isSpeakBatch = string.Equals(snap.Kind, "speak-batch", StringComparison.OrdinalIgnoreCase);
             var keepTail = isCredits
                 ? ClipSilenceTrimmer.DefaultKeepTailSeconds
                 : ClipSilenceTrimmer.SpeechBreathTailSeconds; // safe default without dialogue metadata
@@ -315,7 +373,12 @@ public sealed class ClientMediaFolderService
             string? silenceMessage = null;
             string? trimmedBlobUrl = null;
             var urlToSave = url;
-            if (!isCredits && !isMusic) // credits plate and music tracks have no dialogue to trim silence around
+            // The extend slice is already tightly bounded to the requested new-content duration —
+            // silence-trimming it further risks cutting real content rather than dead air, so skip
+            // that pass entirely for this clip (unlike a plain fresh generation, which can be
+            // arbitrarily longer than its useful content).
+            // Music + speak-batch are pure audio files — never run video silence-trim.
+            if (!isCredits && !isMusic && !isSpeakBatch && extendSliceBlobUrl is null)
             {
                 var (trimmed, trimUrl, message) = await SilenceTrimAsync(
                     url,
@@ -361,7 +424,7 @@ public sealed class ClientMediaFolderService
                     RelativePath = snap.ClientRelativePath!,
                     Sha256 = saved.Sha256,
                     SizeBytes = saved.SizeBytes,
-                    Kind = isCredits ? "credits" : isMusic ? "music" : "clip",
+                    Kind = isCredits ? "credits" : isMusic ? "music" : isSpeakBatch ? "audio" : "clip",
                     Scene = scene,
                     Clip = clip,
                 });
@@ -381,6 +444,11 @@ public sealed class ClientMediaFolderService
                 if (trimmedBlobUrl is not null)
                 {
                     try { await _js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", trimmedBlobUrl); }
+                    catch { /* best effort */ }
+                }
+                if (extendSliceBlobUrl is not null)
+                {
+                    try { await _js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", extendSliceBlobUrl); }
                     catch { /* best effort */ }
                 }
             }
@@ -769,6 +837,7 @@ public sealed class ClientMediaFolderService
     {
         public bool Success { get; set; }
         public string? FolderName { get; set; }
+        public string? FullPath { get; set; }
         public string? Error { get; set; }
     }
 
@@ -819,6 +888,27 @@ public sealed class ClientMediaFolderService
         public string? Error { get; set; }
     }
 
+    private sealed class JsTrimTailResult
+    {
+        public bool Success { get; set; }
+        public string? Url { get; set; }
+        public double SourceDurationSec { get; set; }
+        public double KeptSec { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class JsProbeResult
+    {
+        public bool Success { get; set; }
+        public double Seconds { get; set; }
+    }
+
+    private sealed class JsUploadResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+    }
+
     /// <summary>Local blob URLs for a scene's background-music segments (in order), stopping at
     /// the first missing segment. Segment relative paths mirror
     /// MediaRegistryService.MusicSegmentRelativePath in PageToMovie.Engine (Web doesn't reference
@@ -835,6 +925,56 @@ public sealed class ClientMediaFolderService
             urls.Add(url);
         }
         return urls;
+    }
+
+    /// <summary>
+    /// Client-side "prepare" step for real video-extend continuity (see FilmJobService.
+    /// GenerateOneClipAsync): trims the previous clip's current local video down to the model's
+    /// max input length and uploads it as the continuation source for the clip about to be
+    /// generated. Call this before starting generation for <paramref name="clip"/> when the shot
+    /// plan says it wants to extend from clip-1 and the active model supports real continue.
+    /// Never throws and never blocks generation — a false return just means the server won't find
+    /// an extend-source file and falls back to its default fresh-generation behavior, exactly as
+    /// if this feature didn't exist (no local folder connected, no local copy of the previous
+    /// clip yet, or a browser/codec hiccup are all treated the same way).
+    /// </summary>
+    public async Task<bool> PrepareExtendSourceAsync(
+        string projectId, int scene, int clip, double maxInputSeconds)
+    {
+        if (clip <= 1 || !IsConnected) return false;
+        string? trimUrl = null;
+        try
+        {
+            var prevRelPath = $"assets/video/scene_{scene:D2}_clip_{clip - 1:D2}.mp4";
+            var sourceUrl = await GetLocalBlobUrlAsync(projectId, prevRelPath);
+            if (string.IsNullOrWhiteSpace(sourceUrl)) return false;
+
+            var trim = await _js.InvokeAsync<JsTrimTailResult>(
+                "PageToMovieFfmpeg.trimTailAsync", sourceUrl, maxInputSeconds, null);
+            if (trim is not { Success: true } || string.IsNullOrWhiteSpace(trim.Url)) return false;
+            trimUrl = trim.Url;
+
+            var uploadUrl = _api.ClipUploadUrl(projectId, scene, clip, kind: "extend-source");
+            var up = await _js.InvokeAsync<JsUploadResult>(
+                "PageToMovieMedia.uploadUrlToServerAsync", trimUrl, uploadUrl);
+            if (up is not { Success: true }) return false;
+
+            lock (_pendingExtendSourceSeconds)
+                _pendingExtendSourceSeconds[$"{projectId}|{scene}|{clip}"] = trim.KeptSec;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (trimUrl is not null)
+            {
+                try { await _js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", trimUrl); }
+                catch { /* best effort */ }
+            }
+        }
     }
 
     /// <summary>
@@ -885,4 +1025,112 @@ public sealed class ClientMediaFolderService
         public long LastModifiedMs { get; set; }
         public string? Error { get; set; }
     }
+    /// <summary>
+    /// Write bytes into the connected media folder (e.g. voice clone samples).
+    /// By default does <b>not</b> open a folder picker mid-flow — tries silent reconnect only.
+    /// Pass <paramref name="promptToConnectFolder"/> only from an explicit "Connect folder" control.
+    /// </summary>
+    public async Task<(bool Ok, string? RelativePath, string? Error)> SaveBytesAsync(
+        string projectId, string relativePath, byte[] bytes, bool promptToConnectFolder = false)
+    {
+        if (bytes is null || bytes.Length == 0)
+            return (false, null, "Empty audio");
+        if (!IsConnected)
+            await TryReconnectAsync();
+        if (!IsConnected)
+        {
+            if (!promptToConnectFolder)
+                return (false, null, "Media folder not connected — sample still saved on the project");
+            var ok = await ConnectFolderAsync();
+            if (!ok) return (false, null, LastStatus ?? "Connect a media folder first");
+        }
+        try
+        {
+            var clientPath = relativePath.StartsWith(projectId + "/", StringComparison.OrdinalIgnoreCase)
+                ? relativePath
+                : $"{projectId.Trim()}/{relativePath.TrimStart('/')}";
+            var b64 = Convert.ToBase64String(bytes);
+            var res = await _js.InvokeAsync<JsSaveBytesResult>(
+                "PageToMovieMedia.saveBytesBase64Async", b64, clientPath);
+            if (res is { Success: true })
+            {
+                LastStatus = $"Saved {Path.GetFileName(clientPath)} to media folder";
+                Changed?.Invoke();
+                return (true, res.RelativePath ?? clientPath, null);
+            }
+            return (false, null, res?.Error ?? "Could not write to media folder");
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
+    /// <summary>List audio files under the media folder (optional project prefix).</summary>
+    public async Task<IReadOnlyList<LocalAudioFile>> ListAudioFilesAsync(string? projectId = null)
+    {
+        if (!IsConnected) return Array.Empty<LocalAudioFile>();
+        try
+        {
+            var prefix = string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim();
+            var res = await _js.InvokeAsync<JsListAudioResult>("PageToMovieMedia.listAudioFilesAsync", prefix);
+            if (res is not { Success: true, Files: not null }) return Array.Empty<LocalAudioFile>();
+            return res.Files
+                .Select(f => new LocalAudioFile
+                {
+                    RelativePath = f.RelativePath ?? "",
+                    Name = f.Name ?? Path.GetFileName(f.RelativePath ?? "") ?? "audio",
+                    SizeBytes = f.SizeBytes,
+                })
+                .Where(f => f.RelativePath.Length > 0)
+                .ToList();
+        }
+        catch
+        {
+            return Array.Empty<LocalAudioFile>();
+        }
+    }
+
+    /// <summary>Read a file already in the media folder as bytes.</summary>
+    public async Task<byte[]?> ReadLocalBytesAsync(string relativePath, int minBytes = 0)
+    {
+        if (!IsConnected || string.IsNullOrWhiteSpace(relativePath)) return null;
+        try
+        {
+            var res = await _js.InvokeAsync<JsBytesResult>("PageToMovieMedia.getBytesAsync", relativePath, minBytes);
+            return res is { Success: true, Bytes: not null } ? res.Bytes : null;
+        }
+        catch { return null; }
+    }
+
+    public sealed class LocalAudioFile
+    {
+        public string RelativePath { get; set; } = "";
+        public string Name { get; set; } = "";
+        public long SizeBytes { get; set; }
+    }
+
+    private sealed class JsSaveBytesResult
+    {
+        public bool Success { get; set; }
+        public string? RelativePath { get; set; }
+        public string? Error { get; set; }
+        public long SizeBytes { get; set; }
+    }
+
+    private sealed class JsListAudioResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+        public List<JsListAudioEntry>? Files { get; set; }
+    }
+
+    private sealed class JsListAudioEntry
+    {
+        public string? RelativePath { get; set; }
+        public string? Name { get; set; }
+        public long SizeBytes { get; set; }
+    }
+
+
 }
