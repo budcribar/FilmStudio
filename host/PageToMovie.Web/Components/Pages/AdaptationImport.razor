@@ -90,16 +90,18 @@
 
                     <label class="ptm-dropzone @(Busy || JobRunning ? "ptm-dropzone--disabled" : "") @(_dragOver ? "ptm-dropzone--active" : "")"
                            @ondragenter="OnDragEnter"
+                           @ondragenter:preventDefault
                            @ondragover="OnDragOver"
                            @ondragover:preventDefault
                            @ondragleave="OnDragLeave"
-                           @ondrop:preventDefault
-                           @ondrop="OnDragLeave">
-                        <InputFile OnChange="OnSourceSelectedAsync"
+                           @ondrop="OnDrop">
+                        @* @key remounts InputFile after each pick so Blazor's file map stays valid. *@
+                        <InputFile @key="_inputFileKey"
+                                   OnChange="OnSourceSelectedAsync"
                                    class="ptm-dropzone__input"
-                                   accept=".fountain,.spmd,.pdf,.txt"
+                                   accept=".fountain,.spmd,.pdf,.txt,text/plain,application/pdf"
                                    data-testid="import-file-input"
-                                   disabled="@(Busy || JobRunning)" />
+                                   disabled="@(Busy || JobRunning || _importing)" />
                         <div class="ptm-dropzone__inner" aria-hidden="true">
                             <div class="ptm-dropzone__icon">📖</div>
                             <div class="ptm-dropzone__title">Drop your book here</div>
@@ -139,6 +141,8 @@
     private int? _importPct;
     private string? _chosenFileName;
     private bool _dragOver;
+    /// <summary>Bumped after each selection so InputFile remounts cleanly.</summary>
+    private int _inputFileKey;
 
     private bool CanContinueToScreenplay =>
         Status is not null &&
@@ -170,6 +174,13 @@
 
     private void OnDragLeave(DragEventArgs e) => _dragOver = false;
 
+    private void OnDrop(DragEventArgs e)
+    {
+        // Drop lands on the full-size transparent InputFile (z-index 2). We only clear the
+        // highlight here — OnSourceSelectedAsync handles the file when the input receives it.
+        _dragOver = false;
+    }
+
     private async Task OnSourceSelectedAsync(InputFileChangeEventArgs e)
     {
         var file = e.File;
@@ -180,38 +191,65 @@
             Nav.NavigateTo("/login?returnUrl=/adaptation/import");
             return;
         }
-        _chosenFileName = file.Name;
-        await ImportFileAsync(file);
+
+        // CRITICAL: read the browser file into memory BEFORE any re-render that unmounts
+        // InputFile (progress UI). Opening the stream after unmount throws:
+        //   Cannot read properties of null (reading '_blazorFilesById')
+        byte[] bytes;
+        string name;
+        try
+        {
+            name = file.Name;
+            _chosenFileName = name;
+            _dragOver = false;
+            const long maxBook = 80 * 1024 * 1024;
+            await using var stream = file.OpenReadStream(maxBook);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            bytes = ms.ToArray();
+        }
+        catch (Exception ex)
+        {
+            Error = FriendlyError(ex.Message);
+            _inputFileKey++; // remount so the next pick works
+            return;
+        }
+
+        _inputFileKey++; // remount InputFile for a clean next selection
+        await ImportBufferedAsync(name, bytes);
     }
 
-    private async Task ImportFileAsync(IBrowserFile file)
+    private async Task ImportBufferedAsync(string name, byte[] bytes)
     {
         if (!Session.IsLoggedIn)
         {
             Error = "Sign in required to import books.";
             return;
         }
+        if (bytes.Length == 0)
+        {
+            Error = "That file is empty. Pick a PDF, text, or fountain file with content.";
+            return;
+        }
+
         _importing = true;
         Busy = true;
         Error = null;
         Message = null; // clear stale “Book ready” / Next guidance during pipeline
-        _chosenFileName = file.Name;
+        _chosenFileName = name;
         _importPct = 8;
-        _importStatus = $"Reading {file.Name}…";
+        _importStatus = $"Reading {name}…";
         StateHasChanged();
 
         try
         {
-            var name = file.Name;
-
             if (IsFountainName(name))
             {
                 _importStatus = "Loading screenplay…";
                 _importPct = 40;
                 StateHasChanged();
 
-                const long max = 20 * 1024 * 1024;
-                await using var stream = file.OpenReadStream(max);
+                await using var stream = new MemoryStream(bytes, writable: false);
                 await Engine.ImportFountainAsync(ProjectId, name, stream);
 
                 _importPct = 100;
@@ -226,8 +264,7 @@
             _importPct = 15;
             StateHasChanged();
 
-            const long maxBook = 80 * 1024 * 1024;
-            await using (var stream = file.OpenReadStream(maxBook))
+            await using (var stream = new MemoryStream(bytes, writable: false))
             {
                 await Engine.UploadBookAsync(ProjectId, name, stream);
             }
