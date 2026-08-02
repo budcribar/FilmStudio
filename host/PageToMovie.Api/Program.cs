@@ -2727,9 +2727,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone", async (
     string id,
     string charKey,
     CloneVoiceApiRequest? body,
-    ProjectStore store,
-    IVoiceCloneClient voiceClone,
-    ProjectTelemetryService telemetry,
+    VoiceCloneApplyService apply,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
@@ -2740,44 +2738,23 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone", async (
     {
         if (string.IsNullOrWhiteSpace(charKey))
             return Results.BadRequest(new { ok = false, error = "charKey required" });
-        if (!voiceClone.IsConfigured)
-            return Results.BadRequest(new { ok = false, error = "Connect a voice-clone service (FAL_API_KEY) in Configuration." });
-
-        var samplePath = store.GetVoiceCloneSamplePath(id, charKey);
-        if (!File.Exists(samplePath))
-            return Results.BadRequest(new { ok = false, error = "No voice-clone sample saved for this character yet." });
-
-        var model = body?.Model;
-        var entry = SupportedModelCatalog.ForCapability(ModelCapability.Voice)
-            .FirstOrDefault(m => m.IsVoiceCloneStep &&
-                (string.IsNullOrWhiteSpace(model) || string.Equals(m.Id, model, StringComparison.OrdinalIgnoreCase)));
-
-        var voiceId = await voiceClone.CloneVoiceAsync(samplePath, model, ct);
-        await telemetry.LogApiCallAsync(new ApiCallTelemetry
-        {
-            ProjectId = id,
-            Kind = "voice_clone",
-            Mode = "voice_clone",
-            Model = entry?.Id ?? model,
-            Provider = entry?.ProviderId,
-            CharKey = charKey,
-            EstimatedUsd = entry?.CostPerCloneUsd,
-            Ok = !string.IsNullOrWhiteSpace(voiceId),
-            Error = string.IsNullOrWhiteSpace(voiceId) ? "Voice clone failed" : null,
-        }, ct);
-        if (string.IsNullOrWhiteSpace(voiceId))
-            return Results.BadRequest(new { ok = false, error = "Voice clone failed — see server logs." });
-
-        store.UpdateCharacterSeedText(id, charKey, voiceCloneProviderId: voiceId);
-
+        // Unified router: catalog voice_model_name (or body.Model) → Fal MiniMax or ElevenLabs.
+        var result = await apply.ApplyFromSampleAsync(
+            id, charKey, modelOverride: body?.Model, ct: ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
         return Results.Ok(new
         {
             ok = true,
             projectId = id,
             charKey,
-            voiceId,
-            estimatedUsd = entry?.CostPerCloneUsd,
-            message = "Voice cloned — reused for narration until the sample is replaced.",
+            voiceId = result.ProviderVoiceId,
+            providerId = result.ProviderId,
+            modelId = result.ModelId,
+            usedMock = result.UsedMock,
+            estimatedUsd = result.EstimatedCloneUsd,
+            previewUrl = result.PreviewUrl,
+            message = result.Message ?? "Voice cloned — reused for narration until the sample is replaced.",
         });
     }
     catch (Exception ex)
@@ -2786,13 +2763,6 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/clone", async (
     }
 });
 
-/// <summary>
-/// Synthesize narration/dialogue speech in a previously cloned voice
-/// (see POST .../voice/clone). Explicit, human-triggered only — spends real provider money
-/// ($0.10/1000 chars as of 2026-08) and is never called automatically. Returns a media-proxy URL
-/// (not the raw provider URL) so the Fal.ai key never reaches the browser — same pattern as
-/// generated clips/music.
-/// </summary>
 app.MapPost("/api/projects/{id}/characters/{charKey}/voice/speak", async (
     string id,
     string charKey,
@@ -3014,10 +2984,12 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice/apply-clone", async (
             providerId = result.ProviderId,
             providerVoiceId = result.ProviderVoiceId,
             voiceId = result.ProviderVoiceId,
+            modelId = result.ModelId,
             usedMock = result.UsedMock,
             voiceLabel = result.VoiceLabel,
             previewUrl = result.PreviewUrl,
             previewRelativePath = result.PreviewRelativePath,
+            estimatedUsd = result.EstimatedCloneUsd,
             message = result.Message,
         });
     }

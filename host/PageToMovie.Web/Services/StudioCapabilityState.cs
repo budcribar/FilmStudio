@@ -118,8 +118,14 @@ public sealed class StudioCapabilityState
             else
             {
                 var vpid = ProviderFor(voiceModel, ModelCapability.Voice);
-                if (string.IsNullOrEmpty(vpid)) vpid = "elevenlabs";
-                var hasKey = (keyByProvider.TryGetValue(vpid, out var vk) && vk) || hasEleven;
+                if (string.IsNullOrEmpty(vpid))
+                {
+                    // Prefer a provider the user already has a key for.
+                    if (hasEleven) vpid = "elevenlabs";
+                    else if (keyByProvider.TryGetValue("fal", out var hasFal) && hasFal) vpid = "fal";
+                    else vpid = "elevenlabs";
+                }
+                var hasKey = keyByProvider.TryGetValue(vpid, out var vk) && vk;
                 if (hasKey)
                 {
                     voiceReady = true;

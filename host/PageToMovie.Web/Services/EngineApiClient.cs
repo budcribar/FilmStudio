@@ -3393,9 +3393,11 @@ public sealed class VoiceApplyDto
     public string? Message { get; set; }
     public string? ProviderId { get; set; }
     public string? ProviderVoiceId { get; set; }
+    public string? ModelId { get; set; }
     public bool UsedMock { get; set; }
     public string? PreviewUrl { get; set; }
     public string? VoiceLabel { get; set; }
+    public double? EstimatedUsd { get; set; }
 }
 
 public sealed class VoiceCatalogDto

@@ -2454,8 +2454,8 @@ else
             }
             _voiceCloneHint = result.Message
                 ?? (result.UsedMock
-                    ? "Demo voice applied (no ElevenLabs key). Preview saved."
-                    : "Voice applied — provider voice id saved on this character.");
+                    ? "Demo voice applied. Preview saved."
+                    : $"Voice applied ({result.ProviderId ?? "provider"}) — id saved on this character.");
             await LoadAsync();
             if (!string.IsNullOrEmpty(_selectedKey))
                 Select(_selectedKey, resetMode: false);
@@ -2489,9 +2489,12 @@ else
                 return;
             }
 
+            // Default Instant clone model. Routing still follows whatever is saved here —
+            // user can switch to fal-ai/minimax/voice-clone in Settings (Apply uses catalog).
+            var defaultClone = "eleven_voice_clone";
             await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?>
             {
-                ["voice_model_name"] = "eleven_voice_clone",
+                ["voice_model_name"] = defaultClone,
             });
             await Caps.RefreshAsync(Engine, _projectId);
         }
