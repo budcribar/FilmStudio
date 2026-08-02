@@ -38,6 +38,7 @@ public static class Program
         bool showJudgeLeaderboardOnly = false;
         bool retryFailed = false;
         bool syntaxOnly = false;
+        double samplingTemperature = 0.2;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -69,6 +70,12 @@ public static class Program
             else if (arg.Equals("--reasoning-effort", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 reasoningEffort = args[++i].Trim();
+            }
+            else if (arg.Equals("--temperature", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length
+                     && double.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsedTemperature)
+                     && parsedTemperature is >= 0 and <= 2)
+            {
+                samplingTemperature = parsedTemperature;
             }
             else if (arg.Equals("--dry-run", StringComparison.OrdinalIgnoreCase))
             {
@@ -149,7 +156,7 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature);
             }
 
             // Generate updated HTML Dashboard after suite execution
@@ -171,7 +178,7 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
@@ -195,7 +202,8 @@ public static class Program
         IChatClient chat,
         string workspaceRoot,
         string promptRevision,
-        string? reasoningEffort = null)
+        string? reasoningEffort = null,
+        double samplingTemperature = 0.2)
     {
         var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
         Directory.CreateDirectory(screenplaysDir);
@@ -250,6 +258,7 @@ public static class Program
         // screenplay/judge verdict generated at default effort, and vice versa — they're not
         // interchangeable and must never be compared or averaged as if they were.
         var effortSuffix = string.IsNullOrWhiteSpace(reasoningEffort) ? "" : $"_{SanitizeFileName(reasoningEffort)}";
+        var temperatureKey = samplingTemperature.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture).Replace('.', '_');
 
         // Phase 1 & 2: Generation & C# Audits
         foreach (var modelId in candidateModels)
@@ -258,7 +267,7 @@ public static class Program
             string screenplayText;
 
             var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
-            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}.fountain");
+            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}_temp{temperatureKey}.fountain");
 
             var diskCached = File.Exists(cacheFile) ? await File.ReadAllTextAsync(cacheFile) : null;
             var localCached = File.Exists(screenplayFile) ? await File.ReadAllTextAsync(screenplayFile) : null;
@@ -295,7 +304,8 @@ public static class Program
                         onProgress: msg => Console.WriteLine($"    · {msg}"),
                         onHeuristicFallback: reason => generationFallbacks[modelId] = reason,
                         budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId),
-                        reasoningEffort: reasoningEffort);
+                        reasoningEffort: reasoningEffort,
+                        temperature: samplingTemperature);
 
                     if (generationFallbacks.TryGetValue(modelId, out var fallbackReason))
                     {
@@ -375,7 +385,7 @@ public static class Program
             // at boosted reasoning effort is not interchangeable with one at default effort, even
             // when ScreenplaysHash matches (the candidates could be unchanged while only the
             // judge's own effort level changed).
-            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}_{promptRevision}.json");
+            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}_{promptRevision}_temp{temperatureKey}.json");
             JudgeEvaluationPayload? cachedJudge = null;
 
             if (File.Exists(judgeCacheFile))
@@ -419,7 +429,7 @@ public static class Program
                         systemPrompt: "Respond with ONLY the JSON object described in the instructions. No prose, no markdown code fences.",
                         userPrompt: userPrompt,
                         model: judgeModelId,
-                        temperature: 0.2,
+                        temperature: samplingTemperature,
                         mode: "screenplay_benchmark_judge",
                         reasoningEffort: reasoningEffort);
                     evalPayload = ParseJudgePayload(raw, anonMapping.Keys);
@@ -455,6 +465,7 @@ public static class Program
             BookPath = bookPath,
             IsMockRun = isMockRun,
             ReasoningEffort = reasoningEffort ?? "",
+            SamplingTemperature = samplingTemperature,
             PromptVersion = promptRevision,
             ModelScores = runData.Leaderboard,
             JudgeMatrix = runData.JudgeMatrix,

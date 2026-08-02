@@ -24,12 +24,13 @@ public sealed class HistoricalBenchmarkRun
     /// </summary>
     public string ReasoningEffort { get; set; } = "";
 
+    /// <summary>Sampling temperature used for both generation and peer judging.</summary>
+    public double SamplingTemperature { get; set; } = 0.2;
+
     /// <summary>
-    /// Short content hash (first 10 hex chars of SHA256) of the exact prompts/book_to_fountain.txt
-    /// text every candidate in this run was generated from — automatic, no manual version-bump
-    /// discipline required, so editing the prompt (even a small wording tweak) is always visible
-    /// in history/dashboard rather than silently blending "old prompt" and "new prompt" results
-    /// under one label. Two runs sharing this value were generated from byte-identical prompt text.
+    /// Short Git revision of the commit that last changed prompts/book_to_fountain.txt. Benchmark
+    /// startup rejects an uncommitted prompt, so every newly-recorded run is reproducible from the
+    /// repository history rather than from an untracked content checksum.
     /// </summary>
     public string PromptVersion { get; set; } = "";
 

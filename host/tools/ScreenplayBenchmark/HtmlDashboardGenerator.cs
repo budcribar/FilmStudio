@@ -213,7 +213,7 @@ public static class HtmlDashboardGenerator
         <button class=""tab-btn"" onclick=""setAllGlobalEfforts(false)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Clear</button>
       </div>
       <div style=""display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 0.5rem;"">
-        <span style=""font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"" title=""Content hash of the exact prompts/book_to_fountain.txt text each run was generated from — different hashes mean different prompt wording, so results aren't directly comparable across them."">Prompt Version:</span>
+        <span style=""font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"" title=""Committed Git revision that last changed prompts/book_to_fountain.txt. Benchmarks refuse uncommitted prompt edits."">Prompt Commit:</span>
         <div id=""global-prompt-filter"" style=""display: flex; gap: 1rem; flex-wrap: wrap; flex: 1;""></div>
         <button class=""tab-btn"" onclick=""setAllGlobalPromptVersions(true)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Select All</button>
         <button class=""tab-btn"" onclick=""setAllGlobalPromptVersions(false)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Clear</button>
@@ -253,6 +253,7 @@ public static class HtmlDashboardGenerator
           <tr>
             <th>Date Run</th>
             <th>Reasoning Effort</th>
+            <th>Temperature</th>
             <th>Prompt Version</th>
             <th>Model ID</th>
             <th>Composite Score</th>
@@ -309,8 +310,8 @@ public static class HtmlDashboardGenerator
   <!-- TAB 5: PROMPT VERSIONS -->
   <div id=""tab-promptversions"" class=""tab-content"">
     <div class=""card"" style=""margin-bottom: 1.5rem;"">
-      <h3>📝 Tracked Prompt Versions</h3>
-      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Every distinct prompts/book_to_fountain.txt text that has been benchmarked, identified by a content hash (not a git commit — prompt edits are routinely tested here before being committed).</p>
+      <h3>📝 Tracked Prompt Commits</h3>
+      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Every committed prompt revision used for a benchmark. A benchmark cannot start while the prompt has uncommitted edits.</p>
       <table id=""promptversions-table"">
         <thead>
           <tr>
@@ -359,9 +360,9 @@ public static class HtmlDashboardGenerator
   <div id=""tab-progress"" class=""tab-content"">
     <div class=""card"" style=""position: relative;"">
       <h3>📈 Best Multi-Book Composite Score Over Time</h3>
-      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Every dot is one (model, reasoning effort, prompt version) combination's average composite score. The bold line traces the running best — the highest score achieved as of that point in time. Hover any dot for what it's made of.</p>
+      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Every dot is one (model, reasoning effort, temperature, prompt commit) combination's average composite score. The bold line traces the running best — the highest score achieved as of that point in time. Hover any dot for what it's made of.</p>
       <div id=""progress-chart-container"" style=""margin-top: 1rem;""></div>
-      <div id=""progress-tooltip"" style=""display: none; position: fixed; z-index: 1000; background: #0b0f19; border: 1px solid var(--accent-cyan); border-radius: 0.5rem; padding: 0.6rem 0.85rem; font-size: 0.8rem; pointer-events: none; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); max-width: 280px;""></div>
+      <div id=""progress-tooltip"" style=""display: none; position: fixed; z-index: 1000; background: #0b0f19; border: 1px solid var(--accent-cyan); border-radius: 0.5rem; padding: 0.6rem 0.85rem; font-size: 0.8rem; pointer-events: none; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); width: min(280px, calc(100vw - 24px)); box-sizing: border-box; overflow-wrap: anywhere;""></div>
     </div>
   </div>
 
@@ -445,7 +446,11 @@ public static class HtmlDashboardGenerator
       switch(key) {
         case 'modelId': return (m.modelId || m.ModelId || '').toLowerCase();
         case 'effort': return (m.reasoningEffort || m.ReasoningEffort || 'default').toLowerCase();
-        case 'promptversion': return (m.promptVersion || m.PromptVersion || 'unknown').toLowerCase();
+        case 'temperature': return Number(m.samplingTemperature ?? m.SamplingTemperature ?? 0.2);
+        case 'promptversion': {
+          const version = m.promptVersion || m.PromptVersion || 'unknown';
+          return getTrackedPromptVersions().findIndex(v => v.version === version);
+        }
         case 'composite': return (m.multiBookCompositeScore !== undefined ? m.multiBookCompositeScore : m.MultiBookCompositeScore) || 0;
         case 'syntax': return (m.avgSyntaxScore !== undefined ? m.avgSyntaxScore : m.AvgSyntaxScore) || 0;
         case 'format': return (m.avgFormatCompliance !== undefined ? m.avgFormatCompliance : m.AvgFormatCompliance) || 0;
@@ -497,6 +502,10 @@ public static class HtmlDashboardGenerator
       return p ? p : 'unknown';
     }
 
+    function getRunTemperatureKey(run) {
+      return Number(run.samplingTemperature ?? run.SamplingTemperature ?? 0.2).toFixed(2);
+    }
+
     function computeGlobalLeaderboardJs(selectedSlugs, selectedEfforts, selectedPromptVersions) {
       const allRuns = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
       const liveRuns = allRuns
@@ -523,15 +532,15 @@ public static class HtmlDashboardGenerator
       const groupKeys = [...new Set(liveRuns.flatMap(r => {
         const effort = getRunEffortKey(r);
         const promptVersion = getRunPromptVersionKey(r);
-        return (r.modelScores || r.ModelScores || []).map(m => JSON.stringify([modelId(m), effort, promptVersion]));
+        return (r.modelScores || r.ModelScores || []).map(m => JSON.stringify([modelId(m), effort, promptVersion, getRunTemperatureKey(r)]));
       }))];
       const result = [];
 
       groupKeys.forEach(key => {
-        const [id, rowEffort, rowPromptVersion] = JSON.parse(key);
+        const [id, rowEffort, rowPromptVersion, rowTemperature] = JSON.parse(key);
 
         const modelRuns = liveRuns.filter(r =>
-          getRunEffortKey(r) === rowEffort && getRunPromptVersionKey(r) === rowPromptVersion
+          getRunEffortKey(r) === rowEffort && getRunPromptVersionKey(r) === rowPromptVersion && getRunTemperatureKey(r) === rowTemperature
           && (r.modelScores || r.ModelScores || []).some(m => modelId(m) === id));
         if (modelRuns.length === 0) return;
 
@@ -564,6 +573,7 @@ public static class HtmlDashboardGenerator
         result.push({
           modelId: id,
           reasoningEffort: rowEffort,
+          samplingTemperature: rowTemperature,
           promptVersion: rowPromptVersion,
           multiBookCompositeScore: round1(avg(modelScoresList.map(composite))),
           avgSyntaxScore: round1(avg(modelScoresList.map(m => sa(m, 'overallSyntaxScore', 'OverallSyntaxScore')))),
@@ -678,7 +688,7 @@ public static class HtmlDashboardGenerator
         cb.checked = true;
         cb.onchange = renderGlobalTable;
         label.appendChild(cb);
-        label.appendChild(document.createTextNode(pv === 'unknown' ? pv : pv.slice(0, 7)));
+        label.appendChild(document.createTextNode(promptVersionLabel(pv)));
         container.appendChild(label);
       });
     }
@@ -714,7 +724,8 @@ public static class HtmlDashboardGenerator
           <th style=""${colStyle}"" onclick=""sortGlobal('rank')"">Rank${arrow('rank')}</th>
           <th style=""${colStyle}"" onclick=""sortGlobal('modelId')"">Model ID${arrow('modelId')}</th>
           <th style=""${colStyle}"" onclick=""sortGlobal('effort')"" title=""--reasoning-effort this row's runs used; a model at two effort levels appears as two rows so you can compare directly"">Reasoning Effort${arrow('effort')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('promptversion')"" title=""Content hash of the prompt text this row's runs were generated from; a model under two prompt versions appears as two rows"">Prompt Version${arrow('promptversion')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('temperature')"">Temperature${arrow('temperature')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('promptversion')"" title=""Committed Git revision of the prompt used for these runs; a model under two prompt revisions appears as two rows"">Prompt Commit${arrow('promptversion')}</th>
           <th style=""${colStyle}"" onclick=""sortGlobal('composite')"">${compositeLabel}${arrow('composite')}</th>
           <th style=""${colStyle}"" onclick=""sortGlobal('syntax')"">C# Syntax Avg${arrow('syntax')}</th>`;
 
@@ -766,7 +777,7 @@ public static class HtmlDashboardGenerator
         const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1) + '. ';
         const modelId = m.modelId || m.ModelId || 'Unknown';
         const effort = getSortVal(m, 'effort');
-        const promptVersion = getSortVal(m, 'promptversion');
+        const promptVersion = m.promptVersion || m.PromptVersion || 'unknown';
         const composite = getSortVal(m, 'composite');
         const syntax = getSortVal(m, 'syntax');
         const fmt = getSortVal(m, 'format');
@@ -793,7 +804,8 @@ public static class HtmlDashboardGenerator
           <td><strong>${medal}</strong></td>
           <td><strong>${modelId}</strong></td>
           <td><span class=""score-badge ${effort === 'default' ? 'score-high' : 'score-mid'}"">${effort}</span></td>
-          <td><span class=""score-badge score-mid"" title=""${promptVersion}"">${promptVersion === 'unknown' ? promptVersion : promptVersion.slice(0, 7)}</span></td>
+          <td>${Number(m.samplingTemperature ?? m.SamplingTemperature ?? 0.2).toFixed(2)}</td>
+          <td>${promptVersionBadge(promptVersion)}</td>
           <td><span class=""score-badge score-high"">${composite.toFixed(1)}</span></td>
           <td>${syntax.toFixed(1)}%</td>`;
 
@@ -885,6 +897,7 @@ public static class HtmlDashboardGenerator
         const date = r.timestamp || r.Timestamp || '—';
         const effort = r.reasoningEffort || r.ReasoningEffort || '';
         const effortLabel = effort ? effort : 'default';
+        const temperature = getRunTemperatureKey(r);
         const promptVersion = getRunPromptVersionKey(r);
         const scores = r.modelScores || r.ModelScores || [];
         scores.forEach(m => {
@@ -903,7 +916,8 @@ public static class HtmlDashboardGenerator
           const row = `<tr>
             <td><strong style=""color: var(--accent-cyan);"">${date}</strong></td>
             <td><span class=""score-badge ${effort ? 'score-mid' : 'score-high'}"" title=""--reasoning-effort value this run was invoked with; runs at different effort levels are not directly comparable"">${effortLabel}</span></td>
-            <td><span class=""score-badge score-mid"" title=""${promptVersion}"">${promptVersion === 'unknown' ? promptVersion : promptVersion.slice(0, 7)}</span></td>
+            <td>${temperature}</td>
+            <td>${promptVersionBadge(promptVersion)}</td>
             <td><strong>${modelLabel}</strong></td>
             <td><span class=""score-badge ${badgeClass}"">${compositeLabel}</span></td>
             <td>${syntaxScore.toFixed(1)}%</td>
@@ -1014,6 +1028,19 @@ public static class HtmlDashboardGenerator
       return Object.values(seen).sort((a, b) => a.firstSeen < b.firstSeen ? -1 : 1);
     }
 
+    function promptVersionLabel(version) {
+      if (!version || version === 'unknown') return 'unknown';
+      const index = getTrackedPromptVersions().findIndex(v => v.version === version);
+      return index < 0 ? version.slice(0, 7) : 'V' + index;
+    }
+
+    function promptVersionBadge(version) {
+      const label = promptVersionLabel(version);
+      if (label === 'unknown') return '<span class=""score-badge score-mid"">unknown</span>';
+      const url = 'https://github.com/budcribar/PageToMovie/commit/' + encodeURIComponent(version);
+      return '<a class=""score-badge score-mid"" href=""' + url + '"" target=""_blank"" rel=""noopener"" title=""Git commit: ' + version + ' — open on GitHub"">' + label + '</a>';
+    }
+
     function renderPromptVersionsList() {
       const tbody = document.getElementById('promptversions-tbody');
       if (!tbody) return;
@@ -1030,7 +1057,7 @@ public static class HtmlDashboardGenerator
         if (curWorking && v.version === curWorking && v.version !== curHead) badges.push('<span class=""score-badge score-mid"" title=""Matches the prompt file on disk right now, but has not been committed"">📝 uncommitted</span>');
         if (badges.length === 0) badges.push('<span class=""score-badge score-mock"" title=""Neither the current working tree nor the last commit match this version"">🗄️ archived</span>');
         return `<tr>
-          <td><span class=""score-badge score-mid"" title=""${v.version}"">${v.version.slice(0, 7)}</span></td>
+          <td>${promptVersionBadge(v.version)}</td>
           <td>${v.firstSeen}</td>
           <td>${badges.join(' ')}</td>
           <td>${v.books.size} books × ${v.models.size} models</td>
@@ -1043,7 +1070,7 @@ public static class HtmlDashboardGenerator
       const fromSel = document.getElementById('pv-compare-from');
       const toSel = document.getElementById('pv-compare-to');
       if (!fromSel || !toSel) return;
-      const optionsHtml = versions.map(v => `<option value=""${v.version}"">${v.version.slice(0, 7)} (${v.firstSeen})</option>`).join('');
+      const optionsHtml = versions.map(v => `<option value=""${v.version}"">${promptVersionLabel(v.version)} (${v.firstSeen})</option>`).join('');
       fromSel.innerHTML = optionsHtml;
       toSel.innerHTML = optionsHtml;
       if (versions.length >= 2) {
@@ -1176,8 +1203,9 @@ function computeProgressPoints() {
     if (!d) return;
     (r.modelScores || r.ModelScores || []).forEach(m => {
       if (isFallback(m) || composite(m) < 0) return;
-      const key = JSON.stringify([modelId(m), effort, pv]);
-      if (!groups.has(key)) groups.set(key, { modelId: modelId(m), effort, promptVersion: pv, scores: [], lastSeen: d });
+      const temperature = getRunTemperatureKey(r);
+      const key = JSON.stringify([modelId(m), effort, temperature, pv]);
+      if (!groups.has(key)) groups.set(key, { modelId: modelId(m), effort, temperature, promptVersion: pv, scores: [], lastSeen: d });
       const g = groups.get(key);
       g.scores.push(composite(m));
       if (d > g.lastSeen) g.lastSeen = d;
@@ -1187,6 +1215,7 @@ function computeProgressPoints() {
   const points = Array.from(groups.values()).map(g => ({
     modelId: g.modelId,
     effort: g.effort,
+    temperature: g.temperature,
     promptVersion: g.promptVersion,
     avgComposite: g.scores.reduce((a, b) => a + b, 0) / g.scores.length,
     bookCount: g.scores.length,
@@ -1278,11 +1307,13 @@ function renderProgressChart() {
 function showProgressTooltip(e, p) {
   const tooltip = document.getElementById('progress-tooltip');
   if (!tooltip) return;
-  const promptLabel = p.promptVersion === 'unknown' ? 'unknown' : p.promptVersion.slice(0, 7);
+  const promptLabel = promptVersionLabel(p.promptVersion);
   tooltip.innerHTML = '<div style=""font-weight:700; color:' + (p.isRecord ? '#fbbf24' : '#a855f7') + '; margin-bottom:0.3rem;"">' + (p.isRecord ? '🏆 Record at this point' : 'Not a record') + '</div>'
     + '<div><strong>' + p.modelId + '</strong></div>'
     + '<div style=""color:#9ca3af;"">Effort: <strong style=""color:#f3f4f6;"">' + p.effort + '</strong></div>'
+    + '<div style=""color:#9ca3af;"">Temperature: <strong style=""color:#f3f4f6;"">' + p.temperature + '</strong></div>'
     + '<div style=""color:#9ca3af;"">Prompt: <strong style=""color:#f3f4f6;"">' + promptLabel + '</strong></div>'
+    + '<div style=""color:#9ca3af; font-size:0.72rem;"">Git commit: <strong style=""color:#f3f4f6;"">' + p.promptVersion + '</strong></div>'
     + '<div style=""color:#9ca3af;"">Composite: <strong style=""color:#4ade80;"">' + p.avgComposite.toFixed(1) + '</strong> (' + p.bookCount + ' books)</div>'
     + '<div style=""color:#9ca3af; font-size:0.72rem; margin-top:0.2rem;"">' + p.date.toISOString().replace('T', ' ').slice(0, 19) + ' UTC</div>';
   tooltip.style.display = 'block';
@@ -1292,8 +1323,18 @@ function showProgressTooltip(e, p) {
 function positionProgressTooltip(e) {
   const tooltip = document.getElementById('progress-tooltip');
   if (!tooltip || tooltip.style.display === 'none') return;
-  tooltip.style.left = (e.clientX + 16) + 'px';
-  tooltip.style.top = (e.clientY + 16) + 'px';
+  const margin = 12;
+  const gap = 16;
+  const rect = tooltip.getBoundingClientRect();
+  const preferredLeft = e.clientX + gap + rect.width <= window.innerWidth - margin
+    ? e.clientX + gap
+    : e.clientX - gap - rect.width;
+  const left = Math.max(margin, Math.min(preferredLeft, window.innerWidth - rect.width - margin));
+  const chart = document.getElementById('progress-chart-container');
+  const chartTop = chart ? chart.getBoundingClientRect().top : margin;
+  const top = Math.max(margin, Math.min(chartTop + margin, window.innerHeight - rect.height - margin));
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
 }
 
 function hideProgressTooltip() {
