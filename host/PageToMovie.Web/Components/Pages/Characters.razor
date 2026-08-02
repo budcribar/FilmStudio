@@ -2135,12 +2135,12 @@ else
                     // Keep what the operator typed; mark as saved baseline
                 }
                 else
-                    _editDescription = _selected.Description ?? _editDescription;
+                    _editDescription = _selected.Description ?? _editDescription ?? "";
 
                 if (!silent && result.VisualLock is not null)
                     _editVisualLock = result.VisualLock;
                 else if (!silent)
-                    _editVisualLock = _selected.VisualLock ?? _editVisualLock;
+                    _editVisualLock = _selected.VisualLock ?? _editVisualLock ?? "";
 
                 _savedLookDescription = _editDescription ?? "";
                 _savedLookVisualLock = _editVisualLock ?? "";
@@ -2672,7 +2672,9 @@ else
         _voiceCloneHint = "Saving…";
 
         await using var ms = new MemoryStream(bytes);
-        await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey, ms, "voice_clone_sample" + ext);
+        if (string.IsNullOrWhiteSpace(_selectedKey))
+            throw new InvalidOperationException("No character selected for voice sample.");
+        await Engine.UploadVoiceCloneSampleAsync(_projectId, _selectedKey!, ms, "voice_clone_sample" + ext);
         await SoftReloadAsync();
         RefreshVoiceClonePlayUrl();
         _voiceCloneBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

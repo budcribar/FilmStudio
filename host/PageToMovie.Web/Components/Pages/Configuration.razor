@@ -933,6 +933,13 @@
                 new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" },
                 new SupportedModelDto { Id = "fal-ai/stable-audio-2.0", DisplayName = "Stable Audio 2.0 (Fal.ai)", Provider = "Fal", ProviderId = "fal" }
             ];
+            _voiceModels = [
+                new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (no voice clone)", Provider = "None" },
+                new SupportedModelDto { Id = "eleven_voice_clone", DisplayName = "Instant voice clone (ElevenLabs)", Provider = "ElevenLabs", ProviderId = "elevenlabs", IsVoiceCloneStep = true },
+                new SupportedModelDto { Id = "eleven_multilingual_v2", DisplayName = "Multilingual TTS (ElevenLabs)", Provider = "ElevenLabs", ProviderId = "elevenlabs" },
+                new SupportedModelDto { Id = "fal-ai/minimax/voice-clone", DisplayName = "MiniMax voice clone (Fal)", Provider = "Fal", ProviderId = "fal", IsVoiceCloneStep = true },
+                new SupportedModelDto { Id = "fal-ai/minimax/speech-02-hd", DisplayName = "MiniMax speech (Fal)", Provider = "Fal", ProviderId = "fal" },
+            ];
         }
     }
 
