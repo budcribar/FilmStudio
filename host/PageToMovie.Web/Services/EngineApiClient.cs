@@ -2702,7 +2702,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     public async Task<ExtractCastResultDto?> ExtractCastFromScreenplayAsync(
         string projectId,
         bool force = true,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
@@ -3234,7 +3234,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         bool forceExtract = true,
         bool forceVision = false,
         bool autoVision = true,
-        string model = "grok-4.5",
+        string model = "",
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(

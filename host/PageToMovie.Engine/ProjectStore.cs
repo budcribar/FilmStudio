@@ -2320,6 +2320,9 @@ public sealed class ProjectStore
 
         model ??= _opts.DefaultImageModel;
         provider ??= _opts.ImageProvider;
+        if (string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException(
+                "Image seed limits: no image model selected. Open Settings and choose an Image generation model.");
         var resolved = ImageApiLimits.ResolveProvider(provider, model);
         return new ImageSeedLimits
         {
@@ -4388,7 +4391,11 @@ public sealed class ProjectStore
                              pmEl.ValueKind == JsonValueKind.String &&
                              pmEl.GetString() is { Length: > 0 } pm
             ? pm
-            : "grok-4.5";
+            : (cfg.TryGetValue("chat_model_name", out var cmEl) &&
+               cmEl.ValueKind == JsonValueKind.String &&
+               cmEl.GetString() is { Length: > 0 } cm
+                ? cm
+                : "");
 
         var cast = ReadCastStatus(projectId);
 

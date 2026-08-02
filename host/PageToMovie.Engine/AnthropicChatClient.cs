@@ -72,7 +72,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "claude-sonnet-5",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
         string? mode = null,
@@ -119,7 +119,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "claude-sonnet-5",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default)
     {
@@ -199,14 +199,14 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     /// returning a wrong answer if ever routed here.
     /// </summary>
     public Task<string> TranscribePageAsync(
-        string imagePath, int page, string model = "claude-sonnet-5", CancellationToken ct = default) =>
+        string imagePath, int page, string model = "", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Book-page transcription is not implemented for Anthropic yet — route this call to Grok.");
 
     /// <inheritdoc cref="TranscribePageAsync"/>
     public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(
         string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "claude-sonnet-5", CancellationToken ct = default) =>
+        string model = "", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Character-page classification is not implemented for Anthropic yet — route this call to Grok.");
 

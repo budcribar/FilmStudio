@@ -1249,7 +1249,7 @@ public sealed class FilmJobService
             var detail = await _projects.GetSceneDetailAsync(projectId, scene, probeDurations: false, ct: ct).ConfigureAwait(false);
             var totalDuration = Math.Max(1, (int)Math.Ceiling(detail?.DurationSeconds ?? 10));
             var screenplay = detail?.Setting ?? "";
-            var planningModel = SceneMusicScoringService.GetConfigStr(cfg, "planning_model_name", "grok-4.5");
+            var planningModel = ProjectModelSelection.RequirePlanning(cfg, "Scene music composition");
 
             var prompt = await _musicScoring.GetOrComposeMusicPromptAsync(
                 pDir, scene, screenplay, totalDuration, planningModel, ct).ConfigureAwait(false);
@@ -3040,6 +3040,19 @@ public sealed class FilmJobService
                     {
                         var projId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
 
+                        // Attribute evaluator to project Video review / planning model (Settings), never invent.
+                        var evaluatorModelId = "";
+                        try
+                        {
+                            var evalCfg = await _projects.GetConfigAsync(projId, ct).ConfigureAwait(false);
+                            evaluatorModelId = ProjectModelSelection.TryGet(
+                                evalCfg,
+                                ProjectModelSelection.QualityConfigKey,
+                                ProjectModelSelection.PlanningConfigKey,
+                                ProjectModelSelection.ChatConfigKey) ?? "";
+                        }
+                        catch { /* telemetry only */ }
+
                         // 1. Extract dialogue text & word count from clip blueprint
                         string dialogueText = "";
                         if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
@@ -3090,7 +3103,7 @@ public sealed class FilmJobService
                                     sceneNumber: scene,
                                     videoModelId: model,
                                     videoModelVersion: "v1",
-                                    evaluatorModelId: "grok-4.5",
+                                    evaluatorModelId: evaluatorModelId,
                                     evaluatorModelVersion: "v1",
                                     cameraCategory: camCat,
                                     actionCategory: actCat,
@@ -3663,53 +3676,28 @@ public sealed class FilmJobService
     }
 
     /// <summary>
-    /// Project <c>model_name</c> → catalog (endpoint/keys), else host <see cref="PageToMovieOptions.DefaultModel"/>.
+    /// Project <c>model_name</c> only — Settings selection required (no host DefaultModel invent).
     /// </summary>
     private async Task<string> ResolveVideoModelAsync(string projectId, CancellationToken ct)
     {
-        string? fromCfg = null;
-        try
-        {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("model_name", out var el) && el.ValueKind == JsonValueKind.String)
-                fromCfg = el.GetString();
-        }
-        catch
-        {
-            /* use default */
-        }
-
-        var resolved = SupportedModelCatalog.ResolveOrDefault(
-            fromCfg,
-            ModelCapability.Video,
-            fallbackId: _opts.DefaultModel);
-        return resolved.Id;
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequireVideo(cfg, "Video generation");
     }
 
     private async Task<string> ResolvePlanningModelAsync(string projectId, string? requestedModel, CancellationToken ct)
     {
-        if (!string.IsNullOrWhiteSpace(requestedModel)) return requestedModel.Trim();
-        try
-        {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("planning_model_name", out var el) && el.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(el.GetString()))
-                return el.GetString()!.Trim();
-        }
-        catch { }
-        return "grok-4.5";
+        if (!string.IsNullOrWhiteSpace(requestedModel))
+            return ProjectModelSelection.RequireExplicit(requestedModel, ModelCapability.Chat, "Script & planning");
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequirePlanning(cfg, "Script & planning");
     }
 
     private async Task<string> ResolveVisionModelAsync(string projectId, string? requestedModel, CancellationToken ct)
     {
-        if (!string.IsNullOrWhiteSpace(requestedModel)) return requestedModel.Trim();
-        try
-        {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("vision_model_name", out var el) && el.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(el.GetString()))
-                return el.GetString()!.Trim();
-        }
-        catch { }
-        return "grok-4.5";
+        if (!string.IsNullOrWhiteSpace(requestedModel))
+            return ProjectModelSelection.RequireExplicit(requestedModel, ModelCapability.Vision, "Image vision");
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequireVision(cfg, "Image vision");
     }
 
     private static string NormalizeResolution(string? value)

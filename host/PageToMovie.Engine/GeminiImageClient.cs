@@ -44,18 +44,13 @@ public sealed class GeminiImageClient : IImageClient
 
     private static string NormalizeModelName(string? model)
     {
-        if (string.IsNullOrWhiteSpace(model)) return "gemini-2.5-pro-image";
+        if (string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException(
+                "Gemini image: model is required. Open Settings and choose an Image generation model.");
         var trimmed = model.Trim();
         if (trimmed.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
-        {
             trimmed = trimmed["models/".Length..];
-        }
-        if (trimmed.Equals("gemini-3-pro-image", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-3-pro", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-1.5-pro", StringComparison.OrdinalIgnoreCase))
-        {
-            return "gemini-2.5-pro-image";
-        }
+        // Catalog/Settings ids only — never rewrite to a different model.
         return trimmed;
     }
 

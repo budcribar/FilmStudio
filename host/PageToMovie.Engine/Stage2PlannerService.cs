@@ -99,23 +99,18 @@ public sealed class Stage2PlannerService
     }
 
     /// <summary>
-    /// Reads the project's configured video model (same <c>model_name</c> config key
-    /// <see cref="FilmJobService"/> resolves at generation time) so planning clamps duration/dialogue
-    /// splits against that model's actual limits instead of assuming Grok's.
+    /// Project video model from Settings (<c>model_name</c>) — required for duration bounds.
     /// </summary>
-    private async Task<string?> ResolveVideoModelIdAsync(string projectId, CancellationToken ct)
+    private async Task<string> ResolveVideoModelIdAsync(string projectId, CancellationToken ct)
     {
-        try
-        {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("model_name", out var el) && el.ValueKind == JsonValueKind.String)
-                return el.GetString();
-        }
-        catch
-        {
-            /* use default */
-        }
-        return null;
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequireVideo(cfg, "Shot plan / Stage 2");
+    }
+
+    private async Task<string> ResolvePlanningModelIdAsync(string projectId, CancellationToken ct)
+    {
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequirePlanning(cfg, "Shot plan classifiers");
     }
 
     public async Task<Stage2PlanResult> PlanAsync(
@@ -130,6 +125,7 @@ public sealed class Stage2PlannerService
         // Clip-duration bounds for whichever video model this project is actually configured to
         // generate with — planning must not assume Grok's limits when a different model is selected.
         var videoModelId = await ResolveVideoModelIdAsync(projectId, ct).ConfigureAwait(false);
+        var planningModel = await ResolvePlanningModelIdAsync(projectId, ct).ConfigureAwait(false);
         var (durMinSeconds, durMaxSeconds, durAbsMaxSeconds) = ClipDurationEstimator.ResolveBoundsForModel(videoModelId);
         // Tighter cap for clips that will extend from the previous one (some providers, e.g. Grok,
         // allow a longer fresh clip than the "new portion" of a reference/continue call) — used so
@@ -156,37 +152,38 @@ public sealed class Stage2PlannerService
         // Overlay plate/voice edits from cast_seeds.json when present
         MergeCastSeedsOverlay(_projects, projectId, stage1);
 
-        // AI enrichments (each: chat preferred → retry → heuristic fallback)
+        // AI enrichments (each: chat preferred → retry → heuristic fallback).
+        // All use the Settings Script & planning model — no host option invent defaults.
         SilentBeatClassifyResult? classifyMeta = null;
         var enrichMeta = new Dictionary<string, object?>();
         if (_silentBeatClassifier is not null)
         {
             classifyMeta = await _silentBeatClassifier
-                .ClassifyStage1Async(stage1, onProgress, ct)
+                .ClassifyStage1Async(stage1, onProgress, ct, overrideModel: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["silent_beat"] = classifyMeta.ToMetaDict();
         }
         if (_ambientSfxClassifier is not null)
         {
-            var amb = await _ambientSfxClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+            var amb = await _ambientSfxClassifier.ClassifyStage1Async(stage1, onProgress, ct, overrideModel: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["ambient_sfx"] = amb.ToMetaDict();
         }
         if (_speciesKindClassifier is not null)
         {
-            var sp = await _speciesKindClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+            var sp = await _speciesKindClassifier.ClassifyStage1Async(stage1, onProgress, ct, model: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["species_kind"] = sp.ToMetaDict();
         }
         if (_onScreenCastClassifier is not null)
         {
-            var osc = await _onScreenCastClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+            var osc = await _onScreenCastClassifier.ClassifyStage1Async(stage1, onProgress, ct, model: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["onscreen_cast"] = osc.ToMetaDict();
         }
         if (_extendCutClassifier is not null)
         {
-            var ext = await _extendCutClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+            var ext = await _extendCutClassifier.ClassifyStage1Async(stage1, onProgress, ct, model: planningModel)
                 .ConfigureAwait(false);
             enrichMeta["extend_hardcut"] = ext.ToMetaDict();
         }
@@ -223,31 +220,31 @@ public sealed class Stage2PlannerService
             // sets auth per-request now (not on shared HttpClient.DefaultRequestHeaders), so
             // this fan-out is safe there too.
             var pacingTask = _beatPacingClassifier is not null
-                ? _beatPacingClassifier.ClassifyScenePacingAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _beatPacingClassifier.ClassifyScenePacingAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, int>?>(null);
             var lightingTask = _lightingClassifier is not null
-                ? _lightingClassifier.ClassifySceneLightingAsync(s, onProgress, ct)
+                ? _lightingClassifier.ClassifySceneLightingAsync(s, onProgress, ct, model: planningModel)
                 : Task.FromResult<string?>(null);
             var cameraTask = _cameraClassifier is not null
-                ? _cameraClassifier.ClassifySceneCameraAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _cameraClassifier.ClassifySceneCameraAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, CameraDirective>?>(null);
             var negativeTask = _negativeClassifier is not null
-                ? _negativeClassifier.ClassifySceneNegativeAsync(s, onProgress, ct)
+                ? _negativeClassifier.ClassifySceneNegativeAsync(s, onProgress, ct, model: planningModel)
                 : Task.FromResult<string?>(null);
             var wardrobeTask = _wardrobeClassifier is not null
-                ? _wardrobeClassifier.ClassifySceneWardrobeAsync(s, UnionCharactersOnScreen(s), onProgress, ct)
+                ? _wardrobeClassifier.ClassifySceneWardrobeAsync(s, UnionCharactersOnScreen(s), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, string>?>(null);
             var emotionTask = _emotionClassifier is not null
-                ? _emotionClassifier.ClassifySceneEmotionAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _emotionClassifier.ClassifySceneEmotionAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, EmotionDirective>?>(null);
             var soundTask = _soundComposerClassifier is not null
-                ? _soundComposerClassifier.ClassifySceneSoundDesignAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _soundComposerClassifier.ClassifySceneSoundDesignAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, SoundDesignDirective>?>(null);
             var dofTask = _dofClassifier is not null
-                ? _dofClassifier.ClassifySceneDepthOfFieldAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
+                ? _dofClassifier.ClassifySceneDepthOfFieldAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct, model: planningModel)
                 : Task.FromResult<Dictionary<string, DepthOfFieldDirective>?>(null);
             var colorTask = _colorGradingClassifier is not null
-                ? _colorGradingClassifier.ClassifySceneColorGradingAsync(s, onProgress, ct)
+                ? _colorGradingClassifier.ClassifySceneColorGradingAsync(s, onProgress, ct, model: planningModel)
                 : Task.FromResult<ColorGradingDirective?>(null);
 
             await Task.WhenAll(
@@ -272,7 +269,7 @@ public sealed class Stage2PlannerService
             }
             if (_shotPlanRefiner is not null)
             {
-                await _shotPlanRefiner.RefinePlannedSceneAsync(plannedScene, onProgress, ct).ConfigureAwait(false);
+                await _shotPlanRefiner.RefinePlannedSceneAsync(plannedScene, onProgress, ct, model: planningModel).ConfigureAwait(false);
             }
             planned.Add(plannedScene);
         }

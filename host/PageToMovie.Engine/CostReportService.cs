@@ -222,12 +222,12 @@ public sealed class CostReportService
         var scenarios = BuildScenarios(blueprintClips, onDisk, cfg, rates, retries, draftRes, heroRes);
 
         // Non-video scope (model-dependent): cast portraits, optional voice, music, planning.
-        var videoModel = GetStr(cfg, "model_name", "grok-imagine-video");
-        var imageModel = GetStr(cfg, "image_model_name", "grok-imagine-image-quality");
+        var videoModel = GetStr(cfg, "model_name", "");
+        var imageModel = GetStr(cfg, "image_model_name", "");
         var planningModel = GetStr(cfg, "planning_model_name",
-            GetStr(cfg, "chat_model_name", "grok-4.5"));
-        var voiceModel = GetStr(cfg, "voice_model_name", "eleven_multilingual_v2");
-        var audioModel = GetStr(cfg, "audio_model_name", "fal-ai/musicgen");
+            GetStr(cfg, "chat_model_name", ""));
+        var voiceModel = GetStr(cfg, "voice_model_name", "");
+        var audioModel = GetStr(cfg, "audio_model_name", "");
 
         var castPlan = EstimateCharacterGeneration(projectId, rates, cfg);
         var voicePlan = EstimateVoiceGeneration(projectId, rates, cfg);
@@ -355,8 +355,8 @@ public sealed class CostReportService
         var onDisk = IndexOnDiskClips(projectId);
         var clipJobs = await LoadClipJobsAsync(projectId, ct).ConfigureAwait(false);
         var defaultRes = GetStr(cfg, "resolution", "480p");
-        var defaultModel = GetStr(cfg, "model_name", "grok-imagine-video");
-        var imageModel = GetStr(cfg, "image_model_name", "grok-imagine-image-quality");
+        var defaultModel = GetStr(cfg, "model_name", "");
+        var imageModel = GetStr(cfg, "image_model_name", "");
         var defaultDur = GetDouble(cfg, "duration_seconds", 8);
         var assumeRef = GetBool(defaultRates, "assume_ref_image_per_clip", true);
 
@@ -466,7 +466,7 @@ public sealed class CostReportService
         // Price this event with the model that actually ran (vendor catalog), not a stale config table.
         var rates = RatesFromModels(
             videoModelId: model,
-            imageModelId: GetStr(cfg, "image_model_name", "grok-imagine-image-quality"),
+            imageModelId: GetStr(cfg, "image_model_name", ""),
             cfgOverrides: cfg);
         var priced = PriceVideo(durationSec, resolution, rates, hasRefImage, isExtend, 1);
         var evt = new Dictionary<string, object?>
@@ -624,7 +624,7 @@ public sealed class CostReportService
         string draftRes,
         string heroRes)
     {
-        var model = GetStr(cfg, "model_name", "grok-imagine-video");
+        var model = GetStr(cfg, "model_name", "");
         var rows = new List<CostScenarioRow>();
         foreach (var res in new[] { "480p", "720p", "1080p" })
         {
@@ -1133,8 +1133,8 @@ public sealed class CostReportService
     /// </summary>
     private static Dictionary<string, object?> RatesFromConfig(Dictionary<string, JsonElement> cfg)
     {
-        var videoModelId = GetStr(cfg, "model_name", "grok-imagine-video");
-        var imageModelId = GetStr(cfg, "image_model_name", "grok-imagine-image-quality");
+        var videoModelId = GetStr(cfg, "model_name", "");
+        var imageModelId = GetStr(cfg, "image_model_name", "");
         return RatesFromModels(videoModelId, imageModelId, cfg);
     }
 
@@ -1147,10 +1147,10 @@ public sealed class CostReportService
         Dictionary<string, JsonElement>? cfgOverrides = null)
     {
         var video = SupportedModelCatalog.ResolveOrDefault(
-            videoModelId, ModelCapability.Video, fallbackId: "grok-imagine-video");
+            videoModelId, ModelCapability.Video, fallbackId: null);
         var imagePrimary = SupportedModelCatalog.Find(imageModelId, ModelCapability.Image)
             ?? SupportedModelCatalog.ResolveOrDefault(
-                imageModelId, ModelCapability.Image, fallbackId: "grok-imagine-image-quality");
+                imageModelId, ModelCapability.Image, fallbackId: null);
         // Prefer a cheaper "standard" sibling in the same family when the project uses a quality image model.
         var imageStandard = SupportedModelCatalog.ForCapability(ModelCapability.Image)
             .Where(e => e.Provider == imagePrimary.Provider
@@ -1544,7 +1544,7 @@ public sealed class CostReportService
             return new ScopeEstimate(0, 0, Included: false);
 
         // Prefer catalog voice entry if it ever gains unit prices; else planning knobs / defaults.
-        var voiceId = GetStr(cfg, "voice_model_name", "eleven_multilingual_v2");
+        var voiceId = GetStr(cfg, "voice_model_name", "");
         var voiceEntry = SupportedModelCatalog.Find(voiceId, ModelCapability.Voice);
         // Defaults: clone ~$0.00 when sample already on disk; TTS dialogue budget per speaking role.
         if (cloneUsd <= 0) cloneUsd = 0.0; // clone API often free tier / included — keep 0 unless configured
@@ -1739,7 +1739,7 @@ public sealed class CostReportService
         // Prefer quality/vision model for Gemini-style native video dialogue QA.
         var reviewModelId = GetStr(cfg, "quality_model_name",
             GetStr(cfg, "vision_model_name",
-                GetStr(cfg, "planning_model_name", "grok-4.5")));
+                GetStr(cfg, "planning_model_name", "")));
         var entry = SupportedModelCatalog.Find(reviewModelId, ModelCapability.Vision)
                     ?? SupportedModelCatalog.Find(reviewModelId, ModelCapability.Chat)
                     ?? SupportedModelCatalog.ResolveOrDefault(reviewModelId, ModelCapability.Chat);
@@ -1800,7 +1800,7 @@ public sealed class CostReportService
             return new ScopeEstimate(0, 0, Included: false);
 
         var planningId = GetStr(cfg, "planning_model_name",
-            GetStr(cfg, "chat_model_name", "grok-4.5"));
+            GetStr(cfg, "chat_model_name", ""));
         var entry = SupportedModelCatalog.Find(planningId, ModelCapability.Chat)
                     ?? SupportedModelCatalog.ResolveOrDefault(planningId, ModelCapability.Chat);
 

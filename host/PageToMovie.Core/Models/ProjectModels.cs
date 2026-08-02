@@ -322,7 +322,7 @@ public sealed class ExtractCastRequest
     public string ProjectId { get; set; } = "";
     /// <summary>Rebuild cast even if cast_seeds.json already exists.</summary>
     public bool Force { get; set; } = true;
-    public string Model { get; set; } = "grok-4.5";
+    public string Model { get; set; } = "";
 }
 
 public sealed class AttachCharacterPlatesRequest
@@ -341,7 +341,7 @@ public sealed class AttachCharacterPlatesRequest
     public bool UseGrok { get; set; } = true;
     /// <summary>Max book images to send to Grok (cost/latency cap).</summary>
     public int MaxImages { get; set; } = 32;
-    public string VisionModel { get; set; } = "grok-4.5";
+    public string VisionModel { get; set; } = "";
 }
 
 public sealed class AttachCharacterPlatesResult
@@ -392,7 +392,7 @@ public sealed class StartBookPrepareRequest
     public bool ForceExtract { get; set; } = true;
     public bool ForceVision { get; set; }
     public bool AutoVision { get; set; } = true;
-    public string VisionModel { get; set; } = "grok-4.5";
+    public string VisionModel { get; set; } = "";
 }
 
 /// <summary>
@@ -407,8 +407,8 @@ public sealed class StartBookImportRequest
     public bool ForceExtract { get; set; } = true;
     public bool ForceVision { get; set; }
     public bool AutoVision { get; set; } = true;
-    public string VisionModel { get; set; } = "grok-4.5";
-    public string Model { get; set; } = "grok-4.5";
+    public string VisionModel { get; set; } = "";
+    public string Model { get; set; } = "";
 }
 
 /// <summary>POST /api/projects — create a new project folder.</summary>
@@ -637,7 +637,7 @@ public sealed class UpdateCharacterLookRequest
     /// Run AI visual scrub (literal + base-look, not later wardrobe) before save. Default true.
     /// </summary>
     public bool ScrubWithAi { get; set; } = true;
-    public string Model { get; set; } = "grok-4.5";
+    public string Model { get; set; } = "";
 }
 
 /// <summary>Response from look save (optional AI scrub applied).</summary>
@@ -777,7 +777,7 @@ public sealed class AdaptationStatus
     public CastStatus Cast { get; set; } = new();
     public bool XaiConfigured { get; set; }
     /// <summary>Configured planning model (Configuration page) — Stage 1 / book→Fountain / cast scrub.</summary>
-    public string PlanningModel { get; set; } = "grok-4.5";
+    public string PlanningModel { get; set; } = "";
     public string NextStep { get; set; } = "";
 }
 
@@ -882,7 +882,7 @@ public sealed class StartStage1Request
     public string ProjectId { get; set; } = "";
     public int ChunkPages { get; set; } = 10;
     public int? TotalMinutes { get; set; }
-    public string Model { get; set; } = "grok-4.5";
+    public string Model { get; set; } = "";
     public bool Resume { get; set; }
     public int MaxChunks { get; set; }
 }

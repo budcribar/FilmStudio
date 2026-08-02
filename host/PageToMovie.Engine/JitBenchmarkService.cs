@@ -78,11 +78,15 @@ public sealed class JitBenchmarkService
         string actionDescription,
         string? parenthetical = null,
         string? modelId = null,
+        string? evaluatorModelId = null,
         CancellationToken ct = default)
     {
         var concurrency = ActionConcurrencyAnalyzer.AnalyzeBeat(actionDescription, parenthetical);
         double camOverhead = _ledger.GetOverheadSec(concurrency.CameraId, 1.6);
-        string targetModel = modelId ?? "fal-ai/hunyuan-video";
+        // Video model is optional for index-only matches; required only when live JIT renders.
+        string? targetModel = string.IsNullOrWhiteSpace(modelId) ? null : modelId.Trim();
+        // Evaluator attribution for telemetry — never invent Grok/Gemini ids.
+        string evaluatorId = string.IsNullOrWhiteSpace(evaluatorModelId) ? "" : evaluatorModelId.Trim();
 
         // Always classify first — cheap and works with no video keys configured. A confident index
         // match skips live measurement entirely; only an uncertain match pays for a real benchmark.
@@ -102,9 +106,9 @@ public sealed class JitBenchmarkService
                     Id: $"idx_{Guid.NewGuid():N}",
                     ProjectId: "global",
                     SceneNumber: 0,
-                    VideoModelId: targetModel,
+                    VideoModelId: targetModel ?? "",
                     VideoModelVersion: "v1",
-                    EvaluatorModelId: "grok-4.5",
+                    EvaluatorModelId: evaluatorId,
                     EvaluatorModelVersion: "v1",
                     CameraCategory: concurrency.CameraId,
                     ActionCategory: estimation.MatchCategoryId,
@@ -125,7 +129,7 @@ public sealed class JitBenchmarkService
                 SourceDescription: $"Confident index match ({estimation.Explanation}).");
         }
 
-        bool canRunLiveJit = _videoClient is not null && _videoClient.IsConfigured;
+        bool canRunLiveJit = _videoClient is not null && _videoClient.IsConfigured && !string.IsNullOrWhiteSpace(targetModel);
 
         if (canRunLiveJit)
         {
@@ -141,7 +145,7 @@ public sealed class JitBenchmarkService
                     prompt: prompt,
                     durationSeconds: 4,
                     resolution: "1280x720",
-                    model: targetModel,
+                    model: targetModel!,
                     ct: ct).ConfigureAwait(false);
 
                 _log?.LogInformation("[JitBenchmark] Submitted 1-clip JIT job '{ReqId}'. Polling for video completion...", reqId);
@@ -186,10 +190,12 @@ public sealed class JitBenchmarkService
                             _log?.LogInformation("[JitBenchmark] Probed MP4 stream total clip duration: {TotalSec:F2}s", measuredTotalClipSec);
                         }
 
-                        // 2. Perform multimodal Gemini Vision frame inspection to measure physical action overhead
-                        if (_visionClient is not null && _visionClient.IsConfigured)
+                        // 2. Multimodal vision frame inspection when an evaluator model is supplied.
+                        if (_visionClient is not null && _visionClient.IsConfigured
+                            && !string.IsNullOrWhiteSpace(evaluatorId))
                         {
-                            _log?.LogInformation("[JitBenchmark] Inspecting JIT video frames at {Path} via Vision Client...", tempMp4Path);
+                            _log?.LogInformation("[JitBenchmark] Inspecting JIT video frames at {Path} via Vision Client ({Model})...",
+                                tempMp4Path, evaluatorId);
                             
                             var visionPrompt = $$"""
                                 Analyze this video clip frame by frame.
@@ -207,7 +213,7 @@ public sealed class JitBenchmarkService
                             var rawVision = await _visionClient.CompleteWithImagesAsync(
                                 prompt: visionPrompt,
                                 imagePaths: new[] { tempMp4Path },
-                                model: "gemini-2.5-flash",
+                                model: evaluatorId,
                                 ct: ct).ConfigureAwait(false);
 
                             if (!string.IsNullOrWhiteSpace(rawVision))
@@ -222,8 +228,8 @@ public sealed class JitBenchmarkService
                                 if (parsedAnalysis is not null && parsedAnalysis.ActionCompletionSec > 0)
                                 {
                                     measuredActionOverheadSec = Math.Round(parsedAnalysis.ActionCompletionSec, 2);
-                                    sourceNote = $"Live Video API + Gemini Vision Inspection ({parsedAnalysis.Explanation})";
-                                    _log?.LogInformation("[JitBenchmark] Gemini Vision measured physical action overhead for '{Action}' = {ActionSec:F2}s (Conf={Conf:F2})",
+                                    sourceNote = $"Live Video API + Vision Inspection ({parsedAnalysis.Explanation})";
+                                    _log?.LogInformation("[JitBenchmark] Vision measured physical action overhead for '{Action}' = {ActionSec:F2}s (Conf={Conf:F2})",
                                         actionDescription, measuredActionOverheadSec, parsedAnalysis.Confidence);
                                 }
                             }
@@ -240,9 +246,9 @@ public sealed class JitBenchmarkService
                         Id: $"jit_{Guid.NewGuid():N}",
                         ProjectId: "global",
                         SceneNumber: 0,
-                        VideoModelId: targetModel,
+                        VideoModelId: targetModel ?? "",
                         VideoModelVersion: "v1",
-                        EvaluatorModelId: "gemini-2.5-flash",
+                        EvaluatorModelId: evaluatorId,
                         EvaluatorModelVersion: "v1",
                         CameraCategory: concurrency.CameraId,
                         ActionCategory: categoryId,
@@ -286,9 +292,9 @@ public sealed class JitBenchmarkService
                 Id: $"clf_{Guid.NewGuid():N}",
                 ProjectId: "global",
                 SceneNumber: 0,
-                VideoModelId: targetModel,
+                VideoModelId: targetModel ?? "",
                 VideoModelVersion: "v1",
-                EvaluatorModelId: "grok-4.5",
+                EvaluatorModelId: evaluatorId,
                 EvaluatorModelVersion: "v1",
                 CameraCategory: concurrency.CameraId,
                 ActionCategory: estimation.MatchCategoryId,

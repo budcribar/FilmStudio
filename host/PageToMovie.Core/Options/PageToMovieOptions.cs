@@ -7,13 +7,13 @@ public sealed class PageToMovieOptions
     /// <summary>Repo / workspace root containing projects/ and prompts/.</summary>
     public string WorkspaceRoot { get; set; } = "";
 
-    public string DefaultModel { get; set; } = "grok-imagine-video";
-    public string DefaultImageModel { get; set; } = "grok-imagine-image-quality";
+    public string DefaultModel { get; set; } = "";
+    public string DefaultImageModel { get; set; } = "";
     /// <summary>
     /// Image backend for character portraits: grok | gemini.
-    /// Also inferred from DefaultImageModel / project image_model_name when empty.
+    /// Inferred from project image_model_name / DefaultImageModel when empty.
     /// </summary>
-    public string ImageProvider { get; set; } = "grok";
+    public string ImageProvider { get; set; } = "";
     public string DefaultResolution { get; set; } = "480p";
     public int DefaultDurationSeconds { get; set; } = 6;
     public int GrokPollSeconds { get; set; } = 5;
@@ -92,7 +92,7 @@ public sealed class PageToMovieOptions
     public bool ClassifySilentBeatsWithChat { get; set; } = true;
 
     /// <summary>Chat model for silent beat classify (compare via BeatLabelEval).</summary>
-    public string SilentBeatClassifyModel { get; set; } = "grok-4.5";
+    public string SilentBeatClassifyModel { get; set; } = "";
 
     /// <summary>Sampling temperature for silent beat classify (0 = most stable).</summary>
     public double SilentBeatClassifyTemperature { get; set; } = 0.0;
@@ -104,51 +104,51 @@ public sealed class PageToMovieOptions
     public int SilentBeatClassifyBackoffBaseMs { get; set; } = 400;
 
     public bool ClassifyAmbientSfxWithChat { get; set; } = true;
-    public string AmbientSfxClassifyModel { get; set; } = "grok-4.5";
+    public string AmbientSfxClassifyModel { get; set; } = "";
     public double AmbientSfxClassifyTemperature { get; set; } = 0.2;
     public int AmbientSfxClassifyMaxAttempts { get; set; } = 3;
 
     public bool ClassifyOnScreenCastWithChat { get; set; } = true;
-    public string OnScreenCastClassifyModel { get; set; } = "grok-4.5";
+    public string OnScreenCastClassifyModel { get; set; } = "";
 
     public bool ClassifyExtendCutWithChat { get; set; } = true;
-    public string ExtendCutClassifyModel { get; set; } = "grok-4.5";
+    public string ExtendCutClassifyModel { get; set; } = "";
 
     public bool ClassifySpeciesKindWithChat { get; set; } = true;
-    public string SpeciesKindClassifyModel { get; set; } = "grok-4.5";
+    public string SpeciesKindClassifyModel { get; set; } = "";
 
     public bool ClassifyPlateRankWithChat { get; set; } = true;
-    public string PlateRankClassifyModel { get; set; } = "grok-4.5";
+    public string PlateRankClassifyModel { get; set; } = "";
 
     public bool ClassifyShotPlanRefineWithChat { get; set; } = true;
-    public string ShotPlanRefineClassifyModel { get; set; } = "grok-4.5";
+    public string ShotPlanRefineClassifyModel { get; set; } = "";
 
     public bool ClassifyBeatPacingWithChat { get; set; } = true;
-    public string BeatPacingClassifyModel { get; set; } = "grok-4.5";
+    public string BeatPacingClassifyModel { get; set; } = "";
 
     public bool ClassifyCinematicLightingWithChat { get; set; } = true;
-    public string CinematicLightingClassifyModel { get; set; } = "grok-4.5";
+    public string CinematicLightingClassifyModel { get; set; } = "";
 
     public bool ClassifyCameraDirectorWithChat { get; set; } = true;
-    public string CameraDirectorClassifyModel { get; set; } = "grok-4.5";
+    public string CameraDirectorClassifyModel { get; set; } = "";
 
     public bool ClassifyNegativePromptWithChat { get; set; } = true;
-    public string NegativePromptClassifyModel { get; set; } = "grok-4.5";
+    public string NegativePromptClassifyModel { get; set; } = "";
 
     public bool ClassifyWardrobeContinuityWithChat { get; set; } = true;
-    public string WardrobeContinuityClassifyModel { get; set; } = "grok-4.5";
+    public string WardrobeContinuityClassifyModel { get; set; } = "";
 
     public bool ClassifyCharacterEmotionArcWithChat { get; set; } = true;
-    public string CharacterEmotionArcClassifyModel { get; set; } = "grok-4.5";
+    public string CharacterEmotionArcClassifyModel { get; set; } = "";
 
     public bool ClassifySoundDesignComposerWithChat { get; set; } = true;
-    public string SoundDesignComposerClassifyModel { get; set; } = "grok-4.5";
+    public string SoundDesignComposerClassifyModel { get; set; } = "";
 
     public bool ClassifyDepthOfFieldWithChat { get; set; } = true;
-    public string DepthOfFieldClassifyModel { get; set; } = "grok-4.5";
+    public string DepthOfFieldClassifyModel { get; set; } = "";
 
     public bool ClassifyColorPaletteGradingWithChat { get; set; } = true;
-    public string ColorPaletteGradingClassifyModel { get; set; } = "grok-4.5";
+    public string ColorPaletteGradingClassifyModel { get; set; } = "";
 
     public bool EnableBackgroundMusic { get; set; } = true;
     public string BackgroundMusicModel { get; set; } = "";

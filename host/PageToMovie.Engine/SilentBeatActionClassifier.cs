@@ -21,7 +21,7 @@ public sealed class SilentBeatActionClassifier
     /// </summary>
     public const string PromptVersion = "v2_pp";
 
-    public const string DefaultModel = "grok-4.5";
+    public const string DefaultModel = "";
     public const double DefaultTemperature = 0.0;
     public const int DefaultMaxAttempts = 3; // 1 try + 2 retries
     public const int DefaultBatchSize = 40;
@@ -54,9 +54,10 @@ public sealed class SilentBeatActionClassifier
         string? overrideModel = null)
     {
         var model = !string.IsNullOrWhiteSpace(overrideModel)
-            ? overrideModel
+            ? overrideModel!.Trim()
             : (string.IsNullOrWhiteSpace(_opts.SilentBeatClassifyModel)
-                ? DefaultModel
+                ? throw new InvalidOperationException(
+                    "Silent beat classify: no model configured. Set the project Script & planning model in Settings, or SilentBeatClassifyModel.")
                 : _opts.SilentBeatClassifyModel.Trim());
         var temp = _opts.SilentBeatClassifyTemperature;
         if (double.IsNaN(temp) || temp < 0)

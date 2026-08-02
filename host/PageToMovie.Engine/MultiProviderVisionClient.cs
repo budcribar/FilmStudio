@@ -35,18 +35,18 @@ public sealed class MultiProviderVisionClient : IVisionClient
     public bool IsConfigured => _grok.IsConfigured || _anthropic.IsConfigured || _gemini.IsConfigured;
 
     public Task<string> TranscribePageAsync(
-        string imagePath, int page, string model = "grok-4.5", CancellationToken ct = default) =>
+        string imagePath, int page, string model = "", CancellationToken ct = default) =>
         Resolve(model).TranscribePageAsync(imagePath, page, model, ct);
 
     public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(
         string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "grok-4.5", CancellationToken ct = default) =>
+        string model = "", CancellationToken ct = default) =>
         Resolve(model).ClassifyCharactersOnImageAsync(imagePath, page, cast, model, ct);
 
     public Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "grok-4.5",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default) =>
         Resolve(model).CompleteWithImagesAsync(prompt, imagePaths, model, detail, ct);
@@ -54,14 +54,19 @@ public sealed class MultiProviderVisionClient : IVisionClient
     private IVisionClient Resolve(string? model)
     {
         if (string.IsNullOrWhiteSpace(model))
-            return _grok.IsConfigured ? (IVisionClient)_grok : (_gemini.IsConfigured ? _gemini : _anthropic);
-
-        var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Vision).Provider;
-        return provider switch
+            throw new InvalidOperationException(
+                "Vision: model is required. Open Settings and choose an Image vision model.");
+        var visionEntry = SupportedModelCatalog.Find(model, ModelCapability.Vision) ?? SupportedModelCatalog.Find(model);
+        if (visionEntry is null || !visionEntry.Enabled)
+            throw new InvalidOperationException(
+                $"Vision: model '{model}' is not in the models catalog (or is disabled). Open Settings and pick a current model.");
+        // Route by catalog provider only — do not invent a different backend when the selected
+        // provider lacks a key (that surfaces as IsConfigured=false / HTTP auth errors instead).
+        return visionEntry.Provider switch
         {
-            ModelProviderFamily.Anthropic => _anthropic.IsConfigured ? _anthropic : (_grok.IsConfigured ? (IVisionClient)_grok : _gemini),
-            ModelProviderFamily.Google => _gemini.IsConfigured ? _gemini : (_grok.IsConfigured ? (IVisionClient)_grok : _anthropic),
-            _ => _grok.IsConfigured ? (IVisionClient)_grok : (_gemini.IsConfigured ? _gemini : _anthropic),
+            ModelProviderFamily.Anthropic => _anthropic,
+            ModelProviderFamily.Google => _gemini,
+            _ => _grok,
         };
     }
 }

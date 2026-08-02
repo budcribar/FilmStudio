@@ -48,11 +48,9 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     private static readonly AsyncLocal<string?> _lastResolvedModel = new();
 
     /// <summary>
-    /// The model id that actually served the most recently completed call on this async flow —
-    /// differs from the requested model when a 404 (e.g. a deprecated/retired model like
-    /// gemini-2.5-pro) triggered the gemini-2.5-flash fallback below. Callers that need to report
-    /// or attribute results by model (benchmarks, telemetry dashboards) should check this rather
-    /// than assume the requested id is what generated the response.
+    /// The model id that actually served the most recently completed call on this async flow.
+    /// Callers that need to report or attribute results by model (benchmarks, telemetry) should
+    /// check this rather than assume the requested id is what generated the response.
     /// </summary>
     public static string? LastResolvedModel => _lastResolvedModel.Value;
 
@@ -70,7 +68,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "gemini-2.5-flash",
+        string model = "",
         double temperature = 0.2,
         CancellationToken ct = default,
         string? mode = null,
@@ -110,7 +108,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "gemini-2.5-flash",
+        string model = "",
         string detail = "low",
         CancellationToken ct = default)
     {
@@ -182,36 +180,26 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     /// returning a wrong answer if ever routed here.
     /// </summary>
     public Task<string> TranscribePageAsync(
-        string imagePath, int page, string model = "gemini-2.5-flash", CancellationToken ct = default) =>
+        string imagePath, int page, string model = "", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Book-page transcription is not implemented for Gemini yet — route this call to Grok.");
 
     /// <inheritdoc cref="TranscribePageAsync"/>
     public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(
         string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "gemini-2.5-flash", CancellationToken ct = default) =>
+        string model = "", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Character-page classification is not implemented for Gemini yet — route this call to Grok.");
 
     private static string NormalizeModelName(string? model)
     {
-        if (string.IsNullOrWhiteSpace(model)) return "gemini-2.5-flash";
+        if (string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException(
+                "Gemini: model is required. Open Settings and choose a model (no silent default).");
         var trimmed = model.Trim();
         if (trimmed.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
-        {
             trimmed = trimmed["models/".Length..];
-        }
-        if (trimmed.Equals("gemini-3-pro", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-3.0-pro", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-3-pro-image", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-1.5-pro", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-1.5-flash", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("grok-4.5", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("grok-4", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("claude-sonnet-5", StringComparison.OrdinalIgnoreCase))
-        {
-            return "gemini-2.5-flash";
-        }
+        // Strip provider prefix only — never rewrite to a different model id.
         return trimmed;
     }
 
@@ -245,12 +233,6 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
-                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound && targetModel != "gemini-2.5-flash")
-                {
-                    _log.LogWarning("Gemini model {Model} returned 404 — retrying with gemini-2.5-flash", targetModel);
-                    return await SendAsync(payload, "gemini-2.5-flash", kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
-                }
-
                 // Not every Gemini model supports thinkingConfig (confirmed live: gemini-2.5-flash
                 // 400s with "Thinking level is not supported for this model"). Self-heal by
                 // stripping it and retrying rather than maintaining a model-capability list.
