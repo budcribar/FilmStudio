@@ -3,6 +3,7 @@
 @inherits AdaptationPageBase
 @using Microsoft.AspNetCore.Components.Forms
 @inject AdminSessionService Session
+@inject IJSRuntime Js
 
 <PageTitle>Book · Import</PageTitle>
 
@@ -88,13 +89,15 @@
                     <h5 class="card-title mb-1">Import source</h5>
                     <p class="text-muted small mb-3">PDF, text, or fountain — then the pipeline runs. You can edit after.</p>
 
-                    <label class="ptm-dropzone @(Busy || JobRunning ? "ptm-dropzone--disabled" : "") @(_dragOver ? "ptm-dropzone--active" : "")"
+                    <label class="ptm-dropzone @(Busy || JobRunning || _importing ? "ptm-dropzone--disabled" : "") @(_dragOver ? "ptm-dropzone--active" : "")"
+                           data-testid="import-dropzone"
                            @ondragenter="OnDragEnter"
                            @ondragenter:preventDefault
                            @ondragover="OnDragOver"
                            @ondragover:preventDefault
                            @ondragleave="OnDragLeave"
-                           @ondrop="OnDrop">
+                           @ondrop="OnDrop"
+                           @ondrop:preventDefault>
                         @* @key remounts InputFile after each pick so Blazor's file map stays valid. *@
                         <InputFile @key="_inputFileKey"
                                    OnChange="OnSourceSelectedAsync"
@@ -176,9 +179,24 @@
 
     private void OnDrop(DragEventArgs e)
     {
-        // Drop lands on the full-size transparent InputFile (z-index 2). We only clear the
-        // highlight here — OnSourceSelectedAsync handles the file when the input receives it.
+        // preventDefault (markup) stops the browser from opening the dropped .txt as a navigation.
+        // JS (ptmImportDrop) assigns the File to the InputFile and fires change → OnSourceSelectedAsync.
         _dragOver = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        if (_importing || Busy || JobRunning) return;
+        try
+        {
+            // Re-bind after each InputFile remount (@key) so drop keeps working.
+            await Js.InvokeVoidAsync("ptmImportDrop.attachBySelector", "[data-testid=import-dropzone]");
+        }
+        catch
+        {
+            // script not loaded yet — next render retries
+        }
     }
 
     private async Task OnSourceSelectedAsync(InputFileChangeEventArgs e)

@@ -2131,7 +2131,12 @@ app.MapPost("/api/projects", async (
         var title = body?.Title;
         var p = await store.CreateProjectAsync(
             name, title, ct, ownerUserId: user.UserId, studioPath: body?.StudioPath);
-        var list = await store.ListProjectsAsync(ct);
+        var all = await store.ListProjectsAsync(ct);
+        // Same visibility rule as GET /api/projects — only owner (or admin) sees their list.
+        var list = user.IsAdmin
+            ? all
+            : all.Where(x =>
+                string.Equals(x.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase)).ToList();
         return Results.Ok(new
         {
             ok = true,

@@ -104,16 +104,16 @@
             </a>
         </div>
     </div>
-    <div class="card mb-3" data-testid="home-full-studio-card">
+    <div class="card mb-3 border-primary border-opacity-50" data-testid="home-full-studio-card">
         <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div class="min-w-0">
-                <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing:0.06em;">Advanced</div>
+                <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Advanced</div>
                 <div class="fw-semibold">Full studio</div>
                 <div class="small text-muted">
                     Cast, estimate, film, and review — full control.
                 </div>
             </div>
-            <a href="login?returnUrl=/" class="btn btn-outline-secondary btn-sm flex-shrink-0" data-testid="home-open-full-studio-guest">
+            <a href="login?returnUrl=/" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-full-studio-guest">
                 Sign in for studio →
             </a>
         </div>
@@ -150,17 +150,17 @@ else
             </div>
         </div>
 
-        <div class="card mb-3" data-testid="home-full-studio-card">
+        <div class="card mb-3 border-primary border-opacity-50" data-testid="home-full-studio-card">
             <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
                 <div class="min-w-0">
-                    <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing:0.06em;">Advanced</div>
+                    <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Advanced</div>
                     <div class="fw-semibold">Full studio</div>
                     <div class="small text-muted">
                         Pick or create a project, cast faces, estimate, film, and review — full control.
                     </div>
                 </div>
                 <button type="button"
-                        class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                        class="btn btn-primary btn-sm flex-shrink-0"
                         data-testid="home-open-full-studio"
                         @onclick="EnterFullStudio">
                     Open full studio →
@@ -602,6 +602,7 @@ else
     {
         _fullStudioHome = true;
         _manageExpanded = false;
+        _ = PersistHomeModeAsync("full");
     }
 
     private void ExitFullStudio()
@@ -610,6 +611,37 @@ else
         _manageExpanded = false;
         _showNew = false;
         _showRename = false;
+        _ = PersistHomeModeAsync("easy");
+    }
+
+    private async Task PersistHomeModeAsync(string mode)
+    {
+        try { await Js.InvokeVoidAsync("localStorage.setItem", "ptm.homeMode", mode); }
+        catch { /* non-fatal */ }
+    }
+
+    /// <summary>
+    /// Prefer full studio when the user already has projects (or last chose full),
+    /// so creating a project and returning home still shows it in the list.
+    /// </summary>
+    private async Task ResolveHomeModeAsync()
+    {
+        string? mode = null;
+        try { mode = await Js.InvokeAsync<string?>("localStorage.getItem", "ptm.homeMode"); }
+        catch { /* ignore */ }
+
+        if (string.Equals(mode, "full", StringComparison.OrdinalIgnoreCase))
+        {
+            _fullStudioHome = true;
+            return;
+        }
+        if (string.Equals(mode, "easy", StringComparison.OrdinalIgnoreCase))
+        {
+            _fullStudioHome = false;
+            return;
+        }
+        // Default: full studio if any projects exist so empty new projects stay visible.
+        _fullStudioHome = _projects?.Projects is { Count: > 0 };
     }
 
     private async Task ToggleNewProjectAsync()
@@ -628,6 +660,7 @@ else
     private async Task OpenNewProjectAsync()
     {
         _fullStudioHome = true;
+        await PersistHomeModeAsync("full");
         _manageExpanded = true;
         if (!_showNew)
             await ToggleNewProjectAsync();
@@ -863,6 +896,7 @@ else
             _projects = await Engine.GetProjectsAsync();
             await ActiveProject.RefreshFromApiAsync(Engine);
             await RefreshProjectCostAsync();
+            await ResolveHomeModeAsync();
 
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -973,20 +1007,30 @@ else
         {
             var name = _newName.Trim();
             var result = await Engine.CreateProjectAsync(name);
-            _projects = result ?? await Engine.GetProjectsAsync();
-            var created = _projects?.Active;
+            // Prefer filtered GET list (create response may include unowned projects for admins).
+            _projects = await Engine.GetProjectsAsync() ?? result;
+            var created = _projects?.Active
+                ?? _projects?.Projects?.FirstOrDefault(p =>
+                    string.Equals(p.Title, name, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(p.Label, name, StringComparison.OrdinalIgnoreCase))
+                ?? result?.Active;
             if (created?.Id is { Length: > 0 } cid)
             {
                 ActiveProject.Set(cid, created.Label ?? created.Title ?? cid, created.ParentProjectId, created.StudioPath);
                 await ActiveProject.RefreshReadinessAsync(Engine);
-            await RefreshProjectCostAsync();
+                await RefreshProjectCostAsync();
             }
             else
                 await ActiveProject.RefreshFromApiAsync(Engine);
-            _message = $"Created “{name}”";
+
+            // Stay in full studio so going Home still shows the new project in the picker.
+            _fullStudioHome = true;
+            await PersistHomeModeAsync("full");
+            _message = $"Created “{name}” — ready to import a book.";
             _newName = "";
             _showNew = false;
-            Nav.NavigateTo("adaptation");
+            // Go to import (book) rather than a generic adaptation shell so the project is clearly "started".
+            Nav.NavigateTo("adaptation/import");
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
