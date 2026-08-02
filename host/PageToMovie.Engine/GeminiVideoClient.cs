@@ -98,7 +98,7 @@ public sealed class GeminiVideoClient : IVideoClient
             ["instances"] = new object[] { instance },
             ["parameters"] = new Dictionary<string, object?>
             {
-                ["aspectRatio"] = "16:9",
+                ["aspectRatio"] = ResolveAspectRatio(model),
                 ["durationSeconds"] = durationSeconds,
                 ["resolution"] = NormalizeResolution(resolution),
             },
@@ -322,6 +322,13 @@ public sealed class GeminiVideoClient : IVideoClient
         await resp.Content.CopyToAsync(fs, ct).ConfigureAwait(false);
         _log.LogInformation("Downloaded {Bytes} bytes → {Path}", new FileInfo(destPath).Length, destPath);
     }
+
+    /// <summary>
+    /// Catalog's <c>DefaultAspectRatio</c> for the requested Veo model, falling back to the
+    /// historical hardcoded "16:9" for models the catalog doesn't cover yet.
+    /// </summary>
+    private static string ResolveAspectRatio(string model) =>
+        SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).DefaultAspectRatio ?? "16:9";
 
     private static string NormalizeResolution(string resolution) =>
         (resolution ?? "").Trim().ToLowerInvariant() switch

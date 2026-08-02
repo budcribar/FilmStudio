@@ -376,4 +376,57 @@ public class SupportedModelCatalogTests
         var roundTripped = SupportedModelCatalog.FromDto(dto);
         Assert.Null(roundTripped.MaxOutputTokens);
     }
+
+    [Theory]
+    // xAI Grok Imagine video generation (docs.x.ai/developers/model-capabilities/video/generation):
+    // aspect_ratio accepts 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, default 16:9.
+    [InlineData("grok-imagine-video", ModelCapability.Video,
+        new[] { "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3" }, "16:9")]
+    // Google Veo 3.1 via Gemini API (ai.google.dev/gemini-api/docs/veo): landscape 16:9 (default)
+    // or portrait 9:16 only.
+    [InlineData("veo-3.1", ModelCapability.Video, new[] { "16:9", "9:16" }, "16:9")]
+    // Fal.ai HunyuanVideo (fal.ai/models/fal-ai/hunyuan-video/api): aspect_ratio 16:9 or 9:16,
+    // default 16:9.
+    [InlineData("hunyuan-video", ModelCapability.Video, new[] { "16:9", "9:16" }, "16:9")]
+    // Fal.ai Wan 2.1 image-to-video (fal.ai/models/fal-ai/wan-i2v/api): auto (infer from input
+    // image, default), 16:9, 9:16, or 1:1.
+    [InlineData("fal-ai/wan-2.1", ModelCapability.Video,
+        new[] { "auto", "16:9", "9:16", "1:1" }, "auto")]
+    public void Video_models_carry_real_per_model_aspect_ratios(
+        string id, ModelCapability cap, string[] expectedSupported, string expectedDefault)
+    {
+        var e = SupportedModelCatalog.Find(id, cap);
+        Assert.NotNull(e);
+        Assert.NotNull(e!.SupportedAspectRatios);
+        Assert.Equal(expectedSupported, e.SupportedAspectRatios);
+        Assert.Equal(expectedDefault, e.DefaultAspectRatio);
+        // Default should always be a member of the model's own supported list.
+        Assert.Contains(e.DefaultAspectRatio, e.SupportedAspectRatios!);
+    }
+
+    [Fact]
+    public void Unknown_video_model_leaves_aspect_ratio_unset_so_callers_fall_back_to_16_9()
+    {
+        // Callers resolve `entry.DefaultAspectRatio ?? "16:9"` — an unresolvable/unknown model id
+        // must yield a null DefaultAspectRatio (not a guessed value) so that fallback kicks in.
+        var synthetic = SupportedModelCatalog.ResolveOrDefault("totally-unknown-video-model-xyz", ModelCapability.Video);
+        Assert.Null(synthetic.SupportedAspectRatios);
+        Assert.Null(synthetic.DefaultAspectRatio);
+        Assert.Equal("16:9", synthetic.DefaultAspectRatio ?? "16:9");
+    }
+
+    [Fact]
+    public void Chat_and_image_models_leave_aspect_ratio_catalog_fields_unset()
+    {
+        // SupportedAspectRatios/DefaultAspectRatio are Video-only concepts (image generation
+        // already has its own per-call aspectRatio parameter unrelated to this catalog field).
+        foreach (var cap in new[] { ModelCapability.Chat, ModelCapability.Image })
+        {
+            foreach (var e in SupportedModelCatalog.ForCapability(cap, enabledOnly: false))
+            {
+                Assert.Null(e.SupportedAspectRatios);
+                Assert.Null(e.DefaultAspectRatio);
+            }
+        }
+    }
 }
