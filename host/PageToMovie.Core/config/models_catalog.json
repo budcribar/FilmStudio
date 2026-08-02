@@ -220,7 +220,10 @@
         "720p": 0.40,
         "1080p": 0.40
       },
-      "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs. Billed as a flat ~$0.40/video (frame-count-based generation, not duration-based) — NOT per-second; a prior per-second rate here (0.005/s) underpriced a 5s clip by ~16x ($0.025 vs the real ~$0.40 flat fee). Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading. Deliberately no min/max/absMaxClipDurationSeconds: the real API parameter is num_frames (85 or 129) + fps, not seconds — forcing a seconds-shaped min/max onto a frame-count model would itself be a wrong approximation; needs its own frame-count-based representation (tracked separately), not a generic duration bound."
+      "numInferenceSteps": 30,
+      "shortClipFrameCount": 85,
+      "longClipFrameCount": 129,
+      "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs. Billed as a flat ~$0.40/video (frame-count-based generation, not duration-based) — NOT per-second; a prior per-second rate here (0.005/s) underpriced a 5s clip by ~16x ($0.025 vs the real ~$0.40 flat fee). Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading. Deliberately no min/max/absMaxClipDurationSeconds: the real API parameter is num_frames (85 or 129) + fps, not seconds — forcing a seconds-shaped min/max onto a frame-count model would itself be a wrong approximation; now represented directly via shortClipFrameCount/longClipFrameCount (the model's real NumberofFramesEnum: 85 or 129, default 129) rather than a generic duration bound. numInferenceSteps default 30 confirmed against fal.ai/models/fal-ai/hunyuan-video/api."
     },
     {
       "id": "fal-ai/wan-2.1",
@@ -251,7 +254,8 @@
         "720p": 0.40,
         "1080p": 0.40
       },
-      "notes": "Alibaba Wan 2.1 open-weights image-to-video model hosted on Fal.ai serverless GPUs. Billed as a flat fee per video (frame-count-based generation, not duration-based), not per-second — a prior per-second rate here (0.025/s) underpriced a 5s 720p clip by ~3x ($0.125 vs the real ~$0.40 flat fee). 1080p flat fee not independently documented; assumed equal to 720p pending confirmation. Duration is a narrow ~5-6s band (81-100 frames @ 5-24fps typical), NOT the generic 3-10s range — approximated here in seconds even though frames+fps is the more precise real parameter. Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading."
+      "numInferenceSteps": 30,
+      "notes": "Alibaba Wan 2.1 open-weights image-to-video model hosted on Fal.ai serverless GPUs. Billed as a flat fee per video (frame-count-based generation, not duration-based), not per-second — a prior per-second rate here (0.025/s) underpriced a 5s 720p clip by ~3x ($0.125 vs the real ~$0.40 flat fee). 1080p flat fee not independently documented; assumed equal to 720p pending confirmation. Duration is a narrow ~5-6s band (81-100 frames @ 5-24fps typical), NOT the generic 3-10s range — approximated here in seconds even though frames+fps is the more precise real parameter. Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading. numInferenceSteps default 30 confirmed against fal.ai/models/fal-ai/wan-i2v/api. Deliberately no shortClipFrameCount/longClipFrameCount: Wan's real num_frames (default 81, range 81-100 per fal-ai/wan-i2v) is a continuous range, not Hunyuan's discrete short/long enum, and FalVideoClient does not send an explicit num_frames override for Wan today — this entry stays duration-native via min/max/absMaxClipDurationSeconds above instead."
     },
     {
       "id": "veo-3.1",

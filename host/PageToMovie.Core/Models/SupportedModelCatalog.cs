@@ -220,6 +220,30 @@ public sealed class SupportedModelEntry
     /// </summary>
     public int? MaxReferenceImageDimension { get; init; }
 
+    /// <summary>
+    /// Diffusion sampling steps (Video/Image only) — the quality/speed knob Fal-hosted diffusion
+    /// models expose as <c>num_inference_steps</c>. Null falls back to the calling client's own
+    /// hardcoded default (30 in <c>FalVideoClient</c>).
+    /// </summary>
+    public int? NumInferenceSteps { get; init; }
+
+    /// <summary>
+    /// For Fal video models whose real generation API takes a discrete <c>num_frames</c> value
+    /// rather than a continuous seconds-based duration (see the frame-count-native note on the
+    /// <c>hunyuan-video</c> catalog entry) — the frame count <c>FalVideoClient</c> requests for
+    /// clips at or under its short/long duration split (4s). Null falls back to the client's
+    /// hardcoded default (85). Duration-native Fal models (e.g. Wan-2.1, which instead populate
+    /// <see cref="MinClipDurationSeconds"/>/<see cref="MaxClipDurationSeconds"/>) leave this null.
+    /// </summary>
+    public int? ShortClipFrameCount { get; init; }
+
+    /// <summary>
+    /// Frame count <c>FalVideoClient</c> requests for clips over its short/long duration split
+    /// (4s) — the counterpart to <see cref="ShortClipFrameCount"/>. Null falls back to the
+    /// client's hardcoded default (129).
+    /// </summary>
+    public int? LongClipFrameCount { get; init; }
+
     /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
     public string ProviderName { get; init; } = "";
 
@@ -766,6 +790,9 @@ public static class SupportedModelCatalog
         AllowedDurationsSeconds = e.AllowedDurationsSeconds is { } ad ? new List<int>(ad) : null,
         MaxExtensionSeconds = e.MaxExtensionSeconds,
         MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
+        NumInferenceSteps = e.NumInferenceSteps,
+        ShortClipFrameCount = e.ShortClipFrameCount,
+        LongClipFrameCount = e.LongClipFrameCount,
     };
 
     public static SupportedModelEntry FromDto(SupportedModelDto d) => new()
@@ -798,6 +825,9 @@ public static class SupportedModelCatalog
         AllowedDurationsSeconds = d.AllowedDurationsSeconds,
         MaxExtensionSeconds = d.MaxExtensionSeconds,
         MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
+        NumInferenceSteps = d.NumInferenceSteps,
+        ShortClipFrameCount = d.ShortClipFrameCount,
+        LongClipFrameCount = d.LongClipFrameCount,
     };
 }
 
@@ -831,6 +861,9 @@ public sealed class SupportedModelDto
     public List<int>? AllowedDurationsSeconds { get; set; }
     public int? MaxExtensionSeconds { get; set; }
     public int? MaxAudioDurationSeconds { get; set; }
+    public int? NumInferenceSteps { get; set; }
+    public int? ShortClipFrameCount { get; set; }
+    public int? LongClipFrameCount { get; set; }
 }
 
 public sealed class ModelCapabilityDefinition

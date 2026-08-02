@@ -52,6 +52,48 @@ public class SupportedModelCatalogTests
         Assert.Equal(expectedMax, entry.MaxReferenceImages);
     }
 
+    [Theory]
+    [InlineData("hunyuan-video", 30)]
+    [InlineData("fal-ai/wan-2.1", 30)]
+    public void NumInferenceSteps_MatchesRealPerModelFalDefault(string modelId, int expectedSteps)
+    {
+        var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
+        Assert.Equal(expectedSteps, entry.NumInferenceSteps);
+    }
+
+    [Fact]
+    public void HunyuanVideo_HasRealFrameCountLadder()
+    {
+        // HunyuanVideo's real fal.ai num_frames parameter is a discrete enum: 85 or 129 (default 129).
+        var entry = SupportedModelCatalog.ResolveOrDefault("hunyuan-video", ModelCapability.Video);
+        Assert.Equal(85, entry.ShortClipFrameCount);
+        Assert.Equal(129, entry.LongClipFrameCount);
+    }
+
+    [Fact]
+    public void Wan21_IsDurationNative_NotFrameCountNative()
+    {
+        // Wan-2.1 stays duration-native (min/max/absMaxClipDurationSeconds) — it does not get a
+        // short/long frame-count ladder like Hunyuan since FalVideoClient doesn't send an explicit
+        // num_frames override for it today.
+        var entry = SupportedModelCatalog.ResolveOrDefault("fal-ai/wan-2.1", ModelCapability.Video);
+        Assert.Null(entry.ShortClipFrameCount);
+        Assert.Null(entry.LongClipFrameCount);
+        Assert.Equal(5, entry.MinClipDurationSeconds);
+        Assert.Equal(6, entry.MaxClipDurationSeconds);
+    }
+
+    [Fact]
+    public void NumInferenceSteps_And_FrameCount_FallBackToNull_ForUnknownModel()
+    {
+        // A model with no catalog entry (or one that predates these fields) must resolve to null
+        // so callers (FalVideoClient) know to fall back to their own hardcoded defaults.
+        var entry = SupportedModelCatalog.ResolveOrDefault("veo-3.1", ModelCapability.Video);
+        Assert.Null(entry.NumInferenceSteps);
+        Assert.Null(entry.ShortClipFrameCount);
+        Assert.Null(entry.LongClipFrameCount);
+    }
+
     [Fact]
     public void SaveCatalogJson_throws_and_does_not_touch_disk_on_invalid_structure()
     {
