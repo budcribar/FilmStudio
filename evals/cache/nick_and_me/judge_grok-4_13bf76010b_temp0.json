@@ -1,0 +1,44 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity to source beats and dialogue, consistent character visuals across time jumps, concrete filmable actions, and explicit sound cues in every scene.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring every scene to end with a single-line visual or sound micro-beat that can serve as a natural clip cut point."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 6.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 6.83,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Missing explicit sound cue in multiple scenes",
+        "Inconsistent character visual restatement across time jumps",
+        "Some action lines contain unfilmable internal states"
+      ],
+      "rationale": "Covers core beats but drops several source details, has weaker character consistency, and omits required audio cues in several scenes.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring every scene to contain at least one standalone (SOUND: concrete diegetic description) or (MUSIC: specific description) cue placed on its own line after the action."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it maintains source fidelity, consistent visuals, and required audio cues across every scene. Weakest: Screenplay B because it omits required sound cues and has inconsistent character descriptions across time periods.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "BC1EF4ABF535577C188F4FB6A303068AB218CC932C303633FE97A27F813DD348"
+}

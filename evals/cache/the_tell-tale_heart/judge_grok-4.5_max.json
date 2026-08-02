@@ -2,124 +2,39 @@
   "evaluations": [
     {
       "screenplayId": "Screenplay A",
-      "adaptationFidelity": 9,
-      "characterDisambiguation": 7.5,
-      "aiVideoDirectibility": 8,
-      "dramaticPacing": 7.5,
-      "dialogueAuthenticity": 9,
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
       "soundDesignMusic": 9,
-      "overallQualitativeScore": 8.3,
+      "overallQualitativeScore": 8.25,
       "productionReady": true,
       "disqualifyingIssues": [],
-      "rationale": "Near-exact book VO and beats with no invented plot or improper character names; officers receive only generic coat descriptions without individual build/hair locks or re-entry restatements, slightly weakening casting clarity. Actions are mostly concrete and clip-scalable though some seven-night compression and long VO blocks reduce atomicity. Sound cues are dense and progressive on the heartbeat peaks. Strong overall fidelity and audio make it greenlightable with minor polish.",
-      "promptImprovementSuggestion": "Require every supporting speaker (officers etc.) to receive 2-3 distinct, restatable visual traits (build, hair/facial hair, age markers, signature prop) at first entrance and on every re-entry after a gap."
+      "rationale": "Strong closed-cast gothic adaptation with a clear interrogation-frame device and excellent sound motif (watch/heartbeat). Fidelity is high on iconic lines and major beats, but the Old Man is given spoken lines (\u0027It is nothing but the wind\u2026\u0027) that the book presents only as the narrator\u2019s attributed internal thoughts\u2014an avoidable invention. Character looks are locked with high consistency (Narrator\u2019s frock coat/hollow eyes; distinct officer builds and whiskers). Directibility suffers on the seven-night stretch, collapsed into one unfilmable summary line (\u0027The ritual repeats through seven changes of candle and moon\u0027), and the murder/concealment beats pack many distinct actions into single scenes that will be hard to split into clean 5\u201310s clips. Pacing and sound design are otherwise solid, with good frame cutbacks and dense peak audio.",
+      "promptImprovementSuggestion": "Require that any multi-night/multi-day repeated ritual be written as 2\u20133 discrete, camera-observable Action micro-beats (or separate timed headings) rather than a single summary montage sentence, so each beat can become its own short clip."
     },
     {
       "screenplayId": "Screenplay B",
-      "adaptationFidelity": 6.5,
-      "characterDisambiguation": 9,
-      "aiVideoDirectibility": 8,
-      "dramaticPacing": 8.5,
-      "dialogueAuthenticity": 8,
-      "soundDesignMusic": 8,
-      "overallQualitativeScore": 8,
-      "productionReady": true,
-      "disqualifyingIssues": [],
-      "rationale": "Solid frame structure and visual locking for NARRATOR and officers, but inventing the proper name MR. VALE for the unnamed old man is an unnecessary fidelity hit; otherwise covers all major beats with good book diction. Directibility is strong via concrete lantern/eye micro-beats and chamber cutaways. Pacing benefits from deliberate frame returns. Minor invented connective tissue keeps it from the top tier but still production-viable.",
-      "promptImprovementSuggestion": "Clarify that characters given no proper name in the source must use stable descriptive tokens (THE OLD MAN, THE OFFICER) rather than newly invented proper names unless the book itself supplies one."
-    },
-    {
-      "screenplayId": "Screenplay C",
-      "adaptationFidelity": 9.5,
-      "characterDisambiguation": 9.5,
-      "aiVideoDirectibility": 9.5,
-      "dramaticPacing": 9,
-      "dialogueAuthenticity": 9,
-      "soundDesignMusic": 9.5,
-      "overallQualitativeScore": 9.3,
-      "productionReady": true,
-      "disqualifyingIssues": [],
-      "rationale": "Highest-fidelity adaptation: exact iconic lines, no invented plot events or improper names, closed cast with richly distinct and consistently restated looks for THE NARRATOR, THE OLD MAN and each officer. Every action line is a single camera-observable micro-beat ideal for 5-10s AI clips; prison-cell frame is used exactly as the shared prompt prefers for turns and button. Sound design is exemplary\u2014diegetic, multi-layered on peaks, present in every scene. Minor dramatization of the old man\u2019s self-comfort lines is the only quibble and stays within book spirit.",
-      "promptImprovementSuggestion": "Add a rule that any internal monologue the book attributes to a non-narrating character may be externalized as at most one whispered self-address line, clearly parentheticalized, to avoid accidental dialogue invention."
-    },
-    {
-      "screenplayId": "Screenplay D",
-      "adaptationFidelity": 5.5,
-      "characterDisambiguation": 7,
-      "aiVideoDirectibility": 6.5,
-      "dramaticPacing": 6,
-      "dialogueAuthenticity": 5.5,
-      "soundDesignMusic": 8,
-      "overallQualitativeScore": 6.4,
-      "productionReady": false,
-      "disqualifyingIssues": [
-        "Multiple invented multi-line exchanges for officers and narrator that exceed the summarized-chat cap",
-        "Under-specified and potentially anachronistic officer visuals (e.g. CHEN) without consistent re-locking"
-      ],
-      "rationale": "Covers the spine but freely invents officer banter and morning dialogue far beyond the book\u2019s summarized \u2018chatted of familiar things,\u2019 triggering a fidelity penalty. Character looks are present at intro yet inconsistently restated and thin for supporting cast. Several action blocks cram the kill and concealment into non-atomic paragraphs hard to slice into 5-10s clips. Sound/music is a relative strength with clear heartbeat escalation. Not greenlightable without dialogue purge.",
-      "promptImprovementSuggestion": "Strengthen the summarized-exchange rule to an absolute default of zero invented spoken lines for searchers/police when the book only narrates that they conversed; force pure Action coverage."
-    },
-    {
-      "screenplayId": "Screenplay E",
-      "adaptationFidelity": 2.5,
-      "characterDisambiguation": 6.5,
-      "aiVideoDirectibility": 6,
-      "dramaticPacing": 5.5,
-      "dialogueAuthenticity": 5,
-      "soundDesignMusic": 7,
-      "overallQualitativeScore": 5.4,
-      "productionReady": false,
-      "disqualifyingIssues": [
-        "Major invented plot event: officers seize the narrator and tear up the planks to reveal the body\u2014absent from the source\u2019s ending",
-        "Extensive invented officer and narrator dialogue"
-      ],
-      "rationale": "Disqualifying fidelity breach by extending past Poe\u2019s final confession into an unstated arrest-and-reveal sequence. Officers lack visual descriptions entirely, weakening cast locks. Directibility suffers from crammed peak actions and long unbroken VO. Dialogue mixes faithful opening with modernized inventions. Sound is adequate but cannot rescue the structural invention. Unusable as-is.",
-      "promptImprovementSuggestion": "Mandate that the screenplay\u2019s closing narrative beat must be identical to the source\u2019s final event; explicitly forbid appending unstated aftermath (arrests, trials, body reveals) after the book\u2019s last line."
-    },
-    {
-      "screenplayId": "Screenplay F",
-      "adaptationFidelity": 8,
-      "characterDisambiguation": 9,
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8,
       "aiVideoDirectibility": 8.5,
       "dramaticPacing": 8.5,
-      "dialogueAuthenticity": 8,
+      "dialogueAuthenticity": 9,
       "soundDesignMusic": 9,
-      "overallQualitativeScore": 8.5,
+      "overallQualitativeScore": 8.7,
       "productionReady": true,
       "disqualifyingIssues": [],
-      "rationale": "Strong frame (interrogation room \u002B pocket-watch motif) that visualizes the heartbeat without inventing plot. Character looks are distinct, period-accurate and restated on re-entry for NARRATOR, OLD MAN and all three officers. Actions stay concrete and clip-friendly; pacing uses frame cutaways at major turns per prompt. Minor officer intro lines are the only invented dialogue. Sound design is excellent with the watch as recurring diegetic bed. Fully production-ready.",
-      "promptImprovementSuggestion": "Cap any single officer or searcher speaking turn at one short sentence that closely paraphrases the book\u2019s report of their purpose; forbid multi-speaker invented exchanges."
-    },
-    {
-      "screenplayId": "Screenplay G",
-      "adaptationFidelity": 4,
-      "characterDisambiguation": 5,
-      "aiVideoDirectibility": 5.5,
-      "dramaticPacing": 5,
-      "dialogueAuthenticity": 4,
-      "soundDesignMusic": 7,
-      "overallQualitativeScore": 5.1,
-      "productionReady": false,
-      "disqualifyingIssues": [
-        "Inconsistent character-token casing (Narrator vs NARRATOR) creating unstable closed-cast identity",
-        "Extensive invented multi-line dialogue for both narrator and officers far beyond source",
-        "Supporting cast given only minimal non-restated visuals"
-      ],
-      "rationale": "Heavy invention of police-scene banter and narrator responses destroys dialogue authenticity and fidelity. Action lines frequently use lowercase \u2018Narrator,\u2019 breaking the ALL-CAPS closed-cast rule. Officer descriptions are thin and never restated. Peak kill is somewhat visual but many beats remain summary-like and hard to clip. Sound/music provides partial salvage yet cannot overcome cast and invention defects. Unusable without rewrite.",
-      "promptImprovementSuggestion": "Make identical ALL-CAPS spelling of every character token in cues, Action lines and headings a hard validation failure; any lowercase or variant form must be rejected before output."
+      "rationale": "Best overall fidelity: keeps book diction on spine monologues, correctly leaves the wind/mouse/cricket material in Narrator V.O. as attributed thought rather than invented Old Man dialogue, and hits every major beat (seven nights, eighth-night hour, kill, tub/planks, officers, confession) without plot invention. Frame (BARE CHAMBER) cutbacks are well placed and the closing return works. Directibility is strong\u2014micro-beats on lantern ray, heartbeat rise, bed crash, hand-on-chest\u2014with sound/music interleaved at peaks. Character locking is good in Notes and first appearances but thinner on officer re-entry (coats/badges only) and occasional missed restatements after gaps. Minor invented connective dialogue (\u0027Well enough\u0027; \u0027Rest from your fatigues\u0027) stays within summarized-exchange bounds. Sound design is excellent throughout.",
+      "promptImprovementSuggestion": "Strengthen CHARACTER RE-ENTRY so that every speaking character\u2014including supporting roles\u2014must have 2\u20133 locked visual traits restated in the first Action line of any scene after a gap, not only protagonists or age-split roles."
     }
   ],
   "forcedRanking": [
-    "Screenplay C",
-    "Screenplay F",
-    "Screenplay A",
     "Screenplay B",
-    "Screenplay D",
-    "Screenplay E",
-    "Screenplay G"
+    "Screenplay A"
   ],
-  "judgeSummaryNotes": "Strongest: Screenplay C because it alone combines near-perfect source fidelity, zero invented plot, rigorously locked and restated character visuals, and fully atomic 5-10s-clip directibility with dense diegetic sound. Weakest: Screenplay E because it fabricates a major post-confession arrest-and-body-reveal sequence absent from Poe, a disqualifying fidelity violation that renders the draft unusable.",
+  "judgeSummaryNotes": "Strongest: Screenplay B because it preserves book voice and internal-vs-spoken boundaries most cleanly while delivering clip-ready micro-beats and peak sound density. Weakest: Screenplay A because the seven-night montage summary and converting attributed Old Man thoughts into spoken dialogue hurt directibility and fidelity relative to B.",
   "isMock": false,
   "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
-  "screenplaysHash": "705263D6AD0B7518EB17FB84B9D669EA2DA8D9512CD6F8F8CF6ED0B9B05BD728"
+  "screenplaysHash": "161E6949A4B24842845FE5D7EBD704D1B092391B5219154A0D36BA54C3C2BF81"
 }

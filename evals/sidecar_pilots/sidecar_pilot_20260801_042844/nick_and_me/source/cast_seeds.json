@@ -1,0 +1,75 @@
+{
+  "schema_version": "cast_seeds.v1",
+  "render_style_lock": "Naturalistic Midwestern short-film realism; handheld intimacy; no glamour lighting; period-flexible 1990s Milwaukee into early-2000s Seattle; faces show weather and work.",
+  "character_seed_tokens": {
+    "CHAR_NARRATOR": {
+      "description": "Younger brother; ordinary working-class build; not flashy; eyes that watch more than challenge; pizza-job hands; later older, steadier Seattle businessman still carrying Midwestern posture.",
+      "canonical_given_name": "Peter",
+      "display_name_policy": "Withhold given name until final beat; credit as Peter Olson only at end per source.",
+      "voice_label": "VO_NARRATOR_INTIMATE",
+      "voice_profile": "First-person reflective, plain Milwaukee diction, quiet intensity, occasional wry bitterness turning toward calm.",
+      "visual_lock": "Average height; practical haircut; no gym-god physique; later slight maturity lines; never styled like Nick.",
+      "age_variants": {
+        "young_adult": "Early-to-mid 20s caretaker/pizza worker",
+        "later": "Approx seven-plus years older successful owner"
+      },
+      "wardrobe_variants": {
+        "W_NARR_PIZZA": "Work shirt or plain tee, jeans, practical jacket, bike-commute look",
+        "W_NARR_DATE": "Simple cleaner shirt for Java Hut",
+        "W_NARR_SEATTLE": "Practical Northwest layers, no flash"
+      },
+      "source_evidence": "I\u2019m not too shabby when it comes to weight lifting, but I aint gonna curl no fifty pounds as a warm-up... That\u2019s me. President Peter Olson."
+    },
+    "CHAR_NICK": {
+      "description": "Big brother; scarred rough face; reddish-brown messy hair; imposing walk that clears rooms; later prison-thinned, graying, sad-eyed.",
+      "canonical_given_name": "Nick",
+      "display_name_policy": "Always Nick / Nicholas Olson as source allows.",
+      "voice_label": "VO_NICK_ALPHA",
+      "voice_profile": "Loud, commanding, mocking, sudden rage; later weakened gravel.",
+      "visual_lock": "Puzzle-scar face, chin and left eyebrow scars; wrecking-ball presence; Trans Am era toughness; prison version scrawnier, older.",
+      "age_variants": {
+        "prime": "Dominant adult factory worker",
+        "prison": "Years later, older, thinner, gray at sides"
+      },
+      "wardrobe_variants": {
+        "W_NICK_STREET": "Boots, suede or work jacket, lived-in tough clothes",
+        "W_NICK_BAR": "Same tougher night look",
+        "W_NICK_PRISON": "Institutional inmate clothing as appropriate"
+      },
+      "source_evidence": "His face looked like a puzzle with the pieces held together with sticky stuff from a glue gun... A few scars here and there, chin and over his left eyebrow."
+    },
+    "CHAR_MA": {
+      "description": "Aging mother; tired brown eyes; confusion increasing; quiet former school janitor worn down by hard life.",
+      "canonical_given_name": "Olivia",
+      "display_name_policy": "Ma / Olivia Anne Olsen on formal records only.",
+      "voice_label": "VO_MA_FRAIL",
+      "voice_profile": "Soft, sometimes rambling, childlike confusion alternating with brief clarity.",
+      "visual_lock": "Older woman; sagging fatigue; afghan and chair association; not glamorous.",
+      "age_variants": {
+        "late": "Elderly decline period only for short film"
+      },
+      "wardrobe_variants": {
+        "W_MA_HOME": "Simple housedress or sweater, practical slippers, afghan nearby"
+      },
+      "source_evidence": "Mother: Olivia Anne Olsen. August 28, 1933 to September 7, 1998... She looked up at me with those tired brown eyes of hers."
+    },
+    "CHAR_SIONNA": {
+      "description": "Pale, intense young woman; short-to-mid brown hair; light blue early-morning eyes; skinny but pretty; fish-symbol necklace; moves like water.",
+      "canonical_given_name": "Sionna",
+      "display_name_policy": "Sionna (source also uses Siona later); full Sionna McAllister if needed in records.",
+      "voice_label": "VO_SIONNA_COOL_BLUE",
+      "voice_profile": "Calm, articulate, philosophical, gentle certainty.",
+      "visual_lock": "Light blue eyes; pale English-story skin; Target/Walmart simple clothes evolving to green hooded top, jeans, backpack; never flashy.",
+      "age_variants": {
+        "meet": "Young adult student/teacher path",
+        "recovery": "Post-stabbing fragile, blanker eyes"
+      },
+      "wardrobe_variants": {
+        "W_SIONNA_MEET": "Black short-sleeved V-neck, jeans, blue tennis shoes, fish necklace, backpack",
+        "W_SIONNA_JAVA": "Long-sleeved loose green top with hood, washed jeans, soft leather shoes",
+        "W_SIONNA_HOME": "Loose hippie-leaning layers, sandals, simple jewelry"
+      },
+      "source_evidence": "She had kind of short brown hair and was skinny... eyes... real light blue color... necklace with some kind of fish symbol"
+    }
+  }
+}

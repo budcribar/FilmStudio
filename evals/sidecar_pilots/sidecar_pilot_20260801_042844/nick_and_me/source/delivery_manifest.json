@@ -1,0 +1,15 @@
+{
+  "schema_version": "delivery_manifest.v1",
+  "target_aspect_ratio": "operator_choice_required",
+  "target_resolution": "operator_choice_required",
+  "caption_requirement": "Full captions required for dialogue, V.O., and critical diegetic speech; speaker IDs stable (NARRATOR withheld name until end).",
+  "credits_requirement": "End card may reveal Peter Olson only after final prison beat; include source adaptation credit for book \u0027Nick and Me\u0027; no invented bios.",
+  "review_gates": [
+    "source_evidence present on every character/location/beat",
+    "withheld narrator name until final beat",
+    "no invented plot facts beyond compression",
+    "one canonical location_key per scene",
+    "Fountain contains no casting/wardrobe/image metadata",
+    "short-film length target via EDL seconds sum review"
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "schema_version": "edit_decision_list.v1",
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "location_key": "LOC_HOUSE_INTERIOR",
+      "cast_variant_keys": [
+        "NARRATOR_ADULT"
+      ],
+      "wardrobe_variant_keys": [
+        "NARR_WRD_NIGHT"
+      ],
+      "purpose": "Frame confessional premise and acute hearing.",
+      "estimated_seconds": 45,
+      "clip_beats": [
+        "CU narrator addressing camera/listener",
+        "insert abstract night house silence",
+        "VO sanity claim"
+      ]
+    },
+    {
+      "scene_id": "S2",
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "cast_variant_keys": [
+        "NARRATOR_ADULT",
+        "OLD_MAN_ELDERLY"
+      ],
+      "wardrobe_variant_keys": [
+        "NARR_WRD_NIGHT",
+        "OLD_WRD_BED"
+      ],
+      "purpose": "Seven-night pattern and daytime cover of kindness.",
+      "estimated_seconds": 90,
+      "clip_beats": [
+        "daytime hearty greeting",
+        "midnight latch",
+        "head through door",
+        "lantern ray finds closed eye",
+        "repeat with time marks",
+        "eye motive insert"
+      ]
+    },
+    {
+      "scene_id": "S3",
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "cast_variant_keys": [
+        "NARRATOR_ADULT",
+        "OLD_MAN_ELDERLY"
+      ],
+      "wardrobe_variant_keys": [
+        "NARR_WRD_NIGHT",
+        "OLD_WRD_BED"
+      ],
+      "purpose": "Eighth night murder sequence.",
+      "estimated_seconds": 150,
+      "clip_beats": [
+        "ultra-slow door",
+        "chuckle / bed move",
+        "tin slip",
+        "Who\u2019s there?",
+        "hour freeze",
+        "groan",
+        "ray on open eye",
+        "heart beat ramp",
+        "yell and leap",
+        "bed over body",
+        "heart ceases",
+        "hand on heart stone dead"
+      ]
+    },
+    {
+      "scene_id": "S4",
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "cast_variant_keys": [
+        "NARRATOR_ADULT"
+      ],
+      "wardrobe_variant_keys": [
+        "NARR_WRD_NIGHT"
+      ],
+      "purpose": "Concealment and four o\u2019clock knock bridge.",
+      "estimated_seconds": 60,
+      "clip_beats": [
+        "dismemberment implied cuts",
+        "three planks up",
+        "deposit",
+        "boards replaced",
+        "tub",
+        "bell four",
+        "knock"
+      ]
+    },
+    {
+      "scene_id": "S5",
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "cast_variant_keys": [
+        "NARRATOR_ADULT",
+        "OFFICER_A_ADULT",
+        "OFFICER_B_ADULT",
+        "OFFICER_C_ADULT"
+      ],
+      "wardrobe_variant_keys": [
+        "NARR_WRD_POLICE",
+        "OFF_WRD_DUTY"
+      ],
+      "purpose": "Police ease, auditory agony, confession.",
+      "estimated_seconds": 120,
+      "clip_beats": [
+        "welcome and tour compress",
+        "treasures undisturbed",
+        "chairs; narrator sits on spot",
+        "cheery answers",
+        "pallor; ringing to heartbeat",
+        "pace; grate chair",
+        "officers smile chat",
+        "confession to camera/officers",
+        "end on planks / sound"
+      ]
+    }
+  ]
+}

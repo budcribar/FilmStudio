@@ -1,0 +1,95 @@
+{
+  "BookPath": "books\\Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 23:36:16 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 22,
+        "TotalDialogueBlocks": 125,
+        "AvgWordsPerDialogue": 10.9,
+        "MaxWordsInSingleDialogue": 30,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "MA",
+          "SIONNA",
+          "LIBRARIAN",
+          "LINDSEY",
+          "MARCO",
+          "OFFICER MIKE DUPUIS",
+          "PARAMEDIC HARRIS",
+          "SAGE",
+          "GATE ATTENDANT",
+          "PETER"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 3 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.5,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 7.8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 8.8,
+      "AvgOverallQualitative": 8,
+      "DisqualifyingFlags": [
+        "grok-4: Narrator explicitly named Peter Olson at end and in final lines, but source book never reveals the first-person narrator\u0027s name"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-sol": 7.92
+    },
+    "grok-4": {
+      "gpt-5.6-sol": 8
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-sol": 1
+    },
+    "grok-4": {
+      "gpt-5.6-sol": 1
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-sol": "Strong full-arc compression of Nick and Me that hits the essential spine (Ma caretaking, Sionna awakening, bar rupture, crash/Ma death, stabbing, Seattle reinvention, prison forgiveness, Peter Olson button) without inventing major plot. Supporting names (Marco, Paramedic Harris) are closed-cast necessities, not freestanding inventions. Character looks lock well on first entry (Nick scars/suede, Sionna eyes/necklace, Narrator work clothes \u2192 later business shirt) and mostly restate on re-entry, though age splits rely on prose (\u0027older NARRATOR\u0027) rather than explicit YOUNG/ADULT tokens. Directibility is mostly clip-ready concrete action, weakened by a few dense multi-beat scenes (Joe\u0027s brawl, stabbing aftermath) and heavy V.O. over static images. Pacing covers decades via clear time jumps but several \u0027months later\u0027 cuts feel abrupt for short-clip rhythm. Dialogue stays close to book diction and clip length. Sound/music is the standout: nearly every scene has concrete diegetic (SOUND:) or (MUSIC:) cues, with peaks double-cued."
+    },
+    "grok-4": {
+      "gpt-5.6-sol": "Strong visual action lines and consistent character descriptions with locked wardrobe/age traits; excellent sound cues in every scene; dialogue stays close to book voice. Fidelity penalized for naming the unnamed narrator and for runtime length exceeding the 10-minute target. Pacing solid but some scenes cram multiple micro-beats."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay A because it is the only candidate and delivers a production-ready, full-arc Fountain adaptation with excellent sound cueing and high source fidelity. Weakest: Screenplay A because age-split cast tokens are underspecified and a few peak scenes still cram multiple clip-length actions into one heading.",
+    "grok-4": "Strongest: Screenplay A because it is the sole candidate and delivers strong visual directibility plus consistent sound cues. Weakest: Screenplay A because it violates the closed-narrator rule by naming the first-person protagonist."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-sol": "Require explicit age-disambiguated cast tokens (e.g. YOUNG X / ADULT X) with 2\u20133 restated visual traits on every first appearance after a time jump, and cap any single scene to one primary dramatic purpose so multi-phase fights or confrontations split into separate headings for 5\u201310s clip generation."
+    },
+    "grok-4": {
+      "gpt-5.6-sol": "Add an explicit rule that the narrator character cue must remain NARRATOR unless the source text explicitly names the narrator."
+    }
+  }
+}

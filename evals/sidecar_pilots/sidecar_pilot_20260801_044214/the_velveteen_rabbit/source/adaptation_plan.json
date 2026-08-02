@@ -1,0 +1,314 @@
+{
+  "schema_version": "adaptation_plan.v1",
+  "logline": "A shy velveteen rabbit, loved threadbare by a Boy, learns what it means to become Real\u2014and is saved by nursery magic when illness and a bonfire threaten to end him.",
+  "source_grounded_timeline": [
+    {
+      "beat_id": "T1",
+      "summary": "Christmas morning: the splendid velveteen rabbit arrives in the Boy\u0027s stocking and is briefly loved, then forgotten among new presents.",
+      "source_evidence": "On Christmas morning, when he sat wedged in the top of the Boy\u0027s stocking, with a sprig of holly between his paws, the effect was charming."
+    },
+    {
+      "beat_id": "T2",
+      "summary": "In the nursery the Rabbit is snubbed by superior toys; only the Skin Horse is kind and explains Real.",
+      "source_evidence": "Between them all the poor little Rabbit was made to feel himself very insignificant and commonplace, and the only person who was kind to him at all was the Skin Horse."
+    },
+    {
+      "beat_id": "T3",
+      "summary": "Nana puts the Rabbit into the Boy\u0027s bed; nights of tight hugs, tunnels, and whispered games follow; the Rabbit grows shabby.",
+      "source_evidence": "That night, and for many nights after, the Velveteen Rabbit slept in the Boy\u0027s bed."
+    },
+    {
+      "beat_id": "T4",
+      "summary": "Spring garden days; after being left in the dew, the Boy insists the Bunny is Real.",
+      "source_evidence": "Give me my Bunny! he said. You mustn\u0027t say that. He isn\u0027t a toy. He\u0027s REAL!"
+    },
+    {
+      "beat_id": "T5",
+      "summary": "Summer wood: wild rabbits mock his missing hind legs and wrong smell; he is left alone.",
+      "source_evidence": "He isn\u0027t a rabbit at all! He isn\u0027t real!"
+    },
+    {
+      "beat_id": "T6",
+      "summary": "The Boy falls ill with scarlet fever; the Rabbit stays hidden and loyal under the bedclothes.",
+      "source_evidence": "And then, one day, the Boy was ill."
+    },
+    {
+      "beat_id": "T7",
+      "summary": "Doctor orders infected toys burnt; Rabbit is sacked behind the fowl-house for the bonfire.",
+      "source_evidence": "Why, it\u0027s a mass of scarlet fever germs!-Burn it at once."
+    },
+    {
+      "beat_id": "T8",
+      "summary": "A real tear falls; a mysterious flower opens; the nursery magic Fairy takes him and makes him Real to everyone.",
+      "source_evidence": "I am the nursery magic Fairy, she said. I take care of all the playthings that the children have loved."
+    },
+    {
+      "beat_id": "T9",
+      "summary": "In the moonlit wood he discovers hind legs and fur, joins the wild rabbits; later spring the Boy glimpses a familiar marked rabbit and never knows.",
+      "source_evidence": "But he never knew that it really was his own Bunny, come back to look at the child who had first helped him to be Real."
+    }
+  ],
+  "withheld_name_rules": [
+    {
+      "rule": "Do not reveal before the Fairy sequence that the Rabbit will gain living hind legs, brown fur, and join wild rabbits forever.",
+      "source_evidence": "he did not know that when the Fairy kissed him that last time she had changed him altogether."
+    },
+    {
+      "rule": "Keep the Boy\u0027s final recognition incomplete: he only thinks the marked rabbit looks like his old Bunny; he never knows it is him.",
+      "source_evidence": "But he never knew that it really was his own Bunny, come back to look at the child who had first helped him to be Real."
+    },
+    {
+      "rule": "Characters are titled as in source (the Boy, Nana, the Skin Horse, the doctor); do not invent personal given names.",
+      "source_evidence": "There was a person called Nana who ruled the nursery."
+    }
+  ],
+  "essential_beats": [
+    {
+      "beat_id": "B1",
+      "title": "Splendid arrival and forgetting",
+      "description": "Christmas stocking reveal; two hours of love; tissue-paper chaos; Rabbit forgotten.",
+      "characters": [
+        "CHAR_RABBIT",
+        "CHAR_BOY"
+      ],
+      "location": "LOC_NURSERY",
+      "source_evidence": "For at least two hours the Boy loved him, and then Aunts and Uncles came to dinner... the Velveteen Rabbit was forgotten."
+    },
+    {
+      "beat_id": "B2",
+      "title": "What is REAL?",
+      "description": "Skin Horse teaches that Real comes from long love and shabbiness, not clockwork.",
+      "characters": [
+        "CHAR_RABBIT",
+        "CHAR_SKIN_HORSE"
+      ],
+      "location": "LOC_NURSERY",
+      "source_evidence": "Real isn\u0027t how you are made, said the Skin Horse. It\u0027s a thing that happens to you."
+    },
+    {
+      "beat_id": "B3",
+      "title": "Bedtime substitute",
+      "description": "Nana cannot find the china dog; thrusts old Bunny into the Boy\u0027s arms.",
+      "characters": [
+        "CHAR_NANA",
+        "CHAR_RABBIT",
+        "CHAR_BOY"
+      ],
+      "location": "LOC_NURSERY",
+      "source_evidence": "Here, she said, take your old Bunny! He\u0027ll do to sleep with you!"
+    },
+    {
+      "beat_id": "B4",
+      "title": "Loved shabby / declared Real",
+      "description": "Garden play; dew-soaked rescue; Boy forbids calling him a toy.",
+      "characters": [
+        "CHAR_BOY",
+        "CHAR_RABBIT",
+        "CHAR_NANA"
+      ],
+      "location": "LOC_GARDEN",
+      "source_evidence": "He isn\u0027t a toy. He\u0027s REAL!"
+    },
+    {
+      "beat_id": "B5",
+      "title": "Wild rabbits reject him",
+      "description": "Furry rabbits discover no hind legs and wrong smell; flee at Boy\u0027s footsteps.",
+      "characters": [
+        "CHAR_RABBIT",
+        "CHAR_WILD_RABBIT_1",
+        "CHAR_WILD_RABBIT_2",
+        "CHAR_BOY"
+      ],
+      "location": "LOC_WOOD",
+      "source_evidence": "He doesn\u0027t smell right! he exclaimed. He isn\u0027t a rabbit at all! He isn\u0027t real!"
+    },
+    {
+      "beat_id": "B6",
+      "title": "Scarlet fever vigil",
+      "description": "Rabbit burns against the Boy\u0027s fever and hides so no one will take him away.",
+      "characters": [
+        "CHAR_RABBIT",
+        "CHAR_BOY"
+      ],
+      "location": "LOC_BOY_BED",
+      "source_evidence": "his little body was so hot that it burned the Rabbit when he held him close."
+    },
+    {
+      "beat_id": "B7",
+      "title": "Burn order",
+      "description": "Doctor condemns the Bunny; sack behind fowl-house; new plush bunny for the Boy.",
+      "characters": [
+        "CHAR_DOCTOR",
+        "CHAR_NANA",
+        "CHAR_RABBIT",
+        "CHAR_BOY"
+      ],
+      "location": "LOC_NURSERY",
+      "source_evidence": "That? said the doctor. Why, it\u0027s a mass of scarlet fever germs!-Burn it at once."
+    },
+    {
+      "beat_id": "B8",
+      "title": "Tear, flower, Fairy",
+      "description": "Lonely tear grows emerald-leaved golden flower; Fairy claims him for true Real.",
+      "characters": [
+        "CHAR_RABBIT",
+        "CHAR_FAIRY"
+      ],
+      "location": "LOC_FOWL_HOUSE",
+      "source_evidence": "And then a strange thing happened. For where the tear had fallen a flower grew out of the ground"
+    },
+    {
+      "beat_id": "B9",
+      "title": "At last Real among rabbits",
+      "description": "Fairy sets him in the glade; he scratches, finds hind legs, leaps; later Boy almost recognizes him.",
+      "characters": [
+        "CHAR_FAIRY",
+        "CHAR_RABBIT",
+        "CHAR_WILD_RABBIT_1",
+        "CHAR_WILD_RABBIT_2",
+        "CHAR_BOY"
+      ],
+      "location": "LOC_WOOD",
+      "source_evidence": "He was a Real Rabbit at last, at home with the other rabbits."
+    }
+  ],
+  "scene_outline": [
+    {
+      "scene_id": "S01",
+      "heading": "NURSERY - CHRISTMAS MORNING",
+      "location_key": "LOC_NURSERY",
+      "purpose": "Establish splendid toy Rabbit and swift forgetting.",
+      "beat_ids": [
+        "B1"
+      ],
+      "cast_keys": [
+        "CHAR_RABBIT",
+        "CHAR_BOY"
+      ],
+      "source_evidence": "he was really splendid. He was fat and bunchy, as a rabbit should be; his coat was spotted brown and white"
+    },
+    {
+      "scene_id": "S02",
+      "heading": "NURSERY - BY THE FENDER",
+      "location_key": "LOC_NURSERY",
+      "purpose": "Skin Horse defines Real; Rabbit longs and fears shabbiness.",
+      "beat_ids": [
+        "B2"
+      ],
+      "cast_keys": [
+        "CHAR_RABBIT",
+        "CHAR_SKIN_HORSE"
+      ],
+      "source_evidence": "What is REAL? asked the Rabbit one day, when they were lying side by side near the nursery fender"
+    },
+    {
+      "scene_id": "S03",
+      "heading": "NURSERY - BEDTIME",
+      "location_key": "LOC_NURSERY",
+      "purpose": "Nana assigns Bunny to the Boy\u0027s bed; bond begins.",
+      "beat_ids": [
+        "B3"
+      ],
+      "cast_keys": [
+        "CHAR_NANA",
+        "CHAR_RABBIT",
+        "CHAR_BOY"
+      ],
+      "source_evidence": "she dragged the Rabbit out by one ear, and put him into the Boy\u0027s arms."
+    },
+    {
+      "scene_id": "S04",
+      "heading": "BOY\u0027S BED - NIGHTS",
+      "location_key": "LOC_BOY_BED",
+      "purpose": "Hugs, burrow games, growing shabbiness and happiness.",
+      "beat_ids": [
+        "B3",
+        "B4"
+      ],
+      "cast_keys": [
+        "CHAR_RABBIT",
+        "CHAR_BOY"
+      ],
+      "source_evidence": "the Boy used to talk to him, and made nice tunnels for him under the bedclothes"
+    },
+    {
+      "scene_id": "S05",
+      "heading": "GARDEN - SPRING",
+      "location_key": "LOC_GARDEN",
+      "purpose": "Outdoor love; dew rescue; Boy declares him Real.",
+      "beat_ids": [
+        "B4"
+      ],
+      "cast_keys": [
+        "CHAR_BOY",
+        "CHAR_RABBIT",
+        "CHAR_NANA"
+      ],
+      "source_evidence": "Spring came, and they had long days in the garden, for wherever the Boy went the Rabbit went too."
+    },
+    {
+      "scene_id": "S06",
+      "heading": "WOOD - SUMMER EVENING",
+      "location_key": "LOC_WOOD",
+      "purpose": "Encounter with wild rabbits; identity crisis.",
+      "beat_ids": [
+        "B5"
+      ],
+      "cast_keys": [
+        "CHAR_RABBIT",
+        "CHAR_WILD_RABBIT_1",
+        "CHAR_WILD_RABBIT_2",
+        "CHAR_BOY"
+      ],
+      "source_evidence": "he saw two strange beings creep out of the tall bracken near him."
+    },
+    {
+      "scene_id": "S07",
+      "heading": "BOY\u0027S BED - ILLNESS",
+      "location_key": "LOC_BOY_BED",
+      "purpose": "Fever vigil; recovery talk of seaside and burning toys.",
+      "beat_ids": [
+        "B6",
+        "B7"
+      ],
+      "cast_keys": [
+        "CHAR_RABBIT",
+        "CHAR_BOY",
+        "CHAR_NANA",
+        "CHAR_DOCTOR"
+      ],
+      "source_evidence": "Strange people came and went in the nursery, and a light burned all night"
+    },
+    {
+      "scene_id": "S08",
+      "heading": "BEHIND THE FOWL-HOUSE - NIGHT",
+      "location_key": "LOC_FOWL_HOUSE",
+      "purpose": "Abandonment, tear, Fairy flower, flight to the wood.",
+      "beat_ids": [
+        "B8"
+      ],
+      "cast_keys": [
+        "CHAR_RABBIT",
+        "CHAR_FAIRY"
+      ],
+      "source_evidence": "the little Rabbit lay among the old picture-books in the corner behind the fowl-house, and he felt very lonely."
+    },
+    {
+      "scene_id": "S09",
+      "heading": "WOOD - MOONLIT GLADE / LATER SPRING",
+      "location_key": "LOC_WOOD",
+      "purpose": "Transformation; joy of hind legs; Boy\u0027s incomplete recognition.",
+      "beat_ids": [
+        "B9"
+      ],
+      "cast_keys": [
+        "CHAR_FAIRY",
+        "CHAR_RABBIT",
+        "CHAR_WILD_RABBIT_1",
+        "CHAR_WILD_RABBIT_2",
+        "CHAR_BOY"
+      ],
+      "source_evidence": "In the open glade between the tree-trunks the wild rabbits danced with their shadows on the velvet grass"
+    }
+  ]
+}

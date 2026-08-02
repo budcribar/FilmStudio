@@ -1,0 +1,16 @@
+{
+  "schema_version": "delivery_manifest.v1",
+  "target_aspect_ratio": "operator_choice_required",
+  "target_resolution": "operator_choice_required",
+  "caption_requirement": "Full captions required for all spoken source lines and essential non-speech story cues (tear, flower open, hind-leg first scratch).",
+  "credits_requirement": "Credit Margery Williams (Margery Williams Bianco) as author of The Velveteen Rabbit; note public-domain Project Gutenberg source edition; list principal cast keys\u0027 display names only as titled in source; include operator production credits.",
+  "review_gates": [
+    "Source fidelity: no invented personal names or unsourced dialogue",
+    "Withheld twist intact: living transformation only after Fairy kiss; Boy never knows",
+    "Shabbiness progression readable across RABBIT_NEW to RABBIT_LOVED to RABBIT_REAL_LIVING",
+    "One canonical location_key per scene heading",
+    "Audio exclusions observed (no laugh track, no medical gore, no spoiling fanfare)",
+    "Short-film length check against sum of estimated_seconds",
+    "Fountain contains screenplay only; metadata remains in JSON sidecars"
+  ]
+}

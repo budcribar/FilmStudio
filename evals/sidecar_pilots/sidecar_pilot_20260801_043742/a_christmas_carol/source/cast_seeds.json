@@ -1,0 +1,526 @@
+{
+  "schema_version": "cast_seeds.v1",
+  "render_style_lock": "Victorian London period drama; naturalistic faces; candle and fog light; John Leech-era costume silhouette; no modern anachronism; cinematic still-description only.",
+  "character_seed_tokens": {
+    "CHAR_SCROOGE": {
+      "description": "Elderly tight-fisted London businessman; pointed nose; shrivelled cheek; thin blue lips; red-rimmed eyes; stiff gait; frosty rime on head, brows, and wiry chin; grating voice; solitary as an oyster.",
+      "canonical_given_name": "Ebenezer",
+      "display_name_policy": "On first picture card: Ebenezer Scrooge; thereafter Scrooge.",
+      "voice_label": "scrooge_grating_elder",
+      "voice_profile": {
+        "age_timbre": "aged, thin, sharp",
+        "pitch": "mid-low grating",
+        "pace": "clipped, impatient",
+        "dialect_notes": "Victorian London gentleman, cold and caustic"
+      },
+      "visual_lock": {
+        "face_shape": "sharp, pinched",
+        "hair": "frosty white-grey, sparse rime on brows and wiry chin",
+        "eyes": "red-rimmed, keen",
+        "distinguishing_marks": "pointed nose; thin blue lips; cold bearing"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_SCROOGE_OLD",
+          "label": "present-day elder",
+          "years": "old",
+          "source_evidence": "a squeezing, wrenching, grasping, scraping, clutching, covetous, old sinner!"
+        },
+        {
+          "variant_key": "AGE_SCROOGE_BOY",
+          "label": "solitary schoolboy",
+          "years": "child",
+          "source_evidence": "a solitary child, neglected by his friends, is left there still."
+        },
+        {
+          "variant_key": "AGE_SCROOGE_YOUNG_MAN",
+          "label": "prime of life, growing avarice",
+          "years": "young adult to prime",
+          "source_evidence": "He was older now; a man in the prime of life."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_SCROOGE_OFFICE",
+          "label": "counting-house day dress and great-coat",
+          "source_evidence": "Scrooge, buttoning his great-coat to the chin."
+        },
+        {
+          "variant_key": "WR_SCROOGE_NIGHT",
+          "label": "dressing-gown, slippers, nightcap",
+          "source_evidence": "took off his cravat; put on his dressing-gown and slippers, and his nightcap"
+        },
+        {
+          "variant_key": "WR_SCROOGE_BEST",
+          "label": "Christmas morning best",
+          "source_evidence": "He dressed himself \u0022all in his best,\u0022"
+        }
+      ],
+      "source_evidence": "Hard and sharp as flint, from which no steel had ever struck out generous fire; secret, and self-contained, and solitary as an oyster."
+    },
+    "CHAR_MARLEY": {
+      "description": "Ghost of Scrooge\u2019s partner; same face as in life; pigtail; waistcoat, tights, boots; transparent body; chain of cash-boxes, keys, padlocks, ledgers, deeds, steel purses; kerchief bound about head and chin; death-cold eyes.",
+      "canonical_given_name": "Jacob",
+      "display_name_policy": "Jacob Marley / Marley\u0027s Ghost",
+      "voice_label": "marley_hollow_chain",
+      "voice_profile": {
+        "age_timbre": "dead partner, hollow",
+        "pitch": "low, resonant",
+        "pace": "slow, anguished",
+        "dialect_notes": "same class as Scrooge; cries of remorse"
+      },
+      "visual_lock": {
+        "face_shape": "as Marley used to look",
+        "hair": "pigtail; hair stirred as by hot air",
+        "eyes": "wide, motionless, death-cold",
+        "distinguishing_marks": "transparent; jaw drops when bandage removed; spectacles on ghostly forehead in knocker"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_MARLEY_GHOST",
+          "label": "seven-years-dead spectre",
+          "years": "as at death",
+          "source_evidence": "Marley in his pigtail, usual waistcoat, tights and boots"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_MARLEY_CHAINS",
+          "label": "ghostly office dress and forged chain",
+          "source_evidence": "The chain he drew was clasped about his middle... cash-boxes, keys, padlocks, ledgers, deeds, and heavy purses wrought in steel."
+        }
+      ],
+      "source_evidence": "In life I was your partner, Jacob Marley."
+    },
+    "CHAR_NEPHEW": {
+      "description": "Scrooge\u2019s cheerful nephew; ruddy handsome face; sparkling eyes; breath smoking from rapid walking in fog and frost; all in a glow.",
+      "canonical_given_name": "Fred",
+      "display_name_policy": "Scrooge\u0027s nephew (Fred when addressed)",
+      "voice_label": "nephew_warm_laugh",
+      "voice_profile": {
+        "age_timbre": "young adult male",
+        "pitch": "bright mid",
+        "pace": "brisk, laughing",
+        "dialect_notes": "open, good-humoured London"
+      },
+      "visual_lock": {
+        "face_shape": "handsome, open",
+        "hair": "unknown beyond healthy glow",
+        "eyes": "sparkling",
+        "distinguishing_marks": "ruddy from cold walk"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_NEPHEW_ADULT",
+          "label": "married young man",
+          "years": "adult",
+          "source_evidence": "He had so heated himself with rapid walking in the fog and frost, this nephew of Scrooge\u0027s, that he was all in a glow; his face was ruddy and handsome; his eyes sparkled"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_NEPHEW_VISIT",
+          "label": "Christmas Eve outdoor street clothes",
+          "source_evidence": "rapid walking in the fog and frost"
+        }
+      ],
+      "source_evidence": "A merry Christmas, uncle! God save you!\u0022 cried a cheerful voice. It was the voice of Scrooge\u0027s nephew"
+    },
+    "CHAR_CRATCHIT": {
+      "description": "Scrooge\u2019s clerk; works in a dismal tank cell; white comforter; threadbare clothes; meek, cold, family man; fifteen shillings a week.",
+      "canonical_given_name": "Bob",
+      "display_name_policy": "Bob Cratchit / the clerk",
+      "voice_label": "cratchit_mild_clerk",
+      "voice_profile": {
+        "age_timbre": "adult male, gentle",
+        "pitch": "mid",
+        "pace": "careful, deferential then warm at home",
+        "dialect_notes": "humble London clerk"
+      },
+      "visual_lock": {
+        "face_shape": "careworn ordinary",
+        "hair": "unknown",
+        "eyes": "kind",
+        "distinguishing_marks": "long white comforter ends dangling; no great-coat"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_CRATCHIT_ADULT",
+          "label": "father and clerk",
+          "years": "adult",
+          "source_evidence": "my clerk, with fifteen shillings a week, and a wife and family"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_CRATCHIT_OFFICE",
+          "label": "office clothes and white comforter",
+          "source_evidence": "the clerk put on his white comforter, and tried to warm himself at the candle"
+        },
+        {
+          "variant_key": "WR_CRATCHIT_CHRISTMAS",
+          "label": "threadbare brushed clothes, long comforter, Tim on shoulder",
+          "source_evidence": "in came little Bob, the father, with at least three feet of comforter exclusive of the fringe, hanging down before him; and his threadbare clothes darned up and brushed, to look seasonable"
+        }
+      ],
+      "source_evidence": "the clerk, who in a dismal little cell beyond, a sort of tank, was copying letters."
+    },
+    "CHAR_TINY_TIM": {
+      "description": "Cratchit\u2019s small crippled boy; little crutch; limbs supported by iron frame; thoughtful; plaintive gentle presence.",
+      "canonical_given_name": "Tim",
+      "display_name_policy": "Tiny Tim",
+      "voice_label": "tim_plaintive_child",
+      "voice_profile": {
+        "age_timbre": "small child",
+        "pitch": "high, thin",
+        "pace": "soft, clear",
+        "dialect_notes": "childlike, earnest"
+      },
+      "visual_lock": {
+        "face_shape": "small, delicate",
+        "hair": "unknown",
+        "eyes": "earnest",
+        "distinguishing_marks": "crutch; iron frame on limbs"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_TIM_CHILD",
+          "label": "living child",
+          "years": "child",
+          "source_evidence": "Alas for Tiny Tim, he bore a little crutch, and had his limbs supported by an iron frame!"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_TIM_CHRISTMAS",
+          "label": "poor Christmas home clothes",
+          "source_evidence": "Tiny Tim upon his shoulder"
+        }
+      ],
+      "source_evidence": "God bless us every one!\u0022 said Tiny Tim, the last of all."
+    },
+    "CHAR_MRS_CRATCHIT": {
+      "description": "Bob\u2019s wife; dressed poorly in a twice-turned gown but brave in ribbons; proud cook of the pudding; fierce in defense of family against Scrooge.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "Mrs. Cratchit",
+      "voice_label": "mrs_cratchit_brisk",
+      "voice_profile": {
+        "age_timbre": "adult woman",
+        "pitch": "mid",
+        "pace": "brisk, emotional",
+        "dialect_notes": "working London mother"
+      },
+      "visual_lock": {
+        "face_shape": "ordinary, animated",
+        "hair": "unknown",
+        "eyes": "bright when angry or proud",
+        "distinguishing_marks": "ribbons on poor gown"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_MRS_CRATCHIT_ADULT",
+          "label": "mother",
+          "years": "adult",
+          "source_evidence": "up rose Mrs. Cratchit, Cratchit\u0027s wife, dressed out but poorly in a twice-turned gown, but brave in ribbons"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_MRS_CRATCHIT_FEAST",
+          "label": "twice-turned gown and ribbons",
+          "source_evidence": "dressed out but poorly in a twice-turned gown, but brave in ribbons, which are cheap and make a goodly show for sixpence"
+        }
+      ],
+      "source_evidence": "Then up rose Mrs. Cratchit, Cratchit\u0027s wife"
+    },
+    "CHAR_GHOST_PAST": {
+      "description": "Strange figure like a child yet like an old man diminished; white hair, unwrinkled face with tender bloom; long muscular arms; bare legs and feet; pure white tunic; lustrous belt; holly branch; dress trimmed with summer flowers; jet of light from crown; extinguisher cap under arm; form fluctuates.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "Ghost of Christmas Past",
+      "voice_label": "past_soft_distant",
+      "voice_profile": {
+        "age_timbre": "ageless soft",
+        "pitch": "low gentle",
+        "pace": "quiet, measured",
+        "dialect_notes": "soft and gentle; singularly low as if at a distance"
+      },
+      "visual_lock": {
+        "face_shape": "child-old blend, unwrinkled bloom",
+        "hair": "white, hanging about neck and back",
+        "eyes": "mild",
+        "distinguishing_marks": "bright jet of light from crown; fluctuating limbs"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_PAST_SPIRIT",
+          "label": "supernatural visitor",
+          "years": "ageless",
+          "source_evidence": "It was a strange figure\u2014like a child: yet not so like a child as like an old man"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_PAST_TUNIC",
+          "label": "white tunic, flowers, holly, extinguisher cap",
+          "source_evidence": "It wore a tunic of the purest white; and round its waist was bound a lustrous belt"
+        }
+      ],
+      "source_evidence": "I am the Ghost of Christmas Past."
+    },
+    "CHAR_GHOST_PRESENT": {
+      "description": "Jolly Giant; green robe bordered with white fur; bare breast and feet; holly wreath with icicles; long dark brown free curls; glowing torch like Plenty\u2019s horn; empty rusted scabbard; genial sparkling eye.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "Ghost of Christmas Present",
+      "voice_label": "present_genial_giant",
+      "voice_profile": {
+        "age_timbre": "huge, warm, later aging",
+        "pitch": "deep cheery",
+        "pace": "open, hearty",
+        "dialect_notes": "joyful, plain-spoken"
+      },
+      "visual_lock": {
+        "face_shape": "genial open giant",
+        "hair": "dark brown curls, long and free; later grey",
+        "eyes": "clear, kind, sparkling",
+        "distinguishing_marks": "holly wreath with icicles; bare breast; torch"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_PRESENT_YOUNG",
+          "label": "glorious giant",
+          "years": "very young spirit of the year",
+          "source_evidence": "there sat a jolly Giant, glorious to see"
+        },
+        {
+          "variant_key": "AGE_PRESENT_OLD",
+          "label": "near midnight, hair grey",
+          "years": "ends tonight",
+          "source_evidence": "looking at the Spirit as they stood together in an open place, he noticed that its hair was grey."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_PRESENT_ROBE",
+          "label": "green fur-bordered mantle and holly crown",
+          "source_evidence": "It was clothed in one simple green robe, or mantle, bordered with white fur."
+        }
+      ],
+      "source_evidence": "I am the Ghost of Christmas Present,\u0022 said the Spirit. \u0022Look upon me!\u0022"
+    },
+    "CHAR_GHOST_FUTURE": {
+      "description": "Solemn Phantom draped and hooded in deep black; face and form concealed; only one outstretched hand visible; tall, stately, silent; scatters gloom.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "Ghost of Christmas Yet to Come",
+      "voice_label": "future_silence",
+      "voice_profile": {
+        "age_timbre": "none\u2014does not speak",
+        "pitch": "n/a",
+        "pace": "n/a",
+        "dialect_notes": "communicates only by pointing hand and hood motion"
+      },
+      "visual_lock": {
+        "face_shape": "concealed",
+        "hair": "concealed",
+        "eyes": "unseen but felt",
+        "distinguishing_marks": "single outstretched hand from black shroud"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_FUTURE_PHANTOM",
+          "label": "shrouded spectre",
+          "years": "timeless",
+          "source_evidence": "It was shrouded in a deep black garment, which concealed its head, its face, its form, and left nothing of it visible save one outstretched hand."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_FUTURE_SHROUD",
+          "label": "deep black hooded garment",
+          "source_evidence": "a solemn Phantom, draped and hooded, coming, like a mist along the ground"
+        }
+      ],
+      "source_evidence": "I am in the presence of the Ghost of Christmas Yet To Come?\u0022 said Scrooge."
+    },
+    "CHAR_CHARITY_A": {
+      "description": "One of two portly gentlemen, pleasant to behold; hat off; books and papers; seeks provision for the poor.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "portly gentleman (charity collector)",
+      "voice_label": "charity_polite",
+      "voice_profile": {
+        "age_timbre": "middle-aged male",
+        "pitch": "pleasant mid",
+        "pace": "courteous",
+        "dialect_notes": "formal charitable appeal"
+      },
+      "visual_lock": {
+        "face_shape": "portly pleasant",
+        "hair": "unknown",
+        "eyes": "open",
+        "distinguishing_marks": "books and papers in hand"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_CHARITY_A",
+          "label": "adult collector",
+          "years": "adult",
+          "source_evidence": "They were portly gentlemen, pleasant to behold"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_CHARITY_DAY",
+          "label": "street/office gentleman dress, hats",
+          "source_evidence": "stood, with their hats off, in Scrooge\u0027s office."
+        }
+      ],
+      "source_evidence": "At this festive season of the year, Mr. Scrooge,\u0022 said the gentleman, taking up a pen, \u0022it is more than usually desirable that we should make some slight provision for the Poor and destitute"
+    },
+    "CHAR_CHARITY_B": {
+      "description": "Second portly gentleman companion to the first; same errand.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "second portly gentleman",
+      "voice_label": "charity_support",
+      "voice_profile": {
+        "age_timbre": "middle-aged male",
+        "pitch": "pleasant mid",
+        "pace": "brief supportive",
+        "dialect_notes": "formal"
+      },
+      "visual_lock": {
+        "face_shape": "portly pleasant",
+        "hair": "unknown",
+        "eyes": "open",
+        "distinguishing_marks": "paired with first gentleman"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_CHARITY_B",
+          "label": "adult collector",
+          "years": "adult",
+          "source_evidence": "This lunatic, in letting Scrooge\u0027s nephew out, had let two other people in. They were portly gentlemen"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_CHARITY_DAY",
+          "label": "street/office gentleman dress, hats",
+          "source_evidence": "stood, with their hats off, in Scrooge\u0027s office."
+        }
+      ],
+      "source_evidence": "two other people in. They were portly gentlemen, pleasant to behold"
+    },
+    "CHAR_FAN": {
+      "description": "Little girl much younger than boy Scrooge; large-hearted; delicate; brings him home from school.",
+      "canonical_given_name": "Fan",
+      "display_name_policy": "little Fan",
+      "voice_label": "fan_child_bright",
+      "voice_profile": {
+        "age_timbre": "young girl",
+        "pitch": "high bright",
+        "pace": "eager",
+        "dialect_notes": "affectionate child"
+      },
+      "visual_lock": {
+        "face_shape": "child small",
+        "hair": "unknown",
+        "eyes": "glad",
+        "distinguishing_marks": "tiny hands; stands tiptoe to embrace"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_FAN_CHILD",
+          "label": "child sister",
+          "years": "child",
+          "source_evidence": "a little girl, much younger than the boy, came darting in"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_FAN_TRAVEL",
+          "label": "child travel dress from coach",
+          "source_evidence": "sent me in a coach to bring you."
+        }
+      ],
+      "source_evidence": "Home, little Fan?\u0022 returned the boy."
+    },
+    "CHAR_BELLE": {
+      "description": "Fair young girl in mourning-dress who releases young Scrooge; later seen as comely matron with family.",
+      "canonical_given_name": "Belle",
+      "display_name_policy": "Belle (released fianc\u00E9e)",
+      "voice_label": "belle_gentle_firm",
+      "voice_profile": {
+        "age_timbre": "young woman",
+        "pitch": "soft mid",
+        "pace": "steady, gentle",
+        "dialect_notes": "quiet resolve"
+      },
+      "visual_lock": {
+        "face_shape": "fair",
+        "hair": "unknown",
+        "eyes": "tear-bright",
+        "distinguishing_marks": "mourning-dress in breakup scene"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_BELLE_YOUNG",
+          "label": "young woman ending engagement",
+          "years": "young adult",
+          "source_evidence": "a fair young girl in a mourning-dress: in whose eyes there were tears"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_BELLE_MOURNING",
+          "label": "mourning-dress",
+          "source_evidence": "sat by the side of a fair young girl in a mourning-dress"
+        }
+      ],
+      "source_evidence": "Belle,\u0022 said the husband, turning to his wife with a smile"
+    },
+    "CHAR_YOUNG_SCROOGE": {
+      "description": "Scrooge\u2019s former self as apprentice and later as man whose eye shows growing avarice; used in Past visions only.",
+      "canonical_given_name": "Ebenezer",
+      "display_name_policy": "young Scrooge (shadow of the past)",
+      "voice_label": "young_scrooge",
+      "voice_profile": {
+        "age_timbre": "youth to prime",
+        "pitch": "firmer than elder",
+        "pace": "becomes impatient",
+        "dialect_notes": "same man earlier"
+      },
+      "visual_lock": {
+        "face_shape": "not yet harsh rigid lines; later care and avarice",
+        "hair": "younger than present Scrooge",
+        "eyes": "eager, greedy, restless motion later",
+        "distinguishing_marks": "recognizably Scrooge younger"
+      },
+      "age_variants": [
+        {
+          "variant_key": "AGE_SCROOGE_BOY",
+          "label": "schoolboy",
+          "years": "child",
+          "source_evidence": "a lonely boy was reading near a feeble fire"
+        },
+        {
+          "variant_key": "AGE_SCROOGE_YOUNG_MAN",
+          "label": "apprentice / prime",
+          "years": "young adult to prime",
+          "source_evidence": "Scrooge\u0027s former self, now grown a young man, came briskly in"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_YOUNG_SCHOOL",
+          "label": "schoolboy clothes",
+          "source_evidence": "a lonely boy was reading near a feeble fire"
+        },
+        {
+          "variant_key": "WR_YOUNG_APPRENTICE",
+          "label": "apprentice work clothes",
+          "source_evidence": "Was I apprenticed here!"
+        }
+      ],
+      "source_evidence": "These are but shadows of the things that have been,\u0022 said the Ghost."
+    }
+  }
+}

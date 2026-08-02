@@ -1,0 +1,15 @@
+{
+  "schema_version": "delivery_manifest.v1",
+  "target_aspect_ratio": "operator_choice_required",
+  "target_resolution": "operator_choice_required",
+  "caption_requirement": "Full English captions required for dialogue and essential non-speech (bells, chains, peals).",
+  "credits_requirement": "Credit Charles Dickens as author of the public-domain source A Christmas Carol; credit Project Gutenberg source edition; cast and production credits operator_choice_required.",
+  "review_gates": [
+    "Source-faithfulness: no invented proper names for unnamed speakers; no dialogue not grounded in book situations.",
+    "Withheld identity: dead man\u2019s name only at grave insert.",
+    "Short-film length: target under ~15 minutes total scene time.",
+    "Period lock: fog, costume, locations consistent with location_bible and cast_seeds.",
+    "Audio: Future Spirit remains silent; Marley chain and bells present.",
+    "Ending: Tiny Tim does NOT die; Scrooge keeps Christmas."
+  ]
+}

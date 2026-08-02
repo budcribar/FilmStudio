@@ -1,0 +1,187 @@
+{
+  "schema_version": "edit_decision_list.v1",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "location_key": "LOC_KIRK_APT",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult",
+        "CHAR_NICK.prime",
+        "CHAR_MA.late"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_PIZZA",
+        "W_NICK_STREET",
+        "W_MA_HOME"
+      ],
+      "purpose": "Establish duty triangle and Nick\u2019s dominance.",
+      "estimated_seconds": 70,
+      "clip_beats": [
+        "Ma in chair",
+        "Nick enters/checks",
+        "narrator absorbs order"
+      ]
+    },
+    {
+      "scene_id": "S02",
+      "location_key": "LOC_PIZZA_SIDEWALK",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult",
+        "CHAR_SIONNA.meet"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_PIZZA",
+        "W_SIONNA_MEET"
+      ],
+      "purpose": "Inciting meeting.",
+      "estimated_seconds": 55,
+      "clip_beats": [
+        "bike/arrive",
+        "trip-brush",
+        "name exchange implication",
+        "look back"
+      ]
+    },
+    {
+      "scene_id": "S03",
+      "location_key": "LOC_JAVA_HUT",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult",
+        "CHAR_SIONNA.meet"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_DATE",
+        "W_SIONNA_JAVA"
+      ],
+      "purpose": "Mind opens; attachment forms.",
+      "estimated_seconds": 65,
+      "clip_beats": [
+        "find table",
+        "eyes lock",
+        "book talk energy",
+        "leave changed"
+      ]
+    },
+    {
+      "scene_id": "S04",
+      "location_key": "LOC_KIRK_APT",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult",
+        "CHAR_NICK.prime",
+        "CHAR_MA.late"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_PIZZA",
+        "W_NICK_STREET",
+        "W_MA_HOME"
+      ],
+      "purpose": "Care crisis and brother pressure.",
+      "estimated_seconds": 60,
+      "clip_beats": [
+        "Ma glassy confusion",
+        "Nick anger",
+        "door slam"
+      ]
+    },
+    {
+      "scene_id": "S05",
+      "location_key": "LOC_JOES_BAR",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult",
+        "CHAR_NICK.prime"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_DATE",
+        "W_NICK_BAR"
+      ],
+      "purpose": "Public break; choose self over fear.",
+      "estimated_seconds": 80,
+      "clip_beats": [
+        "bar heat",
+        "confrontation rise",
+        "fist draw",
+        "run"
+      ]
+    },
+    {
+      "scene_id": "S06",
+      "location_key": "LOC_POLICE_STATION",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_PIZZA"
+      ],
+      "purpose": "Irreversible loss of Ma.",
+      "estimated_seconds": 50,
+      "clip_beats": [
+        "messages",
+        "officer news",
+        "shock still"
+      ]
+    },
+    {
+      "scene_id": "S07",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult",
+        "CHAR_NICK.prime",
+        "CHAR_SIONNA.home"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_PIZZA",
+        "W_NICK_STREET",
+        "W_SIONNA_HOME"
+      ],
+      "purpose": "Climax violence; love endangered.",
+      "estimated_seconds": 90,
+      "clip_beats": [
+        "Nick enters",
+        "threat",
+        "blade",
+        "narrator burst in",
+        "blood pressure",
+        "sirens"
+      ]
+    },
+    {
+      "scene_id": "S08",
+      "location_key": "LOC_SEATTLE_STREET",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.later"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_SEATTLE"
+      ],
+      "purpose": "Time jump; decision to face past.",
+      "estimated_seconds": 45,
+      "clip_beats": [
+        "Seattle walk",
+        "memory sting",
+        "resolve"
+      ]
+    },
+    {
+      "scene_id": "S09",
+      "location_key": "LOC_PRISON_VISIT",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.later",
+        "CHAR_NICK.prison"
+      ],
+      "wardrobe_variant_keys": [
+        "W_NARR_SEATTLE",
+        "W_NICK_PRISON"
+      ],
+      "purpose": "Forgiveness and identity seal.",
+      "estimated_seconds": 95,
+      "clip_beats": [
+        "glass sit",
+        "truth said",
+        "forgive",
+        "tears",
+        "hang up",
+        "name whisper/title"
+      ]
+    }
+  ]
+}

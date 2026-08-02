@@ -1,0 +1,172 @@
+{
+  "schema_version": "adaptation_plan.v1",
+  "logline": "A Milwaukee pizza worker living in his big brother\u2019s shadow meets a woman who awakens him to books, meditation, and selfhood\u2014until family violence and a fatal crash force him to leave, rebuild, and finally forgive.",
+  "source_grounded_timeline": [
+    {
+      "period": "childhood\u2013young adulthood",
+      "events": "Dad leaves when narrator is about eight; lives with Ma and Nick in fifth-floor walk-up on Kirk Street, Milwaukee; Nick is feared protector and modern-day Viking figure.",
+      "source_evidence": "I lived with him and Ma after dad took off when I was about eight. We lived downtown in a big brick apartment building on Kirk Street."
+    },
+    {
+      "period": "meeting Sionna",
+      "events": "Girl trips into narrator outside pizza place; name Sionna; coffee at Java Hut; Wuthering Heights; dreams of past-life forest/horse; yoga and Buddhism talk.",
+      "source_evidence": "this girl tripped over the cement while she was walking toward me... \u201CSionna\u201D she said."
+    },
+    {
+      "period": "Ma\u2019s decline and hospital",
+      "events": "Ma confuses church/Mrs. Canasta; high blood pressure; ER; three-day hospital stay; pill organizer with Sionna\u2019s help.",
+      "source_evidence": "Your mother\u2019s blood pressure is dangerously high... take her directly to the emergency room"
+    },
+    {
+      "period": "Nick conflict / bar",
+      "events": "Missed doctor appointment fight; later Joe\u2019s bar confrontation over Lindsey; Nick nearly hits narrator; narrator runs to Sionna.",
+      "source_evidence": "I could see Nick\u2019s creased brow... his right fist slowly drawing back and moving toward my face."
+    },
+    {
+      "period": "accident",
+      "events": "Nick takes Ma to mass after drinking; broadside crash Werner and Lowe; Ma dies at scene; Nick serious injuries; possible vehicular manslaughter.",
+      "source_evidence": "your brother is in serious condition at Frodo and your mother passed away at the scene."
+    },
+    {
+      "period": "stabbing",
+      "events": "Nick blames Sionna; confronts her at duplex with switchblade; narrator walks in; knife hits her; Nick flees.",
+      "source_evidence": "The knife hits her hard and there is red flying out... I wipe the blade off on her shirt"
+    },
+    {
+      "period": "aftermath / Seattle years later",
+      "events": "Sionna survives but leaves; narrator builds Tony\u2019s Boy\u2019s Pizza chain in Seattle; dream of sage; visits Nick in Green Bay prison; forgives; name Peter Olson revealed.",
+      "source_evidence": "I own a pizza chain in Seattle... President Peter Olson."
+    }
+  ],
+  "withheld_name_rules": [
+    {
+      "element": "narrator given name",
+      "rule": "Do not state or display full name until final prison/airport beat; use little brother / I / Bro until then.",
+      "source_evidence": "I whispered to myself, \u201CThat\u2019s me. President Peter Olson.\u201D"
+    },
+    {
+      "element": "Ma full name",
+      "rule": "May use Ma until funeral/grave; full Olivia Anne Olsen only at marker.",
+      "source_evidence": "Mother: Olivia Anne Olsen. August 28, 1933 to September 7, 1998."
+    },
+    {
+      "element": "stabbing outcome and Sionna departure",
+      "rule": "Hold emotional aftermath and separation until after hospital/ICU recovery beats; do not foreshadow Seattle life early.",
+      "source_evidence": "As long as there is any doubt, I can\u2019t go on with you."
+    }
+  ],
+  "essential_beats": [
+    {
+      "beat_id": "B01_nick_shadow",
+      "description": "Establish Nick\u2019s physical dominance and narrator\u2019s subordinate care of Ma in Kirk Street walk-up.",
+      "source_evidence": "Nick was the guy everybody was scared of... I lived with him and Ma"
+    },
+    {
+      "beat_id": "B02_meet_sionna",
+      "description": "Sidewalk collision outside pizza place; Sionna; fish necklace; coffee invitation.",
+      "source_evidence": "She fell and just kind of brushed into me with her shoulder... \u201Cif you want to go have a cup of coffee sometime, you can call me.\u201D"
+    },
+    {
+      "beat_id": "B03_library_wuthering",
+      "description": "Narrator gets library card, checks out Wuthering Heights; dreams mix Sionna/Catherine.",
+      "source_evidence": "I just picked out \u201CWuthering Heights\u201D by a lady named Emily Bronte."
+    },
+    {
+      "beat_id": "B04_java_awakening",
+      "description": "Java Hut talk of symbols, love that destroys; narrator feels smarter; dinner date.",
+      "source_evidence": "A love that never changes will destroy you. It reminded me of the way Nick is"
+    },
+    {
+      "beat_id": "B05_ma_crisis",
+      "description": "Ma glassy-eyed confusion; later dangerously high BP; hospital; pill box.",
+      "source_evidence": "I\u2019m afraid of the risk of a stroke... admit her for observation"
+    },
+    {
+      "beat_id": "B06_bar_break",
+      "description": "Joe\u2019s: Nick confronts Lindsey\u2019s date; narrator intervenes; fist toward face; flight to Sionna.",
+      "source_evidence": "No one cares about your ego Nick!\u201D I was yelling at him"
+    },
+    {
+      "beat_id": "B07_crash",
+      "description": "Police messages; Ma dead at scene; Nick ICU; narrator\u2019s rage at Nick.",
+      "source_evidence": "your mother passed away at the scene... Die you fucking jackass."
+    },
+    {
+      "beat_id": "B08_stabbing",
+      "description": "Nick at Sionna\u2019s duplex; knife to collarbone; narrator enters; blood; Nick flees.",
+      "source_evidence": "I placed the edge of the knife in between her skinny collarbone and boob... The knife hits her hard"
+    },
+    {
+      "beat_id": "B09_separation_seattle",
+      "description": "Sionna cannot continue; years later Seattle pizza owner; sage dream; decision to forgive.",
+      "source_evidence": "I forgive you, Nick, because it also releases your control over me forever"
+    },
+    {
+      "beat_id": "B10_prison_forgive",
+      "description": "Green Bay visit; names Nick asshole then forgives; Nick weeps; President Peter Olson.",
+      "source_evidence": "I forgive you. I forgive you for being a huge asshole because it sets me free."
+    }
+  ],
+  "scene_outline": [
+    {
+      "scene_id": "S01",
+      "location_key": "LOC_KIRK_APT",
+      "purpose": "Open on Ma\u2019s apartment, Nick\u2019s presence, narrator\u2019s duty.",
+      "source_evidence": "We lived downtown in a big brick apartment building on Kirk Street. A fifth-floor walk-up"
+    },
+    {
+      "scene_id": "S02",
+      "location_key": "LOC_PIZZA_SIDEWALK",
+      "purpose": "Meet Sionna.",
+      "source_evidence": "just as I was walking down the sidewalk and into the front door of the pizza place, this girl tripped"
+    },
+    {
+      "scene_id": "S03",
+      "location_key": "LOC_LIBRARY",
+      "purpose": "Library card; Wuthering Heights.",
+      "source_evidence": "I walked real fast over there and saw they were open till 9 o\u2019clock"
+    },
+    {
+      "scene_id": "S04",
+      "location_key": "LOC_JAVA_HUT",
+      "purpose": "Coffee; book talk; awakening.",
+      "source_evidence": "We decided to meet downtown at a coffee shop called The Java Hut."
+    },
+    {
+      "scene_id": "S05",
+      "location_key": "LOC_KIRK_APT",
+      "purpose": "Ma confusion and later med crisis setup.",
+      "source_evidence": "Did we go to church today? Did you see Mrs. Canasta there?"
+    },
+    {
+      "scene_id": "S06",
+      "location_key": "LOC_JOES_BAR",
+      "purpose": "Bar fight almost; brother rupture.",
+      "source_evidence": "The music was turned up loud as we opened the door to Joe\u2019s Bar and Grill."
+    },
+    {
+      "scene_id": "S07",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "purpose": "Refuge after bar; later stabbing climax.",
+      "source_evidence": "I found myself running to Sionna\u2019s house"
+    },
+    {
+      "scene_id": "S08",
+      "location_key": "LOC_POLICE_HOSPITAL",
+      "purpose": "Crash news; Ma dead; Nick ICU.",
+      "source_evidence": "they were hit broadside while going through the intersection of Werner and Lowe."
+    },
+    {
+      "scene_id": "S09",
+      "location_key": "LOC_SEATTLE_PRESENT",
+      "purpose": "Years later; pizza chain; decision to return.",
+      "source_evidence": "I now had my own chain of pizzerias here in the Northwest... Tony\u2019s Boy\u2019s Pizza."
+    },
+    {
+      "scene_id": "S10",
+      "location_key": "LOC_PRISON_GREENBAY",
+      "purpose": "Forgiveness; name reveal.",
+      "source_evidence": "Nick was being held in Green Bay at the correctional institute there"
+    }
+  ]
+}

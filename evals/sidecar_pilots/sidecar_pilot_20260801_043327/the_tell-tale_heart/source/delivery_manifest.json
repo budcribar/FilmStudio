@@ -1,0 +1,16 @@
+{
+  "schema_version": "delivery_manifest.v1",
+  "target_aspect_ratio": "operator_choice_required",
+  "target_resolution": "operator_choice_required",
+  "caption_requirement": "Full captions required for confessional VO and source-quoted speech; mark heart-sound as captioned rhythmic audio where needed for accessibility.",
+  "credits_requirement": "Credit source: Edgar Allan Poe, \u0027The Tell-Tale Heart\u0027; characters without invented personal names; production roles operator-defined.",
+  "review_gates": [
+    "source_evidence_present_for_cast_locations_beats",
+    "withheld_names_preserved",
+    "no_invented_quoted_dialogue",
+    "single_canonical_location_per_scene_heading",
+    "short_film_length_budget_check",
+    "audio_exclusions_verified",
+    "fountain_contains_no_sidecar_metadata"
+  ]
+}

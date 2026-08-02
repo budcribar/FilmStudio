@@ -1,0 +1,60 @@
+{
+  "schema_version": "audio_plan.v1",
+  "project_music_style": "Sparse Victorian ghost-story score: low strings, distant carol fragments, handbells, chain percussion; diegetic fiddle only if Fezziwig snippet used; silence as moral pressure; no modern pop.",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "score_intent": "Cold ostinato under fog; brief warm lift on nephew\u2019s entrance crushed by Scrooge\u2019s refusal.",
+      "timing": "Underscore enters after establishing city clocks/fog; thins for charity dialogue; ends on office close.",
+      "diegetic_sound": "City clocks gone three; wheezing court footsteps; stamping feet; pen scratching; tiny fire spit; carol boy cut off outside keyhole.",
+      "silence_guidance": "Hold dead air after surplus-population line.",
+      "exclusions": "No comic cartoon stings; no lush full orchestra yet.",
+      "source_evidence": "The city clocks had only just gone three, but it was quite dark already"
+    },
+    {
+      "scene_id": "S02",
+      "score_intent": "Unease to horror: knocker hit; bells; chain drag; lamenting wind voices at departure.",
+      "timing": "Near-silence on knocker face; bells swell together; chain rises from cellar to door; dirge as Ghost departs.",
+      "diegetic_sound": "Door bang thunder; echoes; disused bell then every bell; clanking chain on casks; booming cellar-door; jaw teeth smart sound; phantom wailings outdoors.",
+      "silence_guidance": "After bells cease, leave only chain before apparition enters.",
+      "exclusions": "No jump-scare braams; no spoken invented ghost choir text.",
+      "source_evidence": "They were succeeded by a clanking noise, deep down below; as if some person were dragging a heavy chain over the casks in the wine-merchant\u0027s cellar."
+    },
+    {
+      "scene_id": "S03",
+      "score_intent": "Soft distant tones; childhood music-box plainness; ache on Belle\u2019s farewell; light extinguisher struggle.",
+      "timing": "Church chimes to One; flash; pastoral cues on road; thin sorrow for breakup; collapse into sleep.",
+      "diegetic_sound": "Neighbouring church chimes and deep ONE; frost window rub; boys\u2019 distant Christmas shouts; mice/scuttle optional faint; no invented songs with lyrics beyond source context.",
+      "silence_guidance": "Silence on Scrooge\u2019s tears at lonely boy.",
+      "exclusions": "No modern synth leads.",
+      "source_evidence": "the heavy bell went on from six to seven, and from seven to eight, and regularly up to twelve; then stopped."
+    },
+    {
+      "scene_id": "S04",
+      "score_intent": "Abundant warm present theme; domestic joy; chill when Tim\u2019s future vacancy is spoken; dread sting for Ignorance and Want.",
+      "timing": "Bell One; room transformation bloom; street scrape of snow; Cratchit feast peak; quote of surplus population strips music bare.",
+      "diegetic_sound": "Roaring chimney blaze; dinner bustle; pudding copper; crutch on floor; chestnuts cracking; London bells to church; later chimes toward midnight.",
+      "silence_guidance": "After \u201CGod bless us every one,\u201D a clean hold on Scrooge\u2019s face.",
+      "exclusions": "No slapstick kitchen music.",
+      "source_evidence": "Then Bob proposed: \u0022A Merry Christmas to us all, my dears. God bless us!\u0022"
+    },
+    {
+      "scene_id": "S05",
+      "score_intent": "Near-anempathic drone; remove melody; heartbeat-low pulse only at grave.",
+      "timing": "Enter with Phantom; almost no score over merchants; ugly small noises in junk shop; void around corpse bed; single tonal drop on stone.",
+      "diegetic_sound": "Money chink; yawning laugh of businessmen; rusty shop door skreak; cat at door; rats beneath hearth; wind in churchyard.",
+      "silence_guidance": "Spirit never speaks\u2014protect long silent pointing beats.",
+      "exclusions": "No choir spelling the dead man\u2019s name early; no jump stingers on grave until name reveal.",
+      "source_evidence": "The Phantom slowly, gravely, silently, approached."
+    },
+    {
+      "scene_id": "S06",
+      "score_intent": "Release into pealing joy; honest laugh motif; gentle carol color without drowning dialogue; final benediction.",
+      "timing": "Church peals on window open; light comic bounce for turkey errand; warm swell at Fred\u2019s; soft resolve at salary raise; coda under Tiny Tim blessing.",
+      "diegetic_sound": "Lustiest church peals; street bustle; knocker pat; boy\u2019s run; office clock nine and late arrival; laughter.",
+      "silence_guidance": "One clean breath before final \u201CGod bless Us, Every One!\u201D card or line.",
+      "exclusions": "No ironic dark reprise under ending.",
+      "source_evidence": "Clash, clang, hammer; ding, dong, bell. Bell, dong, ding; hammer, clang, clash! Oh, glorious, glorious!"
+    }
+  ]
+}

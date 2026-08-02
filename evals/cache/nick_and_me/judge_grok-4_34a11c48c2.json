@@ -1,0 +1,25 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong source coverage and consistent character visuals with locked traits; minor pacing drag from extended V.O. blocks and occasional multi-action compression within scenes, but no invented plot or closed-cast violations.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring at least one concrete visual micro-beat (sound, gesture, or prop action) between any two consecutive V.O. lines longer than one sentence."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it delivers high fidelity, consistent character locks, and usable sound cues across every scene. Weakest: Screenplay A because extended V.O. blocks occasionally slow clip-friendly pacing.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "5DA17B48C99749EEFADF5B49D50A612C5FCDC9CEEBD362E2D70EBB3D09433EFB"
+}

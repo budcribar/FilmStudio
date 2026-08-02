@@ -1,0 +1,197 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\openai\\books\\A_Christmas_Carol.txt",
+  "Timestamp": "2026-07-31 21:59:53 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 84.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 19,
+        "TotalDialogueBlocks": 103,
+        "AvgWordsPerDialogue": 13.7,
+        "MaxWordsInSingleDialogue": 46,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. DOBSON",
+          "BOB CRATCHIT",
+          "MARLEY",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "BOY SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG SCROOGE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "TINY TIM",
+          "FRED\u0027S WIFE",
+          "TOM"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY SCROOGE",
+          "YOUNG SCROOGE",
+          "TINY TIM"
+        ],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 age-qualified character header(s) (e.g. BOY SCROOGE, YOUNG SCROOGE, TINY TIM).",
+          "Detected 4 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.2,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 7.5,
+      "AvgDramaticPacing": 6.8,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 7.4,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: MR. DOBSON and TOM are proper names invented for source-anonymous characters, triggering the stated severe fidelity penalty.",
+        "gpt-5.6-sol: Major Future-stave evidence is omitted, including the indifferent businessmen, Old Joe\u0027s sale of the stolen death-room goods, and the relieved debtor family, substantially weakening the source\u0027s social indictment and delayed identification of the corpse.",
+        "gpt-5.6-sol: The approximately 1,500 spoken words already consume about ten minutes without action or transitions, while several long dialogue turns and compound action blocks cannot fit individual 5-10-second clips."
+      ]
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 75.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 32,
+        "TotalDialogueBlocks": 179,
+        "AvgWordsPerDialogue": 18,
+        "MaxWordsInSingleDialogue": 84,
+        "LongMonologueCount": 28,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "CHARITY GENTLEMAN",
+          "CAROL BOY",
+          "BOB CRATCHIT",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "BOY SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG SCROOGE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "MRS. CRATCHIT",
+          "ALL CRATCHITS",
+          "TINY TIM",
+          "NIECE",
+          "FAT MAN",
+          "MR. ADAMS",
+          "MR. BARKER",
+          "CHARWOMAN",
+          "OLD JOE",
+          "HUSBAND",
+          "PETER",
+          "BOY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "CAROL BOY",
+          "BOY SCROOGE",
+          "YOUNG SCROOGE",
+          "TINY TIM",
+          "OLD JOE",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "28 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 6 age-qualified character header(s) (e.g. CAROL BOY, BOY SCROOGE, YOUNG SCROOGE)."
+        ]
+      },
+      "AvgAdaptationFidelity": 6,
+      "AvgCharacterDisambiguation": 6.5,
+      "AvgAiVideoDirectibility": 4.8,
+      "AvgDramaticPacing": 4.5,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 6,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: The draft is far beyond a roughly 10-minute film: extensive source transcription and numerous 30-100-word dialogue turns cannot fit 5-10-second clips.",
+        "gpt-5.6-sol: Forbidden multi-location headings and hidden location changes, including EXT. CITY STREET / INT. BELLE\u0027S ROOM and EXT. BLEAK MOOR / LIGHTHOUSE / SHIP, make the draft unschedulable and clip-ambiguous.",
+        "gpt-5.6-sol: Closed-cast and dialogue integrity are broken by the plural-to-singular CHARITY GENTLEMEN/CHARITY GENTLEMAN handling, ALL CRATCHITS, uncued passers-by, placeholder-only parentheticals, and the reversed Scrooge/Marley belief exchange.",
+        "gpt-5.6-sol: MR. ADAMS and MR. BARKER are proper names invented for source-anonymous businessmen.",
+        "grok-4.5: Compound multi-location scene headings banned by prompt (EXT. BLEAK MOOR / LIGHTHOUSE / SHIP, EXT. CITY STREET / INT. BELLE\u0027S ROOM)",
+        "grok-4.5: Malformed character/dialogue lines containing placeholder parentheticals (\u0027(what business)\u0027, \u0027(a pimple\u2014lead on)\u0027) that break Fountain parsing",
+        "grok-4.5: Unstable supporting tokens (NIECE, CHARITY GENTLEMAN, FAT MAN, MR. ADAMS) violating closed-cast consistency"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-sol": {
+      "grok-4.5": 4.25,
+      "gpt-5.6-sol": 6.42
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 8.4,
+      "grok-4.5": 7.75
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-sol": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u2139\uFE0F gpt-5.6-sol rated its own screenplay 6.4/10 vs. a 8.4/10 average from 1 other judge(s) (-2.0) \u2014 notably harsher on itself than peers were.",
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.8/10 vs. a 4.2/10 average from 1 other judge(s) (\u002B3.5) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "This version covers an unusually broad selection of the source, including the carol boy, Fan, Fezziwig, Belle, the remote Christmas celebrations, Old Joe, the debtor family, Tiny Tim\u0027s projected death, and the complete redemption. However, the required severe penalty applies because MR. ADAMS and MR. BARKER are invented names, while several lines are also misattributed or altered in meaning, most notably the reversed exchange about believing in Marley. Principal ghosts receive vivid visual descriptions, but BOY SCROOGE and YOUNG SCROOGE lack sufficiently locked physical traits, Belle is not given a separate matron identity, and several supporting tokens are ambiguous or generic. Directibility is undermined by compound action paragraphs, literary summaries, multiple locations inside single headings, and dialogue far too long for individual clips. The dramatic progression remains recognizable, but near-transcription produces a film substantially longer than the target and leaves the final stave rushed despite the overall excess. Much of the dialogue preserves Dickens\u0027s diction, yet malformed parentheticals and oversized speeches require substantial rewriting. Diegetic sound is often specific and atmospheric, but at least two scenes lack the mandated parenthetical cue and the background score is largely undeveloped outside Fezziwig and the ending.",
+      "gpt-5.6-sol": "This is the more coherent and selective adaptation, preserving the central progression through Marley, childhood isolation, Fezziwig, Belle, the Cratchits, Fred, Ignorance and Want, the future grave, and Scrooge\u0027s restitution. Fidelity is nevertheless capped below three because it invents the proper names MR. DOBSON and TOM and drops several major Future-stave beats that establish how Scrooge\u0027s death affects society. Casting clarity is strong: Scrooge, Bob, Fred, Tiny Tim, the ghosts, and the age-separated Scrooge identities receive stable and generally consistent visual traits on re-entry. The main identity weakness is retaining BELLE as one token through a substantial age transformation rather than defining a distinct matron version. Most action is concrete and filmable, but the Fezziwig transformation, family meals, temporal dissolves, and several other paragraphs bundle multiple clips into one beat. The structure moves cleanly and makes sensible compression choices, but the spoken-word volume still pushes the finished film well beyond ten minutes, while the abbreviated Future section loses escalation before the grave reveal. Dialogue remains close to Dickens and is character-distinct, though several speeches exceed a single clip\u0027s performable length. Sound design is the strongest craft element, with explicit ambience in every scene and a well-shaped musical progression from warmth through dissonance, funeral pulse, and final release."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Strong closed-cast adaptation that hits every major spine beat (counting-house setup, Marley, three spirits with school/Fezziwig/Belle, Cratchit dinner \u002B Tim, Fred party, Ignorance/Want, future corpse/grave, redemption turkey/salary/Tim lives) while keeping iconic lines intact. Character looks are locked early and restated on re-entry/age splits (Boy/Young/Elderly Scrooge, Bob\u2019s comforter, Tim\u2019s crutch/braces). Scenes are single-location with concrete camera actions ideal for 5-10s clips; sound/music cues appear in every scene and densify at peaks. Minor compressions (miners/lighthouse montage dropped, Future Joe\u2019s shop abbreviated) keep runtime tight without inventing plot. No deal-breakers.",
+      "grok-4.5": "Highest source coverage\u2014retains nearly every book beat, long Marley speeches, Ali Baba fantasy, full Fezziwig dance, Belle double scene, Cratchit Martha/pudding details, miners/lighthouse/ship, Joe\u2019s rag shop, Caroline debtors, and all iconic dialogue verbatim. Sound cues are frequent. However, directibility collapses on multi-place headings and crammed montages that cannot be scheduled as single clips; several cues are literally unparsable placeholders; supporting names drift. Pacing bloats well past a tight 10-minute cut. These structural defects make the draft unusable without rewrite despite superior fidelity."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-sol": "Strongest: Screenplay B because its disciplined selection, stable visual identities, clear transitions, and purposeful audio arc make it substantially more filmable despite fidelity and runtime defects. Weakest: Screenplay A because its excessive length, multi-location scene construction, unstable supporting cast, and malformed or oversized dialogue make it unusable for the required short-clip production workflow as written.",
+    "grok-4.5": "Strongest: Screenplay A because it delivers clean single-location, clip-ready scenes with locked character visuals, consistent audio direction, and full emotional spine without structural defects. Weakest: Screenplay B because banned compound headings plus broken placeholder dialogue cues render it unparsable and unfilmable as-is despite richer beat coverage."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "Add a quantitative preflight budget: no more than 80 clip-beats, approximately 1,300 spoken words, and 25 spoken words per 5-10-second beat; if the draft exceeds any cap, cut whole secondary sequences rather than compressing them into compound montage actions.",
+      "gpt-5.6-sol": "Change the supporting-role rule so that a source-anonymous person receives a stable descriptive token such as CHARITY COLLECTOR or STREET BOY, never a fabricated proper name; proper names may be used only when supplied by the source."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Add a hard rule that every spirit-journey sequence must retain at least one dedicated single-location micro-scene for each major book locale visited (no wholesale omission of secondary stops solely for runtime), forcing explicit coverage before compression.",
+      "grok-4.5": "Strengthen the existing multi-place ban with an explicit parse-time rule: any heading containing a slash, \u0027VARIOUS\u0027, or more than one concrete place is invalid and must be split into sequential single-location scenes each opening with a grounding Action line; also forbid any parenthetical text inside or immediately after a character cue except standard delivery notes."
+    }
+  }
+}

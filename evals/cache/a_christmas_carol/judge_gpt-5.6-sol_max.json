@@ -1,0 +1,49 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 3.5,
+      "dramaticPacing": 2.5,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 6.5,
+      "overallQualitativeScore": 4.25,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The draft is far beyond a roughly 10-minute film: extensive source transcription and numerous 30-100-word dialogue turns cannot fit 5-10-second clips.",
+        "Forbidden multi-location headings and hidden location changes, including EXT. CITY STREET / INT. BELLE\u0027S ROOM and EXT. BLEAK MOOR / LIGHTHOUSE / SHIP, make the draft unschedulable and clip-ambiguous.",
+        "Closed-cast and dialogue integrity are broken by the plural-to-singular CHARITY GENTLEMEN/CHARITY GENTLEMAN handling, ALL CRATCHITS, uncued passers-by, placeholder-only parentheticals, and the reversed Scrooge/Marley belief exchange.",
+        "MR. ADAMS and MR. BARKER are proper names invented for source-anonymous businessmen."
+      ],
+      "rationale": "This version covers an unusually broad selection of the source, including the carol boy, Fan, Fezziwig, Belle, the remote Christmas celebrations, Old Joe, the debtor family, Tiny Tim\u0027s projected death, and the complete redemption. However, the required severe penalty applies because MR. ADAMS and MR. BARKER are invented names, while several lines are also misattributed or altered in meaning, most notably the reversed exchange about believing in Marley. Principal ghosts receive vivid visual descriptions, but BOY SCROOGE and YOUNG SCROOGE lack sufficiently locked physical traits, Belle is not given a separate matron identity, and several supporting tokens are ambiguous or generic. Directibility is undermined by compound action paragraphs, literary summaries, multiple locations inside single headings, and dialogue far too long for individual clips. The dramatic progression remains recognizable, but near-transcription produces a film substantially longer than the target and leaves the final stave rushed despite the overall excess. Much of the dialogue preserves Dickens\u0027s diction, yet malformed parentheticals and oversized speeches require substantial rewriting. Diegetic sound is often specific and atmospheric, but at least two scenes lack the mandated parenthetical cue and the background score is largely undeveloped outside Fezziwig and the ending.",
+      "promptImprovementSuggestion": "Add a quantitative preflight budget: no more than 80 clip-beats, approximately 1,300 spoken words, and 25 spoken words per 5-10-second beat; if the draft exceeds any cap, cut whole secondary sequences rather than compressing them into compound montage actions."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 2.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 6.42,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "MR. DOBSON and TOM are proper names invented for source-anonymous characters, triggering the stated severe fidelity penalty.",
+        "Major Future-stave evidence is omitted, including the indifferent businessmen, Old Joe\u0027s sale of the stolen death-room goods, and the relieved debtor family, substantially weakening the source\u0027s social indictment and delayed identification of the corpse.",
+        "The approximately 1,500 spoken words already consume about ten minutes without action or transitions, while several long dialogue turns and compound action blocks cannot fit individual 5-10-second clips."
+      ],
+      "rationale": "This is the more coherent and selective adaptation, preserving the central progression through Marley, childhood isolation, Fezziwig, Belle, the Cratchits, Fred, Ignorance and Want, the future grave, and Scrooge\u0027s restitution. Fidelity is nevertheless capped below three because it invents the proper names MR. DOBSON and TOM and drops several major Future-stave beats that establish how Scrooge\u0027s death affects society. Casting clarity is strong: Scrooge, Bob, Fred, Tiny Tim, the ghosts, and the age-separated Scrooge identities receive stable and generally consistent visual traits on re-entry. The main identity weakness is retaining BELLE as one token through a substantial age transformation rather than defining a distinct matron version. Most action is concrete and filmable, but the Fezziwig transformation, family meals, temporal dissolves, and several other paragraphs bundle multiple clips into one beat. The structure moves cleanly and makes sensible compression choices, but the spoken-word volume still pushes the finished film well beyond ten minutes, while the abbreviated Future section loses escalation before the grave reveal. Dialogue remains close to Dickens and is character-distinct, though several speeches exceed a single clip\u0027s performable length. Sound design is the strongest craft element, with explicit ambience in every scene and a well-shaped musical progression from warmth through dissonance, funeral pulse, and final release.",
+      "promptImprovementSuggestion": "Change the supporting-role rule so that a source-anonymous person receives a stable descriptive token such as CHARITY COLLECTOR or STREET BOY, never a fabricated proper name; proper names may be used only when supplied by the source."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because its disciplined selection, stable visual identities, clear transitions, and purposeful audio arc make it substantially more filmable despite fidelity and runtime defects. Weakest: Screenplay A because its excessive length, multi-location scene construction, unstable supporting cast, and malformed or oversized dialogue make it unusable for the required short-clip production workflow as written.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "EFFB56368ED20F23EFB41F59D0A64A03A841D14E84DC85385E31034F5F75E717"
+}

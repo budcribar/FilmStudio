@@ -1,0 +1,96 @@
+{
+  "schema_version": "audio_plan.v1",
+  "project_music_style": "Sparse low strings and restrained pulse motifs that can be mistaken for a muffled watch-tick; avoid lush romantic score; prioritize silence and diegetic creaks.",
+  "scenes": [
+    {
+      "scene_id": "S1",
+      "score_intent": "Barely-there drone under confessional VO; no melody that comforts.",
+      "timing": "Enter under first VO; thin out before chamber montage.",
+      "diegetic_sound": [
+        "room tone of old house",
+        "distant night quiet"
+      ],
+      "silence_guidance": "Leave air around claims of calm so nervousness reads.",
+      "exclusions": [
+        "no modern traffic",
+        "no non-source musical pastiche jokes"
+      ],
+      "source_evidence": "I heard all things in the heaven and in the earth."
+    },
+    {
+      "scene_id": "S2",
+      "score_intent": "Repeating soft nocturnal figure; cut hard on morning greetings.",
+      "timing": "Pulse only during midnight approaches; mute on daytime kindness.",
+      "diegetic_sound": [
+        "latch",
+        "door hinges slow",
+        "lantern hinge creak",
+        "old man sleeping breath"
+      ],
+      "silence_guidance": "Long held quiet while head enters the room.",
+      "exclusions": [
+        "no jump-scare stingers on closed eye"
+      ],
+      "source_evidence": "I undid the lantern cautiously\u2014oh, so cautiously\u2014cautiously (for the hinges creaked)"
+    },
+    {
+      "scene_id": "S3",
+      "score_intent": "Withdraw score as diegetic heart-sound becomes lead percussion.",
+      "timing": "After eye ray, introduce low dull quick beat; accelerate to yell.",
+      "diegetic_sound": [
+        "thumb slip on tin fastening",
+        "old man: Who\u2019s there?",
+        "slight groan of terror",
+        "heart like watch in cotton",
+        "loud yell",
+        "single shriek",
+        "bed dragged",
+        "muffled heart then cease"
+      ],
+      "silence_guidance": "Full hour stillness after Who\u2019s there?\u2014hold muscle-quiet.",
+      "exclusions": [
+        "no added dialogue",
+        "no neighbour voice"
+      ],
+      "source_evidence": "there came to my ears a low, dull, quick sound, such as a watch makes when enveloped in cotton."
+    },
+    {
+      "scene_id": "S4",
+      "score_intent": "Dry, workmanlike absence of triumph music; silence as cunning.",
+      "timing": "Optional faint low tone under dismemberment; cut for plank work.",
+      "diegetic_sound": [
+        "cutting implied off-mic or abstracted",
+        "planks lifted and replaced",
+        "tub sounds minimal",
+        "bell sounding four o\u2019clock",
+        "knocking at street door"
+      ],
+      "silence_guidance": "Work hastily but in silence\u2014keep foley tight and hushed.",
+      "exclusions": [
+        "no comic tub sting beyond narrator\u2019s ha! ha! if VO used",
+        "no explicit gore wet mix beyond source necessity"
+      ],
+      "source_evidence": "I worked hastily, but in silence."
+    },
+    {
+      "scene_id": "S5",
+      "score_intent": "Pleasant neutral bed under officers replaced by rising non-diegetic/diegetic ambiguous heartbeat only narrator seems to hear.",
+      "timing": "Heart re-enters after chat establishes ease; climb under pacing and chair grating to confession.",
+      "diegetic_sound": [
+        "street door knock already bridged",
+        "chairs set",
+        "pleasant officer chat murmur without invented lines",
+        "narrator heightened voice",
+        "heavy strides",
+        "chair grated on boards",
+        "final shrieked confession lines from source"
+      ],
+      "silence_guidance": "Officers remain aurally calm; do not let them acknowledge the heart until confession.",
+      "exclusions": [
+        "no officer accusation lines not in source",
+        "no extra confessors"
+      ],
+      "source_evidence": "It was a low, dull, quick sound\u2014much such a sound as a watch makes when enveloped in cotton. I gasped for breath\u2014and yet the officers heard it not."
+    }
+  ]
+}

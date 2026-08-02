@@ -1,0 +1,152 @@
+{
+  "BookPath": "books\\The_Velveteen_Rabbit.txt",
+  "Timestamp": "2026-07-31 21:50:52 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 92.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 12,
+        "TotalDialogueBlocks": 52,
+        "AvgWordsPerDialogue": 17.2,
+        "MaxWordsInSingleDialogue": 52,
+        "LongMonologueCount": 4,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "HAZEL",
+          "DOCTOR LEWIS",
+          "NURSERY MAGIC FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "4 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "Detected 3 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.7,
+      "AvgCharacterDisambiguation": 9.3,
+      "AvgAiVideoDirectibility": 8.4,
+      "AvgDramaticPacing": 8.4,
+      "AvgDialogueAuthenticity": 8.4,
+      "AvgSoundDesignMusic": 9.4,
+      "AvgOverallQualitative": 8.8,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 15,
+        "TotalDialogueBlocks": 48,
+        "AvgWordsPerDialogue": 18.2,
+        "MaxWordsInSingleDialogue": 87,
+        "LongMonologueCount": 7,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "WILD RABBIT",
+          "THE DOCTOR",
+          "NURSERY FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "7 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.6,
+      "AvgCharacterDisambiguation": 6.2,
+      "AvgAiVideoDirectibility": 7.4,
+      "AvgDramaticPacing": 7.7,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 8.6,
+      "AvgOverallQualitative": 7.8,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: Closed-cast/reference-lock failure: two on-screen wild rabbits are not individually identified, yet dialogue is assigned to one ambiguous WILD RABBIT token; THE DOCTOR also remains a generic speaking token rather than a uniquely named cast key."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-sol": {
+      "grok-4.5": 7.68,
+      "gpt-5.6-sol": 8.92
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 8.58,
+      "grok-4.5": 7.83
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-sol": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "This is a highly faithful adaptation that preserves the Christmas neglect, Skin Horse lesson, the Boy\u0027s declaration, the wild-rabbit encounter, scarlet-fever crisis, threatened bonfire, Fairy transformation, and final recognition. It does omit the replacement-bunny bedroom beat and invents a brief Fairy-scene response for the Rabbit, but neither change damages the central arc. Visual progression for the Velveteen Rabbit is clear, while casting clarity is substantially weaker: the two wild rabbits are indistinguishable, the speaking rabbit lacks a unique identity, the Doctor is generic, and the Boy and Nana are not consistently re-grounded after elapsed-time transitions. Most action is filmable, but several montage paragraphs combine multiple actions or time changes, and the longest Skin Horse and Fairy speeches cannot fit a single 5\u201310-second clip without subdivision. Pacing remains emotionally coherent, and the layered ambient cues, peak sound beats, and recurring musical themes are exceptionally effective.",
+      "gpt-5.6-sol": "This version covers virtually the complete emotional and narrative spine, including the replacement bunny and the Boy\u0027s temporary removal to another bedroom. Hazel, Clover, Doctor Lewis, Nana, the Boy, the Fairy, and the Rabbit receive unusually strong, stable casting descriptions, with effective re-entry reminders and clearly tracked wear or recovery. The assigned names identify source-present roles rather than adding new characters, although minor fidelity slips include rainwater replacing garden dew and a golden flower apparently relocating to the wood glade. The action is concrete and animation-friendly, with especially strong transformation and memory imagery, but a few montage paragraphs still contain several clip-sized actions, and some source-faithful speeches exceed the 5\u201310-second delivery window. The structure escalates cleanly from neglect through love, rejection, threatened destruction, and liberation, while the recurring music-box motif, strategic musical cutoff, and detailed diegetic beds provide the strongest sound arc of the two drafts."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "High-fidelity adaptation that hits every major book beat (Christmas arrival, Skin Horse lesson, Nana bedtime handoff, Boy declaring him Real, wild-rabbit rejection, scarlet-fever vigil, sack/bonfire crisis, Fairy transformation, spring reunion) with book-close dialogue and only light closed-cast naming (Hazel/Clover, Doctor Lewis). Character looks are locked and restated on re-entry (Boy\u2019s chestnut bowl-cut, Nana\u2019s iron-gray bun/black dress/white apron, Rabbit\u2019s progressive shabbiness, Fairy\u2019s pearl-and-dewdrop dress). Action is concrete and clip-sized; every scene carries usable (SOUND)/(MUSIC) cues, denser at peaks. Minor deductions: multi-night compressions inside single headings slightly blur 5\u201310s clip boundaries; invented wild-rabbit names are small fidelity nits, not plot invention.",
+      "grok-4.5": "Equally faithful to the book\u2019s spine and iconic lines, with slightly less invented naming than A and solid Skin Horse / Fairy exchanges. Weaknesses concentrate in cast lock and directibility: Boy is only \u201Cfair hair, about seven\u201D then later \u201Ca little taller\u201D without restating traits; Nana\u2019s look is thin on re-entry; two wild rabbits share a single WILD RABBIT cue with no distinct builds/markings; several Action lines summarize spans (\u201CMonths of soft light and dust motes\u201D) rather than giving one observable moment per beat. Sound cues are present and adequate but thinner at emotional peaks than A. Still greenlightable, but needs a cast-consistency pass before AI clip production."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-sol": "Strongest: Screenplay B because it combines near-complete source coverage with exceptional cast locking, cleaner escalation, and a coherent musical strategy. Weakest: Screenplay A because its otherwise faithful adaptation contains an unresolved wild-rabbit identity collision and generic speaking-role tokens that prevent reliable reference-image assignment.",
+    "grok-4.5": "Strongest: Screenplay A because it delivers the tightest cast visual locks, re-entry restatements, clip-ready micro-beats, and densest sound/music scoring while staying faithful to the book. Weakest: Screenplay B because character appearance drifts across scenes and the wild rabbits lack distinct tokens/descriptions, which directly undermines AI reference-image consistency."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "Require a silent preflight cast audit before output: every speaking role must have one unique cast token, every simultaneously present same-species or same-role character must be individually distinguishable, and all required re-entry traits must be verified before the Fountain draft is emitted.",
+      "gpt-5.6-sol": "Add a hard beat-granularity rule that every action paragraph and dialogue or V.O. turn must fit one 5\u201310-second clip; cap spoken turns at roughly 20 words and split longer source passages or serial montage actions with separate observable micro-beats."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Require that when elapsed time is compressed inside one scene heading, each temporal jump be marked by an explicit one-line visual time-shift beat (light change, prop state, weather, or wardrobe wear) so downstream 5\u201310s clips never span multiple indistinct days.",
+      "grok-4.5": "Mandate that every on-screen speaking individual (including animals in a group) receive a unique ALL-CAPS token plus 2\u20133 locked visual traits at first appearance, and that those same traits be restated in the first Action line of every later scene after any heading break."
+    }
+  }
+}

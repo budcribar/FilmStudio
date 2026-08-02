@@ -1,0 +1,181 @@
+{
+  "schema_version": "adaptation_plan.v1",
+  "logline": "In Milwaukee, a younger brother living in the shadow of his feared older brother begins to awaken through a mysterious woman, family duty, and loss\u2014until years later he must decide whether forgiveness can free him from the past.",
+  "source_grounded_timeline": [
+    {
+      "period": "Childhood / early family life",
+      "events": "Dad leaves when narrator is about eight; brothers and Ma live in fifth-floor walk-up on Kirk Street, Milwaukee; Nick protects narrator and takes blame for broken window.",
+      "source_evidence": "I lived with him and Ma after dad took off when I was about eight. We lived downtown in a big brick apartment building on Kirk Street."
+    },
+    {
+      "period": "Adult present before Sionna",
+      "events": "Narrator works pizza job, cares for aging Ma; Nick works metal factory, drives 1980 Trans Am, dominates bars and gym.",
+      "source_evidence": "Nick has a job down at the local metal factory... He has a nice car and a pretty cool apartment down on Werner Street."
+    },
+    {
+      "period": "Meeting Sionna",
+      "events": "Girl trips into narrator outside pizza place; name Sionna; coffee at Java Hut; Wuthering Heights; dreams of past-life forest kiss.",
+      "source_evidence": "She kind of fell into me... \u201CSionna\u201D she said."
+    },
+    {
+      "period": "Ma decline and hospital",
+      "events": "Ma confused, high blood pressure, brief hospital stay; narrator and Sionna organize meds; fight with Nick escalates.",
+      "source_evidence": "Your mother\u2019s blood pressure is dangerously high... take her directly to the emergency room"
+    },
+    {
+      "period": "Bar confrontation",
+      "events": "At Joe\u2019s, Nick confronts Lindsey\u2019s new boyfriend; narrator intervenes; Nick nearly hits him; narrator runs to Sionna.",
+      "source_evidence": "I stepped up closer than I had ever dared to face Nick when he was in a state of rage."
+    },
+    {
+      "period": "Accident",
+      "events": "Nick, possibly drunk after church, crashes; Ma dies at scene; Nick seriously injured; toxicology pending.",
+      "source_evidence": "your brother is in serious condition at Frodo and your mother passed away at the scene."
+    },
+    {
+      "period": "Stabbing",
+      "events": "Nick blames Sionna, confronts her at duplex with switchblade; narrator arrives; Sionna is stabbed; Nick flees.",
+      "source_evidence": "The knife hits her hard and there is red flying out."
+    },
+    {
+      "period": "Aftermath / Seattle years later",
+      "events": "Sionna leaves after recovery; narrator builds pizza chain in Seattle; returns to forgive imprisoned Nick; name revealed as Peter Olson.",
+      "source_evidence": "I own a pizza chain in Seattle... \u201CThat\u2019s me. President Peter Olson.\u201D"
+    }
+  ],
+  "withheld_name_rules": {
+    "narrator_given_name": "Withhold on-screen and in dialogue until final beat; source reveals only at end as Peter Olson.",
+    "policy": "Use CHAR_NARRATOR / \u0027little brother\u0027 / \u0027Bro\u0027 until final title card or V.O. line matching source close.",
+    "source_evidence": "I whispered to myself, \u201CThat\u2019s me. President Peter Olson.\u201D"
+  },
+  "essential_beats": [
+    {
+      "beat_id": "BEAT_01_BROTHERS",
+      "description": "Establish Nick as feared modern Viking protector and narrator as caretaker of Ma on Kirk Street.",
+      "source_evidence": "Nick was the guy everybody was scared of... I lived with him and Ma"
+    },
+    {
+      "beat_id": "BEAT_02_SIONNA",
+      "description": "Chance collision outside pizza place; Sionna\u2019s eyes and fish necklace; coffee invitation.",
+      "source_evidence": "this girl tripped over the cement... She had on a necklace with some kind of fish symbol"
+    },
+    {
+      "beat_id": "BEAT_03_AWAKENING",
+      "description": "Library, Wuthering Heights, yoga, meditation; narrator feels himself becoming a person apart from Nick.",
+      "source_evidence": "Something inside of me was coming awake... I started to feel like a real person."
+    },
+    {
+      "beat_id": "BEAT_04_FRACTURE",
+      "description": "Missed doctor appointment; Nick rage; later Joe\u2019s almost-punch; narrator chooses Sionna\u2019s arms.",
+      "source_evidence": "Your brother tried to hit you."
+    },
+    {
+      "beat_id": "BEAT_05_CRASH",
+      "description": "Police messages; Ma dead at scene; Nick blamed; narrator\u2019s grief and hatred.",
+      "source_evidence": "your mother passed away at the scene... And Nick killed her."
+    },
+    {
+      "beat_id": "BEAT_06_BLADE",
+      "description": "Nick attacks Sionna; stabbing; narrator applies pressure; sirens.",
+      "source_evidence": "I found myself suddenly awake again, back up against the wall, trying to support her body weight"
+    },
+    {
+      "beat_id": "BEAT_07_FORGIVE",
+      "description": "Years later Seattle to Green Bay prison visit; narrator forgives Nick and reclaims self; name sealed.",
+      "source_evidence": "I forgive you, Nick, because it also releases your control over me forever"
+    }
+  ],
+  "scene_outline": [
+    {
+      "scene_id": "S01",
+      "location_key": "LOC_KIRK_APT",
+      "purpose": "Open on family gravity: Ma fragile, Nick dominant, narrator trapped in duty.",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_NICK",
+        "CHAR_MA"
+      ],
+      "source_evidence": "Someone has to be here with Ma. She\u2019s getting older and it\u2019s hard for her to see."
+    },
+    {
+      "scene_id": "S02",
+      "location_key": "LOC_PIZZA_SIDEWALK",
+      "purpose": "Meet Sionna; first spark of other life.",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_SIONNA"
+      ],
+      "source_evidence": "just as I was walking down the sidewalk and into the front door of the pizza place, this girl tripped"
+    },
+    {
+      "scene_id": "S03",
+      "location_key": "LOC_JAVA_HUT",
+      "purpose": "Conversation awakens mind; book talk; second date set.",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_SIONNA"
+      ],
+      "source_evidence": "We decided to meet downtown at a coffee shop called The Java Hut."
+    },
+    {
+      "scene_id": "S04",
+      "location_key": "LOC_KIRK_APT",
+      "purpose": "Ma confusion; Nick blames narrator; internal hate under loyalty.",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_NICK",
+        "CHAR_MA"
+      ],
+      "source_evidence": "I knew she would start going crazy cooped up in that place all day"
+    },
+    {
+      "scene_id": "S05",
+      "location_key": "LOC_JOES_BAR",
+      "purpose": "Public fracture; Nick almost strikes narrator; flight to Sionna.",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_NICK"
+      ],
+      "source_evidence": "his right fist slowly drawing back and moving toward my face"
+    },
+    {
+      "scene_id": "S06",
+      "location_key": "LOC_POLICE_STATION",
+      "purpose": "Accident revealed; Ma dead; Nick critical.",
+      "cast_keys": [
+        "CHAR_NARRATOR"
+      ],
+      "source_evidence": "your mother passed away at the scene"
+    },
+    {
+      "scene_id": "S07",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "purpose": "Nick\u2019s knife attack; narrator intervenes; blood.",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_NICK",
+        "CHAR_SIONNA"
+      ],
+      "source_evidence": "Holy shit, Nick, what the fuck are you doing?"
+    },
+    {
+      "scene_id": "S08",
+      "location_key": "LOC_SEATTLE_STREET",
+      "purpose": "Years later; successful but haunted; decision to return.",
+      "cast_keys": [
+        "CHAR_NARRATOR"
+      ],
+      "source_evidence": "I now had my own chain of pizzerias here in the Northwest."
+    },
+    {
+      "scene_id": "S09",
+      "location_key": "LOC_PRISON_VISIT",
+      "purpose": "Forgiveness speech; release; identity close.",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_NICK"
+      ],
+      "source_evidence": "I forgive you. I forgive you for being a huge asshole because it sets me free."
+    }
+  ]
+}

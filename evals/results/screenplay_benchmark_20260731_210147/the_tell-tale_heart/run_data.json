@@ -1,0 +1,138 @@
+{
+  "BookPath": "books\\The_Tell-Tale_Heart.txt",
+  "Timestamp": "2026-08-01 03:05:10 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 90.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 14,
+        "TotalDialogueBlocks": 49,
+        "AvgWordsPerDialogue": 19.7,
+        "MaxWordsInSingleDialogue": 34,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS",
+          "OFFICER HALE"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.5,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8.8,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 7.5,
+      "AvgSoundDesignMusic": 9,
+      "AvgOverallQualitative": 8.4,
+      "DisqualifyingFlags": [
+        "grok-4: Invented spoken dialogue for the Old Man not present in the source."
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 50,
+        "AvgWordsPerDialogue": 13.8,
+        "MaxWordsInSingleDialogue": 25,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 7.5,
+      "AvgAiVideoDirectibility": 6.8,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 7.7,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "grok-4.5": 8.5,
+      "gpt-5.6-terra": 7.4
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 8.08,
+      "grok-4.5": 8.25
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    },
+    "grok-4": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "grok-4.5": "Strong, near-complete coverage of Poe\u2019s beats (motive, seven nights, eighth-night standoff, kill, concealment, police, confession) with iconic diction preserved in V.O. and on-camera lines. Narrator and Old Man are locked with consistent, filmable traits; officers receive stable named tokens and brief looks. Action is concrete and clip-scalable, with excellent interleaving of micro-beats and heartbeat sound at the peak. Minor deductions for a few invented spoken lines (Old Man\u2019s \u2018Well enough,\u2019 brief officer banter) that the source only summarizes, and for a couple of denser scenes that pack many clip-units under one heading. Sound/music cues are specific, diegetic, and present in every scene, with peak density at the murder and confession.",
+      "gpt-5.6-terra": "Covers the full arc and keeps book wording tightly in V.O., with almost no invented dialogue\u2014stronger purity on that axis than A. Weaknesses: Narrator\u2019s full visual lock arrives late and thin; police remain an undifferentiated group (\u2018three POLICE OFFICERS\u2019) with no individual tokens or looks, hurting cast-reference stability; heavy stacked V.O. over sparse Action and a \u2018week passes in brief repetitions\u2019 montage reduce clip-level directibility; peak kill/confession has fewer interleaved visual micro-beats than the source density warrants. Sound cues are present and the heartbeat bed works, but overall show-don\u2019t-tell and casting clarity lag A enough to lower the average."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Stays extremely close to source text with almost no invented dialogue or events; however, long unbroken V.O. blocks and repeated identical scene headings reduce directibility and pacing for short-clip format.",
+      "grok-4.5": "Strong visual action lines, consistent character descriptions, and well-interleaved sound cues make it highly directible, but invented Old Man lines violate fidelity rules."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay A because it best balances fidelity, locked cast looks, clip-scalable action, and peak sound/visual density while remaining production-ready. Weakest: Screenplay B because stacked V.O., late/thin character locks, and unnamed group officers materially hurt AI directibility and casting clarity despite cleaner dialogue purity.",
+    "grok-4": "Strongest: Screenplay B because its action lines and sound cues are far more filmable in short clips despite one fidelity flaw. Weakest: Screenplay A because multiple unbroken V.O. paragraphs violate the short-clip constraint and make it less directible."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "grok-4.5": "Add an explicit hard rule that any exchange the book only summarizes without quoted speech must be carried by Action alone (zero invented spoken lines by default), allowing at most one brief generic line only when a mute gap would break the scene.",
+      "gpt-5.6-terra": "Mandate that every character\u2019s first on-screen appearance include a full locked visual description (build, hair/face, wardrobe) in that scene\u2019s opening Action, and require a concrete visual or diegetic-sound micro-beat after every two consecutive V.O. sentences so peaks cannot run as long narration over static images."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule that no more than two consecutive V.O. lines may appear without an intervening concrete visual or sound micro-beat action line.",
+      "grok-4.5": "Add an explicit rule that any summarized exchange or non-quoted speaker may receive at most one brief generic period-appropriate line, defaulting to zero when Action alone can carry the beat."
+    }
+  }
+}

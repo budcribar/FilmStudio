@@ -2,127 +2,43 @@
   "evaluations": [
     {
       "screenplayId": "Screenplay A",
-      "adaptationFidelity": 9,
-      "characterDisambiguation": 8.5,
-      "aiVideoDirectibility": 8.5,
-      "dramaticPacing": 8.5,
-      "dialogueAuthenticity": 9,
-      "soundDesignMusic": 9,
-      "overallQualitativeScore": 8.75,
-      "productionReady": true,
-      "disqualifyingIssues": [],
-      "rationale": "Near-complete coverage of the novel\u0027s spine from Santa Clara through the Ghost Dog coda, with book-faithful dialogue and dense interleaved (SOUND)/(MUSIC) cues on every scene. Character looks (Buck\u0027s white chest, red sweater, Mercedes/Hal/Charles) stay locked. Slight compression of secondary trail incidents and a few multi-beat scenes keep it just shy of perfect for 5-10s clip slicing, but it is the most production-ready full arc.",
-      "promptImprovementSuggestion": "Require that any scene intended for multi-clip coverage end each micro-beat on a single observable action or sound so editors can cut on the beat without rewriting action lines."
-    },
-    {
-      "screenplayId": "Screenplay B",
-      "adaptationFidelity": 8.5,
-      "characterDisambiguation": 8.5,
-      "aiVideoDirectibility": 8.5,
-      "dramaticPacing": 8,
-      "dialogueAuthenticity": 8.5,
-      "soundDesignMusic": 8,
-      "overallQualitativeScore": 8.33,
-      "productionReady": true,
-      "disqualifyingIssues": [],
-      "rationale": "Strong closed-cast naming (Harris, Murphy, Tom) and consistent Buck markings; hits kidnapping, club, Curly, Spitz death, Dave, Hal/Mercedes collapse, Thornton love, thousand-pound pull, Yeehats, and pack join. Slightly thinner on the mail-train middle and moose hunt than A/C, and a few scenes pack two locations, but still fully filmable and faithful.",
-      "promptImprovementSuggestion": "Add a hard rule that travel or time-compression montages must be written as 2-3 concrete micro-locations with their own headings rather than a single summary slug spanning days."
-    },
-    {
-      "screenplayId": "Screenplay C",
-      "adaptationFidelity": 7,
-      "characterDisambiguation": 8,
-      "aiVideoDirectibility": 7.5,
-      "dramaticPacing": 6,
-      "dialogueAuthenticity": 8.5,
-      "soundDesignMusic": 8.5,
-      "overallQualitativeScore": 7.58,
-      "productionReady": false,
-      "disqualifyingIssues": [
-        "Draft is truncated mid-moose-hunt and never reaches Yeehat attack, Thornton\u0027s death, or Ghost Dog ending",
-        "Opening estate scene is cut off mid-sentence"
-      ],
-      "rationale": "Best-in-class fidelity and sound design for the middle third (Le Barge invasion, Dolly madness, Spitz death, Dave\u0027s heartbreak, Hal/Mercedes cruelty, thousand-pound pull) with excellent book diction, but the screenplay literally ends mid-action on the moose hunt and omits the entire resolution. Unusable as a finished 10-minute film.",
-      "promptImprovementSuggestion": "Mandate an explicit end-to-end arc check: after the final action line the writer must confirm setup, crisis, and resolution are all present before emitting FADE OUT; reject any draft that stops mid-sequence."
-    },
-    {
-      "screenplayId": "Screenplay D",
-      "adaptationFidelity": 7.5,
-      "characterDisambiguation": 7,
-      "aiVideoDirectibility": 7,
-      "dramaticPacing": 7,
-      "dialogueAuthenticity": 7.5,
-      "soundDesignMusic": 7,
-      "overallQualitativeScore": 7.17,
-      "productionReady": false,
-      "disqualifyingIssues": [
-        "Skips or collapses major beats (Narwhal voyage, full mail-train arc, Forty-Mile rescue detail)",
-        "Generic character tokens (STRANGER, MAN IN RED SWEATER) and inconsistent Buck coat color"
-      ],
-      "rationale": "Covers the emotional spine and lands the Ghost Dog button, but compresses too aggressively, invents minor connective tissue, and lets cast looks drift (silk-black coat vs earlier dark). Sound cues exist but are thinner at peaks. Workable only after heavy revision.",
-      "promptImprovementSuggestion": "Strengthen the CHARACTER RE-ENTRY rule to require the same 2-3 locked visual traits on every reappearance and forbid epithet-only cues (MAN IN RED SWEATER) once a proper name token has been established."
-    },
-    {
-      "screenplayId": "Screenplay E",
-      "adaptationFidelity": 5,
-      "characterDisambiguation": 5.5,
-      "aiVideoDirectibility": 5,
-      "dramaticPacing": 4.5,
-      "dialogueAuthenticity": 6,
-      "soundDesignMusic": 5.5,
-      "overallQualitativeScore": 5.25,
-      "productionReady": false,
-      "disqualifyingIssues": [
-        "Severe compression that drops or summarizes entire chapters into single VO blocks",
-        "Multiple scenes cram several locations and time jumps into one heading",
-        "Weak cast locking and thin sound beds"
-      ],
-      "rationale": "Reads like a highlight reel rather than a screenplay: Curly, Spitz fight, Hal arc, Thornton, and ending are present but so telescoped that AI clip breakdown becomes impossible. Heavy reliance on NARRATOR summarizing action violates show-don\u0027t-tell and directibility.",
-      "promptImprovementSuggestion": "Cap NARRATOR VO at two short sentences per action beat and require every major plot turn (fight, death, rescue) to be carried by concrete visible action lines, not summary narration."
-    },
-    {
-      "screenplayId": "Screenplay F",
-      "adaptationFidelity": 8.5,
+      "adaptationFidelity": 8,
       "characterDisambiguation": 9,
       "aiVideoDirectibility": 8.5,
       "dramaticPacing": 8,
       "dialogueAuthenticity": 8.5,
-      "soundDesignMusic": 8,
+      "soundDesignMusic": 8.5,
       "overallQualitativeScore": 8.42,
       "productionReady": true,
       "disqualifyingIssues": [],
-      "rationale": "Excellent locked visual identity for Buck (dark sable, brown muzzle/brows, white blaze restated on re-entry) and clear supporting cast. Full arc with strong peak interleaving on Spitz fight, pull, and Yeehat attack. Slightly less dense sound design than A and minor trail compression, but highly directable and faithful.",
-      "promptImprovementSuggestion": "Require every scene, including quiet camp or travel beats, to carry at least one concrete diegetic (SOUND:) cue; forbid generic placeholders such as \u0027music plays\u0027."
+      "rationale": "Strong closed-cast adaptation with locked, repeatedly restated visual identity for Buck (sable coat, brown muzzle/brows, white blaze, weight changes) and clear first-looks for Thornton, Hal, Charles, Mercedes, Perrault, Francois, Skeet, and Nig. Scene headings are single concrete places suitable for 5\u201310s clips; action is camera-observable; book dialect and iconic lines are preserved; every scene carries usable (SOUND:) beds and peaks get multiple cues. Fidelity is high on the spine (kidnap \u2192 club \u2192 Curly \u2192 Spitz death \u2192 lead \u2192 Hal ordeal \u2192 Thornton \u2192 pull \u2192 Yeehats \u2192 pack) but compresses away Dave\u2019s harness death, the cliff jump, and the Forty-Mile rapids rescue, which costs a point on coverage without inventing plot. Pacing fits a ~10-minute cut without montage dumps. Production-ready as-is for the AI clip pipeline.",
+      "promptImprovementSuggestion": "Add an explicit compression rule: when cutting a long novel to short-film runtime, retain at least one concrete visual micro-beat for every major secondary death or iconic set-piece the source treats as a turning point; cut connective travel and repeated trail montage before cutting those peaks."
     },
     {
-      "screenplayId": "Screenplay G",
-      "adaptationFidelity": 6,
-      "characterDisambiguation": 6,
-      "aiVideoDirectibility": 6.5,
-      "dramaticPacing": 5.5,
-      "dialogueAuthenticity": 7,
-      "soundDesignMusic": 6,
-      "overallQualitativeScore": 6.17,
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 6.5,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 6,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 7.33,
       "productionReady": false,
       "disqualifyingIssues": [
-        "Omits or collapses large stretches (full kidnapping sequence detail, Dave\u0027s death, mail-train suffering, Forty-Mile rescue, thousand-pound wager staging)",
-        "Several multi-location scenes and thin cast descriptions"
+        "Multiple compound/multi-place scene headings (e.g. BAGGAGE CAR AND SAN FRANCISCO WATERFRONT SHED; ORCHARD AND COLLEGE PARK FLAG STATION; NORTHLAND TRAIL AND CAMPS; CLIFF CREST AND FORTY-MILE RAPIDS; EASTERN WILDERNESS AND SPRUCE-BOUGH CAMP) violate the hard one-concrete-place rule and break short-clip scheduling",
+        "Weak closed-cast tokens for speaking roles (STRANGER, SALOON-KEEPER, MAN IN RED SWEATER) without stable proper-name keys",
+        "Several beats written as summary montage paragraphs rather than ordered filmable actions, unusable as discrete 5\u201310s clips"
       ],
-      "rationale": "Hits iconic set-pieces (club, Spitz death, Thornton rescue, Yeehats, pack) with decent book lines, but the middle is gutted and many scenes are summary-heavy. Sound cues are sparse outside peaks. Not greenlight-ready without substantial expansion.",
-      "promptImprovementSuggestion": "Add an explicit minimum-beat checklist for novel-length sources: the adaptation must dramatize (not merely VO-summarize) the protagonist\u0027s three deepest losses or turning points before the finale."
+      "rationale": "Highest source coverage of the two: includes baggage-car struggle, Dave dying in harness, cliff whim-jump, rapids rope rescue, hairy-man visions, and full Yeehat/pack close, with strong book-voice dialogue and solid (SOUND:)/(MUSIC:) design including a strong aurora pack-song button. However, directibility collapses under compound location headings and DAY AND NIGHT slugs that cram multiple places and times into one unit, plus prose-summary stretches (\u201CMail train. Heavy toil. Dave\u2026\u201D) that are not shot lists. Character looks are locked once in Notes for Buck but rarely restated on re-entry; supporting speakers stay epithet-tokens rather than cast keys; Pete/Hans arrive thin. Excellent fidelity raw material that is not production-schedulable without a structural rewrite of headings and montage blocks.",
+      "promptImprovementSuggestion": "Make the single-place heading rule fail-closed with an explicit ban on compound headings that join two places with AND, slash, or comma, and require any multi-place sequence to be split into separate scene headings each followed by its own grounding Action line before dialogue or V.O."
     }
   ],
   "forcedRanking": [
     "Screenplay A",
-    "Screenplay F",
-    "Screenplay B",
-    "Screenplay C",
-    "Screenplay D",
-    "Screenplay G",
-    "Screenplay E"
+    "Screenplay B"
   ],
-  "judgeSummaryNotes": "Strongest: Screenplay A because it delivers the most complete, book-faithful arc with consistent cast locking, clip-friendly action, and rich per-scene sound design. Weakest: Screenplay E because extreme compression turns major chapters into unfilmable VO summaries and collapses multiple locations into single headings, making AI clip breakdown unusable.",
+  "judgeSummaryNotes": "Strongest: Screenplay A because it alone delivers single-location, clip-ready scenes with consistently re-locked character looks and no format deal-breakers while still hitting the emotional spine. Weakest: Screenplay B because compound multi-place headings and summary-montage blocks make it unusable for the short-clip pipeline despite superior beat coverage.",
   "isMock": false,
   "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
-  "screenplaysHash": "09DBFEFBDAE8B049AE1842FFE6E86D45D24F3757DD9B6820F5782563339F73D0"
+  "screenplaysHash": "4514900B399557FF974F5DB1ED87B2C54F578F30B397863AED36A4FD06871FA4"
 }

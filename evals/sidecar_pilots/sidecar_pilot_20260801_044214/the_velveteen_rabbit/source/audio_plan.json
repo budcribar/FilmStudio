@@ -1,0 +1,87 @@
+{
+  "schema_version": "audio_plan.v1",
+  "project_music_style": "Sparse chamber-lullaby score: soft strings, celesta or music-box colors, restrained woodwinds; warmth in love scenes, thin lonely textures at rejection and sack, luminous lift at Fairy without bombast.",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "score_intent": "Bright gentle Christmas chime settling into quieter forgotten toy motif.",
+      "timing": "Chime on stocking reveal; thin out under tissue-paper rush.",
+      "diegetic_sound": "Rustling tissue paper; unwrapping parcels; muted household dinner arrival.",
+      "silence_guidance": "Brief hold on forgotten Rabbit after noise peaks.",
+      "exclusions": "No comedy slapstick stings; no modern holiday pop.",
+      "source_evidence": "there was a great rustling of tissue paper and unwrapping of parcels"
+    },
+    {
+      "scene_id": "S02",
+      "score_intent": "Low wise pedal under Skin Horse; question motif for What is REAL?",
+      "timing": "Enter after they settle by fender; hold soft under dialogue.",
+      "diegetic_sound": "Small fire tick at fender if present; distant house hush before Nana tidy.",
+      "silence_guidance": "Leave air after Sometimes and It lasts for always.",
+      "exclusions": "No horror drones; no ticking clockwork dominance.",
+      "source_evidence": "when they were lying side by side near the nursery fender, before Nana came to tidy the room."
+    },
+    {
+      "scene_id": "S03",
+      "score_intent": "Hurry motif for Nana swoop resolving into soft acceptance as Rabbit enters arms.",
+      "timing": "Staccato under hunt refusal; warm sustain on put into arms.",
+      "diegetic_sound": "Cupboard door; fabric drag by ear; bed settle.",
+      "silence_guidance": "Short breath after He\u0027ll do to sleep with you!",
+      "exclusions": "No cruel impact hits on ear drag.",
+      "source_evidence": "she dragged the Rabbit out by one ear, and put him into the Boy\u0027s arms."
+    },
+    {
+      "scene_id": "S04",
+      "score_intent": "Intimate night lullaby; whispered-game sparkle.",
+      "timing": "Bedclothes tunnel play; resolve under chin snuggle.",
+      "diegetic_sound": "Whispers; bedclothes movement; night-light stillness; distant Nana supper leave.",
+      "silence_guidance": "Long quiet on clasped hands sleep.",
+      "exclusions": "No loud score over whispers.",
+      "source_evidence": "they had splendid games together, in whispers, when Nana had gone away to her supper and left the night-light burning on the mantelpiece."
+    },
+    {
+      "scene_id": "S05",
+      "score_intent": "Open air pastoral; dew anxiety; triumphant tender cadence on He\u0027s REAL!",
+      "timing": "Light day bed under garden play; thin cold on dusk lawn; swell on Boy\u0027s declaration.",
+      "diegetic_sound": "Wheelbarrow; birds; dew drip; Nana apron rub; candle outdoor search.",
+      "silence_guidance": "Beat of silence after He\u0027s REAL! before Rabbit happiness reaction.",
+      "exclusions": "No cartoon spring clich\u00E9s.",
+      "source_evidence": "He isn\u0027t a toy. He\u0027s REAL!"
+    },
+    {
+      "scene_id": "S06",
+      "score_intent": "Curious woodland texture turning exposed and thin on mockery; empty hold after flight.",
+      "timing": "Ant micro-sounds into wild rabbit entry; cut score almost out on He isn\u0027t real!; hollow sustain alone.",
+      "diegetic_sound": "Ant movement; soft pads; bracken sway; Boy footsteps; white-tail rush; moths later.",
+      "silence_guidance": "No answer after Come back and play with me!",
+      "exclusions": "No slapstick laugh track.",
+      "source_evidence": "But there was no answer, only the little ants ran to and fro, and the bracken swayed gently"
+    },
+    {
+      "scene_id": "S07",
+      "score_intent": "Feverish low pulse; loyal stillness; clinical cold on burn order.",
+      "timing": "Muted under illness; slight hope on recovery books; cut hard under doctor\u0027s Burn it.",
+      "diegetic_sound": "Restless sleep talk; footsteps of strange people; continuous light room tone; open window air; adult dialogue.",
+      "silence_guidance": "Rabbit stillness under bedclothes emphasized with reduced score.",
+      "exclusions": "No graphic medical sound design.",
+      "source_evidence": "a light burned all night and through it all the little Velveteen Rabbit lay there, hidden from sight under the bedclothes"
+    },
+    {
+      "scene_id": "S08",
+      "score_intent": "Bereft sparse line; single tear cadence; flower bloom luminescence; Fairy theme tender not grand.",
+      "timing": "Near-silence in sack; note on tear hit ground; harmonic open on blossom; lift on flight.",
+      "diegetic_sound": "Sack wriggle; night shiver cloth; distant garden quiet; flower open delicate; wing-air flight.",
+      "silence_guidance": "Hold after tear falls before flower appears.",
+      "exclusions": "No thunderous choir; no horror stingers.",
+      "source_evidence": "And a tear, a real tear, trickled down his little shabby velvet nose and fell to the ground."
+    },
+    {
+      "scene_id": "S09",
+      "score_intent": "Moon glade dance; transformation joy leaps; autumn-winter breathe; spring bittersweet recognition without full resolve.",
+      "timing": "Dance ring under Fairy speech; burst on first hind-leg scratch and leaps; gentle coda on Boy\u0027s thought.",
+      "diegetic_sound": "Rabbit feet on grass; bracken; later spring birds; soft peep of two rabbits.",
+      "silence_guidance": "Quiet on Boy\u0027s private thought; end on unresolved soft air so he never knows.",
+      "exclusions": "No triumphant fanfare that spoils withheld knowledge.",
+      "source_evidence": "But he never knew that it really was his own Bunny, come back to look at the child who had first helped him to be Real."
+    }
+  ]
+}

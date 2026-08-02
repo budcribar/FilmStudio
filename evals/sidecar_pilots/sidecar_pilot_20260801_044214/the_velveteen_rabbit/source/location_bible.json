@@ -1,0 +1,174 @@
+{
+  "schema_version": "location_bible.v1",
+  "render_style_lock": "Edwardian-leaning English house nursery and garden; soft natural light; tactile period detail; no modern objects.",
+  "locations": [
+    {
+      "key": "LOC_NURSERY",
+      "description": "Nursery with toy cupboard, floor space for toys, fender, mantelpiece night-light, stocking at Christmas, door Nana swoops through.",
+      "layout_anchors": [
+        "toy cupboard with door that can stand open",
+        "nursery fender where Rabbit and Skin Horse lie",
+        "mantelpiece for night-light",
+        "stocking area at Christmas"
+      ],
+      "lighting_states": [
+        "Christmas morning bright",
+        "day tidy light",
+        "night-light glow after Nana leaves",
+        "illness night continuous light"
+      ],
+      "persistent_props": [
+        "mechanical toys and model boat (background)",
+        "Timothy jointed wooden lion (background)",
+        "china dog (missing at bedtime)",
+        "tissue paper and parcels (Christmas)"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "LOC_NURSERY_HERO",
+          "shot_intent": "wide establishing cupboard, fender, bed approach",
+          "camera": "child-height wide",
+          "lens_feel": "soft storybook wide"
+        }
+      ],
+      "source_evidence": "For a long time he lived in the toy cupboard or on the nursery floor",
+      "scene_assignments": [
+        "S01",
+        "S02",
+        "S03",
+        "S07"
+      ]
+    },
+    {
+      "key": "LOC_BOY_BED",
+      "description": "The Boy\u0027s bed with bedclothes tunnels, pillow, close chin snuggle space; later fever bedclothes hiding place; tangled sheets when Boy is carried out.",
+      "layout_anchors": [
+        "pillow",
+        "bedclothes tunnels",
+        "chin/shoulder snuggle zone",
+        "view toward nursery activity"
+      ],
+      "lighting_states": [
+        "night-light",
+        "fever all-night light",
+        "bright sunny morning windows open"
+      ],
+      "persistent_props": [
+        "bedclothes",
+        "pillow",
+        "picture-books (recovery)"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "LOC_BED_CLOSE",
+          "shot_intent": "intimate Rabbit under chin / under clothes",
+          "camera": "very close tactile",
+          "lens_feel": "soft macro-leaning"
+        }
+      ],
+      "source_evidence": "the Velveteen Rabbit slept in the Boy\u0027s bed.",
+      "scene_assignments": [
+        "S04",
+        "S07"
+      ]
+    },
+    {
+      "key": "LOC_GARDEN",
+      "description": "Garden with lawn, flower border, raspberry canes, flower-bed burrows, wheelbarrow path; later path toward fowl-house end.",
+      "layout_anchors": [
+        "lawn",
+        "raspberry canes behind flower border",
+        "flower-bed burrows",
+        "wheelbarrow route"
+      ],
+      "lighting_states": [
+        "long spring day",
+        "dusk dew",
+        "candle search"
+      ],
+      "persistent_props": [
+        "wheelbarrow",
+        "raspberry canes",
+        "fairy huts under canes"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "LOC_GARDEN_SPRING",
+          "shot_intent": "Boy and Rabbit picnic and huts",
+          "camera": "gentle wide to close on dew Rabbit",
+          "lens_feel": "pastoral soft"
+        }
+      ],
+      "source_evidence": "they had long days in the garden, for wherever the Boy went the Rabbit went too.",
+      "scene_assignments": [
+        "S05"
+      ]
+    },
+    {
+      "key": "LOC_WOOD",
+      "description": "Wood near the house; bracken nests; ants in grass; open glade between trunks; velvet grass for dancing; moonlit frosted-silver fronds.",
+      "layout_anchors": [
+        "bracken nest",
+        "tall bracken entry for wild rabbits",
+        "open glade",
+        "tree-trunk ring"
+      ],
+      "lighting_states": [
+        "long June evening",
+        "sunken sun moth hour",
+        "moon risen silver",
+        "warm spring day later"
+      ],
+      "persistent_props": [
+        "bracken",
+        "ants",
+        "little white moths"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "LOC_WOOD_GLADE",
+          "shot_intent": "wild rabbits dancing then Fairy arrival",
+          "camera": "glade wide then Rabbit POV",
+          "lens_feel": "lyrical night"
+        }
+      ],
+      "source_evidence": "Near the house where they lived there was a wood",
+      "scene_assignments": [
+        "S06",
+        "S09"
+      ]
+    },
+    {
+      "key": "LOC_FOWL_HOUSE",
+      "description": "End of garden behind the fowl-house; bonfire corner; sack with picture-books and rubbish left untied; view to raspberry thicket; ground where tear grows mysterious flower.",
+      "layout_anchors": [
+        "fowl-house wall",
+        "sack corner",
+        "bonfire heap spot",
+        "ground for tear-flower",
+        "distant raspberry thicket"
+      ],
+      "lighting_states": [
+        "lonely night",
+        "moonrise beginning as Fairy flies"
+      ],
+      "persistent_props": [
+        "sack",
+        "old picture-books",
+        "rubbish heap"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "LOC_FOWL_TEAR",
+          "shot_intent": "Rabbit head from sack; tear; emerald-gold flower opens",
+          "camera": "low ground close",
+          "lens_feel": "magical still"
+        }
+      ],
+      "source_evidence": "carried out to the end of the garden behind the fowl-house.",
+      "scene_assignments": [
+        "S08"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "schema_version": "edit_decision_list.v1",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "location_key": "LOC_KIRK_APT",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult_milwaukee",
+        "CHAR_NICK.adult_prime",
+        "CHAR_MA.decline_era"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_PIZZA",
+        "WR_NICK_STREET",
+        "WR_MA_HOME"
+      ],
+      "purpose": "Establish hierarchy and duty.",
+      "estimated_seconds": 45,
+      "clip_beats": [
+        "grocery climb memory flash",
+        "Nick fills frame",
+        "Ma in chair"
+      ]
+    },
+    {
+      "scene_id": "S02",
+      "location_key": "LOC_PIZZA_SIDEWALK",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult_milwaukee",
+        "CHAR_SIONNA.meet_era"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_PIZZA",
+        "WR_SIONNA_MEET"
+      ],
+      "purpose": "Inciting meeting.",
+      "estimated_seconds": 40,
+      "clip_beats": [
+        "trip brush",
+        "eyes",
+        "number exchange action",
+        "look back"
+      ]
+    },
+    {
+      "scene_id": "S03",
+      "location_key": "LOC_LIBRARY",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult_milwaukee"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_PIZZA"
+      ],
+      "purpose": "Secret self begins.",
+      "estimated_seconds": 35,
+      "clip_beats": [
+        "card form",
+        "classics aisle",
+        "Wuthering Heights checkout"
+      ]
+    },
+    {
+      "scene_id": "S04",
+      "location_key": "LOC_JAVA_HUT",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult_milwaukee",
+        "CHAR_SIONNA.meet_era"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_DATE",
+        "WR_SIONNA_JAVA"
+      ],
+      "purpose": "Mind opens; Nick parallel.",
+      "estimated_seconds": 50,
+      "clip_beats": [
+        "eyes lose time",
+        "book talk",
+        "walk to bus thinking of Ma/Dad"
+      ]
+    },
+    {
+      "scene_id": "S05",
+      "location_key": "LOC_KIRK_APT",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult_milwaukee",
+        "CHAR_MA.decline_era",
+        "CHAR_NICK.adult_prime"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_PIZZA",
+        "WR_MA_HOME",
+        "WR_NICK_STREET"
+      ],
+      "purpose": "Care burden and Nick pressure.",
+      "estimated_seconds": 40,
+      "clip_beats": [
+        "glassy Ma",
+        "pills found",
+        "Nick anger over doctor miss compress"
+      ]
+    },
+    {
+      "scene_id": "S06",
+      "location_key": "LOC_JOES_BAR",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult_milwaukee",
+        "CHAR_NICK.adult_prime"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_DATE",
+        "WR_NICK_STREET"
+      ],
+      "purpose": "Public rupture.",
+      "estimated_seconds": 55,
+      "clip_beats": [
+        "Lindsey beat",
+        "narrator steps in",
+        "fist slow-mo",
+        "run"
+      ]
+    },
+    {
+      "scene_id": "S07",
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult_milwaukee",
+        "CHAR_SIONNA.meet_era",
+        "CHAR_NICK.adult_prime"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_DATE",
+        "WR_SIONNA_HOME",
+        "WR_NICK_STREET"
+      ],
+      "purpose": "Love refuge then stabbing.",
+      "estimated_seconds": 70,
+      "clip_beats": [
+        "couch comfort after bar",
+        "time cut to Nick door",
+        "wall press knife",
+        "narrator enters blood",
+        "Nick flees"
+      ]
+    },
+    {
+      "scene_id": "S08",
+      "location_key": "LOC_POLICE_HOSPITAL",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.young_adult_milwaukee",
+        "CHAR_NICK.hospital_injured"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_PIZZA",
+        "WR_NICK_HOSPITAL"
+      ],
+      "purpose": "Ma death; refuse full bedside bond.",
+      "estimated_seconds": 45,
+      "clip_beats": [
+        "messages",
+        "officer news",
+        "ICU window refuse enter",
+        "empty Ma chair scream"
+      ]
+    },
+    {
+      "scene_id": "S09",
+      "location_key": "LOC_SEATTLE_PRESENT",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.adult_seattle_plus7y"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_SEATTLE"
+      ],
+      "purpose": "New life; choose forgiveness trip.",
+      "estimated_seconds": 40,
+      "clip_beats": [
+        "Tony\u2019s Boy\u2019s Pizza",
+        "yoga",
+        "sage dream insert",
+        "book flight"
+      ]
+    },
+    {
+      "scene_id": "S10",
+      "location_key": "LOC_PRISON_GREENBAY",
+      "cast_variant_keys": [
+        "CHAR_NARRATOR.adult_seattle_plus7y",
+        "CHAR_NICK.prison_plus8y"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NARR_PRISON_VISIT",
+        "WR_NICK_PRISON"
+      ],
+      "purpose": "Forgive; name; close.",
+      "estimated_seconds": 60,
+      "clip_beats": [
+        "glass sit",
+        "asshole then forgive",
+        "Nick tears",
+        "President Peter Olson whisper",
+        "exit light"
+      ]
+    }
+  ]
+}

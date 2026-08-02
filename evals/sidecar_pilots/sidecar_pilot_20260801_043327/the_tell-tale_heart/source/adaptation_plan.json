@@ -1,0 +1,174 @@
+{
+  "schema_version": "adaptation_plan.v1",
+  "logline": "A nervous caretaker, tormented by an old man\u2019s filmed pale-blue eye, murders him after midnight vigils, conceals the body beneath the floorboards, then confesses when he believes police can hear the dead heart still beating.",
+  "source_grounded_timeline": [
+    {
+      "beat_id": "T1",
+      "summary": "Narrator insists he is nervous but not mad; hearing is over-acute.",
+      "source_evidence": "True!\u2014nervous\u2014very, very dreadfully nervous I had been and am; but why will you say that I am mad?"
+    },
+    {
+      "beat_id": "T2",
+      "summary": "Motive forms around the old man\u2019s vulture-like pale blue filmed eye; narrator loves the man but resolves to kill him to be rid of the eye.",
+      "source_evidence": "I think it was his eye! yes, it was this! He had the eye of a vulture\u2014a pale blue eye, with a film over it."
+    },
+    {
+      "beat_id": "T3",
+      "summary": "For seven nights at midnight narrator opens the door, thrusts in a dark lantern, and seeks the open eye; each morning he is kindly.",
+      "source_evidence": "And this I did for seven long nights\u2014every night just at midnight\u2014but I found the eye always closed"
+    },
+    {
+      "beat_id": "T4",
+      "summary": "Eighth night: door opened with extreme caution; old man startles; narrator freezes an hour after \u201CWho\u2019s there?\u201D",
+      "source_evidence": "my thumb slipped upon the tin fastening, and the old man sprang up in bed, crying out\u2014\u201CWho\u2019s there?\u201D"
+    },
+    {
+      "beat_id": "T5",
+      "summary": "Lantern ray hits the open Evil Eye; narrator hears the old man\u2019s heart like a watch in cotton; leaps, kills him under the bed.",
+      "source_evidence": "In an instant I dragged him to the floor, and pulled the heavy bed over him."
+    },
+    {
+      "beat_id": "T6",
+      "summary": "Body dismembered; parts hidden under three floor planks; tub catches blood; no stains.",
+      "source_evidence": "I then took up three planks from the flooring of the chamber, and deposited all between the scantlings."
+    },
+    {
+      "beat_id": "T7",
+      "summary": "At four o\u2019clock police arrive after a neighbour heard a shriek; narrator tours them and sits above the corpse.",
+      "source_evidence": "there came a knocking at the street door... three men, who introduced themselves... as officers of the police."
+    },
+    {
+      "beat_id": "T8",
+      "summary": "Imagined heartbeat grows; narrator raves and confesses, demanding the planks be torn up.",
+      "source_evidence": "\u201CVillains!\u201D I shrieked, \u201Cdissemble no more! I admit the deed!\u2014tear up the planks!\u2014here, here!\u2014It is the beating of his hideous heart!\u201D"
+    }
+  ],
+  "withheld_name_rules": {
+    "policy": "Source withholds personal names for narrator and old man; keep them unnamed on screen and in credits of character.",
+    "rules": [
+      "Do not assign a proper given name to the narrator or the old man.",
+      "Police may be addressed only as officers; no invented individual names.",
+      "Neighbour remains offscreen/unseen unless strictly required as sound motivation."
+    ],
+    "source_evidence": "calling him by name in a hearty tone"
+  },
+  "essential_beats": [
+    {
+      "beat_id": "B1",
+      "description": "Opening claim of sanity and acute hearing.",
+      "characters": [
+        "CHAR_NARRATOR"
+      ],
+      "location": "LOC_HOUSE_INTERIOR",
+      "source_evidence": "Above all was the sense of hearing acute."
+    },
+    {
+      "beat_id": "B2",
+      "description": "The eye identified as sole motive.",
+      "characters": [
+        "CHAR_NARRATOR",
+        "CHAR_OLD_MAN"
+      ],
+      "location": "LOC_OLD_MAN_CHAMBER",
+      "source_evidence": "Whenever it fell upon me, my blood ran cold"
+    },
+    {
+      "beat_id": "B3",
+      "description": "Seven midnight lantern vigils; eye closed.",
+      "characters": [
+        "CHAR_NARRATOR",
+        "CHAR_OLD_MAN"
+      ],
+      "location": "LOC_OLD_MAN_CHAMBER",
+      "source_evidence": "I put in a dark lantern, all closed, closed, that no light shone out"
+    },
+    {
+      "beat_id": "B4",
+      "description": "Eighth night discovery, heart-sound, murder under bed.",
+      "characters": [
+        "CHAR_NARRATOR",
+        "CHAR_OLD_MAN"
+      ],
+      "location": "LOC_OLD_MAN_CHAMBER",
+      "source_evidence": "a low, dull, quick sound, such as a watch makes when enveloped in cotton."
+    },
+    {
+      "beat_id": "B5",
+      "description": "Dismemberment and floorboard concealment.",
+      "characters": [
+        "CHAR_NARRATOR"
+      ],
+      "location": "LOC_OLD_MAN_CHAMBER",
+      "source_evidence": "First of all I dismembered the corpse. I cut off the head and the arms and the legs."
+    },
+    {
+      "beat_id": "B6",
+      "description": "Police search; narrator sits on burial spot; auditory breakdown and confession.",
+      "characters": [
+        "CHAR_NARRATOR",
+        "CHAR_OFFICER_A",
+        "CHAR_OFFICER_B",
+        "CHAR_OFFICER_C"
+      ],
+      "location": "LOC_OLD_MAN_CHAMBER",
+      "source_evidence": "placed my own seat upon the very spot beneath which reposed the corpse of the victim."
+    }
+  ],
+  "scene_outline": [
+    {
+      "scene_id": "S1",
+      "heading": "INT. HOUSE - NIGHT",
+      "purpose": "Establish narrator\u2019s address to an unseen listener and dread of madness accusation.",
+      "location_key": "LOC_HOUSE_INTERIOR",
+      "cast_keys": [
+        "CHAR_NARRATOR"
+      ],
+      "source_evidence": "how healthily\u2014how calmly I can tell you the whole story."
+    },
+    {
+      "scene_id": "S2",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - DAY/NIGHT MONTAGE",
+      "purpose": "Show kindness by day and seven cautious midnight inspections with lantern ray.",
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_OLD_MAN"
+      ],
+      "source_evidence": "I was never kinder to the old man than during the whole week before I killed him."
+    },
+    {
+      "scene_id": "S3",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - NIGHT (EIGHTH)",
+      "purpose": "Eighth entry, startle, hour of stillness, open eye, heartbeat, killing.",
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_OLD_MAN"
+      ],
+      "source_evidence": "Upon the eighth night I was more than usually cautious in opening the door."
+    },
+    {
+      "scene_id": "S4",
+      "heading": "INT. OLD MAN\u0027S CHAMBER - NIGHT (AFTER)",
+      "purpose": "Concealment under planks; tub; four o\u2019clock.",
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "cast_keys": [
+        "CHAR_NARRATOR"
+      ],
+      "source_evidence": "When I had made an end of these labors, it was four o\u2019clock\u2014still dark as midnight."
+    },
+    {
+      "scene_id": "S5",
+      "heading": "INT. HOUSE STREET DOOR / CHAMBER - PREDAWN",
+      "purpose": "Police arrival, tour, seated chat over corpse, rising pulse-sound, confession.",
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "cast_keys": [
+        "CHAR_NARRATOR",
+        "CHAR_OFFICER_A",
+        "CHAR_OFFICER_B",
+        "CHAR_OFFICER_C"
+      ],
+      "source_evidence": "A shriek had been heard by a neighbour during the night; suspicion of foul play had been aroused"
+    }
+  ]
+}

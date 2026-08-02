@@ -1,0 +1,25 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong full-arc fidelity from Kirk Street setup through Sionna, Ma\u2019s decline, the bar rupture, the crash, the stabbing, Seattle aftermath, and the prison forgiveness/button, with book diction largely preserved in dialogue and V.O. and no major invented plot. Cast looks lock well (Nick\u2019s scars/hair/build, Sionna\u2019s eyes/necklace, YOUNG NICK vs adult, older Seattle/prison variants). Directibility is mostly concrete but several scenes stack multi-location or multi-beat action under heavy V.O., and nonstandard headings like DREAM - BATTLEFIELD weaken clip scheduling. Pacing hits the emotional peaks but rushes connective tissue across a very large scene count for a ~10-minute target. Dialogue is character-distinct and clip-length friendly. Sound design is the standout: nearly every scene carries explicit diegetic (SOUND:) cues, with denser beds at peaks.",
+      "promptImprovementSuggestion": "Add a hard rule that each scene may contain at most 2\u20133 distinct camera-observable micro-beats (suitable for 5\u201310s clips) and that any V.O. block longer than two short sentences must be broken by a new visual or sound micro-beat or a new scene heading\u2014never leave multi-minute internal arc as continuous V.O. over one static image."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it alone is present and delivers a faithful closed-cast full-arc Fountain cut with excellent sound cues and clear character locks. Weakest: Screenplay A because the same draft still over-packs V.O. and multi-beat scenes for short-clip AI direction and rushes mid-to-late structure.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "4F5C708DECEFF9C403446D0CFADD5DBA26BAFFB63546F4CE954251E75E214FF5"
+}

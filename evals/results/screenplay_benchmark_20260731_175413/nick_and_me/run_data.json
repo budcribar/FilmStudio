@@ -1,0 +1,90 @@
+{
+  "BookPath": "books\\Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 23:55:54 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 25,
+        "TotalDialogueBlocks": 119,
+        "AvgWordsPerDialogue": 10.2,
+        "MaxWordsInSingleDialogue": 25,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR V.O.",
+          "NICK",
+          "NARRATOR",
+          "SIONNA",
+          "LIBRARIAN MARGARET",
+          "LINDSEY\u0027S BOYFRIEND",
+          "MA",
+          "OFFICER DUPUIS",
+          "YOGA INSTRUCTOR ANIKA"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 2 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 8.2,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 8.8,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-terra": 7.75
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 8.67
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-terra": 1
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 1
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-terra": "Covers the full spine (Nick/Ma setup, Sionna meet-cute, library/Java Hut awakening, bar confrontation, crash/Ma death, stabbing, Seattle aftermath, prison forgiveness) without major invented plot. Compression drops secondary threads (yoga comedy, Buddhism depth, farm trip, extended Nick POV) but keeps essential turns. Character looks are mostly locked (Nick scars/hair/boots; Sionna pale/blue eyes; Ma afghan/pills) and age for Narrator/Nick is restated at the Seattle and prison jumps, but LINDSEY\u0027S BOYFRIEND is an unstable cast token and several re-entries under-specify wardrobe. Action is generally clip-sized and camera-observable, though several scenes lean hard on V.O. restating what we already see and the bar/stab peaks pack multiple micro-beats tightly. Pacing hits the arc but scene count is high for a ~10-minute cut, so momentum thins in the middle montage of caretaking/school beats. Dialogue stays close to book diction and clip-length. Sound design is the strongest dimension: nearly every scene has concrete diegetic (SOUND:) cues, with multi-cue density on crash and stabbing."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Strong fidelity to source beats and themes with consistent character visuals, concrete filmable actions, natural short dialogue, and mandatory audio cues in every scene; minor compression of some internal reflection keeps runtime tight without invention."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay A because it is the only candidate and delivers a complete, filmable Fountain arc with strong diegetic sound coverage and faithful peak beats (crash, stabbing, prison forgiveness). Weakest: Screenplay A because high scene density plus V.O.-heavy connective tissue and one unstable supporting cast token (LINDSEY\u0027S BOYFRIEND) keep it from being exceptional on pacing and casting clarity.",
+    "grok-4": "Strongest: Screenplay A because it delivers high fidelity, locked character visuals, and required audio cues across all scenes. Weakest: N/A (only one candidate provided)."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-terra": "Add an explicit rule that any supporting speaker must receive a stable personal name token on first cue (e.g. MARCO, not LINDSEY\u0027S BOYFRIEND / THE BOYFRIEND) and that after any multi-year time jump the first Action line must restate 2\u20133 locked visual traits for every returning principal before dialogue or V.O."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule requiring every scene to end with a single concrete visual or sonic micro-beat that can stand alone as a 5-10 second clip."
+    }
+  }
+}

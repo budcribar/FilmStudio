@@ -1,0 +1,42 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 7.75,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Recurring 50-90-word monologue and V.O. blocks, along with multi-action paragraphs such as the concealment sequence, are not atomized into beats that can reliably fit 5-10-second clips."
+      ],
+      "rationale": "This is the more comprehensive adaptation, preserving the opening defense, the eye motive, seven-night ritual, eighth-night vigil, mortal-terror groan, heartbeat escalation, murder, dismemberment, police search, breakdown, and confession with remarkably close Poe diction. The neutral recurring chamber frame is appropriate, and the principal looks and locations remain stable, although the three officers receive comparatively thin individual visual locks. Its greatest weakness is clip structure: several speeches require 20-40 seconds of performance, while some Action paragraphs bundle numerous sequential shots. Those choices slow an otherwise effective escalation and would require editorial restructuring before clip generation. Dialogue is highly authentic but insufficiently concise, with a few unnecessary invented lines during the morning and police sequences. Sound direction is excellent, using creaks, insects, breath, lantern hardware, silence, heartbeat, and restrained music to shape the entire arc.",
+      "promptImprovementSuggestion": "Add a HARD clip-atomization rule limiting each dialogue or V.O. turn to approximately 24 spoken words and each Action paragraph to one sequential camera-observable beat; require longer passages to be split by a new visual or sound micro-beat."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 0,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "The screenplay retains the complete narrative spine and most iconic language while organizing the material into cleaner, shorter visual and vocal units. It slightly reduces fidelity by omitting the explicit repeated morning-inquiry routine and some of the narrator\u0027s psychological elaboration, while the interrogation setting, silver watch, and stopped-watch ending are source-adjacent inventions rather than major plot changes. Principal and supporting characters receive distinct, stable visual introductions, particularly the individually differentiated officers. Most Action lines isolate a single observable event, and the interrogation cutbacks give long narration visual rhythm, though a few opening speeches and the seven-night montage remain marginally too dense for one short clip. The heartbeat progression, murder, police interview, and confession are paced with strong escalation. Dialogue remains close to Poe and is appreciably more performable than in Screenplay A. Diegetic sound design is cohesive and sophisticated, but the complete absence of explicit MUSIC cues leaves the background-score strategy unspecified.",
+      "promptImprovementSuggestion": "Change the audio rule so every major dramatic sequence must include an explicit score decision\u2014either a MUSIC entry, development, and exit or a clear MUSIC: no score instruction\u2014rather than permitting SOUND-only cues to provide the entire audio plan."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because its cleaner beat atomization, sharper escalation, and more distinct casting locks make it the most immediately usable short-clip production draft. Weakest: Screenplay A because its excellent fidelity and sound work are undermined by long monologue blocks and bundled action sequences that cannot be generated reliably as individual 5-10-second clips.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "161E6949A4B24842845FE5D7EBD704D1B092391B5219154A0D36BA54C3C2BF81"
+}

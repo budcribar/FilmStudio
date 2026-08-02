@@ -1,0 +1,96 @@
+{
+  "schema_version": "audio_plan.v1",
+  "project_music_style": "Sparse Midwest guitar and low drone; no needle-drops required; diegetic bar rock only where source places AC/DC-like bed; Seattle cues thinner ambient rain",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "score_intent": "Heavy familial gravity; distant city.",
+      "timing": "under establishing VO",
+      "diegetic_sound": "apartment TV game show murmur; hallway echo",
+      "silence_guidance": "let Ma\u2019s quiet breathe",
+      "exclusions": "no heroic theme for Nick",
+      "source_evidence": "All she wants to do is watch game shows"
+    },
+    {
+      "scene_id": "S02",
+      "score_intent": "Soft unexpected lift on eye contact.",
+      "timing": "enter on shoulder brush",
+      "diegetic_sound": "street; pizza door chime optional",
+      "silence_guidance": "hold after she looks back over shoulder",
+      "exclusions": "no rom-com swell",
+      "source_evidence": "When she walked away from me, she looked back over her shoulder"
+    },
+    {
+      "scene_id": "S03",
+      "score_intent": "Curious hush; old-wood resonance.",
+      "timing": "stacks wander",
+      "diegetic_sound": "page turns; desk stamp",
+      "silence_guidance": "library quiet dominant",
+      "exclusions": "no comedy sting on card",
+      "source_evidence": "It smelled kind of old, but there was something attractive about it too."
+    },
+    {
+      "scene_id": "S04",
+      "score_intent": "Warm intellectual intimacy.",
+      "timing": "under symbols talk",
+      "diegetic_sound": "espresso machine distant; cup sets",
+      "silence_guidance": "pause on \u201Clove that never changes will destroy you\u201D idea",
+      "exclusions": "no lyric song competing with VO",
+      "source_evidence": "She talked to me about symbols in the book"
+    },
+    {
+      "scene_id": "S05",
+      "score_intent": "Unease; thin high tone on glassy eyes.",
+      "timing": "Ma confusion",
+      "diegetic_sound": "pill bottles; fridge hum",
+      "silence_guidance": "after empty-eye look",
+      "exclusions": "no horror stingers",
+      "source_evidence": "Her eyes were all glassy and looked really empty."
+    },
+    {
+      "scene_id": "S06",
+      "score_intent": "Diegetic rock bed; score drops out for confrontation.",
+      "timing": "cut score when Nick approaches Lindsey",
+      "diegetic_sound": "crowd; pool balls; AC/DC-like track as source notes; fists ambient",
+      "silence_guidance": "slow-motion fist almost silent except heartbeat",
+      "exclusions": "no glorifying fight music",
+      "source_evidence": "An old AC-DC song blared through"
+    },
+    {
+      "scene_id": "S07",
+      "score_intent": "Refuge calm then sudden violence cut to raw foley.",
+      "timing": "knife open without score",
+      "diegetic_sound": "door thunk; squeaks; blade; blood; running feet later",
+      "silence_guidance": "after stab before sirens",
+      "exclusions": "no thriller chase theme for Nick exit",
+      "source_evidence": "She\u2019s making squeaking noises like a dying animal."
+    },
+    {
+      "scene_id": "S08",
+      "score_intent": "Hollow shock; hospital beeps only.",
+      "timing": "after officer line",
+      "diegetic_sound": "station walla; ICU monitors; distant siren memory",
+      "silence_guidance": "narrator cannot hear officer after death news",
+      "exclusions": "no sentimental strings on Ma death",
+      "source_evidence": "He continued to talk, but I have no recollection of what he said."
+    },
+    {
+      "scene_id": "S09",
+      "score_intent": "Cool Seattle openness; residual ache.",
+      "timing": "walk and yoga gratefulness",
+      "diegetic_sound": "rain mist; ferry horn distant; cat purr",
+      "silence_guidance": "after sage dream smile",
+      "exclusions": "no triumphant montage music yet",
+      "source_evidence": "The sky is a thick gray blanket"
+    },
+    {
+      "scene_id": "S10",
+      "score_intent": "Bare; human breath and phone line; gentle release after forgive.",
+      "timing": "cue only after hang-up",
+      "diegetic_sound": "locks; muffled voices; phone plastic; tears hit counter",
+      "silence_guidance": "long hold on yellow receiver",
+      "exclusions": "no revenge score",
+      "source_evidence": "I forgive you, Nick, because it also releases your control over me forever"
+    }
+  ]
+}

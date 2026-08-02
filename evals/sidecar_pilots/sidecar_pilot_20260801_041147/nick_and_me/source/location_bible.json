@@ -1,0 +1,220 @@
+{
+  "schema_version": "location_bible.v1",
+  "render_style_lock": "Practical Milwaukee brick and neon grit; warm tungsten interiors; cold blue night exteriors; Seattle mist grey present-day",
+  "locations": [
+    {
+      "location_key": "LOC_KIRK_APT",
+      "description": "Fifth-floor walk-up big brick apartment on Kirk Street; living room with Ma\u2019s chair, TV, overstuffed brown chair; kitchen counter pill line.",
+      "layout_anchors": [
+        "front door slam path",
+        "Ma chair facing TV",
+        "kitchen counter pill bottles in line",
+        "bedroom hallway"
+      ],
+      "lighting_states": [
+        "day_flat_overcast",
+        "night_tv_glow",
+        "empty_after_death"
+      ],
+      "persistent_props": [
+        "afghan",
+        "blue weekly pill container",
+        "game-show TV"
+      ],
+      "image_briefs": [
+        "Wide of worn living room with Ma chair",
+        "Close pill bottles in straight line"
+      ],
+      "source_evidence": "big brick apartment building on Kirk Street. A fifth-floor walk-up",
+      "scene_assignments": [
+        "S01",
+        "S05"
+      ]
+    },
+    {
+      "location_key": "LOC_PIZZA_SIDEWALK",
+      "description": "Front sidewalk and door of narrator\u2019s pizza workplace; cement trip hazard.",
+      "layout_anchors": [
+        "front door",
+        "sidewalk cement edge",
+        "street beyond"
+      ],
+      "lighting_states": [
+        "day_work_arrival"
+      ],
+      "persistent_props": [
+        "pizza place front glass"
+      ],
+      "image_briefs": [
+        "Sidewalk collision framing two figures"
+      ],
+      "source_evidence": "walking down the sidewalk and into the front door of the pizza place",
+      "scene_assignments": [
+        "S02"
+      ]
+    },
+    {
+      "location_key": "LOC_LIBRARY",
+      "description": "Old public library; wood floors; big windows; chain-hung lights; classic literature stacks.",
+      "layout_anchors": [
+        "front desk",
+        "stairs to another floor",
+        "classic literature aisle"
+      ],
+      "lighting_states": [
+        "night_open_to_9"
+      ],
+      "persistent_props": [
+        "temporary paper library card",
+        "Wuthering Heights volume"
+      ],
+      "image_briefs": [
+        "Aisles under old hanging lights"
+      ],
+      "source_evidence": "Old lights hung down on metal chains from the ceiling... classic literature",
+      "scene_assignments": [
+        "S03"
+      ]
+    },
+    {
+      "location_key": "LOC_JAVA_HUT",
+      "description": "College-coded coffee shop; backpacks; small back wall table.",
+      "layout_anchors": [
+        "back wall small table",
+        "entrance sightline to Sionna"
+      ],
+      "lighting_states": [
+        "day_interior_warm"
+      ],
+      "persistent_props": [
+        "coffee cups",
+        "backpacks"
+      ],
+      "image_briefs": [
+        "Two-shot at small table; her light blue eyes catch light"
+      ],
+      "source_evidence": "coffee shop called The Java Hut... saw her near the wall in the back at a small table",
+      "scene_assignments": [
+        "S04"
+      ]
+    },
+    {
+      "location_key": "LOC_JOES_BAR",
+      "description": "Joe\u2019s Bar and Grill; bar right, pool room left; smoke; loud rock; waitresses jeans/white blouses.",
+      "layout_anchors": [
+        "bar rail",
+        "pool room threshold",
+        "exit path for running"
+      ],
+      "lighting_states": [
+        "saturday_night_neon_smoke"
+      ],
+      "persistent_props": [
+        "pool cues",
+        "Jack and Coke glass",
+        "TV stack"
+      ],
+      "image_briefs": [
+        "Crowd parts for Nick; tight on fist draw"
+      ],
+      "source_evidence": "Joe\u2019s Bar and Grill... room to the left, smoking and holding cue sticks",
+      "scene_assignments": [
+        "S06"
+      ]
+    },
+    {
+      "location_key": "LOC_SIONNA_DUPLEX",
+      "description": "Old duplex right side; lumpy chocolate couch; hallway to kitchen; later blood on wood floor.",
+      "layout_anchors": [
+        "front door crack",
+        "hallway wall",
+        "green suede sofa earlier refuge"
+      ],
+      "lighting_states": [
+        "night_lamp",
+        "stabbing_harsh"
+      ],
+      "persistent_props": [
+        "flower candle",
+        "gray cat",
+        "ceramic pipe earlier optional cut"
+      ],
+      "image_briefs": [
+        "Door crack open on Nick",
+        "Hallway wall press; knife glint"
+      ],
+      "source_evidence": "The house was an old duplex. She rented the right side",
+      "scene_assignments": [
+        "S07"
+      ]
+    },
+    {
+      "location_key": "LOC_POLICE_HOSPITAL",
+      "description": "Ancient stone police station then hospital ICU; machines; Nick\u2019s hair above mattress.",
+      "layout_anchors": [
+        "station counter",
+        "ICU window view of Nick bed"
+      ],
+      "lighting_states": [
+        "fluorescent_shock"
+      ],
+      "persistent_props": [
+        "styrofoam water cup",
+        "chest tube box"
+      ],
+      "image_briefs": [
+        "Officer news beat; ICU glass barrier"
+      ],
+      "source_evidence": "ancient stone building... Frodo... ICU",
+      "scene_assignments": [
+        "S08"
+      ]
+    },
+    {
+      "location_key": "LOC_SEATTLE_PRESENT",
+      "description": "Belltown / Pike Place grey mist; Tony\u2019s Boy\u2019s Pizza under medical building; Lowell\u2019s window ferry view optional short insert.",
+      "layout_anchors": [
+        "apartment with cat Bozo",
+        "pizza storefront",
+        "wet hooded sidewalks"
+      ],
+      "lighting_states": [
+        "seattle_overcast"
+      ],
+      "persistent_props": [
+        "Bozo the cat",
+        "yoga mat"
+      ],
+      "image_briefs": [
+        "Mist street walk; pizza chain sign Tony\u2019s Boy\u2019s Pizza"
+      ],
+      "source_evidence": "Seattle... Tony\u2019s Boy\u2019s Pizza... first store is right near my apartment in Belltown",
+      "scene_assignments": [
+        "S09"
+      ]
+    },
+    {
+      "location_key": "LOC_PRISON_GREENBAY",
+      "description": "Green Bay correctional visiting: plexiglass, phones, locked doors, patrol officer.",
+      "layout_anchors": [
+        "visitor chair and yellow receiver",
+        "plexiglass",
+        "inmate entry"
+      ],
+      "lighting_states": [
+        "institutional_cold"
+      ],
+      "persistent_props": [
+        "wall phone",
+        "thick glass"
+      ],
+      "image_briefs": [
+        "Two brothers through glass; tears on gray counter"
+      ],
+      "source_evidence": "Green Bay at the correctional institute... thick plexiglass",
+      "scene_assignments": [
+        "S10"
+      ]
+    }
+  ]
+}

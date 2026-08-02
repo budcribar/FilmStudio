@@ -1,0 +1,317 @@
+{
+  "schema_version": "cast_seeds.v1",
+  "render_style_lock": "Soft storybook live-action with gentle period nursery texture; tactile fabrics; no modern branding; warm illustration-adjacent realism after William Nicholson plate mood without copying plates.",
+  "character_seed_tokens": {
+    "CHAR_RABBIT": {
+      "description": "Small stuffed rabbit, fat and bunchy; spotted brown-and-white velveteen; thread whiskers; ears lined pink sateen; boot-button eyes; later threadbare, unsewn tail, pink rubbed from nose, shape lost; final living form brown soft fur with faint spotted markings under coat.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "On-screen and credits: the Velveteen Rabbit / Bunny; never invent a personal name.",
+      "voice_label": "rabbit_inner_soft",
+      "voice_profile": {
+        "register": "gentle childlike toy voice for sparse sourced lines",
+        "pace": "hesitant then earnest",
+        "tone": "shy, longing, tender",
+        "dialect": "neutral storybook English matching source diction"
+      },
+      "visual_lock": {
+        "silhouette": "pincushion rear, no separate hind legs until final form",
+        "palette": "brown-white spots, pink sateen ears fading to grey",
+        "materials": "velveteen to threadbare cloth to living fur",
+        "faces": "boot-button eyes gaining wise look; living round black eyes at end"
+      },
+      "age_variants": [
+        {
+          "variant_key": "RABBIT_NEW",
+          "label": "splendid new",
+          "apparent_age": "new toy",
+          "source_evidence": "in the beginning he was really splendid."
+        },
+        {
+          "variant_key": "RABBIT_LOVED",
+          "label": "shabby loved",
+          "apparent_age": "worn toy",
+          "source_evidence": "his beautiful velveteen fur was getting shabbier and shabbier, and his tail becoming unsewn, and all the pink rubbed off his nose"
+        },
+        {
+          "variant_key": "RABBIT_REAL_LIVING",
+          "label": "living Real rabbit",
+          "apparent_age": "young wild rabbit",
+          "source_evidence": "Instead of dingy velveteen he had brown fur, soft and shiny... the other had strange markings under his fur, as though long ago he had been spotted"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_RABBIT_HOLLY",
+          "label": "stocking with holly sprig",
+          "source_evidence": "with a sprig of holly between his paws"
+        },
+        {
+          "variant_key": "WR_RABBIT_PLAIN",
+          "label": "no props, worn coat only",
+          "source_evidence": "his coat had worn so thin and threadbare from hugging"
+        }
+      ],
+      "source_evidence": "HERE was once a velveteen rabbit, and in the beginning he was really splendid. He was fat and bunchy, as a rabbit should be; his coat was spotted brown and white, he had real thread whiskers, and his ears were lined with pink sateen."
+    },
+    "CHAR_BOY": {
+      "description": "A kind-hearted little boy who loves the Rabbit, makes bed-tunnels and garden burrows, falls ill with scarlet fever, recovers, goes to seaside plans, later plays in the spring wood.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "Always the Boy; no invented personal name.",
+      "voice_label": "boy_child_warm",
+      "voice_profile": {
+        "register": "young child",
+        "pace": "natural excited whispers and clear declarations",
+        "tone": "affectionate, insistent when defending Bunny",
+        "dialect": "neutral storybook English"
+      },
+      "visual_lock": {
+        "silhouette": "small child, period nightclothes and day play clothes",
+        "palette": "soft whites, garden play earth tones",
+        "materials": "cotton nightshirt, shawl on balcony",
+        "faces": "flushed in fever; open earnest expression"
+      },
+      "age_variants": [
+        {
+          "variant_key": "BOY_WELL",
+          "label": "well play age",
+          "apparent_age": "young child",
+          "source_evidence": "he was a kind-hearted little boy and he liked Bunny to be comfortable."
+        },
+        {
+          "variant_key": "BOY_ILL",
+          "label": "scarlet fever",
+          "apparent_age": "young child ill",
+          "source_evidence": "His face grew very flushed, and he talked in his sleep"
+        },
+        {
+          "variant_key": "BOY_RECOVERED",
+          "label": "recovering / later spring",
+          "apparent_age": "young child",
+          "source_evidence": "in the Spring, when the days grew warm and sunny, the Boy went out to play in the wood behind the house."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_BOY_NIGHT",
+          "label": "bedtime",
+          "source_evidence": "when the Boy was going to bed"
+        },
+        {
+          "variant_key": "WR_BOY_PLAY",
+          "label": "garden and wood play",
+          "source_evidence": "they had long days in the garden"
+        },
+        {
+          "variant_key": "WR_BOY_SHAWL",
+          "label": "balcony wrapped in shawl",
+          "source_evidence": "They had carried the Boy out on to the balcony, wrapped in a shawl"
+        }
+      ],
+      "source_evidence": "For at least two hours the Boy loved him"
+    },
+    "CHAR_SKIN_HORSE": {
+      "description": "Very old nursery toy horse; brown coat bald in patches showing seams; tail hairs mostly pulled out; wise, gentle, truthful smile.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "the Skin Horse",
+      "voice_label": "skin_horse_wise",
+      "voice_profile": {
+        "register": "low calm elder toy",
+        "pace": "measured",
+        "tone": "kind, truthful, unhurried",
+        "dialect": "neutral storybook English"
+      },
+      "visual_lock": {
+        "silhouette": "long worn toy horse",
+        "palette": "faded brown, bald patches, visible seams",
+        "materials": "skin/hide toy worn bare",
+        "faces": "quiet smile"
+      },
+      "age_variants": [
+        {
+          "variant_key": "SKIN_HORSE_OLD",
+          "label": "oldest nursery toy",
+          "apparent_age": "very old toy",
+          "source_evidence": "He was so old that his brown coat was bald in patches and showed the seams underneath"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_SKIN_HORSE_BARE",
+          "label": "worn coat only",
+          "source_evidence": "most of the hairs in his tail had been pulled out to string bead necklaces."
+        }
+      ],
+      "source_evidence": "The Skin Horse had lived longer in the nursery than any of the others."
+    },
+    "CHAR_NANA": {
+      "description": "Person who rules the nursery; tidies in sudden swoops; practical, sometimes dismissive of toys, still fetches Bunny when the Boy needs him.",
+      "canonical_given_name": "Nana",
+      "display_name_policy": "Nana",
+      "voice_label": "nana_brisk",
+      "voice_profile": {
+        "register": "adult caregiver",
+        "pace": "hurried",
+        "tone": "brisk, grumbling, practical",
+        "dialect": "neutral storybook English"
+      },
+      "visual_lock": {
+        "silhouette": "adult woman in caregiver dress/apron",
+        "palette": "dark dress, light apron",
+        "materials": "cloth apron corner used to rub dew off Rabbit",
+        "faces": "busy, not cruel"
+      },
+      "age_variants": [
+        {
+          "variant_key": "NANA_ADULT",
+          "label": "ruling nurse",
+          "apparent_age": "adult",
+          "source_evidence": "There was a person called Nana who ruled the nursery."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_NANA_APRON",
+          "label": "aproned nursery dress",
+          "source_evidence": "Nana grumbled as she rubbed him off with a corner of her apron."
+        }
+      ],
+      "source_evidence": "There was a person called Nana who ruled the nursery."
+    },
+    "CHAR_FAIRY": {
+      "description": "Loveliest nursery magic Fairy; dress of pearl and dew-drops; flowers on neck and in hair; face like a perfect flower; gathers and kisses the Rabbit.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "the nursery magic Fairy",
+      "voice_label": "fairy_clear_kind",
+      "voice_profile": {
+        "register": "clear luminous adult-fairy",
+        "pace": "gentle ceremonial",
+        "tone": "tender authority",
+        "dialect": "neutral storybook English"
+      },
+      "visual_lock": {
+        "silhouette": "slender luminous figure",
+        "palette": "pearl, dew, floral colors, emerald-gold flower origin",
+        "materials": "pearl and dew-drop dress",
+        "faces": "most perfect flower-like face"
+      },
+      "age_variants": [
+        {
+          "variant_key": "FAIRY_APPARITION",
+          "label": "nursery magic Fairy",
+          "apparent_age": "ageless",
+          "source_evidence": "She was quite the loveliest fairy in the whole world."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_FAIRY_PEARL",
+          "label": "pearl and dew-drops with flowers",
+          "source_evidence": "Her dress was of pearl and dew-drops, and there were flowers round her neck and in her hair"
+        }
+      ],
+      "source_evidence": "I am the nursery magic Fairy, she said. I take care of all the playthings that the children have loved."
+    },
+    "CHAR_WILD_RABBIT_1": {
+      "description": "Living furry rabbit; seams invisible; shape changes long-thin to fat-bunchy; twitches nose; hops on hind legs; sharp-eyed mocker then later ring-stander and playfellow.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "a wild rabbit / furry rabbit",
+      "voice_label": "wild_rabbit_bright",
+      "voice_profile": {
+        "register": "quick animal-child",
+        "pace": "brisk teasing",
+        "tone": "curious then scornful then accepting under Fairy",
+        "dialect": "neutral storybook English"
+      },
+      "visual_lock": {
+        "silhouette": "real rabbit with hind legs",
+        "palette": "natural fur",
+        "materials": "living fur, no visible seams",
+        "faces": "twitching nose, sharp eyes"
+      },
+      "age_variants": [
+        {
+          "variant_key": "WILD_1_SUMMER",
+          "label": "summer encounter",
+          "apparent_age": "young wild",
+          "source_evidence": "They were rabbits like himself, but quite furry and brand-new."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_WILD_1_FUR",
+          "label": "natural fur only",
+          "source_evidence": "their seams didn\u0027t show at all"
+        }
+      ],
+      "source_evidence": "Why don\u0027t you get up and play with us? one of them asked."
+    },
+    "CHAR_WILD_RABBIT_2": {
+      "description": "Second living rabbit companion; dances and flees with white-tail flash; later among the ring in the glade.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "another wild rabbit",
+      "voice_label": "wild_rabbit_2_light",
+      "voice_profile": {
+        "register": "quick animal-child",
+        "pace": "light",
+        "tone": "choric with first wild rabbit",
+        "dialect": "neutral storybook English"
+      },
+      "visual_lock": {
+        "silhouette": "real rabbit",
+        "palette": "natural fur, white tail flash",
+        "materials": "living fur",
+        "faces": "alert"
+      },
+      "age_variants": [
+        {
+          "variant_key": "WILD_2_SUMMER",
+          "label": "summer encounter",
+          "apparent_age": "young wild",
+          "source_evidence": "with a stamp of feet and a flash of white tails the two strange rabbits disappeared."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_WILD_2_FUR",
+          "label": "natural fur only",
+          "source_evidence": "two strange beings creep out of the tall bracken near him."
+        }
+      ],
+      "source_evidence": "They stared at him, and the little Rabbit stared back."
+    },
+    "CHAR_DOCTOR": {
+      "description": "Medical authority in nursery after illness; orders disinfection and burning of bed toys including the Bunny.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "the doctor",
+      "voice_label": "doctor_firm",
+      "voice_profile": {
+        "register": "adult professional",
+        "pace": "decisive",
+        "tone": "clinical, dismissive of the old Bunny",
+        "dialect": "neutral storybook English"
+      },
+      "visual_lock": {
+        "silhouette": "adult visitor",
+        "palette": "dark professional period clothes",
+        "materials": "cloth suit/coat",
+        "faces": "brisk practical"
+      },
+      "age_variants": [
+        {
+          "variant_key": "DOCTOR_ADULT",
+          "label": "attending doctor",
+          "apparent_age": "adult",
+          "source_evidence": "now it only remained to carry out the doctor\u0027s orders."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "WR_DOCTOR_VISIT",
+          "label": "professional visit attire",
+          "source_evidence": "That? said the doctor."
+        }
+      ],
+      "source_evidence": "That? said the doctor. Why, it\u0027s a mass of scarlet fever germs!-Burn it at once."
+    }
+  }
+}

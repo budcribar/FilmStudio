@@ -1,0 +1,40 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong visual descriptions and consistent cast but expanded scene count and occasional dense beats reduce clip-friendly pacing.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring every scene to contain at most three distinct visual micro-beats separated by a single sound cue before the next heading."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Tight, filmable scenes with precise action lines, consistent audio cues, and faithful compression of the source arc.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring every scene to contain at most three distinct visual micro-beats separated by a single sound cue before the next heading."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because its tighter scene rhythm and precise micro-beat structure best serve the short-clip constraint while preserving fidelity. Weakest: Screenplay A because its expanded scene count occasionally dilutes momentum under the short-clip constraint.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "CD384CA17769938A6317CF98BFB934F68A28FA2AF1BD366BBDAFA39D23626096"
+}

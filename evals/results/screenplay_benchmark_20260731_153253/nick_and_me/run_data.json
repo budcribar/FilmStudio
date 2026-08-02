@@ -1,0 +1,162 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\openai\\books\\Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 21:38:46 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 83.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 39,
+        "TotalDialogueBlocks": 89,
+        "AvgWordsPerDialogue": 12.4,
+        "MaxWordsInSingleDialogue": 36,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "MA",
+          "SIONNA",
+          "DR. CARSON",
+          "OFFICER DUPUIS",
+          "NURSE",
+          "INSTRUCTOR",
+          "BOB",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.8,
+      "AvgCharacterDisambiguation": 6.6,
+      "AvgAiVideoDirectibility": 7.1,
+      "AvgDramaticPacing": 6.6,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 7.3,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: Several scenes lack the mandated literal (SOUND:) or (MUSIC:) cue, while major moments such as the death reveal and prison confession lack the required peak-level audio density.",
+        "gpt-5.6-sol: Prohibited compound headings combine separate locations, including DOCTOR\u0027S OFFICE / HOSPITAL HALL, COMMUNITY COLLEGE CLASSROOM / JAVA HUT, FUNERAL HOME / CEMETERY, and MILWAUKEE STREETS / OLD BUILDINGS.",
+        "gpt-5.6-sol: The closed-cast and identity rules are broken by generic speaking cues such as NURSE, INSTRUCTOR, and GUARD, and by using the same NARRATOR and NICK tokens across materially different ages.",
+        "gpt-5.6-sol: The scene count, spoken material, and repeated framing passages are unlikely to fit approximately ten finished minutes without major cuts."
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 74.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 23,
+        "TotalDialogueBlocks": 111,
+        "AvgWordsPerDialogue": 12.6,
+        "MaxWordsInSingleDialogue": 47,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "NICK",
+          "SIONNA",
+          "MA",
+          "LIBRARIAN MORALES",
+          "LINDSEY",
+          "ADAM KLINE",
+          "OFFICER DUPUIS",
+          "NURSE PATRICIA OWENS",
+          "THE SAGE"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 7.2,
+      "AvgAiVideoDirectibility": 7.3,
+      "AvgDramaticPacing": 6.4,
+      "AvgDialogueAuthenticity": 8.1,
+      "AvgSoundDesignMusic": 1.8,
+      "AvgOverallQualitative": 6,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: No scene contains a mandated parenthetical (SOUND:) or (MUSIC:) direction, constituting an explicit hard failure of the shared generation prompt.",
+        "gpt-5.6-sol: The draft invents personal names for source-unnamed characters, notably LIBRARIAN MORALES and ADAM KLINE, triggering the rubric\u0027s severe fidelity penalty.",
+        "gpt-5.6-sol: The amount of dialogue, particularly the extended prison exchange, makes the approximately ten-minute runtime implausible without substantial compression.",
+        "grok-4.5: Zero (SOUND:) or (MUSIC:) parenthetical cues in any scene \u2014 shared prompt hard-requires at least one explicit audio direction per scene; fails sound-design dimension outright",
+        "grok-4.5: Malformed closing markers (\u003EFADE OUT. / \u003ETHE END\u003C) instead of clean Fountain FADE OUT / THE END"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-sol": {
+      "grok-4.5": 6,
+      "gpt-5.6-sol": 5.3
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 6.75,
+      "grok-4.5": 8.58
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-sol": {
+      "grok-4.5": 1,
+      "gpt-5.6-sol": 2
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-sol": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u2139\uFE0F gpt-5.6-sol rated its own screenplay 5.3/10 vs. a 6.8/10 average from 1 other judge(s) (-1.5) \u2014 notably harsher on itself than peers were.",
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.6/10 vs. a 6.0/10 average from 1 other judge(s) (\u002B2.6) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "This draft preserves most of the essential emotional spine: Nick\u0027s intimidating protectiveness, Ma\u0027s dementia, Sionna\u0027s transformative influence, the bar rupture, fatal crash, stabbing, separation, Seattle success, forgiveness, and final name reveal. It also retains a good amount of the source\u0027s blunt diction and avoids inventing personal names for unnamed supporting characters. Coverage is weakened by omitting the Tony mentorship and entrepreneurial bridge to the pizza-chain resolution, minimizing the recurring medieval-dream motif, omitting Nick\u0027s extended point of view, and ambiguously suggesting that years pass before the stabbing. The principal visual problem is identity control: the twenties and forties versions of the protagonist share one cue, twelve-year-old and adult Nick share another, and the younger protagonist receives almost no locked physical description. Many individual actions are filmable, but compound locations, summarized montages, internal phrases, and long dialogue scenes make clip decomposition difficult. The numerous concrete diegetic sound cues are useful, but omissions in several scenes and the near-total absence of an intentional musical arc keep the sound package from being production-complete.",
+      "gpt-5.6-sol": "This is the cleaner and more linear piece of screenwriting, with strong grounding actions, mostly concrete single-location scenes, clear escalation from domestic control to crash and attempted murder, and a legible eight-year transition into the forgiveness resolution. The main characters receive stronger initial casting descriptions than in Screenplay A, and older Nick and the older protagonist are visibly re-established after the time jump. However, the same cast tokens still cover visibly different ages, Sionna\u0027s source-described short hair becomes shoulder-length, and several supporting characters remain thinly specified. Fidelity receives the required severe penalty because the screenplay invents LIBRARIAN MORALES and ADAM KLINE; it also changes the bar action by having Nick head-butt Joe rather than the bouncer and adds several unsupported visual details. The dialogue is highly performable and generally close to the source, but some philosophical and prison speeches are too long for a single short clip. Most critically, not one scene includes the required formal audio parenthetical: occasional prose references to rock music, sirens, impacts, and beeping do not constitute a usable scene-by-scene sound or scoring plan."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Strong fidelity to the book\u0027s arc (Nick as Viking protector \u2192 Sionna awakening \u2192 Ma\u0027s decline \u2192 crash \u2192 stabbing \u2192 Seattle forgiveness) with mostly book-rooted dialogue and a closed cast. Character looks are introduced well (Nick scars/Trans Am, Sionna fish pendant/blue eyes) but adult/young splits and re-entries after time jumps are not consistently restated. Action is generally filmable, yet several scenes pack multi-beat compression that strains 5\u201310s clip slicing, and the complete absence of mandated audio parentheticals is a hard production blocker. Pacing covers the spine but rushes the Seattle frame and dream beats.",
+      "grok-4.5": "Best overall package: Seattle on-camera frame bookends the story cleanly, every scene carries concrete (SOUND:) beds that match emotional arc, and action lines stay single-location and clip-sized. Fidelity is high (kickball window, Wuthering Heights, yoga, bar fight, crash, stabbing, prison forgiveness, President Peter Olson button) with minimal invention. Character re-entries restate locked traits (Nick scars/hair, Sionna eyes/pendant, older Narrator). Dialogue stays close to book cadence and short enough for short clips. Minor compression of secondary beats (college montage, Bob reunion) is appropriate for runtime and does not invent major plot."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-sol": "Strongest: Screenplay A, because it preserves more of the book\u0027s complete emotional and narrative spine and supplies a substantial, if incomplete, diegetic sound plan. Weakest: Screenplay B, because its cleaner linear construction is outweighed by a total hard failure on required audio cues and severe fidelity penalties for invented named roles.",
+    "grok-4.5": "Strongest: Screenplay B because it alone fully satisfies the shared prompt\u0027s per-scene audio-cue mandate, maintains a stable on-camera narrator frame, and keeps action/dialogue clip-directable while covering the full book arc. Weakest: Screenplay A because it ships with zero (SOUND:)/(MUSIC:) cues and broken closing Fountain markers, making it non-greenlightable despite solid narrative coverage."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "Add a mandatory runtime ledger for ten-minute drafts: cap dialogue and voice-over at roughly 1,100 words, budget every visual beat at a minimum of five seconds, and require cutting whole secondary beats until the estimated total is within the runtime band.",
+      "gpt-5.6-sol": "Add a mandatory internal preflight validator that counts scene headings and literal audio-cue lines, regenerating the draft if any scene lacks a (SOUND:) or (MUSIC:) token or if a designated climax contains fewer than two such cues."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Add an explicit validation rule: reject or auto-flag any scene that lacks at least one standalone (SOUND: \u2026) or (MUSIC: \u2026) line immediately after its grounding Action, and require two distinct audio cues at peak emotional scenes (crash, stabbing, prison goodbye).",
+      "grok-4.5": "Require that any montage or multi-location compression still use only one concrete INT./EXT. heading at a time (never slash-combined headings like CLASSROOM / JAVA HUT) and mark elapsed time inside Action so clip boundaries remain unambiguous."
+    }
+  }
+}

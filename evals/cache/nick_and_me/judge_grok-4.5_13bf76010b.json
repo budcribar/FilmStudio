@@ -1,0 +1,43 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity to the book\u0027s first-person arc, late name reveal, key beats (Nick intro/Viking framing, Sionna meet, Ma decline, bar confrontation, crash, stabbing, Seattle aftermath, prison forgiveness) without major invented plot. NARRATOR token stays consistent until the final self-naming line. Visual locks for Nick (scars, reddish-brown hair, bulk), Sionna (pale skin, light-blue eyes, fish necklace, specific wardrobe), and Ma are mostly stable, with YOUNG NICK disambiguated; occasional re-entry after time jumps under-describes Narrator. Action is largely camera-observable and clip-sized, though several V.O.-heavy montages and multi-beat scenes (bar fight into run, stabbing aftermath) slightly strain single-clip directibility. Pacing compresses the long source effectively but rushes the post-stabbing recovery and Seattle transition. Dialogue stays close to book diction and short enough for clips. Every scene carries concrete (SOUND:) or (MUSIC:) cues, denser at peaks.",
+      "promptImprovementSuggestion": "Add an explicit hard cap: after any time-jump or multi-year cut, the first Action line of the new scene must restate 2-3 locked visual traits for every returning principal before any dialogue or V.O."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 5.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 7.58,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Protagonist identity split across unstable tokens (NARRATOR in early Action/V.O. then PETER for all dialogue and later Action), violating closed-cast single-token rule and early name reveal before book ending",
+        "Invented named supporting character MARTIN (book leaves boyfriend unnamed)"
+      ],
+      "rationale": "Covers the same essential spine and many book phrases, but early and consistent use of PETER (plus Action calling the same figure both NARRATOR and PETER) directly contradicts the source\u0027s late name reveal and the single-token rule; inventing MARTIN is a further named-character addition. Visual descriptions are otherwise clear and age-split (twelve-year-old NICK, older leaner PETER, Sionna traits locked), yet the dual token makes casting reference images unusable. Directibility is strong\u2014short observable actions, clean single-location headings, good micro-beats at the stabbing and prison. Pacing and scene rhythm feel tighter and less montage-dependent than A. Dialogue is performable and book-adjacent. Sound cues are present and specific in nearly every scene. The token fracture is a hard production blocker despite otherwise solid craft.",
+      "promptImprovementSuggestion": "Strengthen the closed-cast rule with: \u0027The protagonist\u2019s on-screen and cue token must be exactly one string for the entire draft; if the source withholds the given name until late or never, that token remains NARRATOR (or THE NARRATOR) in every Action mention and cue until the source itself utters the name\u2014no mid-draft switch to a proper name.\u0027"
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it alone keeps a single stable NARRATOR token until the book\u2019s final self-naming, delivers high source coverage with dense usable sound cues, and has no disqualifying cast or invention defects. Weakest: Screenplay B because the protagonist is fractured across NARRATOR and PETER tokens plus an invented named boyfriend, rendering the closed cast unusable for locked reference images despite strong clip-level directing.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "CD384CA17769938A6317CF98BFB934F68A28FA2AF1BD366BBDAFA39D23626096"
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": "sidecar_pilot.v1",
+  "book_path": "books\\A_Christmas_Carol.txt",
+  "model": "grok-4.5",
+  "requested_temperature": 0,
+  "generated_at_utc": "2026-08-01T04:42:04.8259534Z",
+  "media_generated": false
+}

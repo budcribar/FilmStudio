@@ -1,0 +1,50 @@
+{
+  "schema_version": "sidecar_validation.v1",
+  "status": "passed",
+  "summary": {
+    "scene_count": 9,
+    "audio_scene_count": 9,
+    "location_count": 5,
+    "failure_count": 0,
+    "warning_count": 1
+  },
+  "failures": [],
+  "warnings": [
+    {
+      "code": "FOUNTAIN_AUDIT",
+      "message": "The screenplay needs Fountain-format review.",
+      "scene_id": null
+    }
+  ],
+  "fountain_syntax": {
+    "OverallSyntaxScore": 94.8,
+    "FormatComplianceScore": 100,
+    "SceneBudgetScore": 100,
+    "DialoguePacingScore": 85,
+    "CharacterDisambiguationScore": 100,
+    "MusicSpecScore": 70,
+    "TotalSceneHeadings": 13,
+    "TotalDialogueBlocks": 33,
+    "AvgWordsPerDialogue": 14.7,
+    "MaxWordsInSingleDialogue": 65,
+    "LongMonologueCount": 3,
+    "GenericNumberedSpeakerCount": 0,
+    "CharacterNamesFound": [
+      "RABBIT",
+      "SKIN HORSE",
+      "NANA",
+      "BOY",
+      "WILD RABBIT",
+      "DOCTOR",
+      "FAIRY"
+    ],
+    "AgeDisambiguatedCharacters": [
+      "BOY"
+    ],
+    "DiagnosticWarnings": [
+      "3 monologue turn(s) exceed 35 words without action line splits.",
+      "Detected 1 age-qualified character header(s) (e.g. BOY).",
+      "No explicit music/sound design cues detected in screenplay."
+    ]
+  }
+}

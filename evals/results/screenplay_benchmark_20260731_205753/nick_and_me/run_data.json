@@ -1,0 +1,160 @@
+{
+  "BookPath": "books\\Nick_and_Me.txt",
+  "Timestamp": "2026-08-01 03:01:44 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 91.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 31,
+        "TotalDialogueBlocks": 184,
+        "AvgWordsPerDialogue": 7.7,
+        "MaxWordsInSingleDialogue": 18,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR V.O.",
+          "MA",
+          "NARRATOR",
+          "NICK",
+          "SIONNA",
+          "LIBRARIAN ELLEN",
+          "DR. CARSON",
+          "DYING SOLDIER",
+          "DAVID",
+          "LINDSEY",
+          "OFFICER DUPUIS V.O.",
+          "OFFICER DUPUIS",
+          "CHRIS",
+          "GUARD HARRIS",
+          "NICK V.O."
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 7 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.2,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 8.8,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 32,
+        "TotalDialogueBlocks": 91,
+        "AvgWordsPerDialogue": 12.1,
+        "MaxWordsInSingleDialogue": 55,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "NICK",
+          "SIONNA",
+          "MA",
+          "LIBRARIAN",
+          "BOYFRIEND",
+          "OFFICER DUPUIS",
+          "NURSE",
+          "CHRIS",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 4 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.2,
+      "AvgCharacterDisambiguation": 7.8,
+      "AvgAiVideoDirectibility": 7.8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 7.8,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 7.5,
+      "DisqualifyingFlags": [
+        "grok-4.5: Protagonist cued as PETER from the opening (and throughout) despite the book withholding the name until the final line; must remain NARRATOR until the source reveal",
+        "grok-4.5: Speaking supporting role cued as bare BOYFRIEND (relational/unstable label forbidden by closed-cast rules)",
+        "grok-4: Missing explicit sound cue in multiple scenes",
+        "grok-4: Inconsistent character visual restatement across time jumps",
+        "grok-4: Some action lines contain unfilmable internal states"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "grok-4.5": 8.25,
+      "gpt-5.6-terra": 8.42
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 8.75,
+      "grok-4.5": 6.83
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-terra": 1,
+      "grok-4.5": 2
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 1,
+      "grok-4.5": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.2/10 vs. a 6.8/10 average from 1 other judge(s) (\u002B1.4) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "grok-4.5": "Strong visual locking via title-page Notes and consistent re-entry traits for the core four; solid short-clip action and near-complete sound coverage. Fidelity suffers from premature naming of the narrator, compression that drops several mid-book confrontations (early slap, full doctor/ER setup, Nick\u0027s wrecked apartment), and the illegal BOYFRIEND cue. Pacing is tight with effective Seattle bookends but loses some escalation density around the crash and stabbing. Dialogue stays close to book cadence when present. Production-blocked by the two hard cast/reveal violations.",
+      "gpt-5.6-terra": "Highest fidelity: correctly keeps NARRATOR until the final \u0027President Peter Olson\u0027 line, covers more source beats (doctor visit, battlefield dream, early slap fight, Nick apartment mess, Trans Am crash visual, full stabbing aftermath), and invents only light stable names (DAVID, ELLEN, HARRIS) for unnamed speakers. Directibility is concrete and clip-friendly; pacing escalates cleanly through the accident/stabbing/prison arc with good Seattle coda. Dialogue preserves book wording and subtext in short turns. Sound cues are present and specific in every scene. Character looks are described on first entry and some re-entries but lack a locked upfront bible and occasional restatement after time jumps, the only real softness."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Strong fidelity to source beats and dialogue, consistent character visuals across time jumps, concrete filmable actions, and explicit sound cues in every scene.",
+      "grok-4.5": "Covers core beats but drops several source details, has weaker character consistency, and omits required audio cues in several scenes."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay B because it alone obeys the narrator-name reveal rule, covers more essential source confrontations and the crash without major drops, and stays production-ready. Weakest: Screenplay A because the early PETER naming and illegal BOYFRIEND cue are hard closed-cast/fidelity violations that block greenlight despite superior visual locking.",
+    "grok-4": "Strongest: Screenplay A because it maintains source fidelity, consistent visuals, and required audio cues across every scene. Weakest: Screenplay B because it omits required sound cues and has inconsistent character descriptions across time periods."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "grok-4.5": "Add an explicit enforcement example under closed-cast and name-reveal rules: \u0027If the source withholds the protagonist\u0027s given name until late or final pages, the cue must remain NARRATOR (or equivalent) until that exact reveal; never promote an end-name into early Action or cues, and never allow bare relational tokens (BOYFRIEND, GIRLFRIEND, HUSBAND) as dialogue cues\u2014assign a stable proper name or ROLE SURNAME instead.\u0027",
+      "gpt-5.6-terra": "Mandate a title-page Notes: cast bible that locks 2-3 filmable visual traits (build/hair/scar/wardrobe colors) for every recurring character on first appearance, and require those exact traits to be restated in the opening Action line of any scene after a time jump or age shift."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule requiring every scene to end with a single-line visual or sound micro-beat that can serve as a natural clip cut point.",
+      "grok-4.5": "Add an explicit rule requiring every scene to contain at least one standalone (SOUND: concrete diegetic description) or (MUSIC: specific description) cue placed on its own line after the action."
+    }
+  }
+}

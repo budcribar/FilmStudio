@@ -1,0 +1,15 @@
+{
+  "schema_version": "delivery_manifest.v1",
+  "target_aspect_ratio": "operator_choice_required",
+  "target_resolution": "operator_choice_required",
+  "caption_requirement": "Full captions required for VO and essential diegetic speech; preserve withheld given name until final card.",
+  "credits_requirement": "End card: based on the book Nick and Me; character name Peter Olson only in closing credit; no invented cast beyond source roles.",
+  "review_gates": [
+    "source_evidence on every beat and location",
+    "no invented quoted dialogue beyond book lines used sparingly",
+    "withheld narrator name until finale",
+    "violence not stylized as heroic",
+    "short-film length target under ~12 minutes total estimated ~480s",
+    "operator locks aspect/resolution before picture lock"
+  ]
+}

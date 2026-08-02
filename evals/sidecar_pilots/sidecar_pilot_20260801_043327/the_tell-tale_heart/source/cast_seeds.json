@@ -1,0 +1,178 @@
+{
+  "schema_version": "cast_seeds.v1",
+  "render_style_lock": "Desaturated 19th-century interior realism; candle and lantern practicals; no modern elements; faces readable in deep shadow; filmic still-description only.",
+  "character_seed_tokens": {
+    "CHAR_NARRATOR": {
+      "description": "Adult caretaker figure of unfixed exact age; outwardly composed then progressively pallid, sweating, and agitated; eyes sharp; manner shifts from courtly calm to violent gesticulation.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "Withhold proper name; credit as Narrator or The Lodger.",
+      "voice_label": "narrator_direct_address",
+      "voice_profile": {
+        "register": "intimate confessional to shrieking climax",
+        "pace": "initially calm and measured; later quick, vehement, high-key",
+        "notes": "Claims healthy calm while betraying dread; acute attention to faint sounds."
+      },
+      "visual_lock": {
+        "face": "drawn, increasingly pale",
+        "hair": "period-appropriate, unkempt under stress",
+        "build": "capable of dragging a body and moving floorboards",
+        "eyes": "watchful, reflective of lantern light"
+      },
+      "age_variants": [
+        {
+          "variant_key": "NARRATOR_ADULT",
+          "label": "adult present-story",
+          "source_evidence": "how calmly I can tell you the whole story"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "NARR_WRD_NIGHT",
+          "items": [
+            "dark period night clothes or quiet indoor coat",
+            "soft-soled period footwear"
+          ],
+          "source_evidence": "I turned the latch of his door and opened it\u2014oh, so gently!"
+        },
+        {
+          "variant_key": "NARR_WRD_POLICE",
+          "items": [
+            "same clothes slightly disordered after labor",
+            "presentable enough to welcome officers"
+          ],
+          "source_evidence": "I went down to open it with a light heart"
+        }
+      ],
+      "source_evidence": "why will you say that I am mad?"
+    },
+    "CHAR_OLD_MAN": {
+      "description": "Elderly man who sleeps in a darkened shuttered chamber; defining trait a pale blue eye with a film, likened to a vulture\u2019s eye; otherwise loved by narrator and not shown as cruel on the page.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "Withhold proper name; credit as The Old Man.",
+      "voice_label": "old_man_sparse",
+      "voice_profile": {
+        "register": "startled cry; later single shriek",
+        "pace": "sudden",
+        "notes": "Almost no speech beyond alarm."
+      },
+      "visual_lock": {
+        "face": "aged; mostly unseen except the eye under a thin ray",
+        "eyes": "one pale blue eye with film; \u2018vulture\u2019 quality when open",
+        "body": "can sit up in bed; later corpse examined as stone dead"
+      },
+      "age_variants": [
+        {
+          "variant_key": "OLD_MAN_ELDERLY",
+          "label": "elderly living / dead",
+          "source_evidence": "I loved the old man."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "OLD_WRD_BED",
+          "items": [
+            "period nightshirt or bedclothes"
+          ],
+          "source_evidence": "as he lay upon his bed"
+        }
+      ],
+      "source_evidence": "He had the eye of a vulture\u2014a pale blue eye, with a film over it."
+    },
+    "CHAR_OFFICER_A": {
+      "description": "One of three police officers; suave introduction; searches premises; chats pleasantly.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "No personal name; Officer.",
+      "voice_label": "officer_suave",
+      "voice_profile": {
+        "register": "civil, official, pleasant chat",
+        "pace": "even",
+        "notes": "Source gives collective speech behavior, not individual names."
+      },
+      "visual_lock": {
+        "face": "composed official",
+        "attire_hint": "period police/officer dress"
+      },
+      "age_variants": [
+        {
+          "variant_key": "OFFICER_A_ADULT",
+          "label": "adult officer",
+          "source_evidence": "officers of the police"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "OFF_WRD_DUTY",
+          "items": [
+            "period officer outerwear suitable for a night call"
+          ],
+          "source_evidence": "there entered three men, who introduced themselves, with perfect suavity, as officers of the police."
+        }
+      ],
+      "source_evidence": "The officers were satisfied. My manner had convinced them."
+    },
+    "CHAR_OFFICER_B": {
+      "description": "Second of three officers; same collective function as the others.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "No personal name; Officer.",
+      "voice_label": "officer_suave",
+      "voice_profile": {
+        "register": "civil pleasant chat",
+        "pace": "even",
+        "notes": "Indistinguishable individual biography in source."
+      },
+      "visual_lock": {
+        "face": "composed official",
+        "attire_hint": "period police/officer dress"
+      },
+      "age_variants": [
+        {
+          "variant_key": "OFFICER_B_ADULT",
+          "label": "adult officer",
+          "source_evidence": "three men"
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "OFF_WRD_DUTY",
+          "items": [
+            "period officer outerwear"
+          ],
+          "source_evidence": "they (the officers) had been deputed to search the premises."
+        }
+      ],
+      "source_evidence": "still they sat and still chatted."
+    },
+    "CHAR_OFFICER_C": {
+      "description": "Third of three officers; same collective function.",
+      "canonical_given_name": "unknown",
+      "display_name_policy": "No personal name; Officer.",
+      "voice_label": "officer_suave",
+      "voice_profile": {
+        "register": "civil pleasant chat",
+        "pace": "even",
+        "notes": "Smiles and pleasant manner as group."
+      },
+      "visual_lock": {
+        "face": "composed official",
+        "attire_hint": "period police/officer dress"
+      },
+      "age_variants": [
+        {
+          "variant_key": "OFFICER_C_ADULT",
+          "label": "adult officer",
+          "source_evidence": "And still the men chatted pleasantly, and smiled."
+        }
+      ],
+      "wardrobe_variants": [
+        {
+          "variant_key": "OFF_WRD_DUTY",
+          "items": [
+            "period officer outerwear"
+          ],
+          "source_evidence": "I bade the gentlemen welcome."
+        }
+      ],
+      "source_evidence": "they chatted of familiar things."
+    }
+  }
+}

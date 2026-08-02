@@ -1,0 +1,25 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Faithfully covers source beats with consistent character visuals and explicit sound cues per scene; minor pacing compression in flashbacks and V.O. density slightly reduces clip rhythm.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring every scene to end with a single concrete visual or sound micro-beat before any transition or cut to the next heading."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it faithfully adapts the source with consistent character descriptions and explicit sound cues. Weakest: N/A as only one candidate evaluated.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "4F5C708DECEFF9C403446D0CFADD5DBA26BAFFB63546F4CE954251E75E214FF5"
+}

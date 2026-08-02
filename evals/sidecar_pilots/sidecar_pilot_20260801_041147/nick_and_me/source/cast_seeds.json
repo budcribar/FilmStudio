@@ -1,0 +1,84 @@
+{
+  "schema_version": "cast_seeds.v1",
+  "render_style_lock": "naturalistic 1990s\u20132000s Midwest realism; handheld intimacy; no glamour lighting on violence; Seattle present cooler desaturated greys",
+  "character_seed_tokens": [
+    {
+      "cast_key": "CHAR_NARRATOR",
+      "canonical_given_name": "Peter",
+      "display_name_policy": "Withhold given name on screen and in dialogue until final beat; credit as Peter Olson only at end.",
+      "description": "Younger brother; average build pizza worker who becomes student then Seattle pizza-chain owner; not flashy; watchful eyes; softens then hardens then softens again.",
+      "voice_label": "VO_NARRATOR",
+      "voice_profile": "First-person Midwest working-class; reflective, sometimes crude, increasingly thoughtful; adult VO bridges past/present.",
+      "visual_lock": "Ordinary jeans/t-shirts early; later cleaner Seattle layers; no heroic framing until prison exit.",
+      "age_variants": [
+        "youth_teen_memory",
+        "young_adult_milwaukee",
+        "adult_seattle_plus7y"
+      ],
+      "wardrobe_variants": [
+        "WR_NARR_PIZZA",
+        "WR_NARR_DATE",
+        "WR_NARR_SEATTLE",
+        "WR_NARR_PRISON_VISIT"
+      ],
+      "source_evidence": "President Peter Olson... I own a pizza chain in Seattle"
+    },
+    {
+      "cast_key": "CHAR_NICK",
+      "canonical_given_name": "Nick",
+      "display_name_policy": "Always Nick / Nicholas Olson in official contexts.",
+      "description": "Big brother; scarred chin and over left eyebrow; reddish-brown messy hair; pox-marked; large imposing Viking presence; later prison-thinned and grayed.",
+      "voice_label": "VO_NICK_NONE",
+      "voice_profile": "Loud, bullying, slang-heavy; weak gravel in hospital/prison.",
+      "visual_lock": "Rough glue-gun puzzle face; steel wrecking-ball confidence early; hospital tubes then orange jumpsuit scrawny.",
+      "age_variants": [
+        "adult_prime",
+        "hospital_injured",
+        "prison_plus8y"
+      ],
+      "wardrobe_variants": [
+        "WR_NICK_STREET",
+        "WR_NICK_FACTORY_BOOTS",
+        "WR_NICK_HOSPITAL",
+        "WR_NICK_PRISON"
+      ],
+      "source_evidence": "His face looked like a puzzle with the pieces held together with sticky stuff from a glue gun... scars here and there, chin and over his left eyebrow."
+    },
+    {
+      "cast_key": "CHAR_SIONNA",
+      "canonical_given_name": "Sionna",
+      "display_name_policy": "Sionna only; no nickname invention.",
+      "description": "Short-to-long brown hair; pale English-story skin; lightest watery blue eyes; skinny not frail; fish-symbol necklace at meeting; calm intense presence.",
+      "voice_label": "VO_SIONNA_NONE",
+      "voice_profile": "Even, educated, gentle certainty; philosophical without condescension.",
+      "visual_lock": "Target/Walmart V-neck then green hooded top; jeans; blue tennis or soft leather shoes; backpack; later recovery frailty.",
+      "age_variants": [
+        "meet_era",
+        "post_stab_recovery"
+      ],
+      "wardrobe_variants": [
+        "WR_SIONNA_MEET",
+        "WR_SIONNA_JAVA",
+        "WR_SIONNA_HOME"
+      ],
+      "source_evidence": "She had kind of short brown hair and was skinny... eyes... real light blue color... necklace with some kind of fish symbol"
+    },
+    {
+      "cast_key": "CHAR_MA",
+      "canonical_given_name": "Olivia",
+      "display_name_policy": "Ma in life; Olivia Anne Olsen on grave/funeral materials only.",
+      "description": "Aging mother; brown hair; tired brown eyes; failing sight; dementia confusion; janitor past; afghan and game shows.",
+      "voice_label": "VO_MA_NONE",
+      "voice_profile": "Soft, sometimes rambling, childlike when confused.",
+      "visual_lock": "House clothes; chair-bound; pill line on counter.",
+      "age_variants": [
+        "decline_era"
+      ],
+      "wardrobe_variants": [
+        "WR_MA_HOME",
+        "WR_MA_CHURCH"
+      ],
+      "source_evidence": "Ma\u2019s had a tough life... She\u2019s getting older and it\u2019s hard for her to see... Mother: Olivia Anne Olsen"
+    }
+  ]
+}

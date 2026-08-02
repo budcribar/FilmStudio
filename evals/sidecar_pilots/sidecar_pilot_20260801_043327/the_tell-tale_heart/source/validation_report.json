@@ -1,0 +1,46 @@
+{
+  "schema_version": "sidecar_validation.v1",
+  "status": "passed",
+  "summary": {
+    "scene_count": 5,
+    "audio_scene_count": 5,
+    "location_count": 2,
+    "failure_count": 0,
+    "warning_count": 1
+  },
+  "failures": [],
+  "warnings": [
+    {
+      "code": "FOUNTAIN_AUDIT",
+      "message": "The screenplay needs Fountain-format review.",
+      "scene_id": null
+    }
+  ],
+  "fountain_syntax": {
+    "OverallSyntaxScore": 93,
+    "FormatComplianceScore": 95,
+    "SceneBudgetScore": 100,
+    "DialoguePacingScore": 80,
+    "CharacterDisambiguationScore": 100,
+    "MusicSpecScore": 70,
+    "TotalSceneHeadings": 7,
+    "TotalDialogueBlocks": 17,
+    "AvgWordsPerDialogue": 24.6,
+    "MaxWordsInSingleDialogue": 49,
+    "LongMonologueCount": 4,
+    "GenericNumberedSpeakerCount": 0,
+    "CharacterNamesFound": [
+      "NARRATOR",
+      "OLD MAN"
+    ],
+    "AgeDisambiguatedCharacters": [
+      "OLD MAN"
+    ],
+    "DiagnosticWarnings": [
+      "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+      "4 monologue turn(s) exceed 35 words without action line splits.",
+      "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+      "No explicit music/sound design cues detected in screenplay."
+    ]
+  }
+}

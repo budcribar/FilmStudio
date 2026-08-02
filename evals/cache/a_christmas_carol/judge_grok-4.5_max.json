@@ -2,122 +2,43 @@
   "evaluations": [
     {
       "screenplayId": "Screenplay A",
-      "adaptationFidelity": 8.5,
-      "characterDisambiguation": 8.5,
-      "aiVideoDirectibility": 8.5,
-      "dramaticPacing": 8,
-      "dialogueAuthenticity": 9,
-      "soundDesignMusic": 8.5,
-      "overallQualitativeScore": 8.5,
-      "productionReady": true,
-      "disqualifyingIssues": [],
-      "rationale": "Strong full-arc coverage of all major beats and iconic lines with only light compression; consistent Scrooge/Bob/young variants and concrete single-location actions that clip cleanly; minor duplicate Bob cue and occasional multi-beat scenes are fixable. Sound cues are present and useful throughout.",
-      "promptImprovementSuggestion": "Add a hard rule that every character re-entry after any time jump or age shift must restate 2-3 locked visual traits in the opening action line of that scene."
-    },
-    {
-      "screenplayId": "Screenplay B",
-      "adaptationFidelity": 8.5,
+      "adaptationFidelity": 8,
       "characterDisambiguation": 9,
       "aiVideoDirectibility": 8.5,
       "dramaticPacing": 8,
       "dialogueAuthenticity": 8.5,
       "soundDesignMusic": 8.5,
-      "overallQualitativeScore": 8.5,
+      "overallQualitativeScore": 8.4,
       "productionReady": true,
       "disqualifyingIssues": [],
-      "rationale": "Excellent closed-cast naming and age-split visuals (Young Scrooge restated cleanly); hits every spine beat and most iconic dialogue with only minor paraphrase; actions are camera-ready and scenes stay single-purpose. Slight compression of Belle family and Fred party is acceptable for runtime.",
-      "promptImprovementSuggestion": "Require that summarized book exchanges (no quoted speech) receive at most one generic period line total, defaulting to pure action description to prevent any invented banter."
+      "rationale": "Strong closed-cast adaptation that hits every major spine beat (counting-house setup, Marley, three spirits with school/Fezziwig/Belle, Cratchit dinner \u002B Tim, Fred party, Ignorance/Want, future corpse/grave, redemption turkey/salary/Tim lives) while keeping iconic lines intact. Character looks are locked early and restated on re-entry/age splits (Boy/Young/Elderly Scrooge, Bob\u2019s comforter, Tim\u2019s crutch/braces). Scenes are single-location with concrete camera actions ideal for 5-10s clips; sound/music cues appear in every scene and densify at peaks. Minor compressions (miners/lighthouse montage dropped, Future Joe\u2019s shop abbreviated) keep runtime tight without inventing plot. No deal-breakers.",
+      "promptImprovementSuggestion": "Add a hard rule that every spirit-journey sequence must retain at least one dedicated single-location micro-scene for each major book locale visited (no wholesale omission of secondary stops solely for runtime), forcing explicit coverage before compression."
     },
     {
-      "screenplayId": "Screenplay C",
-      "adaptationFidelity": 3,
-      "characterDisambiguation": 9.5,
-      "aiVideoDirectibility": 7,
-      "dramaticPacing": 3,
-      "dialogueAuthenticity": 9,
-      "soundDesignMusic": 9,
-      "overallQualitativeScore": 6.75,
-      "productionReady": false,
-      "disqualifyingIssues": [
-        "Screenplay truncates mid-sentence and mid-climax during the grave reveal, omitting the entire redemption/Stave V resolution"
-      ],
-      "rationale": "Up to the cut-off the text is the most faithful and richly detailed adaptation with superb multi-age tokens (Young Ebenezer / Apprentice / In His Prime) and dense sound, but the catastrophic truncation makes the package unusable and destroys pacing/fidelity scores.",
-      "promptImprovementSuggestion": "Add an explicit completeness check: the final Fountain must contain setup, every major turn, and a full resolution ending with FADE OUT; never emit a draft that ends mid-scene or mid-sentence."
-    },
-    {
-      "screenplayId": "Screenplay D",
-      "adaptationFidelity": 5,
-      "characterDisambiguation": 8,
-      "aiVideoDirectibility": 8,
-      "dramaticPacing": 7.5,
-      "dialogueAuthenticity": 4.5,
-      "soundDesignMusic": 8,
-      "overallQualitativeScore": 6.83,
-      "productionReady": false,
-      "disqualifyingIssues": [
-        "Major dialogue attribution inversion on the iconic Marley \u0027You don\u0027t believe in me\u0027 exchange",
-        "Invented park-bench location for the Belle breakup"
-      ],
-      "rationale": "Solid visual structure and sound, decent age splits, but the reversed Marley/Scrooge belief lines and the non-book Belle location are severe fidelity breaches that break trust in the adaptation; remaining dialogue is otherwise close.",
-      "promptImprovementSuggestion": "Mandate that every quoted or near-quoted exchange preserve exact speaker identity from the source text; add a verification step forbidding any swap of who speaks which line."
-    },
-    {
-      "screenplayId": "Screenplay E",
-      "adaptationFidelity": 7,
-      "characterDisambiguation": 6.5,
-      "aiVideoDirectibility": 7,
-      "dramaticPacing": 7.5,
-      "dialogueAuthenticity": 8,
-      "soundDesignMusic": 8,
-      "overallQualitativeScore": 7.33,
-      "productionReady": true,
-      "disqualifyingIssues": [],
-      "rationale": "Functional full arc with a useful on-camera narrator frame and good sound, but Past is heavily summarized (school/Fan/Fezziwig reduced to fragments), character looks are thinly restated, and some actions remain summary rather than concrete clip-able beats.",
-      "promptImprovementSuggestion": "Require that any on-camera narrator or frame device be established with a stable heading and used for at least three cut-backs (setup, peak, close) rather than a single book-end, and that all major source set-pieces receive at least two concrete visual micro-beats."
-    },
-    {
-      "screenplayId": "Screenplay F",
+      "screenplayId": "Screenplay B",
       "adaptationFidelity": 9,
-      "characterDisambiguation": 9.5,
-      "aiVideoDirectibility": 9,
-      "dramaticPacing": 8.5,
-      "dialogueAuthenticity": 9,
-      "soundDesignMusic": 9,
-      "overallQualitativeScore": 9,
-      "productionReady": true,
-      "disqualifyingIssues": [],
-      "rationale": "Highest overall: complete faithful arc, crystal-clear BOY SCROOGE / YOUNG SCROOGE / adult locks restated on re-entry, every action is a single observable 5-10 s beat, iconic dialogue preserved verbatim, and sound/music cues are dense and diegetic at every emotional peak.",
-      "promptImprovementSuggestion": "Add a runtime-shape rule that peak emotional scenes (death reveal, confession, reunion) must interleave at least two distinct (SOUND/MUSIC) cues with two visual micro-beats rather than one long VO or one static image."
-    },
-    {
-      "screenplayId": "Screenplay G",
-      "adaptationFidelity": 5,
-      "characterDisambiguation": 6,
-      "aiVideoDirectibility": 7,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 6,
       "dramaticPacing": 6.5,
-      "dialogueAuthenticity": 5,
-      "soundDesignMusic": 7,
-      "overallQualitativeScore": 6.08,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.75,
       "productionReady": false,
       "disqualifyingIssues": [
-        "Major dialogue attribution inversion on Marley belief exchange",
-        "Drops core Past beats (solitary schoolboy and Fan rescue almost entirely absent)"
+        "Compound multi-location scene headings banned by prompt (EXT. BLEAK MOOR / LIGHTHOUSE / SHIP, EXT. CITY STREET / INT. BELLE\u0027S ROOM)",
+        "Malformed character/dialogue lines containing placeholder parentheticals (\u0027(what business)\u0027, \u0027(a pimple\u2014lead on)\u0027) that break Fountain parsing",
+        "Unstable supporting tokens (NIECE, CHARITY GENTLEMAN, FAT MAN, MR. ADAMS) violating closed-cast consistency"
       ],
-      "rationale": "Readable short-clip structure and adequate sound, but inverted Marley lines plus near-total omission of the school/Fan sequence fatally damage fidelity; character looks are thinly described after first appearance and Past feels rushed.",
-      "promptImprovementSuggestion": "Explicitly require that every major emotional set-piece named in the source (childhood isolation, sibling rescue, workplace feast, romantic rupture, family dinner, scavenger scene, grave) appear as its own headed scene with book dialogue intact."
+      "rationale": "Highest source coverage\u2014retains nearly every book beat, long Marley speeches, Ali Baba fantasy, full Fezziwig dance, Belle double scene, Cratchit Martha/pudding details, miners/lighthouse/ship, Joe\u2019s rag shop, Caroline debtors, and all iconic dialogue verbatim. Sound cues are frequent. However, directibility collapses on multi-place headings and crammed montages that cannot be scheduled as single clips; several cues are literally unparsable placeholders; supporting names drift. Pacing bloats well past a tight 10-minute cut. These structural defects make the draft unusable without rewrite despite superior fidelity.",
+      "promptImprovementSuggestion": "Strengthen the existing multi-place ban with an explicit parse-time rule: any heading containing a slash, \u0027VARIOUS\u0027, or more than one concrete place is invalid and must be split into sequential single-location scenes each opening with a grounding Action line; also forbid any parenthetical text inside or immediately after a character cue except standard delivery notes."
     }
   ],
   "forcedRanking": [
-    "Screenplay F",
     "Screenplay A",
-    "Screenplay B",
-    "Screenplay E",
-    "Screenplay C",
-    "Screenplay D",
-    "Screenplay G"
+    "Screenplay B"
   ],
-  "judgeSummaryNotes": "Strongest: Screenplay F because it alone combines near-perfect source fidelity, explicit multi-age casting locks restated on every re-entry, and consistently clip-length concrete actions with dense diegetic sound. Weakest: Screenplay C because catastrophic mid-climax truncation omits the entire redemption, rendering an otherwise richly detailed draft unusable.",
+  "judgeSummaryNotes": "Strongest: Screenplay A because it delivers clean single-location, clip-ready scenes with locked character visuals, consistent audio direction, and full emotional spine without structural defects. Weakest: Screenplay B because banned compound headings plus broken placeholder dialogue cues render it unparsable and unfilmable as-is despite richer beat coverage.",
   "isMock": false,
   "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
-  "screenplaysHash": "087625FDC2693F44D985AD13FBA8786410D3C7B637B66A7C38C37C5F16602649"
+  "screenplaysHash": "EFFB56368ED20F23EFB41F59D0A64A03A841D14E84DC85385E31034F5F75E717"
 }

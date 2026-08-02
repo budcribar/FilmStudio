@@ -1,0 +1,87 @@
+{
+  "schema_version": "audio_plan.v1",
+  "project_music_style": "Sparse Midwestern indie-drama score; low strings and distant guitar; avoid needle-drop rock except brief diegetic bar cue; silence as pressure; later Seattle cues cooler and thinner.",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "score_intent": "Heavy domestic gravity; low drone under family routine.",
+      "timing": "Enter under establishing shots; thin out for Nick entrance.",
+      "diegetic_sound": "TV game show murmur; fridge; boots on floor.",
+      "silence_guidance": "Hold silence after Nick door energy lands.",
+      "exclusions": "No heroic theme for Nick.",
+      "source_evidence": "All she wants to do is watch game shows"
+    },
+    {
+      "scene_id": "S02",
+      "score_intent": "Sudden soft lift; almost tidal, gentle.",
+      "timing": "Begin at shoulder brush; sustain under walk-away look-back.",
+      "diegetic_sound": "Street traffic; shop door; footsteps.",
+      "silence_guidance": "Brief mute on eye contact.",
+      "exclusions": "No romantic pop song.",
+      "source_evidence": "That was like Sionna, except she was washing up on me"
+    },
+    {
+      "scene_id": "S03",
+      "score_intent": "Curious intellectual warmth; light piano figures.",
+      "timing": "Under conversation montage; out on leaving to bus.",
+      "diegetic_sound": "Cup clinks; backpack rustle; cafe bed.",
+      "silence_guidance": "Leave space after beauty/eyes beats.",
+      "exclusions": "No student comedy cues.",
+      "source_evidence": "When I looked into them, I lost all track of time"
+    },
+    {
+      "scene_id": "S04",
+      "score_intent": "Tight anxious pulse under Ma confusion and Nick anger.",
+      "timing": "Build on glassy-eyed Ma look; spike on Nick blame.",
+      "diegetic_sound": "Pill bottles; chair creak; door slam.",
+      "silence_guidance": "After slam, only hallway decay.",
+      "exclusions": "No comic underscore.",
+      "source_evidence": "Her eyes were all glassy and looked really empty."
+    },
+    {
+      "scene_id": "S05",
+      "score_intent": "Diegetic rock bed then score drops to heartbeat dread.",
+      "timing": "Bar noise full; score enters only at fist draw; cut to run breath.",
+      "diegetic_sound": "Crowd, pool, AC/DC-like bar track energy as ambience not licensed need; fists; door.",
+      "silence_guidance": "Slow-motion almost-silent fist moment.",
+      "exclusions": "No triumph music after escape.",
+      "source_evidence": "An old AC-DC song blared through"
+    },
+    {
+      "scene_id": "S06",
+      "score_intent": "Hollow shock; almost no melody.",
+      "timing": "Under officer words; sustain into hospital refusal beat if cut in.",
+      "diegetic_sound": "Station room tone; distant phones.",
+      "silence_guidance": "Long hold after \u0027passed away at the scene\u0027.",
+      "exclusions": "No sentimental strings swell yet.",
+      "source_evidence": "I regret to tell you that your brother is in serious condition... and your mother passed away at the scene."
+    },
+    {
+      "scene_id": "S07",
+      "score_intent": "Abrupt violence stinger then raw panic air.",
+      "timing": "Silence before knock; stinger on blade; chaos through sirens.",
+      "diegetic_sound": "Knock, struggle, body to wall, wet blood, sirens approaching.",
+      "silence_guidance": "One second pure silence on first blood realization.",
+      "exclusions": "No horror excess stingers beyond one.",
+      "source_evidence": "The knife hits her hard and there is red flying out."
+    },
+    {
+      "scene_id": "S08",
+      "score_intent": "Cool open Seattle air; lonely but freer tempo.",
+      "timing": "Walk and memory flashes; resolve into flight decision.",
+      "diegetic_sound": "Mist rain, traffic hush, ferry horn distant optional.",
+      "silence_guidance": "Breath before booking choice.",
+      "exclusions": "No tourist travel montage music.",
+      "source_evidence": "Many years had passed since my Milwaukee days."
+    },
+    {
+      "scene_id": "S09",
+      "score_intent": "Bare; human voice primary; soft release chord after forgive.",
+      "timing": "None under accusation; gentle resolve after \u0027I forgive you\u0027.",
+      "diegetic_sound": "Room fans, door locks, phone plastic, chair scrape.",
+      "silence_guidance": "After hang-up, extended quiet walk out.",
+      "exclusions": "No revenge theme; no choir.",
+      "source_evidence": "I forgive you, Nick, because it also releases your control over me forever"
+    }
+  ]
+}

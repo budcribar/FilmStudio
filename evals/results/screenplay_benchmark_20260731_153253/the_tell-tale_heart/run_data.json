@@ -1,0 +1,144 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\openai\\books\\The_Tell-Tale_Heart.txt",
+  "Timestamp": "2026-07-31 21:44:42 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 3,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 12,
+        "TotalDialogueBlocks": 35,
+        "AvgWordsPerDialogue": 23.5,
+        "MaxWordsInSingleDialogue": 42,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.2,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 8.3,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.3,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 3,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 30,
+        "AvgWordsPerDialogue": 41.2,
+        "MaxWordsInSingleDialogue": 91,
+        "LongMonologueCount": 18,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "THE OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "High average dialogue length (41.2 words/turn); speech beats risk clip overrun.",
+          "18 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 7.9,
+      "AvgAiVideoDirectibility": 7.6,
+      "AvgDramaticPacing": 7.2,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 9.1,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: The projected runtime substantially exceeds the roughly ten-minute target, with approximately 1,500 spoken words before accounting for suspense holds and visual action.",
+        "gpt-5.6-sol: Several long monologues and multi-action paragraphs contain numerous clip-sized beats, preventing dependable one-beat-per-5\u201310-second-clip generation as written."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-sol": {
+      "grok-4.5": 7.67,
+      "gpt-5.6-sol": 8.42
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 8.25,
+      "grok-4.5": 8.7
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-sol": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-sol": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.7/10 vs. a 7.7/10 average from 1 other judge(s) (\u002B1.0) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "This is the more exhaustive adaptation, preserving nearly every major source beat, much of Poe\u0027s cadence, the seven-night ritual, the prolonged eighth-night vigil, concealment, police visit, auditory breakdown, and confession. Fidelity is reduced slightly because the eighth-night cause-and-effect is reordered: the old man asks who is there before the lantern fastening slips, whereas the slip prompts his cry in the source. The leads have strong, consistent visual locks, but the three officers receive comparatively thin reference traits such as \u0027younger\u0027 or \u0027graying\u0027 rather than complete, individually stable combinations of face, build, hair, and wardrobe. Most action is vividly observable, but the dismemberment-and-concealment paragraph compresses many separate shots into one element, while several abstract phrases and extremely long narration blocks are poorly suited to a single short clip. The dramatic escalation is faithful and effective, yet the amount of retained prose would produce a film well beyond the requested runtime and makes the repeated frame cutaways feel cumulative rather than propulsive. Dialogue preserves the source voice exceptionally well, but multiple 60\u2013100-word turns are not performable within the clip duration, and a few minor lines are invented. Sound is the draft\u0027s strongest production asset: every scene has specific ambience, the heartbeat develops in distinct stages, and restrained music cues reinforce both major peaks.",
+      "gpt-5.6-sol": "This draft covers the complete causal spine while compressing it much closer to the intended runtime. Its principal fidelity deductions are the formal interrogation-room context and stopped-watch closing image, both invented framing choices, plus converting the old man\u0027s imagined private reassurances into audible dialogue; however, these choices do not materially alter the central plot. Character locking is particularly strong: the narrator, old man, and three individually named officers have distinct ages, builds, hair or facial features, and stable period wardrobe cues. Action is generally divided into concise, camera-observable units, with the seven-night montage and graphic dismemberment sequence being the main elements that still contain multiple temporal or physical actions. The pocket-watch frame provides coherent transitions, and the shorter narration creates a more effective escalation from ritual to murder to confession without sacrificing the heartbeat motif. Dialogue retains Poe\u0027s famous wording while making more selective cuts than Screenplay A, although several turns still exceed a ten-second performance and the old man\u0027s spoken self-reassurance violates the source\u0027s internal perspective. Diegetic sound design is precise and exceptionally well integrated, especially the watch, beetles, ringing, and heartbeat progression, but the absence of any explicit music cue leaves the background-score arc undeveloped."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Strong closed-cast gothic adaptation with a clear interrogation-frame device and excellent sound motif (watch/heartbeat). Fidelity is high on iconic lines and major beats, but the Old Man is given spoken lines (\u0027It is nothing but the wind\u2026\u0027) that the book presents only as the narrator\u2019s attributed internal thoughts\u2014an avoidable invention. Character looks are locked with high consistency (Narrator\u2019s frock coat/hollow eyes; distinct officer builds and whiskers). Directibility suffers on the seven-night stretch, collapsed into one unfilmable summary line (\u0027The ritual repeats through seven changes of candle and moon\u0027), and the murder/concealment beats pack many distinct actions into single scenes that will be hard to split into clean 5\u201310s clips. Pacing and sound design are otherwise solid, with good frame cutbacks and dense peak audio.",
+      "grok-4.5": "Best overall fidelity: keeps book diction on spine monologues, correctly leaves the wind/mouse/cricket material in Narrator V.O. as attributed thought rather than invented Old Man dialogue, and hits every major beat (seven nights, eighth-night hour, kill, tub/planks, officers, confession) without plot invention. Frame (BARE CHAMBER) cutbacks are well placed and the closing return works. Directibility is strong\u2014micro-beats on lantern ray, heartbeat rise, bed crash, hand-on-chest\u2014with sound/music interleaved at peaks. Character locking is good in Notes and first appearances but thinner on officer re-entry (coats/badges only) and occasional missed restatements after gaps. Minor invented connective dialogue (\u0027Well enough\u0027; \u0027Rest from your fatigues\u0027) stays within summarized-exchange bounds. Sound design is excellent throughout."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-sol": "Strongest: Screenplay B because its tighter compression, clearer cast locks, and finer-grained visual beats make it the only draft close to the ten-minute, short-clip production target. Weakest: Screenplay A because, despite superior source coverage and audio design, its oversized monologue and action blocks require a substantial runtime and clip-granularity rewrite.",
+    "grok-4.5": "Strongest: Screenplay B because it preserves book voice and internal-vs-spoken boundaries most cleanly while delivering clip-ready micro-beats and peak sound density. Weakest: Screenplay A because the seven-night montage summary and converting attributed Old Man thoughts into spoken dialogue hurt directibility and fidelity relative to B."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "Add a hard clip-budget rule: no dialogue or V.O. turn may exceed 20 spoken words or roughly eight seconds, and each action element may contain only one primary visual action before a new micro-beat.",
+      "gpt-5.6-sol": "Require a deliberate music strategy in addition to diegetic sound: include explicit MUSIC cues at two to four structural turns, including the climax and resolution, unless the title notes expressly declare an intentionally unscored film."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Require that any multi-night/multi-day repeated ritual be written as 2\u20133 discrete, camera-observable Action micro-beats (or separate timed headings) rather than a single summary montage sentence, so each beat can become its own short clip.",
+      "grok-4.5": "Strengthen CHARACTER RE-ENTRY so that every speaking character\u2014including supporting roles\u2014must have 2\u20133 locked visual traits restated in the first Action line of any scene after a gap, not only protagonists or age-split roles."
+    }
+  }
+}

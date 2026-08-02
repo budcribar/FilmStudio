@@ -1,0 +1,40 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong, near-complete coverage of Poe\u2019s beats (motive, seven nights, eighth-night standoff, kill, concealment, police, confession) with iconic diction preserved in V.O. and on-camera lines. Narrator and Old Man are locked with consistent, filmable traits; officers receive stable named tokens and brief looks. Action is concrete and clip-scalable, with excellent interleaving of micro-beats and heartbeat sound at the peak. Minor deductions for a few invented spoken lines (Old Man\u2019s \u2018Well enough,\u2019 brief officer banter) that the source only summarizes, and for a couple of denser scenes that pack many clip-units under one heading. Sound/music cues are specific, diegetic, and present in every scene, with peak density at the murder and confession.",
+      "promptImprovementSuggestion": "Add an explicit hard rule that any exchange the book only summarizes without quoted speech must be carried by Action alone (zero invented spoken lines by default), allowing at most one brief generic line only when a mute gap would break the scene."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 6.5,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.4,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Covers the full arc and keeps book wording tightly in V.O., with almost no invented dialogue\u2014stronger purity on that axis than A. Weaknesses: Narrator\u2019s full visual lock arrives late and thin; police remain an undifferentiated group (\u2018three POLICE OFFICERS\u2019) with no individual tokens or looks, hurting cast-reference stability; heavy stacked V.O. over sparse Action and a \u2018week passes in brief repetitions\u2019 montage reduce clip-level directibility; peak kill/confession has fewer interleaved visual micro-beats than the source density warrants. Sound cues are present and the heartbeat bed works, but overall show-don\u2019t-tell and casting clarity lag A enough to lower the average.",
+      "promptImprovementSuggestion": "Mandate that every character\u2019s first on-screen appearance include a full locked visual description (build, hair/face, wardrobe) in that scene\u2019s opening Action, and require a concrete visual or diegetic-sound micro-beat after every two consecutive V.O. sentences so peaks cannot run as long narration over static images."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it best balances fidelity, locked cast looks, clip-scalable action, and peak sound/visual density while remaining production-ready. Weakest: Screenplay B because stacked V.O., late/thin character locks, and unnamed group officers materially hurt AI directibility and casting clarity despite cleaner dialogue purity.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "AF9031D5E0013AC8E48553C6896D3F35FC91BC6B0F0B7B5084058A704ECD022F"
+}

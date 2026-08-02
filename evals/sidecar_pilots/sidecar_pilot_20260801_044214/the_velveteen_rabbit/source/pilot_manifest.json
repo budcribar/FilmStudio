@@ -1,0 +1,8 @@
+{
+  "schema_version": "sidecar_pilot.v1",
+  "book_path": "books\\The_Velveteen_Rabbit.txt",
+  "model": "grok-4.5",
+  "requested_temperature": 0,
+  "generated_at_utc": "2026-08-01T04:45:09.6336222Z",
+  "media_generated": false
+}

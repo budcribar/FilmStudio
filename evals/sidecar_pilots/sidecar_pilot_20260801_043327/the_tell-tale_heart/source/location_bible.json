@@ -1,0 +1,99 @@
+{
+  "schema_version": "location_bible.v1",
+  "render_style_lock": "Cramped 19th-century dwelling; pitch-black nights; shuttered windows; practical lantern/candle; floorboards as key geometry; no modern fixtures.",
+  "locations": [
+    {
+      "location_key": "LOC_HOUSE_INTERIOR",
+      "description": "Interior of the old house connecting street door to chambers; used for narrator\u2019s calm direct-address frame and descent to answer the door.",
+      "layout_anchors": [
+        "street door at entry",
+        "stair or passage toward chamber",
+        "sense of neighboring walls through which sound might pass"
+      ],
+      "lighting_states": [
+        {
+          "state_key": "HOUSE_NIGHT_DIM",
+          "description": "Sparse artificial light; pre-dawn dark."
+        }
+      ],
+      "persistent_props": [
+        "door latch",
+        "period lamp or candle for answering door"
+      ],
+      "image_briefs": [
+        {
+          "brief_key": "HOUSE_ENTRY",
+          "description": "Narrow entry, heavy street door, darkness beyond a single handheld light."
+        }
+      ],
+      "source_evidence": "amid the dreadful silence of that old house",
+      "scene_assignments": [
+        "S1"
+      ]
+    },
+    {
+      "location_key": "LOC_OLD_MAN_CHAMBER",
+      "description": "The old man\u2019s bedroom: bed, close-fastened shutters, door with latch, floor with removable planks, space for a tub, chairs brought in for officers.",
+      "layout_anchors": [
+        "bed against inner wall",
+        "door with latch opening inward slowly",
+        "shutters close fastened",
+        "three planks in flooring over scantlings",
+        "seating position directly above burial spot"
+      ],
+      "lighting_states": [
+        {
+          "state_key": "CHAMBER_PITCH_BLACK",
+          "description": "Black as pitch; thick darkness."
+        },
+        {
+          "state_key": "CHAMBER_LANTERN_RAY",
+          "description": "Single thin ray from dark lantern on the eye only."
+        },
+        {
+          "state_key": "CHAMBER_LANTERN_OPEN",
+          "description": "Lantern thrown open as narrator leaps in."
+        },
+        {
+          "state_key": "CHAMBER_MORNING",
+          "description": "Daybreak visits; ordinary chamber light."
+        },
+        {
+          "state_key": "CHAMBER_POLICE",
+          "description": "Lit enough for search, treasures display, and seated conversation."
+        }
+      ],
+      "persistent_props": [
+        "heavy bed",
+        "dark lantern with tin fastening and creaking hinges",
+        "door latch",
+        "close-fastened shutters",
+        "three floor planks",
+        "tub",
+        "chairs",
+        "old man\u2019s treasures (undisturbed)"
+      ],
+      "image_briefs": [
+        {
+          "brief_key": "CHAMBER_DOOR_CRACK",
+          "description": "Door ajar a head-width; lantern closed; absolute surrounding black."
+        },
+        {
+          "brief_key": "EYE_RAY",
+          "description": "Thread-thin ray isolating a filmed pale-blue eye; no other face detail."
+        },
+        {
+          "brief_key": "PLANKS_SEALED",
+          "description": "Floorboards replaced flush; chair legs planted on the spot."
+        }
+      ],
+      "source_evidence": "His room was as black as pitch with the thick darkness, (for the shutters were close fastened, through fear of robbers,)",
+      "scene_assignments": [
+        "S2",
+        "S3",
+        "S4",
+        "S5"
+      ]
+    }
+  ]
+}

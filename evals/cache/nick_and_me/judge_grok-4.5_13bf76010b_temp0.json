@@ -1,0 +1,43 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.25,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Protagonist cued as PETER from the opening (and throughout) despite the book withholding the name until the final line; must remain NARRATOR until the source reveal",
+        "Speaking supporting role cued as bare BOYFRIEND (relational/unstable label forbidden by closed-cast rules)"
+      ],
+      "rationale": "Strong visual locking via title-page Notes and consistent re-entry traits for the core four; solid short-clip action and near-complete sound coverage. Fidelity suffers from premature naming of the narrator, compression that drops several mid-book confrontations (early slap, full doctor/ER setup, Nick\u0027s wrecked apartment), and the illegal BOYFRIEND cue. Pacing is tight with effective Seattle bookends but loses some escalation density around the crash and stabbing. Dialogue stays close to book cadence when present. Production-blocked by the two hard cast/reveal violations.",
+      "promptImprovementSuggestion": "Add an explicit enforcement example under closed-cast and name-reveal rules: \u0027If the source withholds the protagonist\u0027s given name until late or final pages, the cue must remain NARRATOR (or equivalent) until that exact reveal; never promote an end-name into early Action or cues, and never allow bare relational tokens (BOYFRIEND, GIRLFRIEND, HUSBAND) as dialogue cues\u2014assign a stable proper name or ROLE SURNAME instead.\u0027"
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highest fidelity: correctly keeps NARRATOR until the final \u0027President Peter Olson\u0027 line, covers more source beats (doctor visit, battlefield dream, early slap fight, Nick apartment mess, Trans Am crash visual, full stabbing aftermath), and invents only light stable names (DAVID, ELLEN, HARRIS) for unnamed speakers. Directibility is concrete and clip-friendly; pacing escalates cleanly through the accident/stabbing/prison arc with good Seattle coda. Dialogue preserves book wording and subtext in short turns. Sound cues are present and specific in every scene. Character looks are described on first entry and some re-entries but lack a locked upfront bible and occasional restatement after time jumps, the only real softness.",
+      "promptImprovementSuggestion": "Mandate a title-page Notes: cast bible that locks 2-3 filmable visual traits (build/hair/scar/wardrobe colors) for every recurring character on first appearance, and require those exact traits to be restated in the opening Action line of any scene after a time jump or age shift."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it alone obeys the narrator-name reveal rule, covers more essential source confrontations and the crash without major drops, and stays production-ready. Weakest: Screenplay A because the early PETER naming and illegal BOYFRIEND cue are hard closed-cast/fidelity violations that block greenlight despite superior visual locking.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "BC1EF4ABF535577C188F4FB6A303068AB218CC932C303633FE97A27F813DD348"
+}

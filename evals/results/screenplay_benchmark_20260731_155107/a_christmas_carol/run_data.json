@@ -1,0 +1,189 @@
+{
+  "BookPath": "books\\A_Christmas_Carol.txt",
+  "Timestamp": "2026-07-31 21:59:25 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 3,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 19,
+        "TotalDialogueBlocks": 103,
+        "AvgWordsPerDialogue": 13.7,
+        "MaxWordsInSingleDialogue": 46,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. DOBSON",
+          "BOB CRATCHIT",
+          "MARLEY",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "BOY SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG SCROOGE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "TINY TIM",
+          "FRED\u0027S WIFE",
+          "TOM"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY SCROOGE",
+          "YOUNG SCROOGE",
+          "TINY TIM"
+        ],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 age-qualified character header(s) (e.g. BOY SCROOGE, YOUNG SCROOGE, TINY TIM).",
+          "Detected 4 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.2,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 8.8,
+      "AvgOverallQualitative": 7.7,
+      "DisqualifyingFlags": [
+        "grok-4.5: Dropped major Stave IV beats entirely (merchants on \u0027Change discussing the death, Old Joe\u0027s plunder shop with charwoman/Dilber/undertaker, debtors\u0027 family relief)",
+        "grok-4.5: Incomplete Ghost of Christmas Yet to Come arc collapses the no-one-mourns-Scrooge revelation into a single bare corpse shot"
+      ]
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 80.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 3,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 26,
+        "TotalDialogueBlocks": 148,
+        "AvgWordsPerDialogue": 20.8,
+        "MaxWordsInSingleDialogue": 122,
+        "LongMonologueCount": 28,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "GENTLEMAN",
+          "CAROL BOY",
+          "BOB CRATCHIT",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG SCROOGE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "MRS. CRATCHIT",
+          "TINY TIM",
+          "ALL",
+          "MR. BARKER",
+          "MR. LEECH",
+          "MR. CHAPMAN",
+          "MR. GROSVENOR",
+          "CHARWOMAN",
+          "HUSBAND",
+          "PETER",
+          "BOY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "CAROL BOY",
+          "YOUNG SCROOGE",
+          "TINY TIM",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "28 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 4 age-qualified character header(s) (e.g. CAROL BOY, YOUNG SCROOGE, TINY TIM)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.8,
+      "AvgCharacterDisambiguation": 6.2,
+      "AvgAiVideoDirectibility": 5.2,
+      "AvgDramaticPacing": 6,
+      "AvgDialogueAuthenticity": 7.8,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 6.9,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: The estimated finished runtime substantially exceeds the roughly 10-minute target, with numerous speeches and compound action passages too long for 5-10-second clips.",
+        "gpt-5.6-sol: Headings such as \u0022EXT. CITY STREET / INT. BELLE\u0027S ROOM\u0022 and \u0022INT. CRATCHIT HOME / EXT. LONDON - MONTAGE\u0022 combine distinct locations and interiors/exteriors, breaking the required schedulable single-location structure.",
+        "gpt-5.6-sol: Collective or ambiguous cues such as ALL and GENTLEMEN/GENTLEMAN violate closed-cast clarity, while the same YOUNG SCROOGE token is used for both a child and an adult apprentice despite reference-image locking.",
+        "grok-4.5: Multiple illegal multi-location scene headings using slashes or MONTAGE (EXT. CITY STREET / INT. BELLE\u0027S ROOM; INT. CRATCHIT HOME / EXT. LONDON - MONTAGE), violating the single concrete place HARD rule",
+        "grok-4.5: Initial generic GENTLEMAN cue before later named tokens creates a brief closed-cast instability"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-sol": {
+      "grok-4.5": 5.42,
+      "gpt-5.6-sol": 7.92
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 7.4,
+      "grok-4.5": 8.3
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-sol": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-sol": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 8.3/10 vs. a 5.4/10 average from 1 other judge(s) (\u002B2.9) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "This is the more comprehensive adaptation, preserving nearly every essential encounter, most thematic reversals, and a large amount of Dickens\u0027s original language. That fidelity comes at the expense of production usability: long monologues, whole celebrations summarized inside single action paragraphs, multiple temporal changes within one beat, and multi-location slash headings make clean clip extraction difficult. Character locking is particularly weak for Young Scrooge\u0027s age changes, Belle\u0027s age change, the charity gentlemen, the businessmen, and several Cratchit family members; many recurring characters also return without their identifying traits being restated. The dialogue is authentic but frequently far too long for one short clip. Diegetic effects are often vivid, but two scenes lack the mandatory audio cue and the screenplay provides almost no sustained background-music strategy before the final montage.",
+      "gpt-5.6-sol": "This draft efficiently preserves the central transformation, the three Spirits, the key emotional relationships, and the most famous dialogue while remaining close to the intended runtime. Its principal fidelity weakness is aggressive source compression: Christmas Present\u0027s broader survey is largely omitted, while the Future sequence loses the businessmen\u0027s indifference, Old Joe\u0027s sale of the stolen property, and the debtor family\u0027s relief, reducing the evidence of Scrooge\u0027s unmourned death to one strong visual scene. Character descriptions are distinctive and usually restated on re-entry, although Young Scrooge still spans more than one adult age and Belle changes from young woman to matron without separate age-specific cast tokens. The concrete headings, controlled transitions, and comparatively short exchanges are well suited to clip generation, with only a few compound actions and speeches exceeding the ideal beat length. Its sound design is the strongest package element, using detailed ambience, recurring musical ideas, a coherent funeral pulse, and properly intensified cues at major reveals."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Fidelity collapses because the Future stave omits the merchants\u0027 indifference, Old Joe\u0027s fencing of bed-curtains/shirt, and the debtors\u0027 relieved household\u2014core proof that Scrooge dies unmourned\u2014triggering the mandated severe penalty. Character lockups are excellent (gaunt pointed-nose Scrooge, Bob\u0027s white comforter and threadbare look restated on re-entry, clear BOY SCROOGE / YOUNG SCROOGE / SCROOGE splits, consistent Belle/Fan). Directibility is strong: single concrete headings, observable micro-actions, clip-friendly beats. Pacing is tight for runtime but hollowed by the missing Future peaks. Dialogue keeps most icons (Bah Humbug, surplus population, God bless us) with only light compression. Sound/music cues are present and concrete in every scene, with good peak layering. Not production-ready solely due to the structural omissions.",
+      "grok-4.5": "Fidelity is near-complete: all five staves, iconic lines, Fezziwig dance, Belle release \u002B later family, full Cratchit dinner, Ignorance/Want, merchants, Old Joe, debtors, Tim\u0027s death future, grave, and redemption morning are present with book diction largely intact. Character work is solid (Scrooge\u0027s sharp-nose/blue-chin lock, Bob\u0027s comforter, YOUNG SCROOGE) but re-entry restatements are thinner and some supporting looks sparse. Directibility suffers from slash-combined and MONTAGE headings that prevent clean single-location 5-10 s clips and break Fountain scheduling. Pacing maintains momentum across the full arc with clear transitions. Dialogue is highly authentic and performable, preserving long Marley and Fred speeches. Sound design is densest and most useful\u2014diegetic cues plus music on every scene and multi-layered at peaks. Not production-ready because the heading violations are structural deal-breakers under the shared prompt\u0027s priority-1 rules."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-sol": "Strongest: Screenplay B because it offers the best overall balance of faithful dramatic spine, cast stability, clip-level directibility, pacing, and purposeful audio scoring. Weakest: Screenplay A because its excessive runtime, compound beats, multi-location headings, and unstable cast tokens make the otherwise faithful draft unsuitable for production as written.",
+    "grok-4.5": "Strongest: Screenplay B because it delivers near-complete stave coverage and book-faithful dialogue including every major Future revelation. Weakest: Screenplay A because it entirely drops the merchants/Old Joe/debtors sequence that proves Scrooge dies unmourned, collapsing Stave IV fidelity."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "Add a hard clip-budget preflight: each action paragraph may contain only one continuous 5-10-second visual event, each dialogue turn may contain no more than roughly 18 spoken words, and the draft must be regenerated if its estimated finished runtime exceeds the target by more than 15 percent.",
+      "gpt-5.6-sol": "Add a silent source-coverage audit before output: identify each section\u0027s indispensable causal or revelatory beats, then verify that each is dramatized rather than replacing an entire sequence with only its endpoint; cut descriptive texture before cutting evidence that drives the protagonist\u0027s change."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Add an explicit coverage mandate: every major stave turn and iconic set-piece (including all three spirit climaxes and the unmourned-death sequence) must receive at least one dedicated scene heading; runtime cuts may only drop connective tissue, never entire revelation sequences.",
+      "grok-4.5": "Strengthen the scene-heading HARD rule with an explicit ban on slash-combined places or the word MONTAGE inside any heading; require either separate single-place headings for consecutive locations or pure Action-line transitions under one stable heading."
+    }
+  }
+}

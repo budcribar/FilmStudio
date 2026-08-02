@@ -1,0 +1,153 @@
+{
+  "BookPath": "books\\Nick_and_Me.txt",
+  "Timestamp": "2026-08-01 02:25:45 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 91.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 28,
+        "TotalDialogueBlocks": 75,
+        "AvgWordsPerDialogue": 14.6,
+        "MaxWordsInSingleDialogue": 58,
+        "LongMonologueCount": 4,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NICK",
+          "NARRATOR",
+          "YOUNG NICK",
+          "MA",
+          "SIONNA",
+          "DARK-HAIRED MAN",
+          "OFFICER DUPUIS",
+          "BOB",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG NICK"
+        ],
+        "DiagnosticWarnings": [
+          "4 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. YOUNG NICK).",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.8,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 9,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 87,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 27,
+        "TotalDialogueBlocks": 128,
+        "AvgWordsPerDialogue": 8,
+        "MaxWordsInSingleDialogue": 19,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "MRS. ENGEL",
+          "PETER",
+          "SIONNA",
+          "MA",
+          "MARTIN",
+          "LINDSEY",
+          "OFFICER DUPUIS",
+          "INSTRUCTOR",
+          "GUARD HARRIS"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.5,
+      "AvgCharacterDisambiguation": 7.2,
+      "AvgAiVideoDirectibility": 8.2,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 8.2,
+      "AvgOverallQualitative": 7.8,
+      "DisqualifyingFlags": [
+        "grok-4.5: Protagonist identity split across unstable tokens (NARRATOR in early Action/V.O. then PETER for all dialogue and later Action), violating closed-cast single-token rule and early name reveal before book ending",
+        "grok-4.5: Invented named supporting character MARTIN (book leaves boyfriend unnamed)"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "grok-4.5": 8.25,
+      "gpt-5.6-terra": 7.58
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 8.08,
+      "grok-4.5": 9
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    },
+    "grok-4": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "grok-4.5": "Strong fidelity to the book\u0027s first-person arc, late name reveal, key beats (Nick intro/Viking framing, Sionna meet, Ma decline, bar confrontation, crash, stabbing, Seattle aftermath, prison forgiveness) without major invented plot. NARRATOR token stays consistent until the final self-naming line. Visual locks for Nick (scars, reddish-brown hair, bulk), Sionna (pale skin, light-blue eyes, fish necklace, specific wardrobe), and Ma are mostly stable, with YOUNG NICK disambiguated; occasional re-entry after time jumps under-describes Narrator. Action is largely camera-observable and clip-sized, though several V.O.-heavy montages and multi-beat scenes (bar fight into run, stabbing aftermath) slightly strain single-clip directibility. Pacing compresses the long source effectively but rushes the post-stabbing recovery and Seattle transition. Dialogue stays close to book diction and short enough for clips. Every scene carries concrete (SOUND:) or (MUSIC:) cues, denser at peaks.",
+      "gpt-5.6-terra": "Covers the same essential spine and many book phrases, but early and consistent use of PETER (plus Action calling the same figure both NARRATOR and PETER) directly contradicts the source\u0027s late name reveal and the single-token rule; inventing MARTIN is a further named-character addition. Visual descriptions are otherwise clear and age-split (twelve-year-old NICK, older leaner PETER, Sionna traits locked), yet the dual token makes casting reference images unusable. Directibility is strong\u2014short observable actions, clean single-location headings, good micro-beats at the stabbing and prison. Pacing and scene rhythm feel tighter and less montage-dependent than A. Dialogue is performable and book-adjacent. Sound cues are present and specific in nearly every scene. The token fracture is a hard production blocker despite otherwise solid craft."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Strong visual descriptions and consistent cast but expanded scene count and occasional dense beats reduce clip-friendly pacing.",
+      "grok-4.5": "Tight, filmable scenes with precise action lines, consistent audio cues, and faithful compression of the source arc."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay A because it alone keeps a single stable NARRATOR token until the book\u2019s final self-naming, delivers high source coverage with dense usable sound cues, and has no disqualifying cast or invention defects. Weakest: Screenplay B because the protagonist is fractured across NARRATOR and PETER tokens plus an invented named boyfriend, rendering the closed cast unusable for locked reference images despite strong clip-level directing.",
+    "grok-4": "Strongest: Screenplay B because its tighter scene rhythm and precise micro-beat structure best serve the short-clip constraint while preserving fidelity. Weakest: Screenplay A because its expanded scene count occasionally dilutes momentum under the short-clip constraint."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "grok-4.5": "Add an explicit hard cap: after any time-jump or multi-year cut, the first Action line of the new scene must restate 2-3 locked visual traits for every returning principal before any dialogue or V.O.",
+      "gpt-5.6-terra": "Strengthen the closed-cast rule with: \u0027The protagonist\u2019s on-screen and cue token must be exactly one string for the entire draft; if the source withholds the given name until late or never, that token remains NARRATOR (or THE NARRATOR) in every Action mention and cue until the source itself utters the name\u2014no mid-draft switch to a proper name.\u0027"
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule requiring every scene to contain at most three distinct visual micro-beats separated by a single sound cue before the next heading.",
+      "grok-4.5": "Add an explicit rule requiring every scene to contain at most three distinct visual micro-beats separated by a single sound cue before the next heading."
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 7.2,
+      "characterDisambiguation": 4.8,
+      "aiVideoDirectibility": 5.7,
+      "dramaticPacing": 4.8,
+      "dialogueAuthenticity": 7.8,
+      "soundDesignMusic": 5.4,
+      "overallQualitativeScore": 6,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Several scenes lack the mandated literal (SOUND:) or (MUSIC:) cue, while major moments such as the death reveal and prison confession lack the required peak-level audio density.",
+        "Prohibited compound headings combine separate locations, including DOCTOR\u0027S OFFICE / HOSPITAL HALL, COMMUNITY COLLEGE CLASSROOM / JAVA HUT, FUNERAL HOME / CEMETERY, and MILWAUKEE STREETS / OLD BUILDINGS.",
+        "The closed-cast and identity rules are broken by generic speaking cues such as NURSE, INSTRUCTOR, and GUARD, and by using the same NARRATOR and NICK tokens across materially different ages.",
+        "The scene count, spoken material, and repeated framing passages are unlikely to fit approximately ten finished minutes without major cuts."
+      ],
+      "rationale": "This draft preserves most of the essential emotional spine: Nick\u0027s intimidating protectiveness, Ma\u0027s dementia, Sionna\u0027s transformative influence, the bar rupture, fatal crash, stabbing, separation, Seattle success, forgiveness, and final name reveal. It also retains a good amount of the source\u0027s blunt diction and avoids inventing personal names for unnamed supporting characters. Coverage is weakened by omitting the Tony mentorship and entrepreneurial bridge to the pizza-chain resolution, minimizing the recurring medieval-dream motif, omitting Nick\u0027s extended point of view, and ambiguously suggesting that years pass before the stabbing. The principal visual problem is identity control: the twenties and forties versions of the protagonist share one cue, twelve-year-old and adult Nick share another, and the younger protagonist receives almost no locked physical description. Many individual actions are filmable, but compound locations, summarized montages, internal phrases, and long dialogue scenes make clip decomposition difficult. The numerous concrete diegetic sound cues are useful, but omissions in several scenes and the near-total absence of an intentional musical arc keep the sound package from being production-complete.",
+      "promptImprovementSuggestion": "Add a mandatory runtime ledger for ten-minute drafts: cap dialogue and voice-over at roughly 1,100 words, budget every visual beat at a minimum of five seconds, and require cutting whole secondary beats until the estimated total is within the runtime band."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 6.8,
+      "aiVideoDirectibility": 7.1,
+      "dramaticPacing": 5.8,
+      "dialogueAuthenticity": 8.2,
+      "soundDesignMusic": 1,
+      "overallQualitativeScore": 5.3,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "No scene contains a mandated parenthetical (SOUND:) or (MUSIC:) direction, constituting an explicit hard failure of the shared generation prompt.",
+        "The draft invents personal names for source-unnamed characters, notably LIBRARIAN MORALES and ADAM KLINE, triggering the rubric\u0027s severe fidelity penalty.",
+        "The amount of dialogue, particularly the extended prison exchange, makes the approximately ten-minute runtime implausible without substantial compression."
+      ],
+      "rationale": "This is the cleaner and more linear piece of screenwriting, with strong grounding actions, mostly concrete single-location scenes, clear escalation from domestic control to crash and attempted murder, and a legible eight-year transition into the forgiveness resolution. The main characters receive stronger initial casting descriptions than in Screenplay A, and older Nick and the older protagonist are visibly re-established after the time jump. However, the same cast tokens still cover visibly different ages, Sionna\u0027s source-described short hair becomes shoulder-length, and several supporting characters remain thinly specified. Fidelity receives the required severe penalty because the screenplay invents LIBRARIAN MORALES and ADAM KLINE; it also changes the bar action by having Nick head-butt Joe rather than the bouncer and adds several unsupported visual details. The dialogue is highly performable and generally close to the source, but some philosophical and prison speeches are too long for a single short clip. Most critically, not one scene includes the required formal audio parenthetical: occasional prose references to rock music, sirens, impacts, and beeping do not constitute a usable scene-by-scene sound or scoring plan.",
+      "promptImprovementSuggestion": "Add a mandatory internal preflight validator that counts scene headings and literal audio-cue lines, regenerating the draft if any scene lacks a (SOUND:) or (MUSIC:) token or if a designated climax contains fewer than two such cues."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A, because it preserves more of the book\u0027s complete emotional and narrative spine and supplies a substantial, if incomplete, diegetic sound plan. Weakest: Screenplay B, because its cleaner linear construction is outweighed by a total hard failure on required audio cues and severe fidelity penalties for invented named roles.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "EA7F25D0F11F0653ADB7881FA7E7808E0F427ADEEFE35BCCFC94CBD2E43690BC"
+}

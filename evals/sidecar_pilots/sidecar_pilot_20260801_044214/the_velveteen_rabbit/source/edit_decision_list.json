@@ -1,0 +1,204 @@
+{
+  "schema_version": "edl.v1",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "location_key": "LOC_NURSERY",
+      "cast_variant_keys": [
+        "RABBIT_NEW",
+        "BOY_WELL"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_RABBIT_HOLLY",
+        "WR_BOY_PLAY"
+      ],
+      "purpose": "Arrive splendid; love briefly; forget.",
+      "estimated_seconds": 45,
+      "clip_beats": [
+        "Stocking wedge holly charm",
+        "Boy loves two hours compressed",
+        "Tissue chaos; Rabbit still and forgotten"
+      ]
+    },
+    {
+      "scene_id": "S02",
+      "location_key": "LOC_NURSERY",
+      "cast_variant_keys": [
+        "RABBIT_NEW",
+        "SKIN_HORSE_OLD"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_RABBIT_PLAIN",
+        "WR_SKIN_HORSE_BARE"
+      ],
+      "purpose": "Define Real through Skin Horse.",
+      "estimated_seconds": 70,
+      "clip_beats": [
+        "Snubs montage brief",
+        "Side by side at fender",
+        "REAL dialogue essentials",
+        "Rabbit sighs longing"
+      ]
+    },
+    {
+      "scene_id": "S03",
+      "location_key": "LOC_NURSERY",
+      "cast_variant_keys": [
+        "NANA_ADULT",
+        "RABBIT_NEW",
+        "BOY_WELL"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_NANA_APRON",
+        "WR_RABBIT_PLAIN",
+        "WR_BOY_NIGHT"
+      ],
+      "purpose": "Nana assigns Bunny to bed.",
+      "estimated_seconds": 35,
+      "clip_beats": [
+        "China dog missing",
+        "Swoop to cupboard",
+        "Old Bunny into arms"
+      ]
+    },
+    {
+      "scene_id": "S04",
+      "location_key": "LOC_BOY_BED",
+      "cast_variant_keys": [
+        "RABBIT_LOVED",
+        "BOY_WELL"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_RABBIT_PLAIN",
+        "WR_BOY_NIGHT"
+      ],
+      "purpose": "Bond nights; shabbiness begins.",
+      "estimated_seconds": 50,
+      "clip_beats": [
+        "Tight hug discomfort to comfort",
+        "Bedclothes burrows",
+        "Whisper games; chin snuggle",
+        "Fur/tail/nose wear inserts"
+      ]
+    },
+    {
+      "scene_id": "S05",
+      "location_key": "LOC_GARDEN",
+      "cast_variant_keys": [
+        "BOY_WELL",
+        "RABBIT_LOVED",
+        "NANA_ADULT"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_BOY_PLAY",
+        "WR_RABBIT_PLAIN",
+        "WR_NANA_APRON"
+      ],
+      "purpose": "Spring love; declaration of Real.",
+      "estimated_seconds": 55,
+      "clip_beats": [
+        "Wheelbarrow and raspberry huts",
+        "Left on lawn dusk; candle fetch",
+        "Nana fuss line; Boy REAL line",
+        "Rabbit joy; knowing eyes"
+      ]
+    },
+    {
+      "scene_id": "S06",
+      "location_key": "LOC_WOOD",
+      "cast_variant_keys": [
+        "RABBIT_LOVED",
+        "WILD_1_SUMMER",
+        "WILD_2_SUMMER",
+        "BOY_WELL"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_RABBIT_PLAIN",
+        "WR_WILD_1_FUR",
+        "WR_WILD_2_FUR",
+        "WR_BOY_PLAY"
+      ],
+      "purpose": "Wild rabbits reject toy body.",
+      "estimated_seconds": 65,
+      "clip_beats": [
+        "Nest in bracken; ants",
+        "Wild rabbits appear and hop",
+        "Hind legs exposure; smell rejection",
+        "Boy passes; alone call unanswered"
+      ]
+    },
+    {
+      "scene_id": "S07",
+      "location_key": "LOC_BOY_BED",
+      "cast_variant_keys": [
+        "BOY_ILL",
+        "RABBIT_LOVED",
+        "NANA_ADULT",
+        "DOCTOR_ADULT",
+        "BOY_RECOVERED"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_BOY_NIGHT",
+        "WR_RABBIT_PLAIN",
+        "WR_NANA_APRON",
+        "WR_DOCTOR_VISIT",
+        "WR_BOY_SHAWL"
+      ],
+      "purpose": "Illness loyalty; burn sentence.",
+      "estimated_seconds": 70,
+      "clip_beats": [
+        "Fever burn hold",
+        "Hidden under clothes",
+        "Recovery books; balcony plan overheard",
+        "Doctor burn order; Nana how about Bunny"
+      ]
+    },
+    {
+      "scene_id": "S08",
+      "location_key": "LOC_FOWL_HOUSE",
+      "cast_variant_keys": [
+        "RABBIT_LOVED",
+        "FAIRY_APPARITION"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_RABBIT_PLAIN",
+        "WR_FAIRY_PEARL"
+      ],
+      "purpose": "Loneliness, tear, Fairy salvation.",
+      "estimated_seconds": 70,
+      "clip_beats": [
+        "Sack among picture-books",
+        "Head out; raspberry memory",
+        "Real tear; flower; Fairy",
+        "Wasn\u0027t I Real; Now Real to every one; fly"
+      ]
+    },
+    {
+      "scene_id": "S09",
+      "location_key": "LOC_WOOD",
+      "cast_variant_keys": [
+        "FAIRY_APPARITION",
+        "RABBIT_LOVED",
+        "RABBIT_REAL_LIVING",
+        "WILD_1_SUMMER",
+        "WILD_2_SUMMER",
+        "BOY_RECOVERED"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_FAIRY_PEARL",
+        "WR_RABBIT_PLAIN",
+        "WR_WILD_1_FUR",
+        "WR_WILD_2_FUR",
+        "WR_BOY_PLAY"
+      ],
+      "purpose": "Living Real; incomplete reunion.",
+      "estimated_seconds": 75,
+      "clip_beats": [
+        "Glade dance stops for Fairy",
+        "New playfellow set down",
+        "Nose tickle; hind legs; leaps",
+        "Seasons breathe; spring peep; Boy almost knows; end"
+      ]
+    }
+  ]
+}

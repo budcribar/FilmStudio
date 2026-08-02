@@ -1,0 +1,232 @@
+{
+  "schema_version": "adaptation_plan.v1",
+  "logline": "On Christmas Eve, miserly Ebenezer Scrooge is warned by his dead partner\u2019s ghost and visited by three spirits who force him to confront his past, present, and possible future\u2014so he may yet keep Christmas in his heart.",
+  "source_grounded_timeline": [
+    {
+      "beat_id": "T1",
+      "when": "Christmas Eve afternoon, counting-house",
+      "event": "Scrooge works in cold fog; refuses nephew\u2019s dinner; rebuffs charity gentlemen; grudgingly gives Cratchit Christmas Day off.",
+      "source_evidence": "Once upon a time\u2014of all the good days in the year, on Christmas Eve\u2014old Scrooge sat busy in his counting-house."
+    },
+    {
+      "beat_id": "T2",
+      "when": "Christmas Eve night, Scrooge\u2019s chambers",
+      "event": "Marley\u2019s face appears in the knocker; Marley\u2019s Ghost enters in chains and warns of three Spirits.",
+      "source_evidence": "Scrooge, having his key in the lock of the door, saw in the knocker, without its undergoing any intermediate process of change\u2014not a knocker, but Marley\u0027s face."
+    },
+    {
+      "beat_id": "T3",
+      "when": "When the bell tolls One",
+      "event": "Ghost of Christmas Past shows lonely boy Scrooge, sister Fan, Fezziwig\u2019s ball, and the lost fianc\u00E9e\u2019s release.",
+      "source_evidence": "Expect the first to-morrow, when the bell tolls One."
+    },
+    {
+      "beat_id": "T4",
+      "when": "Next visitation at One",
+      "event": "Ghost of Christmas Present shows London cheer, the Cratchit dinner, Tiny Tim\u2019s frailty, and Ignorance and Want.",
+      "source_evidence": "I am the Ghost of Christmas Present,"
+    },
+    {
+      "beat_id": "T5",
+      "when": "When the last stroke of Twelve has ceased",
+      "event": "Ghost of Christmas Yet to Come shows indifference to a dead man, plunder of his goods, Cratchit grief, and a neglected grave.",
+      "source_evidence": "The third upon the next night when the last stroke of Twelve has ceased to vibrate."
+    },
+    {
+      "beat_id": "T6",
+      "when": "Christmas Day morning",
+      "event": "Scrooge awakes reformed; sends prize turkey to Cratchits; pledges to charity; dines with nephew; raises Bob\u2019s salary.",
+      "source_evidence": "I will honour Christmas in my heart, and try to keep it all the year."
+    }
+  ],
+  "withheld_name_rules": [
+    {
+      "rule_id": "W1",
+      "description": "Do not identify the unmourned dead man as Scrooge until the grave inscription is revealed.",
+      "applies_to": [
+        "T5",
+        "scene_future_bed",
+        "scene_future_grave"
+      ],
+      "source_evidence": "read upon the stone of the neglected grave his own name, EBENEZER SCROOGE."
+    },
+    {
+      "rule_id": "W2",
+      "description": "Marley\u2019s death is established at the open; his return as Ghost is the first wonder and must not be spoiled by early spectral staging outside the knocker beat.",
+      "applies_to": [
+        "T1",
+        "T2"
+      ],
+      "source_evidence": "Marley was dead: to begin with. There is no doubt whatever about that."
+    }
+  ],
+  "essential_beats": [
+    {
+      "beat_id": "B1",
+      "name": "Marley dead; Scrooge alone and cold",
+      "why_essential": "Establishes the premise that nothing wonderful follows unless Marley\u2019s death is believed.",
+      "characters": [
+        "CHAR_SCROOGE"
+      ],
+      "location": "LOC_COUNTING_HOUSE",
+      "source_evidence": "This must be distinctly understood, or nothing wonderful can come of the story I am going to relate."
+    },
+    {
+      "beat_id": "B2",
+      "name": "Nephew\u2019s Merry Christmas refused",
+      "why_essential": "States Scrooge\u2019s war on Christmas and family.",
+      "characters": [
+        "CHAR_SCROOGE",
+        "CHAR_NEPHEW",
+        "CHAR_CRATCHIT"
+      ],
+      "location": "LOC_COUNTING_HOUSE",
+      "source_evidence": "\u0022Bah!\u0022 said Scrooge, \u0022Humbug!\u0022"
+    },
+    {
+      "beat_id": "B3",
+      "name": "Charity refused; surplus population",
+      "why_essential": "Gives the moral crime later thrown back at him.",
+      "characters": [
+        "CHAR_SCROOGE",
+        "CHAR_CHARITY_A",
+        "CHAR_CHARITY_B"
+      ],
+      "location": "LOC_COUNTING_HOUSE",
+      "source_evidence": "If they would rather die,\u0022 said Scrooge, \u0022they had better do it, and decrease the surplus population."
+    },
+    {
+      "beat_id": "B4",
+      "name": "Marley\u2019s chain and warning",
+      "why_essential": "Inciting supernatural contract: three Spirits or Marley\u2019s fate.",
+      "characters": [
+        "CHAR_SCROOGE",
+        "CHAR_MARLEY"
+      ],
+      "location": "LOC_SCROOGE_CHAMBERS",
+      "source_evidence": "You will be haunted,\u0022 resumed the Ghost, \u0022by Three Spirits.\u0022"
+    },
+    {
+      "beat_id": "B5",
+      "name": "Past: neglected child and lost love",
+      "why_essential": "Shows origin of hardness and the cost of Gain.",
+      "characters": [
+        "CHAR_SCROOGE",
+        "CHAR_GHOST_PAST",
+        "CHAR_YOUNG_SCROOGE",
+        "CHAR_FAN",
+        "CHAR_BELLE"
+      ],
+      "location": "LOC_PAST_MONTAGE",
+      "source_evidence": "Another idol has displaced me; and if it can cheer and comfort you in time to come, as I would have tried to do, I have no just cause to grieve."
+    },
+    {
+      "beat_id": "B6",
+      "name": "Present: Cratchit feast and Tiny Tim",
+      "why_essential": "Human stakes; Scrooge hears his own cruel words quoted.",
+      "characters": [
+        "CHAR_SCROOGE",
+        "CHAR_GHOST_PRESENT",
+        "CHAR_CRATCHIT",
+        "CHAR_MRS_CRATCHIT",
+        "CHAR_TINY_TIM"
+      ],
+      "location": "LOC_CRATCHIT_HOME",
+      "source_evidence": "God bless us every one!\u0022 said Tiny Tim, the last of all."
+    },
+    {
+      "beat_id": "B7",
+      "name": "Future: lonely death and the grave",
+      "why_essential": "Climax of fear and choice; name withheld until stone.",
+      "characters": [
+        "CHAR_SCROOGE",
+        "CHAR_GHOST_FUTURE"
+      ],
+      "location": "LOC_CHURCHYARD",
+      "source_evidence": "Am I that man who lay upon the bed?\u0022 he cried, upon his knees."
+    },
+    {
+      "beat_id": "B8",
+      "name": "End of it: amendment",
+      "why_essential": "Resolution\u2014generosity, family, Tiny Tim lives.",
+      "characters": [
+        "CHAR_SCROOGE",
+        "CHAR_CRATCHIT",
+        "CHAR_NEPHEW",
+        "CHAR_TINY_TIM"
+      ],
+      "location": "LOC_SCROOGE_CHAMBERS",
+      "source_evidence": "and to Tiny Tim, who did NOT die, he was a second father."
+    }
+  ],
+  "scene_outline": [
+    {
+      "scene_id": "S01",
+      "heading": "INT. SCROOGE AND MARLEY COUNTING-HOUSE \u2013 CHRISTMAS EVE",
+      "location_key": "LOC_COUNTING_HOUSE",
+      "purpose": "Establish Scrooge\u2019s coldness; nephew, charity, clerk.",
+      "beat_ids": [
+        "B1",
+        "B2",
+        "B3"
+      ],
+      "approx_seconds": 180,
+      "source_evidence": "The door of Scrooge\u0027s counting-house was open that he might keep his eye upon his clerk, who in a dismal little cell beyond, a sort of tank, was copying letters."
+    },
+    {
+      "scene_id": "S02",
+      "heading": "EXT./INT. SCROOGE\u2019S YARD AND CHAMBERS \u2013 NIGHT",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "purpose": "Knocker; Marley; three-Spirit warning.",
+      "beat_ids": [
+        "B4"
+      ],
+      "approx_seconds": 150,
+      "source_evidence": "I wear the chain I forged in life,\u0022 replied the Ghost."
+    },
+    {
+      "scene_id": "S03",
+      "heading": "INT. BEDROOM / PAST VISIONS \u2013 SPIRIT TIME",
+      "location_key": "LOC_PAST_MONTAGE",
+      "purpose": "Past Spirit; boyhood loneliness; Belle\u2019s release.",
+      "beat_ids": [
+        "B5"
+      ],
+      "approx_seconds": 120,
+      "source_evidence": "I am the Ghost of Christmas Past."
+    },
+    {
+      "scene_id": "S04",
+      "heading": "INT. TRANSFORMED CHAMBERS / CRATCHIT HOME / STREETS \u2013 SPIRIT TIME",
+      "location_key": "LOC_CRATCHIT_HOME",
+      "purpose": "Present Spirit; Cratchit Christmas; Tim\u2019s fate conditional.",
+      "beat_ids": [
+        "B6"
+      ],
+      "approx_seconds": 150,
+      "source_evidence": "If these shadows remain unaltered by the Future, the child will die."
+    },
+    {
+      "scene_id": "S05",
+      "heading": "EXT./INT. CITY, EXCHANGE, RAG-AND-BOTTLE SHOP, BED, CHURCHYARD \u2013 SPIRIT TIME",
+      "location_key": "LOC_CHURCHYARD",
+      "purpose": "Silent Future; death without mourning; grave reveal.",
+      "beat_ids": [
+        "B7"
+      ],
+      "approx_seconds": 140,
+      "source_evidence": "Before I draw nearer to that stone to which you point,\u0022 said Scrooge, \u0022answer me one question."
+    },
+    {
+      "scene_id": "S06",
+      "heading": "INT./EXT. CHAMBERS, STREETS, NEPHEW\u2019S, COUNTING-HOUSE \u2013 CHRISTMAS DAY",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "purpose": "Joyful reform; turkey; charity; Fred; raise for Bob.",
+      "beat_ids": [
+        "B8"
+      ],
+      "approx_seconds": 160,
+      "source_evidence": "Best and happiest of all, the Time before him was his own, to make amends in!"
+    }
+  ]
+}

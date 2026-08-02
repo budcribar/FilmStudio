@@ -1,0 +1,47 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 6.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Repeated multi-location and multi-time headings, including BAGGAGE CAR AND SAN FRANCISCO WATERFRONT SHED, CLIFF CREST AND FORTY-MILE RAPIDS, and EASTERN WILDERNESS AND SPRUCE-BOUGH CAMP, make the draft structurally unsuitable for one short clip per beat.",
+        "Omnibus action paragraphs compress raids, deaths, journeys, and time jumps into single units that cannot be rendered as coherent 5\u201310-second clips.",
+        "Several recurring characters, including John Thornton, Dave, Sol-leks, Mercedes, Pete, and Hans, lack sufficiently locked visual descriptions or re-entry traits for reliable reference-image continuity."
+      ],
+      "rationale": "This is the more comprehensive adaptation, covering nearly every essential stage of Buck\u0027s transformation, including Dave\u0027s death, the cliff and rapids incidents, the wager, the moose hunt, Thornton\u0027s death, and the final joining of the pack. Its retained dialogue and narration preserve London\u0027s diction well, although several voice-over passages are too long for a short clip. The principal failure is structural: multiple headings combine distinct locations, days, and major sequences, while individual action paragraphs frequently contain enough material for several clips. Explicit, atmospheric sound cues appear throughout, but their usefulness is reduced when a single scene encompasses an entire montage or multiple set pieces.",
+      "promptImprovementSuggestion": "Add a HARD clip-atomization rule: each action paragraph must represent one continuous, camera-observable action that fits a single 5\u201310-second clip in one place and time; any second location, time jump, montage phase, or separate action must become a new action beat or scene heading."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "The source\u0027s unnamed man in the red sweater is assigned the invented proper name SMITH, triggering the required severe fidelity penalty for an invented named character.",
+        "The character is introduced as JOHN THORNTON in Action but uses THORNTON as the dialogue and recurrence token, violating the prompt\u0027s exact-token identity requirement."
+      ],
+      "rationale": "This is the cleaner and more directable package: most scenes have one clear dramatic purpose, action is divided into usable visual increments, recurring appearances\u2014especially Buck\u0027s changing physical condition\u2014are described with strong continuity, and the sound beds are specific and well interleaved at major peaks. Dialogue is concise, performable, and generally preserves the book\u0027s wording. Fidelity is nevertheless capped at 3 under the stated rule because SMITH is an invented proper name, while the omission of Dave\u0027s death, the starving-dog raid, Dolly\u0027s madness, and Thornton\u0027s cliff and rapids episodes substantially reduces thematic and character coverage. A few scenes still summarize several days or cross terrain and time within one heading, but these are localized rather than systemic directibility problems.",
+      "promptImprovementSuggestion": "Change the closed-cast rule so that an unnamed source figure must receive a stable source-grounded descriptive role token, never an invented proper personal name; the need for a cast key must not override source naming fidelity."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because its disciplined scene construction, clearer visual identity locks, concise dialogue, and granular sound-supported action make it the more viable short-clip production draft despite its severe fidelity defect. Weakest: Screenplay A because its excellent source coverage is undermined by multi-location mega-scenes and overloaded action units that cannot be reliably segmented into coherent 5\u201310-second clips.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "4514900B399557FF974F5DB1ED87B2C54F578F30B397863AED36A4FD06871FA4"
+}

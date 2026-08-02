@@ -1,0 +1,49 @@
+{
+  "schema_version": "sidecar_validation.v1",
+  "status": "repair_required",
+  "summary": {
+    "scene_count": 10,
+    "audio_scene_count": 10,
+    "location_count": 9,
+    "failure_count": 2,
+    "warning_count": 0
+  },
+  "failures": [
+    {
+      "code": "CAST_SIDE_CAR_SHAPE",
+      "message": "cast_seeds.character_seed_tokens must be an object keyed by stable cast key, not an array.",
+      "scene_id": null
+    },
+    {
+      "code": "FOUNTAIN_SCENE_HEADINGS_MISSING",
+      "message": "screenplay.fountain has no parser-recognized INT./EXT. scene headings and cannot drive a shot plan.",
+      "scene_id": null
+    }
+  ],
+  "warnings": [],
+  "fountain_syntax": {
+    "OverallSyntaxScore": 69,
+    "FormatComplianceScore": 45,
+    "SceneBudgetScore": 60,
+    "DialoguePacingScore": 100,
+    "CharacterDisambiguationScore": 100,
+    "MusicSpecScore": 70,
+    "TotalSceneHeadings": 0,
+    "TotalDialogueBlocks": 14,
+    "AvgWordsPerDialogue": 13.6,
+    "MaxWordsInSingleDialogue": 24,
+    "LongMonologueCount": 0,
+    "GenericNumberedSpeakerCount": 0,
+    "CharacterNamesFound": [
+      "NARRATOR",
+      "MA"
+    ],
+    "AgeDisambiguatedCharacters": [],
+    "DiagnosticWarnings": [
+      "No valid INT./EXT. scene headings detected by FountainParser.",
+      "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+      "Too few scene headings (0); story lacks visual scene progression.",
+      "No explicit music/sound design cues detected in screenplay."
+    ]
+  }
+}

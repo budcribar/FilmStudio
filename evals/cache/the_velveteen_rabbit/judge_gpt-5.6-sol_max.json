@@ -1,0 +1,42 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.7,
+      "characterDisambiguation": 5.5,
+      "aiVideoDirectibility": 7.3,
+      "dramaticPacing": 7.9,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 9.2,
+      "overallQualitativeScore": 7.68,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Closed-cast/reference-lock failure: two on-screen wild rabbits are not individually identified, yet dialogue is assigned to one ambiguous WILD RABBIT token; THE DOCTOR also remains a generic speaking token rather than a uniquely named cast key."
+      ],
+      "rationale": "This is a highly faithful adaptation that preserves the Christmas neglect, Skin Horse lesson, the Boy\u0027s declaration, the wild-rabbit encounter, scarlet-fever crisis, threatened bonfire, Fairy transformation, and final recognition. It does omit the replacement-bunny bedroom beat and invents a brief Fairy-scene response for the Rabbit, but neither change damages the central arc. Visual progression for the Velveteen Rabbit is clear, while casting clarity is substantially weaker: the two wild rabbits are indistinguishable, the speaking rabbit lacks a unique identity, the Doctor is generic, and the Boy and Nana are not consistently re-grounded after elapsed-time transitions. Most action is filmable, but several montage paragraphs combine multiple actions or time changes, and the longest Skin Horse and Fairy speeches cannot fit a single 5\u201310-second clip without subdivision. Pacing remains emotionally coherent, and the layered ambient cues, peak sound beats, and recurring musical themes are exceptionally effective.",
+      "promptImprovementSuggestion": "Require a silent preflight cast audit before output: every speaking role must have one unique cast token, every simultaneously present same-species or same-role character must be individually distinguishable, and all required re-entry traits must be verified before the Fountain draft is emitted."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.9,
+      "characterDisambiguation": 9.6,
+      "aiVideoDirectibility": 8.3,
+      "dramaticPacing": 8.8,
+      "dialogueAuthenticity": 8.2,
+      "soundDesignMusic": 9.7,
+      "overallQualitativeScore": 8.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "This version covers virtually the complete emotional and narrative spine, including the replacement bunny and the Boy\u0027s temporary removal to another bedroom. Hazel, Clover, Doctor Lewis, Nana, the Boy, the Fairy, and the Rabbit receive unusually strong, stable casting descriptions, with effective re-entry reminders and clearly tracked wear or recovery. The assigned names identify source-present roles rather than adding new characters, although minor fidelity slips include rainwater replacing garden dew and a golden flower apparently relocating to the wood glade. The action is concrete and animation-friendly, with especially strong transformation and memory imagery, but a few montage paragraphs still contain several clip-sized actions, and some source-faithful speeches exceed the 5\u201310-second delivery window. The structure escalates cleanly from neglect through love, rejection, threatened destruction, and liberation, while the recurring music-box motif, strategic musical cutoff, and detailed diegetic beds provide the strongest sound arc of the two drafts.",
+      "promptImprovementSuggestion": "Add a hard beat-granularity rule that every action paragraph and dialogue or V.O. turn must fit one 5\u201310-second clip; cap spoken turns at roughly 20 words and split longer source passages or serial montage actions with separate observable micro-beats."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it combines near-complete source coverage with exceptional cast locking, cleaner escalation, and a coherent musical strategy. Weakest: Screenplay A because its otherwise faithful adaptation contains an unresolved wild-rabbit identity collision and generic speaking-role tokens that prevent reliable reference-image assignment.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "D11A02372F9486353D02B9D71BEB0A621526C2779EDBFB3EA682BF93C384D4A3"
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": "sidecar_pilot.v1",
+  "book_path": "books\\Nick_and_Me.txt",
+  "model": "grok-4.5",
+  "requested_temperature": 0,
+  "generated_at_utc": "2026-08-01T04:31:28.3564596Z",
+  "media_generated": false
+}

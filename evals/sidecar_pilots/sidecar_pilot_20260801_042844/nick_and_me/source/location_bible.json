@@ -1,0 +1,214 @@
+{
+  "schema_version": "location_bible.v1",
+  "render_style_lock": "Gritty Milwaukee brick and neon realism; practical sources; cold weather breath; later Seattle gray mist contrast; one canonical location per scene heading.",
+  "locations": [
+    {
+      "key": "LOC_KIRK_APT",
+      "description": "Fifth-floor walk-up big brick apartment on Kirk Street; lived-in, modest, Ma\u2019s chair and TV gravity.",
+      "layout_anchors": [
+        "front door",
+        "living room chair/TV",
+        "kitchen counter pill line",
+        "bedroom hallway"
+      ],
+      "lighting_states": [
+        "day flat window gray",
+        "night lamp and TV glow"
+      ],
+      "persistent_props": [
+        "afghan",
+        "pill bottles/box",
+        "overstuffed brown chair",
+        "game-show TV"
+      ],
+      "image_briefs": [
+        "tight kitchen pill ritual",
+        "Ma in chair",
+        "door slam aftermath"
+      ],
+      "source_evidence": "We lived downtown in a big brick apartment building on Kirk Street. A fifth-floor walk-up",
+      "scene_assignments": [
+        "S01",
+        "S04"
+      ]
+    },
+    {
+      "key": "LOC_PIZZA_SIDEWALK",
+      "description": "Sidewalk and front door of the pizza place; cement trip hazard; working-class street.",
+      "layout_anchors": [
+        "front door",
+        "sidewalk cement",
+        "street approach"
+      ],
+      "lighting_states": [
+        "day exterior"
+      ],
+      "persistent_props": [
+        "shop front signage practical",
+        "bike optional"
+      ],
+      "image_briefs": [
+        "collision brush of shoulders",
+        "her look back over shoulder"
+      ],
+      "source_evidence": "walking down the sidewalk and into the front door of the pizza place",
+      "scene_assignments": [
+        "S02"
+      ]
+    },
+    {
+      "key": "LOC_JAVA_HUT",
+      "description": "Downtown coffee shop with backpacks, students, small back-wall table.",
+      "layout_anchors": [
+        "back small table near wall",
+        "entrance",
+        "counter"
+      ],
+      "lighting_states": [
+        "warm interior day"
+      ],
+      "persistent_props": [
+        "coffee cups",
+        "backpacks",
+        "notebooks"
+      ],
+      "image_briefs": [
+        "eyes across table",
+        "college-magazine crowd contrast"
+      ],
+      "source_evidence": "meet downtown at a coffee shop called The Java Hut... saw her near the wall in the back at a small table",
+      "scene_assignments": [
+        "S03"
+      ]
+    },
+    {
+      "key": "LOC_JOES_BAR",
+      "description": "Joe\u2019s Bar and Grill; packed Saturday energy; pool room adjacent; smoke and rock.",
+      "layout_anchors": [
+        "bar rail",
+        "pool room",
+        "door exit path"
+      ],
+      "lighting_states": [
+        "dim neon and practicals",
+        "smoky"
+      ],
+      "persistent_props": [
+        "pool cues",
+        "beer bottles",
+        "TV stack"
+      ],
+      "image_briefs": [
+        "crowd parting for Nick",
+        "fist draw in slow feel",
+        "run into night"
+      ],
+      "source_evidence": "The music was turned up loud as we opened the door to Joe\u2019s Bar and Grill.",
+      "scene_assignments": [
+        "S05"
+      ]
+    },
+    {
+      "key": "LOC_POLICE_STATION",
+      "description": "Ancient stone station; counter; interview seat; institutional weight.",
+      "layout_anchors": [
+        "chest-high counter",
+        "waiting area",
+        "desk phone"
+      ],
+      "lighting_states": [
+        "harsh institutional"
+      ],
+      "persistent_props": [
+        "styrofoam cup",
+        "forms"
+      ],
+      "image_briefs": [
+        "narrator shaking hands on cup",
+        "officer delivery of news"
+      ],
+      "source_evidence": "The cop shop was an ancient stone building on the corner of Central and 3rd.",
+      "scene_assignments": [
+        "S06"
+      ]
+    },
+    {
+      "key": "LOC_SIONNA_DUPLEX",
+      "description": "Old duplex right-side rental; living room to hallway; wooden floor; candle and cooking smells.",
+      "layout_anchors": [
+        "front door crack",
+        "hallway wall",
+        "living room lamp",
+        "path to kitchen"
+      ],
+      "lighting_states": [
+        "night practical lamp",
+        "dim hallway"
+      ],
+      "persistent_props": [
+        "ratty couch",
+        "flower candle",
+        "gray cat optional"
+      ],
+      "image_briefs": [
+        "knife glint",
+        "blood on wood",
+        "pressure on wound"
+      ],
+      "source_evidence": "I finally reached the driveway of the shitty duplex they live in.",
+      "scene_assignments": [
+        "S07"
+      ]
+    },
+    {
+      "key": "LOC_SEATTLE_STREET",
+      "description": "Belltown / market-adjacent gray Seattle; hoods, mist, ferry-city energy; narrator\u2019s later life.",
+      "layout_anchors": [
+        "wet sidewalk",
+        "storefronts",
+        "gray sky blanket"
+      ],
+      "lighting_states": [
+        "overcast daylight"
+      ],
+      "persistent_props": [
+        "hooded passersby",
+        "coffee culture cues"
+      ],
+      "image_briefs": [
+        "lone walk with purpose",
+        "flash of brown hair stranger"
+      ],
+      "source_evidence": "The sky is a thick gray blanket that covers the people for most months of the year.",
+      "scene_assignments": [
+        "S08"
+      ]
+    },
+    {
+      "key": "LOC_PRISON_VISIT",
+      "description": "Green Bay correctional visit booth; plexiglass; phones; locked doors.",
+      "layout_anchors": [
+        "visitor chair",
+        "plexiglass",
+        "phone handset",
+        "inmate side entry"
+      ],
+      "lighting_states": [
+        "cold fluorescent"
+      ],
+      "persistent_props": [
+        "yellow receiver",
+        "patrol officer presence"
+      ],
+      "image_briefs": [
+        "aged Nick opposite",
+        "tears on glass ledge",
+        "hang up release"
+      ],
+      "source_evidence": "Nick was being held in Green Bay at the correctional institute there",
+      "scene_assignments": [
+        "S09"
+      ]
+    }
+  ]
+}

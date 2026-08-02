@@ -1,0 +1,163 @@
+{
+  "schema_version": "edl.v1",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "location_key": "LOC_COUNTING_HOUSE",
+      "cast_variant_keys": [
+        "CHAR_SCROOGE|AGE_SCROOGE_OLD",
+        "CHAR_NEPHEW|AGE_NEPHEW_ADULT",
+        "CHAR_CRATCHIT|AGE_CRATCHIT_ADULT",
+        "CHAR_CHARITY_A|AGE_CHARITY_A",
+        "CHAR_CHARITY_B|AGE_CHARITY_B"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_SCROOGE_OFFICE",
+        "WR_NEPHEW_VISIT",
+        "WR_CRATCHIT_OFFICE",
+        "WR_CHARITY_DAY"
+      ],
+      "purpose": "Cold world, refused kindness, surplus population.",
+      "estimated_seconds": 180,
+      "clip_beats": [
+        "Fog exterior to name over warehouse door",
+        "Scrooge eyes clerk\u2019s tiny fire",
+        "Nephew entrance and humbug",
+        "Charity appeal refused",
+        "Day-off growl; clerk slides home"
+      ]
+    },
+    {
+      "scene_id": "S02",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "cast_variant_keys": [
+        "CHAR_SCROOGE|AGE_SCROOGE_OLD",
+        "CHAR_MARLEY|AGE_MARLEY_GHOST"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_SCROOGE_NIGHT",
+        "WR_MARLEY_CHAINS"
+      ],
+      "purpose": "Marley warns; three Spirits appointed.",
+      "estimated_seconds": 150,
+      "clip_beats": [
+        "Knocker face",
+        "Double-lock and gruel",
+        "Bells and chain ascent",
+        "Marley revealed; chain explained",
+        "Three Spirits schedule; window phantoms; collapse to sleep"
+      ]
+    },
+    {
+      "scene_id": "S03",
+      "location_key": "LOC_PAST_MONTAGE",
+      "cast_variant_keys": [
+        "CHAR_SCROOGE|AGE_SCROOGE_OLD",
+        "CHAR_GHOST_PAST|AGE_PAST_SPIRIT",
+        "CHAR_YOUNG_SCROOGE|AGE_SCROOGE_BOY",
+        "CHAR_YOUNG_SCROOGE|AGE_SCROOGE_YOUNG_MAN",
+        "CHAR_FAN|AGE_FAN_CHILD",
+        "CHAR_BELLE|AGE_BELLE_YOUNG"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_SCROOGE_NIGHT",
+        "WR_PAST_TUNIC",
+        "WR_YOUNG_SCHOOL",
+        "WR_FAN_TRAVEL",
+        "WR_BELLE_MOURNING"
+      ],
+      "purpose": "Empathy via childhood and lost love.",
+      "estimated_seconds": 120,
+      "clip_beats": [
+        "Bell One; curtains drawn",
+        "Country road recognition",
+        "Lonely boy; Fan homecoming",
+        "Belle releases him",
+        "Scrooge fights extinguisher; returns to bed"
+      ]
+    },
+    {
+      "scene_id": "S04",
+      "location_key": "LOC_CRATCHIT_HOME",
+      "cast_variant_keys": [
+        "CHAR_SCROOGE|AGE_SCROOGE_OLD",
+        "CHAR_GHOST_PRESENT|AGE_PRESENT_YOUNG",
+        "CHAR_CRATCHIT|AGE_CRATCHIT_ADULT",
+        "CHAR_MRS_CRATCHIT|AGE_MRS_CRATCHIT_ADULT",
+        "CHAR_TINY_TIM|AGE_TIM_CHILD"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_SCROOGE_NIGHT",
+        "WR_PRESENT_ROBE",
+        "WR_CRATCHIT_CHRISTMAS",
+        "WR_MRS_CRATCHIT_FEAST",
+        "WR_TIM_CHRISTMAS"
+      ],
+      "purpose": "Love in poverty; Tim\u2019s danger; Scrooge\u2019s words returned.",
+      "estimated_seconds": 150,
+      "clip_beats": [
+        "Transformed room and Giant",
+        "Torch to Cratchit threshold",
+        "Goose, pudding, Tim\u2019s blessing",
+        "Vacant seat if unaltered",
+        "Ignorance and Want; bell twelve"
+      ]
+    },
+    {
+      "scene_id": "S05",
+      "location_key": "LOC_CHURCHYARD",
+      "cast_variant_keys": [
+        "CHAR_SCROOGE|AGE_SCROOGE_OLD",
+        "CHAR_GHOST_FUTURE|AGE_FUTURE_PHANTOM",
+        "CHAR_CRATCHIT|AGE_CRATCHIT_ADULT",
+        "CHAR_MRS_CRATCHIT|AGE_MRS_CRATCHIT_ADULT"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_SCROOGE_NIGHT",
+        "WR_FUTURE_SHROUD",
+        "WR_CRATCHIT_CHRISTMAS",
+        "WR_MRS_CRATCHIT_FEAST"
+      ],
+      "purpose": "Death without love; withheld identity; vow.",
+      "estimated_seconds": 140,
+      "clip_beats": [
+        "Silent Phantom appears",
+        "Exchange indifference (LOC_CITY insert)",
+        "Plunder shop horror",
+        "Unwatched body",
+        "Cratchit quiet grief",
+        "Grave name; plea to change; bedpost"
+      ]
+    },
+    {
+      "scene_id": "S06",
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "cast_variant_keys": [
+        "CHAR_SCROOGE|AGE_SCROOGE_OLD",
+        "CHAR_CRATCHIT|AGE_CRATCHIT_ADULT",
+        "CHAR_NEPHEW|AGE_NEPHEW_ADULT",
+        "CHAR_CHARITY_A|AGE_CHARITY_A",
+        "CHAR_TINY_TIM|AGE_TIM_CHILD"
+      ],
+      "wardrobe_variant_keys": [
+        "WR_SCROOGE_NIGHT",
+        "WR_SCROOGE_BEST",
+        "WR_CRATCHIT_OFFICE",
+        "WR_NEPHEW_VISIT",
+        "WR_CHARITY_DAY",
+        "WR_TIM_CHRISTMAS"
+      ],
+      "purpose": "Amendment enacted; Tim lives.",
+      "estimated_seconds": 160,
+      "clip_beats": [
+        "Bedpost; laughing tears",
+        "Window: Christmas Day",
+        "Turkey errand",
+        "Charity pledge in street",
+        "Fred\u2019s dinner accepted",
+        "Salary raise prank-truth",
+        "Coda: second father to Tim"
+      ]
+    }
+  ]
+}

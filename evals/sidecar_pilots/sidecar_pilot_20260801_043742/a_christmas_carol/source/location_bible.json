@@ -1,0 +1,203 @@
+{
+  "schema_version": "location_bible.v1",
+  "render_style_lock": "1840s London; fog, frost, candle smear; practical period architecture; no modern signage; describe frames only.",
+  "locations": [
+    {
+      "location_key": "LOC_COUNTING_HOUSE",
+      "description": "Scrooge\u2019s counting-house with open door to watch the clerk; very small fire; coal-box kept by Scrooge; clerk\u2019s dismal little cell beyond like a tank with one-coal fire; fog pouring in; candles in neighbouring offices.",
+      "layout_anchors": [
+        "Scrooge\u2019s room with stool and small fire",
+        "open door sightline to Tank/cell",
+        "warehouse door still lettered Scrooge and Marley outside"
+      ],
+      "lighting_states": [
+        "Christmas Eve: dark by three, foggy brown air, candle flare",
+        "Next morning after reform: ordinary office daylight"
+      ],
+      "persistent_props": [
+        "coal-box",
+        "ruler",
+        "clerk\u2019s candle",
+        "copying letters",
+        "small fires"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "IB_CH_1",
+          "shot": "wide of counting-house and Tank beyond",
+          "describe_only": "Fog-choked office, miser\u2019s small fire, clerk in white comforter at nearly dead coal."
+        }
+      ],
+      "source_evidence": "The door of Scrooge\u0027s counting-house was open that he might keep his eye upon his clerk, who in a dismal little cell beyond, a sort of tank, was copying letters.",
+      "scene_assignments": [
+        "S01",
+        "S06"
+      ]
+    },
+    {
+      "location_key": "LOC_SCROOGE_CHAMBERS",
+      "description": "Gloomy suite once Marley\u2019s; lowering pile up a dark yard; large knocker; wide staircase; sitting-room, bedroom, lumber-room; low fire; Dutch-tile fireplace; disused bell; gruel on hob; heavy door double-locked.",
+      "layout_anchors": [
+        "black old gateway and large knocker",
+        "wide dark stair",
+        "sitting-room fireplace with Dutch tiles",
+        "bedroom with curtained bed",
+        "window opening on night air"
+      ],
+      "lighting_states": [
+        "arrival: fog-frost dark, single dip candle",
+        "Marley: dying flame leaps",
+        "Past arrival: light flash at One",
+        "Present: adjoining room blaze and greenery",
+        "Christmas morning: clear bright cold sunlight"
+      ],
+      "persistent_props": [
+        "large knocker",
+        "gruel saucepan",
+        "dressing-gown and nightcap",
+        "disused bell",
+        "bed curtains and extinguisher-cap (Past)",
+        "fireplace"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "IB_CHAMB_1",
+          "shot": "knocker becomes Marley\u2019s face",
+          "describe_only": "Large door knocker in fog holding Marley\u2019s livid motionless face with spectacles on forehead."
+        }
+      ],
+      "source_evidence": "He lived in chambers which had once belonged to his deceased partner. They were a gloomy suite of rooms, in a lowering pile of building up a yard",
+      "scene_assignments": [
+        "S02",
+        "S03",
+        "S04",
+        "S06"
+      ]
+    },
+    {
+      "location_key": "LOC_PAST_MONTAGE",
+      "description": "Composite spirit space: open snowy country road and market-town; dull red-brick school; bare melancholy schoolroom; later city warehouse of apprenticeship; room of Belle\u2019s farewell.",
+      "layout_anchors": [
+        "country road with fields and snow",
+        "school mansion with cupola and bell",
+        "long bare room with deal forms and desks",
+        "warehouse interior for Fezziwig beat if used briefly",
+        "simple room for Belle scene"
+      ],
+      "lighting_states": [
+        "clear cold winter day",
+        "feeble school fire",
+        "Spirit-light from crown"
+      ],
+      "persistent_props": [
+        "holly branch in Spirit\u2019s hand",
+        "school desks",
+        "feeble fire",
+        "mourning-dress tableau"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "IB_PAST_1",
+          "shot": "lonely boy at desk",
+          "describe_only": "Long bare schoolroom, solitary child reading by weak fire."
+        }
+      ],
+      "source_evidence": "they passed through the wall, and stood upon an open country road, with fields on either hand.",
+      "scene_assignments": [
+        "S03"
+      ]
+    },
+    {
+      "location_key": "LOC_CRATCHIT_HOME",
+      "description": "Bob Cratchit\u2019s four-roomed house; poor but festive; hearth; goose and pudding; Tiny Tim\u2019s stool; family circle half round the fire.",
+      "layout_anchors": [
+        "threshold blessed by Spirit\u2019s torch",
+        "main room table and hearth",
+        "corner for Tiny Tim\u2019s stool",
+        "sense of small connected rooms"
+      ],
+      "lighting_states": [
+        "Christmas Day interior firelight and steam",
+        "later quiet grief variant in Future (same rooms, subdued)"
+      ],
+      "persistent_props": [
+        "goose",
+        "pudding like speckled cannon-ball",
+        "custard-cup without handle and two tumblers",
+        "Tiny Tim\u2019s crutch",
+        "chestnuts"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "IB_CRAT_1",
+          "shot": "family toast",
+          "describe_only": "Crowded poor room, blazing pudding, Tim beside Bob."
+        }
+      ],
+      "source_evidence": "the Ghost of Christmas Present blessed his four-roomed house!",
+      "scene_assignments": [
+        "S04",
+        "S05"
+      ]
+    },
+    {
+      "location_key": "LOC_CHURCHYARD",
+      "description": "Walled churchyard overrun by grass and weeds; choked with too much burying; iron gate; neglected grave.",
+      "layout_anchors": [
+        "iron gate entry",
+        "Spirit among graves",
+        "one neglected stone"
+      ],
+      "lighting_states": [
+        "future gloom, pale cold light"
+      ],
+      "persistent_props": [
+        "neglected gravestone",
+        "weeds and rank grass"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "IB_GRAVE_1",
+          "shot": "finger toward stone",
+          "describe_only": "Black-shrouded hand pointing to neglected grave; name not legible until final insert."
+        }
+      ],
+      "source_evidence": "A churchyard. Here, then; the wretched man whose name he had now to learn, lay underneath the ground.",
+      "scene_assignments": [
+        "S05"
+      ]
+    },
+    {
+      "location_key": "LOC_CITY_STREETS_EXCHANGE",
+      "description": "Foggy London streets, Exchange merchants, obscure foul quarter with rag-and-bottle shop; used as Future transit and Christmas morning streets.",
+      "layout_anchors": [
+        "Exchange groups of merchants",
+        "narrow foul streets",
+        "low-browed beetling junk shop",
+        "poulterer\u2019s corner (morning)"
+      ],
+      "lighting_states": [
+        "Christmas Eve fog and brazier fires",
+        "Future grey business day",
+        "Christmas morning clear bright cold"
+      ],
+      "persistent_props": [
+        "money seals and watches on \u0027Change",
+        "bundles in junk shop",
+        "prize turkey"
+      ],
+      "image_briefs": [
+        {
+          "brief_id": "IB_CITY_1",
+          "shot": "merchants gossip",
+          "describe_only": "Busy \u0027Change; men chink money; indifferent talk."
+        }
+      ],
+      "source_evidence": "in the heart of it; on \u0027Change, amongst the merchants",
+      "scene_assignments": [
+        "S05",
+        "S06"
+      ]
+    }
+  ]
+}

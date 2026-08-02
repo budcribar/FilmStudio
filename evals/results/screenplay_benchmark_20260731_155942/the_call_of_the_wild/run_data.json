@@ -1,0 +1,158 @@
+{
+  "BookPath": "books\\The_Call_of_the_Wild.txt",
+  "Timestamp": "2026-07-31 22:05:37 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 42,
+        "AvgWordsPerDialogue": 16.1,
+        "MaxWordsInSingleDialogue": 38,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MANUEL",
+          "SMITH",
+          "PERRAULT",
+          "FRANCOIS",
+          "HAL",
+          "MERCEDES",
+          "THORNTON",
+          "MATTHEWSON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 8.2,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.8,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8.2,
+      "AvgOverallQualitative": 7.7,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: The source\u0027s unnamed man in the red sweater is assigned the invented proper name SMITH, triggering the required severe fidelity penalty for an invented named character.",
+        "gpt-5.6-sol: The character is introduced as JOHN THORNTON in Action but uses THORNTON as the dialogue and recurrence token, violating the prompt\u0027s exact-token identity requirement."
+      ]
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 80.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.2,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 15,
+        "TotalDialogueBlocks": 37,
+        "AvgWordsPerDialogue": 14.8,
+        "MaxWordsInSingleDialogue": 56,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "STRANGER",
+          "MANUEL",
+          "MAN IN RED SWEATER",
+          "PERRAULT",
+          "FRANCOIS",
+          "HAL",
+          "JOHN THORNTON",
+          "PETE",
+          "MATTHEWSON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.8,
+      "AvgCharacterDisambiguation": 5.8,
+      "AvgAiVideoDirectibility": 4.2,
+      "AvgDramaticPacing": 5.5,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 6.8,
+      "DisqualifyingFlags": [
+        "gpt-5.6-sol: Repeated multi-location and multi-time headings, including BAGGAGE CAR AND SAN FRANCISCO WATERFRONT SHED, CLIFF CREST AND FORTY-MILE RAPIDS, and EASTERN WILDERNESS AND SPRUCE-BOUGH CAMP, make the draft structurally unsuitable for one short clip per beat.",
+        "gpt-5.6-sol: Omnibus action paragraphs compress raids, deaths, journeys, and time jumps into single units that cannot be rendered as coherent 5\u201310-second clips.",
+        "gpt-5.6-sol: Several recurring characters, including John Thornton, Dave, Sol-leks, Mercedes, Pete, and Hans, lack sufficiently locked visual descriptions or re-entry traits for reliable reference-image continuity.",
+        "grok-4.5: Multiple compound/multi-place scene headings (e.g. BAGGAGE CAR AND SAN FRANCISCO WATERFRONT SHED; ORCHARD AND COLLEGE PARK FLAG STATION; NORTHLAND TRAIL AND CAMPS; CLIFF CREST AND FORTY-MILE RAPIDS; EASTERN WILDERNESS AND SPRUCE-BOUGH CAMP) violate the hard one-concrete-place rule and break short-clip scheduling",
+        "grok-4.5: Weak closed-cast tokens for speaking roles (STRANGER, SALOON-KEEPER, MAN IN RED SWEATER) without stable proper-name keys",
+        "grok-4.5: Several beats written as summary montage paragraphs rather than ordered filmable actions, unusable as discrete 5\u201310s clips"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-5.6-sol": {
+      "grok-4.5": 6.17,
+      "gpt-5.6-sol": 7
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 8.42,
+      "grok-4.5": 7.33
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-5.6-sol": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2
+    }
+  },
+  "SelfBiasNotes": [
+    "\u2139\uFE0F gpt-5.6-sol rated its own screenplay 7.0/10 vs. a 8.4/10 average from 1 other judge(s) (-1.4) \u2014 notably harsher on itself than peers were.",
+    "\u26A0\uFE0F grok-4.5 rated its own screenplay 7.3/10 vs. a 6.2/10 average from 1 other judge(s) (\u002B1.2) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "This is the more comprehensive adaptation, covering nearly every essential stage of Buck\u0027s transformation, including Dave\u0027s death, the cliff and rapids incidents, the wager, the moose hunt, Thornton\u0027s death, and the final joining of the pack. Its retained dialogue and narration preserve London\u0027s diction well, although several voice-over passages are too long for a short clip. The principal failure is structural: multiple headings combine distinct locations, days, and major sequences, while individual action paragraphs frequently contain enough material for several clips. Explicit, atmospheric sound cues appear throughout, but their usefulness is reduced when a single scene encompasses an entire montage or multiple set pieces.",
+      "gpt-5.6-sol": "This is the cleaner and more directable package: most scenes have one clear dramatic purpose, action is divided into usable visual increments, recurring appearances\u2014especially Buck\u0027s changing physical condition\u2014are described with strong continuity, and the sound beds are specific and well interleaved at major peaks. Dialogue is concise, performable, and generally preserves the book\u0027s wording. Fidelity is nevertheless capped at 3 under the stated rule because SMITH is an invented proper name, while the omission of Dave\u0027s death, the starving-dog raid, Dolly\u0027s madness, and Thornton\u0027s cliff and rapids episodes substantially reduces thematic and character coverage. A few scenes still summarize several days or cross terrain and time within one heading, but these are localized rather than systemic directibility problems."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Strong closed-cast adaptation with locked, repeatedly restated visual identity for Buck (sable coat, brown muzzle/brows, white blaze, weight changes) and clear first-looks for Thornton, Hal, Charles, Mercedes, Perrault, Francois, Skeet, and Nig. Scene headings are single concrete places suitable for 5\u201310s clips; action is camera-observable; book dialect and iconic lines are preserved; every scene carries usable (SOUND:) beds and peaks get multiple cues. Fidelity is high on the spine (kidnap \u2192 club \u2192 Curly \u2192 Spitz death \u2192 lead \u2192 Hal ordeal \u2192 Thornton \u2192 pull \u2192 Yeehats \u2192 pack) but compresses away Dave\u2019s harness death, the cliff jump, and the Forty-Mile rapids rescue, which costs a point on coverage without inventing plot. Pacing fits a ~10-minute cut without montage dumps. Production-ready as-is for the AI clip pipeline.",
+      "grok-4.5": "Highest source coverage of the two: includes baggage-car struggle, Dave dying in harness, cliff whim-jump, rapids rope rescue, hairy-man visions, and full Yeehat/pack close, with strong book-voice dialogue and solid (SOUND:)/(MUSIC:) design including a strong aurora pack-song button. However, directibility collapses under compound location headings and DAY AND NIGHT slugs that cram multiple places and times into one unit, plus prose-summary stretches (\u201CMail train. Heavy toil. Dave\u2026\u201D) that are not shot lists. Character looks are locked once in Notes for Buck but rarely restated on re-entry; supporting speakers stay epithet-tokens rather than cast keys; Pete/Hans arrive thin. Excellent fidelity raw material that is not production-schedulable without a structural rewrite of headings and montage blocks."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-5.6-sol": "Strongest: Screenplay B because its disciplined scene construction, clearer visual identity locks, concise dialogue, and granular sound-supported action make it the more viable short-clip production draft despite its severe fidelity defect. Weakest: Screenplay A because its excellent source coverage is undermined by multi-location mega-scenes and overloaded action units that cannot be reliably segmented into coherent 5\u201310-second clips.",
+    "grok-4.5": "Strongest: Screenplay A because it alone delivers single-location, clip-ready scenes with consistently re-locked character looks and no format deal-breakers while still hitting the emotional spine. Weakest: Screenplay B because compound multi-place headings and summary-montage blocks make it unusable for the short-clip pipeline despite superior beat coverage."
+  },
+  "JudgePromptSuggestions": {
+    "gpt-5.6-sol": {
+      "grok-4.5": "Add a HARD clip-atomization rule: each action paragraph must represent one continuous, camera-observable action that fits a single 5\u201310-second clip in one place and time; any second location, time jump, montage phase, or separate action must become a new action beat or scene heading.",
+      "gpt-5.6-sol": "Change the closed-cast rule so that an unnamed source figure must receive a stable source-grounded descriptive role token, never an invented proper personal name; the need for a cast key must not override source naming fidelity."
+    },
+    "grok-4.5": {
+      "gpt-5.6-sol": "Add an explicit compression rule: when cutting a long novel to short-film runtime, retain at least one concrete visual micro-beat for every major secondary death or iconic set-piece the source treats as a turning point; cut connective travel and repeated trail montage before cutting those peaks.",
+      "grok-4.5": "Make the single-place heading rule fail-closed with an explicit ban on compound headings that join two places with AND, slash, or comma, and require any multi-place sequence to be split into separate scene headings each followed by its own grounding Action line before dialogue or V.O."
+    }
+  }
+}
