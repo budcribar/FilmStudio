@@ -4,6 +4,8 @@ Last updated: 2026-08-03
 
 ## Done (recent)
 
+- [x] **ADAPTATION_REPORT** parse/store (`SplitAdaptationTrailers`, `source/adaptation_report.json`)
+
 - [x] Default Stage‑1 runtime target = **unlimited** (prompt + FilmRuntime mode; retarget only when user sets minutes)
 
 - [x] Adaptation module Phases 0–5 + Engine mapping-only façade

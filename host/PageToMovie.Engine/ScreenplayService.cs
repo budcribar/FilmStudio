@@ -691,6 +691,28 @@ public static string NormalizeText(string text)
                 onProgress?.Invoke("Vision medium metadata skipped: " + metaEx.Message);
             }
 
+            // Optional ADAPTATION_REPORT diagnostic (v4+ prompts). Missing is normal on older prompts.
+            try
+            {
+                if (result.AdaptationReport is not null)
+                {
+                    ProjectAdaptationReport.Write(projectDir, result.AdaptationReport);
+                    onProgress?.Invoke(
+                        $"Saved adaptation report (source_complete={result.AdaptationReport.SourceComplete}, " +
+                        $"issues={result.AdaptationReport.Issues.Count})");
+                }
+                else if (result.AdaptationReportStatus == AdaptationReportStatus.Malformed)
+                {
+                    onProgress?.Invoke(
+                        "Adaptation report trailer present but invalid: " +
+                        (result.AdaptationReportError ?? "malformed JSON"));
+                }
+            }
+            catch (Exception reportEx)
+            {
+                onProgress?.Invoke("Adaptation report skipped: " + reportEx.Message);
+            }
+
             save.Message = "Screenplay draft ready — review and approve";
             return save;
         }

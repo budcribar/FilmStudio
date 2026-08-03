@@ -14,6 +14,10 @@ public sealed class AdaptationResult
     public AdaptationVisionMetaStatus VisionMetaStatus { get; init; }
     public string? VisionMetaError { get; init; }
 
+    public AdaptationReport? AdaptationReport { get; init; }
+    public AdaptationReportStatus AdaptationReportStatus { get; init; }
+    public string? AdaptationReportError { get; init; }
+
     public NaturalRuntimeEstimate Runtime { get; init; } = null!;
     public BookAnalysisResult Analysis { get; init; } = null!;
 

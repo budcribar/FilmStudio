@@ -16,6 +16,9 @@ public sealed record AdaptationConversionResult
     public AdaptationVisionMeta? VisionMeta { get; init; }
     public AdaptationVisionMetaStatus VisionMetaStatus { get; init; }
     public string? VisionMetaError { get; init; }
+    public AdaptationReport? AdaptationReport { get; init; }
+    public AdaptationReportStatus AdaptationReportStatus { get; init; }
+    public string? AdaptationReportError { get; init; }
 }
 
 /// <summary>
@@ -257,14 +260,18 @@ public static class BookToFountainConverter
             text = ConvertHeuristic(title, bookText, author);
         }
 
-        // Pull production medium sidecar before repairs (trailer is not Fountain body).
+        // Pull production / diagnostic sidecars before repairs (trailers are not Fountain body).
         AdaptationVisionMeta? visionEarly = null;
+        AdaptationReport? reportEarly = null;
         var visionMarkerSeen = text.Contains("---VISION_META---", StringComparison.OrdinalIgnoreCase);
         var visionEndMarkerSeen = text.Contains("---END_VISION_META---", StringComparison.OrdinalIgnoreCase);
+        var reportMarkerSeen = text.Contains(AdaptationReportParser.StartMark, StringComparison.OrdinalIgnoreCase);
+        var reportEndMarkerSeen = text.Contains(AdaptationReportParser.EndMark, StringComparison.OrdinalIgnoreCase);
         {
-            var split = SplitVisionMetaTrailer(text);
+            var split = SplitAdaptationTrailers(text);
             text = split.Fountain;
             visionEarly = split.Vision;
+            reportEarly = split.Report;
         }
 
         // Generation repairs — no operator hand-edit path
@@ -319,24 +326,34 @@ public static class BookToFountainConverter
         // In case a repair path re-introduced a trailer (should not), strip again.
         var lateMarkerSeen = text.Contains("---VISION_META---", StringComparison.OrdinalIgnoreCase);
         var lateEndMarkerSeen = text.Contains("---END_VISION_META---", StringComparison.OrdinalIgnoreCase);
-        var (fountainOnly, visionLate) = SplitVisionMetaTrailer(text);
+        var lateReportMarker = text.Contains(AdaptationReportParser.StartMark, StringComparison.OrdinalIgnoreCase);
+        var lateReportEnd = text.Contains(AdaptationReportParser.EndMark, StringComparison.OrdinalIgnoreCase);
+        var (fountainOnly, visionLate, reportLate) = SplitAdaptationTrailers(text);
         var vision = visionLate ?? visionEarly;
+        var report = reportLate ?? reportEarly;
         if (vision is null)
         {
             var repairedPackage = await RepairVisionMetaAsync(
                 system, fountainOnly, bookText, chat, model, reasoningEffort, ct).ConfigureAwait(false);
-            var repairedSplit = SplitVisionMetaTrailer(repairedPackage);
+            var repairedSplit = SplitAdaptationTrailers(repairedPackage);
             fountainOnly = repairedSplit.Fountain;
             vision = repairedSplit.Vision;
+            report ??= repairedSplit.Report;
         }
         if (vision is not null)
         {
             vision.DecidedBy = "adaptation";
             onProgress?.Invoke($"Visual medium from screenplay: {vision.VisualMedium}");
         }
+        if (report is not null)
+            onProgress?.Invoke(
+                $"Adaptation report: source_complete={report.SourceComplete}, " +
+                $"issues={report.Issues.Count}, est_runtime={report.Metrics.EstRuntimeMin:0.#} min");
 
         visionMarkerSeen |= lateMarkerSeen;
         visionEndMarkerSeen |= lateEndMarkerSeen;
+        reportMarkerSeen |= lateReportMarker;
+        reportEndMarkerSeen |= lateReportEnd;
         var status = vision is not null
             ? visionLate is not null || visionEarly is not null
                 ? AdaptationVisionMetaStatus.PrimaryResponse
@@ -350,12 +367,26 @@ public static class BookToFountainConverter
                     ? "VISION_META JSON is invalid."
                     : "VISION_META trailer is missing.";
 
+        var reportStatus = report is not null
+            ? AdaptationReportStatus.Present
+            : reportMarkerSeen ? AdaptationReportStatus.Malformed : AdaptationReportStatus.Missing;
+        var reportError = report is not null
+            ? null
+            : reportMarkerSeen && !reportEndMarkerSeen
+                ? "ADAPTATION_REPORT end delimiter is missing or its JSON is invalid."
+                : reportMarkerSeen
+                    ? "ADAPTATION_REPORT JSON is invalid."
+                    : null; // missing is normal for current production prompt
+
         return new AdaptationConversionResult
         {
             Fountain = fountainOnly,
             VisionMeta = vision,
             VisionMetaStatus = status,
             VisionMetaError = error,
+            AdaptationReport = report,
+            AdaptationReportStatus = reportStatus,
+            AdaptationReportError = reportError,
         };
         }
         finally
@@ -413,28 +444,83 @@ public static class BookToFountainConverter
     /// Strip trailing ---VISION_META--- JSON ---END_VISION_META--- written by book-to-Fountain LLM.
     /// Fountain body is the screenplay file; JSON is production medium metadata.
     /// </summary>
+    /// <summary>
+    /// Strip trailing VISION_META and optional ADAPTATION_REPORT sidecars from model output.
+    /// Fountain body is the screenplay file only — diagnostics never leak into the draft.
+    /// </summary>
     public static (string Fountain, AdaptationVisionMeta? Vision) SplitVisionMetaTrailer(string? text)
     {
+        var (fountain, vision, _) = SplitAdaptationTrailers(text);
+        return (fountain, vision);
+    }
+
+    /// <summary>
+    /// Strip <c>---VISION_META---</c> and <c>---ADAPTATION_REPORT---</c> trailers.
+    /// Order in the model response: Fountain, then vision meta, then adaptation report.
+    /// Either sidecar may be absent (older prompts / heuristic path).
+    /// </summary>
+    public static (string Fountain, AdaptationVisionMeta? Vision, AdaptationReport? Report)
+        SplitAdaptationTrailers(string? text)
+    {
         text ??= "";
-        const string startMark = "---VISION_META---";
-        const string endMark = "---END_VISION_META---";
+        AdaptationReport? report = null;
+        AdaptationVisionMeta? vision = null;
+
+        // Strip adaptation report first (last sidecar) so it never re-enters the fountain.
+        text = ExtractSidecar(
+            text,
+            AdaptationReportParser.StartMark,
+            AdaptationReportParser.EndMark,
+            out var reportJson);
+        if (!string.IsNullOrWhiteSpace(reportJson))
+            report = AdaptationReportParser.ParseModelJson(reportJson);
+
+        // Then vision meta.
+        text = ExtractSidecar(
+            text,
+            "---VISION_META---",
+            "---END_VISION_META---",
+            out var visionJson);
+        if (!string.IsNullOrWhiteSpace(visionJson))
+        {
+            vision = AdaptationVisionMetaParser.ParseModelJson(visionJson);
+            if (vision is not null)
+                vision.DecidedBy = "adaptation";
+        }
+
+        var fountain = text.TrimEnd();
+        if (!fountain.EndsWith('\n'))
+            fountain += "\n";
+        return (fountain, vision, report);
+    }
+
+    /// <summary>
+    /// Remove one marked sidecar block; returns remaining text and JSON body (or null).
+    /// </summary>
+    private static string ExtractSidecar(
+        string text,
+        string startMark,
+        string endMark,
+        out string? jsonBody)
+    {
+        jsonBody = null;
         var start = text.LastIndexOf(startMark, StringComparison.OrdinalIgnoreCase);
         if (start < 0)
-            return (text.EndsWith('\n') ? text : text + "\n", null);
+            return text;
 
         var jsonStart = start + startMark.Length;
         var end = text.IndexOf(endMark, jsonStart, StringComparison.OrdinalIgnoreCase);
         string json;
-        string fountain;
+        string remaining;
         if (end < 0)
         {
             json = text[jsonStart..].Trim();
-            fountain = text[..start].TrimEnd();
+            remaining = text[..start].TrimEnd();
         }
         else
         {
             json = text[jsonStart..end].Trim();
-            fountain = (text[..start] + text[(end + endMark.Length)..]).TrimEnd();
+            remaining = (text[..start] + text[(end + endMark.Length)..]).TrimEnd();
         }
 
         if (json.StartsWith("```", StringComparison.Ordinal))
@@ -446,10 +532,8 @@ public static class BookToFountainConverter
             json = json.Trim();
         }
 
-        var doc = AdaptationVisionMetaParser.ParseModelJson(json);
-        if (doc is not null)
-            doc.DecidedBy = "adaptation";
-        return (fountain.EndsWith('\n') ? fountain : fountain + "\n", doc);
+        jsonBody = string.IsNullOrWhiteSpace(json) ? null : json;
+        return remaining;
     }
 
     /// <summary>
