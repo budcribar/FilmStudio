@@ -219,7 +219,7 @@ else if (_extractingCast)
 {
     @* Hide stale cast while rebuild/build runs — avoids editing the old list mid-flight. *@
 }
-else if (_chars.Count == 0)
+else if (OperatorCastCount == 0)
 {
     <div class="alert alert-warning">
         No cast yet. Approve the screenplay, then build the cast.
@@ -230,7 +230,7 @@ else
     <div class="row">
         <div class="col-md-3">
             <div class="list-group">
-                @foreach (var c in _chars)
+                @foreach (var c in CharactersForUi)
                 {
                     var active = c.Key == _selectedKey;
                     var thumb = ListThumbUrl(c);
@@ -325,34 +325,9 @@ else
             }
             else if (_selected.IsGroup)
             {
-                <div class="card mb-3">
-                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <span><code>@_selected.Key</code> — @_selected.DisplayName</span>
-                        <span class="badge text-bg-info">group / chorus</span>
-                    </div>
-                    <div class="card-body">
-                        <p class="small text-muted mb-3">
-                            This is a <strong>group</strong> (several people on screen together), not a single face.
-                            A solo portrait is optional. Description and voice are enough for filming.
-                        </p>
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold">Group look (optional)</label>
-                            <textarea class="form-control form-control-sm" rows="3"
-                                      value="@_editDescription"
-                                      @oninput="OnLookDescriptionInput"
-                                      placeholder="How the group should look in every scene"></textarea>
-                            <label class="form-label small fw-semibold mt-2">Visual lock (optional)</label>
-                            <textarea class="form-control form-control-sm" rows="2"
-                                      value="@_editVisualLock"
-                                      @oninput="OnLookVisualLockInput"
-                                      placeholder="Hard constraints for the crowd / classmates"></textarea>
-                            <button type="button" class="btn btn-sm btn-outline-primary mt-2"
-                                    disabled="@(_busy || _savingLook)"
-                                    @onclick="() => SaveLookAsync()">Save description</button>
-                        </div>
-                        @RenderVoiceEditor()
-                    </div>
-                </div>
+                // Groups are filtered from the list; clear stale selection.
+                _selectedKey = null;
+                _selected = null;
             }
             else
             {
@@ -1244,19 +1219,22 @@ else
 
     private bool HasCast => _chars is { Count: > 0 };
 
+    /// <summary>Operator-facing cast: hide group/chorus seeds (too abstract for average users).</summary>
+    private IEnumerable<CharacterSummary> CharactersForUi =>
+        _chars?.Where(c => !c.IsGroup) ?? Enumerable.Empty<CharacterSummary>();
+
+    private int OperatorCastCount => CharactersForUi.Count();
+
     /// <summary>Every cast member has look (if needed) + voice — next is shot plan or scenes.</summary>
     private bool IsCastComplete =>
-        _chars is { Count: > 0 } &&
-        _chars.All(c =>
+        OperatorCastCount > 0 &&
+        CharactersForUi.All(c =>
             HasVoiceProfile(c) &&
-            (c.VoiceOnly ||
-             c.IsGroup || // group/chorus: no single-face lock required
-             c.HasPreferred ||
-             c.Locked));
+            (c.VoiceOnly || c.HasPreferred || c.Locked));
 
     /// <summary>Show primary Build cast only when there is no cast yet.</summary>
     private bool NeedsCastBuild =>
-        _chars is not null && _chars.Count == 0 && !_extractingCast;
+        _chars is not null && OperatorCastCount == 0 && !_extractingCast;
 
     /// <summary>Book picture matching is now automated on cast extract.</summary>
     private bool NeedsFindCharacters => false;
@@ -1532,7 +1510,7 @@ else
             _imageSeedLimits = dto?.ImageSeedLimits;
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             // Do not auto-open a character — user clicks the list to choose source.
-            if (_selectedKey is not null && _chars.Any(c => c.Key == _selectedKey))
+            if (_selectedKey is not null && CharactersForUi.Any(c => c.Key == _selectedKey))
                 await SelectCoreAsync(_selectedKey, resetMode: false, flushPending: false);
             else
             {
@@ -1625,7 +1603,7 @@ else
             return;
 
         _selectedKey = key;
-        _selected = _chars?.FirstOrDefault(c =>
+        _selected = CharactersForUi.FirstOrDefault(c =>
             string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase));
         _pendingLockCandidate = null;
         _chosenCandidateKey = null;
@@ -2513,11 +2491,13 @@ else
             || string.Equals(_focusHint, "narrator", StringComparison.OrdinalIgnoreCase);
         if (!wantNarrator) return;
 
-        var pick = _chars.FirstOrDefault(c =>
+        var ui = CharactersForUi.ToList();
+        if (ui.Count == 0) return;
+        var pick = ui.FirstOrDefault(c =>
                        (c.Key?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false)
                        || (c.DisplayName?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false))
-                   ?? _chars.FirstOrDefault(c => c.VoiceOnly)
-                   ?? _chars[0];
+                   ?? ui.FirstOrDefault(c => c.VoiceOnly)
+                   ?? ui[0];
         if (pick is null) return;
         if (!string.Equals(_selectedKey, pick.Key, StringComparison.OrdinalIgnoreCase))
             _ = SelectAsync(pick.Key);
@@ -2824,7 +2804,7 @@ else
         {
             var dto = await Engine.GetCharactersAsync(_projectId);
             _chars = dto?.Characters ?? new List<CharacterSummary>();
-            _selected = _chars.FirstOrDefault(c =>
+            _selected = CharactersForUi.FirstOrDefault(c =>
                 string.Equals(c.Key, _selectedKey, StringComparison.OrdinalIgnoreCase));
             if (_selected is not null)
             {

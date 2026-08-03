@@ -4620,8 +4620,8 @@ public sealed class ProjectStore
     /// <summary>
     /// Cast is ready when every member has a voice profile and (if a single on-screen face)
     /// a <em>locked</em> ref image — not merely a variant draft (<see cref="CharacterSummary.HasPreferred"/>).
-    /// <see cref="CharacterSummary.VoiceOnly"/> and <see cref="CharacterSummary.IsGroup"/> skip the
-    /// locked-image requirement (groups/chorus are not single-face pins).
+    /// <see cref="CharacterSummary.VoiceOnly"/> skips the locked-image requirement.
+    /// <see cref="CharacterSummary.IsGroup"/> is ignored for readiness (hidden on Characters UI).
     /// Empty cast (no seeds yet) is not ready. Used for next-step gating and video-gen spend protection.
     /// </summary>
     public CastStatus ReadCastStatus(string projectId)
@@ -4639,8 +4639,14 @@ public sealed class ProjectStore
             foreach (var c in rows)
             {
                 var hasVoice = !string.IsNullOrWhiteSpace(c.VoiceProfile);
-                // Voice-only and group/chorus: no single-face portrait pin required.
-                if (c.VoiceOnly || c.IsGroup)
+                // Voice-only: need voice profile, no portrait.
+                // Group/chorus: production extras — not shown on Characters UI; never block readiness.
+                if (c.IsGroup)
+                {
+                    ready++;
+                    continue;
+                }
+                if (c.VoiceOnly)
                 {
                     if (hasVoice)
                         ready++;
@@ -4671,8 +4677,8 @@ public sealed class ProjectStore
     /// <summary>
     /// Project-wide cast gate before any video spend: every seed needs a voice profile;
     /// every single on-screen face needs a locked ref image (not just a variant draft).
-    /// <see cref="CharacterSummary.VoiceOnly"/> and <see cref="CharacterSummary.IsGroup"/> skip
-    /// the locked-image requirement.
+    /// <see cref="CharacterSummary.VoiceOnly"/> skips the locked-image requirement.
+    /// <see cref="CharacterSummary.IsGroup"/> never blocks (not shown for operator pin).
     /// Empty cast is not ready. Returns human-readable missing items (empty when ready).
     /// </summary>
     public IReadOnlyList<string> GetCastNotReadyForVideo(string projectId)
@@ -4697,7 +4703,10 @@ public sealed class ProjectStore
         foreach (var c in rows)
         {
             var hasVoice = !string.IsNullOrWhiteSpace(c.VoiceProfile);
-            if (c.VoiceOnly || c.IsGroup)
+            // Groups are not operator-pinned; never block video gen.
+            if (c.IsGroup)
+                continue;
+            if (c.VoiceOnly)
             {
                 if (!hasVoice)
                     missing.Add($"{c.Key}: voice profile");

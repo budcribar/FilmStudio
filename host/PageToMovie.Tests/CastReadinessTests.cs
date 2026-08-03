@@ -226,7 +226,7 @@ public class CastReadinessTests : IDisposable
     }
 
     [Fact]
-    public void Group_without_voice_is_not_ready()
+    public void Group_alone_is_ready_without_voice_or_portrait()
     {
         WriteSeeds("""
             {
@@ -242,11 +242,11 @@ public class CastReadinessTests : IDisposable
             }
             """);
 
+        // Groups are not operator-pinned; a cast of only groups is "ready" so pin_characters
+        // is not stuck — UI hides them and shows empty until real individuals exist.
         var status = _store.ReadCastStatus(ProjectId);
-        Assert.False(status.ReadyForShots);
-        Assert.Contains("Character_Children", status.Missing);
-        Assert.Contains(_store.GetCastNotReadyForVideo(ProjectId),
-            m => m.Contains("voice", StringComparison.OrdinalIgnoreCase));
+        Assert.True(status.ReadyForShots, string.Join("; ", status.Missing));
+        Assert.Empty(_store.GetCastNotReadyForVideo(ProjectId));
     }
 
 }
