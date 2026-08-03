@@ -61,7 +61,7 @@ public static class FountainStage1Importer
         }
 
         projects.InvalidateSceneListCache(projectId);
-        projects.TriggerAutoGitCommit(projectId, "Stage: screenplay created");
+        projects.TriggerAutoGitCommit(projectId, ProjectStageCommits.ScreenplayCreated);
 
         var gpv = doc["global_production_variables"] as Dictionary<string, object?>;
         var chars = gpv?["character_seed_tokens"] as Dictionary<string, object?>;

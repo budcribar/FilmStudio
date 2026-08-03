@@ -108,6 +108,7 @@ public sealed class ProjectArtifactIndexService
         // Media
         Add("assets/movie_wip.mp4", "Full cut (WIP)", requiredForManualReview: true);
         Add("assets/movie_wip.mp4.sources.json", "WIP concat sources + assembly note");
+        Add("assets/movie_wip.film.json", "Film build EDL + studio.sha256 (provenance)");
         Add("assets/characters", "Locked character plates + variants", requiredForManualReview: true);
         Add("assets/video", "Clips + scene composites + duration sidecars", requiredForManualReview: true);
         Add("assets/video/prompts", "Full prompt .txt + .meta.json per clip", requiredForManualReview: true);

@@ -7181,6 +7181,18 @@ app.MapPost("/api/demos", async (
                     var wipPath = Path.Combine(store.GetProjectDir(projectId!), "assets", "movie_wip.mp4");
                     Directory.CreateDirectory(Path.GetDirectoryName(wipPath)!);
                     await File.WriteAllBytesAsync(wipPath, bytes);
+                    try
+                    {
+                        FilmBuildService.Register(
+                            store,
+                            projectId!,
+                            FilmBuildService.HashBytes(bytes),
+                            durationSeconds: 0,
+                            segments: null,
+                            byteLength: bytes.Length,
+                            assemblyWhere: "server");
+                    }
+                    catch { /* non-fatal film_build */ }
                 }
                 catch { /* non-fatal */ }
 
@@ -7216,6 +7228,18 @@ app.MapPost("/api/demos", async (
                     var wipPath = Path.Combine(store.GetProjectDir(projectId!), "assets", "movie_wip.mp4");
                     Directory.CreateDirectory(Path.GetDirectoryName(wipPath)!);
                     await File.WriteAllBytesAsync(wipPath, bytes);
+                    try
+                    {
+                        FilmBuildService.Register(
+                            store,
+                            projectId!,
+                            FilmBuildService.HashBytes(bytes),
+                            durationSeconds: 0,
+                            segments: null,
+                            byteLength: bytes.Length,
+                            assemblyWhere: "server");
+                    }
+                    catch { /* non-fatal film_build */ }
                 }
                 catch { /* non-fatal */ }
 
@@ -7417,6 +7441,103 @@ app.MapGet("/api/projects/{id}/movie/wip/meta", (string id, ProjectStore store) 
             staleScenes = f.StaleScenes,
             url = wipUrl,
         });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Register a stitched studio cut: film_build.v1 (EDL + studio.sha256) on project disk + stage commit.
+/// Client stitch should POST after producing the WIP blob; server may also call when bytes land.
+/// </summary>
+app.MapPost("/api/projects/{id}/film-build", async (
+    string id,
+    HttpRequest request,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var body = await request.ReadFromJsonAsync<FilmBuildRegisterRequest>(cancellationToken: ct);
+        if (body is null)
+            return Results.BadRequest(new { ok = false, error = "JSON body required" });
+
+        var sha = (body.StudioSha256 ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(sha) && body.HashFromServerWip == true)
+        {
+            var docFromFile = FilmBuildService.RegisterFromWipFile(store, id, body.StudioPath);
+            if (docFromFile is null)
+                return Results.BadRequest(new { ok = false, error = "WIP file not found to hash" });
+            return Results.Ok(new { ok = true, filmId = docFromFile.FilmId, path = FilmBuildService.RelativePath, filmBuild = docFromFile });
+        }
+
+        if (string.IsNullOrWhiteSpace(sha) || sha.Length < 32)
+            return Results.BadRequest(new { ok = false, error = "studioSha256 required (or hashFromServerWip=true)" });
+
+        var segments = body.Segments?.Select((s, i) => new FilmBuildSegment
+        {
+            Index = s.Index >= 0 ? s.Index : i,
+            Scene = s.Scene,
+            Clip = s.Clip,
+            Take = s.Take,
+            TStart = s.TStart,
+            TEnd = s.TEnd,
+            Src = s.Src ?? "",
+            SrcSha256 = s.SrcSha256,
+            Sidecar = s.Sidecar,
+        }).ToList();
+
+        var doc = FilmBuildService.Register(
+            store,
+            id,
+            sha,
+            body.DurationSeconds,
+            segments,
+            body.ByteLength,
+            string.IsNullOrWhiteSpace(body.AssemblyWhere) ? "client" : body.AssemblyWhere!);
+
+        if (!string.IsNullOrWhiteSpace(body.StudioPath))
+            doc.Studio.Path = body.StudioPath!;
+
+        FilmBuildService.Write(store.GetProjectDir(id), doc);
+
+        return Results.Ok(new
+        {
+            ok = true,
+            filmId = doc.FilmId,
+            path = FilmBuildService.RelativePath,
+            filmBuild = doc,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/film-build", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var doc = FilmBuildService.TryRead(store.GetProjectDir(id));
+        if (doc is null)
+            return Results.Ok(new { ok = true, exists = false, path = FilmBuildService.RelativePath });
+        return Results.Ok(new { ok = true, exists = true, path = FilmBuildService.RelativePath, filmBuild = doc });
     }
     catch (Exception ex)
     {
@@ -7655,3 +7776,28 @@ namespace PageToMovie.Api
     public partial class Program { }
 }
 
+
+
+file sealed class FilmBuildRegisterRequest
+{
+    public string? StudioSha256 { get; set; }
+    public double DurationSeconds { get; set; }
+    public long? ByteLength { get; set; }
+    public string? StudioPath { get; set; }
+    public string? AssemblyWhere { get; set; }
+    public bool? HashFromServerWip { get; set; }
+    public List<FilmBuildSegmentDto>? Segments { get; set; }
+}
+
+file sealed class FilmBuildSegmentDto
+{
+    public int Index { get; set; } = -1;
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public int? Take { get; set; }
+    public double TStart { get; set; }
+    public double TEnd { get; set; }
+    public string? Src { get; set; }
+    public string? SrcSha256 { get; set; }
+    public string? Sidecar { get; set; }
+}

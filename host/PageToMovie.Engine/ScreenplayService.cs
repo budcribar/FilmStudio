@@ -732,6 +732,16 @@ public static string NormalizeText(string text)
                 onProgress?.Invoke("Stage‑1 convert manifest skipped: " + manifestEx.Message);
             }
 
+            // Trajectory: screenplay + optional report/manifest on project git (text only).
+            try
+            {
+                store.TriggerAutoGitCommit(projectId, ProjectStageCommits.ScreenplayCreated);
+            }
+            catch (Exception gitEx)
+            {
+                onProgress?.Invoke("Stage commit skipped: " + gitEx.Message);
+            }
+
             save.Message = "Screenplay draft ready — review and approve";
             return save;
         }

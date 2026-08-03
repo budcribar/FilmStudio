@@ -4474,23 +4474,8 @@ public sealed class FilmJobService
     /// Job kinds that represent a complete pipeline stage for project package history.
     /// Book / screenplay / cast / stage2 also commit from their services; film+music finish here.
     /// </summary>
-    private static string? StageEndAutoGitMessage(string? kind)
-    {
-        if (string.IsNullOrWhiteSpace(kind)) return null;
-        return kind switch
-        {
-            "book_prepare" => "Stage: book prepared",
-            "book_import" => "Stage: screenplay created",
-            "stage1" => "Stage: screenplay created",
-            "cast" or "cast_extract" or "characters" or "character" => "Stage: cast built",
-            "stage2" => "Stage: Stage 2 blueprint written",
-            // Actual FilmJobService kinds are "scene" / "batch" (not gen-scene / gen-batch).
-            "scene" or "batch" or "remux" or "film" or "gen-scene" or "gen-batch"
-                => "Stage: film job finished",
-            "music" => "Stage: music job finished",
-            _ => null,
-        };
-    }
+    private static string? StageEndAutoGitMessage(string? kind) =>
+        ProjectStageCommits.FromJobKind(kind);
 
     /// <summary>
     /// Server MP4 bytes or client-folder marker (.client.json). Called per-clip inside bulk
