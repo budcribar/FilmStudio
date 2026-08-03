@@ -7,7 +7,15 @@ public sealed class ModelScoreSummary
 {
     public string ModelId { get; set; } = "";
     public string AnonymousLabel { get; set; } = "";
-    public double CompositeScore { get; set; } // 0 - 100
+    public double CompositeScore { get; set; } // 0 - 100 (Stage 1: syntax + LLM judge — does not include cast package)
+    /// <summary>
+    /// Deterministic cast package cross-check (0–100) when <c>*.cast_seeds.json</c> is present.
+    /// Null = cast not evaluated (Stage 1 only).
+    /// </summary>
+    public double? CastPackageScore { get; set; }
+    public bool? CastPackageOk { get; set; }
+    public List<string> CastPackageFailures { get; set; } = new();
+    public List<string> CastPackageWarnings { get; set; } = new();
 
     /// <summary>
     /// True when the "screenplay" scored here is not this model's real output — generation
@@ -108,6 +116,42 @@ public static class BenchmarkReportGenerator
             sb.AppendLine($"| **{m.ModelId}** | {m.SyntaxAudit.FormatComplianceScore:F0}% | {m.SyntaxAudit.SceneBudgetScore:F0}% | {m.SyntaxAudit.DialoguePacingScore:F0}% | {m.AvgAdaptationFidelity:F1}/10 | {m.AvgCharacterDisambiguation:F1}/10 | {m.AvgAiVideoDirectibility:F1}/10 | {m.AvgDramaticPacing:F1}/10 | {m.AvgDialogueAuthenticity:F1}/10 | {m.AvgSoundDesignMusic:F1}/10 |");
         }
         sb.AppendLine();
+
+        sb.AppendLine();
+
+        // Layer 2: cast package (when *.cast_seeds.json was present for a candidate)
+        var withCast = data.Leaderboard.Where(m => m.CastPackageScore.HasValue).ToList();
+        var withoutCast = data.Leaderboard.Where(m => !m.CastPackageScore.HasValue && !m.IsGenerationFallback).ToList();
+        if (withCast.Count > 0 || withoutCast.Count > 0)
+        {
+            sb.AppendLine("## 🎭 Cast Package Cross-Check");
+            sb.AppendLine();
+            sb.AppendLine(
+                "Deterministic gate: every speaking Fountain character must resolve to `cast_seeds.json` " +
+                "with usable description/visual locks. Stage 1 composite score above does **not** include this layer.");
+            sb.AppendLine();
+            if (withCast.Count > 0)
+            {
+                sb.AppendLine("| Model ID | Cast package score | OK | Failures |");
+                sb.AppendLine("| :--- | :---: | :---: | :--- |");
+                foreach (var m in withCast)
+                {
+                    var fail = m.CastPackageFailures.Count == 0
+                        ? "—"
+                        : string.Join("; ", m.CastPackageFailures.Take(3));
+                    sb.AppendLine(
+                        $"| **{m.ModelId}** | {m.CastPackageScore:F1} | {(m.CastPackageOk == true ? "yes" : "no")} | {fail} |");
+                }
+                sb.AppendLine();
+            }
+            if (withoutCast.Count > 0)
+            {
+                sb.AppendLine(
+                    $"> ℹ️ Cast not evaluated for: {string.Join(", ", withoutCast.Select(m => m.ModelId))} " +
+                    "(no `*.cast_seeds.json` beside the Fountain — Stage 1 only).");
+                sb.AppendLine();
+            }
+        }
 
         var disqualified = data.Leaderboard.Where(m => m.DisqualifyingFlags.Count > 0).ToList();
         if (disqualified.Count > 0)

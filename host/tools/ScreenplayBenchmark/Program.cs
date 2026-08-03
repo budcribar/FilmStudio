@@ -432,6 +432,7 @@ public static class Program
         var generatedScreenplays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var generatedVisionMeta = new Dictionary<string, ProjectVisionMeta.Document?>(StringComparer.OrdinalIgnoreCase);
         var deterministicResults = new Dictionary<string, DeterministicSyntaxResult>(StringComparer.OrdinalIgnoreCase);
+        var castPackageResults = new Dictionary<string, PageToMovie.Engine.CastPackageCrossCheck.Report?>(StringComparer.OrdinalIgnoreCase);
 
         // Canonical output of the non-AI, book-text-only fallback for THIS book. Every model that
         // hits BookToFountainConverter's internal quality-gate fallback produces this exact text —
@@ -582,6 +583,29 @@ public static class Program
 
             var syntaxAudit = DeterministicSyntaxScorer.Evaluate(screenplayText);
             deterministicResults[modelId] = syntaxAudit;
+
+            // Layer 2 (deterministic): cast package when present alongside the Fountain.
+            // Stage 1 score alone does not judge cast_seeds.json — that is intentional until
+            // cast extraction is part of the run. When the file exists, cross-check membership.
+            var castSeedsFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.cast_seeds.json");
+            if (File.Exists(castSeedsFile))
+            {
+                var castJson = await File.ReadAllTextAsync(castSeedsFile);
+                var castReport = PageToMovie.Engine.CastPackageCrossCheck.Evaluate(screenplayText, castJson);
+                castPackageResults[modelId] = castReport;
+                await File.WriteAllTextAsync(
+                    Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.cast_package_report.json"),
+                    JsonSerializer.Serialize(castReport, new JsonSerializerOptions { WriteIndented = true }));
+                Console.WriteLine(
+                    castReport.Ok
+                        ? $"    · Cast package OK · score {castReport.Score:F1}"
+                        : $"    · Cast package FAIL · score {castReport.Score:F1} · {castReport.Failures.Count} issue(s)");
+            }
+            else
+            {
+                // Explicit null marker so reports can show "cast not evaluated".
+                castPackageResults[modelId] = null;
+            }
         }
 
         // Phase 3 & 4: Blind Cross-Evaluation
@@ -707,7 +731,7 @@ public static class Program
         }
 
         // Phase 5: Aggregation & History Persistence
-        var runData = AggregateBenchmarkData(bookPath, candidateModels, generatedScreenplays, deterministicResults, judgeEvaluations, generationFallbacks);
+        var runData = AggregateBenchmarkData(bookPath, candidateModels, generatedScreenplays, deterministicResults, judgeEvaluations, generationFallbacks, castPackageResults);
         var isMockRun = dryRun || judgeEvaluations.Values.All(v => v.IsMock);
         runData.IsMockRun = isMockRun;
 
@@ -1152,7 +1176,8 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
         Dictionary<string, string> screenplays,
         Dictionary<string, DeterministicSyntaxResult> deterministicResults,
         Dictionary<string, JudgeEvaluationPayload> judgeEvaluations,
-        Dictionary<string, string> generationFallbacks)
+        Dictionary<string, string> generationFallbacks,
+        Dictionary<string, PageToMovie.Engine.CastPackageCrossCheck.Report?>? castPackageResults = null)
     {
         var runData = new BenchmarkRunData
         {
@@ -1277,6 +1302,9 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
 
             var isFallback = generationFallbacks.TryGetValue(modelId, out var fallbackReason);
 
+            PageToMovie.Engine.CastPackageCrossCheck.Report? castReport = null;
+            castPackageResults?.TryGetValue(modelId, out castReport);
+
             runData.Leaderboard.Add(new ModelScoreSummary
             {
                 ModelId = modelId,
@@ -1294,6 +1322,10 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 IsGenerationFallback = isFallback,
                 GenerationFallbackReason = fallbackReason,
                 DisqualifyingFlags = disqualifyingFlags,
+                CastPackageScore = castReport?.Score,
+                CastPackageOk = castReport?.Ok,
+                CastPackageFailures = castReport?.Failures?.ToList() ?? new List<string>(),
+                CastPackageWarnings = castReport?.Warnings?.ToList() ?? new List<string>(),
             });
         }
 
