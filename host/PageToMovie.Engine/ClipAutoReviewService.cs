@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
 using PageToMovie.Engine.ModelExecution;
+using PageToMovie.Engine.ModelBacked;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -194,17 +195,20 @@ public sealed class ClipAutoReviewService
             }
 
 
-            var raw = await _vision.CompleteWithImagesAsync(
-                prompt,
-                imagePaths,
-                model: qualityModel,
-                detail: "low",
-                ct: ct);
-
             onProgress?.Invoke(85, 100, "Parsing suggestions…");
-            var draft = ParseDraft(raw, projectId, scene, clip, plan, profiles, hasPrev);
+            var operation = new MultimodalReviewOperation<ClipAutoReviewDraft>(
+                _vision, imagePaths, qualityModel, "clip_multimodal_review", "clip-auto-review.v1",
+                raw => ParseDraft(raw, projectId, scene, clip, plan, profiles, hasPrev),
+                ValidateDraft);
+            var observation = new MultimodalReviewObservation(
+                $"Clip S{scene:D2}C{clip:D2}", images.Select(i => i.Label).ToArray(), prompt);
+            var execution = await operation.ExecuteAsync(observation, ct).ConfigureAwait(false);
+            if (!execution.Success || execution.Value is null)
+                throw new InvalidOperationException(execution.Error ?? string.Join(" ", execution.ValidationIssues.Select(i => i.Message)));
+            var draft = execution.Value;
             draft.GeneratedAt = DateTimeOffset.UtcNow;
             SaveDraft(draft);
+            SaveExecutionManifest(projectDir, "clip_multimodal_review", execution);
 
             await TryLogAsync(projectId, scene, clip, draft, ct);
             try
@@ -522,7 +526,12 @@ public sealed class ClipAutoReviewService
             """;
     }
 
-    private static ClipAutoReviewDraft ParseDraft(
+    internal static ModelParseResult<ClipAutoReviewDraft> ParseDraftForReplay(
+        string raw, string projectId, int scene, int clip, bool hasPrev) =>
+        ParseDraft(raw, projectId, scene, clip, new ClipPlan(),
+            new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(), hasPrev);
+
+    private static ModelParseResult<ClipAutoReviewDraft> ParseDraft(
         string raw,
         string projectId,
         int scene,
@@ -546,9 +555,8 @@ public sealed class ClipAutoReviewService
             var end = raw.LastIndexOf('}');
             if (start < 0 || end <= start)
             {
-                draft.Suggestion = "unclear";
-                draft.Note = "Could not parse review response.";
-                return draft;
+                return ModelParseResult<ClipAutoReviewDraft>.Failure(
+                    new ModelValidationIssue("invalid_json", "Review response did not contain a JSON object."));
             }
 
             using var doc = JsonDocument.Parse(raw[start..(end + 1)]);
@@ -614,14 +622,35 @@ public sealed class ClipAutoReviewService
                 }
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            draft.Suggestion = "unclear";
-            if (string.IsNullOrWhiteSpace(draft.Note))
-                draft.Note = "Review response parse error.";
+            return ModelParseResult<ClipAutoReviewDraft>.Failure(
+                new ModelValidationIssue("invalid_json", $"Review response JSON could not be parsed: {ex.Message}"));
         }
 
-        return draft;
+        return ModelParseResult<ClipAutoReviewDraft>.Success(draft);
+    }
+
+    internal static IReadOnlyList<ModelValidationIssue> ValidateDraft(ClipAutoReviewDraft draft)
+    {
+        var issues = new List<ModelValidationIssue>();
+        if (draft.Suggestion is not ("pass" or "fail" or "unclear"))
+            issues.Add(new("invalid_suggestion", "suggestion must be pass, fail, or unclear.", "$.suggestion"));
+        if (draft.Confidence is not ("high" or "medium" or "low"))
+            issues.Add(new("invalid_confidence", "confidence must be high, medium, or low.", "$.confidence"));
+        if (string.IsNullOrWhiteSpace(draft.Note))
+            issues.Add(new("missing_note", "A specific review note is required.", "$.note"));
+        return issues;
+    }
+
+    private static void SaveExecutionManifest<TResult>(
+        string projectDir, string operationName, ValidatedModelResult<TResult> execution)
+        where TResult : class
+    {
+        var dir = Path.Combine(projectDir, "artifacts", "model_operations");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, operationName + ".lifecycle.json"),
+            ModelExecutionManifest.Serialize(execution));
     }
 
     /// <summary>

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
 using PageToMovie.Engine.ModelExecution;
+using PageToMovie.Engine.ModelBacked;
 
 namespace PageToMovie.Engine;
 
@@ -91,11 +92,7 @@ public sealed class MovieAutoReviewService
         onProgress?.Invoke(10, "Organizing scene keyframes for full movie review…");
 
         var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-        var reviewModel = ProjectModelSelection.TryGet(
-            cfg,
-            ProjectModelSelection.QualityConfigKey,
-            ProjectModelSelection.VisionConfigKey,
-            ProjectModelSelection.PlanningConfigKey);
+        var reviewModel = ProjectModelSelection.RequireVideoReview(cfg, "Full movie review");
         var report = new MovieAutoReviewReport
         {
             ProjectId = projectId,
@@ -136,7 +133,7 @@ public sealed class MovieAutoReviewService
             var stepPct = 20 + (int)((double)(i + 1) / totalChunks * 60);
             onProgress?.Invoke(stepPct, $"AI reviewing {rangeStr} ({i + 1}/{totalChunks})…");
 
-            var feedback = await EvaluateSceneChunkAsync(projectId, rangeStr, sceneList, chunkFrames, ct).ConfigureAwait(false);
+            var feedback = await EvaluateSceneChunkAsync(projectId, rangeStr, sceneList, chunkFrames, reviewModel, ct).ConfigureAwait(false);
             groupFeedbacks.Add(feedback);
         }
 
@@ -186,7 +183,7 @@ public sealed class MovieAutoReviewService
         report.SummaryNotes = summarySb.ToString().Trim();
 
         // Master AI Executive Director Synthesis Pass
-        report.ExecutiveSummary = await SynthesizeExecutiveSummaryAsync(report, groupFeedbacks, ct).ConfigureAwait(false);
+        report.ExecutiveSummary = await SynthesizeExecutiveSummaryAsync(report, groupFeedbacks, reviewModel, ct).ConfigureAwait(false);
 
         SaveReport(report);
         onProgress?.Invoke(100, "Full movie review ready!");
@@ -198,6 +195,7 @@ public sealed class MovieAutoReviewService
         string rangeStr,
         List<int> sceneNumbers,
         List<MovieAutoReviewKeyframe> frames,
+        string reviewModel,
         CancellationToken ct)
     {
         var feedback = new MovieSceneGroupFeedback
@@ -269,66 +267,27 @@ Return valid JSON with non-generic, specific observations:
   ""dialogueNotes"": ""Specific observations on spoken dialogue delivery and lip movement alignment"",
   ""audioNotes"": ""Specific observations on music cue transitions, fade-outs, and audio ending smoothness""
 }}";
-                var raw = await _vision.CompleteWithImagesAsync(prompt, imageFiles.Select(x => x.Path).ToList(), ct: ct).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(raw))
-                {
-                    try
-                    {
-                        var jsonStart = raw.IndexOf('{');
-                        var jsonEnd = raw.LastIndexOf('}');
-                        if (jsonStart >= 0 && jsonEnd > jsonStart)
-                        {
-                            var cleanJson = raw[jsonStart..(jsonEnd + 1)];
-                            using var doc = JsonDocument.Parse(cleanJson);
-                            var root = doc.RootElement;
-                            if (root.TryGetProperty("overallScore", out var osEl) && osEl.TryGetInt32(out var osc))
-                                feedback.Score = Math.Clamp(osc, 1, 10);
-                            else if (root.TryGetProperty("score", out var sEl) && sEl.TryGetInt32(out var sc))
-                                feedback.Score = Math.Clamp(sc, 1, 10);
-
-                            if (root.TryGetProperty("continuityScore", out var csEl) && csEl.TryGetInt32(out var cs))
-                                feedback.ContinuityScore = Math.Clamp(cs, 1, 10);
-                            else feedback.ContinuityScore = feedback.Score;
-
-                            if (root.TryGetProperty("characterScore", out var chrEl) && chrEl.TryGetInt32(out var chs))
-                                feedback.CharacterScore = Math.Clamp(chs, 1, 10);
-                            else feedback.CharacterScore = feedback.Score;
-
-                            if (root.TryGetProperty("lightingScore", out var lsEl) && lsEl.TryGetInt32(out var ls))
-                                feedback.LightingScore = Math.Clamp(ls, 1, 10);
-                            else feedback.LightingScore = feedback.Score;
-
-                            if (root.TryGetProperty("pacingScore", out var psEl) && psEl.TryGetInt32(out var ps))
-                                feedback.PacingScore = Math.Clamp(ps, 1, 10);
-                            else feedback.PacingScore = feedback.Score;
-
-                            if (root.TryGetProperty("dialogueScore", out var dsEl) && dsEl.TryGetInt32(out var ds))
-                                feedback.DialogueScore = Math.Clamp(ds, 1, 10);
-                            else feedback.DialogueScore = feedback.Score;
-
-                            if (root.TryGetProperty("musicScore", out var msEl) && msEl.TryGetInt32(out var ms))
-                                feedback.MusicScore = Math.Clamp(ms, 1, 10);
-                            else feedback.MusicScore = feedback.Score;
-
-                            if (root.TryGetProperty("continuityNotes", out var cn) && cn.ValueKind == JsonValueKind.String)
-                                feedback.ContinuityNotes = cn.GetString() ?? feedback.ContinuityNotes;
-                            if (root.TryGetProperty("visualConsistencyNotes", out var vn) && vn.ValueKind == JsonValueKind.String)
-                                feedback.VisualConsistencyNotes = vn.GetString() ?? feedback.VisualConsistencyNotes;
-                            if (root.TryGetProperty("lightingNotes", out var ln) && ln.ValueKind == JsonValueKind.String)
-                                feedback.LightingNotes = ln.GetString() ?? feedback.LightingNotes;
-                            if (root.TryGetProperty("dialogueNotes", out var dn) && dn.ValueKind == JsonValueKind.String)
-                                feedback.DialogueNotes = dn.GetString() ?? feedback.DialogueNotes;
-                            if (root.TryGetProperty("audioNotes", out var an) && an.ValueKind == JsonValueKind.String)
-                                feedback.AudioNotes = an.GetString() ?? feedback.AudioNotes;
-                        }
-                    }
-                    catch { /* fallback to defaults */ }
-                }
+                var imagePaths = imageFiles.Select(x => x.Path).ToList();
+                var operation = new MultimodalReviewOperation<MovieSceneGroupFeedback>(
+                    _vision, imagePaths, reviewModel, "movie_scene_group_review", "movie-scene-review.v1",
+                    raw => ParseSceneGroupFeedback(raw, rangeStr, sceneNumbers), ValidateSceneGroupFeedback);
+                var observation = new MultimodalReviewObservation(
+                    rangeStr, imageFiles.Select(x => x.Label).ToArray(), prompt);
+                var execution = await operation.ExecuteAsync(observation, ct).ConfigureAwait(false);
+                if (!execution.Success || execution.Value is null)
+                    throw new InvalidOperationException(execution.Error ?? string.Join(" ", execution.ValidationIssues.Select(i => i.Message)));
+                feedback = execution.Value;
+                SaveExecutionManifest(_projects.GetProjectDir(projectId), $"movie_scene_group_review_{sceneNumbers.Min():D2}_{sceneNumbers.Max():D2}", execution);
+            }
+            else
+            {
+                throw new InvalidOperationException($"{rangeStr} has no valid visual observations to review.");
             }
         }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "Error evaluating scene chunk {Range}", rangeStr);
+            throw;
         }
         finally
         {
@@ -341,6 +300,7 @@ Return valid JSON with non-generic, specific observations:
     private async Task<string> SynthesizeExecutiveSummaryAsync(
         MovieAutoReviewReport report,
         IReadOnlyList<MovieSceneGroupFeedback> groupFeedbacks,
+        string reviewModel,
         CancellationToken ct)
     {
         var sysPrompt = "You are an Executive Film Director and Post-Production Supervisor writing a high-level Executive Director Summary Report for a complete movie. " +
@@ -365,29 +325,111 @@ Return valid JSON with non-generic, specific observations:
             if (!string.IsNullOrWhiteSpace(gf.AudioNotes)) promptSb.AppendLine($"  Audio/Music: {gf.AudioNotes}");
         }
 
+        var fullPrompt = $"{sysPrompt}\n\nReview Data:\n{promptSb}";
+        var operation = new MultimodalReviewOperation<ExecutiveReviewSummary>(
+            _vision, Array.Empty<string>(), reviewModel, "movie_review_synthesis", "movie-review-synthesis.v1",
+            raw => string.IsNullOrWhiteSpace(raw)
+                ? ModelParseResult<ExecutiveReviewSummary>.Failure(new ModelValidationIssue("missing_summary", "Executive summary is empty.", "$"))
+                : ModelParseResult<ExecutiveReviewSummary>.Success(new(raw.Trim())),
+            summary => string.IsNullOrWhiteSpace(summary.Text)
+                ? [new ModelValidationIssue("missing_summary", "Executive summary is empty.", "$.text")]
+                : Array.Empty<ModelValidationIssue>());
+        var execution = await operation.ExecuteAsync(
+            new MultimodalReviewObservation("Full movie synthesis", Array.Empty<string>(), fullPrompt), ct).ConfigureAwait(false);
+        if (execution.Success && execution.Value is not null)
+        {
+            SaveExecutionManifest(_projects.GetProjectDir(report.ProjectId), "movie_review_synthesis", execution);
+            return execution.Value.Text;
+        }
+
+        _log.LogWarning("Executive summary lifecycle failed; using structured deterministic summary. {Error}", execution.Error);
+        return BuildFallbackExecutiveSummary(report, groupFeedbacks);
+    }
+
+    private sealed record ExecutiveReviewSummary(string Text);
+
+    internal static ModelParseResult<MovieSceneGroupFeedback> ParseSceneGroupFeedback(
+        string raw, string rangeStr, IReadOnlyList<int> sceneNumbers)
+    {
         try
         {
-            if (_chat is { IsConfigured: true })
-            {
-                var summary = await _chat.CompleteAsync(sysPrompt, promptSb.ToString(), ct: ct, mode: "movie_review_synthesis").ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(summary))
-                    return summary.Trim();
-            }
+            var start = raw.IndexOf('{');
+            var end = raw.LastIndexOf('}');
+            if (start < 0 || end <= start)
+                return ModelParseResult<MovieSceneGroupFeedback>.Failure(
+                    new ModelValidationIssue("invalid_json", "Scene review did not contain a JSON object."));
 
-            if (_vision is { IsConfigured: true })
+            using var doc = JsonDocument.Parse(raw[start..(end + 1)]);
+            var root = doc.RootElement;
+            int Score(string name) => root.TryGetProperty(name, out var value) && value.TryGetInt32(out var score)
+                ? score
+                : 0;
+            string Note(string name) => root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString() ?? ""
+                : "";
+
+            return ModelParseResult<MovieSceneGroupFeedback>.Success(new MovieSceneGroupFeedback
             {
-                var fullPrompt = $"{sysPrompt}\n\nReview Data:\n{promptSb}";
-                var summary = await _vision.CompleteWithImagesAsync(fullPrompt, Array.Empty<string>(), ct: ct).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(summary))
-                    return summary.Trim();
-            }
+                SceneRange = rangeStr,
+                SceneNumbers = sceneNumbers.ToList(),
+                Score = Score("overallScore") is var overall && overall > 0 ? overall : Score("score"),
+                ContinuityScore = Score("continuityScore"),
+                CharacterScore = Score("characterScore"),
+                LightingScore = Score("lightingScore"),
+                PacingScore = Score("pacingScore"),
+                DialogueScore = Score("dialogueScore"),
+                MusicScore = Score("musicScore"),
+                ContinuityNotes = Note("continuityNotes"),
+                VisualConsistencyNotes = Note("visualConsistencyNotes"),
+                LightingNotes = Note("lightingNotes"),
+                DialogueNotes = Note("dialogueNotes"),
+                AudioNotes = Note("audioNotes"),
+            });
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "AI Executive Summary synthesis pass failed; falling back to structured summary.");
+            return ModelParseResult<MovieSceneGroupFeedback>.Failure(
+                new ModelValidationIssue("invalid_json", $"Scene review JSON could not be parsed: {ex.Message}"));
         }
+    }
 
-        return BuildFallbackExecutiveSummary(report, groupFeedbacks);
+    internal static IReadOnlyList<ModelValidationIssue> ValidateSceneGroupFeedback(MovieSceneGroupFeedback feedback)
+    {
+        var issues = new List<ModelValidationIssue>();
+        var scores = new Dictionary<string, int>
+        {
+            ["overallScore"] = feedback.Score,
+            ["continuityScore"] = feedback.ContinuityScore,
+            ["characterScore"] = feedback.CharacterScore,
+            ["lightingScore"] = feedback.LightingScore,
+            ["pacingScore"] = feedback.PacingScore,
+            ["dialogueScore"] = feedback.DialogueScore,
+            ["musicScore"] = feedback.MusicScore,
+        };
+        foreach (var (name, score) in scores.Where(pair => pair.Value is < 1 or > 10))
+            issues.Add(new("invalid_score", $"{name} must be between 1 and 10.", "$." + name));
+
+        if (string.IsNullOrWhiteSpace(feedback.ContinuityNotes))
+            issues.Add(new("missing_observation", "Continuity observations are required.", "$.continuityNotes"));
+        if (string.IsNullOrWhiteSpace(feedback.VisualConsistencyNotes))
+            issues.Add(new("missing_observation", "Character consistency observations are required.", "$.visualConsistencyNotes"));
+        if (string.IsNullOrWhiteSpace(feedback.LightingNotes))
+            issues.Add(new("missing_observation", "Lighting observations are required.", "$.lightingNotes"));
+        if (string.IsNullOrWhiteSpace(feedback.DialogueNotes))
+            issues.Add(new("missing_observation", "Dialogue observations are required.", "$.dialogueNotes"));
+        if (string.IsNullOrWhiteSpace(feedback.AudioNotes))
+            issues.Add(new("missing_observation", "Audio observations are required.", "$.audioNotes"));
+        return issues;
+    }
+
+    private static void SaveExecutionManifest<TResult>(
+        string projectDir, string operationName, ValidatedModelResult<TResult> execution)
+        where TResult : class
+    {
+        var dir = Path.Combine(projectDir, "artifacts", "model_operations");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, operationName + ".lifecycle.json"),
+            ModelExecutionManifest.Serialize(execution));
     }
 
     private static string BuildFallbackExecutiveSummary(

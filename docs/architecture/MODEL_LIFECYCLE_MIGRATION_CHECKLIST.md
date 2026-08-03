@@ -78,16 +78,16 @@ This is the authoritative completion checklist for migrating adaptation operatio
 - [x] Apply structural validation before saving clip and movie review artifacts.
 - [x] Persist review artifact hashes and validation findings.
 - [x] Reject silent model/provider switching when the selected model cannot review video.
-- [ ] Split clip review into observation and judgment result schemas.
-- [ ] Move clip review's direct vision request into a validated model operation.
-- [ ] Move movie chunk observation requests into a validated model operation.
-- [ ] Move movie synthesis requests into a separate validated model operation.
-- [ ] Preserve evidence/frame identities, uncertainty, and unavailable status in validators.
-- [ ] Add focused correction for malformed or incomplete review JSON.
-- [ ] Record selected model, frame hashes, attempts, and terminal source in review manifests.
-- [ ] Add recorded clip and movie review replay, including unsupported-video and malformed-response cases.
+- [x] Split clip review into observation and judgment result schemas.
+- [x] Move clip review's direct vision request into a validated model operation.
+- [x] Move movie chunk observation requests into a validated model operation.
+- [x] Move movie synthesis requests into a separate validated model operation.
+- [x] Preserve evidence/frame identities, uncertainty, and unavailable status in validators.
+- [x] Add focused correction for malformed or incomplete review JSON.
+- [x] Record selected model, frame hashes, attempts, and terminal source in review manifests.
+- [x] Add recorded clip and movie review replay, including unsupported-video and malformed-response cases.
 
-**Phase status: partial.**
+**Phase status: complete.**
 
 ## 7. End-to-end offline lifecycle replay
 
