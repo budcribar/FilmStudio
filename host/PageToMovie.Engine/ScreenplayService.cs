@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
+using PageToMovie.Adaptation;
 
 namespace PageToMovie.Engine;
 
@@ -480,7 +481,7 @@ public static string NormalizeText(string text)
     public static async Task<SaveResult> CreateDraftFromBookAsync(
         ProjectStore store,
         string projectId,
-        PageToMovie.Engine.Abstractions.IChatClient? chat = null,
+        PageToMovie.Core.Abstractions.IChatClient? chat = null,
         string model = "",
         Action<string>? onProgress = null,
         CancellationToken ct = default,

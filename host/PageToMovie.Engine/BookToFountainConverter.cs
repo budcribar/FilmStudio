@@ -4,6 +4,7 @@ using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
 using PageToMovie.Engine.ModelBacked;
 using PageToMovie.Engine.ModelExecution;
+using PageToMovie.Adaptation;
 
 namespace PageToMovie.Engine;
 

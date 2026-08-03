@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Utils;
 
-namespace PageToMovie.Engine;
+namespace PageToMovie.Adaptation;
 
 /// <summary>
 /// Adaptation density: how much finished film a source yields when adapted naturally
@@ -91,9 +92,9 @@ public static class AdaptationDensity
         {
             kind = bookKind.Trim();
             // Prefer analyzer word count when available without re-entering suggested-runtime.
-            words = ClipDurationEstimator.CountWords(BookToFountainConverter.NormalizeBookText(text));
+            words = TextMetrics.CountWords(NormalizeBookText(text));
             if (words <= 0)
-                words = ClipDurationEstimator.CountWords(text);
+                words = TextMetrics.CountWords(text);
         }
         else
         {
@@ -102,7 +103,7 @@ public static class AdaptationDensity
             words = analysis.TextWords;
         }
 
-        var syllables = ClipDurationEstimator.CountSyllables(text);
+        var syllables = TextMetrics.CountSyllables(text);
         var quoteFrac = EstimateQuotedDialogueFraction(text);
         return EstimateFromStats(kind, words, syllables, quoteFrac);
     }
@@ -145,10 +146,10 @@ public static class AdaptationDensity
         {
             // Short literary / picture-book prose: most words become VO or on-camera speech.
             // Calibrated on PageToMovie Tell-Tale Heart (YouTube 16:49 ≈ 17 min for ~2.2k words):
-            //   speechSec = max(words/2.6, syllables/4.2)  // ClipDurationEstimator rates
+            //   speechSec = max(words/2.6, syllables/4.2)  // TextMetrics / narration rates
             //   filmMin   ≈ speechSec × 1.20 / 60
             var speechSec = Math.Max(
-                words / ClipDurationEstimator.DialogueWordsPerSecond,
+                words / TextMetrics.DialogueWordsPerSecond,
                 syllables / 4.2);
             var filmMin = speechSec * ShortLiteraryStagingMultiplier / 60.0;
             natural = kind == "picture_book"
@@ -157,7 +158,7 @@ public static class AdaptationDensity
             delta = words > 0 ? natural / (words / 1000.0) : DeltaPictureBookPages;
             method = "short_literary_speech_x_staging";
             notes =
-                $"Narration-rate speech (ClipDurationEstimator) × {ShortLiteraryStagingMultiplier:F2} " +
+                $"Narration-rate speech (TextMetrics) × {ShortLiteraryStagingMultiplier:F2} " +
                 "staging; calibrated on Tell-Tale Heart (~17 min / ~2.2k words). " +
                 "Not novel δ — short fiction keeps most temporal mass.";
         }
@@ -202,6 +203,14 @@ public static class AdaptationDensity
             return null;
         var half = (int)Math.Round(natural.NaturalFilmMinutes * 0.5);
         return Math.Clamp(half, 20, natural.NaturalFilmMinutes - 5);
+    }
+
+
+    /// <summary>Gutenberg strip + newline normalize (same as former BookToFountainConverter.NormalizeBookText).</summary>
+    private static string NormalizeBookText(string bookText)
+    {
+        var cleaned = GutenbergCleaner.StripHeaderAndFooter(bookText ?? "");
+        return cleaned.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
     }
 
     /// <summary>Rough prior: character mass inside ASCII/curly quotes over total letters.</summary>

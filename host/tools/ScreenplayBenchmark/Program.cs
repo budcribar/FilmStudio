@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
+using PageToMovie.Adaptation;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
 

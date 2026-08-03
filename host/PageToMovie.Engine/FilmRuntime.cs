@@ -1,11 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using PageToMovie.Adaptation;
 
 namespace PageToMovie.Engine;
 
 /// <summary>
 /// Natural vs user-chosen target film length for a project.
-/// Natural comes from <see cref="AdaptationDensity"/>; target drives Stage 1 / estimates.
+/// Natural comes from <see cref="PageToMovie.Adaptation.AdaptationDensity"/>; target drives Stage 1 / estimates.
 /// </summary>
 public static class FilmRuntime
 {

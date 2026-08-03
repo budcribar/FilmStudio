@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Utils;
 
-namespace PageToMovie.Engine;
+namespace PageToMovie.Adaptation;
 
 /// <summary>Port of extract_book_source.analyze_book_text — quality + Stage 1 defaults.</summary>
 public static class BookTextAnalyzer
@@ -9,6 +9,11 @@ public static class BookTextAnalyzer
     private static readonly Regex PageMarker = new(
         @"---\s*PAGE\s+(\d+)\s*---",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>Line-anchored page markers (matches Engine BookContextService.ParseBookPages).</summary>
+    private static readonly Regex PageMarkerLine = new(
+        @"^---\s*PAGE\s+(\d+)\s*---\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Multiline);
 
     private static readonly Regex WeirdChars = new(
         @"[^\w\s'.,!?;:\-""()…°]",
@@ -106,7 +111,7 @@ public static class BookTextAnalyzer
 
         // Natural film length from adaptation density (speech×staging for short literary;
         // market δ for novels). Calibrated on TTH ~17 min published film.
-        var syllables = ClipDurationEstimator.CountSyllables(plain);
+        var syllables = TextMetrics.CountSyllables(plain);
         var quoteFrac = AdaptationDensity.EstimateQuotedDialogueFraction(plain);
         var runtimeEstimate = AdaptationDensity.EstimateFromStats(bookKind, words, syllables, quoteFrac);
         var suggestedMinutes = runtimeEstimate.NaturalFilmMinutes;
@@ -145,9 +150,9 @@ public static class BookTextAnalyzer
     }
 
     /// <summary>
-    /// Stage 1 target runtime used by production (<see cref="ScreenplayService"/> /
-    /// <see cref="Stage1Service"/>) and the screenplay benchmark. Optional override is
-    /// clamped to 2–180; otherwise uses <see cref="AdaptationDensity"/> natural film minutes.
+    /// Stage 1 target runtime used by production Stage 1 / screenplay services and the
+    /// screenplay benchmark. Optional override is clamped to 2–180; otherwise uses
+    /// <see cref="AdaptationDensity"/> natural film minutes.
     /// </summary>
     public static int ResolveStage1RuntimeMinutes(string bookText, int? overrideMinutes = null)
     {
@@ -163,7 +168,7 @@ public static class BookTextAnalyzer
     /// Stats-only helper for tests; prefer <see cref="ResolveStage1RuntimeMinutes"/> /
     /// <see cref="AdaptationDensity.EstimateFromStats"/>.
     /// </summary>
-    internal static int SuggestStage1RuntimeMinutes(string bookKind, int words, int pages)
+    public static int SuggestStage1RuntimeMinutes(string bookKind, int words, int pages)
     {
         words = Math.Max(0, words);
         // Without real text, approximate syllables ≈ words (tests only).
@@ -172,14 +177,38 @@ public static class BookTextAnalyzer
     }
 
     /// <summary>
-    /// Page bodies for density/quality heuristics. Same split rules as
-    /// <see cref="BookContextService.ParseBookPages"/>: <c>--- PAGE N ---</c> markers
+    /// Page bodies for density/quality heuristics. Same split rules as Engine
+    /// <c>BookContextService.ParseBookPages</c>: <c>--- PAGE N ---</c> markers
     /// when present, otherwise paragraph-based synthetic pages (plain .txt).
+    /// Implemented here so Adaptation does not reference Engine.
     /// </summary>
-    public static List<string> PageBodies(string text) =>
-        BookContextService.ParseBookPages(text ?? "")
-            .Select(p => p.Text ?? "")
+    public static List<string> PageBodies(string text)
+    {
+        text ??= "";
+        text = text.Replace("\r\n", "\n").Replace('\r', '\n');
+        var bodies = new List<string>();
+
+        var matches = PageMarkerLine.Matches(text);
+        if (matches.Count > 0)
+        {
+            for (var i = 0; i < matches.Count; i++)
+            {
+                var m = matches[i];
+                var start = m.Index + m.Length;
+                var end = i + 1 < matches.Count ? matches[i + 1].Index : text.Length;
+                bodies.Add(text[start..end].Trim());
+            }
+            return bodies;
+        }
+
+        var paras = Regex.Split(text.Trim(), @"\n\s*\n+")
+            .Select(p => p.Trim())
+            .Where(p => p.Length > 0)
             .ToList();
+        if (paras.Count == 0 && text.Trim().Length > 0)
+            paras.Add(text.Trim());
+        return paras;
+    }
 
     public static bool IsIllustrationOnly(string body)
     {

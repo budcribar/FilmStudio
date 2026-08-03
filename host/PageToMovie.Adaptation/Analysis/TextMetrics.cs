@@ -1,0 +1,71 @@
+using System.Text.RegularExpressions;
+
+namespace PageToMovie.Adaptation;
+
+/// <summary>
+/// Pure text metrics used by adaptation density and (via Engine wrappers) clip duration.
+/// Kept free of Engine so Adaptation never depends on Stage‑2 / model catalog code.
+/// </summary>
+public static class TextMetrics
+{
+    /// <summary>Words per second for spoken dialogue (~156 wpm — natural narration pace).</summary>
+    /// <remarks>Matches <c>ClipDurationEstimator.DialogueWordsPerSecond</c> in Engine.</remarks>
+    public const double DialogueWordsPerSecond = 2.6;
+
+    private static readonly Regex WordCountRegex = new(@"[\p{L}\p{N}']+", RegexOptions.Compiled);
+
+    public static int CountWords(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 0;
+        return WordCountRegex.Matches(text).Count;
+    }
+
+    public static int CountSyllables(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 0;
+        var total = 0;
+        var len = text.Length;
+        var wordLen = 0;
+        var syllables = 0;
+        var inVowelGroup = false;
+
+        for (var i = 0; i < len; i++)
+        {
+            var ch = text[i];
+            if (char.IsLetter(ch) || char.IsDigit(ch) || ch == '\'')
+            {
+                wordLen++;
+                var lower = char.ToLowerInvariant(ch);
+                var isV = lower is 'a' or 'e' or 'i' or 'o' or 'u' or 'y';
+                if (isV && !inVowelGroup)
+                {
+                    syllables++;
+                    inVowelGroup = true;
+                }
+                else if (!isV)
+                {
+                    inVowelGroup = false;
+                }
+            }
+            else
+            {
+                if (wordLen > 0)
+                {
+                    if (wordLen <= 3) total += 1;
+                    else total += Math.Max(1, syllables);
+                    wordLen = 0;
+                    syllables = 0;
+                    inVowelGroup = false;
+                }
+            }
+        }
+
+        if (wordLen > 0)
+        {
+            if (wordLen <= 3) total += 1;
+            else total += Math.Max(1, syllables);
+        }
+
+        return total;
+    }
+}

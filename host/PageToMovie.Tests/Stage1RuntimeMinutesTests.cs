@@ -1,3 +1,4 @@
+using PageToMovie.Adaptation;
 using PageToMovie.Engine;
 using Xunit;
 

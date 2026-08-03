@@ -4988,7 +4988,7 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
     HttpRequest req,
     ProjectStore store,
     CastFromScreenplayService castService,
-    PageToMovie.Engine.Abstractions.IChatClient chat,
+    PageToMovie.Core.Abstractions.IChatClient chat,
     IUserContext user,
     CancellationToken ct) =>
 {
@@ -5142,7 +5142,7 @@ app.MapPut("/api/projects/{id}/film-runtime", async (
 app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     string id,
     ProjectStore store,
-    PageToMovie.Engine.Abstractions.IChatClient chat,
+    PageToMovie.Core.Abstractions.IChatClient chat,
     BookTextRegistryService books,
     IUserContext user,
     UserDatabaseService userDb,

@@ -4,6 +4,7 @@ using PageToMovie.Engine.Abstractions;
 using PageToMovie.Engine.ModelExecution;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PageToMovie.Adaptation;
 
 namespace PageToMovie.Engine;
 

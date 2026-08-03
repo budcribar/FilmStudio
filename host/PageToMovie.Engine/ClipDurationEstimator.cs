@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Adaptation;
 using PageToMovie.Core.Models;
 
 namespace PageToMovie.Engine;
@@ -21,7 +22,7 @@ public static class ClipDurationEstimator
     public const int AbsMaxSeconds = 12;
 
     /// <summary>Words per second for spoken dialogue (~156 wpm — natural narration pace).</summary>
-    public const double DialogueWordsPerSecond = 2.6;
+    public const double DialogueWordsPerSecond = TextMetrics.DialogueWordsPerSecond;
 
     /// <summary>
     /// Lead-in before speech so lip-sync / video-extend does not clip the first word
@@ -602,64 +603,9 @@ public static class ClipDurationEstimator
             _ => SilentActionMaxSeconds,
         };
 
-    private static readonly Regex WordCountRegex = new(@"[\p{L}\p{N}']+", RegexOptions.Compiled);
-    private static readonly Regex VowelGroupRegex = new(@"[aeiouy]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    private static readonly Regex TrailingERegex = new(@"(?:(?<!s)e|e[ds])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    public static int CountWords(string text) => TextMetrics.CountWords(text);
 
-    public static int CountWords(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return 0;
-        return WordCountRegex.Matches(text).Count;
-    }
-
-    public static int CountSyllables(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return 0;
-        var total = 0;
-        var len = text.Length;
-        var wordLen = 0;
-        var syllables = 0;
-        var inVowelGroup = false;
-
-        for (var i = 0; i < len; i++)
-        {
-            var ch = text[i];
-            if (char.IsLetter(ch) || char.IsDigit(ch) || ch == '\'')
-            {
-                wordLen++;
-                var lower = char.ToLowerInvariant(ch);
-                var isV = lower is 'a' or 'e' or 'i' or 'o' or 'u' or 'y';
-                if (isV && !inVowelGroup)
-                {
-                    syllables++;
-                    inVowelGroup = true;
-                }
-                else if (!isV)
-                {
-                    inVowelGroup = false;
-                }
-            }
-            else
-            {
-                if (wordLen > 0)
-                {
-                    if (wordLen <= 3) total += 1;
-                    else total += Math.Max(1, syllables);
-                    wordLen = 0;
-                    syllables = 0;
-                    inVowelGroup = false;
-                }
-            }
-        }
-
-        if (wordLen > 0)
-        {
-            if (wordLen <= 3) total += 1;
-            else total += Math.Max(1, syllables);
-        }
-
-        return total;
-    }
+    public static int CountSyllables(string text) => TextMetrics.CountSyllables(text);
 
     /// <summary>
     /// Sentence / clause units for packing (keeps trailing punctuation on the unit).
