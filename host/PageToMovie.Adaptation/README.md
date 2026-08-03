@@ -75,6 +75,20 @@ Engine maps `AdaptationVisionMeta` ↔ `ProjectVisionMeta.Document` at the orche
 **Remaining Engine-side orchestration (not in this module):** ProjectStore save, book registry cache,
 `GenerationErrorLogger` (mapped via callback), Stage2, `FountainParser` (Engine still uses it elsewhere).
 
+## Version identity (Phase 5)
+
+`AdaptationVersion.Current` returns a 12-char lowercase hex id used by ScreenplayBenchmark disk-cache
+file names and `HistoricalBenchmarkRun.AdaptationVersion`.
+
+**Method:** `SHA-256("{AssemblyName}|{InformationalVersion}|{sha256(embedded book_to_fountain)}")[..12]`.
+
+- **Assembly name** — namespaces the fingerprint.
+- **InformationalVersion** — MSBuild/SourceLink product version (often includes source revision).
+- **Embedded prompt content hash** — Stage‑1 `book_to_fountain.txt` body from the assembly resource
+  (not disk override). A re-embed invalidates identity even when the version attribute is unchanged.
+
+See XML docs on `AdaptationVersion.ComputeId`.
+
 ## Plan
 
 See `host/docs/adaptation-module-implementation-plan.md`.
@@ -84,3 +98,5 @@ See `host/docs/adaptation-module-implementation-plan.md`.
 - Phase 0–1: contracts, density, analyzer, façade stubs
 - Phase 2: converter + prompts + `ConvertAsync` + ScreenplayService wiring
 - Phase 3: `NaturalRuntime` pure math; Engine `FilmRuntime` storage-only; BookPrepare writes natural via Adaptation
+- Phase 5: `AdaptationVersion` + benchmark cache/history identity
+- Phase 6.1: architecture test (no Engine project/assembly reference)

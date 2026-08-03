@@ -307,6 +307,9 @@ public static class Program
             return 1;
         }
 
+        var adaptationVersion = PageToMovie.Adaptation.AdaptationVersion.Current;
+        Console.WriteLine($"🔖 Prompt revision: {promptRevision}  ·  Adaptation version: {adaptationVersion}");
+
         outDir ??= Path.Combine(workspaceRoot, "evals", "results", $"screenplay_benchmark_{DateTime.Now:yyyyMMdd_HHmmss}");
         Directory.CreateDirectory(outDir);
 
@@ -333,7 +336,7 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility, targetRuntimeMinutesOverride);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, adaptationVersion, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility, targetRuntimeMinutesOverride);
             }
 
             // Generate updated HTML Dashboard after suite execution
@@ -355,7 +358,7 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility, targetRuntimeMinutesOverride);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, adaptationVersion, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility, targetRuntimeMinutesOverride);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
@@ -379,6 +382,7 @@ public static class Program
         IChatClient chat,
         string workspaceRoot,
         string promptRevision,
+        string adaptationVersion,
         string? reasoningEffort = null,
         double samplingTemperature = 0.2,
         bool bypassCache = false,
@@ -476,11 +480,14 @@ public static class Program
 
             var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
             var visionMetaFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.vision_meta.json");
-            // A screenplay cache must be scoped to the committed prompt revision as well as the
-            // model and reasoning effort. Otherwise a V4 benchmark could silently reuse a V3
-            // draft and make the prompt comparison meaningless.
-            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}_temp{temperatureKey}.fountain");
-            var cacheVisionMetaFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}_temp{temperatureKey}.vision_meta.json");
+            // A screenplay cache must be scoped to the committed prompt revision, the Adaptation
+            // module surface (converter + embedded prompt identity), and the model / effort /
+            // temperature. Otherwise a V4 benchmark could silently reuse a V3 draft, or a
+            // prompt-unchanged converter fix would keep grading stale Fountain.
+            var adaptationKey = SanitizeFileName(adaptationVersion);
+            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}_{adaptationKey}_temp{temperatureKey}.fountain");
+            var cacheVisionMetaFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}_{promptRevision}_{adaptationKey}_temp{temperatureKey}.vision_meta.json");
+
 
             var diskCached = File.Exists(cacheFile) ? await File.ReadAllTextAsync(cacheFile) : null;
             var localCached = File.Exists(screenplayFile) ? await File.ReadAllTextAsync(screenplayFile) : null;
@@ -676,7 +683,7 @@ public static class Program
             // at boosted reasoning effort is not interchangeable with one at default effort, even
             // when ScreenplaysHash matches (the candidates could be unchanged while only the
             // judge's own effort level changed).
-            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}_{promptRevision}_temp{temperatureKey}_judgetemp{judgeTemperatureKey}.json");
+            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}_{promptRevision}_{SanitizeFileName(adaptationVersion)}_temp{temperatureKey}_judgetemp{judgeTemperatureKey}.json");
             JudgeEvaluationPayload? cachedJudge = null;
 
             if (!bypassCache && File.Exists(judgeCacheFile))
@@ -763,6 +770,7 @@ public static class Program
             SamplingTemperature = samplingTemperature,
             JudgeTemperature = judgeTemperature,
             PromptVersion = promptRevision,
+            AdaptationVersion = adaptationVersion,
             ModelScores = runData.Leaderboard,
             JudgeMatrix = runData.JudgeMatrix,
             SelfBiasNotes = runData.SelfBiasNotes,

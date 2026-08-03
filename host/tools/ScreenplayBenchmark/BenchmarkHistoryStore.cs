@@ -43,6 +43,14 @@ public sealed class HistoricalBenchmarkRun
     /// </summary>
     public string PromptVersion { get; set; } = "";
 
+    /// <summary>
+    /// Short stable id of the <c>PageToMovie.Adaptation</c> module surface (assembly informational
+    /// version + embedded Stage‑1 prompt content). See <c>PageToMovie.Adaptation.AdaptationVersion</c>.
+    /// Paired with <see cref="PromptVersion"/> so converter/heuristic changes bust cache/history
+    /// buckets even when the prompt git revision is unchanged.
+    /// </summary>
+    public string AdaptationVersion { get; set; } = "";
+
     /// <summary>True when a legacy untagged run was mapped to the prompt revision inferred from
     /// its timestamp, rather than recorded directly by the benchmark runner.</summary>
     public bool PromptVersionInferred { get; set; }
