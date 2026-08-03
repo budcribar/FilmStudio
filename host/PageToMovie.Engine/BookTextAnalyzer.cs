@@ -99,21 +99,23 @@ public static class BookTextAnalyzer
         else
             quality = "poor";
 
-        var density = sparseRatio > 0.45 || avgChars < 200 ? "sparse" : "normal";
-        var bookKind = pages <= 40 && (density == "sparse" || words < 800)
+        var textDensity = sparseRatio > 0.45 || avgChars < 200 ? "sparse" : "normal";
+        var bookKind = pages <= 40 && (textDensity == "sparse" || words < 800)
             ? "picture_book"
             : words < 15000 ? "short" : "novel";
 
-        // Stage 1 target ≈ slow read-aloud + light film staging — not a fixed short-film floor.
-        // A ~130-word nursery rhyme is about 2 minutes when spoken slowly; the old short floor
-        // of 8 minutes (and picture_book floor of 5) forced padding and invented beats.
-        var suggestedMinutes = SuggestStage1RuntimeMinutes(bookKind, words, pages);
+        // Natural film length from adaptation density (speech×staging for short literary;
+        // market δ for novels). Calibrated on TTH ~17 min published film.
+        var syllables = ClipDurationEstimator.CountSyllables(plain);
+        var quoteFrac = AdaptationDensity.EstimateQuotedDialogueFraction(plain);
+        var runtimeEstimate = AdaptationDensity.EstimateFromStats(bookKind, words, syllables, quoteFrac);
+        var suggestedMinutes = runtimeEstimate.NaturalFilmMinutes;
         var suggestedChunks = bookKind == "picture_book"
             ? Math.Clamp(pages, 5, 20)
             : 10;
 
         var notes = new List<string>();
-        if (density == "sparse")
+        if (textDensity == "sparse")
             notes.Add("Layout is illustration-heavy (normal for picture books) but wording may still be usable.");
         if (bookKind == "picture_book")
             notes.Add($"Treated as picture book (~{pages} pages). Suggested Stage 1 runtime {suggestedMinutes} min.");
@@ -133,7 +135,7 @@ public static class BookTextAnalyzer
             AvgCharsPerPage = Math.Round(avgChars, 1),
             GarbageScore = Math.Round(garbage, 3),
             TextQuality = quality,
-            TextDensity = density,
+            TextDensity = textDensity,
             BookKind = bookKind,
             ReadyForStage1 = quality == "good" && garbage < 0.45,
             SuggestedTotalMinutes = suggestedMinutes,
@@ -145,38 +147,28 @@ public static class BookTextAnalyzer
     /// <summary>
     /// Stage 1 target runtime used by production (<see cref="ScreenplayService"/> /
     /// <see cref="Stage1Service"/>) and the screenplay benchmark. Optional override is
-    /// clamped to 2–180; otherwise uses <see cref="BookTextAnalysis.SuggestedTotalMinutes"/>.
+    /// clamped to 2–180; otherwise uses <see cref="AdaptationDensity"/> natural film minutes.
     /// </summary>
     public static int ResolveStage1RuntimeMinutes(string bookText, int? overrideMinutes = null)
     {
         if (overrideMinutes is > 0)
             return Math.Clamp(overrideMinutes.Value, 2, 180);
-        return Math.Clamp(Analyze(bookText ?? "").SuggestedTotalMinutes, 2, 180);
+        return Math.Clamp(
+            AdaptationDensity.EstimateNatural(bookText).NaturalFilmMinutes,
+            2,
+            180);
     }
 
     /// <summary>
-    /// Spoken-duration-first runtime estimate (minutes of finished film).
-    /// Very short sources track slow read-aloud time; longer sources use words/pages heuristics.
+    /// Stats-only helper for tests; prefer <see cref="ResolveStage1RuntimeMinutes"/> /
+    /// <see cref="AdaptationDensity.EstimateFromStats"/>.
     /// </summary>
     internal static int SuggestStage1RuntimeMinutes(string bookKind, int words, int pages)
     {
         words = Math.Max(0, words);
-        pages = Math.Max(1, pages);
-
-        // Nursery rhymes / short verse: ~70 words per minute of finished film when spoken
-        // slowly with staging. Empirically Mary (~136 words) ≈ 2 min read-aloud.
-        if (words > 0 && words < 500)
-            return Math.Clamp((int)Math.Round(words / 70.0), 2, 12);
-
-        return bookKind switch
-        {
-            // Picture books: page-driven with a soft word floor; no hard 5-minute minimum.
-            "picture_book" => Math.Clamp(Math.Max(pages / 2, Math.Max(2, words / 100)), 2, 25),
-            // Short prose: ~120 wpm film target; floor 3 (was 8 — that padded fables).
-            "short" => Math.Clamp(Math.Max(3, words / 120), 3, 45),
-            // Novels: denser; keep longer band.
-            _ => Math.Clamp(Math.Max(30, words / 150), 30, 180),
-        };
+        // Without real text, approximate syllables ≈ words (tests only).
+        return AdaptationDensity.EstimateFromStats(bookKind, words, syllables: words, quotedDialogueFraction: 0.2)
+            .NaturalFilmMinutes;
     }
 
     /// <summary>

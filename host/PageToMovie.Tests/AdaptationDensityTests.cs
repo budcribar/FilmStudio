@@ -12,10 +12,24 @@ public sealed class AdaptationDensityTests
         var e = AdaptationDensity.EstimateNatural(book);
 
         Assert.InRange(e.NaturalFilmMinutes, 2, 3);
-        Assert.Equal("short_speech_x_staging", e.Method);
-        // High minutes-per-1k-words (short verse filmed near full speech length)
+        Assert.Equal("verse_speech_x_staging", e.Method);
         Assert.True(e.MinutesPerThousandWords > 8, $"δ={e.MinutesPerThousandWords}");
-        Assert.True(e.TemporalCompressionRatio > 0.8, $"τ={e.TemporalCompressionRatio}");
+        Assert.Null(AdaptationDensity.SuggestReducedBenchmarkMinutes(e));
+    }
+
+    [Fact]
+    public void Tell_Tale_Heart_calibrates_near_published_seventeen_minutes()
+    {
+        var path = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..", "..", "books", "The_Tell-Tale_Heart.txt"));
+        Assert.True(File.Exists(path), $"Missing fixture book at {path}");
+
+        var e = AdaptationDensity.EstimateNatural(File.ReadAllText(path));
+        // Published PageToMovie TTH on YouTube is 16:49; density should land near that, not ~10.
+        Assert.Equal("short", e.BookKind);
+        Assert.Equal("short_literary_speech_x_staging", e.Method);
+        Assert.InRange(e.NaturalFilmMinutes, 14, 20);
+        Assert.InRange(e.MinutesPerThousandWords, 6.0, 10.0);
         Assert.Null(AdaptationDensity.SuggestReducedBenchmarkMinutes(e));
     }
 
@@ -25,7 +39,6 @@ public sealed class AdaptationDensityTests
         var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "books", "Nick_and_Me.txt"));
         if (!File.Exists(path))
         {
-            // Fallback: synthetic ~50k-word novel mass
             var synth = string.Join(' ', Enumerable.Repeat("Nick walked home and thought about the day.", 6000));
             var eSynth = AdaptationDensity.EstimateNatural(synth, bookKind: "novel");
             Assert.InRange(eSynth.NaturalFilmMinutes, 40, 180);
@@ -35,10 +48,9 @@ public sealed class AdaptationDensityTests
 
         var e = AdaptationDensity.EstimateNatural(File.ReadAllText(path));
         Assert.Equal("novel", e.BookKind);
-        // Feature / limited-series band — not 340+ min full-prose speech
         Assert.InRange(e.NaturalFilmMinutes, 80, 180);
         Assert.True(e.AudiobookMinutes > 300, "Nick should be multi-hour as audiobook");
-        Assert.True(e.TemporalCompressionRatio < 0.5, $"τ={e.TemporalCompressionRatio} should show heavy compression");
+        Assert.True(e.TemporalCompressionRatio < 0.5, $"τ={e.TemporalCompressionRatio}");
         Assert.InRange(e.MinutesPerThousandWords, 1.2, 3.5);
 
         var reduced = AdaptationDensity.SuggestReducedBenchmarkMinutes(e);
@@ -55,5 +67,14 @@ public sealed class AdaptationDensityTests
             bookKind: "short");
         var expected = e.NaturalFilmMinutes / (e.SourceWords / 1000.0);
         Assert.Equal(Math.Round(expected, 2), e.MinutesPerThousandWords);
+    }
+
+    [Fact]
+    public void Stage1_resolve_matches_density_natural()
+    {
+        var book = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "MaryHadALittleLamb.txt"));
+        var density = AdaptationDensity.EstimateNatural(book).NaturalFilmMinutes;
+        Assert.Equal(density, BookTextAnalyzer.ResolveStage1RuntimeMinutes(book));
+        Assert.Equal(density, BookTextAnalyzer.Analyze(book).SuggestedTotalMinutes);
     }
 }

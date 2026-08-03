@@ -13,17 +13,8 @@ public sealed class Stage1RuntimeMinutesTests
         var minutes = BookTextAnalyzer.ResolveStage1RuntimeMinutes(book);
 
         Assert.InRange(analysis.TextWords, 80, 200);
-        // Slow read of this verse is ~2 minutes; do not force 8–10 min short-film padding.
         Assert.InRange(minutes, 2, 3);
         Assert.Equal(analysis.SuggestedTotalMinutes, minutes);
-    }
-
-    [Fact]
-    public void Very_short_word_count_suggests_two_minutes()
-    {
-        // ~140 words → 140/70 ≈ 2
-        Assert.Equal(2, BookTextAnalyzer.SuggestStage1RuntimeMinutes("short", words: 140, pages: 1));
-        Assert.Equal(2, BookTextAnalyzer.SuggestStage1RuntimeMinutes("picture_book", words: 100, pages: 1));
     }
 
     [Fact]
@@ -35,11 +26,11 @@ public sealed class Stage1RuntimeMinutesTests
     }
 
     [Fact]
-    public void Short_prose_no_longer_floors_at_eight()
+    public void Short_literary_uses_speech_staging_not_eight_minute_floor()
     {
-        // 1200 words / 120 = 10; mid short-story band
-        Assert.Equal(10, BookTextAnalyzer.SuggestStage1RuntimeMinutes("short", words: 1200, pages: 20));
-        // 600 words would have been floored at 8 under the old rule (600/120=5 → clamp 8)
-        Assert.Equal(5, BookTextAnalyzer.SuggestStage1RuntimeMinutes("short", words: 600, pages: 20));
+        // ~1200 words of short prose → narration speech path, not old words/120 floor of 8.
+        var minutes = BookTextAnalyzer.SuggestStage1RuntimeMinutes("short", words: 1200, pages: 20);
+        Assert.InRange(minutes, 5, 20);
+        Assert.NotEqual(8, minutes); // old floor
     }
 }
