@@ -1,8 +1,8 @@
 using PageToMovie.Core.Models;
-using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.ModelBacked;
+using PageToMovie.Engine.ModelExecution;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -65,12 +65,17 @@ public sealed class CastVisualLiteralizeService
                 "Return JSON only with character_seed_tokens.\n\n" +
                 JsonSerializer.Serialize(payload, JsonDefaults.Indented);
 
-            var raw = await _chat.CompleteAsync(
-                    system, user, model, temperature: 0.15, ct,
-                    mode: ChatCallModes.CastVisualLiteralize)
-                .ConfigureAwait(false);
-            var parsed = GrokChatClient.ParseJsonObject(StripFences(raw));
-            return MergeLiteralized(seeds, parsed);
+            var requestedKeys = seeds.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var pipeline = new ValidatedModelOperation<CastModelInput, string, Dictionary<string, object?>>(
+                new CastChatOperation(_chat, "cast_visual_literalize", "1", ChatCallModes.CastVisualLiteralize, 0.15),
+                new CastJsonObjectParser(),
+                new LiteralizedCastValidator(requestedKeys),
+                new OriginalCastFallback(seeds),
+                new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+            var result = await pipeline.ExecuteAsync(new CastModelInput(system, user, model), ct).ConfigureAwait(false);
+            if (result.Source == ModelResultSource.DeterministicFallback)
+                onProgress?.Invoke("AI visual scrub kept the original cast after validation failed.");
+            return result.Value is null ? seeds : MergeLiteralized(seeds, result.Value);
         }
         catch (Exception ex)
         {
@@ -191,24 +196,6 @@ public sealed class CastVisualLiteralizeService
             result[key] = copy;
         }
 
-        // Add any unexpected keys from model (shouldn't, but keep closed)
-        foreach (var (key, val) in cleanedSeeds)
-        {
-            if (!result.ContainsKey(key) && val is Dictionary<string, object?>)
-                result[key] = val;
-        }
-
         return result;
-    }
-
-    private static string StripFences(string text)
-    {
-        text = (text ?? "").Trim();
-        if (text.StartsWith("```", StringComparison.Ordinal))
-        {
-            text = Regex.Replace(text, @"^```(?:json|text)?\s*", "", RegexOptions.IgnoreCase);
-            text = Regex.Replace(text, @"\s*```\s*$", "");
-        }
-        return text.Trim();
     }
 }

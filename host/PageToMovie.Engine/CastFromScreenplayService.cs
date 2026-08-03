@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using PageToMovie.Engine.Abstractions;
 using PageToMovie.Engine.ModelExecution;
+using PageToMovie.Engine.ModelBacked;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -134,38 +135,21 @@ public sealed class CastFromScreenplayService
         var user = BuildUserPrompt(fountain, book);
 
         onProgress?.Invoke("Calling Grok for closed cast (book-aware looks)…");
-        var raw = await _chat.CompleteAsync(
-                system, user, model, temperature: 0.2, ct,
-                mode: ChatCallModes.CastFromScreenplay)
-            .ConfigureAwait(false);
-        raw = StripFences(raw);
-
-        Dictionary<string, object?> parsed;
-        try
-        {
-            parsed = GrokChatClient.ParseJsonObject(raw);
-        }
-        catch (Exception ex)
-        {
-            var dump = Path.Combine(
-                _projects.GetProjectDir(projectId),
-                "source",
-                $"cast_raw_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(dump)!);
-                await File.WriteAllTextAsync(dump, raw, ct).ConfigureAwait(false);
-            }
-            catch { /* ignore */ }
-
-            _log.LogWarning(ex, "Cast JSON parse failed for {Project}", projectId);
+        var pipeline = new ValidatedModelOperation<CastModelInput, string, Dictionary<string, object?>>(
+            new CastChatOperation(_chat, "cast_extraction", "1", ChatCallModes.CastFromScreenplay, 0.2),
+            new CastJsonObjectParser(),
+            new CastExtractionValidator(),
+            new TerminalCastFallback(),
+            new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+        var lifecycle = await pipeline.ExecuteAsync(new CastModelInput(system, user, model), ct).ConfigureAwait(false);
+        await WriteLifecycleManifestAsync(projectId, "cast_extraction", lifecycle, ct).ConfigureAwait(false);
+        if (!lifecycle.Success || lifecycle.Value is null)
             return new ExtractResult
             {
                 Ok = false,
-                Error = $"Could not parse cast JSON: {ex.Message}",
-                RawPath = dump,
+                Error = lifecycle.Error ?? string.Join(" ", lifecycle.ValidationIssues.Select(i => i.Message)),
             };
-        }
+        var parsed = lifecycle.Value;
 
         var normalized = NormalizeCastDoc(parsed, projectId, book);
 
@@ -284,6 +268,19 @@ public sealed class CastFromScreenplayService
 
     public static Task<string> LoadSystemPromptAsync(string workspaceRoot, CancellationToken ct = default) =>
         PromptFiles.ReadAsync(PromptRelativePath, workspaceRoot, ct);
+
+    private async Task WriteLifecycleManifestAsync<TResult>(
+        string projectId,
+        string operation,
+        ValidatedModelResult<TResult> result,
+        CancellationToken ct) where TResult : class
+    {
+        var dir = Path.Combine(_projects.GetProjectDir(projectId), "artifacts", "model_operations");
+        Directory.CreateDirectory(dir);
+        await File.WriteAllTextAsync(
+            Path.Combine(dir, operation + ".lifecycle.json"),
+            ModelExecutionManifest.Serialize(result), ct).ConfigureAwait(false);
+    }
 
     private async Task<string?> LoadBookTextAsync(string projectId, CancellationToken ct)
     {
@@ -781,6 +778,7 @@ public sealed class CastFromScreenplayService
                 ["description"] = desc,
                 ["canonical_given_name"] = name,
                 ["display_name_policy"] = off ? "never_on_screen" : "ok_anytime",
+                ["species_kind"] = CoerceString(seed, "species_kind")!,
                 ["voice_label"] = CoerceString(seed, "voice_label") ?? name.Replace(' ', '_'),
                 ["voice_profile"] = CoerceString(seed, "voice_profile")
                     ?? "Consistent character voice every scene.",

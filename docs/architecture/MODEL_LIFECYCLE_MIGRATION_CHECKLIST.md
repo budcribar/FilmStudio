@@ -47,15 +47,15 @@ This is the authoritative completion checklist for migrating adaptation operatio
 - [x] Require versioned schema and non-empty `character_seed_tokens`.
 - [x] Persist cast extraction input/output hashes and validation findings.
 - [x] Preserve model-selected cast membership; do not invent omitted characters.
-- [ ] Move the direct `IChatClient.CompleteAsync` request into a cast `IModelOperation`.
-- [ ] Extract cast JSON parsing into an `IModelResponseParser`.
-- [ ] Add domain validation for stable keys, membership, descriptions, species, and source references.
-- [ ] Implement a focused correction request containing exact missing/invalid fields.
-- [ ] Define an explicit terminal policy for unresolved cast errors without provider switching.
-- [ ] Migrate visual-literalization and wardrobe-lock model passes or inventory them separately.
-- [ ] Add recorded primary/correction/failure replay for cast extraction.
+- [x] Move the direct `IChatClient.CompleteAsync` request into a cast `IModelOperation`.
+- [x] Extract cast JSON parsing into an `IModelResponseParser`.
+- [x] Add domain validation for stable keys, membership, descriptions, species, and source references.
+- [x] Implement a focused correction request containing exact missing/invalid fields.
+- [x] Define an explicit terminal policy for unresolved cast errors without provider switching.
+- [x] Migrate visual-literalization and wardrobe-lock model passes or inventory them separately.
+- [x] Add recorded primary/correction/failure replay for cast extraction.
 
-**Phase status: partial.**
+**Phase status: complete.**
 
 ## 5. Stage 2 planning
 

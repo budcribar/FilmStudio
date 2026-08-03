@@ -125,7 +125,8 @@ public sealed class CastExtractRegressionTests
                   "canonical_given_name": "Mom",
                   "description": "adult woman",
                   "visual_lock": "adult woman",
-                  "display_name_policy": "ok_anytime"
+                  "display_name_policy": "ok_anytime",
+                  "species_kind": "human"
                 }
               }
             }
@@ -162,7 +163,8 @@ public sealed class CastExtractRegressionTests
                   "canonical_given_name": "Hero",
                   "description": "young adult",
                   "visual_lock": "young adult",
-                  "display_name_policy": "ok_anytime"
+                  "display_name_policy": "ok_anytime",
+                  "species_kind": "human"
                 }
               }
             }
