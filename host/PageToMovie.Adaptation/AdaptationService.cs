@@ -1,4 +1,7 @@
+using System.Security.Cryptography;
+using System.Text;
 using PageToMovie.Adaptation.Contracts;
+using PageToMovie.Adaptation.Conversion;
 using PageToMovie.Core.Abstractions;
 
 namespace PageToMovie.Adaptation;
@@ -73,21 +76,90 @@ public sealed class AdaptationService
     }
 
     /// <summary>
-    /// Full Stage‑1 convert. Phase 2 implements via moved <c>BookToFountainConverter</c>.
+    /// System prompt for book → Fountain (embedded <c>book_to_fountain.txt</c>).
     /// </summary>
-    public Task<AdaptationResult> ConvertAsync(
+    public Task<string> BuildSystemPromptAsync(int totalRuntimeMinutes, CancellationToken ct = default) =>
+        BookToFountainConverter.BuildSystemPromptAsync(totalRuntimeMinutes, ct);
+
+    /// <summary>
+    /// Offline / test heuristic path (no chat).
+    /// </summary>
+    public string ConvertHeuristic(string title, string bookText, string? author = null) =>
+        BookToFountainConverter.ConvertHeuristic(title, bookText, author);
+
+    /// <summary>
+    /// Full Stage‑1 convert via <see cref="BookToFountainConverter"/>.
+    /// </summary>
+    public async Task<AdaptationResult> ConvertAsync(
         AdaptationRequest request,
         IChatClient chat,
         IProgress<string>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        Func<StructuralGateFailure, CancellationToken, Task>? onStructuralGateFailure = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(chat);
-        _ = progress;
-        _ = ct;
-        throw new NotImplementedException(
-            "Phase 2: move BookToFountainConverter into PageToMovie.Adaptation.Conversion " +
-            "and implement ConvertAsync (see adaptation-module-implementation-plan.md A2.x).");
+
+        var analysis = AnalyzeBook(request.BookText);
+        var runtime = ResolveTargetMinutes(request.BookText, request.TargetRuntimeMinutes);
+        var minutes = Math.Clamp(runtime.TargetMinutes, MinRuntimeMinutes, MaxRuntimeMinutes);
+
+        Action<string>? onProgress = progress is null ? null : s => progress.Report(s);
+        var usedHeuristic = false;
+
+        string promptSha;
+        try
+        {
+            var prompt = await BuildSystemPromptAsync(minutes, ct).ConfigureAwait(false);
+            promptSha = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(prompt))).ToLowerInvariant();
+        }
+        catch
+        {
+            promptSha = "";
+        }
+
+        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
+            title: string.IsNullOrWhiteSpace(request.Title) ? "Untitled" : request.Title!,
+            bookText: request.BookText,
+            author: request.Author,
+            totalRuntimeMinutes: minutes,
+            chat: chat,
+            model: request.ModelId,
+            onProgress: onProgress,
+            ct: ct,
+            onHeuristicFallback: _ => usedHeuristic = true,
+            reasoningEffort: request.ReasoningEffort,
+            onStructuralGateFailure: onStructuralGateFailure,
+            temperature: request.Temperature).ConfigureAwait(false);
+
+        // Re-emit runtime with the clamped minutes actually used for generation.
+        var runtimeUsed = new NaturalRuntimeEstimate
+        {
+            NaturalMinutes = runtime.NaturalMinutes,
+            TargetMinutes = minutes,
+            Mode = runtime.Mode,
+            Method = runtime.Method,
+            SourceWords = runtime.SourceWords,
+            SourceSyllables = runtime.SourceSyllables,
+            BookKind = runtime.BookKind,
+            MinutesPerThousandWords = runtime.MinutesPerThousandWords,
+            TemporalCompressionRatio = runtime.TemporalCompressionRatio,
+            QuotedDialogueFraction = runtime.QuotedDialogueFraction,
+            Notes = runtime.Notes,
+        };
+
+        return new AdaptationResult
+        {
+            Fountain = conversion.Fountain,
+            VisionMeta = conversion.VisionMeta,
+            VisionMetaStatus = conversion.VisionMetaStatus,
+            VisionMetaError = conversion.VisionMetaError,
+            Runtime = runtimeUsed,
+            Analysis = analysis,
+            UsedHeuristicFallback = usedHeuristic,
+            PromptContentSha256 = promptSha,
+            Notes = conversion.VisionMetaError,
+        };
     }
 
     private static NaturalRuntimeEstimate ToNaturalRuntimeEstimate(

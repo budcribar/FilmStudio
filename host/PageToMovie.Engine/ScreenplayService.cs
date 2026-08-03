@@ -4,6 +4,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 using PageToMovie.Adaptation;
+using PageToMovie.Adaptation.Contracts;
+using PageToMovie.Adaptation.Conversion;
 
 namespace PageToMovie.Engine;
 
@@ -560,26 +562,69 @@ public static string NormalizeText(string text)
 
         try
         {
-            var usedHeuristicFallback = false;
-            var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
-                workspaceRoot: store.WorkspaceRoot,
-                title: title,
-                bookText: book,
-                author: author,
-                totalRuntimeMinutes: minutes,
-                chat: chat,
-                model: model,
-                onProgress: onProgress,
-                onHeuristicFallback: _ => usedHeuristicFallback = true,
-                temperature: generationTemperature,
-                ct: ct,
-                errorLogger: errorLogger,
-                jobId: jobId,
-                projectId: projectId).ConfigureAwait(false);
-            var fountain = conversion.Fountain;
-            var visionFromScript = conversion.VisionMeta;
+            // Stage‑1 generation goes through Adaptation façade (not a reimplementation).
+            var adaptation = new AdaptationService();
+            Func<StructuralGateFailure, CancellationToken, Task>? onGate = null;
+            if (errorLogger is not null)
+            {
+                onGate = async (fail, token) =>
+                {
+                    await errorLogger.LogAsync(new GenerationErrorRecord
+                    {
+                        ProjectId = projectId,
+                        JobId = jobId,
+                        Stage = fail.Stage,
+                        Model = fail.Model,
+                        ErrorType = fail.ErrorType,
+                        ErrorMessage = fail.ErrorMessage,
+                        Resolved = false,
+                        ResponseSummary = fail.ResponseSummary,
+                    }, token).ConfigureAwait(false);
+                };
+            }
 
-            if (!usedHeuristicFallback && visionFromScript is not null && bookRegistry is not null &&
+            IProgress<string>? progressAdapter = onProgress is null
+                ? null
+                : new Progress<string>(onProgress);
+
+            if (chat is null || !chat.IsConfigured)
+                return new SaveResult { Ok = false, Error = "Connect service to build a screenplay draft from the book." };
+
+            var result = await adaptation.ConvertAsync(
+                new AdaptationRequest
+                {
+                    BookText = book,
+                    Title = title,
+                    Author = author,
+                    TargetRuntimeMinutes = minutes,
+                    ModelId = model,
+                    Temperature = generationTemperature,
+                },
+                chat,
+                progressAdapter,
+                ct,
+                onStructuralGateFailure: onGate).ConfigureAwait(false);
+
+            var fountain = result.Fountain;
+            var visionFromScript = BookToFountainConverter.MapVision(result.VisionMeta);
+            // Cache package shape remains Engine AdaptationConversionResult for registry compatibility.
+            var conversion = new AdaptationConversionResult
+            {
+                Fountain = fountain,
+                VisionMeta = visionFromScript,
+                VisionMetaStatus = result.VisionMetaStatus switch
+                {
+                    AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,
+                    AdaptationVisionMetaStatus.RepairResponse => VisionMetaStatus.RepairResponse,
+                    AdaptationVisionMetaStatus.Missing => VisionMetaStatus.Missing,
+                    AdaptationVisionMetaStatus.Malformed => VisionMetaStatus.Malformed,
+                    AdaptationVisionMetaStatus.InvalidValue => VisionMetaStatus.InvalidValue,
+                    _ => VisionMetaStatus.Missing,
+                },
+                VisionMetaError = result.VisionMetaError,
+            };
+
+            if (!result.UsedHeuristicFallback && visionFromScript is not null && bookRegistry is not null &&
                 bookIdentity is not null && !string.IsNullOrWhiteSpace(cacheUserId) &&
                 promptHash is not null && promptVersion is not null && behaviorVersions is not null)
             {

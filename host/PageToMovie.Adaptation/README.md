@@ -26,7 +26,9 @@
 | `AnalyzeBook` | Wired → `BookTextAnalyzer` |
 | `EstimateNaturalRuntime` | Wired → `AdaptationDensity` |
 | `ResolveTargetMinutes` | Pure clamp over density |
-| `ConvertAsync` | Phase 2 (throws until BookToFountainConverter moves) |
+| `BuildSystemPromptAsync` | Wired → embedded `book_to_fountain.txt` |
+| `ConvertHeuristic` | Wired → offline stub |
+| `ConvertAsync` | Wired → `Conversion.BookToFountainConverter` |
 
 ## Chat interface
 
@@ -41,22 +43,24 @@ See `Contracts/`:
 - `NaturalRuntimeEstimate` / `BookAnalysisResult`
 - `AdaptationVisionMeta` (+ `AdaptationVisionMetaStatus`)
 
-Engine maps `AdaptationVisionMeta` ↔ `ProjectVisionMeta.Document` at the orchestration boundary.
+Engine maps `AdaptationVisionMeta` ↔ `ProjectVisionMeta.Document` at the orchestration boundary
+(`Engine.BookToFountainConverter` thin façade + `ScreenplayService.CreateDraftFromBookAsync`).
 
-Related analysis types (same assembly, not under Contracts/):
+## Conversion (Phase 2)
 
-- `BookTextAnalyzer` / `BookTextAnalysis`
-- `AdaptationDensity` / `AdaptationDensity.Estimate`
-- `TextMetrics`
+- `Conversion/BookToFountainConverter.cs` — full Stage‑1 convert (moved from Engine)
+- `Conversion/Stage1ChatExecutor.cs` — primary + correction + fallback without ModelExecution
+- `Conversion/AdaptationPromptPack.cs` — embedded prompt load
+- `Conversion/AdaptationVisionMetaParser.cs` — pure VISION_META JSON parse
+
+**Remaining Engine-side orchestration (not in this module):** ProjectStore save, book registry cache,
+`GenerationErrorLogger` (mapped via callback), Stage2, `FountainParser` (Engine still uses it elsewhere).
 
 ## Plan
 
 See `host/docs/adaptation-module-implementation-plan.md`.
 
+## Phase contents
 
-## Phase 1 contents
-
-- `Analysis/AdaptationDensity.cs` — natural film minutes (δ, τ)
-- `Analysis/BookTextAnalyzer.cs` — quality, book kind, Stage‑1 runtime resolve
-- `Analysis/TextMetrics.cs` — pure word/syllable counting (shared with Engine clip estimator wrappers)
-- `ClipDurationEstimator` remains in Engine (Stage 2 / video model bounds)
+- Phase 0–1: contracts, density, analyzer, façade stubs
+- Phase 2: converter + prompts + `ConvertAsync` + ScreenplayService wiring

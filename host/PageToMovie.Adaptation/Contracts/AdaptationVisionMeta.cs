@@ -6,19 +6,19 @@ namespace PageToMovie.Adaptation.Contracts;
 /// </summary>
 public sealed class AdaptationVisionMeta
 {
-    public string SchemaVersion { get; init; } = "vision_meta.v1";
+    public string SchemaVersion { get; set; } = "vision_meta.v1";
 
     /// <summary>photoreal_live_action | illustrated_picture_book | stylized_3d_animated | other</summary>
-    public string VisualMedium { get; init; } = "photoreal_live_action";
+    public string VisualMedium { get; set; } = "photoreal_live_action";
 
-    public string? RenderStyleLock { get; init; }
-    public string? PerformanceLock { get; init; }
+    public string? RenderStyleLock { get; set; }
+    public string? PerformanceLock { get; set; }
 
     /// <summary>adaptation | cast_extract | user</summary>
-    public string DecidedBy { get; init; } = "adaptation";
+    public string DecidedBy { get; set; } = "adaptation";
 
-    public string? DecidedAt { get; init; }
-    public string? Notes { get; init; }
+    public string? DecidedAt { get; set; }
+    public string? Notes { get; set; }
 }
 
 /// <summary>How vision meta was obtained from the model response (converter status).</summary>
