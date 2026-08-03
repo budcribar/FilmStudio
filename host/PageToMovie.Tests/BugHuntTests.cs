@@ -4,6 +4,8 @@ using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Core.Utils;
 using PageToMovie.Adaptation;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -1095,14 +1097,14 @@ public class BugHuntTests
     [Fact]
     public void Bug65_StitchFountainParts_null_safe()
     {
-        Assert.Equal("", BookToFountainConverter.StitchFountainParts(null));
-        Assert.Equal("", BookToFountainConverter.StitchFountainParts(Array.Empty<string>()));
+        Assert.Equal("", AdaptationFountain.StitchFountainParts(null));
+        Assert.Equal("", AdaptationFountain.StitchFountainParts(Array.Empty<string>()));
     }
 
     [Fact]
     public void Bug66_StripBookPageTags_null_safe()
     {
-        Assert.Equal("", BookToFountainConverter.StripBookPageTags(null));
+        Assert.Equal("", AdaptationFountain.StripBookPageTags(null));
     }
 
     [Fact]

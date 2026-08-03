@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using PageToMovie.Engine;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 
 namespace ScreenplayBenchmark;
 
@@ -116,7 +118,7 @@ public static class DeterministicSyntaxScorer
         }
 
         // Vague location language
-        var vagueLocations = BookToFountainConverter.FindVagueLocationHeadings(fountainText);
+        var vagueLocations = AdaptationFountain.FindVagueLocationHeadings(fountainText);
         if (vagueLocations.Count > 0)
         {
             formatScore -= Math.Min(20.0, vagueLocations.Count * 5.0);
@@ -194,7 +196,7 @@ public static class DeterministicSyntaxScorer
         int ageDisambiguatedCount = 0;
         foreach (var cName in charNames)
         {
-            if (BookToFountainConverter.IsGenericNumberedSpeaker(cName))
+            if (AdaptationFountain.IsGenericNumberedSpeaker(cName))
             {
                 genericCount++;
             }

@@ -1,11 +1,17 @@
-using PageToMovie.Adaptation.Conversion;
+using PageToMovie.Adaptation;
 using PageToMovie.Adaptation.Contracts;
+using PageToMovie.Adaptation.Conversion;
 using PageToMovie.Core.Abstractions;
 using AdaptationConverter = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using AdaptationConversionResultCore = PageToMovie.Adaptation.Conversion.AdaptationConversionResult;
 
 namespace PageToMovie.Engine;
 
+/// <summary>
+/// Engine-side Stage‑1 vision mapping only.
+/// Pure text helpers and LLM conversion live in <see cref="PageToMovie.Adaptation.Conversion.BookToFountainConverter"/>
+/// and <see cref="AdaptationService"/> — do not re-add forwarders here.
+/// </summary>
 public enum VisionMetaStatus
 {
     PrimaryResponse,
@@ -27,250 +33,12 @@ public sealed record AdaptationConversionResult
 }
 
 /// <summary>
-/// Thin Engine façade over Adaptation for backward-compatible call sites.
-/// <b>Stage‑1 LLM conversion must go through <see cref="PageToMovie.Adaptation.AdaptationService"/>.</b>
-/// This type remains for pure helpers (strip tags, vague headings) and vision DTO mapping.
+/// Maps Adaptation vision DTOs to Engine <see cref="ProjectVisionMeta"/>.
+/// For pure Fountain helpers, call <see cref="AdaptationConverter"/> directly.
+/// For Stage‑1 generation, call <see cref="AdaptationService.ConvertAsync"/>.
 /// </summary>
 public static class BookToFountainConverter
 {
-    public const int SingleShotMaxChars = AdaptationConverter.SingleShotMaxChars;
-    public const int ChunkSoftMaxChars = AdaptationConverter.ChunkSoftMaxChars;
-    public const int MaxAdaptChunks = AdaptationConverter.MaxAdaptChunks;
-    public const int AbsoluteMaxAdaptChunks = AdaptationConverter.AbsoluteMaxAdaptChunks;
-    public const int DefaultSingleShotBookMaxChars = AdaptationConverter.DefaultSingleShotBookMaxChars;
-    public const int DefaultChunkSoftMaxChars = AdaptationConverter.DefaultChunkSoftMaxChars;
-    public const int MinBookCharsForChunkFallback = AdaptationConverter.MinBookCharsForChunkFallback;
-    public const int AbsoluteSingleShotCeiling = AdaptationConverter.AbsoluteSingleShotCeiling;
-    public const int ReservedOverheadChars = AdaptationConverter.ReservedOverheadChars;
-    public const string FountainOutputOverride = AdaptationConverter.FountainOutputOverride;
-
-    public enum AdaptPath
-    {
-        Single = 0,
-        Multi = 1,
-    }
-
-    public sealed class PromptBudget
-    {
-        public required string ModelId { get; init; }
-        public int SingleShotBookMaxChars { get; init; }
-        public int ChunkSoftMaxChars { get; init; }
-        public int MaxChunks { get; init; }
-        public int ReservedOverheadChars { get; init; }
-
-        internal AdaptationConverter.PromptBudget ToCore() => new()
-        {
-            ModelId = ModelId,
-            SingleShotBookMaxChars = SingleShotBookMaxChars,
-            ChunkSoftMaxChars = ChunkSoftMaxChars,
-            MaxChunks = MaxChunks,
-            ReservedOverheadChars = ReservedOverheadChars,
-        };
-
-        internal static PromptBudget FromCore(AdaptationConverter.PromptBudget b) => new()
-        {
-            ModelId = b.ModelId,
-            SingleShotBookMaxChars = b.SingleShotBookMaxChars,
-            ChunkSoftMaxChars = b.ChunkSoftMaxChars,
-            MaxChunks = b.MaxChunks,
-            ReservedOverheadChars = b.ReservedOverheadChars,
-        };
-    }
-
-    public sealed class QualityResult
-    {
-        public bool Ok { get; init; }
-        public string Reason { get; init; } = "";
-        public int SceneCount { get; init; }
-        public int FountainChars { get; init; }
-        public IReadOnlyList<string> Failures { get; init; } = Array.Empty<string>();
-        public bool HasHardFailure { get; init; }
-
-        internal static QualityResult FromCore(AdaptationConverter.QualityResult q) => new()
-        {
-            Ok = q.Ok,
-            Reason = q.Reason,
-            SceneCount = q.SceneCount,
-            FountainChars = q.FountainChars,
-            Failures = q.Failures,
-            HasHardFailure = q.HasHardFailure,
-        };
-    }
-
-    /// <summary>
-    /// Prefer <see cref="AdaptationService.ConvertAsync"/>. Kept for ScreenplayBenchmark / legacy callers.
-    /// </summary>
-    [Obsolete("Use PageToMovie.Adaptation.AdaptationService.ConvertAsync for Stage-1 generation.")]
-    public static async Task<AdaptationConversionResult> ConvertWithMetadataAsync(
-        string workspaceRoot,
-        string title,
-        string bookText,
-        string? author = null,
-        int totalRuntimeMinutes = 10,
-        IChatClient? chat = null,
-        string? model = null,
-        Action<string>? onProgress = null,
-        CancellationToken ct = default,
-        PromptBudget? budgetOverride = null,
-        Action<string>? onHeuristicFallback = null,
-        string? reasoningEffort = null,
-        GenerationErrorLogger? errorLogger = null,
-        string? jobId = null,
-        string? projectId = null,
-        double temperature = 0.2)
-    {
-        _ = workspaceRoot;
-        if (chat is null)
-            throw new ArgumentNullException(nameof(chat));
-
-        Func<StructuralGateFailure, CancellationToken, Task>? onFail = null;
-        if (errorLogger is not null)
-        {
-            onFail = async (fail, token) =>
-            {
-                await errorLogger.LogAsync(new GenerationErrorRecord
-                {
-                    ProjectId = projectId,
-                    JobId = jobId,
-                    Stage = fail.Stage,
-                    Model = fail.Model,
-                    ErrorType = fail.ErrorType,
-                    ErrorMessage = fail.ErrorMessage,
-                    Resolved = false,
-                    ResponseSummary = fail.ResponseSummary,
-                }, token).ConfigureAwait(false);
-            };
-        }
-
-        var adaptation = new PageToMovie.Adaptation.AdaptationService();
-        IProgress<string>? progress = onProgress is null ? null : new Progress<string>(onProgress);
-        var result = await adaptation.ConvertAsync(
-            new PageToMovie.Adaptation.Contracts.AdaptationRequest
-            {
-                BookText = bookText,
-                Title = title,
-                Author = author,
-                TargetRuntimeMinutes = totalRuntimeMinutes,
-                ModelId = model ?? "",
-                Temperature = temperature,
-                ReasoningEffort = reasoningEffort,
-            },
-            chat,
-            progress,
-            ct,
-            onStructuralGateFailure: onFail,
-            budgetOverride: budgetOverride?.ToCore()).ConfigureAwait(false);
-
-        if (result.UsedHeuristicFallback)
-            onHeuristicFallback?.Invoke("adaptation_heuristic_fallback");
-
-        return new AdaptationConversionResult
-        {
-            Fountain = result.Fountain,
-            VisionMeta = MapVision(result.VisionMeta),
-            VisionMetaStatus = result.VisionMetaStatus switch
-            {
-                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,
-                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.RepairResponse => VisionMetaStatus.RepairResponse,
-                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.Missing => VisionMetaStatus.Missing,
-                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.Malformed => VisionMetaStatus.Malformed,
-                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.InvalidValue => VisionMetaStatus.InvalidValue,
-                _ => VisionMetaStatus.Missing,
-            },
-            VisionMetaError = result.VisionMetaError,
-        };
-    }
-
-    public static (string Fountain, ProjectVisionMeta.Document? Vision) SplitVisionMetaTrailer(string? text)
-    {
-        var (fountain, vision) = AdaptationConverter.SplitVisionMetaTrailer(text);
-        return (fountain, MapVision(vision));
-    }
-
-    public static IReadOnlyList<string> FindVagueLocationHeadings(string? fountain) =>
-        AdaptationConverter.FindVagueLocationHeadings(fountain);
-
-    public static bool HeadingContainsVagueLocationLanguage(string? heading) =>
-        AdaptationConverter.HeadingContainsVagueLocationLanguage(heading);
-
-    public static IReadOnlyList<string> FindGenericNumberedSpeakers(string? fountain) =>
-        AdaptationConverter.FindGenericNumberedSpeakers(fountain);
-
-    public static bool IsGenericNumberedSpeaker(string? characterName) =>
-        AdaptationConverter.IsGenericNumberedSpeaker(characterName);
-
-    public static int SoftMaxSceneHeadings(string? bookKind) =>
-        AdaptationConverter.SoftMaxSceneHeadings(bookKind);
-
-    public static string NormalizeSceneHeadingWording(string? fountain) =>
-        AdaptationConverter.NormalizeSceneHeadingWording(fountain);
-
-    public static bool IsLocationNameAlias(string longer, string shorter) =>
-        AdaptationConverter.IsLocationNameAlias(longer, shorter);
-
-    public static string FixDraftDate(string? fountain) =>
-        AdaptationConverter.FixDraftDate(fountain);
-
-    public static PromptBudget ResolvePromptBudget(string? modelId) =>
-        PromptBudget.FromCore(AdaptationConverter.ResolvePromptBudget(modelId));
-
-    public static int ResolveMaxChunks(string? bookText, PromptBudget budget) =>
-        AdaptationConverter.ResolveMaxChunks(bookText, budget.ToCore());
-
-    public static bool FitsSingleShot(string bookText, PromptBudget budget) =>
-        AdaptationConverter.FitsSingleShot(bookText, budget.ToCore());
-
-    public static bool ShouldChunkFallback(string bookText, PromptBudget budget) =>
-        AdaptationConverter.ShouldChunkFallback(bookText, budget.ToCore());
-
-    public static QualityResult EvaluateQuality(
-        string fountain,
-        string bookText,
-        int totalRuntimeMinutes,
-        AdaptPath path) =>
-        QualityResult.FromCore(AdaptationConverter.EvaluateQuality(
-            fountain, bookText, totalRuntimeMinutes,
-            path == AdaptPath.Multi ? AdaptationConverter.AdaptPath.Multi : AdaptationConverter.AdaptPath.Single));
-
-    public static string StripBookPageTags(string? fountain) =>
-        AdaptationConverter.StripBookPageTags(fountain);
-
-    public static string StripFountainPageBreaks(string? fountain) =>
-        AdaptationConverter.StripFountainPageBreaks(fountain);
-
-    public static Task<string> BuildSystemPromptAsync(
-        string workspaceRoot,
-        int totalRuntimeMinutes,
-        CancellationToken ct = default)
-    {
-        _ = workspaceRoot;
-        return AdaptationConverter.BuildSystemPromptAsync(totalRuntimeMinutes, ct);
-    }
-
-    public static IReadOnlyList<string> ChunkBookForAdaptation(
-        string bookText,
-        int maxChunks = MaxAdaptChunks,
-        int softMaxChars = ChunkSoftMaxChars) =>
-        AdaptationConverter.ChunkBookForAdaptation(bookText, maxChunks, softMaxChars);
-
-    public static string StitchFountainParts(IReadOnlyList<string>? parts) =>
-        AdaptationConverter.StitchFountainParts(parts);
-
-    public static string ConvertHeuristic(string title, string bookText, string? author = null) =>
-        AdaptationConverter.ConvertHeuristic(title, bookText, author);
-
-    public static bool LooksLikeGoodFountain(string text, bool requirePageTags = false) =>
-        AdaptationConverter.LooksLikeGoodFountain(text, requirePageTags);
-
-    public static string NormalizeBookText(string bookText) =>
-        AdaptationConverter.NormalizeBookText(bookText);
-
-    public static string EnsureFadeIn(string text) =>
-        AdaptationConverter.EnsureFadeIn(text);
-
-    public static string StripFences(string text) =>
-        AdaptationConverter.StripFences(text);
-
     public static AdaptationConversionResult MapResult(AdaptationConversionResultCore core) => new()
     {
         Fountain = core.Fountain,
@@ -278,6 +46,15 @@ public static class BookToFountainConverter
         VisionMetaStatus = MapStatus(core.VisionMetaStatus),
         VisionMetaError = core.VisionMetaError,
     };
+
+    /// <summary>
+    /// Split a model response that may include a VISION_META trailer, mapping vision to project document.
+    /// </summary>
+    public static (string Fountain, ProjectVisionMeta.Document? Vision) SplitVisionMetaTrailer(string? text)
+    {
+        var (fountain, vision) = AdaptationConverter.SplitVisionMetaTrailer(text);
+        return (fountain, MapVision(vision));
+    }
 
     public static ProjectVisionMeta.Document? MapVision(AdaptationVisionMeta? v)
     {

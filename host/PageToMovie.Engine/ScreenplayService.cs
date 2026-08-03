@@ -6,6 +6,7 @@ using PageToMovie.Core.Models;
 using PageToMovie.Adaptation;
 using PageToMovie.Adaptation.Contracts;
 using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 
 namespace PageToMovie.Engine;
 
@@ -229,7 +230,7 @@ public static class ScreenplayService
         public static string NormalizeForApprovalHash(string text)
     {
         text = NormalizeText(text);
-        text = BookToFountainConverter.NormalizeSceneHeadingWording(text);
+        text = AdaptationFountain.NormalizeSceneHeadingWording(text);
         var lines = text.Split('\n');
         var kept = new System.Collections.Generic.List<string>(lines.Length);
         foreach (var line in lines)
@@ -252,7 +253,7 @@ public static string NormalizeText(string text)
         text ??= "";
         text = text.Replace("\r\n", "\n").Replace('\r', '\n');
         // Drop book page tags — fidelity uses UI match, not script annotations
-        text = BookToFountainConverter.StripBookPageTags(text);
+        text = AdaptationFountain.StripBookPageTags(text);
         if (text.Length > 0 && !text.EndsWith('\n'))
             text += "\n";
         return text;
@@ -393,7 +394,7 @@ public static string NormalizeText(string text)
     {
         text = NormalizeText(text ?? "");
         // Unify drifted same-place headings before they seed location_seed_tokens
-        text = BookToFountainConverter.NormalizeSceneHeadingWording(text);
+        text = AdaptationFountain.NormalizeSceneHeadingWording(text);
         // Do NOT FixDraftDate on every save — stamping "today" changed the file after
         // approval and falsely set Dirty / "Edited since approval". Date is set at
         // draft creation / import only (CreateDraftFromBook, ImportAsDraft).
@@ -431,7 +432,7 @@ public static string NormalizeText(string text)
         if (string.IsNullOrWhiteSpace(text))
             return new SaveResult { Ok = false, Error = "Empty screenplay text" };
 
-        text = BookToFountainConverter.FixDraftDate(NormalizeText(text));
+        text = AdaptationFountain.FixDraftDate(NormalizeText(text));
         var result = SaveDraft(store, projectId, text);
 
         // Keep a copy under the original name for reference when different

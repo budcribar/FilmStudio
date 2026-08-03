@@ -65,7 +65,9 @@ See `Contracts/`:
 - `AdaptationVisionMeta` (+ `AdaptationVisionMetaStatus`)
 
 Engine maps `AdaptationVisionMeta` ↔ `ProjectVisionMeta.Document` at the orchestration boundary
-(`Engine.BookToFountainConverter` thin façade + `ScreenplayService.CreateDraftFromBookAsync`).
+(`Engine.BookToFountainConverter` is **mapping-only**: `MapVision` / `SplitVisionMetaTrailer` /
+`AdaptationConversionResult`). Pure text helpers call `Adaptation.Conversion.BookToFountainConverter`
+directly; Stage‑1 generation goes through `AdaptationService`.
 
 ## Validation (Phase 4)
 

@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 using PageToMovie.Adaptation;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using PageToMovie.Adaptation.Contracts;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
@@ -15,13 +17,13 @@ public class BookToFountainPathTests
     [Fact]
     public void ResolvePromptBudget_grok_allows_large_single_shot()
     {
-        var b = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var b = AdaptationFountain.ResolvePromptBudget("grok-4.5");
         Assert.Equal("grok-4.5", b.ModelId);
         Assert.True(
-            b.SingleShotBookMaxChars > BookToFountainConverter.SingleShotMaxChars,
+            b.SingleShotBookMaxChars > AdaptationFountain.SingleShotMaxChars,
             $"expected single-shot max >> legacy 28k, got {b.SingleShotBookMaxChars}");
         Assert.InRange(b.ChunkSoftMaxChars, 4_000, b.SingleShotBookMaxChars);
-        Assert.Equal(BookToFountainConverter.MaxAdaptChunks, b.MaxChunks);
+        Assert.Equal(AdaptationFountain.MaxAdaptChunks, b.MaxChunks);
     }
 
     [Fact]
@@ -30,18 +32,18 @@ public class BookToFountainPathTests
         // grok-4.5's real catalog window (500k tokens) is large enough that its token-derived
         // budget hits the absolute safety ceiling, not the conservative "we don't really know"
         // default — that default exists for models we have no verified data on, not for ones we do.
-        var b = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var b = AdaptationFountain.ResolvePromptBudget("grok-4.5");
         Assert.True(
-            b.SingleShotBookMaxChars > BookToFountainConverter.DefaultSingleShotBookMaxChars,
+            b.SingleShotBookMaxChars > AdaptationFountain.DefaultSingleShotBookMaxChars,
             $"expected a known large-context model to exceed the conservative default, got {b.SingleShotBookMaxChars}");
-        Assert.Equal(BookToFountainConverter.AbsoluteSingleShotCeiling, b.SingleShotBookMaxChars);
+        Assert.Equal(AdaptationFountain.AbsoluteSingleShotCeiling, b.SingleShotBookMaxChars);
     }
 
     [Fact]
     public void ResolvePromptBudget_unknown_model_still_usable()
     {
-        var b = BookToFountainConverter.ResolvePromptBudget("some-future-chat");
-        Assert.True(b.SingleShotBookMaxChars >= BookToFountainConverter.SingleShotMaxChars);
+        var b = AdaptationFountain.ResolvePromptBudget("some-future-chat");
+        Assert.True(b.SingleShotBookMaxChars >= AdaptationFountain.SingleShotMaxChars);
         Assert.True(b.ChunkSoftMaxChars >= 4_000);
     }
 
@@ -50,14 +52,14 @@ public class BookToFountainPathTests
     {
         // No catalog entry → no verified context window → stay under the conservative default
         // rather than the (unfounded) 128k-token guess pushing past it.
-        var b = BookToFountainConverter.ResolvePromptBudget("some-future-chat");
-        Assert.Equal(BookToFountainConverter.DefaultSingleShotBookMaxChars, b.SingleShotBookMaxChars);
+        var b = AdaptationFountain.ResolvePromptBudget("some-future-chat");
+        Assert.Equal(AdaptationFountain.DefaultSingleShotBookMaxChars, b.SingleShotBookMaxChars);
     }
 
     [Fact]
     public void FitsSingleShot_respects_budget()
     {
-        var budget = new BookToFountainConverter.PromptBudget
+        var budget = new AdaptationFountain.PromptBudget
         {
             ModelId = "test",
             SingleShotBookMaxChars = 10_000,
@@ -65,76 +67,76 @@ public class BookToFountainPathTests
             MaxChunks = 4,
             ReservedOverheadChars = 1_000,
         };
-        Assert.True(BookToFountainConverter.FitsSingleShot(new string('a', 9_000), budget));
-        Assert.False(BookToFountainConverter.FitsSingleShot(new string('a', 10_001), budget));
+        Assert.True(AdaptationFountain.FitsSingleShot(new string('a', 9_000), budget));
+        Assert.False(AdaptationFountain.FitsSingleShot(new string('a', 10_001), budget));
     }
 
     [Fact]
     public void ShouldChunkFallback_false_for_tiny_book()
     {
-        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var budget = AdaptationFountain.ResolvePromptBudget("grok-4.5");
         var tiny = "--- PAGE 1 ---\nA short picture-book line about a dog in the sun.\n";
-        Assert.False(BookToFountainConverter.ShouldChunkFallback(tiny, budget));
+        Assert.False(AdaptationFountain.ShouldChunkFallback(tiny, budget));
     }
 
     [Fact]
     public void ShouldChunkFallback_true_for_long_chaptered_book()
     {
-        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var budget = AdaptationFountain.ResolvePromptBudget("grok-4.5");
         var book = BuildChapteredBook(chapters: 12, bodyChars: 3_000);
-        Assert.True(book.Length >= BookToFountainConverter.MinBookCharsForChunkFallback);
-        Assert.True(BookToFountainConverter.ShouldChunkFallback(book, budget));
+        Assert.True(book.Length >= AdaptationFountain.MinBookCharsForChunkFallback);
+        Assert.True(AdaptationFountain.ShouldChunkFallback(book, budget));
     }
 
     [Fact]
     public void ResolveMaxChunks_stays_at_default_for_typical_book()
     {
-        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var budget = AdaptationFountain.ResolvePromptBudget("grok-4.5");
         var book = BuildChapteredBook(chapters: 12, bodyChars: 3_000); // ~40K chars
-        var resolved = BookToFountainConverter.ResolveMaxChunks(book, budget);
+        var resolved = AdaptationFountain.ResolveMaxChunks(book, budget);
         Assert.Equal(budget.MaxChunks, resolved);
     }
 
     [Fact]
     public void ResolveMaxChunks_scales_up_for_a_dracula_scale_book()
     {
-        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var budget = AdaptationFountain.ResolvePromptBudget("grok-4.5");
         // ~840K chars, same order of magnitude as Dracula's stripped content —
         // needs ~21 chunks at a 40K soft-max, well past the flat 8-chunk default.
         var book = BuildChapteredBook(chapters: 200, bodyChars: 4_100);
         Assert.True(book.Length > 800_000, $"test book too small: {book.Length}");
 
-        var resolved = BookToFountainConverter.ResolveMaxChunks(book, budget);
+        var resolved = AdaptationFountain.ResolveMaxChunks(book, budget);
 
         Assert.True(resolved > budget.MaxChunks,
             $"expected scaling past default {budget.MaxChunks}, got {resolved}");
-        Assert.True(resolved <= BookToFountainConverter.AbsoluteMaxAdaptChunks);
+        Assert.True(resolved <= AdaptationFountain.AbsoluteMaxAdaptChunks);
     }
 
     [Fact]
     public void ResolveMaxChunks_never_exceeds_absolute_ceiling_for_extreme_books()
     {
-        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var budget = AdaptationFountain.ResolvePromptBudget("grok-4.5");
         var huge = new string('a', 5_000_000);
-        var resolved = BookToFountainConverter.ResolveMaxChunks(huge, budget);
-        Assert.Equal(BookToFountainConverter.AbsoluteMaxAdaptChunks, resolved);
+        var resolved = AdaptationFountain.ResolveMaxChunks(huge, budget);
+        Assert.Equal(AdaptationFountain.AbsoluteMaxAdaptChunks, resolved);
     }
 
     [Fact]
     public void ChunkBookForAdaptation_with_resolved_chunks_avoids_one_oversized_final_chunk()
     {
-        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var budget = AdaptationFountain.ResolvePromptBudget("grok-4.5");
         var book = BuildChapteredBook(chapters: 200, bodyChars: 4_100); // ~840K chars
 
         // Old behavior: flat MaxAdaptChunks (8) forces most of the book into the last chunk.
-        var flatChunks = BookToFountainConverter.ChunkBookForAdaptation(
-            book, BookToFountainConverter.MaxAdaptChunks, budget.ChunkSoftMaxChars);
+        var flatChunks = AdaptationFountain.ChunkBookForAdaptation(
+            book, AdaptationFountain.MaxAdaptChunks, budget.ChunkSoftMaxChars);
         Assert.True(flatChunks[^1].Length > budget.ChunkSoftMaxChars * 4,
             $"expected the flat-cap regression to reproduce here, last chunk was {flatChunks[^1].Length}");
 
         // Fixed behavior: a resolved (scaled) chunk count keeps every chunk close to soft-max.
-        var resolvedMax = BookToFountainConverter.ResolveMaxChunks(book, budget);
-        var scaledChunks = BookToFountainConverter.ChunkBookForAdaptation(
+        var resolvedMax = AdaptationFountain.ResolveMaxChunks(book, budget);
+        var scaledChunks = AdaptationFountain.ChunkBookForAdaptation(
             book, resolvedMax, budget.ChunkSoftMaxChars);
         foreach (var chunk in scaledChunks)
         {
@@ -147,7 +149,7 @@ public class BookToFountainPathTests
     public void StripFountainPageBreaks_removes_standalone_marker_after_title_page()
     {
         var fountain = "Title: Test\nAuthor: Unit\n\n===\n\nFADE IN:\n\nINT. ROOM - DAY\n\nSomething happens.\n";
-        var cleaned = BookToFountainConverter.StripFountainPageBreaks(fountain);
+        var cleaned = AdaptationFountain.StripFountainPageBreaks(fountain);
         Assert.DoesNotContain("===", cleaned);
         Assert.Contains("FADE IN:", cleaned);
         Assert.Contains("INT. ROOM - DAY", cleaned);
@@ -157,7 +159,7 @@ public class BookToFountainPathTests
     public void StripFountainPageBreaks_leaves_normal_content_alone()
     {
         var fountain = "Title: Test\nAuthor: Unit\n\nFADE IN:\n\nINT. ROOM - DAY\n\nA sign reads: OPEN.\n";
-        var cleaned = BookToFountainConverter.StripFountainPageBreaks(fountain);
+        var cleaned = AdaptationFountain.StripFountainPageBreaks(fountain);
         Assert.Equal(fountain.TrimEnd() + "\n", cleaned);
     }
 
@@ -165,7 +167,7 @@ public class BookToFountainPathTests
     public void EnsureFadeIn_inserts_before_first_scene_heading_when_missing()
     {
         var fountain = "Title: Test\nAuthor: Unit\n\nINT. ROOM - DAY\n\nSomething happens.\n";
-        var fixed_ = BookToFountainConverter.EnsureFadeIn(fountain);
+        var fixed_ = AdaptationFountain.EnsureFadeIn(fountain);
         Assert.Contains("FADE IN:\n\nINT. ROOM - DAY", fixed_, StringComparison.Ordinal);
         Assert.Single(Regex.Matches(fixed_, "FADE IN:", RegexOptions.IgnoreCase));
     }
@@ -174,7 +176,7 @@ public class BookToFountainPathTests
     public void EnsureFadeIn_is_a_noop_when_already_present()
     {
         var fountain = "Title: Test\nAuthor: Unit\n\nFADE IN:\n\nINT. ROOM - DAY\n\nSomething happens.\n";
-        var unchanged = BookToFountainConverter.EnsureFadeIn(fountain);
+        var unchanged = AdaptationFountain.EnsureFadeIn(fountain);
         Assert.Equal(fountain, unchanged);
     }
 
@@ -184,11 +186,11 @@ public class BookToFountainPathTests
         // The exact regression this pair is for: the model emitted === where FADE IN: should
         // have been (not alongside it) — stripping the === alone would leave no FADE IN: at all.
         var fountain = "Title: Test\nAuthor: Unit\n\n===\n\nINT. ROOM - DAY\n\nSomething happens.\n";
-        var stripped = BookToFountainConverter.StripFountainPageBreaks(fountain);
+        var stripped = AdaptationFountain.StripFountainPageBreaks(fountain);
         Assert.DoesNotContain("===", stripped);
         Assert.DoesNotContain("FADE IN", stripped, StringComparison.OrdinalIgnoreCase); // gap before the fix
 
-        var recovered = BookToFountainConverter.EnsureFadeIn(stripped);
+        var recovered = AdaptationFountain.EnsureFadeIn(stripped);
         Assert.Contains("FADE IN:\n\nINT. ROOM - DAY", recovered, StringComparison.Ordinal);
     }
 
@@ -197,8 +199,8 @@ public class BookToFountainPathTests
     {
         var book = "--- PAGE 1 ---\nA little dog naps by the warm fire tonight under soft blankets.\n";
         var fountain = GoodFountain(scenes: 3, withEnding: true);
-        var gate = BookToFountainConverter.EvaluateQuality(
-            fountain, book, totalRuntimeMinutes: 8, BookToFountainConverter.AdaptPath.Single);
+        var gate = AdaptationFountain.EvaluateQuality(
+            fountain, book, totalRuntimeMinutes: 8, AdaptationFountain.AdaptPath.Single);
         Assert.True(gate.Ok, gate.Reason);
         Assert.Equal("ok", gate.Reason);
     }
@@ -207,8 +209,8 @@ public class BookToFountainPathTests
     public void EvaluateQuality_structure_fail_is_hard()
     {
         var book = new string('x', 30_000);
-        var gate = BookToFountainConverter.EvaluateQuality(
-            "not fountain at all", book, 20, BookToFountainConverter.AdaptPath.Single);
+        var gate = AdaptationFountain.EvaluateQuality(
+            "not fountain at all", book, 20, AdaptationFountain.AdaptPath.Single);
         Assert.False(gate.Ok);
         Assert.True(gate.HasHardFailure);
         Assert.Contains("structure", gate.Failures);
@@ -233,8 +235,8 @@ public class BookToFountainPathTests
 
             THE END
             """;
-        var gate = BookToFountainConverter.EvaluateQuality(
-            thin, book, totalRuntimeMinutes: 40, BookToFountainConverter.AdaptPath.Single);
+        var gate = AdaptationFountain.EvaluateQuality(
+            thin, book, totalRuntimeMinutes: 40, AdaptationFountain.AdaptPath.Single);
         Assert.False(gate.Ok, "expected soft coverage fail");
         Assert.False(gate.HasHardFailure);
         Assert.Contains(gate.Failures, f => f.StartsWith("scene_count") || f == "suspiciously_short");
@@ -260,8 +262,8 @@ public class BookToFountainPathTests
 
             THE END
             """;
-        var gate = BookToFountainConverter.EvaluateQuality(
-            thin, book, totalRuntimeMinutes: 40, BookToFountainConverter.AdaptPath.Multi);
+        var gate = AdaptationFountain.EvaluateQuality(
+            thin, book, totalRuntimeMinutes: 40, AdaptationFountain.AdaptPath.Multi);
         Assert.True(gate.Ok, gate.Reason);
         Assert.False(gate.HasHardFailure);
     }
@@ -282,7 +284,7 @@ public class BookToFountainPathTests
             totalRuntimeMinutes: 6,
             author: "A");
 
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(text));
         // One adaptation call plus up to two focused VISION_META lifecycle attempts.
         Assert.InRange(chat.Calls, 1, 3);
         Assert.DoesNotContain(chat.UserPrompts, u => u.Contains("multi-chunk", StringComparison.OrdinalIgnoreCase)
@@ -295,7 +297,7 @@ public class BookToFountainPathTests
         var chat = new RecordingChatClient(_ => GoodFountain(scenes: 12, withEnding: true, padBody: 400));
         // ~40k–50k: under default 120k single-shot budget, over legacy 28k
         var book = BuildChapteredBook(chapters: 14, bodyChars: 3_200);
-        Assert.InRange(book.Length, BookToFountainConverter.SingleShotMaxChars + 1, BookToFountainConverter.DefaultSingleShotBookMaxChars);
+        Assert.InRange(book.Length, AdaptationFountain.SingleShotMaxChars + 1, AdaptationFountain.DefaultSingleShotBookMaxChars);
 
         var (text, _) = await AdaptConvertAsync(
             title: "Medium",
@@ -304,7 +306,7 @@ public class BookToFountainPathTests
             model: "grok-4.5",
             totalRuntimeMinutes: 20);
 
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(text));
         // Single-shot success plus up to two focused VISION_META lifecycle attempts.
         Assert.True(chat.Calls <= 3, $"expected single-shot plus metadata repair (≤3 calls), got {chat.Calls}");
         Assert.Contains(chat.UserPrompts, u => u.Contains("BOOK_CHUNK 1/1", StringComparison.Ordinal));
@@ -338,8 +340,8 @@ public class BookToFountainPathTests
 
         var book = BuildChapteredBook(chapters: 18, bodyChars: 4_000);
         Assert.True(book.Length > 60_000);
-        Assert.True(BookToFountainConverter.ShouldChunkFallback(
-            book, BookToFountainConverter.ResolvePromptBudget("grok-4.5")));
+        Assert.True(AdaptationFountain.ShouldChunkFallback(
+            book, AdaptationFountain.ResolvePromptBudget("grok-4.5")));
 
         var progress = new List<string>();
         var (text, _) = await AdaptConvertAsync(
@@ -350,7 +352,7 @@ public class BookToFountainPathTests
             totalRuntimeMinutes: 45,
             onProgress: s => progress.Add(s));
 
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(text));
         Assert.True(chat.Calls >= 3, $"expected chunk fallback (≥3 calls), got {chat.Calls}");
         Assert.Contains(progress, p => p.Contains("multi-chunk", StringComparison.OrdinalIgnoreCase)
             || p.Contains("Falling back", StringComparison.OrdinalIgnoreCase));
@@ -361,7 +363,7 @@ public class BookToFountainPathTests
     {
         var chat = new RecordingChatClient(_ => GoodFountain(scenes: 3, withEnding: true, padBody: 80));
         var book = BuildChapteredBook(chapters: 10, bodyChars: 2_500);
-        var tinyBudget = new BookToFountainConverter.PromptBudget
+        var tinyBudget = new AdaptationFountain.PromptBudget
         {
             ModelId = "tiny-test",
             SingleShotBookMaxChars = 5_000,
@@ -369,7 +371,7 @@ public class BookToFountainPathTests
             MaxChunks = 4,
             ReservedOverheadChars = 1_000,
         };
-        Assert.False(BookToFountainConverter.FitsSingleShot(book, tinyBudget));
+        Assert.False(AdaptationFountain.FitsSingleShot(book, tinyBudget));
 
         var progress = new List<string>();
         var (text, _) = await AdaptConvertAsync(
@@ -381,7 +383,7 @@ public class BookToFountainPathTests
             onProgress: s => progress.Add(s),
             budgetOverride: tinyBudget);
 
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(text));
         Assert.Contains(progress, p => p.Contains("exceeds model budget", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(progress, p => p.Contains("single pass", StringComparison.OrdinalIgnoreCase));
         // Multi path should mention chunks
@@ -436,21 +438,9 @@ public class BookToFountainPathTests
         string model = "grok-4.5",
         int totalRuntimeMinutes = 10,
         Action<string>? onProgress = null,
-        BookToFountainConverter.PromptBudget? budgetOverride = null,
+        AdaptationFountain.PromptBudget? budgetOverride = null,
         string? author = null)
     {
-        PageToMovie.Adaptation.Conversion.BookToFountainConverter.PromptBudget? coreBudget = null;
-        if (budgetOverride is not null)
-        {
-            coreBudget = new PageToMovie.Adaptation.Conversion.BookToFountainConverter.PromptBudget
-            {
-                ModelId = budgetOverride.ModelId,
-                SingleShotBookMaxChars = budgetOverride.SingleShotBookMaxChars,
-                ChunkSoftMaxChars = budgetOverride.ChunkSoftMaxChars,
-                MaxChunks = budgetOverride.MaxChunks,
-                ReservedOverheadChars = budgetOverride.ReservedOverheadChars,
-            };
-        }
         var result = await new AdaptationService().ConvertAsync(
             new AdaptationRequest
             {
@@ -462,11 +452,11 @@ public class BookToFountainPathTests
             },
             chat,
             onProgress is null ? null : new Progress<string>(onProgress),
-            budgetOverride: coreBudget);
-        var mapped = new AdaptationConversionResult
+            budgetOverride: budgetOverride);
+        var mapped = new PageToMovie.Engine.AdaptationConversionResult
         {
             Fountain = result.Fountain,
-            VisionMeta = BookToFountainConverter.MapVision(result.VisionMeta),
+            VisionMeta = PageToMovie.Engine.BookToFountainConverter.MapVision(result.VisionMeta),
             VisionMetaStatus = result.VisionMetaStatus switch
             {
                 AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,

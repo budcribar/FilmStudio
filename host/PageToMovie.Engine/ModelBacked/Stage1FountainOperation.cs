@@ -1,5 +1,7 @@
 using PageToMovie.Engine.Abstractions;
 using PageToMovie.Engine.ModelExecution;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 
 namespace PageToMovie.Engine.ModelBacked;
 
@@ -100,8 +102,8 @@ internal static class Stage1FountainLifecycle
                 return ModelParseResult<Stage1FountainResponse>.Failure(
                     new ModelValidationIssue("empty_response", "The Stage 1 response was empty."));
 
-            var cleaned = BookToFountainConverter.StripBookPageTags(
-                BookToFountainConverter.StripFences(response));
+            var cleaned = AdaptationFountain.StripBookPageTags(
+                AdaptationFountain.StripFences(response));
             return ModelParseResult<Stage1FountainResponse>.Success(new Stage1FountainResponse(cleaned));
         }
     }

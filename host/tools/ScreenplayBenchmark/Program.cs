@@ -12,6 +12,10 @@ using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Adaptation;
 using PageToMovie.Adaptation.Validation;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
+using EngineConversionResult = PageToMovie.Engine.AdaptationConversionResult;
+using EngineFountainMap = PageToMovie.Engine.BookToFountainConverter;
 using CastPackageCrossCheck = PageToMovie.Adaptation.Validation.CastPackageCrossCheck;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
@@ -515,7 +519,7 @@ public static class Program
             }
 
             if (sharedArtifact is not null &&
-                JsonSerializer.Deserialize<AdaptationConversionResult>(sharedArtifact.Content) is
+                JsonSerializer.Deserialize<EngineConversionResult>(sharedArtifact.Content) is
                     { Fountain.Length: > 0, VisionMeta: not null } sharedConversion)
             {
                 screenplayText = sharedConversion.Fountain;
@@ -547,19 +551,7 @@ public static class Program
                     Console.Write("(ignoring stale fallback-poisoned cache, retrying live) ");
                 try
                 {
-                    var budgetCore = ResolveRateLimitSafeBudgetOverride(modelId);
-                    PageToMovie.Adaptation.Conversion.BookToFountainConverter.PromptBudget? budget = null;
-                    if (budgetCore is not null)
-                    {
-                        budget = new PageToMovie.Adaptation.Conversion.BookToFountainConverter.PromptBudget
-                        {
-                            ModelId = budgetCore.ModelId,
-                            SingleShotBookMaxChars = budgetCore.SingleShotBookMaxChars,
-                            ChunkSoftMaxChars = budgetCore.ChunkSoftMaxChars,
-                            MaxChunks = budgetCore.MaxChunks,
-                            ReservedOverheadChars = budgetCore.ReservedOverheadChars,
-                        };
-                    }
+                    var budget = ResolveRateLimitSafeBudgetOverride(modelId);
                     var adaptResult = await new AdaptationService().ConvertAsync(
                         new PageToMovie.Adaptation.Contracts.AdaptationRequest
                         {
@@ -577,8 +569,8 @@ public static class Program
                     if (adaptResult.UsedHeuristicFallback)
                         generationFallbacks[modelId] = "adaptation_heuristic_fallback";
                     screenplayText = adaptResult.Fountain;
-                    visionMeta = BookToFountainConverter.MapVision(adaptResult.VisionMeta);
-                    var conversion = new AdaptationConversionResult
+                    visionMeta = EngineFountainMap.MapVision(adaptResult.VisionMeta);
+                    var conversion = new EngineConversionResult
                     {
                         Fountain = screenplayText,
                         VisionMeta = visionMeta,
@@ -1185,22 +1177,22 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
     /// this account/org). These are account-tier rate limits, not the model's real context window —
     /// deliberately kept out of <c>models_catalog.json</c> (which drives the real product's book
     /// adaptation for all users) and scoped to this benchmark only. Forces
-    /// <see cref="BookToFountainConverter.ConvertWithMetadataAsync"/> onto the multi-chunk path so each
+    /// <see cref="AdaptationService.ConvertAsync"/> onto the multi-chunk path so each
     /// individual adapt call stays comfortably under the cap instead of one big one-shot request
     /// that blows through it regardless of what the model can actually hold.
     /// </summary>
-    private static BookToFountainConverter.PromptBudget? ResolveRateLimitSafeBudgetOverride(string modelId)
+    private static AdaptationFountain.PromptBudget? ResolveRateLimitSafeBudgetOverride(string modelId)
     {
         if (!string.Equals(modelId, "gpt-4o", StringComparison.OrdinalIgnoreCase))
             return null;
 
-        return new BookToFountainConverter.PromptBudget
+        return new AdaptationFountain.PromptBudget
         {
             ModelId = modelId,
             SingleShotBookMaxChars = 50_000,
             ChunkSoftMaxChars = 25_000,
-            MaxChunks = BookToFountainConverter.MaxAdaptChunks,
-            ReservedOverheadChars = BookToFountainConverter.ReservedOverheadChars,
+            MaxChunks = AdaptationFountain.MaxAdaptChunks,
+            ReservedOverheadChars = AdaptationFountain.ReservedOverheadChars,
         };
     }
 

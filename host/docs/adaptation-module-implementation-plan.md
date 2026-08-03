@@ -328,7 +328,8 @@ Import UI / `FilmLengthCard`: unchanged externally; API still Engine.
 
 - [x] `PageToMovie.Adaptation.dll` builds standalone with Core only (+ allowed packages)  
 - [x] No `ProjectStore`, no project paths, no user DB inside Adaptation  
-- [x] All Stage‑1 LLM conversion goes through `AdaptationService` (Engine `ConvertWithMetadataAsync` obsolete façade)  
+- [x] All Stage‑1 LLM conversion goes through `AdaptationService`  
+- [x] Engine `BookToFountainConverter` is mapping-only (no pure-helper forwarders)  
 - [x] Engine only orchestrates I/O + DI of chat  
 - [x] Benchmark uses same façade + `adaptation_sha` in cache/history  
 - [x] Unit + architecture tests green  

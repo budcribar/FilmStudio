@@ -1,4 +1,6 @@
 using PageToMovie.Engine;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using PageToMovie.Engine.Abstractions;
 using PageToMovie.Engine.ModelBacked;
 using PageToMovie.Engine.ModelExecution;
@@ -78,9 +80,9 @@ public sealed class Stage1FountainLifecycleTests
 
     private static IReadOnlyList<ModelValidationIssue> ValidatePackage(string package)
     {
-        var split = BookToFountainConverter.SplitVisionMetaTrailer(package);
+        var split = PageToMovie.Engine.BookToFountainConverter.SplitVisionMetaTrailer(package);
         var issues = new List<ModelValidationIssue>();
-        if (!BookToFountainConverter.LooksLikeGoodFountain(split.Fountain))
+        if (!AdaptationFountain.LooksLikeGoodFountain(split.Fountain))
             issues.Add(new("invalid_fountain", "Fountain is invalid.", "$.fountain"));
         if (split.Vision is null)
             issues.Add(new("missing_vision_meta", "VISION_META is required.", "$.vision_meta"));

@@ -5,6 +5,8 @@ using PageToMovie.Engine.ModelExecution;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PageToMovie.Adaptation;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 
 namespace PageToMovie.Engine;
 
@@ -185,7 +187,7 @@ public sealed class Stage1Service
         // (e.g. a transient API failure on the repair call itself). Checked from the
         // saved draft every run, not just once at generation time, so it doesn't rely
         // on catching a one-off progress message.
-        var stillVagueHeadings = BookToFountainConverter.FindVagueLocationHeadings(fountainText);
+        var stillVagueHeadings = AdaptationFountain.FindVagueLocationHeadings(fountainText);
         if (stillVagueHeadings.Count > 0)
         {
             var msg = $"{stillVagueHeadings.Count} vague location heading(s) unresolved: " +
@@ -194,7 +196,7 @@ public sealed class Stage1Service
             onProgress?.Invoke($"Warning: {msg}");
         }
 
-        var stillGenericSpeakers = BookToFountainConverter.FindGenericNumberedSpeakers(fountainText);
+        var stillGenericSpeakers = AdaptationFountain.FindGenericNumberedSpeakers(fountainText);
         if (stillGenericSpeakers.Count > 0)
         {
             var msg = $"{stillGenericSpeakers.Count} generic numbered speaker(s) unresolved: " +
@@ -211,7 +213,7 @@ public sealed class Stage1Service
                 "clip gen will lean on narration. Prefer on-camera frame cutbacks where possible.");
         }
 
-        var softMaxScenes = BookToFountainConverter.SoftMaxSceneHeadings(analysis.BookKind);
+        var softMaxScenes = AdaptationFountain.SoftMaxSceneHeadings(analysis.BookKind);
         if (result.SceneCount > softMaxScenes)
         {
             onProgress?.Invoke(

@@ -1,6 +1,8 @@
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -140,7 +142,7 @@ public class ScreenplayServiceTests : IDisposable
 
             Action here.
             """;
-        var cleaned = BookToFountainConverter.StripBookPageTags(raw);
+        var cleaned = AdaptationFountain.StripBookPageTags(raw);
         Assert.DoesNotContain("= page", cleaned, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("[[page", cleaned, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("INT. ROOM", cleaned, StringComparison.OrdinalIgnoreCase);
@@ -185,7 +187,7 @@ public class ScreenplayServiceTests : IDisposable
             MOMMA
             Time for bed!
             """;
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(good));
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(good));
 
         var dump = """
             Title: X
@@ -196,7 +198,7 @@ public class ScreenplayServiceTests : IDisposable
             INT. STORY - PAGE 3 - DAY
             more
             """;
-        Assert.False(BookToFountainConverter.LooksLikeGoodFountain(dump));
+        Assert.False(AdaptationFountain.LooksLikeGoodFountain(dump));
     }
 
     [Fact]
@@ -212,7 +214,7 @@ public class ScreenplayServiceTests : IDisposable
         var fountainPath = Path.Combine(root, "prompts", "book_to_fountain.txt");
         Assert.True(File.Exists(fountainPath), "Expected prompts/book_to_fountain.txt");
 
-        var system = await BookToFountainConverter.BuildSystemPromptAsync(root, totalRuntimeMinutes: 12);
+        var system = await AdaptationFountain.BuildSystemPromptAsync(12);
 
         // Fountain product path — not the JSON schema dump
         Assert.Contains("Fountain", system, StringComparison.OrdinalIgnoreCase);
@@ -299,10 +301,10 @@ public class ScreenplayServiceTests : IDisposable
             sb.Append(new string('a', 3_000)).Append(" chapter body ").Append(c).Append("\n\n");
         }
         var book = sb.ToString();
-        Assert.True(book.Length > BookToFountainConverter.SingleShotMaxChars);
+        Assert.True(book.Length > AdaptationFountain.SingleShotMaxChars);
 
-        var chunks = BookToFountainConverter.ChunkBookForAdaptation(book);
-        Assert.InRange(chunks.Count, 2, BookToFountainConverter.MaxAdaptChunks);
+        var chunks = AdaptationFountain.ChunkBookForAdaptation(book);
+        Assert.InRange(chunks.Count, 2, AdaptationFountain.MaxAdaptChunks);
         Assert.True(chunks.Sum(c => c.Length) >= book.Length * 0.9);
         // First chunk should open near chapter 1
         Assert.Contains("CHAPTER 1", chunks[0], StringComparison.OrdinalIgnoreCase);
@@ -336,7 +338,7 @@ public class ScreenplayServiceTests : IDisposable
 
             THE END
             """;
-        var stitched = BookToFountainConverter.StitchFountainParts(new[] { p1, p2 });
+        var stitched = AdaptationFountain.StitchFountainParts(new[] { p1, p2 });
         Assert.Single(Regex.Matches(stitched, @"(?im)^Title:"));
         Assert.Contains("INT. CASTLE", stitched, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("EXT. FOREST", stitched, StringComparison.OrdinalIgnoreCase);
@@ -355,7 +357,7 @@ public class ScreenplayServiceTests : IDisposable
             NARRATOR
             Hello world this is long enough for structural gates and more text.
             """;
-        var fixedText = BookToFountainConverter.FixDraftDate(raw);
+        var fixedText = AdaptationFountain.FixDraftDate(raw);
         var today = DateTime.Now.ToString("M/d/yyyy");
         Assert.Contains($"Draft date: {today}", fixedText, StringComparison.Ordinal);
         Assert.DoesNotContain("3/25/2025", fixedText, StringComparison.Ordinal);
@@ -369,7 +371,7 @@ public class ScreenplayServiceTests : IDisposable
     [InlineData("INT. OLD MAN'S CHAMBER - NIGHT", false)]
     public void HeadingContainsVagueLocationLanguage_detects_fillers(string heading, bool expected)
     {
-        Assert.Equal(expected, BookToFountainConverter.HeadingContainsVagueLocationLanguage(heading));
+        Assert.Equal(expected, AdaptationFountain.HeadingContainsVagueLocationLanguage(heading));
     }
 
     [Fact]
@@ -393,7 +395,7 @@ public class ScreenplayServiceTests : IDisposable
             NARRATOR
             Here.
             """;
-        var bad = BookToFountainConverter.FindVagueLocationHeadings(fountain);
+        var bad = AdaptationFountain.FindVagueLocationHeadings(fountain);
         Assert.Single(bad);
         Assert.Contains("VARIOUS", bad[0], StringComparison.OrdinalIgnoreCase);
     }
@@ -416,7 +418,7 @@ public class ScreenplayServiceTests : IDisposable
     [InlineData("SCROOGE", false)]
     public void IsGenericNumberedSpeaker_detects_ordinals(string name, bool expected)
     {
-        Assert.Equal(expected, BookToFountainConverter.IsGenericNumberedSpeaker(name));
+        Assert.Equal(expected, AdaptationFountain.IsGenericNumberedSpeaker(name));
     }
 
     [Theory]
@@ -425,7 +427,7 @@ public class ScreenplayServiceTests : IDisposable
     [InlineData("novel", 45)]
     public void SoftMaxSceneHeadings_by_book_kind(string kind, int expected)
     {
-        Assert.Equal(expected, BookToFountainConverter.SoftMaxSceneHeadings(kind));
+        Assert.Equal(expected, AdaptationFountain.SoftMaxSceneHeadings(kind));
     }
 
     [Fact]
@@ -445,7 +447,7 @@ public class ScreenplayServiceTests : IDisposable
             OFFICER REYNOLDS
             Already named.
             """;
-        var found = BookToFountainConverter.FindGenericNumberedSpeakers(fountain);
+        var found = AdaptationFountain.FindGenericNumberedSpeakers(fountain);
         Assert.Contains(found, n => n.Equals("FIRST OFFICER", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(found, n => n.Equals("SECOND OFFICER", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(found, n => n.Contains("REYNOLDS", StringComparison.OrdinalIgnoreCase));
@@ -472,7 +474,7 @@ public class ScreenplayServiceTests : IDisposable
             NARRATOR
             Inside.
             """;
-        var norm = BookToFountainConverter.NormalizeSceneHeadingWording(fountain);
+        var norm = AdaptationFountain.NormalizeSceneHeadingWording(fountain);
         var halls = Regex.Matches(norm, @"(?im)^(INT\..*HALL OUTSIDE CHAMBER.*)$")
             .Select(m => m.Groups[1].Value.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -486,11 +488,11 @@ public class ScreenplayServiceTests : IDisposable
     [Fact]
     public void IsLocationNameAlias_detects_prefix_drift()
     {
-        Assert.True(BookToFountainConverter.IsLocationNameAlias(
+        Assert.True(AdaptationFountain.IsLocationNameAlias(
             "OLD HOUSE - HALL OUTSIDE CHAMBER", "HALL OUTSIDE CHAMBER"));
-        Assert.False(BookToFountainConverter.IsLocationNameAlias(
+        Assert.False(AdaptationFountain.IsLocationNameAlias(
             "OLD MAN'S CHAMBER", "CHAMBER"));
-        Assert.False(BookToFountainConverter.IsLocationNameAlias(
+        Assert.False(AdaptationFountain.IsLocationNameAlias(
             "HALL", "HALL OUTSIDE CHAMBER"));
     }
 
@@ -509,9 +511,9 @@ public class ScreenplayServiceTests : IDisposable
             HERO
             We begin.
             """;
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(novel));
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(novel));
         // requirePageTags is ignored (page tags stripped / not required)
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(novel, requirePageTags: true));
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(novel, requirePageTags: true));
     }
 
     [Fact]
@@ -528,10 +530,10 @@ public class ScreenplayServiceTests : IDisposable
             NARRATOR
             He's Buster the Noodle Head Dog.
             """;
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(raw));
-        var stripped = BookToFountainConverter.StripBookPageTags(raw);
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(raw));
+        var stripped = AdaptationFountain.StripBookPageTags(raw);
         Assert.DoesNotContain("= page", stripped, StringComparison.OrdinalIgnoreCase);
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(stripped));
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(stripped));
     }
 
     [Fact]

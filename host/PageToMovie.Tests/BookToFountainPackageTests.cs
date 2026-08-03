@@ -1,4 +1,6 @@
 using PageToMovie.Engine;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using Xunit;
 
 namespace PageToMovie.Tests;
@@ -56,7 +58,7 @@ public class BookToFountainPackageTests
         Assert.True(heads >= 1, $"{fileName}: expected scene headings");
         Assert.True(chars >= 1, $"{fileName}: expected character cues");
         Assert.True(dlg >= 1, $"{fileName}: expected dialogue");
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text),
+        Assert.True(AdaptationFountain.LooksLikeGoodFountain(text),
             $"{fileName}: failed LooksLikeGoodFountain gate");
 
         // FADE IN (if present) must be Transition — never Action that invents INT. UNSPECIFIED

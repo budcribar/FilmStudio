@@ -2,6 +2,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using PageToMovie.Engine;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using PageToMovie.Engine.ModelExecution;
 using Xunit;
 
@@ -115,9 +117,9 @@ public sealed class MaryEndToEndLifecycleReplayTests
     {
         if (name == "stage1")
         {
-            var split = BookToFountainConverter.SplitVisionMetaTrailer(json);
+            var split = PageToMovie.Engine.BookToFountainConverter.SplitVisionMetaTrailer(json);
             var issues = new List<ModelValidationIssue>();
-            if (!BookToFountainConverter.LooksLikeGoodFountain(split.Fountain)) issues.Add(new("invalid_fountain", "Fountain is invalid."));
+            if (!AdaptationFountain.LooksLikeGoodFountain(split.Fountain)) issues.Add(new("invalid_fountain", "Fountain is invalid."));
             if (split.Vision is null) issues.Add(new("missing_vision_meta", "VISION_META is required."));
             return issues;
         }

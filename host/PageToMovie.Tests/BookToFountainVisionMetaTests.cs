@@ -1,4 +1,6 @@
 using PageToMovie.Engine;
+using PageToMovie.Adaptation.Conversion;
+using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using Xunit;
 
 namespace PageToMovie.Tests;
@@ -23,7 +25,7 @@ FADE OUT.
 {"visual_medium":"photoreal_live_action","render_style_lock":"STYLE LOCK: photoreal gothic","notes":"literary short"}
 ---END_VISION_META---
 """;
-        var (fountain, vision) = BookToFountainConverter.SplitVisionMetaTrailer(raw);
+        var (fountain, vision) = PageToMovie.Engine.BookToFountainConverter.SplitVisionMetaTrailer(raw);
         Assert.DoesNotContain("VISION_META", fountain, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("FADE IN", fountain, StringComparison.OrdinalIgnoreCase);
         Assert.NotNull(vision);
@@ -34,7 +36,7 @@ FADE OUT.
     [Fact]
     public void SplitVisionMetaTrailer_NoTrailer()
     {
-        var (fountain, vision) = BookToFountainConverter.SplitVisionMetaTrailer("FADE IN:\n\nINT. A - DAY\n");
+        var (fountain, vision) = PageToMovie.Engine.BookToFountainConverter.SplitVisionMetaTrailer("FADE IN:\n\nINT. A - DAY\n");
         Assert.Null(vision);
         Assert.Contains("FADE IN", fountain);
     }
