@@ -24,7 +24,7 @@ No paid model or media-generation endpoint was invoked while completing this wor
 
 | Check | Result |
 |---|---:|
-| Full offline solution tests | 1,234 passed; 0 failed; 0 skipped |
+| Full offline solution tests | 1,255 passed; 0 failed; 0 skipped |
 | Pronunciation and prompt tests | 77 passed |
 | Classifier regression tests | 33 passed |
 | Shared lifecycle/pilot tests | 13 passed |
@@ -62,6 +62,23 @@ substitute for a fresh clean-commit result:
 | Repository checks | `git diff --check` and final `git status --short` results |
 | Lifecycle coverage | Replay manifest paths and operation/prompt/schema versions exercised |
 | Cache state | Whether shared cache was disabled, empty, or reused; derivation identity when reused |
+
+### Final verification record
+
+| Field | Recorded result |
+|---|---|
+| Commit | `39fcdb424cfc48ab488b81b1fc4859e7806f0707` (pushed implementation/inventory commit) |
+| Tree state | Clean before and after verification |
+| UTC completion | `2026-08-03T02:50:29.7771155Z` |
+| Runtime | .NET SDK `10.0.302` on Windows |
+| Dependency state | Solution restore was current; repository SQLite override remains `2.1.12` |
+| Offline suite | `pwsh -File host/scripts/verify-adaptation-lifecycle.ps1`; 1,255 passed, 0 failed, 0 skipped; TRX SHA-256 `469a16211e52a6b3d359d9d43e3123f405d78545f2667520f0efecb9fc6a04fd` |
+| Paid-call guard | `PAGETOMOVIE_LIVE_API_TESTS=0`; filter `Category!=LiveApi` |
+| Benchmark self-test | `dotnet run --project host/tools/ScreenplayBenchmark -- --self-test`; 11 passed |
+| Builds | Complete solution build/test passed, including API and benchmark tools |
+| Repository checks | `git diff --check` passed; final `git status --short` empty |
+| Lifecycle coverage | Mary replay: Stage 1 package, cast, Stage 2 correction, multimodal observation/judgment; operation prompt/schema v1 fixtures |
+| Cache state | Empty in-memory replay cache on first run; exact derivations reused on second run with zero model calls |
 
 This is the pre-paid-run reproducibility baseline. The next scored benchmark must use a new run identity and record the code commit, prompt versions, model/provider, parameters, source hash, pronunciation lexicon version, validation attempts, fallback source, and complete Fountain plus vision-metadata candidate package.
 

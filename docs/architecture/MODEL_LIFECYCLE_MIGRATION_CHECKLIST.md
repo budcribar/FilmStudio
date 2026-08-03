@@ -111,10 +111,10 @@ This is the authoritative completion checklist for migrating adaptation operatio
 - [x] Confirm deterministic namespaces have no model-client, HTTP, or indirect model-operation dependencies.
 - [x] Decide and document whether the compile-time boundary is a separate assembly or an equivalent analyzer/test.
 - [x] Check all completion items in `MODEL_CALL_INVENTORY.md` only after repository-wide verification.
-- [ ] Run the complete offline suite and benchmark self-test from a clean commit.
-- [ ] Record the final commit and verification counts in the reliability document.
+- [x] Run the complete offline suite and benchmark self-test from a clean commit.
+- [x] Record the final commit and verification counts in the reliability document.
 
-**Phase status: not complete.**
+**Phase status: complete.**
 
 ## Completion gate
 
