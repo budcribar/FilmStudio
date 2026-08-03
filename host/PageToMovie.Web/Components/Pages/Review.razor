@@ -1648,18 +1648,18 @@ else
                 await Stitch.RevokePreviewUrlAsync();
                 var meta = await Engine.GetWipMovieMetaAsync(_projectId);
                 var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
-                var urls = await Stitch.CollectAndMixSceneSegmentsAsync(_projectId, sceneNums, _scenes, stale);
-                if (urls.Count == 0)
+                var segs = await Stitch.CollectAndMixSceneSegmentInfosAsync(_projectId, sceneNums, _scenes, stale);
+                if (segs.Count == 0)
                 {
                     _error = "No scene videos were found";
                     _showWipPlayer = false;
                     return;
                 }
 
-                _clientStitchStatus = urls.Count == 1
+                _clientStitchStatus = segs.Count == 1
                     ? "Loading…"
-                    : $"Combining {urls.Count} file(s)…";
-                var result = await Stitch.ConcatAsync(urls);
+                    : $"Combining {segs.Count} file(s)…";
+                var result = await Stitch.ConcatAsync(segs.Select(s => s.Url).ToList());
                 if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
                 {
                     _error = result.Error ?? "Browser stitch failed";
@@ -1669,7 +1669,20 @@ else
 
                 _clientWipUrl = result.Url;
                 _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                _message = $"WIP preview ready (browser) — {sceneNums.Count} scene(s)";
+                _message = $"Preview ready — {segs.Count} scene(s)";
+
+                // film_build.v1: full segment EDL + studio.sha256 (non-fatal)
+                try
+                {
+                    _clientStitchStatus = "Saving cut timeline…";
+                    var reg = await Stitch.RegisterFilmBuildAfterWipStitchAsync(_projectId, segs, result);
+                    if (reg.Ok && !string.IsNullOrWhiteSpace(reg.FilmId))
+                        _message = $"Preview ready — {segs.Count} scene(s) · film {reg.FilmId}";
+                }
+                catch
+                {
+                    /* provenance must not block playback */
+                }
             }
             catch (Exception ex)
             {
@@ -2539,14 +2552,19 @@ else
             await Stitch.RevokePreviewUrlAsync();
             var meta = await Engine.GetWipMovieMetaAsync(_projectId);
             var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
-            var urls = await Stitch.CollectAndMixSceneSegmentsAsync(_projectId, sceneNums, _scenes, stale);
-            if (urls.Count == 0) return null;
-            var result = await Stitch.ConcatAsync(urls);
+            var segs = await Stitch.CollectAndMixSceneSegmentInfosAsync(_projectId, sceneNums, _scenes, stale);
+            if (segs.Count == 0) return null;
+            var result = await Stitch.ConcatAsync(segs.Select(s => s.Url).ToList());
             if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
                 throw new InvalidOperationException(result.Error ?? "Browser stitch failed");
             _clientWipUrl = result.Url;
             _showWipPlayer = true;
             _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            try
+            {
+                await Stitch.RegisterFilmBuildAfterWipStitchAsync(_projectId, segs, result);
+            }
+            catch { /* non-fatal */ }
             return _clientWipUrl;
         }
         finally

@@ -175,6 +175,29 @@ window.PageToMovieFfmpeg = {
      * @param {(pct:number,msg:string)=>void} [onProgress]
      * @returns {{ success:boolean, url?:string, error?:string, count?:number }}
      */
+
+    /**
+     * SHA-256 hex of the media at url (blob: or http). Used for film_build.studio.sha256.
+     * @param {string} url
+     * @returns {Promise<{ success:boolean, sha256?:string, byteLength?:number, error?:string }>}
+     */
+    hashUrlAsync: async function (url) {
+        if (!url) return { success: false, error: "No URL" };
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) return { success: false, error: "fetch " + resp.status };
+            const buf = await resp.arrayBuffer();
+            const digest = await crypto.subtle.digest("SHA-256", buf);
+            const bytes = new Uint8Array(digest);
+            let hex = "";
+            for (let i = 0; i < bytes.length; i++)
+                hex += bytes[i].toString(16).padStart(2, "0");
+            return { success: true, sha256: hex, byteLength: buf.byteLength };
+        } catch (err) {
+            return { success: false, error: (err && err.message) ? err.message : String(err) };
+        }
+    },
+
     concatVideosAsync: async function (urls, onProgress) {
         let list = [];
         if (Array.isArray(urls)) {
@@ -253,6 +276,23 @@ window.PageToMovieFfmpeg = {
                 // top-level preview replacement already calls revokePreviewUrl() itself (see
                 // RevokePreviewUrlAsync callers) before requesting a new preview, so nothing here
                 // relied on this implicit revoke for correctness — only for eager cleanup.
+                // Hash the stitched bytes for film_build.studio.sha256 before handing out the URL.
+                let sha256 = null;
+                let byteLength = null;
+                try {
+                    const ab = await blob.arrayBuffer();
+                    byteLength = ab.byteLength;
+                    const dig = await crypto.subtle.digest("SHA-256", ab);
+                    const bytes = new Uint8Array(dig);
+                    sha256 = "";
+                    for (let i = 0; i < bytes.length; i++)
+                        sha256 += bytes[i].toString(16).padStart(2, "0");
+                    // Re-wrap so the blob URL still works after arrayBuffer()
+                    blob = new Blob([ab], { type: blob.type || "video/mp4" });
+                } catch (hashErr) {
+                    self._log("stitch sha256 skipped: " + (hashErr && hashErr.message));
+                }
+
                 self._blobUrl = URL.createObjectURL(blob);
 
                 // Cleanup MEMFS
@@ -263,7 +303,7 @@ window.PageToMovieFfmpeg = {
                 try { await ffmpeg.deleteFile("out.mp4"); } catch (_) { /* */ }
 
                 reportProgress(onProgress, 100, "Ready");
-                return { success: true, url: self._blobUrl, count: list.length };
+                return { success: true, url: self._blobUrl, count: list.length, sha256: sha256, byteLength: byteLength };
             } catch (err) {
                 console.error("concatVideosAsync failed:", err);
                 return { success: false, error: err.message || String(err) };

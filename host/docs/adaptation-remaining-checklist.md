@@ -5,6 +5,7 @@ Last updated: 2026-08-03
 ## Done (recent)
 
 - [x] **Stage commits** (`ptm:stage=…` including screenplay_created after report/manifest)
+- [x] **Client stitch → film_build EDL** (Review WIP play + share/export; sha256 + segments)
 - [x] **film_build.v1** + studio.sha256 (`assets/movie_wip.film.json`, API + WIP upload hook)
 - [x] **Stage‑1 convert manifest** (`source/stage1_convert_manifest.json` — prompt/adaptation/runtime/model)
 - [x] **ADAPTATION_REPORT** parse/store (`SplitAdaptationTrailers`, `source/adaptation_report.json`)

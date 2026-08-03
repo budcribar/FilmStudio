@@ -110,31 +110,9 @@ public sealed class ClientVideoStitchService
         IReadOnlySet<int>? staleScenes,
         CancellationToken ct = default)
     {
-        var segments = new List<string>();
-        foreach (var sn in sceneNumbers.Distinct().OrderBy(x => x))
-        {
-            ct.ThrowIfCancellationRequested();
-
-            var sceneUrls = await CollectSceneMediaUrlsAsync(projectId, new[] { sn }, sceneList, staleScenes, ct);
-            if (sceneUrls.Count == 0)
-                continue;
-
-            string sceneUrl;
-            if (sceneUrls.Count == 1)
-            {
-                sceneUrl = sceneUrls[0];
-            }
-            else
-            {
-                var concat = await ConcatAsync(sceneUrls, ct);
-                if (!concat.Success || string.IsNullOrWhiteSpace(concat.Url))
-                    continue;
-                sceneUrl = concat.Url!;
-            }
-
-            segments.Add(await MixSceneMusicAsync(projectId, sceneUrl, sn, ct: ct));
-        }
-        return segments;
+        var infos = await CollectAndMixSceneSegmentInfosAsync(
+            projectId, sceneNumbers, sceneList, staleScenes, ct).ConfigureAwait(false);
+        return infos.Select(s => s.Url).ToList();
     }
 
     /// <summary>On-disk clip URLs for one scene (ordered).</summary>
@@ -169,7 +147,23 @@ public sealed class ClientVideoStitchService
             return ClientStitchResult.Fail("No video URLs to combine");
 
         if (urls.Count == 1)
-            return ClientStitchResult.Ok(urls[0], count: 1, single: true);
+        {
+            // Still hash so film_build gets a studio.sha256 for single-scene projects.
+            string? sha = null;
+            long? blen = null;
+            try
+            {
+                var hash = await _js.InvokeAsync<JsHashResult>(
+                    "PageToMovieFfmpeg.hashUrlAsync", ct, urls[0]);
+                if (hash is { Success: true })
+                {
+                    sha = hash.Sha256;
+                    blen = hash.ByteLength;
+                }
+            }
+            catch { /* non-fatal */ }
+            return ClientStitchResult.Ok(urls[0], count: 1, single: true, sha, blen);
+        }
 
         try
         {
@@ -187,7 +181,12 @@ public sealed class ClientVideoStitchService
             if (string.IsNullOrWhiteSpace(raw.Url))
                 return ClientStitchResult.Fail("Stitch produced no video URL");
 
-            return ClientStitchResult.Ok(raw.Url!, raw.Count > 0 ? raw.Count : urls.Count, raw.Single);
+            return ClientStitchResult.Ok(
+                raw.Url!,
+                raw.Count > 0 ? raw.Count : urls.Count,
+                raw.Single,
+                raw.Sha256,
+                raw.ByteLength);
         }
         catch (JSException jex)
         {
@@ -196,6 +195,139 @@ public sealed class ClientVideoStitchService
         catch (Exception ex)
         {
             return ClientStitchResult.Fail(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Same as <see cref="CollectAndMixSceneSegmentsAsync"/> but keeps scene numbers + relative paths
+    /// for film_build EDL registration after full-film stitch.
+    /// </summary>
+    public async Task<IReadOnlyList<ClientWipSegment>> CollectAndMixSceneSegmentInfosAsync(
+        string projectId,
+        IReadOnlyList<int> sceneNumbers,
+        IReadOnlyList<SceneSummary>? sceneList,
+        IReadOnlySet<int>? staleScenes,
+        CancellationToken ct = default)
+    {
+        var segments = new List<ClientWipSegment>();
+        foreach (var sn in sceneNumbers.Distinct().OrderBy(x => x))
+        {
+            ct.ThrowIfCancellationRequested();
+            var sceneUrls = await CollectSceneMediaUrlsAsync(projectId, new[] { sn }, sceneList, staleScenes, ct);
+            if (sceneUrls.Count == 0)
+                continue;
+
+            string sceneUrl;
+            if (sceneUrls.Count == 1)
+                sceneUrl = sceneUrls[0];
+            else
+            {
+                var concat = await ConcatAsync(sceneUrls, ct);
+                if (!concat.Success || string.IsNullOrWhiteSpace(concat.Url))
+                    continue;
+                sceneUrl = concat.Url!;
+            }
+
+            sceneUrl = await MixSceneMusicAsync(projectId, sceneUrl, sn, ct: ct);
+            segments.Add(new ClientWipSegment
+            {
+                SceneNumber = sn,
+                Url = sceneUrl,
+                RelativeSrc = $"assets/video/scene_{sn:D2}.mp4",
+            });
+        }
+        return segments;
+    }
+
+    /// <summary>
+    /// After a full-film browser stitch: probe segment + total durations, ensure studio sha256,
+    /// POST film_build.v1 to the API (non-fatal on failure).
+    /// </summary>
+    public async Task<(bool Ok, string? FilmId, string? Error)> RegisterFilmBuildAfterWipStitchAsync(
+        string projectId,
+        IReadOnlyList<ClientWipSegment> segments,
+        ClientStitchResult stitch,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || stitch.Url is null || !stitch.Success)
+            return (false, null, "No stitch result");
+        if (segments.Count == 0)
+            return (false, null, "No segments");
+
+        try
+        {
+            var sha = stitch.Sha256;
+            long? byteLen = stitch.ByteLength;
+            if (string.IsNullOrWhiteSpace(sha))
+            {
+                var hash = await _js.InvokeAsync<JsHashResult>("PageToMovieFfmpeg.hashUrlAsync", ct, stitch.Url);
+                if (hash is { Success: true } && !string.IsNullOrWhiteSpace(hash.Sha256))
+                {
+                    sha = hash.Sha256;
+                    byteLen = hash.ByteLength ?? byteLen;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(sha))
+                return (false, null, "Could not hash stitched video");
+
+            double t = 0;
+            var edl = new List<object>();
+            for (var i = 0; i < segments.Count; i++)
+            {
+                var seg = segments[i];
+                var dur = await ProbeDurationSecondsAsync(seg.Url, ct);
+                if (dur <= 0) dur = 0.1; // keep monotonic timeline
+                edl.Add(new
+                {
+                    index = i,
+                    scene = seg.SceneNumber,
+                    clip = (int?)null,
+                    take = (int?)null,
+                    tStart = t,
+                    tEnd = t + dur,
+                    src = seg.RelativeSrc,
+                    srcSha256 = (string?)null,
+                    sidecar = (string?)null,
+                });
+                t += dur;
+            }
+
+            // Prefer probed total; fall back to sum of segments
+            var total = await ProbeDurationSecondsAsync(stitch.Url, ct);
+            if (total <= 0) total = t;
+
+            var body = new
+            {
+                studioSha256 = sha,
+                durationSeconds = total,
+                byteLength = byteLen,
+                studioPath = "assets/movie_wip.mp4",
+                assemblyWhere = "client",
+                segments = edl,
+            };
+
+            var resp = await _engine.RegisterFilmBuildAsync(projectId, body, ct);
+            return resp;
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
+    public async Task<double> ProbeDurationSecondsAsync(string url, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return 0;
+        try
+        {
+            var probe = await _js.InvokeAsync<JsProbeResult>(
+                "PageToMovieFfmpeg.probeDurationAsync", ct, url);
+            return probe is { Success: true } && probe.Seconds > 0 ? probe.Seconds : 0;
+        }
+        catch
+        {
+            return 0;
         }
     }
 
@@ -375,6 +507,8 @@ public sealed class ClientVideoStitchService
         public string? Error { get; set; }
         public int Count { get; set; }
         public bool Single { get; set; }
+        public string? Sha256 { get; set; }
+        public long? ByteLength { get; set; }
     }
 
     private sealed class JsProbeResult
@@ -405,10 +539,38 @@ public sealed class ClientStitchResult
     public string? Error { get; init; }
     public int Count { get; init; }
     public bool Single { get; init; }
+    /// <summary>SHA-256 of stitched bytes when computed in the browser.</summary>
+    public string? Sha256 { get; init; }
+    public long? ByteLength { get; init; }
 
-    public static ClientStitchResult Ok(string url, int count = 1, bool single = false) =>
-        new() { Success = true, Url = url, Count = count, Single = single };
+    public static ClientStitchResult Ok(
+        string url, int count = 1, bool single = false, string? sha256 = null, long? byteLength = null) =>
+        new()
+        {
+            Success = true,
+            Url = url,
+            Count = count,
+            Single = single,
+            Sha256 = sha256,
+            ByteLength = byteLength,
+        };
 
     public static ClientStitchResult Fail(string error) =>
         new() { Success = false, Error = error };
+}
+
+/// <summary>One scene segment used in a full-film client stitch (URL + path for film_build EDL).</summary>
+public sealed class ClientWipSegment
+{
+    public int SceneNumber { get; init; }
+    public string Url { get; init; } = "";
+    public string RelativeSrc { get; init; } = "";
+}
+
+public sealed class JsHashResult
+{
+    public bool Success { get; set; }
+    public string? Sha256 { get; set; }
+    public long? ByteLength { get; set; }
+    public string? Error { get; set; }
 }

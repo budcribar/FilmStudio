@@ -1850,6 +1850,43 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         }
     }
 
+    /// <summary>
+    /// Register film_build.v1 after client stitch (EDL + studio.sha256). Non-throwing wrapper returns ok/filmId.
+    /// </summary>
+    public async Task<(bool Ok, string? FilmId, string? Error)> RegisterFilmBuildAsync(
+        string projectId,
+        object body,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await _http.PostAsJsonAsync(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/film-build",
+                body,
+                JsonOpts,
+                ct);
+            var json = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts, ct);
+            var ok = json.ValueKind == JsonValueKind.Object
+                     && json.TryGetProperty("ok", out var okEl)
+                     && okEl.ValueKind == JsonValueKind.True;
+            string? filmId = null;
+            if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("filmId", out var fid)
+                && fid.ValueKind == JsonValueKind.String)
+                filmId = fid.GetString();
+            string? error = null;
+            if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("error", out var err)
+                && err.ValueKind == JsonValueKind.String)
+                error = err.GetString();
+            if (!resp.IsSuccessStatusCode && error is null)
+                error = resp.ReasonPhrase ?? $"HTTP {(int)resp.StatusCode}";
+            return (ok, filmId, error);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
     public async Task<YouTubeStatusDto?> GetYouTubeStatusAsync(CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<YouTubeStatusDto>("/api/youtube/status", JsonOpts, ct);
 
