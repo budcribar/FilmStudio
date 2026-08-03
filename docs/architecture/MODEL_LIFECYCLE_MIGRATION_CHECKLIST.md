@@ -105,12 +105,12 @@ This is the authoritative completion checklist for migrating adaptation operatio
 
 ## 8. Close the model-call inventory
 
-- [ ] Update every inventory row with owner, operation name, prompt/schema version, and migration status.
-- [ ] Remove obsolete “Phase 1 baseline” and stale recovery descriptions.
-- [ ] Confirm no adaptation operation bypasses the shared lifecycle with direct client calls.
-- [ ] Confirm deterministic namespaces have no model-client, HTTP, or indirect model-operation dependencies.
-- [ ] Decide and document whether the compile-time boundary is a separate assembly or an equivalent analyzer/test.
-- [ ] Check all completion items in `MODEL_CALL_INVENTORY.md` only after repository-wide verification.
+- [x] Update every inventory row with owner, operation name, prompt/schema version, and migration status.
+- [x] Remove obsolete “Phase 1 baseline” and stale recovery descriptions.
+- [x] Confirm no adaptation operation bypasses the shared lifecycle with direct client calls.
+- [x] Confirm deterministic namespaces have no model-client, HTTP, or indirect model-operation dependencies.
+- [x] Decide and document whether the compile-time boundary is a separate assembly or an equivalent analyzer/test.
+- [x] Check all completion items in `MODEL_CALL_INVENTORY.md` only after repository-wide verification.
 - [ ] Run the complete offline suite and benchmark self-test from a clean commit.
 - [ ] Record the final commit and verification counts in the reliability document.
 

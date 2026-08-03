@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace PageToMovie.Engine.Deterministic;
+namespace PageToMovie.Engine.ModelExecution;
 
 public sealed record Stage2ClassifierProvenance(
     string Classifier,

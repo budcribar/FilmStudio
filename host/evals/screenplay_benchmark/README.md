@@ -96,6 +96,19 @@ dotnet run --project host/tools/ScreenplayBenchmark -- --dry-run
 dotnet run --project host/tools/ScreenplayBenchmark -- --leaderboard
 ```
 
+#### Option F: Run the Zero-Cost Harness Self-Test
+
+This is the canonical final-verification command. It reads recorded in-process fixtures only,
+makes no provider requests, and exits nonzero when any check fails:
+
+```bash
+dotnet run --project host/tools/ScreenplayBenchmark -- --self-test
+```
+
+Do not use `--dry-run` as a substitute for `--self-test`: dry-run exercises a different CLI path,
+while self-test asserts the structured extraction, cast/location recovery, and complete
+Fountain + `VISION_META` judge package invariants.
+
 ---
 
 ### Step 4: View & Inspect Benchmark Dashboard

@@ -32,6 +32,37 @@ No paid model or media-generation endpoint was invoked while completing this wor
 | API build | Passed |
 | `git diff --check` | Passed |
 
+## Canonical final verification
+
+Run the checked-in verifier from the repository root after committing all migration changes:
+
+```powershell
+pwsh -File host/scripts/verify-adaptation-lifecycle.ps1
+```
+
+For a non-final dirty-tree preflight only, add `-AllowDirty`. `-NoRestore` is permitted only after
+the exact dependency graph has already been restored. The verifier explicitly disables the live
+API gate, filters out `Category=LiveApi`, runs every project in `host/PageToMovie.slnx`, runs the
+11-check zero-cost screenplay benchmark self-test, and writes its TRX outside the repository.
+
+The final verification record must include all of these fields; historical counts above are not a
+substitute for a fresh clean-commit result:
+
+| Field | Required value |
+|---|---|
+| Commit | Full 40-character commit SHA tested and pushed |
+| Tree state | `clean` before and after verification |
+| UTC timestamp | ISO-8601 start time |
+| Runtime | `dotnet --info` SDK and OS summary |
+| Dependency state | Restore command/result, including locked SQLite package version |
+| Offline suite | Exact command; passed, failed, and skipped counts; TRX path/hash |
+| Paid-call guard | `PAGETOMOVIE_LIVE_API_TESTS=0` and `Category!=LiveApi` |
+| Benchmark self-test | Exact command and passed check count |
+| Builds | API/tool build results if not already covered by the solution test command |
+| Repository checks | `git diff --check` and final `git status --short` results |
+| Lifecycle coverage | Replay manifest paths and operation/prompt/schema versions exercised |
+| Cache state | Whether shared cache was disabled, empty, or reused; derivation identity when reused |
+
 This is the pre-paid-run reproducibility baseline. The next scored benchmark must use a new run identity and record the code commit, prompt versions, model/provider, parameters, source hash, pronunciation lexicon version, validation attempts, fallback source, and complete Fountain plus vision-metadata candidate package.
 
 ## Operational rules

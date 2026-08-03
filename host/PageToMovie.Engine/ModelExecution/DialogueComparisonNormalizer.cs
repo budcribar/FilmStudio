@@ -1,7 +1,5 @@
 using System.Text.RegularExpressions;
-using PageToMovie.Engine.ModelExecution;
-
-namespace PageToMovie.Engine.Deterministic;
+namespace PageToMovie.Engine.ModelExecution;
 
 public sealed record DialogueNormalizationChange(
     int TokenIndex,
