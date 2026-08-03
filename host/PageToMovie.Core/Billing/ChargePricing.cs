@@ -1,8 +1,12 @@
 namespace PageToMovie.Core.Billing;
 
 /// <summary>
-/// Single place: vendor list rate → customer charge (admin charge multiplier).
-/// Used for estimates, cost_ledger, user_api_calls, and credit debits.
+/// Vendor list rate → customer-facing display charge (admin multiplier).
+/// <para>
+/// <b>Storage rule:</b> databases and cost ledgers keep <b>list rates only</b>.
+/// The multiplier is applied at read/display time (and optionally when debiting credits),
+/// never written as a permanent "charged" cost row.
+/// </para>
 /// </summary>
 public static class ChargePricing
 {
@@ -14,7 +18,7 @@ public static class ChargePricing
         return Math.Clamp(multiplier, 0, 100);
     }
 
-    /// <summary>listUsd × multiplier, rounded to 6 dp (ledger precision).</summary>
+    /// <summary>listUsd × multiplier, rounded to 6 dp.</summary>
     public static double ToCharge(double listUsd, double multiplier)
     {
         var list = Math.Max(0, listUsd);
@@ -25,30 +29,38 @@ public static class ChargePricing
     public static double RoundMoney(double usd) => Math.Round(usd, 2);
 
     /// <summary>
-    /// Resolve customer charge for a ledger/API row.
-    /// New rows store list + write-time multiplier + charged <paramref name="storedUsd"/>.
-    /// Legacy rows only store list in <paramref name="storedUsd"/> / <paramref name="listUsd"/> —
-    /// reprice with <paramref name="currentMultiplier"/> so actuals match estimate markup.
+    /// Recover vendor list rate from a ledger/API row.
+    /// Prefer explicit <paramref name="listUsd"/>; if a legacy row only stored charged
+    /// <paramref name="storedUsd"/> with a write-time multiplier, divide it back out.
     /// </summary>
-    public static double ResolveChargeUsd(
+    public static double ResolveListUsd(double storedUsd, double? listUsd, double? eventMultiplier)
+    {
+        if (listUsd is double lu && double.IsFinite(lu) && lu >= 0)
+            return lu;
+        if (eventMultiplier is double em && em > 0 && double.IsFinite(em) && double.IsFinite(storedUsd))
+            return Math.Max(0, storedUsd / em);
+        return Math.Max(0, storedUsd);
+    }
+
+    /// <summary>
+    /// Customer-facing amount for UI: list rate × <paramref name="currentMultiplier"/>
+    /// (always the admin setting now — not a frozen per-row charge).
+    /// </summary>
+    public static double DisplayCharge(
         double storedUsd,
         double? listUsd,
         double? eventMultiplier,
         double currentMultiplier)
     {
-        var current = ClampMultiplier(currentMultiplier);
-        if (eventMultiplier is double em && em > 0 && double.IsFinite(em))
-        {
-            // Write-time charge: prefer list × event mult when list is known; else trust stored usd.
-            if (listUsd is double lu && lu >= 0 && double.IsFinite(lu))
-                return ToCharge(lu, em);
-            return Math.Round(Math.Max(0, storedUsd), 6);
-        }
-
-        // Legacy: amounts were list rates only.
-        var list = listUsd is double l && l >= 0 && double.IsFinite(l)
-            ? l
-            : Math.Max(0, storedUsd);
-        return ToCharge(list, current);
+        var list = ResolveListUsd(storedUsd, listUsd, eventMultiplier);
+        return ToCharge(list, currentMultiplier);
     }
+
+    /// <summary>Obsolete name — use <see cref="DisplayCharge"/>.</summary>
+    public static double ResolveChargeUsd(
+        double storedUsd,
+        double? listUsd,
+        double? eventMultiplier,
+        double currentMultiplier) =>
+        DisplayCharge(storedUsd, listUsd, eventMultiplier, currentMultiplier);
 }

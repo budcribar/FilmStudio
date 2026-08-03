@@ -489,7 +489,7 @@ public class UserDatabaseService
     /// <summary>
     /// One-shot migration for Railway / old DBs: rows with missing user and/or project
     /// are assigned to the legacy owner (Bud Cribar / <c>budcribar</c>) and project <c>development</c>.
-    /// Also backfills <c>charge_usd</c> from list rate × current charge multiplier when null.
+    /// Legacy column charge_usd is no longer written; display multiplies estimated_usd at read time.
     /// </summary>
     private void MigrateLegacyCostAttributionV5(SqliteConnection conn, BillingOptions billing)
     {
@@ -1509,14 +1509,14 @@ public class UserDatabaseService
             using var conn = new SqliteConnection(ConnectionString);
             await conn.OpenAsync(ct).ConfigureAwait(false);
             using var cmd = conn.CreateCommand();
-            // charge_usd may be null on legacy rows → fall back to estimated_usd (list rate).
+            // Display charge = list (estimated_usd) × current admin multiplier; DB stores list only.
             cmd.CommandText = """
                 SELECT
                     COALESCE(NULLIF(TRIM(provider), ''), 'unknown') AS prov,
                     COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
                     COUNT(*),
                     COALESCE(SUM(estimated_usd), 0),
-                    COALESCE(SUM(COALESCE(charge_usd, estimated_usd * @chargeMult)), 0)
+                    COALESCE(SUM(estimated_usd), 0) * @chargeMult
                 FROM user_api_calls
                 WHERE ok = 1
                   AND estimated_usd IS NOT NULL
@@ -1600,7 +1600,7 @@ public class UserDatabaseService
                         COALESCE(NULLIF(TRIM(project_id), ''), '(no project)') AS proj,
                         COUNT(*),
                         COALESCE(SUM(estimated_usd), 0),
-                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd * @chargeMult)), 0)
+                        COALESCE(SUM(estimated_usd), 0) * @chargeMult
                     FROM user_api_calls
                     WHERE ok = 1
                       AND user_id = @userId
@@ -1650,7 +1650,7 @@ public class UserDatabaseService
                         COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
                         COUNT(*),
                         COALESCE(SUM(estimated_usd), 0),
-                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd * @chargeMult)), 0)
+                        COALESCE(SUM(estimated_usd), 0) * @chargeMult
                     FROM user_api_calls
                     WHERE ok = 1
                       AND user_id = @userId
@@ -1732,8 +1732,9 @@ public class UserDatabaseService
             cmd.Parameters.AddWithValue("@ok", rec.Ok ? 1 : 0);
             cmd.Parameters.AddWithValue("@durationMs", (object?)rec.DurationMs ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@estimatedUsd", (object?)rec.EstimatedUsd ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@chargeUsd", (object?)rec.ChargeUsd ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@chargeMultiplier", (object?)rec.ChargeMultiplier ?? DBNull.Value);
+            // List rate only — multiplier is display-time (and optional credit debit), not stored.
+            cmd.Parameters.AddWithValue("@chargeUsd", DBNull.Value);
+            cmd.Parameters.AddWithValue("@chargeMultiplier", DBNull.Value);
             cmd.Parameters.AddWithValue("@currency", "USD");
             cmd.Parameters.AddWithValue("@scene", (object?)rec.Scene ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@clip", (object?)rec.Clip ?? DBNull.Value);

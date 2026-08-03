@@ -17,7 +17,7 @@ namespace PageToMovie.Engine;
 /// Cost ledger (pipeline_state.cost_ledger) + planning estimates from blueprint + list rates.
 /// Rates come from <see cref="SupportedModelCatalog"/> for the project's selected video/image
 /// models (vendor list prices), not free-form config dollars. Customer-facing amounts apply the
-/// admin <see cref="BillingOptions.ChargeMultiplier"/>; events store both <c>list_usd</c> and
+/// admin <see cref="BillingOptions.ChargeMultiplier"/> is display-only (and credit debit); ledger stores list rates only. Events may include
 /// charged <c>usd</c>.
 /// </summary>
 public sealed class CostReportService
@@ -304,7 +304,7 @@ public sealed class CostReportService
             row.HeroUpgradeUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.HeroUpgradeUsd, mult));
             row.AllDraftUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.AllDraftUsd, mult));
             row.AllHeroUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.AllHeroUsd, mult));
-            // ActualUsd on scene rows already charged in SummarizeLedger (list × multiplier).
+            // ActualUsd on scene rows = list × current multiplier (display only).
         }
         foreach (var sc in scenarios)
         {
@@ -384,7 +384,7 @@ public sealed class CostReportService
                     ? $"Quality gate retry ON (admin auto-regen; video ×{qaVideoMultiplier:0.##}). "
                     : "Quality gate retry OFF. ") +
                 (string.IsNullOrWhiteSpace(refinement.Notes) ? "" : refinement.Notes + " ") +
-                "Actual = charged amounts in cost_ledger (list_usd retained for COGS).",
+                "Actual display = list rates in cost_ledger × admin charge multiplier (list rates only in storage).",
         };
     }
 
@@ -459,9 +459,7 @@ public sealed class CostReportService
                     clip.Continuation, "extend_previous", StringComparison.OrdinalIgnoreCase);
                 var rates = RatesFromModels(model, imageModel, cfg);
                 var priced = PriceVideo(duration, res, rates, assumeRef, isExtend, attempts: 1);
-                var mult = GetChargeMultiplier();
                 var listUsd = priced.Usd;
-                var chargeUsd = ChargePricing.ToCharge(listUsd, mult);
 
                 var evt = new Dictionary<string, object?>
                 {
@@ -486,8 +484,7 @@ public sealed class CostReportService
                     ["ref_image_usd"] = priced.RefImg,
                     ["extend_input_usd"] = priced.ExtendIn,
                     ["list_usd"] = listUsd,
-                    ["charge_multiplier"] = mult,
-                    ["usd"] = chargeUsd,
+                    ["usd"] = listUsd,
                     ["currency"] = "USD",
                     ["extra"] = new Dictionary<string, object?> { ["backfill"] = true },
                 };
@@ -534,8 +531,8 @@ public sealed class CostReportService
             imageModelId: GetStr(cfg, "image_model_name", ""),
             cfgOverrides: cfg);
         var priced = PriceVideo(durationSec, resolution, rates, hasRefImage, isExtend, 1);
-        var mult = GetChargeMultiplier();
         var listUsd = priced.Usd;
+        var mult = GetChargeMultiplier(); // display / credit only — not stored on the event
         var chargeUsd = ChargePricing.ToCharge(listUsd, mult);
         var evt = new Dictionary<string, object?>
         {
@@ -558,9 +555,9 @@ public sealed class CostReportService
             ["video_output_usd"] = priced.VideoOut,
             ["ref_image_usd"] = priced.RefImg,
             ["extend_input_usd"] = priced.ExtendIn,
+            // List rate only in ledger — multiplier applied at display / credit debit time.
             ["list_usd"] = listUsd,
-            ["charge_multiplier"] = mult,
-            ["usd"] = chargeUsd,
+            ["usd"] = listUsd,
             ["currency"] = "USD",
             ["user_id"] = userId ?? "",
         };
@@ -595,15 +592,17 @@ public sealed class CostReportService
     {
         var mult = GetChargeMultiplier();
         var raw = await GetCostLedgerRawAsync(projectId, ct).ConfigureAwait(false);
-        var list = new List<CostEvent>();
+        var events = new List<CostEvent>();
         foreach (var e in raw)
         {
             var evt = ParseEvent(e);
-            // Surface charged USD for UI pie/spend (legacy list-only rows get current multiplier).
-            evt.Usd = ChargePricing.ResolveChargeUsd(evt.Usd, evt.ListUsd, evt.ChargeMultiplier, mult);
-            list.Add(evt);
+            // Display only: list × current admin multiplier (ledger still holds list rate).
+            var listRate = ChargePricing.ResolveListUsd(evt.Usd, evt.ListUsd, evt.ChargeMultiplier);
+            evt.ListUsd = listRate;
+            evt.Usd = ChargePricing.ToCharge(listRate, mult);
+            events.Add(evt);
         }
-        return list;
+        return events;
     }
 
     public async Task RecordImageGenerationAsync(
@@ -623,7 +622,7 @@ public sealed class CostReportService
                    ?? (quality ? FallbackImageQualityCostPerImage : FallbackImageStandardCostPerImage);
         var listUsd = Math.Round(unit * n, 4);
         var mult = GetChargeMultiplier();
-        var chargeUsd = ChargePricing.ToCharge(listUsd, mult);
+        var chargeUsd = ChargePricing.ToCharge(listUsd, mult); // credit debit only
         await AppendCostEventAsync(projectId, new Dictionary<string, object?>
         {
             ["kind"] = "image",
@@ -633,8 +632,7 @@ public sealed class CostReportService
             ["n_images"] = n,
             ["unit_usd"] = unit,
             ["list_usd"] = listUsd,
-            ["charge_multiplier"] = mult,
-            ["usd"] = chargeUsd,
+            ["usd"] = listUsd,
             ["currency"] = "USD",
             ["source"] = "list_rate",
             ["pricing_source"] = isEstimated ? "estimated_fallback" : "model_catalog",
@@ -672,7 +670,7 @@ public sealed class CostReportService
         if (string.IsNullOrWhiteSpace(projectId) || listUsd <= 0) return;
 
         var mult = GetChargeMultiplier();
-        var chargeUsd = ChargePricing.ToCharge(listUsd, mult);
+        var chargeUsd = ChargePricing.ToCharge(listUsd, mult); // credit debit only
 
         var evt = new Dictionary<string, object?>
         {
@@ -684,8 +682,7 @@ public sealed class CostReportService
             ["request_id"] = rec.RequestId ?? "",
             ["source"] = "list_rate",
             ["list_usd"] = Math.Round(listUsd, 6),
-            ["charge_multiplier"] = mult,
-            ["usd"] = chargeUsd,
+            ["usd"] = Math.Round(listUsd, 6),
             ["currency"] = "USD",
             ["user_id"] = rec.UserId ?? "",
         };
@@ -813,11 +810,8 @@ public sealed class CostReportService
         var mult = ChargePricing.ClampMultiplier(currentMultiplier);
         foreach (var e in events)
         {
-            var charge = ChargePricing.ResolveChargeUsd(e.Usd, e.ListUsd, e.ChargeMultiplier, mult);
-            var list = e.ListUsd ?? (e.ChargeMultiplier is > 0
-                ? (e.ChargeMultiplier.Value > 0 ? e.Usd / e.ChargeMultiplier.Value : e.Usd)
-                : e.Usd);
-            if (!double.IsFinite(list) || list < 0) list = e.Usd;
+            var list = ChargePricing.ResolveListUsd(e.Usd, e.ListUsd, e.ChargeMultiplier);
+            var charge = ChargePricing.ToCharge(list, mult);
 
             total += charge;
             listTotal += list;

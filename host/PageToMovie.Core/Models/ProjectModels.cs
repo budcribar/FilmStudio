@@ -1088,7 +1088,7 @@ public sealed class CostLedgerSummary
     public Dictionary<string, double> ByModel { get; set; } = new();
     public string Currency { get; set; } = "USD";
     public string Notes { get; set; } =
-        "Tracked actuals = charged amounts (list rate × admin charge multiplier) in cost_ledger.";
+        "Tracked actuals = list rates in cost_ledger; UI multiplies by admin charge multiplier.";
 }
 
 public sealed class CostSceneRow
@@ -1212,7 +1212,7 @@ public sealed class CostReport
     public List<CostScenarioRow> Scenarios { get; set; } = new();
     public List<CostEvent> RecentEvents { get; set; } = new();
     public string Notes { get; set; } =
-        "Estimates = planning × charge multiplier. Actual = cost_ledger charged amounts.";
+        "Estimates = planning × charge multiplier. Actual display = cost_ledger list rates × charge multiplier.";
     public string Currency { get; set; } = "USD";
 }
 

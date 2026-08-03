@@ -13,36 +13,38 @@ public class ChargePricingTests
     }
 
     [Fact]
-    public void ResolveChargeUsd_uses_write_time_multiplier_when_present()
+    public void DisplayCharge_always_uses_current_multiplier()
     {
-        // list 1.0 × 2.0 at write = 2.0; current mult 5 should not reprice
-        var charged = ChargePricing.ResolveChargeUsd(
+        // Even if a legacy row froze mult=2, display uses current admin mult=5 on list rate.
+        var charged = ChargePricing.DisplayCharge(
             storedUsd: 2.0,
             listUsd: 1.0,
             eventMultiplier: 2.0,
             currentMultiplier: 5.0);
-        Assert.Equal(2.0, charged);
+        Assert.Equal(5.0, charged);
     }
 
     [Fact]
-    public void ResolveChargeUsd_legacy_list_only_uses_current_multiplier()
+    public void ResolveListUsd_prefers_list_usd()
     {
-        var charged = ChargePricing.ResolveChargeUsd(
+        Assert.Equal(1.0, ChargePricing.ResolveListUsd(9.0, listUsd: 1.0, eventMultiplier: 3.0));
+    }
+
+    [Fact]
+    public void ResolveListUsd_divides_legacy_charged_row()
+    {
+        // usd was stored charged at 2× without list_usd
+        Assert.Equal(1.0, ChargePricing.ResolveListUsd(2.0, listUsd: null, eventMultiplier: 2.0));
+    }
+
+    [Fact]
+    public void DisplayCharge_list_only_row()
+    {
+        var charged = ChargePricing.DisplayCharge(
             storedUsd: 1.0,
             listUsd: null,
             eventMultiplier: null,
             currentMultiplier: 3.0);
         Assert.Equal(3.0, charged);
-    }
-
-    [Fact]
-    public void ResolveChargeUsd_legacy_with_list_usd_uses_current_multiplier()
-    {
-        var charged = ChargePricing.ResolveChargeUsd(
-            storedUsd: 1.0,
-            listUsd: 1.0,
-            eventMultiplier: null,
-            currentMultiplier: 2.5);
-        Assert.Equal(2.5, charged);
     }
 }

@@ -90,7 +90,8 @@ public sealed class ProjectTelemetryService
         rec.EstimatedUsd ??= EstimateListRateUsd(rec);
         // Always a user-facing cost bucket (same ids as Estimate & cost pie).
         rec.Category = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
-        // Customer charge = list × admin multiplier (same as cost_ledger / credits).
+        // Charge is display/debit only — never the stored "actual" in SQLite.
+        // estimated_usd stays list rate; ChargeUsd is ephemeral for credit debit.
         if (rec.EstimatedUsd is > 0 && rec.ChargeUsd is null && _costs is not null)
         {
             var mult = _costs.GetChargeMultiplier();
