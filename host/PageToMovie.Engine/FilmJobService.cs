@@ -4473,9 +4473,11 @@ public sealed class FilmJobService
             "book_prepare" => "Stage: book prepared",
             "book_import" => "Stage: screenplay created",
             "stage1" => "Stage: screenplay created",
-            "cast" or "cast_extract" or "characters" => "Stage: cast built",
+            "cast" or "cast_extract" or "characters" or "character" => "Stage: cast built",
             "stage2" => "Stage: Stage 2 blueprint written",
-            "gen-scene" or "gen-batch" or "remux" or "film" => "Stage: film job finished",
+            // Actual FilmJobService kinds are "scene" / "batch" (not gen-scene / gen-batch).
+            "scene" or "batch" or "remux" or "film" or "gen-scene" or "gen-batch"
+                => "Stage: film job finished",
             "music" => "Stage: music job finished",
             _ => null,
         };
