@@ -412,6 +412,6 @@ public class ElevenLabsErrorFormattingTests
         var msg = ElevenLabsVoiceClient.FormatCloneError(401, body);
         Assert.Contains("Instant Voice Clone", msg, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("request_id", msg, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Fal", msg, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("choose another voice model", msg, StringComparison.OrdinalIgnoreCase);
     }
 }

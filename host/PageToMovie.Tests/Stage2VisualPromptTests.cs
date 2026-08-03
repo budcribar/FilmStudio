@@ -201,6 +201,7 @@ public class Stage2VisualPromptTests : IDisposable
             HERO
             Hello world.
             """;
+        await OfflineTestModelConfig.ApplyAsync(_store, projectId);
         ScreenplayService.SaveDraft(_store, projectId, fountain);
         var sign = ScreenplayService.SignOff(_store, projectId);
         Assert.True(sign.Ok, sign.Error);
@@ -256,6 +257,7 @@ public class Stage2VisualPromptTests : IDisposable
 
             The narrator leans closer. A floorboard creaks.
             """;
+        await OfflineTestModelConfig.ApplyAsync(_store, projectId);
         ScreenplayService.SaveDraft(_store, projectId, fountain);
         var sign = ScreenplayService.SignOff(_store, projectId);
         Assert.True(sign.Ok, sign.Error);
@@ -287,6 +289,7 @@ public class Stage2VisualPromptTests : IDisposable
             SCIENTIST
             Almost there.
             """;
+        await OfflineTestModelConfig.ApplyAsync(_store, projectId);
         ScreenplayService.SaveDraft(_store, projectId, fountain);
         Assert.True(ScreenplayService.SignOff(_store, projectId).Ok);
 
@@ -428,6 +431,7 @@ public class Stage2VisualPromptTests : IDisposable
             NARRATOR (V.O.)
             And at midnight the eye was closed.
             """;
+        await OfflineTestModelConfig.ApplyAsync(_store, projectId);
         ScreenplayService.SaveDraft(_store, projectId, fountain);
         Assert.True(ScreenplayService.SignOff(_store, projectId).Ok);
 
@@ -501,6 +505,7 @@ public class Stage2VisualPromptTests : IDisposable
             He's Buster the Noodle Head Dog.
             """;
 
+        await OfflineTestModelConfig.ApplyAsync(_store, projectId);
         ScreenplayService.SaveDraft(_store, projectId, fountain);
         Assert.True(ScreenplayService.SignOff(_store, projectId).Ok);
 

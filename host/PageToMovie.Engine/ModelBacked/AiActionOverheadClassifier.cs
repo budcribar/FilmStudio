@@ -20,14 +20,15 @@ public sealed class AiActionOverheadClassifier
         SmartClassifierModelRouter router,
         ActionCameraOverheadLedger ledger,
         IChatClient? chat = null,
-        ILogger<AiActionOverheadClassifier>? log = null)
+        ILogger<AiActionOverheadClassifier>? log = null,
+        string? modelOverride = null)
     {
         _heuristic = new ActionOverheadHeuristic(ledger);
         if (chat is null || !chat.IsConfigured)
             return;
 
         _pipeline = new ValidatedModelOperation<ActionInput, string, ActionClassifierEstimation>(
-            new ActionModelOperation(chat, router, log),
+            new ActionModelOperation(chat, router, log, modelOverride),
             new ActionResponseParser(),
             new ActionResultValidator(ledger),
             new ActionFallback(_heuristic),
@@ -85,7 +86,8 @@ public sealed class AiActionOverheadClassifier
     private sealed class ActionModelOperation(
         IChatClient chat,
         SmartClassifierModelRouter router,
-        ILogger<AiActionOverheadClassifier>? log)
+        ILogger<AiActionOverheadClassifier>? log,
+        string? modelOverride)
         : IModelOperation<ActionInput, string>
     {
         public string OperationName => "action_overhead_classifier";
@@ -96,7 +98,7 @@ public sealed class AiActionOverheadClassifier
             ModelAttemptContext<string> context,
             CancellationToken ct)
         {
-            var model = router.ResolveOptimalModelForTask("screenplay_adaptation");
+            var model = router.ResolveOptimalModelForTask("screenplay_adaptation", modelOverride);
             var correction = context.Kind == ModelAttemptKind.Correction
                 ? $"""
 

@@ -61,6 +61,9 @@ public static class Program
         string? validateSidecarDirectory = null;
         double samplingTemperature = 0.2;
         bool bypassCache = false;
+        bool useSharedCache = true;
+        string sharedCacheUser = Environment.GetEnvironmentVariable("PTM_BENCHMARK_CACHE_USER") ?? "benchmark";
+        string sharedCacheVisibility = Environment.GetEnvironmentVariable("PTM_BENCHMARK_CACHE_VISIBILITY") ?? "Forkable";
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -146,6 +149,18 @@ public static class Program
             else if (arg.Equals("--no-cache", StringComparison.OrdinalIgnoreCase))
             {
                 bypassCache = true;
+            }
+            else if (arg.Equals("--no-shared-cache", StringComparison.OrdinalIgnoreCase))
+            {
+                useSharedCache = false;
+            }
+            else if (arg.Equals("--cache-user", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                sharedCacheUser = args[++i].Trim();
+            }
+            else if (arg.Equals("--cache-visibility", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                sharedCacheVisibility = args[++i].Trim();
             }
             else if (arg.Equals("--dry-run", StringComparison.OrdinalIgnoreCase))
             {
@@ -309,7 +324,7 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility);
             }
 
             // Generate updated HTML Dashboard after suite execution
@@ -331,7 +346,7 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
@@ -358,7 +373,10 @@ public static class Program
         string? reasoningEffort = null,
         double samplingTemperature = 0.2,
         bool bypassCache = false,
-        double judgeTemperature = 0.0)
+        double judgeTemperature = 0.0,
+        bool useSharedCache = true,
+        string sharedCacheUser = "benchmark",
+        string sharedCacheVisibility = "Forkable")
     {
         var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
         Directory.CreateDirectory(screenplaysDir);
@@ -397,6 +415,20 @@ public static class Program
         Console.WriteLine($"🤖 Candidate Models ({candidateModels.Count}): {string.Join(", ", candidateModels)}");
         Console.WriteLine($"⚖️  Judge Models ({judgeModels.Count}): {string.Join(", ", judgeModels)}");
         var bookText = await File.ReadAllTextAsync(bookPath);
+        BookTextRegistryService? sharedCache = null;
+        BookTextIdentity? sharedBook = null;
+        string? sharedPromptHash = null;
+        const int generationRuntimeMinutes = 10;
+        if (useSharedCache && !bypassCache && !dryRun)
+        {
+            sharedCache = new BookTextRegistryService(Microsoft.Extensions.Options.Options.Create(
+                new PageToMovieOptions { WorkspaceRoot = workspaceRoot }));
+            sharedBook = await sharedCache.RegisterAsync(
+                bookText, sharedCacheUser, $"benchmark:{bookSlug}", sharedCacheVisibility);
+            var sharedPrompt = await BookToFountainConverter.BuildSystemPromptAsync(outDir, generationRuntimeMinutes);
+            sharedPromptHash = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(sharedPrompt))).ToLowerInvariant();
+        }
         var generatedScreenplays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var generatedVisionMeta = new Dictionary<string, ProjectVisionMeta.Document?>(StringComparer.OrdinalIgnoreCase);
         var deterministicResults = new Dictionary<string, DeterministicSyntaxResult>(StringComparer.OrdinalIgnoreCase);
@@ -439,8 +471,33 @@ public static class Program
             var localCached = File.Exists(screenplayFile) ? await File.ReadAllTextAsync(screenplayFile) : null;
             var diskVisionMeta = await ReadVisionMetaAsync(cacheVisionMetaFile);
             var localVisionMeta = await ReadVisionMetaAsync(visionMetaFile);
+            var sharedBehaviorVersions = JsonSerializer.Serialize(new
+            {
+                title = Path.GetFileNameWithoutExtension(bookPath),
+                author = "Author",
+                totalRuntimeMinutes = generationRuntimeMinutes,
+                visionMetaSchema = ProjectVisionMeta.SchemaVersion,
+                reasoningEffort,
+                cachePackageSchema = "adaptation-conversion.v1",
+            });
+            DerivedBookArtifact? sharedArtifact = null;
+            if (sharedCache is not null && sharedBook is not null && sharedPromptHash is not null)
+            {
+                sharedArtifact = await sharedCache.FindArtifactAsync(
+                    sharedBook.BookId, sharedCacheUser, "adaptation_conversion", modelId,
+                    "book-to-fountain-" + sharedPromptHash[..12], sharedPromptHash,
+                    samplingTemperature, sharedBehaviorVersions);
+            }
 
-            if (!bypassCache && diskCached is not null && diskVisionMeta is not null && !string.Equals(diskCached, canonicalFallbackText, StringComparison.Ordinal))
+            if (sharedArtifact is not null &&
+                JsonSerializer.Deserialize<AdaptationConversionResult>(sharedArtifact.Content) is
+                    { Fountain.Length: > 0, VisionMeta: not null } sharedConversion)
+            {
+                screenplayText = sharedConversion.Fountain;
+                visionMeta = sharedConversion.VisionMeta;
+                Console.WriteLine($"(reused shared cache {sharedArtifact.ArtifactId})");
+            }
+            else if (!bypassCache && diskCached is not null && diskVisionMeta is not null && !string.Equals(diskCached, canonicalFallbackText, StringComparison.Ordinal))
             {
                 screenplayText = diskCached;
                 visionMeta = diskVisionMeta;
@@ -494,6 +551,14 @@ public static class Program
                             Directory.CreateDirectory(Path.Combine(workspaceRoot, "evals", "cache", bookSlug));
                             await File.WriteAllTextAsync(cacheFile, screenplayText);
                             await WriteVisionMetaAsync(cacheVisionMetaFile, visionMeta);
+                            if (sharedCache is not null && sharedBook is not null && sharedPromptHash is not null)
+                            {
+                                await sharedCache.RegisterArtifactAsync(
+                                    sharedBook.BookId, sharedCacheUser, "adaptation_conversion",
+                                    JsonSerializer.Serialize(conversion), modelId,
+                                    "book-to-fountain-" + sharedPromptHash[..12], sharedPromptHash,
+                                    samplingTemperature, sharedBehaviorVersions);
+                            }
                         }
                         else
                         {

@@ -186,6 +186,7 @@ Directory.CreateDirectory(dpKeysDir);
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir));
 builder.Services.AddSingleton<UserDatabaseService>();
+builder.Services.AddSingleton<BookTextRegistryService>();
 builder.Services.AddSingleton<GenerationErrorLogger>();
 builder.Services.AddHttpContextAccessor();
 
@@ -3980,6 +3981,7 @@ app.MapPost("/api/projects/{id}/visibility", async (
     string id,
     ProjectVisibilityRequest req,
     ProjectStore store,
+    BookTextRegistryService books,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
@@ -3995,6 +3997,7 @@ app.MapPost("/api/projects/{id}/visibility", async (
     }
 
     var proj = await store.SetProjectVisibilityModeAsync(id, req.VisibilityMode, ct);
+    await books.SetProjectVisibilityAsync(proj.OwnerUserId ?? user.UserId, id, proj.VisibilityMode, ct);
     return Results.Ok(new { ok = true, projectId = proj.Id, visibilityMode = proj.VisibilityMode });
 });
 
@@ -4165,6 +4168,7 @@ app.MapPost("/api/invites/accept", async (
     AcceptInviteApiRequest? body,
     ProjectInviteService invites,
     ProjectStore store,
+    BookTextRegistryService books,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
@@ -4182,6 +4186,7 @@ app.MapPost("/api/invites/accept", async (
     try
     {
         var fork = await store.ForkProjectAsync(outcome.ProjectId, user.UserId!, isInvite: true, ct);
+        await books.LinkForkAsync(outcome.ProjectId, user.UserId!, fork.Id, invitationAuthorized: true, ct);
         return Results.Ok(new { ok = true, projectId = fork.Id, title = fork.Title });
     }
     catch (Exception ex)
@@ -4194,6 +4199,7 @@ app.MapPost("/api/invites/accept", async (
 app.MapPost("/api/projects/{id}/fork", async (
     string id,
     ProjectStore store,
+    BookTextRegistryService books,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
@@ -4204,6 +4210,7 @@ app.MapPost("/api/projects/{id}/fork", async (
     try
     {
         var fork = await store.ForkProjectAsync(id, user.UserId!, ct: ct);
+        await books.LinkForkAsync(id, user.UserId!, fork.Id, invitationAuthorized: false, ct);
         return Results.Ok(new { ok = true, id = fork.Id, title = fork.Title, parentProjectId = fork.ParentProjectId, visibilityMode = fork.VisibilityMode });
     }
     catch (Exception ex)
@@ -4733,6 +4740,7 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (
     string id,
     HttpRequest req,
     ProjectStore store,
+    BookTextRegistryService books,
     IUserContext user,
     IOptions<PageToMovieOptions> opts) =>
 {
@@ -4748,12 +4756,23 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (
             return Results.BadRequest(new { ok = false, error = "file required" });
         await using var stream = file.OpenReadStream();
         var path = await store.SaveBookUploadAsync(id, file.FileName, stream);
+        BookTextIdentity? bookIdentity = null;
+        if (Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase))
+        {
+            var text = await File.ReadAllTextAsync(path, req.HttpContext.RequestAborted);
+            var project = await store.GetProjectAsync(id, req.HttpContext.RequestAborted);
+            bookIdentity = await books.RegisterAsync(
+                text, user.UserId, id, project?.VisibilityMode ?? "Private",
+                req.HttpContext.RequestAborted);
+        }
         var status = store.GetAdaptationStatus(id, user.UserId);
         return Results.Ok(new
         {
             ok = true,
             projectId = id,
             savedPath = path,
+            bookId = bookIdentity?.BookId,
+            bookSha256 = bookIdentity?.Sha256,
             message = $"Saved {file.FileName} ({file.Length} bytes)",
             adaptation = status,
         });
@@ -4762,6 +4781,72 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+});
+
+app.MapGet("/api/books/{idOrHash}", async (
+    string idOrHash,
+    BookTextRegistryService books,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var book = await books.ResolveAsync(idOrHash, user.UserId, ct);
+    return book is null ? Results.NotFound(new { ok = false, error = "Book text not found." }) : Results.Ok(new
+    {
+        ok = true,
+        bookId = book.BookId,
+        sha256 = book.Sha256,
+        byteCount = book.ByteCount,
+        text = book.Text,
+    });
+});
+
+app.MapPost("/api/books/{bookId}/projects/{projectId}", async (
+    string bookId, string projectId, BookTextRegistryService books,
+    IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied) return denied;
+    await books.LinkToProjectAsync(bookId, user.UserId, projectId, ct);
+    return Results.Ok(new { ok = true, bookId, projectId });
+});
+
+app.MapPost("/api/books/{bookId}/artifacts", async (
+    string bookId, JsonElement body, BookTextRegistryService books,
+    IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied) return denied;
+    static string Required(JsonElement el, string name) =>
+        el.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String &&
+        !string.IsNullOrWhiteSpace(value.GetString())
+            ? value.GetString()!
+            : throw new ArgumentException($"{name} required");
+    var artifact = await books.RegisterArtifactAsync(
+        bookId, user.UserId,
+        Required(body, "artifactKind"), Required(body, "content"), Required(body, "modelId"),
+        Required(body, "promptVersion"), Required(body, "promptSha256"),
+        body.TryGetProperty("temperature", out var temp) ? temp.GetDouble() : 0,
+        body.TryGetProperty("behaviorVersions", out var behaviors) ? behaviors.GetRawText() : "{}",
+        ct);
+    return Results.Ok(new
+    {
+        ok = true,
+        artifactId = artifact.ArtifactId,
+        derivationSha256 = artifact.DerivationSha256,
+        contentSha256 = artifact.ContentSha256,
+    });
+});
+
+app.MapGet("/api/book-artifacts/{artifactId}", async (
+    string artifactId, BookTextRegistryService books,
+    IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied) return denied;
+    var artifact = await books.ResolveArtifactAsync(artifactId, user.UserId, ct);
+    return artifact is null
+        ? Results.NotFound(new { ok = false, error = "Derived book artifact not found." })
+        : Results.Ok(new { ok = true, artifact });
 });
 
 /// <summary>
@@ -4985,6 +5070,7 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     string id,
     ProjectStore store,
     PageToMovie.Engine.Abstractions.IChatClient chat,
+    BookTextRegistryService books,
     IUserContext user,
     UserDatabaseService userDb,
     IUserApiKeyProvider keys,
@@ -4995,7 +5081,8 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
         return denied;
     try
     {
-        var result = await ScreenplayService.CreateDraftFromBookAsync(store, id, chat, ct: ct);
+        var result = await ScreenplayService.CreateDraftFromBookAsync(
+            store, id, chat, ct: ct, bookRegistry: books, cacheUserId: user.UserId);
         if (!result.Ok)
             return Results.BadRequest(new { ok = false, error = result.Error });
 
@@ -6479,6 +6566,7 @@ app.MapPost("/api/demos/{demoId}/fork", async (
     string demoId,
     DemoCatalogService demos,
     ProjectStore store,
+    BookTextRegistryService books,
     IUserContext user,
     UserDatabaseService userDb,
     IOptions<PageToMovieOptions> opts,
@@ -6520,6 +6608,7 @@ app.MapPost("/api/demos/{demoId}/fork", async (
         // ForkProjectAsync gives real invite-accepts, regardless of the source project's own
         // (possibly still-Private) VisibilityMode.
         var fork = await store.ForkProjectAsync(sourceId, user.UserId!, isInvite: true, ct: ct);
+        await books.LinkForkAsync(sourceId, user.UserId!, fork.Id, invitationAuthorized: true, ct);
         return Results.Ok(new
         {
             ok = true,

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Core.Utils;
+using PageToMovie.Engine.ModelExecution;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -305,6 +306,13 @@ public sealed class Stage2PlannerService
         {
             plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
         }
+
+        var planIssues = StructuredOperationArtifacts.RequireJsonProperties(plan, "stage2_meta", "scenes");
+        await StructuredOperationArtifacts.WriteAsync(
+            _projects.GetProjectDir(projectId), "stage2_shot_plan", videoModelId,
+            new { projectId, sourceLabel, resolution, scenes }, plan, planIssues, ct).ConfigureAwait(false);
+        if (planIssues.Any(i => i.Severity == ModelValidationSeverity.Error))
+            throw new InvalidOperationException(string.Join(" ", planIssues.Select(i => i.Message)));
 
         await File.WriteAllTextAsync(
             outPath,

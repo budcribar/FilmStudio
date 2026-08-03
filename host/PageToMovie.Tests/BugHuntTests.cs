@@ -1113,11 +1113,10 @@ public class BugHuntTests
     }
 
     [Fact]
-    public void Bug68_SupportedModel_ResolveOrDefault_unknown_keeps_id()
+    public void Bug68_SupportedModel_ResolveOrDefault_unknown_is_rejected()
     {
-        var e = SupportedModelCatalog.ResolveOrDefault("custom-future-model", ModelCapability.Chat);
-        Assert.Equal("custom-future-model", e.Id);
-        Assert.False(e.Enabled);
+        Assert.Throws<InvalidOperationException>(() =>
+            SupportedModelCatalog.ResolveOrDefault("custom-future-model", ModelCapability.Chat));
     }
 
     [Fact]

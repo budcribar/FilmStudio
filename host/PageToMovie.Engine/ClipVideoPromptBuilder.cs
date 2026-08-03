@@ -102,7 +102,10 @@ public static class ClipVideoPromptBuilder
         // budget only needs its models_catalog.json MaxPromptLength updated, never a code change.
         // Same resolution pattern already proven in FalVideoClient/FilmJobService; VideoPromptHardCapChars
         // is only the fallback for models with no catalog-specific value set.
-        var promptMaxLen = SupportedModelCatalog.ResolveOrDefault(videoModel, ModelCapability.Video)
+        var selectedVideoModel = string.IsNullOrWhiteSpace(videoModel)
+            ? SupportedModelCatalog.DefaultModelIdForCapability("video")
+            : videoModel;
+        var promptMaxLen = SupportedModelCatalog.ResolveOrDefault(selectedVideoModel, ModelCapability.Video)
             .MaxPromptLength ?? VideoPromptHardCapChars;
 
         // Mode follows actual media inputs, not blueprint cont alone.

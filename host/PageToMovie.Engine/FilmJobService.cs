@@ -71,6 +71,7 @@ public sealed class FilmJobService
     private readonly GenerationErrorLogger? _errorLogger;
     private readonly IVoiceClient _voiceClient;
     private readonly IVoiceCloneClient _voiceClone;
+    private readonly BookTextRegistryService? _bookRegistry;
 
     public FilmJobService(
         ProjectStore projects,
@@ -112,7 +113,8 @@ public sealed class FilmJobService
         ActionCameraOverheadLedger? timingLedger = null,
         AiActionOverheadClassifier? timingClassifier = null,
         MusicSidecarService? musicSidecars = null,
-        GenerationErrorLogger? errorLogger = null)
+        GenerationErrorLogger? errorLogger = null,
+        BookTextRegistryService? bookRegistry = null)
     {
         _httpFactory = httpFactory;
         _projects = projects;
@@ -154,6 +156,7 @@ public sealed class FilmJobService
         _timingClassifier = timingClassifier;
         _musicSidecars = musicSidecars;
         _errorLogger = errorLogger;
+        _bookRegistry = bookRegistry;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -1119,7 +1122,9 @@ public sealed class FilmJobService
                 },
                 ct: ct,
                 errorLogger: _errorLogger,
-                jobId: Snapshot.JobId).ConfigureAwait(false);
+                jobId: Snapshot.JobId,
+                bookRegistry: _bookRegistry,
+                cacheUserId: _user.UserId).ConfigureAwait(false);
 
             if (!save.Ok)
             {

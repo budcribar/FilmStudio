@@ -64,6 +64,11 @@ Status notation:
 
 ### Reliability work adjacent to benchmarking
 
+- [x] **Six-step structured-operation adoption completed.** The clean catalog-aware baseline, shared required-data/provenance gate, Stage 1, cast extraction, Stage 2, and multimodal review now use common validation/artifact rules. A Mary Had a Little Lamb replay covers small-story character adaptation without production story hacks.
+- [x] **Uploaded book text has a server identity.** Text uploads return a stable content-addressed `bookId` and SHA-256. Authorized app and benchmark clients can resolve the canonical text by either value, avoiding duplicate transfer and analysis while retaining exact source identity.
+- [x] **Application Fountain generation uses the shared derived cache.** Cache hits require the same book, catalog model, prompt hash/version, temperature, runtime/title/author inputs, and behavior schemas, and must contain both Fountain and `VISION_META`. Heuristic fallbacks are never cached. Project forks transfer cache identifiers by reference under Private/Public/Forkable rules.
+- [x] **The screenplay benchmark uses the same server database cache.** Live benchmark candidates register the source book and complete adaptation package in `pagetomovie.db`; the default benchmark cache identity is `benchmark` with `Forkable` visibility so website projects can reuse intentionally shared benchmark books. `--cache-user`, `--cache-visibility`, and `PTM_BENCHMARK_CACHE_*` override ownership/visibility; `--no-shared-cache` disables the database layer and `--no-cache` bypasses both database and file caches.
+
 - [x] **Malformed structured model responses no longer pass through silent destructive extraction.** JSON extraction was hardened in `f4c29e48`.
 - [x] **Transient model-call failures have a shared retry policy.** Chat clients and the adaptation path use centralized transient HTTP/network retry handling, reducing failures caused by one-off provider errors.
 - [x] **Multi-chunk adaptation quality failures are visible.** Soft quality-gate failures are logged rather than disappearing during long-book adaptation.

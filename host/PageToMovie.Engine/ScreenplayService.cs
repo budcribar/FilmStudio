@@ -485,7 +485,9 @@ public static string NormalizeText(string text)
         Action<string>? onProgress = null,
         CancellationToken ct = default,
         GenerationErrorLogger? errorLogger = null,
-        string? jobId = null)
+        string? jobId = null,
+        BookTextRegistryService? bookRegistry = null,
+        string? cacheUserId = null)
     {
         var projectDir = store.GetProjectDir(projectId);
         var bookPath = Path.Combine(projectDir, "source", "book_full.txt");
@@ -506,9 +508,53 @@ public static string NormalizeText(string text)
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
         var analysis = BookTextAnalyzer.Analyze(book);
         var minutes = Math.Clamp(analysis.SuggestedTotalMinutes, 3, 180);
+        const double generationTemperature = 0.2;
+
+        BookTextIdentity? bookIdentity = null;
+        string? promptHash = null;
+        string? promptVersion = null;
+        string? behaviorVersions = null;
+        if (bookRegistry is not null && !string.IsNullOrWhiteSpace(cacheUserId))
+        {
+            var project = await store.GetProjectAsync(projectId, ct).ConfigureAwait(false);
+            bookIdentity = await bookRegistry.RegisterAsync(
+                book, cacheUserId, projectId, project?.VisibilityMode ?? "Private", ct).ConfigureAwait(false);
+            var prompt = await BookToFountainConverter.BuildSystemPromptAsync(
+                store.WorkspaceRoot, minutes, ct).ConfigureAwait(false);
+            promptHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(prompt))).ToLowerInvariant();
+            promptVersion = "book-to-fountain-" + promptHash[..12];
+            behaviorVersions = JsonSerializer.Serialize(new
+            {
+                title,
+                author,
+                totalRuntimeMinutes = minutes,
+                visionMetaSchema = ProjectVisionMeta.SchemaVersion,
+                cachePackageSchema = "adaptation-conversion.v1",
+            });
+
+            var cached = await bookRegistry.FindArtifactAsync(
+                bookIdentity.BookId, cacheUserId, "adaptation_conversion", model,
+                promptVersion, promptHash, generationTemperature, behaviorVersions, ct)
+                .ConfigureAwait(false);
+            if (cached is not null)
+            {
+                var cachedConversion = JsonSerializer.Deserialize<AdaptationConversionResult>(cached.Content);
+                if (cachedConversion is { Fountain.Length: > 0, VisionMeta: not null })
+                {
+                    onProgress?.Invoke($"Reused shared adaptation cache {cached.ArtifactId}.");
+                    var cachedFountain = BookToFountainConverter.FixDraftDate(cachedConversion.Fountain);
+                    var cachedSave = SaveDraft(store, projectId, cachedFountain);
+                    if (!cachedSave.Ok) return cachedSave;
+                    ProjectVisionMeta.Write(projectDir, cachedConversion.VisionMeta);
+                    cachedSave.Message = "Screenplay draft ready — reused shared book adaptation";
+                    return cachedSave;
+                }
+            }
+        }
 
         try
         {
+            var usedHeuristicFallback = false;
             var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
                 workspaceRoot: store.WorkspaceRoot,
                 title: title,
@@ -518,12 +564,25 @@ public static string NormalizeText(string text)
                 chat: chat,
                 model: model,
                 onProgress: onProgress,
+                onHeuristicFallback: _ => usedHeuristicFallback = true,
+                temperature: generationTemperature,
                 ct: ct,
                 errorLogger: errorLogger,
                 jobId: jobId,
                 projectId: projectId).ConfigureAwait(false);
             var fountain = conversion.Fountain;
             var visionFromScript = conversion.VisionMeta;
+
+            if (!usedHeuristicFallback && visionFromScript is not null && bookRegistry is not null &&
+                bookIdentity is not null && !string.IsNullOrWhiteSpace(cacheUserId) &&
+                promptHash is not null && promptVersion is not null && behaviorVersions is not null)
+            {
+                var cached = await bookRegistry.RegisterArtifactAsync(
+                    bookIdentity.BookId, cacheUserId, "adaptation_conversion",
+                    JsonSerializer.Serialize(conversion), model, promptVersion, promptHash,
+                    generationTemperature, behaviorVersions, ct).ConfigureAwait(false);
+                onProgress?.Invoke($"Saved shared adaptation cache {cached.ArtifactId}.");
+            }
 
             fountain = BookToFountainConverter.FixDraftDate(fountain);
             var save = SaveDraft(store, projectId, fountain);

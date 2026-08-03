@@ -58,7 +58,9 @@ public class SceneMusicCompositionTests
             var fakeVision = new FakeGrokVisionClient(NullLogger<FakeGrokVisionClient>.Instance);
             var composer = new SceneMusicCompositionService(fakeVision, NullLogger<SceneMusicCompositionService>.Instance);
 
-            var ok = await composer.AugmentProjectMusicAsync(tempDir);
+            var ok = await composer.AugmentProjectMusicAsync(
+                tempDir,
+                userModel: OfflineTestModelConfig.Required("chat"));
             Assert.True(ok);
 
             var updatedText = await File.ReadAllTextAsync(bpPath);

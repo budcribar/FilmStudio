@@ -115,7 +115,9 @@ public class JitBenchmarkServiceTests
             """
         };
 
-        var classifier = new AiActionOverheadClassifier(router, ledger, testChat);
+        var classifier = new AiActionOverheadClassifier(
+            router, ledger, testChat,
+            modelOverride: OfflineTestModelConfig.Required("chat"));
         var estimation = await classifier.ClassifyNovelActionAsync("Lunges forward with a spear", "(screaming)");
 
         Assert.Equal("act_stabbing", estimation.MatchCategoryId);

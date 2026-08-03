@@ -538,6 +538,7 @@ public class ScreenplayServiceTests : IDisposable
     public async Task Stage2_plans_from_approved_fountain_without_scenes_json()
     {
         const string projectId = "Demo";
+        await OfflineTestModelConfig.ApplyAsync(_store, projectId);
         var fountain = """
             Title: Clip Test
 

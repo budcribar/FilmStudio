@@ -24,7 +24,7 @@ No paid model or media-generation endpoint was invoked while completing this wor
 
 | Check | Result |
 |---|---:|
-| Full offline solution tests | 1,185 passed; 0 failed; 0 skipped |
+| Full offline solution tests | 1,234 passed; 0 failed; 0 skipped |
 | Pronunciation and prompt tests | 77 passed |
 | Classifier regression tests | 33 passed |
 | Shared lifecycle/pilot tests | 13 passed |
@@ -47,9 +47,30 @@ This is the pre-paid-run reproducibility baseline. The next scored benchmark mus
 
 ## Follow-on migrations
 
-The classifier family now has the visible namespace boundary, while `AiActionOverheadClassifier` is the reference implementation for the full lifecycle. Large mixed services such as Stage 1, Stage 2, screenplay conversion, cast extraction, and multimodal review still require operation-by-operation decomposition as their schemas are versioned. They are inventoried in `MODEL_CALL_INVENTORY.md`; moving an entire mixed service would incorrectly label deterministic parsing as model execution.
+The six-step adoption pass is complete:
+
+1. **Catalog-aware baseline** — offline fixtures explicitly select catalog entries; unknown IDs fail and no provider/model compatibility fallback is allowed.
+2. **Large structured operations** — `StructuredOperationArtifacts` supplies common required-data validation plus deterministic input/output hashes and per-operation manifests.
+3. **Stage 1** — validates non-empty Fountain and scene coverage and records `stage1_adaptation.json` before accepting the result.
+4. **Cast extraction** — requires the versioned schema and non-empty `character_seed_tokens`, records `cast_extraction.json`, and never invents omitted cast.
+5. **Stage 2** — requires `stage2_meta` and scenes and records the selected catalog video model in `stage2_shot_plan.json`.
+6. **Multimodal review and replay** — clip/movie review saves pass through the same structural gate; the Mary Had a Little Lamb fixture provides a small arbitrary-story cast replay; uploaded text is assigned a stable server book ID derived from its SHA-256 hash.
+
+The mixed services stay in the root orchestration namespace because they contain deterministic file and domain work. Only their model-backed operations and shared execution components belong under `ModelBacked` and `ModelExecution`.
 
 Future model-operation edits should migrate the touched operation rather than add another local retry/parse/fallback implementation.
+
+## Book identity and analysis reuse
+
+Text uploads are registered once in the server SQLite database. `book_texts` stores the canonical UTF-8 text, SHA-256, byte count, and stable `book_<hash-prefix>` ID; `book_text_access` links that identity to authorized users/projects. Upload responses return `bookId` and `bookSha256`, and `GET /api/books/{id-or-hash}` resolves the canonical text for application or benchmark clients. Equal bytes always produce the same ID. Access is user-scoped, so deduplication does not expose another user's book.
+
+Derived artifacts such as Fountain use `book_derived_artifacts`, not the raw-book key. Their derivation identity hashes the book ID, artifact kind, catalog model ID, prompt version and SHA-256, temperature, and behavior/schema versions. Exact derivations are reusable; changing any input creates a new artifact ID. Project cloning calls the book/project link endpoint and transfers IDs rather than copying text or derived payloads.
+
+Cache visibility follows project visibility: **Private** is owner-only, **Public** is cross-user read-only, and **Forkable** is cross-user readable and may be linked into a new project. The existing project value `Open` maps to `Forkable` at the cache boundary. Visibility changes update the project's cache links, and derived artifacts inherit access through their source book link.
+
+Application book-to-Fountain generation now performs this lookup automatically. It registers prepared text, computes the complete derivation identity, reuses only a complete Fountain + `VISION_META` package, and persists successful non-heuristic conversions. Prompt, model, runtime/title/author inputs, temperature, and schema changes invalidate the hit. Background import, Stage 1, and synchronous from-book endpoints all use the same service. Invite, community, and gallery forks link existing book/artifact identities into the new private project instead of duplicating cache rows.
+
+The screenplay benchmark uses the same `pagetomovie.db` registry before its legacy file cache. Benchmark entries default to the `benchmark` cache owner and `Forkable` visibility; operators can override those values or disable the shared layer. `--no-cache` remains the reproducibility escape hatch and bypasses every cache.
 
 ## SQLite dependency verification
 

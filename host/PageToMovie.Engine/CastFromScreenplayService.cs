@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.ModelExecution;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -213,6 +214,18 @@ public sealed class CastFromScreenplayService
             }
             catch { /* ignore */ }
         }
+
+        var castIssues = StructuredOperationArtifacts.RequireJsonProperties(
+            normalized, "schema_version", "character_seed_tokens");
+        await StructuredOperationArtifacts.WriteAsync(
+            _projects.GetProjectDir(projectId), "cast_extraction", model,
+            new { projectId, fountain, book }, normalized, castIssues, ct).ConfigureAwait(false);
+        if (castIssues.Any(i => i.Severity == ModelValidationSeverity.Error))
+            return new ExtractResult
+            {
+                Ok = false,
+                Error = string.Join(" ", castIssues.Select(i => i.Message)),
+            };
 
         var json = JsonSerializer.Serialize(normalized, JsonDefaults.Indented);
         await File.WriteAllTextAsync(outPath, json + "\n", ct).ConfigureAwait(false);

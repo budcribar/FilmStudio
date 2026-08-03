@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.ModelExecution;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -97,8 +98,15 @@ public sealed class ClipAutoReviewService
     public void SaveDraft(ClipAutoReviewDraft draft)
     {
         var path = DraftPath(draft.ProjectId, draft.Scene, draft.Clip);
+        var issues = StructuredOperationArtifacts.RequireJsonProperties(
+            draft, "projectId", "suggestion", "confidence");
+        if (issues.Any(i => i.Severity == ModelValidationSeverity.Error))
+            throw new InvalidOperationException(string.Join(" ", issues.Select(i => i.Message)));
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(draft, JsonOpts) + "\n");
+        StructuredOperationArtifacts.Write(
+            _projects.GetProjectDir(draft.ProjectId), "clip_multimodal_review", null,
+            new { draft.ProjectId, draft.Scene, draft.Clip }, draft, issues);
     }
 
     public async Task<ClipAutoReviewDraft> ReviewAsync(

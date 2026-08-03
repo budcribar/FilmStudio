@@ -346,6 +346,7 @@ public static class SupportedModelCatalog
     public const string ElevenLabsApiBase = "https://api.elevenlabs.io/v1";
 
     private static List<SupportedModelEntry>? _loadedEntries;
+    private static readonly object CatalogSync = new();
     private static List<CatalogProviderDefinition>? _loadedProviders;
 
     private static IReadOnlyList<ModelCapabilityDefinition>? _loadedCapabilities;
@@ -400,8 +401,12 @@ public static class SupportedModelCatalog
     {
         get
         {
-            EnsureLoaded();
-            return _loadedEntries!;
+            lock (CatalogSync)
+            {
+                EnsureLoaded();
+                return _loadedEntries
+                    ?? throw new InvalidOperationException("The models catalog did not produce a model list.");
+            }
         }
     }
 
@@ -475,15 +480,24 @@ public static class SupportedModelCatalog
 
     public static void ReloadCatalog(string? overrideJsonPath = null)
     {
-        _loadedEntries = null;
-        _loadedProviders = null;
-        _loadedCapabilities = null;
-        _loadedTaskRankings = null;
-        EnsureLoaded(overrideJsonPath);
+        lock (CatalogSync)
+        {
+            _loadedEntries = null;
+            _loadedProviders = null;
+            _loadedCapabilities = null;
+            _loadedTaskRankings = null;
+            EnsureLoaded(overrideJsonPath);
+        }
     }
 
     /// <summary>Parse catalog JSON into static fields. Returns true on success.</summary>
     public static bool TryLoadFromJson(string json)
+    {
+        lock (CatalogSync)
+            return TryLoadFromJsonCore(json);
+    }
+
+    private static bool TryLoadFromJsonCore(string json)
     {
         if (string.IsNullOrWhiteSpace(json)) return false;
         try

@@ -219,6 +219,7 @@ public sealed class CastExtractRegressionTests
             });
             var store = new ProjectStore(opts);
             var project = await store.CreateProjectAsync("CastReg");
+            await OfflineTestModelConfig.ApplyAsync(store, project.Id);
             var dir = store.GetProjectDir(project.Id);
             Directory.CreateDirectory(Path.Combine(dir, "source"));
             await File.WriteAllTextAsync(Path.Combine(dir, "source", "screenplay.fountain"), fountain);

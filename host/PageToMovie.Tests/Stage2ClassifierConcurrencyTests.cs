@@ -66,6 +66,7 @@ public sealed class Stage2ClassifierConcurrencyTests : IDisposable
     {
         var store = new ProjectStore(Options.Create(new PageToMovieOptions { WorkspaceRoot = _root }));
         const string projectId = "Demo";
+        await OfflineTestModelConfig.ApplyAsync(store, projectId);
         var fountain = """
             Title: Concurrency Check
 

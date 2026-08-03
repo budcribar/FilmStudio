@@ -51,7 +51,7 @@ public class VoiceCloneApplyServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyFromSample_routes_to_eleven_mock_without_keys()
+    public async Task ApplyFromSample_does_not_mock_or_switch_when_eleven_key_is_missing()
     {
         var p = await _store.CreateProjectAsync("tthv7", title: "Tell-Tale Heart V7");
         await _store.SaveConfigAsync(
@@ -65,12 +65,9 @@ public class VoiceCloneApplyServiceTests : IDisposable
             sampleFileName: "voice_clone_sample.wav",
             previewText: "True! nervous — very, very dreadfully nervous I had been and am.");
 
-        Assert.True(result.Ok, result.Error);
-        Assert.Equal("elevenlabs", result.ProviderId);
-        Assert.False(string.IsNullOrWhiteSpace(result.ProviderVoiceId));
-        Assert.True(result.UsedMock);
+        Assert.False(result.Ok);
+        Assert.Contains("cannot create Instant Voice Clones", result.Error ?? "", StringComparison.OrdinalIgnoreCase);
         Assert.True(File.Exists(_store.GetVoiceCloneSamplePath(p.Id, "Character_Narrator")));
-        Assert.True(File.Exists(_apply.GetTtsPreviewPath(p.Id, "Character_Narrator")));
     }
 
     [Fact]
@@ -88,7 +85,7 @@ public class VoiceCloneApplyServiceTests : IDisposable
             sampleFileName: "voice_clone_sample.wav");
 
         Assert.False(result.Ok);
-        Assert.Contains("No working API key", result.Error ?? "", StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Fal MiniMax voice clone failed", result.Error ?? "", StringComparison.OrdinalIgnoreCase);
         // Sample still saved for a later retry after the user fixes key/model.
         Assert.True(File.Exists(_store.GetVoiceCloneSamplePath(p.Id, "Character_Narrator")));
     }

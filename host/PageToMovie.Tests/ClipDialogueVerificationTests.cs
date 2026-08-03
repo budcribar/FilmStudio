@@ -20,7 +20,7 @@ public class ClipDialogueVerificationTests
     /// IGeminiVideoAnalysisClient (fakeable) fixed that; this proves the branch is really taken.
     /// </summary>
     [Fact]
-    public async Task VerifyClipDialogueAsync_prefers_gemini_video_analysis_when_vision_model_cannot_review_video()
+    public async Task VerifyClipDialogueAsync_does_not_switch_models_when_selection_cannot_review_video()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var projDir = Path.Combine(tempDir, "projects", "test_proj");
@@ -52,7 +52,8 @@ public class ClipDialogueVerificationTests
 
             var result = await service.VerifyClipDialogueAsync("test_proj", sceneNumber: 1, clipNumber: 1);
 
-            Assert.Equal("gemini-native-video", result.DetectedSpeaker);
+            Assert.Equal("unverified", result.Status);
+            Assert.Contains("does not support native video", result.SummaryNote ?? "", StringComparison.OrdinalIgnoreCase);
         }
         finally
         {

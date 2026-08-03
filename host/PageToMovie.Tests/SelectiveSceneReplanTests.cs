@@ -39,6 +39,7 @@ public class SelectiveSceneReplanTests
             await File.WriteAllTextAsync(fountainPath, initialFountain);
 
             var store = new ProjectStore(Options.Create(new PageToMovieOptions { WorkspaceRoot = tempDir }));
+            await OfflineTestModelConfig.ApplyAsync(store, "TestProject");
             var planner = new Stage2PlannerService(store, NullLogger<Stage2PlannerService>.Instance);
 
             // Approve initial screenplay

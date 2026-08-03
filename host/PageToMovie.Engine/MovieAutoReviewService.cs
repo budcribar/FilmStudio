@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.ModelExecution;
 
 namespace PageToMovie.Engine;
 
@@ -61,8 +62,14 @@ public sealed class MovieAutoReviewService
     public void SaveReport(MovieAutoReviewReport report)
     {
         var path = ReportPath(report.ProjectId);
+        var issues = StructuredOperationArtifacts.RequireJsonProperties(report, "projectId");
+        if (issues.Any(i => i.Severity == ModelValidationSeverity.Error))
+            throw new InvalidOperationException(string.Join(" ", issues.Select(i => i.Message)));
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(report, JsonOpts) + "\n");
+        StructuredOperationArtifacts.Write(
+            _projects.GetProjectDir(report.ProjectId), "movie_multimodal_review", null,
+            new { report.ProjectId }, report, issues);
         _projects.TriggerAutoGitCommit(report.ProjectId, $"Update full movie AI review report (Score: {report.OverallScore}/10)");
     }
 

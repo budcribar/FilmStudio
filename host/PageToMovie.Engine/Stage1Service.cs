@@ -1,6 +1,7 @@
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.ModelExecution;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,6 +20,8 @@ public sealed class Stage1Service
     private readonly BookPrepareService _books;
     private readonly CharacterBookPlateService _plates;
     private readonly ILogger<Stage1Service> _log;
+    private readonly BookTextRegistryService? _bookRegistry;
+    private readonly IUserContext? _user;
 
     public Stage1Service(
         ProjectStore projects,
@@ -26,7 +29,9 @@ public sealed class Stage1Service
         BookPrepareService books,
         CharacterBookPlateService plates,
         IOptions<PageToMovieOptions> opts,
-        ILogger<Stage1Service> log)
+        ILogger<Stage1Service> log,
+        BookTextRegistryService? bookRegistry = null,
+        IUserContext? user = null)
     {
         _projects = projects;
         _chat = chat;
@@ -34,6 +39,8 @@ public sealed class Stage1Service
         _plates = plates;
         _ = opts;
         _log = log;
+        _bookRegistry = bookRegistry;
+        _user = user;
     }
 
     /// <summary>
@@ -107,7 +114,9 @@ public sealed class Stage1Service
             _chat,
             model,
             onProgress: onProgress,
-            ct: ct).ConfigureAwait(false);
+            ct: ct,
+            bookRegistry: _bookRegistry,
+            cacheUserId: _user?.UserId).ConfigureAwait(false);
         if (!draft.Ok)
             throw new InvalidOperationException(draft.Error ?? "Could not create Fountain draft from book.");
 
@@ -210,6 +219,16 @@ public sealed class Stage1Service
             $"Screenplay ready · {result.SceneCount} scenes · " +
             $"{result.CharacterCount} cast · {result.LocationCount} locations · " +
             $"V.O. {voCues}/{totalCues} ({voPct}%){warningsSuffix} · {Path.GetFileName(draftPath)}");
+        var stageIssues = new List<ModelValidationIssue>();
+        if (string.IsNullOrWhiteSpace(fountainText))
+            stageIssues.Add(new("missing_fountain", "Stage 1 produced no Fountain text.", "$.fountain"));
+        if (result.SceneCount <= 0)
+            stageIssues.Add(new("missing_scenes", "Stage 1 produced no scenes.", "$.sceneCount"));
+        await StructuredOperationArtifacts.WriteAsync(
+            projectDir, "stage1_adaptation", model, new { projectId, book }, result, stageIssues, ct)
+            .ConfigureAwait(false);
+        if (stageIssues.Count > 0)
+            throw new InvalidOperationException(string.Join(" ", stageIssues.Select(i => i.Message)));
         if (result.Ok)
             _projects.TriggerAutoGitCommit(projectId, "Stage: screenplay created");
         return result;
