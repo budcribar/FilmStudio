@@ -30,8 +30,9 @@ public static class AdaptationVersion
     /// <item><b>Embedded prompt content hash</b> — Stage‑1 <c>book_to_fountain.txt</c> body from the assembly
     /// resource (not disk override). A re-embed invalidates identity even when the version attribute is unchanged.</item>
     /// </list>
-    /// Disk prompt overrides and git dirtiness of loose sources are intentionally out of scope here;
-    /// the benchmark still gates uncommitted <c>prompts/book_to_fountain.txt</c> separately.
+    /// Disk prompt overrides are out of scope here. The ScreenplayBenchmark refuses to start
+    /// when Stage‑1 prompts or <c>host/PageToMovie.Adaptation/</c> sources are dirty
+    /// (<c>TryGetCommittedStage1Surface</c>; override with <c>--allow-dirty</c> for local experiments only).
     /// </summary>
     public static string ComputeId()
     {

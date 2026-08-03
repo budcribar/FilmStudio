@@ -13,6 +13,9 @@ public sealed class ModelScoreSummary
     /// Null = cast not evaluated (Stage 1 only).
     /// </summary>
     public double? CastPackageScore { get; set; }
+    public double? CastPackageMembershipScore { get; set; }
+    public double? CastPackageDescriptionScore { get; set; }
+    public List<string> SpeakersMissingFromCast { get; set; } = new();
     public bool? CastPackageOk { get; set; }
     public List<string> CastPackageFailures { get; set; } = new();
     public List<string> CastPackageWarnings { get; set; } = new();
@@ -143,7 +146,7 @@ public static class BenchmarkReportGenerator
             sb.AppendLine();
             if (withCast.Count > 0)
             {
-                sb.AppendLine("| Model ID | Cast package score | OK | Failures |");
+                sb.AppendLine("| Model ID | Cast package | Membership | Description | OK | Failures |");
                 sb.AppendLine("| :--- | :---: | :---: | :--- |");
                 foreach (var m in withCast)
                 {
@@ -151,7 +154,7 @@ public static class BenchmarkReportGenerator
                         ? "—"
                         : string.Join("; ", m.CastPackageFailures.Take(3));
                     sb.AppendLine(
-                        $"| **{m.ModelId}** | {m.CastPackageScore:F1} | {(m.CastPackageOk == true ? "yes" : "no")} | {fail} |");
+                        $"| **{m.ModelId}** | {m.CastPackageScore:F1} | {m.CastPackageMembershipScore:F0} | {m.CastPackageDescriptionScore:F0} | {(m.CastPackageOk == true ? "yes" : "no")} | {fail} |");
                 }
                 sb.AppendLine();
             }

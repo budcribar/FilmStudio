@@ -15,8 +15,8 @@ Last updated: 2026-08-03
 ## Open — next
 
 ### Adaptation hardening
-- [ ] Dirty Adaptation-source benchmark gate (refuse if Adaptation code/prompts dirty)
-- [ ] Surface membership / description scores in benchmark history UI
+- [x] Dirty Adaptation-source benchmark gate (`TryGetCommittedStage1Surface`, `--allow-dirty`)
+- [x] Membership / description scores on leaderboard summary (cast package section)
 
 ### Mary quality
 - [ ] Book-to-fountain prompt tighten (dialogue invention, scene economy, natural runtime)

@@ -70,6 +70,7 @@ public static class Program
         string? validateSidecarDirectory = null;
         double samplingTemperature = 0.2;
         bool bypassCache = false;
+        bool allowDirty = false;
         bool useSharedCache = true;
         string sharedCacheUser = Environment.GetEnvironmentVariable("PTM_BENCHMARK_CACHE_USER") ?? "benchmark";
         string sharedCacheVisibility = Environment.GetEnvironmentVariable("PTM_BENCHMARK_CACHE_VISIBILITY") ?? "Forkable";
@@ -160,6 +161,10 @@ public static class Program
             {
                 bypassCache = true;
             }
+            else if (arg.Equals("--allow-dirty", StringComparison.OrdinalIgnoreCase))
+            {
+                allowDirty = true;
+            }
             else if (arg.Equals("--no-shared-cache", StringComparison.OrdinalIgnoreCase))
             {
                 useSharedCache = false;
@@ -228,10 +233,10 @@ public static class Program
                 Console.WriteLine("❌ Error: --adaptation-session-pilot requires --book <path/to/book.txt>.");
                 return 1;
             }
-            if (!TryGetCommittedPromptRevision(workspaceRoot, out var pilotPromptRevision, out var pilotPromptError))
+            if (!TryGetCommittedStage1Surface(workspaceRoot, out var pilotPromptRevision, out var pilotPromptError, allowDirty: false))
             {
-                Console.Error.WriteLine($"❌ Adaptation-session pilot not started: {pilotPromptError}");
-                Console.Error.WriteLine("   Commit prompts/book_to_fountain.txt, then run the pilot again.");
+                Console.Error.WriteLine($"❌ Adaptation session pilot not started: {pilotPromptError}");
+                Console.Error.WriteLine("   Commit Stage‑1 prompts and host/PageToMovie.Adaptation/, then run again.");
                 return 1;
             }
             var pilotBookText = await File.ReadAllTextAsync(bookPath);
@@ -306,10 +311,11 @@ public static class Program
             return 0;
         }
 
-        if (!TryGetCommittedPromptRevision(workspaceRoot, out var promptRevision, out var promptError))
+        if (!TryGetCommittedStage1Surface(workspaceRoot, out var promptRevision, out var promptError, allowDirty))
         {
             Console.Error.WriteLine($"❌ Benchmark not started: {promptError}");
-            Console.Error.WriteLine("   Commit prompts/book_to_fountain.txt, then run the benchmark again.");
+            Console.Error.WriteLine("   Commit Stage‑1 prompts and host/PageToMovie.Adaptation/, then run again.");
+            Console.Error.WriteLine("   (Local experiments only: pass --allow-dirty to skip this gate.)");
             return 1;
         }
 
@@ -1036,9 +1042,17 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
     /// revision returned is the commit that last changed the prompt, rather than HEAD, so unrelated
     /// application commits do not create artificial prompt-version buckets in benchmark history.
     /// </summary>
-    private static bool TryGetCommittedPromptRevision(string workspaceRoot, out string revision, out string error)
+    /// <summary>
+    /// Stage‑1 surface must be clean: <c>prompts/book_to_fountain.txt</c>, related Stage‑1 prompts,
+    /// and <c>host/PageToMovie.Adaptation/</c> sources. Returns the committed prompt short hash as
+    /// <paramref name="revision"/>. Pass <paramref name="allowDirty"/> only for local experiments.
+    /// </summary>
+    private static bool TryGetCommittedStage1Surface(
+        string workspaceRoot,
+        out string revision,
+        out string error,
+        bool allowDirty = false)
     {
-        const string promptPath = "prompts/book_to_fountain.txt";
         revision = "";
         error = "";
         try
@@ -1058,17 +1072,42 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 if (process is null) throw new InvalidOperationException("Could not start git.");
                 var output = process.StandardOutput.ReadToEnd();
                 var standardError = process.StandardError.ReadToEnd();
-                process.WaitForExit(5000);
+                process.WaitForExit(15_000);
                 if (process.ExitCode != 0) throw new InvalidOperationException(standardError.Trim());
                 return output.Trim();
             }
 
-            if (!string.IsNullOrWhiteSpace(RunGit(workspaceRoot, $"status --porcelain -- {promptPath}")))
+            // Paths that change Stage‑1 behavior (prompt + Adaptation module sources).
+            string[] watched =
             {
-                error = "prompts/book_to_fountain.txt has uncommitted changes.";
-                return false;
+                "prompts/book_to_fountain.txt",
+                "prompts/fountain_to_cast.txt",
+                "prompts/cast_visual_literalize.txt",
+                "host/PageToMovie.Adaptation",
+            };
+
+            if (!allowDirty)
+            {
+                var dirty = new List<string>();
+                foreach (var path in watched)
+                {
+                    var porcelain = RunGit(workspaceRoot, $"status --porcelain -- {path}");
+                    if (!string.IsNullOrWhiteSpace(porcelain))
+                        dirty.Add(path);
+                }
+
+                if (dirty.Count > 0)
+                {
+                    error = "uncommitted Stage‑1 surface: " + string.Join(", ", dirty);
+                    return false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("⚠️  --allow-dirty: skipping Stage‑1 clean-tree gate (results not comparable).");
             }
 
+            const string promptPath = "prompts/book_to_fountain.txt";
             var commit = RunGit(workspaceRoot, $"log -1 --format=%H -- {promptPath}");
             if (commit.Length < 10)
             {
@@ -1080,10 +1119,14 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
         }
         catch (Exception ex)
         {
-            error = $"could not verify the committed prompt revision ({ex.Message})";
+            error = $"could not verify the committed Stage‑1 surface ({ex.Message})";
             return false;
         }
     }
+
+    /// <summary>Backward-compatible alias used by dashboard backfill helpers.</summary>
+    private static bool TryGetCommittedPromptRevision(string workspaceRoot, out string revision, out string error) =>
+        TryGetCommittedStage1Surface(workspaceRoot, out revision, out error, allowDirty: false);
 
     /// <summary>
     /// Legacy runs predate prompt revision tracking. Their timestamp can still identify the most
@@ -1389,6 +1432,9 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 GenerationFallbackReason = fallbackReason,
                 DisqualifyingFlags = disqualifyingFlags,
                 CastPackageScore = castReport?.Score,
+                CastPackageMembershipScore = castReport?.MembershipScore,
+                CastPackageDescriptionScore = castReport?.DescriptionScore,
+                SpeakersMissingFromCast = castReport?.SpeakersMissingFromCast?.ToList() ?? new List<string>(),
                 CastPackageOk = castReport?.Ok,
                 CastPackageFailures = castReport?.Failures?.ToList() ?? new List<string>(),
                 CastPackageWarnings = castReport?.Warnings?.ToList() ?? new List<string>(),
