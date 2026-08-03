@@ -133,6 +133,8 @@ FIELD RULES:
 - Do **not** quote title words as if they were physical features.
 - Metaphorical wardrobe: only real garments shown in art/story (e.g. actual pajamas), not
   coat-as-metaphor sleepwear inventing extra clothes the art never draws.
+- cast_kind: "individual" (default) or "group" / "chorus" / "ensemble" for a plural
+  unnamed body (children, crowd, classmates). Groups are one seed, not invented names.
 - display_name_policy never_on_screen: pure VO narrator — omit visual_lock or leave short.
 - performance_lock (film-level): 1–3 sentences from BOOK + Fountain about audience relationship
   and default performance/staging (e.g. "first-person confessional often addresses implied
@@ -146,6 +148,16 @@ FIELD RULES:
 - Include humans AND animals that appear on screen.
 - Do NOT invent characters not supported by screenplay or book.
 - Prefer names used in the Fountain (BUSTER, MOMMA, DADDY, NARRATOR).
+
+
+9. **GROUP / CHORUS CAST (HARD):** When several unnamed people act or speak as one body
+   (e.g. "the eager children", "the crowd", "classmates", villagers, soldiers) and the
+   story does **not** give them individual proper names to pin, emit **one** Character_*
+   seed with `"cast_kind": "group"` (aliases: chorus, ensemble, crowd). Do **not** invent
+   proper names (no ELI/CLARA-style pupils) for that plural body. Individual named roles
+   use `"cast_kind": "individual"` (or omit — individual is the default).
+   Group seeds still need description + visual_lock for the collective look (wardrobe/age
+   range), but production will **not** require a single-face portrait pin for them.
 
 ================================================================
 OUTPUT

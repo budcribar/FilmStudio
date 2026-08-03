@@ -266,6 +266,31 @@ public sealed class CastFromScreenplayService
         };
     }
 
+
+    /// <summary>
+    /// Normalize model <c>cast_kind</c> or classify group/chorus from key/name/description.
+    /// Production pin gates skip locked portraits when this returns <c>group</c>.
+    /// </summary>
+    public static string ResolveCastKind(
+        string key,
+        string? displayName = null,
+        string? modelCastKind = null,
+        string? description = null)
+    {
+        if (!string.IsNullOrWhiteSpace(modelCastKind))
+        {
+            var lower = modelCastKind.Trim().ToLowerInvariant();
+            if (lower is "group" or "chorus" or "ensemble" or "crowd")
+                return "group";
+            if (lower is "individual" or "character" or "person")
+                return "individual";
+        }
+
+        return CastKindClassifier.IsGroup(key, displayName, castKind: null, description)
+            ? "group"
+            : "individual";
+    }
+
     public static Task<string> LoadSystemPromptAsync(string workspaceRoot, CancellationToken ct = default) =>
         PromptFiles.ReadAsync(PromptRelativePath, workspaceRoot, ct);
 
@@ -315,6 +340,8 @@ public sealed class CastFromScreenplayService
         sb.AppendLine("Never use stubs like \"as described in the screenplay\".");
         sb.AppendLine("On-camera POV/confessor narrators = ok_anytime (not voice-only).");
         sb.AppendLine("Set species_kind from the story (human/animal/etc.) — do not guess from word lists.");
+        sb.AppendLine("Set cast_kind to group for plural unnamed bodies (children, crowd, classmates);");
+        sb.AppendLine("do not invent proper names for those groups. Individuals stay cast_kind individual.");
         sb.AppendLine("REQUIRED: render_style_lock from the FOUNTAIN medium (title Notes / early Action /");
         sb.AppendLine("story register). The screenplay must carry the book's visual medium; do not choose");
         sb.AppendLine("cartoon vs photoreal from file type. One medium for all cast.");
@@ -811,6 +838,9 @@ public sealed class CastFromScreenplayService
             var wardrobeLock = CoerceString(seed, "wardrobe_lock");
             if (!string.IsNullOrWhiteSpace(wardrobeLock))
                 clean["wardrobe_lock"] = NormalizeWardrobeKey(wardrobeLock!);
+
+            // cast_kind: prefer model output; else classify so pin gates skip group portraits.
+            clean["cast_kind"] = ResolveCastKind(k, name, CoerceString(seed, "cast_kind"), desc);
 
             seedsOut[k] = clean;
         }

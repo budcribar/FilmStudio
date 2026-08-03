@@ -24,6 +24,19 @@ public class CastFromScreenplayServiceTests
         Assert.Contains("FORBIDDEN", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("performance_lock", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("AUDIENCE", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cast_kind", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("GROUP", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("Character_Children", "Children", null, null, "group")]
+    [InlineData("Character_Mary", "Mary", null, null, "individual")]
+    [InlineData("Character_X", "X", "chorus", null, "group")]
+    [InlineData("Character_Kids", "Kids", "individual", null, "individual")]
+    public void ResolveCastKind_normalizes_model_and_heuristics(
+        string key, string display, string? modelKind, string? desc, string expected)
+    {
+        Assert.Equal(expected, CastFromScreenplayService.ResolveCastKind(key, display, modelKind, desc));
     }
 
     [Fact]
