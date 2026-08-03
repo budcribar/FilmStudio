@@ -210,6 +210,8 @@ public sealed class Stage1Service
             $"Screenplay ready · {result.SceneCount} scenes · " +
             $"{result.CharacterCount} cast · {result.LocationCount} locations · " +
             $"V.O. {voCues}/{totalCues} ({voPct}%){warningsSuffix} · {Path.GetFileName(draftPath)}");
+        if (result.Ok)
+            _projects.TriggerAutoGitCommit(projectId, "Stage: screenplay created");
         return result;
     }
 }

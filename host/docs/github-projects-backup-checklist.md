@@ -26,6 +26,7 @@ Source of truth for product intent: `public-community-plan.md` (namespacing + `P
 - [x] `POST /api/projects/{id}/commit` (existing)
 - [x] Commit stages tracked files only (video ignored via `.gitignore`)
 - [x] Debounced auto-commit on screenplay/cast/config/clip save (nested-repo guard skips app-repo demos)
+- [x] Stage-end auto-commit: book prepared · screenplay · cast · Stage 2 · film/music job finished
 - [ ] In-app commit timeline UI
 
 ---

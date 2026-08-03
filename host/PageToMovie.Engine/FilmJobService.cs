@@ -4450,6 +4450,35 @@ public sealed class FilmJobService
         {
             await TryRefreshArtifactIndexAsync(projectId!).ConfigureAwait(false);
         }
+
+        // Stage-end package history: one debounced commit for finished film/music work
+        // (text artifacts only — MP4/MP3 stay gitignored). Intermediate clip writes do not commit.
+        if ((status == "done" || status == "partial") &&
+            !string.IsNullOrWhiteSpace(projectId) &&
+            StageEndAutoGitMessage(kind) is { } gitMsg)
+        {
+            _projects.TriggerAutoGitCommit(projectId!, gitMsg);
+        }
+    }
+
+    /// <summary>
+    /// Job kinds that represent a complete pipeline stage for project package history.
+    /// Book / screenplay / cast / stage2 also commit from their services; film+music finish here.
+    /// </summary>
+    private static string? StageEndAutoGitMessage(string? kind)
+    {
+        if (string.IsNullOrWhiteSpace(kind)) return null;
+        return kind switch
+        {
+            "book_prepare" => "Stage: book prepared",
+            "book_import" => "Stage: screenplay created",
+            "stage1" => "Stage: screenplay created",
+            "cast" or "cast_extract" or "characters" => "Stage: cast built",
+            "stage2" => "Stage: Stage 2 blueprint written",
+            "gen-scene" or "gen-batch" or "remux" or "film" => "Stage: film job finished",
+            "music" => "Stage: music job finished",
+            _ => null,
+        };
     }
 
     /// <summary>

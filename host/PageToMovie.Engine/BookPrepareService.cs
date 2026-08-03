@@ -293,6 +293,8 @@ public sealed class BookPrepareService
             result.ReadyForStage1
                 ? $"Book ready for Stage 1 (~{result.SuggestedTotalMinutes} min)"
                 : "Book needs attention before Stage 1");
+        // Stage-end package history (text only; video ignored by project git).
+        _projects.TriggerAutoGitCommit(projectId, "Stage: book prepared");
         return result;
     }
 

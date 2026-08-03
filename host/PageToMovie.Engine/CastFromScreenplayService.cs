@@ -258,6 +258,7 @@ public sealed class CastFromScreenplayService
         _log.LogInformation(
             "Cast extract {Project}: {Count} character(s) → {Keys}",
             projectId, keys.Count, string.Join(", ", keys));
+        _projects.TriggerAutoGitCommit(projectId, "Stage: cast built");
         return new ExtractResult
         {
             Ok = true,

@@ -317,6 +317,8 @@ public sealed class Stage2PlannerService
         onProgress?.Invoke(
             $"Wrote {Path.GetFileName(outPath)} · {sceneCount} scenes · {totalClips} clips");
 
+        _projects.TriggerAutoGitCommit(projectId, "Stage: Stage 2 blueprint written");
+
         return new Stage2PlanResult
         {
             Ok = true,
