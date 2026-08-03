@@ -85,9 +85,9 @@ public sealed class BeatPacingClassifier
 
             var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
                 requestedIds,
-                () => _chat.CompleteAsync(
+                missingIds => _chat.CompleteAsync(
                     SystemPrompt(),
-                    userPrompt,
+                    AiRetryPolicy.FocusCoveragePrompt(userPrompt, requestedIds, missingIds),
                     effectiveModel,
                     // 0, not 0.2: this is a categorical labeling task (same input should get the
                     // same label), and 0 is what makes CachingChatClient treat it as cacheable by
@@ -99,7 +99,10 @@ public sealed class BeatPacingClassifier
                 ParsePacingResponse,
                 maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
                 backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                operationName: "stage2_beat_pacing",
+                promptVersion: "1",
+                model: effectiveModel).ConfigureAwait(false);
 
             if (_errorLogger is not null)
             {

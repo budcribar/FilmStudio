@@ -6,6 +6,7 @@ using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Core.Utils;
 using PageToMovie.Engine.ModelExecution;
+using PageToMovie.Engine.Deterministic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -121,6 +122,7 @@ public sealed class Stage2PlannerService
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
+        using var operationTrace = ModelOperationTraceScope.Begin();
         var projectDir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
 
         // Clip-duration bounds for whichever video model this project is actually configured to
@@ -307,10 +309,15 @@ public sealed class Stage2PlannerService
             plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
         }
 
-        var planIssues = StructuredOperationArtifacts.RequireJsonProperties(plan, "stage2_meta", "scenes");
+        var planIssues = StructuredOperationArtifacts.RequireJsonProperties(plan, "stage2_meta", "scenes")
+            .Concat(Stage2AggregateValidator.Validate(plan))
+            .ToArray();
+        var classifierProvenance = Stage2AggregateValidator.BuildClassifierProvenance(enrichMeta);
         await StructuredOperationArtifacts.WriteAsync(
             _projects.GetProjectDir(projectId), "stage2_shot_plan", videoModelId,
             new { projectId, sourceLabel, resolution, scenes }, plan, planIssues, ct).ConfigureAwait(false);
+        await Stage2AggregateValidator.WriteManifestAsync(
+            _projects.GetProjectDir(projectId), classifierProvenance, operationTrace.Snapshot(), planIssues, ct).ConfigureAwait(false);
         if (planIssues.Any(i => i.Severity == ModelValidationSeverity.Error))
             throw new InvalidOperationException(string.Join(" ", planIssues.Select(i => i.Message)));
 

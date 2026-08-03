@@ -88,9 +88,9 @@ public sealed class CharacterEmotionArcClassifier
 
             var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
                 requestedIds,
-                () => _chat.CompleteAsync(
+                missingIds => _chat.CompleteAsync(
                     SystemPrompt(),
-                    userPrompt,
+                    AiRetryPolicy.FocusCoveragePrompt(userPrompt, requestedIds, missingIds),
                     effectiveModel,
                     // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
                     temperature: 0,
@@ -99,7 +99,10 @@ public sealed class CharacterEmotionArcClassifier
                 ParseEmotionResponse,
                 maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
                 backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                operationName: "stage2_character_emotion_arc",
+                promptVersion: "1",
+                model: effectiveModel).ConfigureAwait(false);
 
             if (_errorLogger is not null)
             {

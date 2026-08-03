@@ -66,13 +66,11 @@ public sealed class SpeciesKindClassifier
         var byKey = seeds.ToDictionary(s => s.Key, StringComparer.OrdinalIgnoreCase);
         // Mutable: shrinks to only still-missing keys so each retry re-asks fewer cast members —
         // mirrors the pre-refactor hand-rolled loop exactly (single call, no chunking).
-        var currentIds = new List<string>(seedIds);
-
         var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<string>(
             seedIds,
-            callChat: async () =>
+            callChat: async missingIds =>
             {
-                var payload = currentIds.Select(k =>
+                var payload = missingIds.Select(k =>
                 {
                     var s = byKey[k];
                     return new Dictionary<string, object?>
@@ -93,12 +91,14 @@ public sealed class SpeciesKindClassifier
             parseResponse: raw =>
             {
                 var parsed = ParseLabels(raw);
-                currentIds.RemoveAll(id => parsed.ContainsKey(id));
                 return parsed;
             },
             maxAttempts,
             backoffBaseMs,
-            ct).ConfigureAwait(false);
+            ct,
+            operationName: "stage2_species_kind",
+            promptVersion: "1",
+            model: effectiveModel).ConfigureAwait(false);
 
         if (retry.LastError is not null)
         {

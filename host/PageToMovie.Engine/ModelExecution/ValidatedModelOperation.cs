@@ -89,7 +89,7 @@ public sealed class ValidatedModelOperation<TInput, TRaw, TResult>
 
                 if (parsed.Value is not null && unresolved.Count == 0)
                 {
-                    return AddReproducibility(input, new ValidatedModelResult<TResult>(
+                    return ModelOperationTraceScope.Record(AddReproducibility(input, new ValidatedModelResult<TResult>(
                         parsed.Value,
                         kind == ModelAttemptKind.Primary
                             ? ModelResultSource.PrimaryResponse
@@ -98,7 +98,7 @@ public sealed class ValidatedModelOperation<TInput, TRaw, TResult>
                         lastModel,
                         attempts,
                         issues,
-                        null));
+                        null)));
                 }
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -126,28 +126,28 @@ public sealed class ValidatedModelOperation<TInput, TRaw, TResult>
         try
         {
             var fallback = _fallback.Create(input, unresolved);
-            return AddReproducibility(input, new ValidatedModelResult<TResult>(
+            return ModelOperationTraceScope.Record(AddReproducibility(input, new ValidatedModelResult<TResult>(
                 fallback,
                 ModelResultSource.DeterministicFallback,
                 _operation.OperationName,
                 lastModel,
                 attempts,
                 unresolved,
-                lastError));
+                lastError)));
         }
         catch (Exception ex)
         {
             var issues = unresolved
                 .Append(new ModelValidationIssue("fallback_failed", ex.Message))
                 .ToArray();
-            return AddReproducibility(input, new ValidatedModelResult<TResult>(
+            return ModelOperationTraceScope.Record(AddReproducibility(input, new ValidatedModelResult<TResult>(
                 null,
                 ModelResultSource.Failed,
                 _operation.OperationName,
                 lastModel,
                 attempts,
                 issues,
-                ex.Message));
+                ex.Message)));
         }
     }
 

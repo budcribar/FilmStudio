@@ -4,6 +4,7 @@ using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PageToMovie.Engine.ModelExecution;
 
 namespace PageToMovie.Engine.ModelBacked;
 
@@ -66,16 +67,12 @@ public sealed class NegativePromptClassifier
         {
             var userPrompt = BuildUserPrompt(scene);
             var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.NegativePromptClassifyModel;
-            var response = await _chat.CompleteAsync(
-                SystemPrompt(),
-                userPrompt,
-                effectiveModel,
-                // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                temperature: 0,
-                ct: ct,
-                mode: ChatCallModes.NegativePromptClassify).ConfigureAwait(false);
-
-            return ParseNegativeResponse(response);
+            var pipeline = new ValidatedModelOperation<Stage2DirectiveInput, string, TextDirective>(
+                new Stage2DirectiveOperation(_chat, "negative_prompt", PromptVersion),
+                new JsonTextDirectiveParser("negative_tokens"), new TextDirectiveValidator("negative_tokens"),
+                new DirectiveTerminalFallback<TextDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+            var result = await pipeline.ExecuteAsync(new(SystemPrompt(), userPrompt, effectiveModel, ChatCallModes.NegativePromptClassify), ct).ConfigureAwait(false);
+            return result.Value?.Value;
         }
         catch (Exception ex)
         {

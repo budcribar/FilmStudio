@@ -107,8 +107,9 @@ public sealed class ShotPlanRefiningClassifier
             // Cache only the first attempt's call — a coverage retry needs a fresh response,
             // not the same (possibly incomplete) cached text replayed again.
             var firstAttempt = true;
-            async Task<string> CallChatAsync()
+            async Task<string> CallChatAsync(IReadOnlyList<string> missingIds)
             {
+                var focusedPrompt = AiRetryPolicy.FocusCoveragePrompt(userPrompt, requestedIds, missingIds);
                 if (firstAttempt)
                 {
                     firstAttempt = false;
@@ -117,7 +118,7 @@ public sealed class ShotPlanRefiningClassifier
                 }
                 var raw = await _chat.CompleteAsync(
                     SystemPrompt(),
-                    userPrompt,
+                    focusedPrompt,
                     effectiveModel,
                     // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
                     temperature: 0,
@@ -134,7 +135,10 @@ public sealed class ShotPlanRefiningClassifier
                 ParseRefinementsDict,
                 maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
                 backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
-                ct: ct).ConfigureAwait(false);
+                ct: ct,
+                operationName: "stage2_shot_plan_refining",
+                promptVersion: "1",
+                model: effectiveModel).ConfigureAwait(false);
 
             if (_errorLogger is not null)
             {

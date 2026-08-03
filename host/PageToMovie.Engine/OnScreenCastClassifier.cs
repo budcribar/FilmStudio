@@ -107,13 +107,11 @@ public sealed class OnScreenCastClassifier
                 var byId = chunk.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
                 // Mutable: shrinks to only still-missing ids so each retry re-asks fewer beats —
                 // mirrors the pre-refactor hand-rolled loop exactly.
-                var currentIds = new List<string>(chunkIds);
-
                 var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<List<string>>(
                     chunkIds,
-                    callChat: async () =>
+                    callChat: async missingIds =>
                     {
-                        var payload = currentIds.Select(id =>
+                        var payload = missingIds.Select(id =>
                         {
                             var t = byId[id];
                             return new Dictionary<string, object?>
@@ -136,12 +134,14 @@ public sealed class OnScreenCastClassifier
                     parseResponse: raw =>
                     {
                         var parsed = ParseLabels(raw, castKeys);
-                        currentIds.RemoveAll(id => parsed.ContainsKey(id));
                         return parsed;
                     },
                     maxAttempts,
                     backoffBaseMs,
-                    ct).ConfigureAwait(false);
+                    ct,
+                    operationName: "stage2_on_screen_cast",
+                    promptVersion: "1",
+                    model: effectiveModel).ConfigureAwait(false);
 
                 if (retry.LastError is not null)
                 {

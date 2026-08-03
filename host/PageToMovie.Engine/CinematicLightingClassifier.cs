@@ -5,6 +5,7 @@ using PageToMovie.Core.Utils;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PageToMovie.Engine.ModelExecution;
 
 namespace PageToMovie.Engine.ModelBacked;
 
@@ -66,16 +67,12 @@ public sealed class CinematicLightingClassifier
         {
             var userPrompt = BuildUserPrompt(scene);
             var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.CinematicLightingClassifyModel;
-            var response = await _chat.CompleteAsync(
-                SystemPrompt(),
-                userPrompt,
-                effectiveModel,
-                // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                temperature: 0,
-                ct: ct,
-                mode: ChatCallModes.CinematicLightingClassify).ConfigureAwait(false);
-
-            return ParseLightingResponse(response);
+            var pipeline = new ValidatedModelOperation<Stage2DirectiveInput, string, TextDirective>(
+                new Stage2DirectiveOperation(_chat, "cinematic_lighting", PromptVersion),
+                new JsonTextDirectiveParser("lighting_token"), new TextDirectiveValidator("lighting_token"),
+                new DirectiveTerminalFallback<TextDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+            var result = await pipeline.ExecuteAsync(new(SystemPrompt(), userPrompt, effectiveModel, ChatCallModes.CinematicLightingClassify), ct).ConfigureAwait(false);
+            return result.Value?.Value;
         }
         catch (Exception ex)
         {

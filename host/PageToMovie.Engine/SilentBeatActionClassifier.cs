@@ -114,16 +114,15 @@ public sealed class SilentBeatActionClassifier
             var chunkIds = chunk.Select(t => t.Id).ToList();
             // Mutable: shrinks to only still-missing ids so each retry re-asks (and re-pays
             // tokens for) fewer beats — mirrors the pre-refactor hand-rolled loop exactly.
-            var currentIds = new List<string>(chunkIds);
 
             onProgress?.Invoke(
                 $"  Chat batch {chunk.Count} beat(s) ({offset + 1}–{offset + chunk.Count}/{targets.Count})…");
 
             var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<string>(
                 chunkIds,
-                callChat: async () =>
+                callChat: async missingIds =>
                 {
-                    var batch = currentIds.Select(id => byId[id]).ToList();
+                    var batch = missingIds.Select(id => byId[id]).ToList();
                     var raw = await CallChatAsync(batch, stage1, model, temp, ct).ConfigureAwait(false);
                     result.ChatCalls++;
                     return raw;
@@ -131,12 +130,14 @@ public sealed class SilentBeatActionClassifier
                 parseResponse: raw =>
                 {
                     var parsed = ParseLabels(raw);
-                    currentIds.RemoveAll(id => parsed.ContainsKey(id));
                     return parsed;
                 },
                 maxAttempts,
                 backoffBaseMs,
-                ct).ConfigureAwait(false);
+                ct,
+                operationName: "stage2_silent_beat_action",
+                promptVersion: PromptVersion,
+                model: model).ConfigureAwait(false);
 
             totalAttempts += retry.Attempts;
             if (retry.LastError is not null)

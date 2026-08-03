@@ -4,6 +4,7 @@ using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PageToMovie.Engine.ModelExecution;
 
 namespace PageToMovie.Engine.ModelBacked;
 
@@ -70,16 +71,12 @@ public sealed class ColorPaletteGradingClassifier
         {
             var userPrompt = BuildUserPrompt(scene);
             var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.ColorPaletteGradingClassifyModel;
-            var response = await _chat.CompleteAsync(
-                SystemPrompt(),
-                userPrompt,
-                effectiveModel,
-                // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                temperature: 0,
-                ct: ct,
-                mode: ChatCallModes.ColorPaletteGradingClassify).ConfigureAwait(false);
-
-            return ParseColorResponse(response);
+            var pipeline = new ValidatedModelOperation<Stage2DirectiveInput, string, ColorGradingDirective>(
+                new Stage2DirectiveOperation(_chat, "color_palette_grading", PromptVersion),
+                new JsonColorDirectiveParser(), new ColorDirectiveValidator(),
+                new DirectiveTerminalFallback<ColorGradingDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+            var result = await pipeline.ExecuteAsync(new(SystemPrompt(), userPrompt, effectiveModel, ChatCallModes.ColorPaletteGradingClassify), ct).ConfigureAwait(false);
+            return result.Value;
         }
         catch (Exception ex)
         {

@@ -97,13 +97,11 @@ public sealed class AmbientSfxClassifier
                 var chunkIds = chunk.Select(t => t.Id).ToList();
                 // Mutable: shrinks to only still-missing ids so each retry re-asks fewer beats —
                 // mirrors the pre-refactor hand-rolled loop exactly.
-                var currentIds = new List<string>(chunkIds);
-
                 var retry = await AiRetryPolicy.RunWithCoverageRetryAsync<(string Ambient, string Sfx)>(
                     chunkIds,
-                    callChat: async () =>
+                    callChat: async missingIds =>
                     {
-                        var batch = currentIds.Select(id => byId[id]).ToList();
+                        var batch = missingIds.Select(id => byId[id]).ToList();
                         var raw = await CallAsync(batch, model, temp, ct).ConfigureAwait(false);
                         lock (labeled) { result.ChatCalls++; }
                         return raw;
@@ -111,12 +109,14 @@ public sealed class AmbientSfxClassifier
                     parseResponse: raw =>
                     {
                         var parsed = ParseLabels(raw);
-                        currentIds.RemoveAll(id => parsed.ContainsKey(id));
                         return parsed;
                     },
                     maxAttempts,
                     backoffBaseMs,
-                    ct).ConfigureAwait(false);
+                    ct,
+                    operationName: "stage2_ambient_sfx",
+                    promptVersion: PromptVersion,
+                    model: model).ConfigureAwait(false);
 
                 Interlocked.Add(ref totalAttempts, retry.Attempts);
                 if (retry.LastError is not null)

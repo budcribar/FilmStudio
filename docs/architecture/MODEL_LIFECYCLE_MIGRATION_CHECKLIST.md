@@ -63,15 +63,15 @@ This is the authoritative completion checklist for migrating adaptation operatio
 - [x] Require `stage2_meta` and non-empty scenes before accepting the plan.
 - [x] Persist Stage 2 model identity, hashes, and validation findings.
 - [x] Preserve immutable source dialogue and pronunciation annotations.
-- [ ] Inventory every Stage 2 classifier as a distinct operation with schema/version ownership.
-- [ ] Route every Stage 2 classifier request through `ValidatedModelOperation`.
-- [ ] Standardize requested-ID coverage validation and focused missing-ID correction.
-- [ ] Validate cross-references among scenes, clips, cast, dialogue, wardrobe, and continuity.
-- [ ] Record per-classifier attempts and fallback source in the aggregate Stage 2 manifest.
-- [ ] Remove classifier-local retry/default implementations after parity tests pass.
-- [ ] Add recorded aggregate Stage 2 replay covering partial classifier responses.
+- [x] Inventory every Stage 2 classifier as a distinct operation with schema/version ownership.
+- [x] Route every Stage 2 classifier request through `ValidatedModelOperation`.
+- [x] Standardize requested-ID coverage validation and focused missing-ID correction.
+- [x] Validate cross-references among scenes, clips, cast, dialogue, wardrobe, and continuity.
+- [x] Record per-classifier attempts and fallback source in the aggregate Stage 2 manifest.
+- [x] Remove classifier-local retry/default implementations after parity tests pass.
+- [x] Add recorded aggregate Stage 2 replay covering partial classifier responses.
 
-**Phase status: partial.**
+**Phase status: complete.**
 
 ## 6. Multimodal review
 

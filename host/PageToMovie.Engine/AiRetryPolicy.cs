@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
+using PageToMovie.Engine.ModelExecution;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,6 +25,17 @@ namespace PageToMovie.Engine;
 /// </summary>
 public static class AiRetryPolicy
 {
+    public static string FocusCoveragePrompt(
+        string prompt,
+        IReadOnlyList<string> requestedIds,
+        IReadOnlyList<string> attemptIds)
+    {
+        if (attemptIds.Count == requestedIds.Count &&
+            attemptIds.All(id => requestedIds.Contains(id, StringComparer.OrdinalIgnoreCase)))
+            return prompt;
+        return prompt + $"\n\nCORRECTION: Return entries only for these missing ids: " +
+               string.Join(", ", attemptIds) + ". Return the same JSON schema and no commentary.";
+    }
     /// <summary>Default attempt cap for batched classifier coverage retries (small — same call, same instruction).</summary>
     public const int DefaultCoverageMaxAttempts = 3;
 
@@ -90,59 +102,43 @@ public static class AiRetryPolicy
     /// </summary>
     public static async Task<CoverageRetryResult<T>> RunWithCoverageRetryAsync<T>(
         IReadOnlyList<string> requestedIds,
+        Func<IReadOnlyList<string>, Task<string>> callChat,
+        Func<string, Dictionary<string, T>?> parseResponse,
+        int maxAttempts,
+        int backoffBaseMs,
+        CancellationToken ct = default,
+        string operationName = "coverage_classifier",
+        string promptVersion = "1",
+        string? model = null)
+    {
+        var (_, compatibility) = await ValidatedCoverageOperation.ExecuteAsync(
+            operationName,
+            promptVersion,
+            requestedIds,
+            async (_, missingIds) => new ModelResponse<string>(
+                await callChat(missingIds).ConfigureAwait(false), model),
+            parseResponse,
+            correctiveMaxAttempts: Math.Max(0, maxAttempts - 1),
+            transportMaxAttempts: 1,
+            transportBackoffMs: backoffBaseMs,
+            ct).ConfigureAwait(false);
+        return compatibility;
+    }
+
+    public static Task<CoverageRetryResult<T>> RunWithCoverageRetryAsync<T>(
+        IReadOnlyList<string> requestedIds,
         Func<Task<string>> callChat,
         Func<string, Dictionary<string, T>?> parseResponse,
         int maxAttempts,
         int backoffBaseMs,
-        CancellationToken ct = default)
-    {
-        maxAttempts = Math.Max(1, maxAttempts);
-        var merged = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
-        string? lastRaw = null;
-        string? lastError = null;
-        var attemptsUsed = 0;
-
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
-        {
-            attemptsUsed = attempt;
-            try
-            {
-                var raw = await callChat().ConfigureAwait(false);
-                lastRaw = raw;
-                var parsed = parseResponse(raw);
-                if (parsed is not null)
-                {
-                    foreach (var kv in parsed)
-                        merged[kv.Key] = kv.Value;
-                }
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                lastError = ex.Message;
-            }
-
-            var (missing, fullyCovered) = CheckCoverage(requestedIds, merged.Keys);
-            if (fullyCovered) break;
-            if (attempt < maxAttempts)
-                await ClassifierJsonParser.BackoffAsync(attempt, backoffBaseMs, ct).ConfigureAwait(false);
-        }
-
-        var (finalMissing, finalCovered) = CheckCoverage(requestedIds, merged.Keys);
-        return new CoverageRetryResult<T>
-        {
-            Result = merged.Count > 0 ? merged : null,
-            Missing = finalMissing,
-            FullyCovered = finalCovered,
-            Attempts = attemptsUsed,
-            ReturnedCount = requestedIds.Count - finalMissing.Count,
-            LastRawResponse = lastRaw,
-            LastError = lastError,
-        };
-    }
+        CancellationToken ct = default) =>
+        RunWithCoverageRetryAsync(
+            requestedIds,
+            _ => callChat(),
+            parseResponse,
+            maxAttempts,
+            backoffBaseMs,
+            ct);
 
     // ── Transient HTTP / network retry ──────────────────────────────────────
 
