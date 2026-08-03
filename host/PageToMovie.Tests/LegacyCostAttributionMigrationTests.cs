@@ -92,7 +92,7 @@ public class LegacyCostAttributionMigrationTests
             conn.Open();
             using var ver = conn.CreateCommand();
             ver.CommandText = "PRAGMA user_version;";
-            Assert.Equal(5, Convert.ToInt32(ver.ExecuteScalar()));
+            Assert.True(Convert.ToInt32(ver.ExecuteScalar()) >= 5);
 
             using var q = conn.CreateCommand();
             q.CommandText = "SELECT user_id, project_id, charge_usd, charge_multiplier FROM user_api_calls WHERE estimated_usd = 1.25";

@@ -489,4 +489,23 @@ public sealed class BillingOptions
     /// Default: <c>development</c>.
     /// </summary>
     public string LegacyCostProjectId { get; set; } = "development";
+
+    /// <summary>
+    /// Public login handle for the primary operator account after account-merge migration v6.
+    /// Defaults to <c>budcribar</c>.
+    /// </summary>
+    public string CanonicalAccountUsername { get; set; } = "budcribar";
+
+    /// <summary>
+    /// Email for the primary operator account after merge migration v6.
+    /// Default: <c>budcribar@msn.com</c>.
+    /// </summary>
+    public string CanonicalAccountEmail { get; set; } = "budcribar@msn.com";
+
+    /// <summary>
+    /// Comma-separated alias user ids / usernames / email-shaped ids to merge into
+    /// <see cref="LegacyCostOwnerUserId"/> (handle) on user_version 6.
+    /// </summary>
+    public string AccountMergeAliasIds { get; set; } =
+        "budcribarmsn.com,budcribarmsn_com,budcribar@msn.com,budcribarmsn";
 }
