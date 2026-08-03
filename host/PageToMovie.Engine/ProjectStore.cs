@@ -1211,7 +1211,9 @@ public sealed class ProjectStore
             ["config_file"] = "pipeline_config.json",
             ["state_file"] = "pipeline_state.json",
             ["description"] = "",
-            ["ownerUserId"] = string.IsNullOrWhiteSpace(ownerUserId) ? owner : ownerUserId.Trim(),
+            ["ownerUserId"] = string.IsNullOrWhiteSpace(ownerUserId)
+                ? owner
+                : ownerUserId.Trim(),
             ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"),
             ["studioPath"] = ProjectStudioPaths.Normalize(studioPath),
             // Format version for export/import converters (ProjectMigrationService).
@@ -1313,6 +1315,48 @@ public sealed class ProjectStore
             InvalidateReadCaches(newProjectId);
             return;
         }
+    }
+
+    /// <summary>
+    /// Rewrite <c>ownerUserId</c> in project.json to the stable account id without moving the folder.
+    /// Used when list discovers a project under an alias path (identity drift).
+    /// </summary>
+    public async Task RepairProjectOwnerAsync(
+        string projectId,
+        string ownerUserId,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(ownerUserId))
+            return;
+        var dir = GetProjectDir(projectId);
+        var metaPath = Path.Combine(dir, "project.json");
+        if (!File.Exists(metaPath))
+            return;
+
+        Dictionary<string, object?> meta;
+        try
+        {
+            meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(
+                       await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false), JsonOpts)
+                   ?? new Dictionary<string, object?>();
+        }
+        catch
+        {
+            return;
+        }
+
+        var want = ownerUserId.Trim();
+        if (meta.TryGetValue("ownerUserId", out var existing) &&
+            existing is string s &&
+            string.Equals(s.Trim(), want, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        meta["ownerUserId"] = want;
+        await File.WriteAllTextAsync(
+            metaPath,
+            JsonSerializer.Serialize(meta, JsonOpts) + "\n",
+            ct).ConfigureAwait(false);
+        InvalidateReadCaches(projectId);
     }
 
     /// <summary>Video/audio binaries never copy into a fork — the new owner regenerates or syncs media separately.</summary>

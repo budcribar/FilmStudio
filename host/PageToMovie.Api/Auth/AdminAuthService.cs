@@ -120,7 +120,7 @@ public sealed class AdminAuthService : IAdminAuthService
         {
             Ok = true,
             RequiresEmailConfirmation = true,
-            UserId = user.Username,
+            UserId = user.UserId,
             Message =
                 "Account created. Check your email for a confirmation link before signing in. " +
                 "(In development, confirmation links are written to the API log if SMTP is not configured.)",
@@ -219,8 +219,14 @@ public sealed class AdminAuthService : IAdminAuthService
 
             if (passwordValid)
             {
-                // Public identity is always Username (handle), never email
-                var handle = string.IsNullOrWhiteSpace(dbUser.Username) ? dbUser.UserId : dbUser.Username.Trim();
+                // Stable ownership identity is UserId (never email). Username is display-only.
+                // Using Username here used to create projects under divergent folders when the
+                // handle contained dots or differed from UserId (e.g. budcribarmsn.com →
+                // budcribarmsn_com/Mary) so re-login under another alias hid the project.
+                var canonicalId = string.IsNullOrWhiteSpace(dbUser.UserId)
+                    ? (string.IsNullOrWhiteSpace(dbUser.Username) ? "" : dbUser.Username.Trim())
+                    : dbUser.UserId.Trim();
+                var handle = string.IsNullOrWhiteSpace(dbUser.Username) ? canonicalId : dbUser.Username.Trim();
 
                 if (!UserDatabaseService.IsEmailConfirmed(dbUser) && !isDevAdmin)
                 {
@@ -228,14 +234,16 @@ public sealed class AdminAuthService : IAdminAuthService
                     {
                         Ok = false,
                         RequiresEmailConfirmation = true,
-                        UserId = handle,
+                        UserId = canonicalId,
                         Error = "Confirm your email before signing in. Check your inbox (or the API log in development).",
                     };
                 }
 
                 var userRoles = new List<string> { AppRoles.User };
                 if (string.Equals(dbUser.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(canonicalId, _auth.AdminUsername, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(handle, _auth.AdminUsername, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(canonicalId, OperatorUserId, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(handle, OperatorUserId, StringComparison.OrdinalIgnoreCase))
                 {
                     userRoles.Add(AppRoles.Admin);
@@ -243,13 +251,13 @@ public sealed class AdminAuthService : IAdminAuthService
 
                 var userHours = Math.Clamp(_auth.JwtHours, 1, 168);
                 var userExpires = DateTimeOffset.UtcNow.AddHours(userHours);
-                var userToken = IssueJwt(handle, userRoles, userExpires);
+                var userToken = IssueJwt(canonicalId, userRoles, userExpires);
 
                 return new LoginResponse
                 {
                     Ok = true,
                     Token = userToken,
-                    UserId = handle,
+                    UserId = canonicalId,
                     Roles = userRoles,
                     ExpiresAt = userExpires,
                 };

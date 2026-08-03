@@ -2077,19 +2077,56 @@ app.MapGet("/api/projects", async (
     ProjectStore store,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb,
     CancellationToken ct) =>
 {
     // Project inventory is not public — requires sign-in (prevents anonymous enumeration).
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
     var all = await store.ListProjectsAsync(ct);
-    // Only the true owner (or an admin) sees a project in their list. Previously this also
-    // matched blank/"local" OwnerUserId for *any* signed-in user, which leaked unowned/legacy
-    // and seed-demo projects into every account's project list.
-    var list = user.IsAdmin
-        ? all
-        : all.Where(p =>
-            string.Equals(p.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    IReadOnlyList<ProjectInfo> list;
+    if (user.IsAdmin)
+    {
+        list = all;
+    }
+    else
+    {
+        // Resolve all known identities for this account so projects created under a
+        // previous handle / email-shaped id (folder budcribarmsn_com vs budcribar) still appear.
+        UserEntity? me = null;
+        try
+        {
+            me = await userDb.GetUserByIdAsync(user.UserId, ct).ConfigureAwait(false)
+                 ?? await userDb.GetUserByUsernameAsync(user.UserId, ct).ConfigureAwait(false);
+        }
+        catch { /* offline */ }
+
+        var aliases = ProjectOwnership.CollectAliases(
+            user.UserId,
+            canonicalUserId: me?.UserId,
+            username: me?.Username,
+            email: me?.Email);
+        list = all.Where(p => ProjectOwnership.IsOwnedBy(p, aliases)).ToList();
+
+        // Self-heal: if folder/owner field used a stale alias, rewrite ownerUserId to canonical id
+        // so future filters and admin tools stay consistent. Best-effort; never delete.
+        var canonical = !string.IsNullOrWhiteSpace(me?.UserId) ? me!.UserId.Trim() : user.UserId.Trim();
+        if (!string.IsNullOrWhiteSpace(canonical))
+        {
+            foreach (var p in list)
+            {
+                if (string.Equals(p.OwnerUserId, canonical, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                try
+                {
+                    await store.RepairProjectOwnerAsync(p.Id, canonical, ct).ConfigureAwait(false);
+                    p.OwnerUserId = canonical;
+                }
+                catch { /* non-fatal */ }
+            }
+        }
+    }
 
     var activeId = store.ActiveProjectId;
     if (string.IsNullOrWhiteSpace(activeId) && list.Count > 0)
@@ -2134,14 +2171,24 @@ app.MapPost("/api/projects", async (
     {
         var name = body?.Name ?? body?.Id ?? body?.Title ?? "";
         var title = body?.Title;
+        // Prefer stable DB UserId so folder + ownerUserId stay consistent across re-login.
+        var ownerId = user.UserId;
+        try
+        {
+            var me = await userDb.GetUserByIdAsync(user.UserId, ct).ConfigureAwait(false)
+                     ?? await userDb.GetUserByUsernameAsync(user.UserId, ct).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(me?.UserId))
+                ownerId = me!.UserId.Trim();
+        }
+        catch { /* use JWT id */ }
+
         var p = await store.CreateProjectAsync(
-            name, title, ct, ownerUserId: user.UserId, studioPath: body?.StudioPath);
+            name, title, ct, ownerUserId: ownerId, studioPath: body?.StudioPath);
         var all = await store.ListProjectsAsync(ct);
-        // Same visibility rule as GET /api/projects — only owner (or admin) sees their list.
+        var aliases = ProjectOwnership.CollectAliases(ownerId, user.UserId);
         var list = user.IsAdmin
             ? all
-            : all.Where(x =>
-                string.Equals(x.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase)).ToList();
+            : all.Where(x => ProjectOwnership.IsOwnedBy(x, aliases)).ToList();
         return Results.Ok(new
         {
             ok = true,
