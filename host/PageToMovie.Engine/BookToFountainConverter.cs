@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.ModelBacked;
+using PageToMovie.Engine.ModelExecution;
 
 namespace PageToMovie.Engine;
 
@@ -304,6 +306,14 @@ public static class BookToFountainConverter
         var lateEndMarkerSeen = text.Contains("---END_VISION_META---", StringComparison.OrdinalIgnoreCase);
         var (fountainOnly, visionLate) = SplitVisionMetaTrailer(text);
         var vision = visionLate ?? visionEarly;
+        if (vision is null)
+        {
+            var repairedPackage = await RepairVisionMetaAsync(
+                system, fountainOnly, bookText, chat, model, reasoningEffort, ct).ConfigureAwait(false);
+            var repairedSplit = SplitVisionMetaTrailer(repairedPackage);
+            fountainOnly = repairedSplit.Fountain;
+            vision = repairedSplit.Vision;
+        }
         if (vision is not null)
         {
             vision.DecidedBy = "adaptation";
@@ -313,7 +323,9 @@ public static class BookToFountainConverter
         visionMarkerSeen |= lateMarkerSeen;
         visionEndMarkerSeen |= lateEndMarkerSeen;
         var status = vision is not null
-            ? VisionMetaStatus.PrimaryResponse
+            ? visionLate is not null || visionEarly is not null
+                ? VisionMetaStatus.PrimaryResponse
+                : VisionMetaStatus.RepairResponse
             : visionMarkerSeen ? VisionMetaStatus.Malformed : VisionMetaStatus.Missing;
         var error = vision is not null
             ? null
@@ -330,6 +342,51 @@ public static class BookToFountainConverter
             VisionMetaStatus = status,
             VisionMetaError = error,
         };
+    }
+
+    private static async Task<string> RepairVisionMetaAsync(
+        string system,
+        string fountain,
+        string bookText,
+        IChatClient chat,
+        string model,
+        string? reasoningEffort,
+        CancellationToken ct)
+    {
+        var bookContext = bookText.Length <= 12_000 ? bookText : bookText[..12_000];
+        var user = $$"""
+            VISION_META REPAIR
+            Append exactly one valid production-medium sidecar to the complete Fountain below.
+            Preserve the Fountain body verbatim. Return Fountain followed by:
+            ---VISION_META---
+            {"visual_medium":"live_action|illustrated_picture_book|mixed","render_style_lock":"specific reusable style lock","notes":"brief evidence"}
+            ---END_VISION_META---
+
+            Source-book context:
+            {{bookContext}}
+
+            Fountain:
+            {{fountain}}
+            """;
+        var result = await ExecuteStage1OperationAsync(
+            chat, system, user, model, 0.1,
+            ChatCallModes.BookToFountainRetry,
+            "VISION_META repair", null, ct, reasoningEffort,
+            promptVersion: "stage1-vision-meta-repair-v1",
+            correctionInstruction: "Append valid VISION_META JSON with both delimiters and an allowed visual_medium value.",
+            validate: value =>
+            {
+                var split = SplitVisionMetaTrailer(value);
+                var issues = new List<ModelValidationIssue>();
+                if (split.Vision is null)
+                    issues.Add(new("missing_vision_meta", "A valid VISION_META sidecar is required.", "$.vision_meta"));
+                if (!LooksLikeGoodFountain(split.Fountain))
+                    issues.Add(new("invalid_fountain", "The preserved Fountain body is invalid.", "$.fountain"));
+                return issues;
+            },
+            deterministicFallback: fountain,
+            operationName: "stage1_vision_meta_repair").ConfigureAwait(false);
+        return result ?? fountain;
     }
 
     /// <summary>
@@ -400,12 +457,9 @@ public static class BookToFountainConverter
     }
 
     /// <summary>
-    /// Runs one chat completion attempt, retrying once after a transient failure
-    /// (network error, timeout). Repair calls are best-effort; a timeout should not
-    /// permanently leave the original problem when a retry would likely succeed.
-    /// Returns null only if both attempts fail. Does not retry cancellation.
+    /// Executes a versioned Stage 1 request through the shared transport/correction lifecycle.
     /// </summary>
-    private static async Task<string?> CompleteWithOneRetryAsync(
+    private static async Task<string?> ExecuteStage1OperationAsync(
         IChatClient chat,
         string system,
         string user,
@@ -415,25 +469,28 @@ public static class BookToFountainConverter
         string retryLabel,
         Action<string>? onProgress,
         CancellationToken ct,
-        string? reasoningEffort = null)
+        string? reasoningEffort = null,
+        string promptVersion = "stage1-primary-v1",
+        string correctionInstruction = "Fix the reported structural problems without changing book-faithful story content.",
+        Func<string, IReadOnlyList<ModelValidationIssue>>? validate = null,
+        string? deterministicFallback = null,
+        string operationName = "stage1_book_to_fountain")
     {
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            try
-            {
-                return await chat.CompleteAsync(system, user, model, temperature, ct, mode: mode, reasoningEffort: reasoningEffort)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception) when (attempt == 1)
-            {
-                onProgress?.Invoke($"{retryLabel} call failed — retrying once…");
-            }
-        }
-        return null;
+        validate ??= static value => string.IsNullOrWhiteSpace(value)
+            ? [new ModelValidationIssue("empty_response", "The response was empty.")]
+            : Array.Empty<ModelValidationIssue>();
+        var result = await Stage1FountainLifecycle.ExecuteAsync(
+            chat,
+            new Stage1FountainRequest(
+                system, user, model, temperature, mode, promptVersion,
+                correctionInstruction, reasoningEffort, deterministicFallback, operationName),
+            validate,
+            ct).ConfigureAwait(false);
+        if (result.Source == ModelResultSource.CorrectiveResponse)
+            onProgress?.Invoke($"{retryLabel} corrected after validation.");
+        else if (!result.Success)
+            onProgress?.Invoke($"{retryLabel} failed validation.");
+        return result.Value?.FountainPackage;
     }
 
     /// <summary>
@@ -484,11 +541,15 @@ public static class BookToFountainConverter
 
         try
         {
-            var raw = await CompleteWithOneRetryAsync(
+            var raw = await ExecuteStage1OperationAsync(
                     chat, system, user, model, temperature: 0.1,
                     mode: ChatCallModes.BookToFountainLocationsRetry,
-                    retryLabel: "Location repair", onProgress, ct, reasoningEffort)
-                .ConfigureAwait(false);
+                    retryLabel: "Location repair", onProgress, ct, reasoningEffort,
+                    promptVersion: "stage1-location-heading-repair-v1",
+                    correctionInstruction: "Rewrite every remaining vague scene heading as one or two concrete filmable locations.",
+                    validate: value => ValidateFountainRepair(value, FindVagueLocationHeadings, "vague_heading"),
+                    deterministicFallback: fountain,
+                    operationName: "stage1_location_heading_repair").ConfigureAwait(false);
             if (raw is null)
             {
                 onProgress?.Invoke("Location repair failed twice — keeping prior draft.");
@@ -657,10 +718,15 @@ public static class BookToFountainConverter
 
         try
         {
-            var raw = await CompleteWithOneRetryAsync(
+            var raw = await ExecuteStage1OperationAsync(
                     chat, system, user, model, temperature: 0.15,
                     mode: ChatCallModes.BookToFountainSpeakersRetry,
-                    retryLabel: "Speaker naming repair", onProgress, ct, reasoningEffort)
+                    retryLabel: "Speaker naming repair", onProgress, ct, reasoningEffort,
+                    promptVersion: "stage1-generic-speaker-repair-v1",
+                    correctionInstruction: "Replace every remaining generic numbered or ordinal character cue with stable proper-name tokens.",
+                    validate: value => ValidateFountainRepair(value, FindGenericNumberedSpeakers, "generic_speaker"),
+                    deterministicFallback: fountain,
+                    operationName: "stage1_generic_speaker_repair")
                 .ConfigureAwait(false);
             if (raw is null)
             {
@@ -693,6 +759,19 @@ public static class BookToFountainConverter
             onProgress?.Invoke("Speaker naming repair failed — keeping prior draft.");
             return fountain;
         }
+    }
+
+    private static IReadOnlyList<ModelValidationIssue> ValidateFountainRepair(
+        string fountain,
+        Func<string?, IReadOnlyList<string>> findRemaining,
+        string issueCode)
+    {
+        var issues = new List<ModelValidationIssue>();
+        if (!LooksLikeGoodFountain(fountain))
+            issues.Add(new("invalid_fountain", "The response is not a usable Fountain screenplay.", "$.fountain"));
+        foreach (var remaining in findRemaining(fountain))
+            issues.Add(new(issueCode, $"Unresolved value: {remaining}", "$.fountain"));
+        return issues;
     }
 
     /// <summary>
@@ -1269,20 +1348,7 @@ public static class BookToFountainConverter
                 bookMaxChars: budget.SingleShotBookMaxChars,
                 reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
 
-            var gate = EvaluateQuality(draft, bookText, totalMinutes, AdaptPath.Single);
-            if (gate.Ok)
-                return draft;
-
-            onProgress?.Invoke($"Single pass weak ({gate.Reason}) — retry…");
-            draft = await ConvertSingleShotAsync(
-                system, title, author, pageCount, totalMinutes, bookText,
-                chat, model, ct,
-                bookMaxChars: budget.SingleShotBookMaxChars,
-                extraUserSuffix: CoverageRetrySuffix(),
-                reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
-
-            gate = EvaluateQuality(draft, bookText, totalMinutes, AdaptPath.Single);
-            return gate.Ok ? draft : null;
+            return EvaluateQuality(draft, bookText, totalMinutes, AdaptPath.Single).Ok ? draft : null;
         }
         catch (InvalidOperationException)
         {
@@ -1317,31 +1383,20 @@ public static class BookToFountainConverter
         var firstMode = string.IsNullOrEmpty(extraUserSuffix)
             ? ChatCallModes.BookToFountain
             : ChatCallModes.BookToFountainCoverage;
-        var text = await CompleteWithOneRetryAsync(
+        var text = await ExecuteStage1OperationAsync(
                 chat, system, user, model, temperature: temperature,
                 mode: firstMode,
                 retryLabel: "Book adapt",
                 onProgress: null,
-                ct, reasoningEffort)
+                ct, reasoningEffort,
+                promptVersion: "stage1-book-to-fountain-v2",
+                correctionInstruction: CoverageRetrySuffix(),
+                validate: value => ValidatePrimaryPackage(
+                    value, bookText, totalMinutes, AdaptPath.Single))
             .ConfigureAwait(false);
         if (text is null)
             throw new InvalidOperationException(
                 "Book adapt timed out or failed after retry. Try again or import a .fountain file.");
-        text = StripBookPageTags(StripFences(text));
-
-        if (!LooksLikeGoodFountain(text))
-        {
-            var retryUser = user + RetrySuffix(hasPageMarkers: false);
-            var retryText = await CompleteWithOneRetryAsync(
-                    chat, system, retryUser, model, temperature: Math.Min(temperature, 0.15),
-                    mode: ChatCallModes.BookToFountainRetry,
-                    retryLabel: "Book adapt structure",
-                    onProgress: null,
-                    ct, reasoningEffort)
-                .ConfigureAwait(false);
-            if (retryText is not null)
-                text = StripBookPageTags(StripFences(retryText));
-        }
 
         if (!LooksLikeGoodFountain(text))
             throw new InvalidOperationException(
@@ -1382,28 +1437,19 @@ public static class BookToFountainConverter
                 chunkIndex: i, chunkTotal: chunks.Count, continuity: continuity);
 
             // One transport retry on timeout/cancel (chunk calls can exceed short proxies)
-            var part = await CompleteWithOneRetryAsync(
+            var part = await ExecuteStage1OperationAsync(
                     chat, system, user, model, temperature: temperature,
                     mode: ChatCallModes.BookToFountainChunk,
                     retryLabel: $"Chunk {i + 1}/{chunks.Count}",
-                    onProgress, ct, reasoningEffort)
+                    onProgress, ct, reasoningEffort,
+                    promptVersion: "stage1-book-chunk-v2",
+                    correctionInstruction: RetrySuffix(false),
+                    validate: ValidateChunk)
                 .ConfigureAwait(false);
             if (part is null)
                 throw new InvalidOperationException(
                     $"Book adapt chunk {i + 1}/{chunks.Count} failed after retry (timeout or network). Try again.");
             part = StripBookPageTags(StripFences(part));
-
-            if (!LooksLikeGoodFountain(part) && part.Length < 80)
-            {
-                var retryPart = await CompleteWithOneRetryAsync(
-                        chat, system, user + RetrySuffix(false), model, temperature: Math.Min(temperature, 0.15),
-                        mode: ChatCallModes.BookToFountainChunkRetry,
-                        retryLabel: $"Chunk {i + 1} structure",
-                        onProgress, ct, reasoningEffort)
-                    .ConfigureAwait(false);
-                if (retryPart is not null)
-                    part = StripBookPageTags(StripFences(retryPart));
-            }
 
             parts.Add(part);
             continuity = BuildContinuityBrief(part, i + 1, chunks.Count);
@@ -1498,12 +1544,33 @@ public static class BookToFountainConverter
             Prefer story completeness and cast/location consistency over preserving every line.
             """;
 
-        var text = await chat.CompleteAsync(
-                mergeSystem, sb.ToString(), model, temperature: 0.15, ct,
-                mode: ChatCallModes.BookToFountainMerge, reasoningEffort: reasoningEffort)
-            .ConfigureAwait(false);
-        return StripFences(text);
+        var text = await ExecuteStage1OperationAsync(
+                chat, mergeSystem, sb.ToString(), model, temperature: 0.15,
+                mode: ChatCallModes.BookToFountainMerge,
+                retryLabel: "Merge pass", onProgress: null, ct, reasoningEffort,
+                promptVersion: "stage1-multi-chunk-merge-v1",
+                correctionInstruction: "Return one complete, structurally valid Fountain screenplay with a single ending.",
+                validate: ValidateChunk).ConfigureAwait(false);
+        return text ?? throw new InvalidOperationException("The multi-chunk merge did not produce usable Fountain.");
     }
+
+    private static IReadOnlyList<ModelValidationIssue> ValidatePrimaryPackage(
+        string value,
+        string bookText,
+        int totalMinutes,
+        AdaptPath path)
+    {
+        var gate = EvaluateQuality(value, bookText, totalMinutes, path);
+        return gate.Ok
+            ? Array.Empty<ModelValidationIssue>()
+            : gate.Failures.Select(failure =>
+                new ModelValidationIssue("stage1_quality", failure, "$.fountain")).ToArray();
+    }
+
+    private static IReadOnlyList<ModelValidationIssue> ValidateChunk(string value) =>
+        LooksLikeGoodFountain(value)
+            ? Array.Empty<ModelValidationIssue>()
+            : [new ModelValidationIssue("invalid_fountain", "The response is not usable Fountain.", "$.fountain")];
 
     // ── prompts / continuity ─────────────────────────────────────────────
 
@@ -1818,7 +1885,7 @@ public static class BookToFountainConverter
                "\n\n[[Book excerpted (start/middle/end) — adapt a complete short film covering the full arc present across these parts. Do not invent missing chapters.]]\n";
     }
 
-    private static string StripFences(string text)
+    internal static string StripFences(string text)
     {
         text = (text ?? "").Trim();
         if (text.StartsWith("```", StringComparison.Ordinal))

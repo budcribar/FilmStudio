@@ -283,7 +283,8 @@ public class BookToFountainPathTests
         var text = conversion.Fountain;
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
-        Assert.InRange(chat.Calls, 1, 2); // 1 pass, or structure retry only
+        // One adaptation call plus up to two focused VISION_META lifecycle attempts.
+        Assert.InRange(chat.Calls, 1, 3);
         Assert.DoesNotContain(chat.UserPrompts, u => u.Contains("multi-chunk", StringComparison.OrdinalIgnoreCase)
             || u.Contains("BOOK_CHUNK 2/", StringComparison.OrdinalIgnoreCase));
     }
@@ -306,8 +307,8 @@ public class BookToFountainPathTests
         var text = conversion.Fountain;
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
-        // Single-shot success: no multi-chunk (would be ≥3 calls for 2+ chunks + possible merge)
-        Assert.True(chat.Calls <= 2, $"expected single-shot (≤2 calls), got {chat.Calls}");
+        // Single-shot success plus up to two focused VISION_META lifecycle attempts.
+        Assert.True(chat.Calls <= 3, $"expected single-shot plus metadata repair (≤3 calls), got {chat.Calls}");
         Assert.Contains(chat.UserPrompts, u => u.Contains("BOOK_CHUNK 1/1", StringComparison.Ordinal));
     }
 

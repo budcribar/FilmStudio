@@ -32,14 +32,14 @@ This is the authoritative completion checklist for migrating adaptation operatio
 - [x] Validate non-empty Fountain and scene coverage before accepting Stage 1.
 - [x] Persist Stage 1 provenance and validation artifacts.
 - [x] Use derivation-safe shared caching for complete non-heuristic packages.
-- [ ] Move the primary book-to-Fountain request into an `IModelOperation` adapter.
-- [ ] Move structural repair requests into focused corrective lifecycle attempts.
-- [ ] Move vague-heading and generic-speaker repairs into versioned operations.
-- [ ] Move missing/malformed `VISION_META` repair into a versioned operation.
-- [ ] Remove duplicate converter-local retry/parse/fallback orchestration after parity tests pass.
-- [ ] Add recorded primary/correction/fallback replay for the complete Stage 1 package.
+- [x] Move the primary book-to-Fountain request into an `IModelOperation` adapter.
+- [x] Move structural repair requests into focused corrective lifecycle attempts.
+- [x] Move vague-heading and generic-speaker repairs into versioned operations.
+- [x] Move missing/malformed `VISION_META` repair into a versioned operation.
+- [x] Remove duplicate converter-local retry/parse/fallback orchestration after parity tests pass.
+- [x] Add recorded primary/correction/fallback replay for the complete Stage 1 package.
 
-**Phase status: partial.**
+**Phase status: complete.**
 
 ## 4. Cast extraction
 
