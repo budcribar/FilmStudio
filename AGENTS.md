@@ -281,3 +281,13 @@ When debugging runtime behavior on the live Railway server across coding agent s
 ---
 
 *Last updated: 2026-07-30 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup; server diagnostics; platform architecture & pipeline integrity rules; strict client-side media ownership enforcement; strict operator control for paid AI tests.*
+
+
+## Stage‑1 prompt tokens (book → Fountain)
+
+- Template: [`prompts/book_to_fountain.txt`](prompts/book_to_fountain.txt) (currently **v4**: Fountain + `VISION_META` + `ADAPTATION_REPORT`).
+- Loaded via `AdaptationPromptPack` (embedded resource; override with `PAGETOMOVIE_PROMPTS_DIR`).
+- **Every** `{{TOKEN}}` must be substituted by `ApplyPromptTokens` / `AdaptationPromptTokens` before any model call. Leftovers throw.
+- UI-bound values (e.g. visual medium, runtime target) flow: UI → project preference / request → tokens → prompt.
+- After editing the prompt file, **rebuild** `PageToMovie.Adaptation` or point `PAGETOMOVIE_PROMPTS_DIR` at repo `prompts/`.
+
