@@ -152,16 +152,14 @@ public static class BookTextAnalyzer
     /// <summary>
     /// Stage 1 target runtime used by production Stage 1 / screenplay services and the
     /// screenplay benchmark. Optional override is clamped to 2–180; otherwise uses
-    /// <see cref="AdaptationDensity"/> natural film minutes.
+    /// <see cref="AdaptationDensity"/> natural film minutes via <see cref="NaturalRuntime"/>.
     /// </summary>
     public static int ResolveStage1RuntimeMinutes(string bookText, int? overrideMinutes = null)
     {
         if (overrideMinutes is > 0)
-            return Math.Clamp(overrideMinutes.Value, 2, 180);
-        return Math.Clamp(
-            AdaptationDensity.EstimateNatural(bookText).NaturalFilmMinutes,
-            2,
-            180);
+            return NaturalRuntime.ClampMinutes(overrideMinutes.Value);
+        return NaturalRuntime.ClampMinutes(
+            AdaptationDensity.EstimateNatural(bookText).NaturalFilmMinutes);
     }
 
     /// <summary>

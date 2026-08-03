@@ -223,10 +223,10 @@ public sealed class NaturalRuntimeEstimate
 
 | ID | Action | Done when |
 |----|--------|-----------|
-| **A3.1** | Pure target resolve in Adaptation: `ResolveTarget(bookText, overrideMinutes?)` | No store |
-| **A3.2** | Engine `FilmRuntime` / project config: load/save target only; call Adaptation for natural | Import UI still works |
-| **A3.3** | Book prepare writes natural from `AdaptationService.AnalyzeBook` | extract_meta fields filled |
-| **A3.4** | Document: “retarget is Engine; natural math is Adaptation” | README |
+| **A3.1** | Pure target resolve in Adaptation: `ResolveTarget(bookText, overrideMinutes?)` | ✅ `NaturalRuntime` + `AdaptationService.ResolveTargetMinutes` |
+| **A3.2** | Engine `FilmRuntime` / project config: load/save target only; call Adaptation for natural | ✅ storage/orchestration only |
+| **A3.3** | Book prepare writes natural from `AdaptationService.AnalyzeBook` | ✅ + `FilmRuntime.ApplyNaturalToMetaDictionary` |
+| **A3.4** | Document: “retarget is Engine; natural math is Adaptation” | ✅ Adaptation README |
 
 **Exit:** Storage for target minutes stays Engine; math stays Adaptation.
 

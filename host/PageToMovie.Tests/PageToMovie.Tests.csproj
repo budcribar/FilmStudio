@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PageToMovie.Api\PageToMovie.Api.csproj" />
+    <ProjectReference Include="..\PageToMovie.Adaptation\PageToMovie.Adaptation.csproj" />
     <ProjectReference Include="..\PageToMovie.Core\PageToMovie.Core.csproj" />
     <ProjectReference Include="..\PageToMovie.Engine\PageToMovie.Engine.csproj" />
     <ProjectReference Include="..\PageToMovie.Fakes\PageToMovie.Fakes.csproj" />

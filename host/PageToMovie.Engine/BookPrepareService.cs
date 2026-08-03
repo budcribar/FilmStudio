@@ -259,6 +259,19 @@ public sealed class BookPrepareService
                 $"Vision done: {pageImages.Count - failed}/{pageImages.Count} pages, quality={analysis.TextQuality}");
         }
 
+        // Natural film minutes from Adaptation façade (A3.3) — not Engine-local math.
+        // AnalyzeBook / EstimateNaturalRuntime are pure density; FilmRuntime only persists.
+        var bookForNatural = File.Exists(bookTxt)
+            ? await File.ReadAllTextAsync(bookTxt, ct).ConfigureAwait(false)
+            : "";
+        var adaptation = new AdaptationService();
+        var analysisFacade = adaptation.AnalyzeBook(bookForNatural);
+        var naturalMinutes = analysisFacade.SuggestedTotalMinutes > 0
+            ? analysisFacade.SuggestedTotalMinutes
+            : adaptation.EstimateNaturalRuntime(bookForNatural).NaturalMinutes;
+        if (naturalMinutes > 0)
+            analysis.SuggestedTotalMinutes = naturalMinutes;
+
         result.TextQuality = analysis.TextQuality;
         result.GarbageScore = analysis.GarbageScore;
         result.TextWords = analysis.TextWords;
@@ -843,10 +856,7 @@ public sealed class BookPrepareService
                 ? "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action"
                 : "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe. NOT cartoon, NOT illustration, NOT anime",
             ["medium_source"] = "import_extract_meta",
-            ["suggested_total_minutes"] = analysis.SuggestedTotalMinutes,
-            ["natural_runtime_minutes"] = analysis.SuggestedTotalMinutes,
-            ["target_runtime_minutes"] = analysis.SuggestedTotalMinutes,
-            ["runtime_mode"] = "natural",
+            // natural/target/mode filled by FilmRuntime.ApplyNaturalToMetaDictionary below
             ["suggested_chunk_pages"] = analysis.SuggestedChunkPages,
             ["strategy"] = new Dictionary<string, object?>
             {
@@ -887,6 +897,8 @@ public sealed class BookPrepareService
                 }
                 : null,
         };
+        // Natural + default target from Adaptation minutes; FilmRuntime only fills storage keys.
+        FilmRuntime.ApplyNaturalToMetaDictionary(meta, analysis.SuggestedTotalMinutes);
         var path = Path.Combine(sourceDir, "extract_meta.json");
         await File.WriteAllTextAsync(
             path,

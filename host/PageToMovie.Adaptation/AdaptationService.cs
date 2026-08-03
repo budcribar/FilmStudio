@@ -12,8 +12,8 @@ namespace PageToMovie.Adaptation;
 /// </summary>
 public sealed class AdaptationService
 {
-    public const int MinRuntimeMinutes = 2;
-    public const int MaxRuntimeMinutes = 180;
+    public const int MinRuntimeMinutes = NaturalRuntime.MinMinutes;
+    public const int MaxRuntimeMinutes = NaturalRuntime.MaxMinutes;
 
     /// <summary>
     /// Kind, words, quality notes, natural minutes via <see cref="BookTextAnalyzer"/>.
@@ -43,12 +43,14 @@ public sealed class AdaptationService
     }
 
     /// <summary>
-    /// Density-only natural runtime estimate via <see cref="AdaptationDensity"/>.
+    /// Density-only natural runtime estimate via <see cref="AdaptationDensity"/> /
+    /// <see cref="NaturalRuntime"/>.
     /// </summary>
     public NaturalRuntimeEstimate EstimateNaturalRuntime(string bookText)
     {
-        var e = AdaptationDensity.EstimateNatural(bookText);
-        return ToNaturalRuntimeEstimate(e, targetMinutes: e.NaturalFilmMinutes, mode: "natural");
+        var e = AdaptationDensity.EstimateNatural(bookText ?? "");
+        var natural = NaturalRuntime.ClampMinutes(e.NaturalFilmMinutes);
+        return ToNaturalRuntimeEstimate(e, targetMinutes: natural, mode: natural > 0 ? "natural" : "none");
     }
 
     /// <summary>
@@ -56,23 +58,14 @@ public sealed class AdaptationService
     /// </summary>
     public NaturalRuntimeEstimate ResolveTargetMinutes(string bookText, int? overrideMinutes = null)
     {
-        var e = AdaptationDensity.EstimateNatural(bookText);
-        int target;
-        string mode;
-        if (overrideMinutes is > 0)
-        {
-            target = Math.Clamp(overrideMinutes.Value, MinRuntimeMinutes, MaxRuntimeMinutes);
-            mode = target == e.NaturalFilmMinutes
-                ? "natural"
-                : target < e.NaturalFilmMinutes ? "reduced" : "custom";
-        }
-        else
-        {
-            target = Math.Clamp(e.NaturalFilmMinutes, MinRuntimeMinutes, MaxRuntimeMinutes);
-            mode = "natural";
-        }
-
-        return ToNaturalRuntimeEstimate(e, target, mode);
+        var e = AdaptationDensity.EstimateNatural(bookText ?? "");
+        var (natural, target, mode) = NaturalRuntime.Resolve(bookText, overrideMinutes);
+        // Prefer density estimate details; clamp natural to the resolved value.
+        return ToNaturalRuntimeEstimate(
+            e,
+            targetMinutes: target,
+            mode: mode,
+            naturalOverride: natural);
     }
 
     /// <summary>
@@ -102,7 +95,7 @@ public sealed class AdaptationService
 
         var analysis = AnalyzeBook(request.BookText);
         var runtime = ResolveTargetMinutes(request.BookText, request.TargetRuntimeMinutes);
-        var minutes = Math.Clamp(runtime.TargetMinutes, MinRuntimeMinutes, MaxRuntimeMinutes);
+        var minutes = NaturalRuntime.ClampMinutes(runtime.TargetMinutes);
 
         Action<string>? onProgress = progress is null ? null : s => progress.Report(s);
         var usedHeuristic = false;
@@ -137,7 +130,7 @@ public sealed class AdaptationService
         {
             NaturalMinutes = runtime.NaturalMinutes,
             TargetMinutes = minutes,
-            Mode = runtime.Mode,
+            Mode = NaturalRuntime.ResolveMode(runtime.NaturalMinutes, minutes),
             Method = runtime.Method,
             SourceWords = runtime.SourceWords,
             SourceSyllables = runtime.SourceSyllables,
@@ -165,10 +158,11 @@ public sealed class AdaptationService
     private static NaturalRuntimeEstimate ToNaturalRuntimeEstimate(
         AdaptationDensity.Estimate e,
         int targetMinutes,
-        string mode) =>
+        string mode,
+        int? naturalOverride = null) =>
         new()
         {
-            NaturalMinutes = e.NaturalFilmMinutes,
+            NaturalMinutes = naturalOverride ?? NaturalRuntime.ClampMinutes(e.NaturalFilmMinutes),
             TargetMinutes = targetMinutes,
             Mode = mode,
             Method = e.Method,

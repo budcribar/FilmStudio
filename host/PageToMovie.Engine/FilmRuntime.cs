@@ -5,13 +5,18 @@ using PageToMovie.Adaptation;
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Natural vs user-chosen target film length for a project.
-/// Natural comes from <see cref="PageToMovie.Adaptation.AdaptationDensity"/>; target drives Stage 1 / estimates.
+/// Project film-length storage and orchestration.
+/// <para>
+/// <b>Pure math</b> (natural density, clamp, mode) lives in
+/// <see cref="NaturalRuntime"/> / <see cref="AdaptationService"/> — never reimplemented here.
+/// This type only loads book text and reads/writes <c>pipeline_config</c> + <c>extract_meta</c>
+/// for target/mode persistence (retarget is Engine; natural math is Adaptation).
+/// </para>
 /// </summary>
 public static class FilmRuntime
 {
-    public const int MinMinutes = 2;
-    public const int MaxMinutes = 180;
+    public const int MinMinutes = NaturalRuntime.MinMinutes;
+    public const int MaxMinutes = NaturalRuntime.MaxMinutes;
 
     public sealed class Snapshot
     {
@@ -25,13 +30,13 @@ public static class FilmRuntime
         public string Source { get; init; } = ""; // config | extract_meta | density | none
     }
 
-    public static int ClampMinutes(int minutes) =>
-        Math.Clamp(minutes, MinMinutes, MaxMinutes);
+    /// <summary>Delegates to <see cref="NaturalRuntime.ClampMinutes"/> (API surface for Engine callers).</summary>
+    public static int ClampMinutes(int minutes) => NaturalRuntime.ClampMinutes(minutes);
 
     /// <summary>
     /// Resolve target minutes for screenplay generation.
-    /// Order: explicit override → pipeline_config.target_runtime_minutes →
-    /// extract_meta target/suggested → density natural.
+    /// Natural always from Adaptation when book text is available; target from
+    /// override → pipeline_config → extract_meta → natural.
     /// </summary>
     public static async Task<Snapshot> ResolveAsync(
         ProjectStore store,
@@ -71,17 +76,19 @@ public static class FilmRuntime
 
         var hasBook = !string.IsNullOrWhiteSpace(bookText) || File.Exists(bookPath);
 
+        // Natural minutes: Adaptation math only (never re-derived in Engine).
         int natural;
         string densitySource;
-        if (metaNatural is > 0)
+        if (!string.IsNullOrWhiteSpace(bookText))
         {
+            natural = NaturalRuntime.EstimateNaturalMinutes(bookText);
+            densitySource = "density";
+        }
+        else if (metaNatural is > 0)
+        {
+            // Cached value written by BookPrepare / SetTarget (originally from Adaptation).
             natural = ClampMinutes(metaNatural.Value);
             densitySource = "extract_meta";
-        }
-        else if (!string.IsNullOrWhiteSpace(bookText))
-        {
-            natural = BookTextAnalyzer.ResolveStage1RuntimeMinutes(bookText);
-            densitySource = "density";
         }
         else if (metaTarget is > 0)
         {
@@ -109,21 +116,21 @@ public static class FilmRuntime
         if (overrideTargetMinutes is > 0)
         {
             target = ClampMinutes(overrideTargetMinutes.Value);
-            mode = target == natural ? "natural" : (target < natural ? "reduced" : "custom");
+            mode = NaturalRuntime.ResolveMode(natural, target);
             source = "override";
         }
         else if (configTarget is > 0)
         {
             target = ClampMinutes(configTarget.Value);
             mode = string.IsNullOrWhiteSpace(configMode)
-                ? (target == natural ? "natural" : target < natural ? "reduced" : "custom")
+                ? NaturalRuntime.ResolveMode(natural, target)
                 : configMode!.Trim().ToLowerInvariant();
             source = "config";
         }
         else if (metaTarget is > 0)
         {
             target = ClampMinutes(metaTarget.Value);
-            mode = target == natural ? "natural" : target < natural ? "reduced" : "custom";
+            mode = NaturalRuntime.ResolveMode(natural, target);
             source = "extract_meta";
         }
         else if (natural > 0)
@@ -165,9 +172,7 @@ public static class FilmRuntime
             throw new InvalidOperationException(
                 "Import the book first so we can measure a natural film length, then set a shorter target if you want.");
         targetMinutes = ClampMinutes(targetMinutes);
-        var mode = targetMinutes == snap.NaturalMinutes
-            ? "natural"
-            : targetMinutes < snap.NaturalMinutes ? "reduced" : "custom";
+        var mode = NaturalRuntime.ResolveMode(snap.NaturalMinutes, targetMinutes);
 
         using var updateDoc = JsonDocument.Parse(JsonSerializer.Serialize(new Dictionary<string, object?>
         {
@@ -208,7 +213,10 @@ public static class FilmRuntime
         };
     }
 
-    /// <summary>Write natural (+ default target=natural) into extract_meta after book prepare.</summary>
+    /// <summary>
+    /// Write natural (+ default target=natural) into extract_meta after book prepare.
+    /// Natural minutes must come from Adaptation; this only fills storage fields.
+    /// </summary>
     public static void ApplyNaturalToMetaDictionary(
         Dictionary<string, object?> meta,
         int naturalMinutes,
@@ -219,7 +227,7 @@ public static class FilmRuntime
         meta["natural_runtime_minutes"] = naturalMinutes;
         meta["target_runtime_minutes"] = target;
         meta["suggested_total_minutes"] = target;
-        meta["runtime_mode"] = target == naturalMinutes ? "natural" : "custom";
+        meta["runtime_mode"] = NaturalRuntime.ResolveMode(naturalMinutes, target);
     }
 
     private static bool TryInt(JsonElement root, string name, out int value)
