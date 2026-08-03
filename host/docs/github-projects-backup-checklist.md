@@ -25,7 +25,7 @@ Source of truth for product intent: `public-community-plan.md` (namespacing + `P
 
 - [x] `POST /api/projects/{id}/commit` (existing)
 - [x] Commit stages tracked files only (video ignored via `.gitignore`)
-- [ ] Debounced auto-commit on screenplay/cast/blueprint save (blocked on issue-26 guard for nested repos)
+- [x] Debounced auto-commit on screenplay/cast/config/clip save (nested-repo guard skips app-repo demos)
 - [ ] In-app commit timeline UI
 
 ---
@@ -33,7 +33,7 @@ Source of truth for product intent: `public-community-plan.md` (namespacing + `P
 ## Step 3 — Protected project messaging
 
 - [ ] UI copy: recipe/package backed up to Git; clips need media folder or vault
-- [ ] Surface last commit hash + push status on Home/project header
+- [x] Surface last commit hash + History / Save revision on Home project bar
 
 ---
 

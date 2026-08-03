@@ -62,6 +62,13 @@ public sealed class ProjectAutoGitService
 
         if (!Directory.Exists(projectPath)) return;
 
+        // Guard: never nest a project git inside the app repo (local sample projects).
+        if (!ProjectGitRepositoryService.TryEnsureRepository(projectPath, out var skip))
+        {
+            _log.LogDebug("Auto-Git skipped for {Id}: {Reason}", projectId, skip);
+            return;
+        }
+
         try
         {
             var commitResult = await _gitRepo.CommitProjectStateAsync(projectPath, item.Author, item.Message).ConfigureAwait(false);

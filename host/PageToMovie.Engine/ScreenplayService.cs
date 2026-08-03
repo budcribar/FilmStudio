@@ -404,6 +404,7 @@ public static string NormalizeText(string text)
         meta.LastSavedHash = hash;
         meta.LastSavedAt = DateTime.UtcNow.ToString("o");
         WriteMeta(store, projectId, meta);
+        store.TriggerAutoGitCommit(projectId, "Save screenplay draft");
 
         var stage1 = ReadStage1Lite(store, projectId);
         var status = ReadStatus(store, projectId, stage1);
@@ -645,6 +646,7 @@ public static string NormalizeText(string text)
         meta.LastSavedHash = hash;
         meta.LastSavedAt = meta.SignedAt;
         WriteMeta(store, projectId, meta);
+        store.TriggerAutoGitCommit(projectId, "Approve screenplay");
 
         var stage1 = ReadStage1Lite(store, projectId);
         var status = ReadStatus(store, projectId, stage1);

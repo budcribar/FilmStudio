@@ -106,6 +106,14 @@ public sealed class ProjectStore
     }
 
     /// <summary>Gets recent Git history for a project.</summary>
+    public ProjectGitStatus GetProjectGitStatus(string projectId, ProjectGitRepositoryService? gitRepo = null)
+    {
+        var dir = GetProjectDir(projectId);
+        var git = gitRepo ?? new ProjectGitRepositoryService(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+        return git.GetStatus(dir, projectId);
+    }
+
     public async Task<IReadOnlyList<GitCommitInfo>> GetProjectGitHistoryAsync(string projectId, int limit = 20, ProjectGitRepositoryService? gitRepo = null)
     {
         if (string.IsNullOrWhiteSpace(projectId)) return Array.Empty<GitCommitInfo>();
@@ -243,7 +251,7 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// Gets uncommitted file modification status across scenes and clips.
+    /// Package Git status: HEAD tip + uncommitted scene/clip summary for Home "Last saved".
     /// </summary>
     public Task<UncommittedStatusDto> GetProjectUncommittedStatusAsync(string projectId, ProjectGitRepositoryService? gitRepo = null)
     {
@@ -252,14 +260,30 @@ public sealed class ProjectStore
         if (!Directory.Exists(dir)) return Task.FromResult(new UncommittedStatusDto());
 
         var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
-        var (hasChanges, files) = git.GetUncommittedStatus(dir);
-        if (!hasChanges) return Task.FromResult(new UncommittedStatusDto());
-
+        var head = git.GetStatus(dir, projectId);
         var dto = new UncommittedStatusDto
         {
-            HasUncommittedChanges = true,
+            GitAvailable = head.Available,
+            SkipReason = head.SkipReason,
+            RemoteConfigured = head.RemoteConfigured,
+            LastCommitHash = head.LastCommitHash,
+            LastCommitMessage = head.LastCommitMessage,
+            LastCommitAuthor = head.LastCommitAuthor,
+            LastCommitAtUtc = head.LastCommitAtUtc,
+            HistoryUrl = head.HistoryUrl,
+            HasUncommittedChanges = head.HasUncommittedChanges,
         };
 
+        if (!head.Available || !head.HasUncommittedChanges)
+        {
+            if (head.Available && !string.IsNullOrWhiteSpace(head.LastCommitHash))
+                dto.Summary = "Package up to date with last save.";
+            else if (!head.Available)
+                dto.Summary = head.SkipReason ?? "Package history not available.";
+            return Task.FromResult(dto);
+        }
+
+        var (_, files) = git.GetUncommittedStatus(dir);
         var modScenes = new HashSet<int>();
         var modClips = new HashSet<string>();
 
@@ -274,19 +298,22 @@ public sealed class ProjectStore
                     modClips.Add($"{s}-{c}");
                 }
             }
-            else if (f.EndsWith("blueprint.clips.grok.json", StringComparison.OrdinalIgnoreCase) || f.EndsWith("scenes.json", StringComparison.OrdinalIgnoreCase))
+            else if (f.EndsWith("blueprint.clips.grok.json", StringComparison.OrdinalIgnoreCase) ||
+                     f.EndsWith("scenes.json", StringComparison.OrdinalIgnoreCase) ||
+                     f.EndsWith("screenplay.fountain", StringComparison.OrdinalIgnoreCase) ||
+                     f.EndsWith("cast_seeds.json", StringComparison.OrdinalIgnoreCase) ||
+                     f.EndsWith("project.json", StringComparison.OrdinalIgnoreCase) ||
+                     f.EndsWith("pipeline_config.json", StringComparison.OrdinalIgnoreCase))
             {
-                var bpScenes = GetBlueprintSceneNumbers(projectId);
-                if (bpScenes is not null)
-                {
-                    foreach (var sn in bpScenes) modScenes.Add(sn);
-                }
+                // Text package change without scene token in path
             }
         }
 
         dto.ModifiedScenes = modScenes.OrderBy(n => n).ToList();
         dto.ModifiedClipKeys = modClips.ToList();
-        dto.Summary = $"{dto.ModifiedScenes.Count} scene(s) modified since last commit.";
+        dto.Summary = dto.ModifiedScenes.Count > 0
+            ? $"{dto.ModifiedScenes.Count} scene(s) modified since last save."
+            : "Package has uncommitted changes.";
         return Task.FromResult(dto);
     }
 
@@ -1499,6 +1526,7 @@ public sealed class ProjectStore
 
         proj.Title = title;
         proj.Label = title;
+        TriggerAutoGitCommit(projectId, "Rename project");
         return proj;
     }
 
@@ -1543,6 +1571,7 @@ public sealed class ProjectStore
 
         proj.VisibilityMode = mode;
         InvalidateReadCaches(null);
+        TriggerAutoGitCommit(projectId, "Update project visibility");
         return proj;
     }
 
@@ -2025,6 +2054,7 @@ public sealed class ProjectStore
         await File.WriteAllTextAsync(path, json + "\n", ct).ConfigureAwait(false);
         // Blueprint path may have changed via blueprint_file
         InvalidateSceneListCache(projectId);
+        TriggerAutoGitCommit(projectId, "Update pipeline config");
         return await GetConfigAsync(projectId, ct).ConfigureAwait(false);
     }
 
@@ -2714,6 +2744,7 @@ public sealed class ProjectStore
         var scenesPath = ResolveScenesJsonPath(projectId);
         if (File.Exists(scenesPath))
             PatchFile(scenesPath, createCastShape: false);
+        TriggerAutoGitCommit(projectId, "Update character seeds");
     }
 
     /// <summary>
@@ -3072,6 +3103,7 @@ public sealed class ProjectStore
         File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
         InvalidateSceneListCache(projectId);
         InvalidateReadCaches(projectId);
+        TriggerAutoGitCommit(projectId, "Update clip visual prompt");
     }
 
     private static System.Text.Json.Nodes.JsonArray? FindSceneClipsArray(
@@ -3386,6 +3418,7 @@ public sealed class ProjectStore
         File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
         InvalidateSceneListCache(projectId);
         InvalidateReadCaches(projectId);
+        TriggerAutoGitCommit(projectId, "Edit clip fields");
     }
 
     /// <summary>

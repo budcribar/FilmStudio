@@ -263,6 +263,62 @@ else
                         }
                     </div>
 
+                    @* Package history: auto-commits on save; never auto-reverts. *@
+                    <div class="d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-2 small"
+                         data-testid="home-package-history">
+                        @if (_packageStatusLoading && _packageStatus is null)
+                        {
+                            <span class="text-muted">Checking package history…</span>
+                        }
+                        else if (_packageStatus is { GitAvailable: true })
+                        {
+                            <span>
+                                <span class="text-muted">Last saved</span>
+                                @if (!string.IsNullOrWhiteSpace(_packageStatus.LastCommitHash))
+                                {
+                                    <strong class="ms-1 font-monospace" data-testid="home-last-saved-hash">@ShortHash(_packageStatus.LastCommitHash)</strong>
+                                }
+                                else
+                                {
+                                    <span class="ms-1 text-muted">—</span>
+                                }
+                                @if (_packageStatus.LastCommitAtUtc is DateTime when)
+                                {
+                                    <span class="text-muted ms-1" title="@when.ToString("u")">@FormatRelativeUtc(when)</span>
+                                }
+                            </span>
+                            @if (_packageStatus.HasUncommittedChanges)
+                            {
+                                <span class="badge text-bg-warning text-dark fw-normal" data-testid="home-package-dirty">
+                                    Unsaved package changes
+                                </span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(PackageHistoryUrl))
+                            {
+                                <button type="button" class="btn btn-link btn-sm p-0 align-baseline"
+                                        data-testid="home-package-history-link"
+                                        disabled="@_busy"
+                                        @onclick="() => OpenHistoryAsync(PackageHistoryUrl!)">
+                                    History
+                                </button>
+                            }
+                            @if (CanSavePackageRevision)
+                            {
+                                <button type="button" class="btn btn-link btn-sm p-0 align-baseline"
+                                        data-testid="home-package-save-revision"
+                                        disabled="@_busy"
+                                        title="Commit text package and push to backup when configured"
+                                        @onclick="() => SaveRevisionAsync(ActivePackageProjectId)">
+                                    Save revision
+                                </button>
+                            }
+                        }
+                        else if (_packageStatus is not null && !string.IsNullOrWhiteSpace(_packageStatus.SkipReason))
+                        {
+                            <span class="text-muted" title="@_packageStatus.SkipReason">Package history off on this host</span>
+                        }
+                    </div>
+
                     @if (_manageExpanded && hasActive)
                     {
                         <div class="home-manage-panel mb-3 p-2 rounded border border-secondary border-opacity-25">
@@ -551,6 +607,8 @@ else
     /// <summary>Last saved revision hash per project id (session-local).</summary>
     private readonly Dictionary<string, string> _revisionHashes =
         new(StringComparer.OrdinalIgnoreCase);
+    private UncommittedStatusDto? _packageStatus;
+    private bool _packageStatusLoading;
 
     private void OpenCollaboratorsModal(string projectId)
     {
@@ -565,6 +623,35 @@ else
         if (string.IsNullOrWhiteSpace(hash)) return "";
         var h = hash.Trim();
         return h.Length <= 7 ? h : h[..7];
+    }
+
+    private string ActivePackageProjectId =>
+        ActiveProject.ProjectId ?? _projects?.Active?.Id ?? "";
+
+    private string? PackageHistoryUrl
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_packageStatus?.HistoryUrl))
+                return _packageStatus!.HistoryUrl;
+            var pid = ActivePackageProjectId;
+            if (string.IsNullOrWhiteSpace(pid)) return null;
+            return _historyUrls.TryGetValue(pid, out var hu) ? hu : null;
+        }
+    }
+
+    private bool CanSavePackageRevision
+    {
+        get
+        {
+            var pid = ActivePackageProjectId;
+            if (string.IsNullOrWhiteSpace(pid) || !Session.IsLoggedIn) return false;
+            if (Session.IsAdmin) return true;
+            var owner = _projects?.Active?.OwnerUserId
+                        ?? _projects?.Projects.FirstOrDefault(x =>
+                            string.Equals(x.Id, pid, StringComparison.OrdinalIgnoreCase))?.OwnerUserId;
+            return string.Equals(Session.UserId, owner, StringComparison.OrdinalIgnoreCase);
+        }
     }
     private JobSnapshot? _job;
     private List<JobSnapshot> _myJobs = new();
@@ -696,6 +783,49 @@ else
         return amount.Value.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
     }
 
+    private static string FormatRelativeUtc(DateTime utc)
+    {
+        var t = utc.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(utc, DateTimeKind.Utc)
+            : utc.ToUniversalTime();
+        var span = DateTime.UtcNow - t;
+        if (span.TotalSeconds < 45) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 36) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 14) return $"{(int)span.TotalDays}d ago";
+        return t.ToString("MMM d");
+    }
+
+    private async Task RefreshPackageStatusAsync()
+    {
+        var pid = ActiveProject.ProjectId ?? _projects?.Active?.Id;
+        if (string.IsNullOrWhiteSpace(pid) || !Session.IsLoggedIn)
+        {
+            _packageStatus = null;
+            _packageStatusLoading = false;
+            return;
+        }
+
+        _packageStatusLoading = true;
+        try
+        {
+            var env = await Engine.GetProjectUncommittedStatusAsync(pid);
+            _packageStatus = env?.Status;
+            if (!string.IsNullOrWhiteSpace(_packageStatus?.LastCommitHash))
+                _revisionHashes[pid] = _packageStatus!.LastCommitHash!;
+            if (!string.IsNullOrWhiteSpace(_packageStatus?.HistoryUrl))
+                _historyUrls[pid] = _packageStatus!.HistoryUrl!;
+        }
+        catch
+        {
+            // non-fatal
+        }
+        finally
+        {
+            _packageStatusLoading = false;
+        }
+    }
+
     private async Task RefreshProjectCostAsync()
     {
         var pid = ActiveProject.ProjectId ?? _projects?.Active?.Id;
@@ -706,6 +836,7 @@ else
             _costResolution = null;
             _costVideoRate = null;
             _costLoading = false;
+            _packageStatus = null;
             return;
         }
 
@@ -739,6 +870,8 @@ else
         {
             _costLoading = false;
         }
+
+        await RefreshPackageStatusAsync();
     }
 
     private bool CanConfirmDelete => _deleteId is not null;
@@ -1340,6 +1473,7 @@ else
             _message = string.IsNullOrEmpty(shortHash)
                 ? "Revision saved."
                 : $"Revision saved ({shortHash}).";
+            await RefreshPackageStatusAsync();
         }
         catch (Exception ex)
         {

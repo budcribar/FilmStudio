@@ -26,8 +26,22 @@ namespace PageToMovie.Engine
         public string Message { get; set; } = "";
     }
 
+    public class ProjectGitStatus
+    {
+        public bool Available { get; set; }
+        public string? SkipReason { get; set; }
+        public bool RemoteConfigured { get; set; }
+        public string? LastCommitHash { get; set; }
+        public string? LastCommitMessage { get; set; }
+        public string? LastCommitAuthor { get; set; }
+        public DateTime? LastCommitAtUtc { get; set; }
+        public bool HasUncommittedChanges { get; set; }
+        public string? HistoryUrl { get; set; }
+    }
+
     public class GitPushResult
     {
+
         public bool Success { get; set; }
         public string Message { get; set; } = "";
         public string? Branch { get; set; }
@@ -461,30 +475,181 @@ namespace PageToMovie.Engine
             }
         }
 
-        /// <summary>Public entry for create/fork — init repo + video gitignore.</summary>
-        public static void EnsureRepositoryAt(string projectPath) => EnsureRepository(projectPath);
+        /// <summary>
+        /// Best-effort: init project git when safe (not nested under another worktree).
+        /// No-op when nested — callers must tolerate "no git" in local app-repo layouts.
+        /// </summary>
+        public static void EnsureRepositoryAt(string projectPath) =>
+            TryEnsureRepository(projectPath, out _);
 
         /// <summary>
-        /// Initializes a standalone Git repository at <paramref name="projectPath"/> if one doesn't
-        /// already exist, with a .gitignore excluding video/audio binaries.
-        /// <para>
-        /// Caller responsibility: <paramref name="projectPath"/> must be a project's own directory
-        /// under the workspace's <c>projects/</c> folder in a deployment where that folder is plain
-        /// user data (Railway persistent volume), never a path that's already tracked inside a
-        /// different Git working tree (e.g. this very app repo's own checked-in sample/demo
-        /// projects) — nesting a repository inside an already-tracked directory produces a broken
-        /// gitlink in the outer repo. See issue tracking this exact caveat before wiring automatic
-        /// calls into the request pipeline.
-        /// </para>
+        /// True when <paramref name="projectPath"/> already has its own repo, or may safely
+        /// <c>git init</c> without nesting under an outer app/worktree <c>.git</c>.
         /// </summary>
-        private static void EnsureRepository(string projectPath)
-        {
-            if (!Repository.IsValid(projectPath))
-                Repository.Init(projectPath);
+        public static bool TryEnsureRepository(string projectPath) =>
+            TryEnsureRepository(projectPath, out _);
 
+        public static bool TryEnsureRepository(string projectPath, out string? skipReason)
+        {
+            skipReason = null;
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath))
+            {
+                skipReason = "project directory missing";
+                return false;
+            }
+
+            if (Repository.IsValid(projectPath))
+            {
+                EnsureGitignore(projectPath);
+                return true;
+            }
+
+            if (IsNestedInOuterGitWorktree(projectPath))
+            {
+                skipReason =
+                    "project sits inside another Git worktree (e.g. app repo sample projects); " +
+                    "skip init to avoid a nested gitlink";
+                return false;
+            }
+
+            try
+            {
+                Repository.Init(projectPath);
+                EnsureGitignore(projectPath);
+                return true;
+            }
+            catch (Exception)
+            {
+                skipReason = "git init failed";
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Walk parents of the project folder looking for a <c>.git</c> that is not the project itself.
+        /// Used to refuse nested init when demos live inside the app source tree.
+        /// </summary>
+        public static bool IsNestedInOuterGitWorktree(string projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath)) return false;
+            DirectoryInfo? dir;
+            try { dir = Directory.GetParent(Path.GetFullPath(projectPath)); }
+            catch { return false; }
+
+            while (dir is not null)
+            {
+                var gitDir = Path.Combine(dir.FullName, ".git");
+                if (Directory.Exists(gitDir) || File.Exists(gitDir))
+                    return true;
+                try
+                {
+                    if (Repository.IsValid(dir.FullName))
+                        return true;
+                }
+                catch { /* ignore */ }
+                dir = dir.Parent;
+            }
+            return false;
+        }
+
+        private static void EnsureGitignore(string projectPath)
+        {
             var gitignorePath = Path.Combine(projectPath, ".gitignore");
             if (!File.Exists(gitignorePath))
                 File.WriteAllText(gitignorePath, string.Join("\n", IgnoredGlobs) + "\n");
+        }
+
+        private static void EnsureRepository(string projectPath)
+        {
+            if (!TryEnsureRepository(projectPath, out var reason) && !string.IsNullOrEmpty(reason))
+                throw new InvalidOperationException(
+                    $"Cannot use project Git at '{projectPath}': {reason}");
+        }
+
+        /// <summary>HEAD tip + dirty flag for UI "Last saved" without committing.</summary>
+        public ProjectGitStatus GetStatus(string projectPath)
+        {
+            var status = new ProjectGitStatus();
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath))
+            {
+                status.Available = false;
+                status.SkipReason = "project directory missing";
+                return status;
+            }
+
+            if (!Repository.IsValid(projectPath))
+            {
+                status.Available = false;
+                status.SkipReason = IsNestedInOuterGitWorktree(projectPath)
+                    ? "nested under outer git worktree"
+                    : "no local project git yet";
+                status.RemoteConfigured = _git.Enabled && !string.IsNullOrWhiteSpace(_git.ProjectsRepoUrl);
+                return status;
+            }
+
+            status.Available = true;
+            status.RemoteConfigured = _git.Enabled && !string.IsNullOrWhiteSpace(_git.ProjectsRepoUrl);
+            try
+            {
+                using var repo = new Repository(projectPath);
+                var tip = repo.Head.Tip;
+                if (tip is not null)
+                {
+                    status.LastCommitHash = tip.Sha;
+                    status.LastCommitMessage = tip.Message.TrimEnd('\n');
+                    status.LastCommitAuthor = tip.Author.Name;
+                    status.LastCommitAtUtc = tip.Author.When.UtcDateTime;
+                }
+                var st = repo.RetrieveStatus();
+                status.HasUncommittedChanges = st.IsDirty;
+                status.HistoryUrl = BuildHistoryUrlIfPossible(projectPath);
+            }
+            catch (Exception ex)
+            {
+                status.Available = false;
+                status.SkipReason = ex.Message;
+            }
+            return status;
+        }
+
+        private string? BuildHistoryUrlIfPossible(string projectPath, string? projectId = null)
+        {
+            if (!_git.Enabled || string.IsNullOrWhiteSpace(_git.ProjectsRepoUrl))
+                return null;
+            try
+            {
+                string id;
+                if (!string.IsNullOrWhiteSpace(projectId))
+                    id = projectId.Trim();
+                else
+                {
+                    var leaf = Path.GetFileName(projectPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                    var parent = Path.GetFileName(Path.GetDirectoryName(projectPath) ?? "");
+                    id = !string.IsNullOrEmpty(parent) &&
+                         !string.Equals(parent, "projects", StringComparison.OrdinalIgnoreCase)
+                        ? parent + "/" + leaf
+                        : leaf ?? "";
+                }
+                var branch = BuildRemoteBranchName(id, _git.DefaultBranchPrefix);
+                var url = _git.ProjectsRepoUrl.Trim().TrimEnd('/');
+                if (url.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+                    url = url[..^4];
+                if (url.Contains("github.com", StringComparison.OrdinalIgnoreCase))
+                    return $"{url}/commits/{branch}";
+            }
+            catch { /* ignore */ }
+            return null;
+        }
+
+        /// <summary>Status for a known project id (branch naming matches push).</summary>
+        public ProjectGitStatus GetStatus(string projectPath, string projectId)
+        {
+            var s = GetStatus(projectPath);
+            if (s.Available && string.IsNullOrWhiteSpace(s.HistoryUrl))
+                s.HistoryUrl = BuildHistoryUrlIfPossible(projectPath, projectId);
+            else if (s.Available)
+                s.HistoryUrl = BuildHistoryUrlIfPossible(projectPath, projectId);
+            return s;
         }
 
         private static string EmailFor(string author)

@@ -52,10 +52,19 @@ public sealed class MusicVersionItem
 }
 
 /// <summary>
-/// Status of uncommitted changes across scenes and clips.
+/// Package Git status: last commit + optional uncommitted scene/clip summary.
+/// Used for Home "Last saved" (never auto-reverts).
 /// </summary>
 public sealed class UncommittedStatusDto
 {
+    public bool GitAvailable { get; set; }
+    public string? SkipReason { get; set; }
+    public bool RemoteConfigured { get; set; }
+    public string? LastCommitHash { get; set; }
+    public string? LastCommitMessage { get; set; }
+    public string? LastCommitAuthor { get; set; }
+    public DateTime? LastCommitAtUtc { get; set; }
+    public string? HistoryUrl { get; set; }
     public bool HasUncommittedChanges { get; set; }
     public List<int> ModifiedScenes { get; set; } = new();
     public List<string> ModifiedClipKeys { get; set; } = new();

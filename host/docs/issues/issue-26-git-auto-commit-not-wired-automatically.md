@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Severity | suggestion |
-| Status | open |
+| Status | partially done |
 | Branch | `fix/issue-26-git-auto-commit-not-wired-automatically` |
 | Related files | `host/PageToMovie.Engine/ProjectGitRepositoryService.cs` |
 
