@@ -2,13 +2,14 @@
 @inject EngineApiClient Api
 @inject AdminSessionService Session
 @inject NavigationManager Nav
+@inject IJSRuntime Js
 
 <PageTitle>Admin config — PageToMovie</PageTitle>
 
-<div class="container py-3" style="max-width: 40rem;">
+<div class="container-fluid py-3" style="max-width: 72rem;">
     <div class="mb-3">
         <h1 class="h3 mb-0">Server configuration</h1>
-        <div class="text-muted small">Hot-apply capacity &amp; fakes · persists under <code>.filmstudio/runtime-config.json</code></div>
+        <div class="text-muted small">Hot-apply capacity & fakes · persists under <code>.filmstudio/runtime-config.json</code></div>
     </div>
 
     @if (!Session.IsAdmin)
@@ -32,81 +33,102 @@
 
         @if (_cfg is not null)
         {
-            <div class="card mb-3">
-                <div class="card-header">Capacity</div>
-                <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label class="form-label">MaxVideoInFlight</label>
-                            <InputNumber class="form-control" @bind-Value="_maxVideo" />
+            <div class="row"
+                 data-masonry='{"percentPosition": true}'
+                 data-testid="admin-config-masonry"
+                 id="admin-config-masonry">
+                <div class="col-sm-6 col-lg-4 mb-4 ptm-masonry-item">
+                    <div class="card">
+                        <div class="card-header">Capacity</div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">MaxVideoInFlight</label>
+                                    <InputNumber class="form-control" @bind-Value="_maxVideo" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">MaxVideoInFlightPerUser</label>
+                                    <InputNumber class="form-control" @bind-Value="_maxVideoPerUser" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">MaxQueuePerUser</label>
+                                    <InputNumber class="form-control" @bind-Value="_maxQueue" />
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">MaxVideoInFlightPerUser</label>
-                            <InputNumber class="form-control" @bind-Value="_maxVideoPerUser" />
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-4 mb-4 ptm-masonry-item">
+                    <div class="card">
+                        <div class="card-header">Billing · customer charge</div>
+                        <div class="card-body">
+                            <label class="form-label">Charge multiplier</label>
+                            <InputNumber class="form-control" @bind-Value="_chargeMultiplier" step="0.05" min="0" max="100" />
+                            <div class="form-text">
+                                Applied to estimates and actual charges (list rate × multiplier).
+                                1.0 = vendor list rate; 1.5 = 50% markup. Debits credits at the charged amount.
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">MaxQueuePerUser</label>
-                            <InputNumber class="form-control" @bind-Value="_maxQueue" />
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-4 mb-4 ptm-masonry-item">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-1">
+                            <span>Fakes</span>
+                            @if (_cfg.RestartRequired?.Contains("UseFakes") == true)
+                            {
+                                <span class="badge text-bg-warning">UseFakes: restart for full DI effect</span>
+                            }
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-2">
+                                <InputCheckbox class="form-check-input" id="useFakes" @bind-Value="_useFakes" />
+                                <label class="form-check-label" for="useFakes">UseFakes (flag only; clients fixed at process start)</label>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">VideoMode</label>
+                                    <InputText class="form-control" @bind-Value="_videoMode" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">VideoDelayMs</label>
+                                    <InputNumber class="form-control" @bind-Value="_videoDelayMs" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">FailRate (0–1)</label>
+                                    <InputNumber class="form-control" @bind-Value="_failRate" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">RateLimitEveryN</label>
+                                    <InputNumber class="form-control" @bind-Value="_rateLimitEveryN" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-4 mb-4 ptm-masonry-item">
+                    <div class="card">
+                        <div class="card-header">Status</div>
+                        <div class="card-body small text-muted">
+                            <div class="mb-2">
+                                Path: <code class="user-select-all">@(_cfg.ConfigPath ?? "—")</code>
+                            </div>
+                            <div>
+                                Last update: @(_cfg.UpdatedAt?.ToLocalTime().ToString("g") ?? "—")
+                                by @(_cfg.UpdatedBy ?? "—")
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 pt-0">
+                            <button class="btn btn-primary w-100" disabled="@_busy" @onclick="SaveAsync">
+                                @(_busy ? "Saving…" : "Save & hot-apply")
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div class="card mb-3">
-                <div class="card-header">Billing · customer charge</div>
-                <div class="card-body">
-                    <label class="form-label">Charge multiplier</label>
-                    <InputNumber class="form-control" @bind-Value="_chargeMultiplier" step="0.05" min="0" max="100" />
-                    <div class="form-text">
-                        Applied to estimates and actual charges (list rate × multiplier).
-                        1.0 = vendor list rate; 1.5 = 50% markup. Debits credits at the charged amount.
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mb-3">
-                <div class="card-header d-flex justify-content-between">
-                    <span>Fakes</span>
-                    @if (_cfg.RestartRequired?.Contains("UseFakes") == true)
-                    {
-                        <span class="badge text-bg-warning">UseFakes: restart for full DI effect</span>
-                    }
-                </div>
-                <div class="card-body">
-                    <div class="form-check mb-2">
-                        <InputCheckbox class="form-check-input" id="useFakes" @bind-Value="_useFakes" />
-                        <label class="form-check-label" for="useFakes">UseFakes (flag only; clients fixed at process start)</label>
-                    </div>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label class="form-label">VideoMode</label>
-                            <InputText class="form-control" @bind-Value="_videoMode" />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">VideoDelayMs</label>
-                            <InputNumber class="form-control" @bind-Value="_videoDelayMs" />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">FailRate (0–1)</label>
-                            <InputNumber class="form-control" @bind-Value="_failRate" />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">RateLimitEveryN</label>
-                            <InputNumber class="form-control" @bind-Value="_rateLimitEveryN" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="small text-muted mb-3">
-                Path: <code>@(_cfg.ConfigPath ?? "—")</code><br />
-                Last update: @(_cfg.UpdatedAt?.ToLocalTime().ToString("g") ?? "—")
-                by @(_cfg.UpdatedBy ?? "—")
-            </div>
-
-            <button class="btn btn-primary" disabled="@_busy" @onclick="SaveAsync">
-                @(_busy ? "Saving…" : "Save & hot-apply")
-            </button>
         }
     }
 </div>
@@ -116,6 +138,7 @@
     private string? _error;
     private string? _message;
     private bool _busy;
+    private bool _masonryPending;
 
     private int _maxVideo = 4;
     private int _maxVideoPerUser = 2;
@@ -131,18 +154,35 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || _started) return;
-        _started = true;
-
-        await Session.EnsureHydratedAsync();
-        if (!Session.IsAdmin)
+        if (firstRender && !_started)
         {
-            Nav.NavigateTo("/admin/login", forceLoad: true);
+            _started = true;
+
+            await Session.EnsureHydratedAsync();
+            if (!Session.IsAdmin)
+            {
+                Nav.NavigateTo("/admin/login", forceLoad: true);
+                return;
+            }
+
+            await LoadAsync();
+            _masonryPending = true;
+            StateHasChanged();
             return;
         }
 
-        await LoadAsync();
-        StateHasChanged();
+        if (_masonryPending && _cfg is not null)
+        {
+            _masonryPending = false;
+            try
+            {
+                await Js.InvokeVoidAsync("ptmMasonry.refresh", "#admin-config-masonry");
+            }
+            catch
+            {
+                // CDN / offline — cards still stack as a normal Bootstrap row
+            }
+        }
     }
 
     private async Task LoadAsync()
@@ -197,7 +237,8 @@
                 UseFakes = _useFakes,
                 ChargeMultiplier = _chargeMultiplier,
             });
-            _message = "Saved and applied (capacity + charge multiplier hot; UseFakes may need restart for client DI).";
+            _message = "Saved and applied (capacity + charge multiplier hot; UseFakes may need restart for full DI effect).";
+            _masonryPending = true;
         }
         catch (Exception ex)
         {
