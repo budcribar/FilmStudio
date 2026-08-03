@@ -6,7 +6,7 @@ using Xunit;
 namespace PageToMovie.Tests;
 
 /// <summary>
-/// Project-wide cast gate: every character needs voice + locked image (voice-only: voice only)
+/// Project-wide cast gate: every single-face character needs voice + locked image (voice-only and group/chorus: voice only)
 /// before video gen to avoid wasted API spend.
 /// </summary>
 public class CastReadinessTests : IDisposable
@@ -187,4 +187,66 @@ public class CastReadinessTests : IDisposable
         Directory.CreateDirectory(source);
         File.WriteAllText(Path.Combine(source, "cast_seeds.json"), json);
     }
+
+    [Fact]
+    public void Group_with_voice_no_locked_image_is_ready()
+    {
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Children": {
+                  "canonical_given_name": "Children",
+                  "cast_kind": "group",
+                  "description": "A small group of school-age children in simple period play clothes.",
+                  "voice_profile": "eager mixed children voices"
+                },
+                "Character_Mary": {
+                  "canonical_given_name": "Mary",
+                  "description": "Young girl with brown braids",
+                  "voice_profile": "gentle young girl"
+                }
+              }
+            }
+            """);
+
+        // Mary still needs a locked face; Children (group) does not.
+        var charDir = Path.Combine(_store.GetProjectDir(ProjectId), "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllBytes(Path.Combine(charDir, "character_mary_ref.png"), new byte[128]);
+
+        var rows = _store.ListCharacters(ProjectId);
+        var children = Assert.Single(rows, c => c.Key.Contains("Children", StringComparison.OrdinalIgnoreCase));
+        Assert.True(children.IsGroup);
+        Assert.False(children.Locked);
+
+        var status = _store.ReadCastStatus(ProjectId);
+        Assert.True(status.ReadyForShots, string.Join("; ", status.Missing));
+        Assert.Empty(_store.GetCastNotReadyForVideo(ProjectId));
+    }
+
+    [Fact]
+    public void Group_without_voice_is_not_ready()
+    {
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Children": {
+                  "canonical_given_name": "Children",
+                  "cast_kind": "group",
+                  "description": "Several schoolchildren",
+                  "voice_profile": ""
+                }
+              }
+            }
+            """);
+
+        var status = _store.ReadCastStatus(ProjectId);
+        Assert.False(status.ReadyForShots);
+        Assert.Contains("Character_Children", status.Missing);
+        Assert.Contains(_store.GetCastNotReadyForVideo(ProjectId),
+            m => m.Contains("voice", StringComparison.OrdinalIgnoreCase));
+    }
+
 }

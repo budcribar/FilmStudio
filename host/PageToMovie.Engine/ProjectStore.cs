@@ -4618,8 +4618,10 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// Cast is ready when every member has a voice profile and (if on-screen) a
-    /// <em>locked</em> ref image — not merely a variant draft (<see cref="CharacterSummary.HasPreferred"/>).
+    /// Cast is ready when every member has a voice profile and (if a single on-screen face)
+    /// a <em>locked</em> ref image — not merely a variant draft (<see cref="CharacterSummary.HasPreferred"/>).
+    /// <see cref="CharacterSummary.VoiceOnly"/> and <see cref="CharacterSummary.IsGroup"/> skip the
+    /// locked-image requirement (groups/chorus are not single-face pins).
     /// Empty cast (no seeds yet) is not ready. Used for next-step gating and video-gen spend protection.
     /// </summary>
     public CastStatus ReadCastStatus(string projectId)
@@ -4637,7 +4639,8 @@ public sealed class ProjectStore
             foreach (var c in rows)
             {
                 var hasVoice = !string.IsNullOrWhiteSpace(c.VoiceProfile);
-                if (c.VoiceOnly)
+                // Voice-only and group/chorus: no single-face portrait pin required.
+                if (c.VoiceOnly || c.IsGroup)
                 {
                     if (hasVoice)
                         ready++;
@@ -4667,7 +4670,9 @@ public sealed class ProjectStore
 
     /// <summary>
     /// Project-wide cast gate before any video spend: every seed needs a voice profile;
-    /// every non-voice-only seed needs a locked ref image (not just a variant draft).
+    /// every single on-screen face needs a locked ref image (not just a variant draft).
+    /// <see cref="CharacterSummary.VoiceOnly"/> and <see cref="CharacterSummary.IsGroup"/> skip
+    /// the locked-image requirement.
     /// Empty cast is not ready. Returns human-readable missing items (empty when ready).
     /// </summary>
     public IReadOnlyList<string> GetCastNotReadyForVideo(string projectId)
@@ -4692,7 +4697,7 @@ public sealed class ProjectStore
         foreach (var c in rows)
         {
             var hasVoice = !string.IsNullOrWhiteSpace(c.VoiceProfile);
-            if (c.VoiceOnly)
+            if (c.VoiceOnly || c.IsGroup)
             {
                 if (!hasVoice)
                     missing.Add($"{c.Key}: voice profile");

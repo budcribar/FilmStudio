@@ -798,6 +798,7 @@ else
     private string? ListThumbUrl(CharacterSummary c)
     {
         if (c.VoiceOnly) return null;
+        // Groups may optionally have a ref; do not invent one for list thumbs.
         // Locked / preferred ref always wins over old generate variants (uploads used to look
         // "gone" after reload when variant_01 still existed and was preferred in the list).
         if (c.Locked || !string.IsNullOrWhiteSpace(c.RefUrl))
@@ -2784,7 +2785,7 @@ else
     private async Task OnVoiceCloneUploadAsync(InputFileChangeEventArgs e)
     {
         // Legacy OS file picker path — prefer media folder; still supported if invoked.
-        if (_selected is null || _selected.VoiceOnly) return;
+        if (_selected is null || _selected.VoiceOnly || _selected.IsGroup) return;
         var file = e.File;
         if (file is null) return;
         _voiceCloneBusy = true;
@@ -2854,7 +2855,7 @@ else
 
     private async Task OnUploadRefAsync(InputFileChangeEventArgs e)
     {
-        if (_selected is null || _selected.VoiceOnly) return;
+        if (_selected is null || _selected.VoiceOnly || _selected.IsGroup) return;
         var file = e.File;
         if (file is null) return;
 
