@@ -1,0 +1,22 @@
+{
+  "book": "Mary had a little lamb, its fleece was white as snow. Everywhere that Mary went, the lamb was sure to go. It followed her to school one day, which was against the rule. It made the children laugh and play to see a lamb at school.",
+  "operations": {
+    "stage1": [
+      "not a screenplay",
+      "Title: Mary Had a Little Lamb\n\nFADE IN:\n\nEXT. COUNTRY ROAD - MORNING\n\nMARY walks toward school with her little white lamb following close behind.\n\nMARY\nYou always follow me.\n\nEXT. SCHOOLYARD - DAY\n\nThe children laugh and play when the lamb trots through the gate.\n\nTEACHER\nThe lamb must wait outside.\n\nFADE OUT.\n\nTHE END\n\n---VISION_META---\n{\"visual_medium\":\"illustrated_picture_book\",\"render_style_lock\":\"soft watercolor nursery-book continuity\",\"notes\":\"verse picture book\"}\n---END_VISION_META---"
+    ],
+    "cast": [
+      "{\"Character_Mary\":{\"description\":\"A school-age child in a blue dress.\",\"species\":\"human\",\"character_seed_tokens\":[\"young child\",\"blue dress\"]},\"Character_Lamb\":{\"description\":\"A small lamb with white fleece.\",\"species\":\"animal\",\"character_seed_tokens\":[\"small lamb\",\"white fleece\"]}}"
+    ],
+    "stage2": [
+      "{\"scene_1\":{\"clips\":[\"mary_walks\"]}}",
+      "{\"scene_1\":{\"clips\":[\"mary_walks\"]},\"scene_2\":{\"clips\":[\"lamb_at_school\"]}}"
+    ],
+    "multimodal_observation": [
+      "{\"frames\":[{\"frame_id\":\"scene_2_frame_01\",\"observations\":[\"Mary and the white lamb are visible in the schoolyard\"],\"uncertainty\":0.05}],\"unavailable\":false}"
+    ],
+    "multimodal_judgment": [
+      "{\"verdict\":\"pass\",\"evidence_frame_ids\":[\"scene_2_frame_01\"],\"continuity\":\"Characters and watercolor style match the plan.\"}"
+    ]
+  }
+}

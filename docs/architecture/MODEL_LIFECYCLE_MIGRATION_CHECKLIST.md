@@ -93,15 +93,15 @@ This is the authoritative completion checklist for migrating adaptation operatio
 
 - [x] Add Mary Had a Little Lamb as a small arbitrary-story fixture.
 - [x] Replay and validate a representative cast package with deterministic provenance.
-- [ ] Record a complete Stage 1 primary/correction package for Mary.
-- [ ] Replay Stage 1 → cast extraction → Stage 2 without network access.
-- [ ] Replay multimodal observations/judgments using recorded response fixtures.
-- [ ] Assert stable book, derivation, prompt, response, and output hashes across two runs.
-- [ ] Assert cache hit behavior makes zero model-client calls on the second run.
-- [ ] Assert changed prompt/model/temperature/schema invalidates only affected artifacts.
-- [ ] Produce one aggregate replay manifest linking every operation and artifact.
+- [x] Record a complete Stage 1 primary/correction package for Mary.
+- [x] Replay Stage 1 → cast extraction → Stage 2 without network access.
+- [x] Replay multimodal observations/judgments using recorded response fixtures.
+- [x] Assert stable book, derivation, prompt, response, and output hashes across two runs.
+- [x] Assert cache hit behavior makes zero model-client calls on the second run.
+- [x] Assert changed prompt/model/temperature/schema invalidates only affected artifacts.
+- [x] Produce one aggregate replay manifest linking every operation and artifact.
 
-**Phase status: partial.**
+**Phase status: complete.**
 
 ## 8. Close the model-call inventory
 
