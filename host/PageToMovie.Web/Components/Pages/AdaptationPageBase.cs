@@ -25,7 +25,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     public JobSnapshot? Job;
     public IBrowserFile? PendingFile;
 
-    public int TotalMinutes = 15;
+    public int TotalMinutes = 5;
     public int ChunkPages = 10;
     public string Model = "";
     public bool Resume;
@@ -356,8 +356,12 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
 
     protected void ApplyDefaultsFromStatus()
     {
-        if (Status?.Book.SuggestedTotalMinutes is int m && m > 0)
-            TotalMinutes = Math.Clamp(m, 3, 180);
+        if (Status?.Book.TargetRuntimeMinutes is int tmin && tmin > 0)
+            TotalMinutes = Math.Clamp(tmin, 2, 180);
+        else if (Status?.Book.NaturalRuntimeMinutes is int nmin && nmin > 0)
+            TotalMinutes = Math.Clamp(nmin, 2, 180);
+        else if (Status?.Book.SuggestedTotalMinutes is int m && m > 0)
+            TotalMinutes = Math.Clamp(m, 2, 180);
         if (Status?.Book.SuggestedChunkPages is int c && c > 0)
             ChunkPages = Math.Clamp(c, 5, 30);
         if (!string.IsNullOrWhiteSpace(Status?.PlanningModel))

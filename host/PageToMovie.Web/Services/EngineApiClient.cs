@@ -2510,6 +2510,30 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return JsonSerializer.Deserialize<ScreenplaySaveDto>(body, JsonOpts);
     }
 
+    public async Task<FilmRuntimeDto?> GetFilmRuntimeAsync(string projectId, CancellationToken ct = default)
+    {
+        using var resp = await _http.GetAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/film-runtime", ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+        return JsonSerializer.Deserialize<FilmRuntimeDto>(body, JsonOpts);
+    }
+
+    public async Task<FilmRuntimeDto?> SetFilmRuntimeAsync(
+        string projectId, int targetMinutes, CancellationToken ct = default)
+    {
+        using var resp = await _http.PutAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/film-runtime",
+            new { targetMinutes },
+            JsonOpts,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+        return JsonSerializer.Deserialize<FilmRuntimeDto>(body, JsonOpts);
+    }
+
     public async Task<BookContextDto?> GetBookContextAsync(
         string projectId,
         int sceneIndex,
@@ -3910,6 +3934,20 @@ public sealed class CostDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public CostReport? Cost { get; set; }
+}
+
+public sealed class FilmRuntimeDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public int NaturalMinutes { get; set; }
+    public int TargetMinutes { get; set; }
+    public string? Mode { get; set; }
+    public int? TextWords { get; set; }
+    public string? BookKind { get; set; }
+    public string? Source { get; set; }
+    public string? Message { get; set; }
+    public AdaptationStatus? Adaptation { get; set; }
 }
 
 public sealed class ResolutionLockDto

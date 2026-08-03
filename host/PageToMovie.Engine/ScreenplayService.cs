@@ -487,7 +487,8 @@ public static string NormalizeText(string text)
         GenerationErrorLogger? errorLogger = null,
         string? jobId = null,
         BookTextRegistryService? bookRegistry = null,
-        string? cacheUserId = null)
+        string? cacheUserId = null,
+        int? totalRuntimeMinutes = null)
     {
         var projectDir = store.GetProjectDir(projectId);
         var bookPath = Path.Combine(projectDir, "source", "book_full.txt");
@@ -507,7 +508,11 @@ public static string NormalizeText(string text)
 
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
         var analysis = BookTextAnalyzer.Analyze(book);
-        var minutes = BookTextAnalyzer.ResolveStage1RuntimeMinutes(book);
+        var runtime = await FilmRuntime.ResolveAsync(store, projectId, book, overrideTargetMinutes: totalRuntimeMinutes, ct)
+            .ConfigureAwait(false);
+        var minutes = runtime.TargetMinutes;
+        onProgress?.Invoke(
+            $"Film length target: {minutes} min (natural ~{runtime.NaturalMinutes} min, mode={runtime.Mode}).");
         const double generationTemperature = 0.2;
 
         BookTextIdentity? bookIdentity = null;

@@ -843,6 +843,9 @@ public sealed class BookPrepareService
                 : "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe. NOT cartoon, NOT illustration, NOT anime",
             ["medium_source"] = "import_extract_meta",
             ["suggested_total_minutes"] = analysis.SuggestedTotalMinutes,
+            ["natural_runtime_minutes"] = analysis.SuggestedTotalMinutes,
+            ["target_runtime_minutes"] = analysis.SuggestedTotalMinutes,
+            ["runtime_mode"] = "natural",
             ["suggested_chunk_pages"] = analysis.SuggestedChunkPages,
             ["strategy"] = new Dictionary<string, object?>
             {

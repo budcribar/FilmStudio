@@ -4547,7 +4547,7 @@ public sealed class ProjectStore
     public AdaptationStatus GetAdaptationStatus(string projectId, string? userId = null)
     {
         var dir = GetProjectDir(projectId);
-        var book = ReadBookSourceStatus(dir);
+        var book = ReadBookSourceStatus(projectId, dir);
         var stage1 = ReadStage1Status(projectId, dir);
         var screenplay = ScreenplayService.ReadStatus(this, projectId, stage1);
         var stage2 = ReadStage2PlanStatus(projectId, dir, stage1);
@@ -4741,7 +4741,7 @@ public sealed class ProjectStore
         return dest;
     }
 
-    private BookSourceStatus ReadBookSourceStatus(string projectDir)
+    private BookSourceStatus ReadBookSourceStatus(string projectId, string projectDir)
     {
         var source = Path.Combine(projectDir, "source");
         var bookPath = Path.Combine(source, "book_full.txt");
@@ -4800,6 +4800,16 @@ public sealed class ProjectStore
                     status.TextWords = words;
                 if (root.TryGetProperty("suggested_total_minutes", out var sm) && sm.TryGetInt32(out var mins))
                     status.SuggestedTotalMinutes = mins;
+                if (root.TryGetProperty("natural_runtime_minutes", out var nr) && nr.TryGetInt32(out var nat))
+                    status.NaturalRuntimeMinutes = nat;
+                if (root.TryGetProperty("target_runtime_minutes", out var trm) && trm.TryGetInt32(out var tgt))
+                    status.TargetRuntimeMinutes = tgt;
+                else if (status.SuggestedTotalMinutes is int smv)
+                    status.TargetRuntimeMinutes = smv;
+                if (status.NaturalRuntimeMinutes is null && status.SuggestedTotalMinutes is int smv2)
+                    status.NaturalRuntimeMinutes = smv2;
+                if (root.TryGetProperty("runtime_mode", out var rmode) && rmode.ValueKind == JsonValueKind.String)
+                    status.RuntimeMode = rmode.GetString();
                 if (root.TryGetProperty("suggested_chunk_pages", out var sc) && sc.TryGetInt32(out var chunks))
                     status.SuggestedChunkPages = chunks;
                 if (root.TryGetProperty("ready_for_stage1", out var r) &&
@@ -4827,6 +4837,27 @@ public sealed class ProjectStore
             }
             catch { /* ignore */ }
         }
+
+        // Overlay user retarget from pipeline_config when present.
+        try
+        {
+            var cfg = GetConfigSync(projectId);
+            if (cfg.TryGetValue("target_runtime_minutes", out var ctr) &&
+                ctr.ValueKind == JsonValueKind.Number && ctr.TryGetInt32(out var ctm) && ctm > 0)
+            {
+                status.TargetRuntimeMinutes = FilmRuntime.ClampMinutes(ctm);
+                status.SuggestedTotalMinutes = status.TargetRuntimeMinutes;
+            }
+            if (cfg.TryGetValue("natural_runtime_minutes", out var cnr) &&
+                cnr.ValueKind == JsonValueKind.Number && cnr.TryGetInt32(out var cnat) && cnat > 0)
+                status.NaturalRuntimeMinutes = FilmRuntime.ClampMinutes(cnat);
+            if (cfg.TryGetValue("runtime_mode", out var crm) && crm.ValueKind == JsonValueKind.String)
+                status.RuntimeMode = crm.GetString();
+            if (string.IsNullOrWhiteSpace(status.RuntimeMode) &&
+                status.NaturalRuntimeMinutes is int n && status.TargetRuntimeMinutes is int tg)
+                status.RuntimeMode = tg == n ? "natural" : tg < n ? "reduced" : "custom";
+        }
+        catch { /* ignore */ }
 
         // Prefer extract_meta.ready_for_stage1 when present (set by BookPrepareService strategy).
         // Only fall back to heuristics when meta is missing or incomplete.

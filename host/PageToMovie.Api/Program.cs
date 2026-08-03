@@ -5065,6 +5065,77 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
     }
 });
 
+/// <summary>Get natural + target film length for cost/Stage1.</summary>
+app.MapGet("/api/projects/{id}/film-runtime", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    CancellationToken ct) =>
+{
+    try
+    {
+        var snap = await FilmRuntime.ResolveAsync(store, id, ct: ct).ConfigureAwait(false);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            naturalMinutes = snap.NaturalMinutes,
+            targetMinutes = snap.TargetMinutes,
+            mode = snap.Mode,
+            textWords = snap.TextWords,
+            bookKind = snap.BookKind,
+            source = snap.Source,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Set target film length (shorter = typically lower cost). Does not re-run Stage1.</summary>
+app.MapPut("/api/projects/{id}/film-runtime", async (
+    string id,
+    HttpRequest req,
+    ProjectStore store,
+    IUserContext user,
+    CancellationToken ct) =>
+{
+    try
+    {
+        using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct).ConfigureAwait(false);
+        var root = doc.RootElement;
+        int target = 0;
+        if (root.TryGetProperty("targetMinutes", out var tm) && tm.TryGetInt32(out var t1))
+            target = t1;
+        else if (root.TryGetProperty("target_runtime_minutes", out var tm2) && tm2.TryGetInt32(out var t2))
+            target = t2;
+        if (target <= 0)
+            return Results.BadRequest(new { ok = false, error = "targetMinutes required (2–180)" });
+
+        var snap = await FilmRuntime.SetTargetAsync(store, id, target, ct).ConfigureAwait(false);
+        store.TriggerAutoGitCommit(id, $"ptm:stage=runtime_retarget target={snap.TargetMinutes}");
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            naturalMinutes = snap.NaturalMinutes,
+            targetMinutes = snap.TargetMinutes,
+            mode = snap.Mode,
+            message = snap.TargetMinutes < snap.NaturalMinutes
+                ? $"Target set to {snap.TargetMinutes} min (shorter than natural ~{snap.NaturalMinutes} min — typically fewer clips / lower cost)."
+                : snap.TargetMinutes == snap.NaturalMinutes
+                    ? $"Target set to natural length (~{snap.NaturalMinutes} min)."
+                    : $"Target set to {snap.TargetMinutes} min (longer than natural ~{snap.NaturalMinutes} min).",
+            adaptation = store.GetAdaptationStatus(id, user.UserId),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Create an editable Fountain draft from prepared book text (structured + page tags).</summary>
 app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     string id,

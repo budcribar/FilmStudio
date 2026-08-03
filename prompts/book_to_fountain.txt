@@ -11,6 +11,9 @@ GOALS (narrative)
 ================================================================
 1. Cover the book’s essential story in roughly {{TOTAL_RUNTIME_MINUTES}} minutes
    of finished film. Keep the adaptation tight; do not pad.
+   If that target is short (nursery rhyme / micro picture book / brief poem), finish the
+   whole story at that length — do NOT invent extra incidents, reprises, or business to
+   fill time. Prefer complete fidelity at natural length over artificial runtime.
 2. Break the story into scenes a director can schedule: one clear location + time + purpose.
 3. Inside each scene, write ordered concrete events we must SEE or HEAR (action + dialogue).
 4. Keep a closed cast: every speaker is a named CHARACTER (ALL CAPS). No “MAN #2” ghosts.
@@ -199,6 +202,19 @@ DIALOGUE FIDELITY (HARD — book wording over paraphrase):
   invented lines, and add the one line only if Action alone cannot carry the beat.
 - Narration in the book that is clearly spoken or recited on-camera may become dialogue;
   pure prose description stays Action or NARRATOR VO — still use book phrases when VO quotes the text.
+
+
+UNNAMED GROUPS & EXTRAS (HARD — short books and classes especially):
+- If the source says "the children," "the eager children," "they," "the class," "pupils,"
+  "villagers," etc. WITHOUT proper names, do NOT invent given names (no ELI, CLARA, TOM…).
+- Unnamed groups appear in Action as a group, or react without individual speaking cues.
+- Do NOT invent dialogue for unnamed group members. Prefer Action:
+  "The children laugh and point." over a round of invented banter.
+- ALL-CAPS speakers must be accountable to the book: named in the source, or a single
+  clear functional role the story requires (TEACHER, NARRATOR, MARY, the LAMB as character
+  only when the book treats them as such). Closed cast still applies — no ghost extras.
+- Nursery rhyme / short verse: prefer near-verbatim book lines as NARRATOR or the named
+  speaker; do not expand into multi-speaker classroom drama the book never wrote.
 
 Do NOT invent major plot. Light visual connective tissue is OK.
 Skip pure illustration / blank pages as their own scenes.

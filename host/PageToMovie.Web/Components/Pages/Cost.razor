@@ -94,11 +94,25 @@
                         <div class="display-6 fs-2 cost-hero-num" data-testid="cost-estimate">@Usd(estimate)</div>
                         <div class="small text-muted mt-1">
                             Full film · <strong>@_report.DraftResolution</strong>
+                            @if (_filmRuntime is not null)
+                            {
+                                <span> · ~@_filmRuntime.TargetMinutes min target</span>
+                                @if (_filmRuntime.TargetMinutes != _filmRuntime.NaturalMinutes)
+                                {
+                                    <span> (natural ~@_filmRuntime.NaturalMinutes)</span>
+                                }
+                            }
                             @if (_report.OutputRateDraft > 0)
                             {
                                 <span> · @Usd(_report.OutputRateDraft)/sec video</span>
                             }
                         </div>
+                        @if (_filmRuntime is not null)
+                        {
+                            <div class="small mt-2">
+                                <a href="adaptation/import" class="link-secondary">Change film length to save $ →</a>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -548,6 +562,7 @@
     private string _projectId = "";
     private List<string> _projectIds = new();
     private CostReport? _report;
+    private FilmRuntimeDto? _filmRuntime;
     private string _draftRes = "480p";
     private string _heroRes = "720p";
     private double _retries = 0.5;
@@ -652,11 +667,20 @@
             _report = dto?.Cost;
             if (_report is not null && !string.IsNullOrWhiteSpace(_report.DraftResolution))
                 _draftRes = _report.DraftResolution;
+            try
+            {
+                _filmRuntime = await Engine.GetFilmRuntimeAsync(_projectId);
+            }
+            catch
+            {
+                _filmRuntime = null;
+            }
         }
         catch (Exception ex)
         {
             _error = ex.Message;
             _report = null;
+            _filmRuntime = null;
         }
         finally { _busy = false; }
 

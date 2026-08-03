@@ -868,6 +868,12 @@ public sealed class BookSourceStatus
     public string? TextEngine { get; set; }
     public int? TextWords { get; set; }
     public int? SuggestedTotalMinutes { get; set; }
+    /// <summary>Density-based natural film length (minutes).</summary>
+    public int? NaturalRuntimeMinutes { get; set; }
+    /// <summary>User or system target used for Stage 1 / cost (minutes).</summary>
+    public int? TargetRuntimeMinutes { get; set; }
+    /// <summary>natural | reduced | custom</summary>
+    public string? RuntimeMode { get; set; }
     public int? SuggestedChunkPages { get; set; }
     public int PageImageCount { get; set; }
     public bool ReadyForStage1 { get; set; }
