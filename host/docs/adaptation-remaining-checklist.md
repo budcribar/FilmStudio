@@ -1,0 +1,40 @@
+# Adaptation / Stage‑1 remaining checklist
+
+Last updated: 2026-08-03
+
+## Done (recent)
+
+- [x] Adaptation module Phases 0–5 + Engine mapping-only façade
+- [x] Stage‑1 via `AdaptationService` only + golden fixtures
+- [x] xAI file_id + Responses multi-turn + admin book cache
+- [x] `cast_kind: group` from extract + normalize
+- [x] Groups skip portrait pin; **hidden on Characters UI**
+- [x] **Fake-chat `AdaptationService.ConvertAsync` tests** (`AdaptationFakeChatTests`)
+- [x] **Deterministic speaker ⊆ cast** (`SpeakersMissingFromCast` + post-extract report)
+
+## Open — next
+
+### Adaptation hardening
+- [ ] Dirty Adaptation-source benchmark gate (refuse if Adaptation code/prompts dirty)
+- [ ] Surface membership / description scores in benchmark history UI
+
+### Mary quality
+- [ ] Book-to-fountain prompt tighten (dialogue invention, scene economy, natural runtime)
+- [ ] Baseline → treatment benchmark run before/after prompt PR
+
+### Runtime / length (product)
+- [ ] UX: show natural length after import; optional retarget end-to-end
+- [ ] Benchmark dual mode (natural vs reduced) for longer books
+
+### Later
+- [ ] Learning / critic loop (FFmpeg clip metadata, hash, post-YouTube analysis)
+- [ ] Stage‑2 / clip consistency judge
+
+## Quick pointers
+
+| Item | Code |
+|------|------|
+| Fake chat Stage‑1 | `host/PageToMovie.Tests/AdaptationFakeChatTests.cs` |
+| Speaker ⊆ cast | `CastPackageCrossCheck.SpeakersMissingFromCast` |
+| Written on extract | `artifacts/model_operations/cast_package_membership.json` |
+| Extract result fields | `MembershipOk`, `SpeakersMissingFromCast`, `MembershipScore` |

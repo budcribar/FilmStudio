@@ -45,6 +45,8 @@ public static class CastPackageCrossCheck
         /// Advisory — does not fail the package by itself.
         /// </summary>
         public List<string> SpeakersMissingFromBook { get; set; } = new();
+        /// <summary>Dialogue speakers with no matching cast_seeds entry (hard membership failure).</summary>
+        public List<string> SpeakersMissingFromCast { get; set; } = new();
         /// <summary>Cast keys classified as group/chorus (no single-face portrait expected).</summary>
         public List<string> GroupCastKeys { get; set; } = new();
         /// <summary>0–100 membership sub-score (speakers found in seeds).</summary>
@@ -128,6 +130,7 @@ public static class CastPackageCrossCheck
             var match = ResolveCastKey(speaker, seeds);
             if (match is null)
             {
+                report.SpeakersMissingFromCast.Add(speaker);
                 report.Failures.Add(
                     $"Speaking character '{speaker}' has no cast_seeds entry " +
                     $"(expected Character_{SanitizeKey(speaker)} or matching display name).");

@@ -220,4 +220,76 @@ public sealed class CastPackageCrossCheckTests
         Assert.Equal(viaStatic.Score, viaFacade.Score);
         Assert.Equal(viaStatic.MatchedKeys, viaFacade.MatchedKeys);
     }
+
+    [Fact]
+    public void SpeakersMissingFromCast_lists_eli_clara_when_only_group_seed()
+    {
+        var cast = """
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Mary": {
+                  "canonical_given_name": "Mary",
+                  "description": "A young girl with brown braids and a blue pinafore over a white apron.",
+                  "visual_lock": "brown braids, blue pinafore",
+                  "species_kind": "human"
+                },
+                "Character_Teacher": {
+                  "canonical_given_name": "Teacher",
+                  "description": "Adult woman in plain gray dress with hair in a bun.",
+                  "visual_lock": "gray dress, hair in a bun",
+                  "species_kind": "human"
+                },
+                "Character_Children": {
+                  "canonical_given_name": "Children",
+                  "cast_kind": "group",
+                  "description": "Small group of school-age children in simple period play clothes.",
+                  "visual_lock": "several young classmates",
+                  "species_kind": "human"
+                }
+              }
+            }
+            """;
+        // MaryFountain invents ELI and CLARA as dialogue speakers
+        var report = CastPackageCrossCheck.Evaluate(MaryFountain, cast, MaryBook);
+        Assert.Contains("ELI", report.SpeakersMissingFromCast, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("CLARA", report.SpeakersMissingFromCast, StringComparer.OrdinalIgnoreCase);
+        Assert.False(report.Ok);
+        Assert.True(report.MembershipScore < 100);
+    }
+
+    [Fact]
+    public void SpeakersMissingFromCast_empty_when_group_fountain_matches_group_seed()
+    {
+        var cast = """
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Mary": {
+                  "canonical_given_name": "Mary",
+                  "description": "A young girl with brown braids and a blue pinafore over a white apron.",
+                  "visual_lock": "brown braids, blue pinafore",
+                  "species_kind": "human"
+                },
+                "Character_Teacher": {
+                  "canonical_given_name": "Teacher",
+                  "description": "Adult woman in plain gray dress with hair in a bun.",
+                  "visual_lock": "gray dress, hair in a bun",
+                  "species_kind": "human"
+                },
+                "Character_Children": {
+                  "canonical_given_name": "Children",
+                  "cast_kind": "group",
+                  "description": "Small group of school-age children in simple period play clothes.",
+                  "visual_lock": "several young classmates",
+                  "species_kind": "human"
+                }
+              }
+            }
+            """;
+        var report = CastPackageCrossCheck.Evaluate(MaryGroupFountain, cast, MaryBook);
+        Assert.Empty(report.SpeakersMissingFromCast);
+        Assert.True(report.MembershipScore >= 99, $"score={report.MembershipScore} failures={string.Join(';', report.Failures)}");
+    }
+
 }

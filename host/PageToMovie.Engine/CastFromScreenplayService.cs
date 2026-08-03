@@ -1,4 +1,5 @@
 using PageToMovie.Core.Models;
+using PageToMovie.Adaptation.Validation;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -66,6 +67,14 @@ public sealed class CastFromScreenplayService
         public List<string> CharacterKeys { get; init; } = new();
         public string? MovieTitle { get; init; }
         public string? RawPath { get; init; }
+        /// <summary>Dialogue speakers with no cast_seeds entry (deterministic membership check).</summary>
+        public List<string> SpeakersMissingFromCast { get; init; } = new();
+        /// <summary>0–100 membership score from <see cref="CastPackageCrossCheck"/>.</summary>
+        public double MembershipScore { get; init; }
+        /// <summary>True when every required speaker has a cast seed.</summary>
+        public bool MembershipOk { get; init; } = true;
+        /// <summary>Path to written cast package check report (when run).</summary>
+        public string? PackageCheckPath { get; init; }
     }
 
     /// <summary>
@@ -251,6 +260,50 @@ public sealed class CastFromScreenplayService
         }
 
         var keys = seedsObj.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
+
+        // Deterministic: every dialogue speaker must have a cast seed (catch ELI/CLARA-style inventions).
+        string? packageCheckPath = null;
+        var membershipOk = true;
+        var missingFromCast = new List<string>();
+        var membershipScore = 100.0;
+        try
+        {
+            var report = CastPackageCrossCheck.Evaluate(fountain, json, book);
+            membershipOk = report.SpeakersMissingFromCast.Count == 0;
+            missingFromCast = report.SpeakersMissingFromCast.ToList();
+            membershipScore = report.MembershipScore;
+            var checkDir = Path.Combine(_projects.GetProjectDir(projectId), "artifacts", "model_operations");
+            Directory.CreateDirectory(checkDir);
+            packageCheckPath = Path.Combine(checkDir, "cast_package_membership.json");
+            var checkPayload = new
+            {
+                ok = membershipOk,
+                membershipScore,
+                speakersMissingFromCast = missingFromCast,
+                speakersMissingFromBook = report.SpeakersMissingFromBook,
+                failures = report.Failures,
+                warnings = report.Warnings,
+                groupCastKeys = report.GroupCastKeys,
+            };
+            await File.WriteAllTextAsync(
+                packageCheckPath,
+                JsonSerializer.Serialize(checkPayload, JsonDefaults.Indented) + "\n",
+                ct).ConfigureAwait(false);
+            if (!membershipOk)
+            {
+                onProgress?.Invoke(
+                    $"Cast membership warning: {missingFromCast.Count} speaker(s) not in cast — "
+                    + string.Join(", ", missingFromCast));
+                _log.LogWarning(
+                    "Cast extract {Project}: speakers missing from cast: {Missing}",
+                    projectId, string.Join(", ", missingFromCast));
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Cast membership check failed for {Project}", projectId);
+        }
+
         onProgress?.Invoke($"Cast ready · {keys.Count} character(s)");
         _log.LogInformation(
             "Cast extract {Project}: {Count} character(s) → {Keys}",
@@ -262,7 +315,11 @@ public sealed class CastFromScreenplayService
             OutPath = outPath,
             CharacterCount = keys.Count,
             CharacterKeys = keys,
-            MovieTitle = normalized.TryGetValue("movie_title", out var t) ? t?.ToString() : null,
+            MovieTitle = normalized.TryGetValue("movie_title", out var movieTitleObj) ? movieTitleObj?.ToString() : null,
+            SpeakersMissingFromCast = missingFromCast,
+            MembershipScore = membershipScore,
+            MembershipOk = membershipOk,
+            PackageCheckPath = packageCheckPath,
         };
     }
 
