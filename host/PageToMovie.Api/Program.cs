@@ -7545,6 +7545,87 @@ app.MapGet("/api/projects/{id}/film-build", async (
     }
 });
 
+/// <summary>Create a learning package from current project artifacts (Stage‑1 + film_build + publish).</summary>
+app.MapPost("/api/projects/{id}/learning-package", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        string? workspace = null;
+        try
+        {
+            var dir = new DirectoryInfo(AppContext.BaseDirectory);
+            for (var i = 0; i < 8 && dir is not null; i++, dir = dir.Parent)
+            {
+                if (Directory.Exists(Path.Combine(dir.FullName, "prompts")) ||
+                    Directory.Exists(Path.Combine(dir.FullName, "evals")))
+                {
+                    workspace = dir.FullName;
+                    break;
+                }
+            }
+        }
+        catch { /* ignore */ }
+
+        var result = LearningPackageService.CreateFromProject(store, id, workspaceRoot: workspace);
+        return Results.Ok(new
+        {
+            ok = true,
+            packageId = result.PackageId,
+            path = result.ProjectRelativePath,
+            labPath = result.LabRelativePath,
+            publishPath = result.PublishPath,
+            filmId = result.FilmId,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/learning-packages", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var root = LearningPackageService.PackagesRoot(store.GetProjectDir(id));
+        var list = new List<object>();
+        if (Directory.Exists(root))
+        {
+            foreach (var dir in Directory.GetDirectories(root).OrderByDescending(d => d))
+            {
+                var pkg = Path.Combine(dir, "package.json");
+                if (!File.Exists(pkg)) continue;
+                list.Add(new
+                {
+                    packageId = Path.GetFileName(dir),
+                    path = Path.Combine("artifacts", "learning_packages", Path.GetFileName(dir)).Replace('\\', '/'),
+                });
+            }
+        }
+        return Results.Ok(new { ok = true, packages = list });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapGet("/api/user/settings", async (
     IUserContext userCtx,
     UserDatabaseService userDb,

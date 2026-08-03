@@ -34,6 +34,52 @@ public sealed class FilmBuildDocument
 
     [JsonPropertyName("provenance")]
     public FilmBuildProvenance Provenance { get; set; } = new();
+
+    [JsonPropertyName("publish")]
+    public FilmBuildPublish? Publish { get; set; }
+}
+
+/// <summary>Upload-time hash gate (Clipchamp / external edit detection).</summary>
+public sealed class FilmBuildPublish
+{
+    public const string PathStudioIntact = "studio_intact";
+    public const string PathExternalSameLength = "external_same_length";
+    public const string PathExternalRestructured = "external_restructured";
+    public const string PathUnknown = "unknown";
+
+    /// <summary>studio_intact | external_same_length | external_restructured | unknown</summary>
+    [JsonPropertyName("path")]
+    public string Path { get; set; } = PathUnknown;
+
+    [JsonPropertyName("upload_sha256")]
+    public string UploadSha256 { get; set; } = "";
+
+    [JsonPropertyName("upload_duration_seconds")]
+    public double? UploadDurationSeconds { get; set; }
+
+    [JsonPropertyName("upload_byte_length")]
+    public long? UploadByteLength { get; set; }
+
+    [JsonPropertyName("studio_sha256")]
+    public string? StudioSha256 { get; set; }
+
+    [JsonPropertyName("studio_duration_seconds")]
+    public double? StudioDurationSeconds { get; set; }
+
+    [JsonPropertyName("duration_delta_seconds")]
+    public double? DurationDeltaSeconds { get; set; }
+
+    [JsonPropertyName("youtube_video_id")]
+    public string? YoutubeVideoId { get; set; }
+
+    [JsonPropertyName("youtube_url")]
+    public string? YoutubeUrl { get; set; }
+
+    [JsonPropertyName("recorded_at_utc")]
+    public string RecordedAtUtc { get; set; } = "";
+
+    /// <summary>Duration tolerance (seconds) for same-length external edit.</summary>
+    public const double DurationEpsilonSeconds = 0.5;
 }
 
 public sealed class FilmBuildStudio
@@ -263,5 +309,99 @@ public static class FilmBuildService
             segments: null,
             byteLength: bytes.Length,
             assemblyWhere: "server");
+    }
+
+    /// <summary>
+    /// Hash-gate the exact bytes about to upload vs <see cref="FilmBuildStudio.Sha256"/>.
+    /// Writes/updates <c>film_build.publish</c> and returns the path classification.
+    /// </summary>
+    public static FilmBuildPublish ApplyUploadHashGate(
+        ProjectStore store,
+        string projectId,
+        byte[] uploadBytes,
+        double? uploadDurationSeconds = null,
+        string? youtubeVideoId = null,
+        string? youtubeUrl = null)
+    {
+        ArgumentNullException.ThrowIfNull(uploadBytes);
+        var projectDir = store.GetProjectDir(projectId);
+        var uploadSha = HashBytes(uploadBytes);
+        var doc = TryRead(projectDir);
+        if (doc is null)
+        {
+            // No prior stitch record — create minimal film_build from upload bytes alone.
+            doc = Create(
+                projectId,
+                studioSha256: uploadSha,
+                durationSeconds: uploadDurationSeconds ?? 0,
+                segments: null,
+                byteLength: uploadBytes.Length,
+                assemblyWhere: "upload");
+            AttachStage1Provenance(projectDir, doc);
+        }
+
+        var studioSha = (doc.Studio.Sha256 ?? "").Trim().ToLowerInvariant();
+        var path = ClassifyPublishPath(
+            studioSha,
+            uploadSha,
+            doc.Studio.DurationSeconds,
+            uploadDurationSeconds);
+
+        var publish = new FilmBuildPublish
+        {
+            Path = path,
+            UploadSha256 = uploadSha,
+            UploadDurationSeconds = uploadDurationSeconds,
+            UploadByteLength = uploadBytes.Length,
+            StudioSha256 = string.IsNullOrWhiteSpace(studioSha) ? null : studioSha,
+            StudioDurationSeconds = doc.Studio.DurationSeconds > 0 ? doc.Studio.DurationSeconds : null,
+            DurationDeltaSeconds = uploadDurationSeconds is > 0 && doc.Studio.DurationSeconds > 0
+                ? Math.Abs(uploadDurationSeconds.Value - doc.Studio.DurationSeconds)
+                : null,
+            YoutubeVideoId = youtubeVideoId,
+            YoutubeUrl = youtubeUrl,
+            RecordedAtUtc = DateTime.UtcNow.ToString("o"),
+        };
+        doc.Publish = publish;
+        Write(projectDir, doc);
+
+        try
+        {
+            store.TriggerAutoGitCommit(
+                projectId,
+                $"ptm:stage=film_published path={path}" +
+                (string.IsNullOrWhiteSpace(youtubeVideoId) ? "" : $" youtube={youtubeVideoId}"));
+        }
+        catch { /* non-fatal */ }
+
+        return publish;
+    }
+
+    public static string ClassifyPublishPath(
+        string? studioSha256,
+        string uploadSha256,
+        double studioDurationSeconds,
+        double? uploadDurationSeconds)
+    {
+        var studio = (studioSha256 ?? "").Trim().ToLowerInvariant();
+        var upload = (uploadSha256 ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(upload))
+            return FilmBuildPublish.PathUnknown;
+        if (!string.IsNullOrWhiteSpace(studio) &&
+            string.Equals(studio, upload, StringComparison.OrdinalIgnoreCase))
+            return FilmBuildPublish.PathStudioIntact;
+
+        if (uploadDurationSeconds is > 0 && studioDurationSeconds > 0)
+        {
+            var delta = Math.Abs(uploadDurationSeconds.Value - studioDurationSeconds);
+            if (delta <= FilmBuildPublish.DurationEpsilonSeconds)
+                return FilmBuildPublish.PathExternalSameLength;
+            return FilmBuildPublish.PathExternalRestructured;
+        }
+
+        // Hash differs, no reliable duration → treat as restructured (conservative).
+        if (!string.IsNullOrWhiteSpace(studio))
+            return FilmBuildPublish.PathExternalRestructured;
+        return FilmBuildPublish.PathUnknown;
     }
 }

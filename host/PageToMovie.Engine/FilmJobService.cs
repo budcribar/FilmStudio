@@ -2169,6 +2169,20 @@ public sealed class FilmJobService
             if (path is null || !File.Exists(path))
                 throw new InvalidOperationException("No WIP movie file found on server — publish Demo from a browser stitch first.");
 
+            // E: hash-gate exact upload bytes vs film_build.studio.sha256 (Clipchamp detection).
+            byte[] uploadBytes;
+            try
+            {
+                uploadBytes = await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Could not read WIP movie for hash gate: " + ex.Message, ex);
+            }
+            var publishGate = FilmBuildService.ApplyUploadHashGate(_projects, projectId, uploadBytes);
+            await AppendLogAsync(
+                $"Film publish path: {publishGate.Path} (upload sha {publishGate.UploadSha256[..Math.Min(12, publishGate.UploadSha256.Length)]}…)");
+
             var youtube = await _youTube.GetServiceAsync(ct)
                 ?? throw new InvalidOperationException("YouTube is not connected — connect it from Review first.");
 
@@ -2238,6 +2252,31 @@ public sealed class FilmJobService
                 UploadedAt = DateTimeOffset.UtcNow,
             }, ct);
 
+            // Re-record publish block with YouTube ids; create learning package when intact.
+            try
+            {
+                var finalPublish = FilmBuildService.ApplyUploadHashGate(
+                    _projects, projectId, uploadBytes,
+                    youtubeVideoId: videoId, youtubeUrl: url);
+                await AppendLogAsync($"Film build publish recorded ({finalPublish.Path}).");
+                if (string.Equals(finalPublish.Path, FilmBuildPublish.PathStudioIntact, StringComparison.Ordinal))
+                {
+                    var lp = LearningPackageService.CreateFromProject(
+                        _projects, projectId, workspaceRoot: TryFindWorkspaceRoot());
+                    await AppendLogAsync($"Learning package {lp.PackageId} → {lp.ProjectRelativePath}");
+                }
+                else
+                {
+                    await AppendLogAsync(
+                        "Learning package skipped (upload not studio_intact — external edit suspected).");
+                }
+            }
+            catch (Exception lpEx)
+            {
+                _log.LogWarning(lpEx, "Publish provenance / learning package failed for {Project}", projectId);
+                await AppendLogAsync("Publish provenance note: " + lpEx.Message);
+            }
+
             // Best-effort cleanup of temporary staged MP4 to conserve server disk space
             try
             {
@@ -2264,6 +2303,26 @@ public sealed class FilmJobService
             await AppendLogAsync($"❌ YouTube upload exception: {errMessage}");
             await FinishAsync("error", errMessage, errMessage);
         }
+    }
+
+    private static string? TryFindWorkspaceRoot()
+    {
+        try
+        {
+            var dir = new DirectoryInfo(AppContext.BaseDirectory);
+            for (var i = 0; i < 8 && dir is not null; i++, dir = dir.Parent)
+            {
+                var evals = Path.Combine(dir.FullName, "evals");
+                var prompts = Path.Combine(dir.FullName, "prompts");
+                if (Directory.Exists(prompts) || Directory.Exists(evals))
+                    return dir.FullName;
+                if (File.Exists(Path.Combine(dir.FullName, "PageToMovie.sln")) ||
+                    File.Exists(Path.Combine(dir.FullName, "host", "PageToMovie.sln")))
+                    return dir.FullName;
+            }
+        }
+        catch { /* ignore */ }
+        return null;
     }
 
     private async Task RunSpeakBatchAsync(
