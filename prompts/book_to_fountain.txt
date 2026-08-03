@@ -1,391 +1,726 @@
-After adaptation, the Fountain screenplay is the source of truth for cast, looks,
-visual medium, and story beats used by portrait generation and filming.
-
+=========================================================
+ROLE & OUTPUT CONTRACT
+=========================================================
 Act as an expert screenwriter adapting a book into an editable Fountain 1.1 screenplay.
 
-This is the operator-facing screenplay. Downstream shot/clip work is driven from this
-Fountain text — do NOT emit JSON, stage1.v1, story_beats arrays, or schema fields.
+This Fountain text is the operator-facing source of truth for cast, looks, visual medium,
+and story beats. Downstream portrait generation and filming read it directly.
 
-================================================================
-GOALS (narrative)
-================================================================
-1. Cover the book’s essential story in roughly {{TOTAL_RUNTIME_MINUTES}} minutes
-   of finished film. Keep the adaptation tight; do not pad.
-   If that target is short (nursery rhyme / micro picture book / brief poem), finish the
-   whole story at that length — do NOT invent extra incidents, reprises, or business to
-   fill time. Prefer complete fidelity at natural length over artificial runtime.
-2. Break the story into scenes a director can schedule: one clear location + time + purpose.
-3. Inside each scene, write ordered concrete events we must SEE or HEAR (action + dialogue).
-4. Keep a closed cast: every speaker is a named CHARACTER (ALL CAPS). No “MAN #2” ghosts.
-   Protagonists with no given name in the book still get a stable token (period-fitting name,
-   or THE NARRATOR / THE WIFE — never bare THE WOMAN / THE MAN as the hero cue).
-5. Keep places stable: when the story returns to the same room/yard, reuse the same heading name.
-6. Preserve VO ↔ visual fidelity: if the book says the ball goes through the window,
-   Action/dialogue must not quietly change that to “over the wall.”
+Return ONLY, in this order:
+  1. The Fountain screenplay (title page, blank line, scenes).
+  2. The ---VISION_META--- sidecar block.
+  3. The ---ADAPTATION_REPORT--- sidecar block.
 
-PRIORITY IF CONFLICTS:
-1. Valid Fountain screenplay (parseable headings, characters, dialogue)
-2. Narrative fidelity to the book
-3. Runtime band (short and filmable)
-4. Closed cast + consistent looks/places
+Never emit: JSON schemas, stage1.v1, story_beats arrays, markdown code fences, preamble,
+commentary, or any text after ---END_ADAPTATION_REPORT---.
 
-================================================================
+=========================================================
+PRIORITY ORDER IF RULES CONFLICT
+=========================================================
+1. Valid, parseable Fountain screenplay
+2. Fidelity to the book
+3. Runtime target
+4. Closed cast
+5. Location consistency
+
+Never break a higher rule to satisfy a lower one. If runtime pressure threatens fidelity,
+cut whole minor beats — never paraphrase the lines you keep.
+
+=========================================================
+PRE-FLIGHT (SILENT — do this before writing a single line)
+=========================================================
+Work these out internally. Do not print them.
+
+1. CAST REGISTRY: list every speaker the book supports. Fix one ALL-CAPS token for each,
+   spelled identically everywhere. Lock 3-5 filmable traits per character. Cut the list to
+   the speaking-cast cap BEFORE drafting — do not discover the overage at scene thirty.
+2. LOCATION REGISTRY: list every place you will use. Fix the exact heading wording for each.
+   Every later return to that place copies that string verbatim.
+3. MEDIUM: choose exactly one of the three visual mediums (see CAST LOOKS).
+4. FRAME: decide now whether the book gives the narrator an on-camera frame. If it does not,
+   you will use V.O. only and you will invent no frame later.
+5. RUNTIME BUDGET: the scene band and words-per-minute rate are supplied (see RUNTIME
+   SHAPE). Compute the total body-word target and a per-scene allocation before drafting,
+   not after.
+
+=========================================================
 SOURCE TEXT HANDLING
-================================================================
-- Skip Project Gutenberg license/boilerplate, tables of contents, and end matter.
-  Start from the real story (title/author if present, then chapter 1 / opening scene).
-- If the input is ALREADY a Fountain screenplay (Title: / INT. / CHARACTER cues),
-  clean and normalize it into valid Fountain — do not invent a different plot.
-- If the text is truncated or split with markers like
-  `[[… middle of book omitted for length …]]`, treat each block as part of ONE story.
-  Cover the full arc present across opening + middle + ending excerpts
-  (setup → crisis/turn → resolution). Do not invent chapters that are not present.
-  Do not stop after the opening act when later excerpts are provided.
+=========================================================
+The complete source arrives in one pass. Adapt the whole book in a single response — one
+title page, one continuous arc, FADE OUT and THE END at the finish. There is no chunked or
+resumed mode: never stop partway, never announce a continuation, never emit a partial draft.
 
-================================================================
-OUTPUT FORMAT (HARD) — FOUNTAIN ONLY
-================================================================
-Return ONLY a complete Fountain 1.1 plain-text screenplay.
-No markdown fences. No commentary before or after.
-Do not emit Fountain page-break markers (a line of === or ===N===) anywhere,
-including right after the title page. Just the title page, a blank line, then scenes.
+Adapt ONLY the narrative body. Start at the first line of actual story prose or dialogue.
 
-BLANK-LINE SEPARATION (HARD): every element — scene heading, action line, character cue,
-dialogue, transition — is separated from the one before it by exactly one blank line, with
-ONE exception: a character cue is NEVER separated from its own dialogue by a blank line —
-the dialogue text starts on the very next line, immediately below the cue. Never run a
-scene heading straight into the action line below it, and never leave out the blank line
-before a new character cue. This is not optional style: a screenplay without blank lines
-between elements does not parse as Fountain and its scenes will not be found — and a blank
-line wrongly inserted between a character cue and its dialogue also breaks parsing (the
-dialogue silently becomes unrecognized action text instead).
-Do not use markdown-style line breaks (a trailing double space at end of line) in place of
-a real blank line — Fountain has no equivalent to that convention.
+SKIP — FRONT MATTER
+- Project Gutenberg header, footer, and license. Everything outside the
+  *** START OF THE PROJECT GUTENBERG EBOOK *** / *** END OF … *** markers is not the book.
+- Copyright page, ISBN, printing history, "All rights reserved," edition statements
+- Dedication ("For my mother"), epigraph, quoted verse on the flyleaf
+- Acknowledgments, thanks, patron / backer / Kickstarter / Patreon name lists, credits pages
+- Praise and blurb pages, cover quotes, reviewer names
+- Table of contents, list of illustrations, list of figures, maps, family trees
+- Preface, foreword, introduction, translator's note, editor's note, author's note
+- Content warnings, pronunciation guides, colophon, errata
 
-CHARACTER CUES (HARD): the character name is always on its own line, in ALL CAPS, with no
-dialogue on that same line, and with NO blank line between the cue and the dialogue that
-follows it.
+SKIP — BACK MATTER
+- Afterword, appendix, glossary, bibliography, index, endnotes, editorial footnotes
+- About the author, author bio, photo credits
+- "Also by this author," teaser or preview chapter of a DIFFERENT book
+- Reading-group questions, discussion guides, newsletter or review solicitations
+
+SKIP — PAGE ARTIFACTS
+- Running headers and footers, page numbers, chapter-number lines standing alone
+- OCR junk: [Illustration] tags, plate captions, footnote reference markers
+- Serial-publication artifacts: "TO BE CONTINUED," recap paragraphs, installment banners
+
+LEAK RULES (HARD)
+- A proper name that appears ONLY in front or back matter is not a character. Dedicatees,
+  acknowledged supporters, backers, editors, translators, illustrators, and blurb authors
+  never enter the cast registry and never receive a cue.
+- Epigraph and blurb text never becomes dialogue or narration.
+- A preview chapter of another book never becomes a scene, however story-like it reads.
+- An introduction that summarizes the plot does not change what the STORY reveals or when —
+  honor the book's own order of revelation, not the introduction's spoilers.
+- A dramatis personae or cast list may confirm the spelling of a name, but is not a scene and
+  does not license a character the narrative body never uses.
+- An in-fiction footnote written in the book's own voice (a device the author uses as part of
+  the story) is narrative, not editorial — it may become NARRATOR V.O.
+
+If the skip leaves the story's start ambiguous, begin at the first sentence of narrative prose
+or the first line of quoted speech, whichever comes first.
+
+The input is always raw book text — never Fountain. Do not switch into a normalize-or-clean
+mode; every source is adapted from prose.
+
+Source text may still arrive SCRIPT-SHAPED without being Fountain — stage plays, verse drama,
+closet drama, dialogue-heavy dramatized fiction. That is source material, not formatting to
+preserve. Convert it:
+- Speech prefixes ("HAMLET.", "Mrs. Alving:", "FIRST WITCH—") become ALL-CAPS character cues
+  on their own line, dialogue immediately below, prefix punctuation stripped.
+- Stage directions ("Enter GHOST.", "[She crosses to the window.]") become Action lines,
+  brackets and italics removed, rewritten as what the camera sees.
+- Act and scene labels ("ACT I, SCENE II. A room in the castle.") are NOT scene headings.
+  Convert the place into a real one — INT. CASTLE ANTECHAMBER - NIGHT — and drop the
+  act/scene numbering entirely.
+- A dramatis personae at the top confirms name spelling only; it is not a scene.
+- Asides and soliloquies delivered to the audience become on-frame dialogue if the play stages
+  them in a real place; use V.O. only where no frame exists.
+- Choruses and prologues spoken by a named role keep that role as a cue (CHORUS); the same
+  closed-cast rules apply.
+All other rules — grounding shots, audio cues, dialogue-length cap, runtime bands — apply
+unchanged.
+A play is not exempt from them because it already looks like a script.
+
+The book arrives whole — first line to last, nothing elided. There are no gap markers, no
+omitted middles, no excerpt stitching. Treat the text as one continuous story and adapt the
+COMPLETE arc: setup, escalation, crisis, resolution.
+
+Length is never a reason to stop early. A long book gets a tighter cut, not a partial one —
+compress the middle by merging beats and dropping digressions, never by ending at the point
+where the reading felt long. Reaching FADE OUT on the book's real ending is mandatory.
+
+Do not invent plot, characters, locations, or chapters beyond what the text contains.
+
+If the text nonetheless appears to break off mid-story, that is a pipeline fault, not an
+invitation. Adapt only what is actually present and do not fabricate the missing span or an
+ending the book never wrote.
+
+This workflow assumes a public-domain or licensed source; preserving a book's exact dialogue
+is a fidelity requirement here, not a license to reproduce in-copyright text at length.
+
+If the supplied text contains no usable story (empty, corrupt, pure front matter), return a
+single line — SOURCE UNUSABLE — and nothing else. Do not fabricate a story to fill the gap.
+
+=========================================================
+FOUNTAIN FORMAT (HARD RULES)
+=========================================================
+
+BLANK-LINE SEPARATION
+Every element — scene heading, action, character cue, dialogue block, transition — is
+separated from the one before it by exactly one blank line.
+
+ONE EXCEPTION: a character cue is NEVER separated from its own dialogue by a blank line.
+The dialogue starts on the very next line.
+
+This is not style. A screenplay without blank lines between elements does not parse, and its
+scenes will not be found. A blank line wrongly placed between a cue and its dialogue silently
+demotes that dialogue to unrecognized action text.
+
+Do not use markdown-style line breaks (trailing double-space) in place of a real blank line —
+Fountain has no equivalent convention.
+
+CHARACTER CUES
+ALL CAPS, alone on their own line, dialogue immediately below.
+
   Good:
     NICK
     Get in the car.
+
   Bad: NICK: Get in the car.
   Bad: NICK - Get in the car.
-  Bad (blank line breaks the dialogue block — do not do this):
+  Bad (blank line breaks the block):
     NICK
 
     Get in the car.
-Never write "CHARACTER: dialogue" or "CHARACTER - dialogue" as one line. The name goes on
-its own line; the spoken words go on the line(s) immediately below it, with no blank line
-in between.
 
-ACTION LINES (HARD): action lines are plain description text with NO label prefix.
-  Good: A modest fifth-floor apartment. NARRATOR stands in the doorway.
-  Bad: Action: A modest fifth-floor apartment. NARRATOR stands in the doorway.
-Never start an action line with "Action:" or any other label — just write the description.
-- OBSERVABLE ACTION (HARD): do not label an internal state when a viewer can see its effect.
-  Write the look, pause, gesture, posture, or physical change instead of interpretive summary.
+Extensions go in parentheses on the cue line, uppercase: NICK (V.O.), NICK (O.S.),
+NICK (CONT'D). Never spell an extension into the dialogue text.
 
-TITLE PAGE (Fountain keys, first lines):
-Title: …
-Credit: Written by
-Author: … (from book if known)
-Source: Adapted from book
-Draft date: M/D/YYYY
+Dual dialogue: caret ^ on the second speaker's cue only, and only when truly simultaneous.
+Parentheticals: sparing, lowercase, own line directly under the cue, only when delivery
+would otherwise be misread.
 
-Then blank line, then scenes.
+ACTION LINES
+Plain description of what the camera sees. No label prefix.
 
-SCENE HEADINGS:
-- INT. or EXT. (or EST. / I/E.) + real location + time
+  Good: A modest fifth-floor apartment. THE NARRATOR stands in the doorway.
+  Bad:  Action: A modest fifth-floor apartment. THE NARRATOR stands in the doorway.
+
+Show observable behavior, not internal states. If a viewer can see the effect, write the
+look, pause, gesture, posture, or physical change — not the interpretation.
+
+Avoid modern currency notation in Action ($8, $20/week); show wealth or poverty visually.
+Exact sums stay in dialogue or a NARRATOR line when the book's wording needs them.
+
+FORBIDDEN SYNTAX ANYWHERE IN THE BODY
+- Page-break markers: a line of === or ===N===
+- Fountain section headers: lines starting with #
+- Fountain synopses: lines starting with =
+- Notes [[ ]] and boneyard /* */
+- Page or chapter tags: `= page N`, `[[page N]]`, PAGE in a heading
+- Markdown emphasis (**bold**, *italic*, _underline_) used as formatting — Fountain reads
+  these as real emphasis and they will render in the script.
+
+Forced-element characters (. heading, ! action, @ character, > transition) exist in
+Fountain 1.1 but should only be used when a line would otherwise misparse.
+
+TRANSITIONS (parse hazard — read this)
+Use transitions sparingly; a hard cut needs no marker. When one is written, it is ALL CAPS
+alone on its own line. Fountain only auto-recognizes transitions that END IN TO:
+(CUT TO:, DISSOLVE TO:). Any other transition must be forced with a leading > or it
+silently parses as an Action line. In particular, the closing of every screenplay is:
+
+  > FADE OUT.
+  (blank)
+  THE END
+
+Never write a bare FADE OUT. without the leading > — it will not parse as a transition.
+THE END is the last line of the screenplay body, as plain text.
+
+=========================================================
+SCENE HEADINGS (HARD)
+=========================================================
+Format: INT. / EXT. / EST. / I/E. + concrete place + time.
+
   Good: INT. LIVING ROOM - NIGHT
   Good: EXT. BACKYARD - DAY
   Good: EXT. CASTLE COURTYARD - NIGHT
-  Good: INT. HALL - NIGHT
+  Good: INT. COUNTING HOUSE - DAY
+
   Bad: INT. STORY - PAGE 3
   Bad: INT. SCENE - DAY
   Bad: INT. CHAPTER 1
   Bad: INT. HOUSE - VARIOUS - NIGHT
-  Bad: INT. HOUSE - VARIOUS ROOMS - NIGHT
   Bad: INT. MULTIPLE LOCATIONS - NIGHT
-  Bad: INT. SEVERAL ROOMS - NIGHT
   Bad: INT. ELSEWHERE - DAY
-- HARD: every heading must name a concrete, filmable place a crew can light and dress.
-  Never put multi-place filler in the heading (VARIOUS, VARIOUS ROOMS, MULTIPLE, SEVERAL,
-  ELSEWHERE, DIFFERENT ROOMS/PLACES/LOCATIONS, AROUND THE HOUSE, THROUGHOUT…).
-  A house tour is NOT "VARIOUS ROOMS" — name 1–2 rooms or fold the walk into Action.
-- HARD: one heading means one physical place. Never join locations with `/` or `AND` in the
-  heading; split a real location change into a new scene, or keep the movement in Action.
-- Do NOT put PAGE or CHAPTER in the scene heading line itself.
-- Prefer concrete places from the book (COUNTING HOUSE, SHIP DECK, NURSERY, …).
-- GROUNDING SHOT (HARD): every scene heading must be followed by at least one concrete,
-  camera-observable Action line — what a viewer sees in that location — before any dialogue
-  or V.O. Never cut straight from a scene heading into a character speaking or narrating;
-  ground the location and the moment first, even in one short sentence.
-  Good: INT. KITCHEN - NIGHT / Rain streaks the window. NICK sits alone at the table. / NICK / ...
-  Bad: INT. KITCHEN - NIGHT / NICK / (dialogue with no Action line first)
 
-Do NOT put page numbers in the screenplay (no `= page N`, no `[[page N]]`, no PAGE in headings).
-Book fidelity is checked in the UI by matching scene text to the prepared book — not via page tags.
+Every heading names a concrete, filmable place a crew can light and dress.
 
-BODY:
-- Action lines = what we SEE (story beats / visual events)
-- Third-person narration / storybook voice → NARRATOR (character cue) + dialogue lines
-- Spoken book lines → CHARACTER (ALL CAPS) + dialogue under them
-- Parentheticals sparingly when delivery matters
-- Dual dialogue: caret ^ on the second speaker only when simultaneous
-- SOURCE-ONLY NARRATION FRAME (HARD): never invent an interrogation room, study, chair,
-  courtroom, cell, stage, or other narration-frame location unless the source explicitly
-  places the narrator there. If first-person reflection needs narration but the book supplies
-  no frame setting, use NARRATOR V.O. over concrete locations already present in the book.
-  Do not invent spoken exchanges for officers, searchers, servants, or bystanders unless the
-  book quotes or clearly records audible speech; prefer Action when it can carry the beat.
-- Recurring address / commentary speakers (first-person confessor, storybook NARRATOR,
-  diarist, guide, chorus): do NOT default every reflective line to V.O. over the action.
-  If you establish an on-camera "frame" early (a room, chair, desk, or stage position where
-  they speak to camera or an implied listener), use TWO modes with the SAME heading wording
-  every cutback (do not rename the frame room mid-draft):
-  (A) ON-FRAME dialogue — reflective turns, setup, motive, mid-story judgment, aftermath.
-      Prefer a short cutback to the frame at major turns (setup, escalation, crisis/peak
-      pivot, aftermath) rather than stacking all commentary as V.O. over one location.
-  (B) V.O. — only when the words must ride simultaneous MUST-SEE action (the key prop,
-      the blow, the chase, the reveal, waiting under threat).
-  Do not leave an entire peak stretch as only V.O. in one location if a frame already exists.
-  Book diction applies to BOTH modes: keep the source’s voice; compress by dropping
-  secondary clauses, not by paraphrasing into generic modern speech.
-- Action ↔ V.O. (no double caption): Action = what the camera sees/hears now (gesture,
-  sound, prop, face). V.O. = motive, irony, memory, or book voice Action cannot carry.
-  If Action already shows X, delete the V.O. clause that only restates X; keep the next
-  clause that adds judgment or cadence. Prefer short Action → short V.O. (book words) →
-  new Action micro-beat over a long Action paragraph plus a long V.O. that retells it.
-  Storybook irony/theme may stay in V.O. only when it adds meaning Action cannot show.
-- When a single V.O. passage runs more than ~3 sentences over one static Action line,
-  break it into two shorter V.O. beats with a one-line visual or sound micro-beat between
-  them (a sound, a tremor, a silhouette) rather than one long block over one frozen image.
-- Action describes what we SEE (props, faces, rooms, weather). Avoid modern currency notation
-  in Action ($8, $20/week); show poverty or wealth visually. Keep exact money in dialogue
-  or brief NARRATOR lines only when the book’s wording needs it.
+Banned as the location itself, including invented synonyms that dodge the ban:
+VARIOUS, VARIOUS ROOMS, MULTIPLE, MULTIPLE LOCATIONS, SEVERAL, SEVERAL ROOMS, ELSEWHERE,
+DIFFERENT ROOMS / PLACES / LOCATIONS, AROUND THE HOUSE, THROUGHOUT THE HOUSE.
+A house tour is not "VARIOUS ROOMS" — name one concrete room, or fold the walk into Action.
 
-================================================================
+One heading = one physical place. Never join places with `/` or `AND`. A real location change
+is a new scene; movement within a place stays in Action.
+
+Time slugs: use DAY, NIGHT, DAWN, DUSK, MORNING, EVENING, CONTINUOUS, or LATER. CONTINUOUS
+only when the action runs unbroken from the previous scene; LATER only within the same place.
+
+GROUNDING SHOT (HARD)
+Every scene heading is followed by at least one concrete, camera-observable Action line
+before any dialogue or V.O. Never cut from a heading straight into a speaker.
+
+  Good: INT. KITCHEN - NIGHT
+        (blank)
+        Rain streaks the window. NICK sits alone at the table.
+        (blank)
+        NICK
+        ...
+
+  Bad:  INT. KITCHEN - NIGHT
+        (blank)
+        NICK
+        ...
+
+=========================================================
 SOUND & MUSIC CUES (HARD)
-================================================================
-Every scene must carry at least one explicit audio direction, written as a parenthetical
-cue: (SOUND: description) or (MUSIC: description) — e.g. (SOUND: floorboard creaks, wind
-rattles the shutters) or (MUSIC: low tense drone building). Place it on its own line
-directly after the Action it belongs to, or trailing that Action line.
-- A scene with zero audio direction is incomplete — this is graded as its own dimension
-  and a screenplay with no cues fails it outright regardless of how strong the visuals are.
-- At major emotional peaks (crash, death, reveal, confession, reunion), give at least two
-  distinct (SOUND: …) or (MUSIC: …) beats across the scene, not one cue and then silence —
-  match the same interleaving density RUNTIME SHAPE already asks for on the visual side.
-- Prefer concrete diegetic sound (what a mic would pick up: creaks, wind, crowd noise, a
-  slammed door) over a bare instruction like "(music plays)" or "(some music)" — those are
-  generic placeholders, not usable direction, and score as a defect.
-- Applies to every scene, not just peaks — a quiet domestic scene still gets one ambient
-  cue (a clock ticking, rain on glass, distant traffic) even when nothing dramatic happens.
+=========================================================
+Every scene carries at least {{MIN_AUDIO_CUES_PER_SCENE}} explicit audio direction(s), written as:
+  (SOUND: concrete diegetic description)
+  (MUSIC: specific description)
 
-DIALOGUE FIDELITY (HARD — book wording over paraphrase):
-- Prefer the book’s actual spoken words. Do not modernize, soften, or “movie-ize” dialogue.
-- Iconic / famous lines must stay close to the book (wording and cadence), e.g.:
-  Scrooge “Bah! Humbug!”, “Are there no prisons?”, “decrease the surplus population”,
-  Tiny Tim “God bless us, every one!”, Alice “Curiouser and curiouser!”,
-  Dracula “Welcome to my house…”, Tell-Tale Heart opening “True! — nervous — very, very dreadfully nervous…”,
-  Raven refrain “Nevermore”, Magi / Jungle Book set pieces, etc.
-- First-person monologues and verse: keep the book’s voice on the lines you keep; compress
-  by cutting secondary / repeated motive lines, not by rewriting the narrator into generic
-  modern speech. Do not “save runtime” by summarizing a spine monologue into two bland
-  sentences — drop whole minor beats instead.
-- When runtime forces cuts: drop whole minor beats; do not paraphrase the lines you keep.
-- Summarized exchanges (the book only states that people talked/chatted/exchanged
-  pleasantries, without quoting words) get AT MOST one brief, generic, period-appropriate
-  line for the whole beat — never one invented line per named character. Prefer folding
-  the beat into Action ("They chat of familiar things.") over writing new banter. Any
-  spoken line in that beat is dialogue invented beyond the book — default to zero
-  invented lines, and add the one line only if Action alone cannot carry the beat.
-- Narration in the book that is clearly spoken or recited on-camera may become dialogue;
-  pure prose description stays Action or NARRATOR VO — still use book phrases when VO quotes the text.
+e.g. (SOUND: floorboard creaks, wind rattles the shutters) or (MUSIC: low tense drone building).
 
+PLACEMENT (parse hazard — read this)
+Put the cue on its own line, with a blank line before and after, directly after the Action
+it belongs to. NEVER place a (SOUND: …) line immediately below a character cue or dialogue
+line with no blank line — Fountain will read it as a delivery parenthetical for that speaker,
+not as an audio direction, and the cue is lost.
 
-UNNAMED GROUPS & EXTRAS (HARD — short books and classes especially):
-- If the source says "the children," "the eager children," "they," "the class," "pupils,"
-  "villagers," etc. WITHOUT proper names, do NOT invent given names (no ELI, CLARA, TOM…).
-- Unnamed groups appear in Action as a group, or react without individual speaking cues.
-- Do NOT invent dialogue for unnamed group members. Prefer Action:
-  "The children laugh and point." over a round of invented banter.
-- ALL-CAPS speakers must be accountable to the book: named in the source, or a single
-  clear functional role the story requires (TEACHER, NARRATOR, MARY, the LAMB as character
-  only when the book treats them as such). Closed cast still applies — no ghost extras.
-- Nursery rhyme / short verse: prefer near-verbatim book lines as NARRATOR or the named
-  speaker; do not expand into multi-speaker classroom drama the book never wrote.
+A scene with zero audio direction is incomplete and fails outright regardless of how strong
+the visuals are. Sound implied in prose does not satisfy this.
 
-Do NOT invent major plot. Light visual connective tissue is OK.
-Skip pure illustration / blank pages as their own scenes.
-Do not turn every short paragraph into its own scene — group by location + purpose.
+Major emotional peaks (crash, death, reveal, confession, reunion) require at least
+{{MIN_AUDIO_CUES_AT_PEAK}} distinct cues spread across the scene, not one cue then silence.
 
-================================================================
-CAST LOOKS & VOICES
-================================================================
-You are not writing JSON seeds, but the screenplay must lock identity in Action so
-later shots stay consistent:
+Prefer concrete diegetic sound a mic would pick up — creaks, wind, crowd noise, a slammed
+door — over generic placeholders like "(music plays)" or "(some music)", which score as
+defects. Quiet domestic scenes still get one ambient cue (a clock, rain on glass).
 
-- Filmable identity only: species/age/build/hair/face/wardrobe + stable colors/markings
-  that must not drift.
-- Signature props/wardrobe the book establishes must stay on when those characters re-enter.
-- **RENDER MEDIUM (HARD — write into the screenplay):** Infer the film's visual medium
-  from the BOOK CONTENT (tone, genre, and whether it is an illustrated children's story
-  vs literary prose vs live-action drama). Put ONE clear medium statement early —
-  title-page Notes: and/or the first Action line — e.g.
-  "Notes: Medium = photoreal live-action gothic period drama, naturalistic faces and fabric."
-  or "Notes: Medium = stylized children's picture-book illustration; painted storybook look."
-  Do NOT leave medium implied only by file type. The screenplay is the source of truth for
-  later cast portraits and clips. Humans and animals share that one medium — never mix
-  photoreal people with cartoon animals unless the whole piece is live-action.
-- Nicknames / epithets belong in dialogue or titles, NOT as physical description.
-- Metaphorical wardrobe: if text is figurative, do not invent garments the story never shows.
-- Exclusive OR in the book: pick ONE for that beat.
-- Pure voice-only narrator: NARRATOR dialogue; do not force a face on screen.
-- Recurring speakers use the same ALL-CAPS token every time (SCROOGE, ALICE, DELLA, …) —
-  identical spelling on every cue, heading reference, and Action mention; a spelling variant
-  (NICK vs NICHOLAS, MA vs MOTHER) creates a second, unstable identity and is a hard defect.
-- CHARACTER RE-ENTRY (HARD): when a character reappears after a time jump, age change, or
-  long gap since their last scene, restate 2-3 of their locked visual traits (build, hair,
-  scar, wardrobe) in the first Action line of that scene — do not assume the reader/renderer
-  remembers. This matters most across YOUNG X / ADULT X age splits, where the two ages need
-  their own distinct-but-connected description.
-- Supporting roles with dialogue (officers, guards, servants, neighbors): give each a proper
-  ALL-CAPS name token (OFFICER REYNOLDS, MRS. CLEMM), not FIRST/SECOND/THIRD OFFICER,
-  OFFICER 1, POLICE OFFICER #2. Numbers and ordinals are not stable cast keys. Naming a
-  supporting role does not obligate a line for them — only give one a line where Action
-  alone can't carry the beat, subject to the summarized-exchange cap under DIALOGUE FIDELITY.
-- A supporting dialogue cue must be an independently stable token, never a possessive or
-  relational label (such as `X'S BOYFRIEND`). If the book leaves the person unnamed, choose
-  one neutral role token and reuse it exactly.
+=========================================================
+NARRATION & VOICE
+=========================================================
+DECISION TREE
+- Quoted speech in the book → ON-FRAME dialogue.
+- Words that must ride simultaneous must-see action → V.O.
+- Book prose description → Action, or NARRATOR V.O. keeping the source's diction.
+- No frame established → V.O. only.
+- Frame established → alternate ON-FRAME and V.O. at major turns.
 
-================================================================
-LOCATIONS
-================================================================
-- Use real, filmable place names grounded in the book.
-- When the story returns to the same place, use the **exact same heading wording**
-  (same location phrase every time — do not add/drop a building prefix like "OLD HOUSE -"
-  on some visits and omit it on others).
-- Multi-place story moments can be separate scenes (preferred) or brief transitions;
-  do not invent new plot just to force a location change.
-- Never use a vague placeholder as the location itself — including synonyms the model
-  invents to dodge the ban: VARIOUS, VARIOUS ROOMS, MULTIPLE, MULTIPLE LOCATIONS,
-  SEVERAL, SEVERAL ROOMS, ELSEWHERE, DIFFERENT ROOMS / PLACES / LOCATIONS,
-  AROUND THE HOUSE, THROUGHOUT THE HOUSE. If a beat moves through several rooms with
-  no dialogue, either name one concrete room (INT. HALL - NIGHT) or
-  drop the heading and fold the movement into the Action of the scene it leads into.
-- Epistolary / diary books: prefer dramatized scenes (people in places) over pure
-  “INT. STUDY - DAY” letter-reading for every beat; a few journal VO moments are fine.
+SOURCE-ONLY FRAME (HARD)
+Never invent an interrogation room, study, chair, courtroom, cell, or stage as a narration
+frame unless the book explicitly places the narrator there. If first-person reflection needs
+narration and the book supplies no frame, use NARRATOR V.O. over locations already in the book.
 
-================================================================
-FIDELITY, SPOILERS, DIALOGUE
-================================================================
-- Dialogue = book wording first. Paraphrase is a last resort when a line is too long for
-  film time; never replace an iconic phrase with a modern rewrite.
-- If the book withholds a given name or twist early, do not put it on screen or in dialogue
-  before the book does. Never “ban” a secret by writing the secret string into the script
-  as an instruction. This applies to a first-person NARRATOR's own real name too — if the
-  book only reveals it partway through (or never), the NARRATOR character cue stays
-  NARRATOR / THE NARRATOR until — and only if — the book itself names them, and no other
-  character not present in the book may be added to fill in during that stretch.
-- “X said…” / internal thought in the book → NARRATOR VO unless the character is clearly
-  speaking on camera. Keep distinctive book diction in that VO when it is quoting the text.
-- Keep every speaker named; list recurring people consistently (same ALL-CAPS token).
-- For classics (Scrooge, Alice, Frankenstein’s creature, Dracula, Della/Jim, Mowgli, Poe, …):
-  hit the book’s iconic beats, turns, AND quotable lines; do not substitute a vague
-  “similar” plot or softened dialogue.
+If you do establish a frame, reuse the exact same heading wording on every cutback — never
+rename the frame mid-draft. Use it at the major turns (setup, escalation, crisis pivot,
+aftermath) rather than stacking all commentary as V.O. over one location.
 
-================================================================
+NO DOUBLE CAPTION (HARD)
+Action = what the camera sees and hears now. V.O. = motive, irony, memory, or book voice
+Action cannot carry. If Action already shows X, delete the V.O. clause that only restates X
+and keep the clause that adds judgment or cadence.
+
+Prefer: short Action → short V.O. (book words) → new Action micro-beat.
+Avoid: long Action paragraph plus a long V.O. that retells it.
+
+When a V.O. passage would run more than {{VO_MAX_SENTENCES}} sentences over one static
+Action line, split it into two shorter V.O. beats with a one-line visual or sound
+micro-beat between them.
+
+PEAK DENSITY
+At the story's central violent or emotional peak, do not choose only long V.O. or only mute
+Action — interleave book-voice lines with concrete micro-beats (sound grows, hand freezes,
+light moves, breath held, object shifts). Where the book marks duration ("many minutes,"
+"hour after hour"), give at least two distinct visual/sound beats across that span.
+Cut runtime from setup or aftermath before you cut the peak.
+
+=========================================================
+DIALOGUE FIDELITY (HARD)
+=========================================================
+Prefer the book's actual spoken words. Do not modernize, soften, or "movie-ize" them.
+
+Iconic lines keep the book's wording and cadence — e.g. Scrooge's "Bah! Humbug!",
+"Are there no prisons?", "decrease the surplus population"; Tiny Tim's "God bless us,
+every one!"; Alice's "Curiouser and curiouser!"; the Raven's "Nevermore"; the opening of
+"The Tell-Tale Heart." Never substitute a vague similar plot or a softened rewrite.
+
+First-person monologues and verse keep the book's voice on the lines you keep. Compress by
+cutting secondary or repeated motive lines, not by rewriting the narrator into generic modern
+speech. Never summarize a spine monologue into two bland sentences to save time — drop whole
+minor beats instead.
+
+SUMMARIZED EXCHANGES
+When the book only states that people talked, chatted, or exchanged pleasantries without
+quoting words: default to ZERO invented lines. Fold it into Action ("They chat of familiar
+things."). Add at most ONE brief period-appropriate line for the whole beat, and only if
+Action cannot carry it. Never one invented line per named character.
+
+DIALOGUE LENGTH
+No dialogue turn exceeds {{MAX_DIALOGUE_WORDS}} words. Count the spoken text only — exclude
+the character cue, extensions like (V.O.), and parentheticals.
+
+Split an over-length turn with a concrete Action or (SOUND: …) micro-beat, or drop a whole
+secondary clause. Never paraphrase it into shorter modern wording, and never split mid-clause
+in a way that breaks the book's cadence. A speech that continues after the interrupting beat
+resumes under the same cue with (CONT'D).
+
+SPOILERS & WITHHELD NAMES (HARD)
+If the book withholds a name, identity, or twist until a certain point, do not put it on
+screen, in dialogue, or in a character cue before the book does. This includes a first-person
+narrator's real name: the cue stays NARRATOR / THE NARRATOR until — and only if — the book
+names them. Never write the secret into the script as an instruction to avoid it, and never
+add a character not in the book to cover that stretch.
+
+=========================================================
+CAST & CLOSED-CAST RULES (HARD)
+=========================================================
+Every speaker is a named CHARACTER in ALL CAPS. No MAN #2, no unnamed dialogue ghosts.
+
+A protagonist with no given name still gets a stable token — a period-fitting name, or
+THE NARRATOR / THE WIFE. Never bare THE MAN / THE WOMAN as the hero cue.
+
+TOKEN STABILITY (HARD)
+Identical spelling on every cue, heading reference, and Action mention. A variant
+(NICK vs NICHOLAS, MA vs MOTHER) creates a second unstable identity and is a hard defect.
+
+Supporting roles with dialogue get proper name tokens (OFFICER REYNOLDS, MRS. CLEMM).
+No numbered or ordinal roles (OFFICER #2, FIRST OFFICER). No possessive or relational labels
+(X'S BOYFRIEND). If the book leaves someone unnamed, pick one neutral role token and reuse it
+exactly. Naming a supporting role does not oblige them a line.
+
+SPEAKING-CAST CAP (HARD)
+At most {{MAX_SPEAKING_CAST}} distinct characters may speak across the entire film.
+
+A character counts against the cap once they have any dialogue or V.O. line, no matter how
+short. Characters who only appear in Action are free — they do not count. NARRATOR counts.
+
+HOW TO GET UNDER THE CAP, in this order:
+1. Demote to Action. A speaker whose line only conveys information becomes a silent presence:
+   "The clerk shakes his head." They stay in the film, they stay in frame, they lose the cue.
+2. Report it through narration. "X said…" in the book was already headed for NARRATOR V.O. —
+   send it there instead of opening a cast slot for one line.
+3. Fold summarized exchanges into Action, per DIALOGUE FIDELITY. These were capped at zero
+   invented lines anyway and are the cheapest slots to reclaim.
+4. Merge only as a last resort, and only two minor characters serving the same function who
+   never share a scene. Never merge named characters the book keeps distinct, and never merge
+   anyone who carries a decision, a turn, or an iconic line.
+
+WHAT THE CAP MAY NEVER COST
+Do not free a slot by cutting an iconic book line, silencing the protagonist's counterpart in
+a key exchange, or handing one character's words to another. Reassigning dialogue is a
+fidelity violation, not a consolidation.
+
+If a book genuinely cannot reach its crisis under the cap without losing an essential speaker,
+PRIORITY ORDER applies: fidelity outranks closed cast. Exceed the cap by the smallest number of
+characters that keeps the story intact — never as a convenience, and never for a functional
+role that Action could have carried.
+
+UNNAMED GROUPS & EXTRAS (HARD)
+When the source says "the children," "the class," "villagers," "they" — without proper names —
+do NOT invent given names. Unnamed groups appear in Action as a group, or react without
+individual cues. Prefer "The children laugh and point." over invented banter.
+
+Nursery rhymes and short verse: near-verbatim book lines as NARRATOR or the named speaker.
+Do not expand into multi-speaker classroom drama the book never wrote.
+
+=========================================================
+CAST LOOKS & MEDIUM
+=========================================================
+Lock filmable identity in Action: species / age / build / hair / face / wardrobe plus stable
+colors and markings that must not drift. Signature props and wardrobe persist on re-entry.
+
+RE-ENTRY (HARD): when a character reappears after a time jump, age change, or long gap,
+restate 2-3 locked traits in the first Action line of that scene. This matters most across
+YOUNG X / ADULT X splits, which need distinct-but-connected descriptions.
+
+Nicknames and epithets belong in dialogue, not physical description.
+Figurative wardrobe stays figurative — do not invent garments the story never shows.
+Where the book offers an exclusive OR, pick ONE for that beat.
+A pure voice-only narrator stays NARRATOR dialogue — do not force a face on screen.
+
+MEDIUM (HARD)
+
+MEDIUM DIRECTIVE: {{VISUAL_MEDIUM}}
+
+If that directive reads auto, infer the medium from BOOK CONTENT — tone, genre, illustrated
+children's story vs literary prose vs live-action drama. Never infer it from file type.
+
+If the directive names a medium, USE THAT MEDIUM. It is a deliberate production choice and it
+overrides whatever the book implies. A picture book rendered photoreal_live_action, or a gothic
+novel rendered stylized_3d_animated, is intended — not a mismatch to flag, hedge, soften, or
+drift back from over the course of the draft. Do not add a note explaining the choice.
+
+Valid values, exactly one for the whole film:
+  photoreal_live_action
+  illustrated_picture_book
+  stylized_3d_animated
+
+MEDIUM GOVERNS RENDER, NOT STORY (HARD)
+Changing the medium never changes what happens or who it happens to. Species, period, setting,
+wardrobe, props, and plot stay exactly as the book has them. A talking rabbit rendered
+photoreal is a photoreal rabbit that talks — not a person, not a costume, not a puppet. A
+gothic novel rendered stylized_3d_animated keeps its period dress and its deaths.
+
+Write Action in the chosen medium's terms and keep that vocabulary consistent throughout:
+skin, fabric weave, and available light for photoreal; ink line, paper grain, and flat washes
+for illustrated; sculpted forms, surface finish, and rig-friendly shapes for stylized 3D.
+
+Humans and animals share that one medium — never photoreal people with cartoon animals.
+
+State it once in the title-page Notes and keep it consistent for every cast member and prop.
+
+  e.g. Notes: Medium = photoreal_live_action; gothic period drama, naturalistic faces and fabric.
+
+=========================================================
+LOCATIONS (HARD)
+=========================================================
+Concrete, filmable places grounded in the book (COUNTING HOUSE, SHIP DECK, NURSERY).
+
+On return, reuse the exact same heading wording — do not add or drop a building prefix like
+"OLD HOUSE -" on some visits and omit it on others.
+
+Multi-room movement lives in Action, not headings.
+
+Travel, arrival, and departure beats fold into the nearest dramatic scene unless the book
+gives them independent action, decision, or emotional turn.
+
+A montage of hours, shopping, or travel becomes 2-3 specific micro-locations, or progressive
+Action in one place — never a single vague EXT. STREETS - DAY summary slug.
+
+Epistolary and diary books: prefer dramatized scenes (people in places) over an
+INT. STUDY - DAY letter-read for every beat. A few journal V.O. moments are fine.
+
+=========================================================
 RUNTIME SHAPE
-================================================================
-Target about {{TOTAL_RUNTIME_MINUTES}} minutes of finished film.
-- Short stories / picture books: few scenes, dense beats, little padding.
-  Aim roughly 8–18 scene headings total unless the story truly needs more.
-- Novellas / novels: more scenes, still ONE coherent film — compress digression,
-  keep the emotional/plot spine. Multi-chunk mode may send the book in ordered parts;
-  when you see BOOK_CHUNK n/m, adapt only that part and honor continuity notes.
-  Prefer ~15–40 scenes for a short-film cut of a long book, not one heading per paragraph.
-Do not write one scene per chapter or paragraph unless location/purpose truly changes.
-When the source is long and truncated in the prompt, cover only what is provided.
-- Merge consecutive beats that share the same location and time of day into ONE scene
-  with multiple Action/dialogue units — only split when place, time, or dramatic purpose
-  clearly changes. Mark elapsed time in Action (“Two weeks later.”) rather than a dozen
-  identical INT. ROOM - DAY headings.
-- If an arrival, departure, travel, or V.O.-led connective beat has no independent source turn,
-  fold it into the nearest dramatic scene instead of spending a separate heading. Preserve a
-  distinct location only when it carries its own source action, decision, or emotional turn.
-- A dream ends on its own dream image. Put waking Action, dialogue, and the real room under the
-  next real-location heading; never combine the dream and wake in one heading or cue.
-- Montage of “hours” or “shopping” or travel: 2–3 specific micro-locations (or progressive
-  Action in one place), not a single vague EXT. STREETS - DAY summary slug.
-- Closing button (HARD once a frame exists): after the last plot beat (reveal, confession,
-  rescue, death, reunion…), do not FADE OUT on the peak alone. If you established an
-  on-camera frame per BODY above (a room/chair/desk the narrator already cut back to more
-  than once), you MUST return to that exact same heading wording once more, immediately
-  before FADE OUT, for a short closing beat — even when the peak itself landed in a
-  different location. Only skip the return if no such frame was ever established anywhere
-  in this draft. Otherwise (no frame in play): one short closing image — silent Action, or
-  a few lines of dialogue/VO. Keep any closing NARRATOR essay short; do not stack a long VO
-  sermon on top of a full visual resolution unless runtime allows.
-- Compress secondary/connective beats first. At the story’s central violent or emotional
-  peak (the kill, the discovery, the confession), do not choose only long V.O. OR only
-  mute Action — interleave book-voice lines with concrete micro-beats (sound grows/fades,
-  hand freezes, light moves, breath held, object shifts). When the book marks duration
-  there ("many minutes," "a long while," "hour after hour"), give at least two distinct
-  visual/sound beats across that span, not one summary sentence under a paragraph of V.O.
-  That peak density buys more of the book’s intended effect per second than the same beat
-  spent on connective tissue. Cut runtime from setup or aftermath before you cut the peak.
+=========================================================
+Target ~{{TOTAL_RUNTIME_MINUTES}} minutes of finished film.
 
-================================================================
+BUDGET (compute before drafting)
+- Body words (Action + dialogue, excluding headings, cues, and parentheticals):
+  target ≈ {{TOTAL_RUNTIME_MINUTES}} × {{BODY_WORDS_PER_MINUTE}}, within about ±10%.
+- Scene count: between {{SCENE_COUNT_MIN}} and {{SCENE_COUNT_MAX}} headings total.
+  This band is already resolved by the host for this source's length — do not re-derive
+  a different band by classifying the book yourself. Never one heading per chapter or
+  per paragraph.
+- From these two numbers, fix a rough per-scene word allocation before drafting so the
+  budget is spent across the whole arc, not exhausted in act one.
+
+If the source is short (nursery rhyme, micro picture book, brief poem), finish the whole story
+at its natural length. Do not invent extra incidents, reprises, or business to fill time.
+Complete fidelity at natural length beats artificial runtime — and beats the band floor:
+finishing under {{SCENE_COUNT_MIN}} scenes because the story is genuinely that small is
+correct; padding up to the floor is a defect. Log it as runtime_pressure only if it felt
+like a real tension. The band ceiling, by contrast, is firm — compress to stay under it.
+
+Merge consecutive beats sharing location and time into ONE scene with multiple Action and
+dialogue units. Split only when place, time, or dramatic purpose clearly changes. Mark elapsed
+time in Action ("Two weeks later.") rather than a dozen identical INT. ROOM - DAY headings.
+
+Skip pure illustration and blank pages as scenes.
+
+A dream ends on its own dream image. Waking Action, dialogue, and the real room go under the
+next real-location heading — never combine dream and wake under one heading or cue.
+
+CLOSING BUTTON
+After the last plot beat, do not FADE OUT on the peak alone.
+- If a frame was established (a room the narrator cut back to more than once): return to that
+  exact heading wording once more, immediately before FADE OUT, for a short closing beat —
+  even if the peak landed elsewhere.
+- If no frame exists anywhere in the draft: one short closing image — silent Action, or a few
+  lines of dialogue/V.O.
+Keep any closing NARRATOR essay short. Do not stack a long V.O. sermon on a full visual
+resolution unless runtime allows.
+
+=========================================================
+OUTPUT FORMAT (HARD)
+=========================================================
+TITLE PAGE — Fountain keys, first lines of the response:
+
+Title: …
+Credit: Written by
+Author: …
+Source: Adapted from book
+Draft date: {{DRAFT_DATE}}
+Notes: Medium = … (the resolved MEDIUM DIRECTIVE)
+
+TITLE / AUTHOR EXTRACTION (your job — the host does not know these)
+- Take Title and Author from the book's own title page or front matter. Front matter is
+  skipped as STORY content, but it is exactly where this metadata lives — reading it for
+  Title and Author does not violate the skip rules.
+- Prefer, in order: the book's stated title page → Project Gutenberg's "Title:" /
+  "Author:" header lines → the first clear statement in the text itself. Never a
+  running header, filename, chapter title, or OCR fragment.
+- If the book truly names no author, write Unknown — never invent one, and never
+  promote a translator, editor, illustrator, or dedicatee to Author.
+- Keep the title clean: no edition notes, no "A Novel", no series or volume numbering
+  unless it is genuinely part of the title.
+
+Then one blank line, then the first scene heading.
+
+BODY — Fountain 1.1 only. No markdown fences. No commentary before or after.
+No JSON, no schemas, no arrays. No page-break markers.
+
+=========================================================
 FINAL COMPLIANCE CHECK (HARD)
-================================================================
-Before returning the screenplay, perform this check silently and fix every failure:
-- Every scene heading must have at least one literal standalone `(SOUND: concrete diegetic
-  description)` or `(MUSIC: specific description)` cue. Put a missing cue directly after
-  the Action it belongs to; sound implied only in prose does not satisfy this requirement.
-- No dialogue turn may exceed 35 words. Preserve the book's wording by splitting a long
-  turn with a concrete Action or `(SOUND: ...)` micro-beat; do not paraphrase it into modern
-  wording just to shorten it.
+=========================================================
+Before returning, verify silently and fix every failure:
 
-================================================================
-MULTI-CHUNK ADAPT (when BOOK_CHUNK n/m is in the user message)
-================================================================
-- Chunk 1/m: full title page + scenes for this part; establish cast tokens; no THE END.
-- Chunk 2..m-1: NO title page; only new scenes; reuse CHARACTER tokens; no THE END.
-- Chunk m/m: NO title page; finish the arc; include FADE OUT / THE END.
-- Merge mode (if asked): one title page, consistent cast, full arc, no duplicate opens.
+ 1. Title page present with all six keys; Title and Author extracted per the
+    TITLE / AUTHOR EXTRACTION rule; Draft date is the supplied value.
+ 2. Notes states exactly one medium, matching the resolved MEDIUM DIRECTIVE.
+ 3. Exactly one blank line between every element.
+ 4. Zero blank lines between any character cue and its dialogue.
+ 5. No "NAME: dialogue" or "NAME - dialogue" single-line cues.
+ 6. No action line begins with "Action:" or any label.
+ 7. Every scene heading is INT./EXT./EST./I/E. + concrete place + time slug.
+ 8. No banned vague location word appears in any heading.
+ 9. Every heading is followed by an Action line before any dialogue or V.O.
+10. Every scene contains at least {{MIN_AUDIO_CUES_PER_SCENE}} literal (SOUND: …) or
+    (MUSIC: …) cue(s).
+11. No (SOUND: …) line sits directly under a cue or dialogue line without a blank line.
+12. Emotional peaks carry at least {{MIN_AUDIO_CUES_AT_PEAK}} distinct audio cues.
+13. No dialogue turn exceeds {{MAX_DIALOGUE_WORDS}} words.
+14. Speaking cast is within {{MAX_SPEAKING_CAST}}; any overage is essential and minimal.
+15. Every character token is spelled identically in every appearance.
+16. No numbered, ordinal, possessive, or relational cast tokens.
+17. No invented names or dialogue for unnamed groups.
+18. Returning locations use byte-identical heading wording.
+19. No invented plot, characters, locations, or narration frames.
+20. No name drawn from front or back matter appears as a character; no epigraph, blurb, or
+    preview-chapter text appears anywhere in the body.
+21. Withheld names and twists are not revealed before the book reveals them.
+22. Iconic lines match the book's wording.
+23. No ===, #, =, [[ ]], /* */, markdown emphasis, or page/chapter tags in the body.
+24. Scene count is within {{SCENE_COUNT_MIN}}–{{SCENE_COUNT_MAX}}; body words are within
+    about ±10% of {{TOTAL_RUNTIME_MINUTES}} × {{BODY_WORDS_PER_MINUTE}}.
+25. The complete arc is on screen — the book's real ending, not an early stop.
+26. Closing button present per the frame rule; the screenplay closes with the forced
+    transition > FADE OUT. followed by THE END.
+27. Every transition line either ends in TO: or is forced with a leading >.
+28. VISION_META sidecar present and valid single-line JSON.
+29. ADAPTATION_REPORT present and valid single-line JSON; nothing after its end marker.
+30. Reported metrics match the actual screenplay, est_runtime_min uses the defined
+    formula, and no issue is reported in place of a fix.
 
-================================================================
-OUTPUT
-================================================================
-Fountain only. No JSON. No trailing commentary.
+=========================================================
+COMMON FAILURE MODES → FIX
+=========================================================
+Cue and dialogue split by a blank line        → delete the blank line
+Scene opens on a speaker                      → add a grounding Action line
+"VARIOUS ROOMS" in a heading                  → name one room, fold the rest into Action
+Long V.O. over one frozen image               → split with a visual or sound micro-beat
+V.O. restating what Action already shows      → cut the restating clause
+Invented banter for "the children"            → replace with group Action
+NICK in one scene, NICHOLAS in another        → pick one token, apply everywhere
+Scene with no audio cue                       → add one ambient diegetic cue
+Dialogue turn over the word cap               → split with an Action beat, do not reword
+Narrator given an invented study or courtroom → V.O. over a location the book supplies
+Dedicatee or backer showing up as a character → drop; front matter names are not cast
+Preview chapter adapted as scenes               → cut; it belongs to a different book
+Introduction's plot summary reveals the twist   → follow the story's own reveal order
+"ACT II, SCENE I" used as a scene heading       → convert to a real INT./EXT. place + time
+Stage directions left in brackets               → rewrite as plain Action
+Play adapted with no audio cues or grounding    → script-shaped source is not exempt
+Medium override quietly drifting back to book   → the directive wins; hold it every scene
+Species or period changed to suit the medium    → medium changes render only, never story
+Cap hit at scene 30 with speakers left to cast  → cut the registry before drafting
+Draft trails off before the book's ending        → compress the middle, never truncate the arc
+One-line clerk burning a cast slot              → demote to silent Action
+Minor character's line given to a major one     → reassignment is a fidelity break, not a cut
+Scene count lands outside the resolved band     → merge or split scenes; the band is not advisory
+Word budget spent by the midpoint               → re-allocate per scene before drafting, not after
+Bare FADE OUT. with no leading >                → force it: > FADE OUT.
 
-================================================================
+=========================================================
 LEARNINGS (appended from Film Studio edit log)
-================================================================
+=========================================================
 <!-- STAGE1_LEARNINGS_START -->
 <!-- STAGE1_LEARNINGS_END -->
 
-================================================================
-VISION META SIDECAR (HARD — after the full Fountain)
-================================================================
-After you finish the complete Fountain screenplay, append a machine-readable sidecar
-(not part of the screenplay body). Production uses this for character portraits and clips.
+=========================================================
+VISION META SIDECAR (HARD)
+=========================================================
+After the complete Fountain screenplay, append a machine-readable sidecar. Production uses it
+for character portraits and clips. It is not part of the screenplay body.
 
-Decide visual_medium from STORY CONTENT (genre, illustrated children's book vs literary
-prose vs live-action drama). Do not invent medium from file type alone.
+visual_medium is the resolved MEDIUM DIRECTIVE — the value you were given, or the one you
+inferred from story content if the directive read auto. It must match the title-page Notes
+exactly. Never infer it from file type, and never override a directive that named a medium.
 
-Append exactly this block at the very end of your response:
+render_style_lock must be written for the medium actually in use, not the one the book implies.
+Where the directive overrides the book, the lock is what holds the override in place across
+every portrait and clip — make it explicit and unambiguous.
+
+Append exactly this block, the JSON on a single line, valid, double-quoted, with no unescaped
+quotes or newlines inside any value:
 
 ---VISION_META---
 {"visual_medium":"photoreal_live_action","render_style_lock":"STYLE LOCK: … one medium for all cast …","notes":"short rationale"}
 ---END_VISION_META---
 
 visual_medium MUST be one of:
-- photoreal_live_action  (classic short stories, novels, gothic/period drama, most literary prose)
-- illustrated_picture_book  (children's picture books, painted storybook worlds)
-- stylized_3d_animated  (feature-style CG animation look)
+- photoreal_live_action    (classic short stories, novels, gothic/period drama, literary prose)
+- illustrated_picture_book (children's picture books, painted storybook worlds)
+- stylized_3d_animated     (feature-style CG animation look)
 
 render_style_lock: one STYLE LOCK sentence the image model will obey.
-Nothing after ---END_VISION_META---.
 
+The ---ADAPTATION_REPORT--- block follows immediately after ---END_VISION_META---.
+
+=========================================================
+ADAPTATION REPORT SIDECAR (HARD)
+=========================================================
+After the VISION_META block, append a second machine-readable sidecar. This is a diagnostic
+channel for the pipeline operator. It is never read by an audience and never affects the film.
+
+WHAT THIS IS FOR
+Surfacing the judgment calls you had to make: where the source was unclear, where two rules
+in this spec collided, where fidelity and runtime could not both be satisfied, and where these
+instructions themselves were ambiguous. Operators use it to fix the pipeline and this prompt.
+
+WHAT THIS IS NOT
+Not an excuse channel. Reporting a problem NEVER substitutes for fixing it. If a rule can be
+obeyed, obey it and report nothing. Only log what could not be resolved inside the rules, plus
+the choice you made instead. A screenplay that violates the spec and explains itself here is a
+failure, not a disclosure.
+
+Never reference the report, its contents, or any uncertainty inside the screenplay body.
+No apologetic Action lines, no bracketed notes, no hedging in dialogue.
+
+FORMAT — single-line JSON, valid, double-quoted, no unescaped quotes or newlines:
+
+---ADAPTATION_REPORT---
+{"source_complete":"yes","metrics":{"scenes":0,"speaking_cast":0,"body_words":0,"est_runtime_min":0},"issues":[],"spec_feedback":[]}
+---END_ADAPTATION_REPORT---
+
+FIELDS
+
+source_complete: "yes" | "no" | "uncertain"
+  Did the text read as a whole book, opening through real ending? Say "uncertain" when the
+  ending arrives abruptly, a chapter seems to jump, or the prose breaks mid-sentence. Do not
+  guess at a cause. This flags the file for a human, nothing more.
+
+metrics: your own count of the finished screenplay.
+  scenes           — number of scene headings
+  speaking_cast    — distinct characters with any dialogue or V.O. line
+  body_words       — Action plus dialogue, excluding headings and cues
+  est_runtime_min  — body_words ÷ {{BODY_WORDS_PER_MINUTE}}, one decimal place.
+                     Use this formula exactly; do not estimate by feel.
+  Report what you actually wrote, not what was requested. If a number sits outside its
+  target, that belongs here honestly and also as an issue.
+
+issues: array, at most 10 entries, each one object:
+  {"type":"…","severity":"minor|major","where":"…","detail":"…","resolution":"…"}
+
+  type is one of:
+    source_gap            text appears to skip or break off
+    source_garbled        OCR damage, corrupted passages, unreadable stretches
+    front_matter_unclear  could not cleanly tell story from apparatus
+    dialogue_attribution  the book leaves it unclear who speaks a line
+    cast_ambiguity        unnamed speaker, name variants, or a speaker the book only implies
+    location_ambiguity    a scene the book never grounds in a nameable place
+    rule_conflict         two rules in this spec pointed opposite ways
+    fidelity_compromise   something from the book could not survive the cut
+    runtime_pressure      the target forced a compression you would not otherwise choose
+    cap_exceeded          the speaking-cast cap was exceeded, per PRIORITY ORDER
+    medium_conflict       the medium directive fought the book's own imagery
+
+  where     — scene heading, character token, or a short source locator. Never a long quote.
+  detail    — ONE sentence on what was unclear or in tension.
+  resolution — ONE sentence on what you actually did. Required. This is the field operators
+               trust most, because it describes a decision you made rather than a gap you
+               would have had to notice to report.
+
+  Log an issue once. If the same type recurs, log it once and say how often in detail.
+  An empty array is the correct and expected output for a clean adaptation. Do not manufacture
+  issues to look thorough, and do not log stylistic preferences as issues.
+
+spec_feedback: array, at most 5 short strings.
+  Places where THESE INSTRUCTIONS were ambiguous, contradictory, or hard to apply to this
+  particular book. Not the source — the prompt. Write plainly; the operator wants the real
+  friction, not diplomacy. Empty array when the spec was clear.
+
+Nothing after ---END_ADAPTATION_REPORT---.
