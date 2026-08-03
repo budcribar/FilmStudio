@@ -6,6 +6,13 @@
 <PageTitle>Book · Screenplay</PageTitle>
 
 <AdaptationShell Host="this" Step="screenplay">
+    @if (!string.IsNullOrWhiteSpace(ProjectId))
+    {
+        <FilmLengthCard ProjectId="@ProjectId"
+                        Disabled="@(Busy || JobRunning)"
+                        OnChanged="OnFilmLengthChangedAsync" />
+    }
+
     <div class="card mb-3">
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
             <span>Screenplay</span>
@@ -792,4 +799,9 @@
         _dotNetRef?.Dispose();
         await base.DisposeAsync();
     }
+    private async Task OnFilmLengthChangedAsync()
+    {
+        try { await SoftLoadAsync(); } catch { /* ignore */ }
+    }
+
 }

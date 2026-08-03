@@ -1,0 +1,168 @@
+@namespace PageToMovie.Web.Components
+@*
+  Shared film length target control.
+  Loads natural/target from GET /film-runtime so it works even when extract_meta is thin.
+*@
+@inject EngineApiClient Engine
+
+@if (_visible)
+{
+    <div class="card mb-3 border-primary border-opacity-25" data-testid="film-length-card">
+        <div class="card-body p-3">
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+                <div>
+                    <div class="fw-semibold">Film length (target)</div>
+                    <div class="small text-muted">
+                        Natural ~<strong>@_natural</strong> min
+                        @if (_words is int w && w > 0)
+                        {
+                            <span>· @w.ToString("N0") words</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_bookKind))
+                        {
+                            <span>· @_bookKind</span>
+                        }
+                        · mode <strong>@_mode</strong>
+                    </div>
+                </div>
+                <span class="badge text-bg-primary">Target @_target min</span>
+            </div>
+
+            <label class="form-label small mb-1" for="@_inputId">Target length (minutes) — shorter usually costs less</label>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <input id="@_inputId"
+                       type="number"
+                       class="form-control form-control-sm"
+                       style="max-width: 7rem;"
+                       min="2"
+                       max="180"
+                       @bind="_edit"
+                       @bind:event="oninput"
+                       disabled="@(_busy || Disabled)"
+                       data-testid="film-length-input" />
+                <button type="button"
+                        class="btn btn-sm btn-primary"
+                        disabled="@(_busy || Disabled)"
+                        data-testid="film-length-save"
+                        @onclick="SaveAsync">
+                    @(_busy ? "Saving…" : "Save target")
+                </button>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        disabled="@(_busy || Disabled)"
+                        data-testid="film-length-natural"
+                        @onclick="ResetNaturalAsync">
+                    Use natural (@_natural min)
+                </button>
+            </div>
+            <p class="small text-muted mb-0 mt-2">
+                Set this <strong>before</strong> writing or re-drafting the screenplay so planning and cost use the same length.
+            </p>
+            @if (!string.IsNullOrWhiteSpace(_message))
+            {
+                <div class="small text-success mt-2" data-testid="film-length-message">@_message</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="small text-danger mt-2" data-testid="film-length-error">@_error</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private readonly string _inputId = "film-target-" + Guid.NewGuid().ToString("N")[..8];
+    private string? _loadedFor;
+
+    private bool _visible;
+    private bool _busy;
+    private int _natural = 5;
+    private int _target = 5;
+    private int _edit = 5;
+    private string _mode = "natural";
+    private int? _words;
+    private string? _bookKind;
+    private string? _message;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectId))
+        {
+            _visible = false;
+            _loadedFor = null;
+            return;
+        }
+        if (string.Equals(_loadedFor, ProjectId, StringComparison.OrdinalIgnoreCase) && _visible)
+            return;
+        await RefreshAsync();
+    }
+
+    public async Task RefreshAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectId)) return;
+        _error = null;
+        try
+        {
+            var dto = await Engine.GetFilmRuntimeAsync(ProjectId);
+            _loadedFor = ProjectId;
+            if (dto is null || !dto.Ok)
+            {
+                _visible = true;
+                return;
+            }
+            _natural = Math.Clamp(dto.NaturalMinutes > 0 ? dto.NaturalMinutes : 5, 2, 180);
+            _target = Math.Clamp(dto.TargetMinutes > 0 ? dto.TargetMinutes : _natural, 2, 180);
+            _edit = _target;
+            _mode = string.IsNullOrWhiteSpace(dto.Mode) ? "natural" : dto.Mode!;
+            _words = dto.TextWords;
+            _bookKind = dto.BookKind;
+            _visible = true;
+        }
+        catch (Exception ex)
+        {
+            _loadedFor = ProjectId;
+            _visible = true;
+            _error = "Could not load saved length — showing defaults. " + ex.Message;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectId)) return;
+        _busy = true;
+        _message = null;
+        _error = null;
+        try
+        {
+            var dto = await Engine.SetFilmRuntimeAsync(ProjectId, _edit);
+            if (dto is null || !dto.Ok)
+                throw new InvalidOperationException("Save failed.");
+            _natural = dto.NaturalMinutes > 0 ? dto.NaturalMinutes : _natural;
+            _target = dto.TargetMinutes > 0 ? dto.TargetMinutes : _edit;
+            _edit = _target;
+            _mode = dto.Mode ?? _mode;
+            _message = dto.Message ?? $"Target set to {_target} min.";
+            if (OnChanged.HasDelegate)
+                await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ResetNaturalAsync()
+    {
+        _edit = _natural;
+        await SaveAsync();
+    }
+}

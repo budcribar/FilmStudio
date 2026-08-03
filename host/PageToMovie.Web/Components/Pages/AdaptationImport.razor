@@ -10,6 +10,11 @@
 <AdaptationShell Host="this" Step="import">
     @if (Status is not null)
     {
+        @* Always load length from API (works even when extract_meta has no minutes yet). *@
+        <FilmLengthCard ProjectId="@ProjectId"
+                        Disabled="@(Busy || JobRunning || _importing)"
+                        OnChanged="OnFilmLengthChangedAsync" />
+
         @if (!ImportReady)
         {
             <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4"
@@ -135,62 +140,6 @@
                         </div>
                     }
 
-                    @if (Status.Book.BookTextExists && (Status.Book.NaturalRuntimeMinutes is > 0 || Status.Book.SuggestedTotalMinutes is > 0 || Status.Book.TargetRuntimeMinutes is > 0))
-                    {
-                        <div class="border rounded-3 p-3 mt-3 bg-body-tertiary" data-testid="film-length-card">
-                            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
-                                <div>
-                                    <div class="fw-semibold">Film length</div>
-                                    <div class="small text-muted">
-                                        Natural ~<strong>@(Status.Book.NaturalRuntimeMinutes ?? Status.Book.SuggestedTotalMinutes ?? TotalMinutes)</strong> min
-                                        @if (Status.Book.TextWords is int w && w > 0)
-                                        {
-                                            <span>· @w.ToString("N0") words</span>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(Status.Book.BookKind))
-                                        {
-                                            <span>· @Status.Book.BookKind</span>
-                                        }
-                                    </div>
-                                </div>
-                                <span class="badge text-bg-secondary">@(Status.Book.RuntimeMode ?? "natural")</span>
-                            </div>
-                            <label class="form-label small mb-1" for="film-target-minutes">Target length (minutes)</label>
-                            <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <input id="film-target-minutes"
-                                       type="number"
-                                       class="form-control form-control-sm"
-                                       style="max-width: 6rem;"
-                                       min="2"
-                                       max="180"
-                                       @bind="_targetMinutesEdit"
-                                       @bind:event="oninput"
-                                       disabled="@(Busy || _importing || _savingRuntime)" />
-                                <button type="button"
-                                        class="btn btn-sm btn-primary"
-                                        disabled="@(Busy || _importing || _savingRuntime)"
-                                        data-testid="film-length-save"
-                                        @onclick="SaveFilmRuntimeAsync">
-                                    @(_savingRuntime ? "Saving…" : "Use this length")
-                                </button>
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-secondary"
-                                        disabled="@(Busy || _importing || _savingRuntime)"
-                                        data-testid="film-length-natural"
-                                        @onclick="ResetFilmRuntimeNaturalAsync">
-                                    Reset to natural
-                                </button>
-                            </div>
-                            <p class="small text-muted mb-0 mt-2">
-                                Shorter target usually means fewer clips and lower cost. Set this <strong>before</strong> writing the screenplay.
-                                Current target: <strong>@(Status.Book.TargetRuntimeMinutes ?? Status.Book.SuggestedTotalMinutes ?? TotalMinutes)</strong> min.
-                            </p>
-                            @if (!string.IsNullOrWhiteSpace(_runtimeMessage))
-                            {
-                                <div class="small text-success mt-2">@_runtimeMessage</div>
-                            }
-                        </div>
-                    }
 
                     @if (CanContinueToScreenplay)
                     {
@@ -621,5 +570,15 @@
         await SaveFilmRuntimeAsync();
     }
 
+
+    private async Task OnFilmLengthChangedAsync()
+    {
+        try
+        {
+            await LoadAsync();
+            SyncTargetEditFromStatus();
+        }
+        catch { /* ignore */ }
+    }
 
 }

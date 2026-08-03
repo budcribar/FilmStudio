@@ -85,6 +85,11 @@
         var estTotal = estSlices.Sum(x => x.Usd);
         var estimate = s.FullFilmAllDraftUsd;
 
+        @if (!string.IsNullOrWhiteSpace(_projectId))
+        {
+            <FilmLengthCard ProjectId="@_projectId" Disabled="@_busy" OnChanged="LoadAsync" />
+        }
+
         @* —— Simple top summary —— *@
         <div class="row g-3 mb-4">
             <div class="col-md-4">
