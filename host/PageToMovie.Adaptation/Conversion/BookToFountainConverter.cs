@@ -135,7 +135,7 @@ public static class BookToFountainConverter
         string title,
         string bookText,
         string? author = null,
-        int totalRuntimeMinutes = 10,
+        int? totalRuntimeMinutes = null,
         IChatClient? chat = null,
         string? model = null,
         Action<string>? onProgress = null,
@@ -161,7 +161,7 @@ public static class BookToFountainConverter
             .ConfigureAwait(false);
         var pageCount = CountPageMarkers(bookText);
         var budget = budgetOverride ?? ResolvePromptBudget(model);
-        totalRuntimeMinutes = Math.Clamp(totalRuntimeMinutes, 1, 180);
+        // null/≤0 = unlimited (prompt + soft quality); positive = artificial target.
 
         // Prefer xAI Files + Responses when the Engine opened a session for this book.
         var prevSession = Stage1BookSessionScope.Current;
@@ -1035,12 +1035,13 @@ public static class BookToFountainConverter
     public static QualityResult EvaluateQuality(
         string? fountain,
         string bookText,
-        int totalRuntimeMinutes,
+        int? totalRuntimeMinutes,
         AdaptPath path)
     {
         fountain = StripBookPageTags(fountain ?? "");
         bookText = NormalizeBookText(bookText ?? "");
-        totalRuntimeMinutes = Math.Clamp(totalRuntimeMinutes, 1, 180);
+        var hasTarget = totalRuntimeMinutes is > 0;
+        var minutes = hasTarget ? Math.Clamp(totalRuntimeMinutes!.Value, 1, 180) : 0;
 
         var fails = new List<string>();
         var scenes = CountSceneHeadings(fountain);
@@ -1058,10 +1059,19 @@ public static class BookToFountainConverter
             !FadeOutEndingRegex.IsMatch(fountain))
             fails.Add("missing_ending");
 
-        var minScenes = Math.Clamp(totalRuntimeMinutes / 2, 3, 40);
-        if (bookText.Length > 50_000)
-            minScenes = Math.Max(minScenes, 8);
-        // Short picture books: do not demand many scenes
+        // Scene floor: only enforce a runtime-derived band when an artificial target is set.
+        // Unlimited (default) uses book-length soft floors only — never pad short stories.
+        int minScenes;
+        if (hasTarget)
+        {
+            minScenes = Math.Clamp(minutes / 2, 3, 40);
+            if (bookText.Length > 50_000)
+                minScenes = Math.Max(minScenes, 8);
+        }
+        else
+        {
+            minScenes = bookText.Length > 50_000 ? 8 : (bookText.Length > 20_000 ? 3 : 1);
+        }
         if (bookText.Length < 8_000)
             minScenes = Math.Min(minScenes, 2);
         if (scenes < minScenes && bookText.Length >= MinBookCharsForChunkFallback)
@@ -1142,8 +1152,11 @@ public static class BookToFountainConverter
     }
 
     /// <summary>Load <c>prompts/book_to_fountain.txt</c>.</summary>
+    /// <param name="totalRuntimeMinutes">
+    /// Artificial target minutes, or null/≤0 for <see cref="AdaptationPromptPack.UnlimitedRuntimeDirective"/> (default).
+    /// </param>
     public static Task<string> BuildSystemPromptAsync(
-        int totalRuntimeMinutes,
+        int? totalRuntimeMinutes = null,
         CancellationToken ct = default) =>
         AdaptationPromptPack.LoadBookToFountainSystemPromptAsync(
             totalRuntimeMinutes,
@@ -1343,7 +1356,7 @@ public static class BookToFountainConverter
         string title,
         string? author,
         int pageCount,
-        int totalMinutes,
+        int? totalMinutes,
         string bookText,
         IChatClient chat,
         string model,
@@ -1375,7 +1388,7 @@ public static class BookToFountainConverter
         string title,
         string? author,
         int pageCount,
-        int totalMinutes,
+        int? totalMinutes,
         string bookText,
         IChatClient chat,
         string model,
@@ -1423,7 +1436,7 @@ public static class BookToFountainConverter
         string title,
         string? author,
         int pageCount,
-        int totalMinutes,
+        int? totalMinutes,
         string bookText,
         IChatClient chat,
         string model,
@@ -1505,7 +1518,7 @@ public static class BookToFountainConverter
         string system,
         string title,
         string? author,
-        int totalMinutes,
+        int? totalMinutes,
         IReadOnlyList<string> parts,
         IChatClient chat,
         string model,
@@ -1516,7 +1529,9 @@ public static class BookToFountainConverter
         sb.AppendLine("MULTI-CHUNK MERGE TASK");
         sb.AppendLine($"Project title hint: {title}");
         sb.AppendLine($"Author hint: {author ?? "(unknown)"}");
-        sb.AppendLine($"TOTAL_RUNTIME_MINUTES = {totalMinutes}");
+        sb.AppendLine(totalMinutes is > 0
+            ? $"TOTAL_RUNTIME_MINUTES = {totalMinutes}"
+            : "TOTAL_RUNTIME_MINUTES = unlimited (natural length — do not pad)");
         sb.AppendLine();
         sb.AppendLine("You are given ordered Fountain partials adapted from successive book chunks.");
         sb.AppendLine("Merge them into ONE complete Fountain 1.1 screenplay:");
@@ -1570,7 +1585,7 @@ public static class BookToFountainConverter
     private static IReadOnlyList<Stage1ValidationIssue> ValidatePrimaryPackage(
         string value,
         string bookText,
-        int totalMinutes,
+        int? totalMinutes,
         AdaptPath path)
     {
         var gate = EvaluateQuality(value, bookText, totalMinutes, path);
@@ -1591,7 +1606,7 @@ public static class BookToFountainConverter
         string title,
         string? author,
         int pageCount,
-        int totalMinutes,
+        int? totalMinutes,
         string bookForPrompt,
         int chunkIndex,
         int chunkTotal,
@@ -1600,7 +1615,9 @@ public static class BookToFountainConverter
         var attachBookAsFile = Stage1BookSessionScope.Current is { IsAvailable: true };
         var lines = new List<string>
         {
-            $"TOTAL_RUNTIME_MINUTES = {totalMinutes}",
+            totalMinutes is > 0
+                ? $"TOTAL_RUNTIME_MINUTES = {totalMinutes}"
+                : "TOTAL_RUNTIME_MINUTES = unlimited (natural length — do not pad)",
             $"BOOK_CHUNK {chunkIndex + 1}/{chunkTotal}",
             "",
             $"Project title hint: {title}",

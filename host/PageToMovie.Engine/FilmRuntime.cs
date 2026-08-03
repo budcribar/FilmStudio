@@ -135,14 +135,16 @@ public static class FilmRuntime
         }
         else if (natural > 0)
         {
-            target = natural;
-            mode = "natural";
+            // Default product behavior: estimate natural for display, but do not force a
+            // target into Stage‑1 (prompt gets unlimited until the user retargets).
+            target = 0;
+            mode = "unlimited";
             source = densitySource;
         }
         else
         {
             target = 0;
-            mode = "none";
+            mode = "unlimited";
             source = "none";
         }
 

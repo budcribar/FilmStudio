@@ -4,6 +4,8 @@ Last updated: 2026-08-03
 
 ## Done (recent)
 
+- [x] Default Stage‑1 runtime target = **unlimited** (prompt + FilmRuntime mode; retarget only when user sets minutes)
+
 - [x] Adaptation module Phases 0–5 + Engine mapping-only façade
 - [x] Stage‑1 via `AdaptationService` only + golden fixtures
 - [x] xAI file_id + Responses multi-turn + admin book cache

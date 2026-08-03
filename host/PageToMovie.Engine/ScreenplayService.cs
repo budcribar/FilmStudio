@@ -515,9 +515,12 @@ public static string NormalizeText(string text)
         var analysis = BookTextAnalyzer.Analyze(book);
         var runtime = await FilmRuntime.ResolveAsync(store, projectId, book, overrideTargetMinutes: totalRuntimeMinutes, ct)
             .ConfigureAwait(false);
-        var minutes = runtime.TargetMinutes;
+        // 0 / unlimited mode → null TargetRuntimeMinutes so Stage‑1 prompt gets unlimited directive.
+        int? minutes = runtime.TargetMinutes > 0 ? runtime.TargetMinutes : null;
         onProgress?.Invoke(
-            $"Film length target: {minutes} min (natural ~{runtime.NaturalMinutes} min, mode={runtime.Mode}).");
+            minutes is > 0
+                ? $"Film length target: {minutes} min (natural ~{runtime.NaturalMinutes} min, mode={runtime.Mode})."
+                : $"Film length: unlimited / natural (~{runtime.NaturalMinutes} min estimated; mode={runtime.Mode}).");
         const double generationTemperature = 0.2;
 
         BookTextIdentity? bookIdentity = null;

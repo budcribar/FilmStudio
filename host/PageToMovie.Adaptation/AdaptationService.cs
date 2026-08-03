@@ -72,7 +72,8 @@ public sealed class AdaptationService
     /// <summary>
     /// System prompt for book → Fountain (embedded <c>book_to_fountain.txt</c>).
     /// </summary>
-    public Task<string> BuildSystemPromptAsync(int totalRuntimeMinutes, CancellationToken ct = default) =>
+    /// <param name="totalRuntimeMinutes">null or ≤0 = unlimited (default); positive = artificial target.</param>
+    public Task<string> BuildSystemPromptAsync(int? totalRuntimeMinutes = null, CancellationToken ct = default) =>
         BookToFountainConverter.BuildSystemPromptAsync(totalRuntimeMinutes, ct);
 
     /// <summary>
@@ -122,7 +123,14 @@ public sealed class AdaptationService
 
         var analysis = AnalyzeBook(request.BookText);
         var runtime = ResolveTargetMinutes(request.BookText, request.TargetRuntimeMinutes);
-        var minutes = NaturalRuntime.ClampMinutes(runtime.TargetMinutes);
+        // Product default: no artificial minute budget in the prompt (unlimited / natural length).
+        // Only inject a number when the caller set TargetRuntimeMinutes explicitly.
+        int? promptMinutes = request.TargetRuntimeMinutes is > 0
+            ? NaturalRuntime.ClampMinutes(request.TargetRuntimeMinutes.Value)
+            : null;
+        var minutes = promptMinutes ?? (runtime.NaturalMinutes > 0
+            ? runtime.NaturalMinutes
+            : NaturalRuntime.MinMinutes);
 
         Action<string>? onProgress = progress is null ? null : s => progress.Report(s);
         var usedHeuristic = false;
@@ -142,7 +150,7 @@ public sealed class AdaptationService
             title: string.IsNullOrWhiteSpace(request.Title) ? "Untitled" : request.Title!,
             bookText: request.BookText,
             author: request.Author,
-            totalRuntimeMinutes: minutes,
+            totalRuntimeMinutes: promptMinutes,
             chat: chat,
             model: request.ModelId,
             onProgress: onProgress,
@@ -159,7 +167,9 @@ public sealed class AdaptationService
         {
             NaturalMinutes = runtime.NaturalMinutes,
             TargetMinutes = minutes,
-            Mode = NaturalRuntime.ResolveMode(runtime.NaturalMinutes, minutes),
+            Mode = promptMinutes is null
+                ? "unlimited"
+                : NaturalRuntime.ResolveMode(runtime.NaturalMinutes, minutes),
             Method = runtime.Method,
             SourceWords = runtime.SourceWords,
             SourceSyllables = runtime.SourceSyllables,
