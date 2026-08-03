@@ -1,6 +1,6 @@
 # Model-call inventory
 
-Status: Phase 1 baseline. This inventory identifies code that can initiate or route paid/model-backed work before migration into the shared validated-operation lifecycle.
+Status: Active migration. See `MODEL_LIFECYCLE_MIGRATION_CHECKLIST.md` for the authoritative operation-level completion state. This inventory identifies code that can initiate or route paid/model-backed work before migration into the shared validated-operation lifecycle.
 
 ## Intended boundaries
 
