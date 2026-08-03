@@ -2553,6 +2553,30 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return JsonSerializer.Deserialize<ScreenplaySaveDto>(body, JsonOpts);
     }
 
+    public async Task<VisualMediumDto?> GetVisualMediumAsync(string projectId, CancellationToken ct = default)
+    {
+        using var resp = await _http.GetAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/visual-medium", ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase ?? "visual-medium failed");
+        return JsonSerializer.Deserialize<VisualMediumDto>(body, JsonOpts);
+    }
+
+    public async Task<VisualMediumDto?> SetVisualMediumAsync(
+        string projectId, string visualMedium, CancellationToken ct = default)
+    {
+        using var resp = await _http.PutAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/visual-medium",
+            new { visualMedium },
+            JsonOpts,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase ?? "set visual-medium failed");
+        return JsonSerializer.Deserialize<VisualMediumDto>(body, JsonOpts);
+    }
+
     public async Task<FilmRuntimeDto?> GetFilmRuntimeAsync(string projectId, CancellationToken ct = default)
     {
         using var resp = await _http.GetAsync(
@@ -3977,6 +4001,22 @@ public sealed class CostDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public CostReport? Cost { get; set; }
+}
+
+public sealed class VisualMediumDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public string? VisualMedium { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+    public List<VisualMediumOptionDto>? Options { get; set; }
+}
+
+public sealed class VisualMediumOptionDto
+{
+    public string? Id { get; set; }
+    public string? Label { get; set; }
 }
 
 public sealed class FilmRuntimeDto

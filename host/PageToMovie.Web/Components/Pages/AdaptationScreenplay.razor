@@ -8,6 +8,7 @@
 <AdaptationShell Host="this" Step="screenplay">
     @if (!string.IsNullOrWhiteSpace(ProjectId))
     {
+        <VisualMediumCard ProjectId="@ProjectId" Disabled="@Busy" />
         <FilmLengthCard ProjectId="@ProjectId"
                         Disabled="@(Busy || JobRunning)"
                         OnChanged="OnFilmLengthChangedAsync" />

@@ -5123,6 +5123,84 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
     }
 });
 
+/// <summary>Get Stage‑1 visual medium preference (auto | photoreal | picture book | …).</summary>
+app.MapGet("/api/projects/{id}/visual-medium", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var dir = store.GetProjectDir(id);
+        var medium = ProjectVisionMeta.GetAdaptationMediumPreference(dir);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            visualMedium = medium,
+            options = new[]
+            {
+                new { id = ProjectVisionMeta.MediumAuto, label = "Auto (infer from book)" },
+                new { id = ProjectVisionMeta.MediumPhotoreal, label = "Photoreal / live action" },
+                new { id = ProjectVisionMeta.MediumIllustrated, label = "Picture book / illustrated" },
+                new { id = ProjectVisionMeta.MediumStylized3d, label = "Stylized 3D animation" },
+                new { id = ProjectVisionMeta.MediumOther, label = "Other / stylized" },
+            },
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Set Stage‑1 visual medium preference before (or after) import.</summary>
+app.MapPut("/api/projects/{id}/visual-medium", async (
+    string id,
+    HttpRequest req,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct);
+        var root = doc.RootElement;
+        string? medium = null;
+        if (root.TryGetProperty("visualMedium", out var vm) && vm.ValueKind == JsonValueKind.String)
+            medium = vm.GetString();
+        else if (root.TryGetProperty("visual_medium", out var vm2) && vm2.ValueKind == JsonValueKind.String)
+            medium = vm2.GetString();
+        if (string.IsNullOrWhiteSpace(medium))
+            return Results.BadRequest(new { ok = false, error = "visualMedium required" });
+
+        var written = ProjectVisionMeta.SetAdaptationMediumPreference(store.GetProjectDir(id), medium);
+        store.TriggerAutoGitCommit(id, $"ptm:stage=visual_medium_preference medium={written.VisualMedium}");
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            visualMedium = written.VisualMedium,
+            message = string.Equals(written.VisualMedium, ProjectVisionMeta.MediumAuto, StringComparison.Ordinal)
+                ? "Medium set to Auto — Stage‑1 will infer from the book."
+                : $"Medium locked to {written.VisualMedium} for Stage‑1.",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Get natural + target film length for cost/Stage1.</summary>
 app.MapGet("/api/projects/{id}/film-runtime", async (
     string id,

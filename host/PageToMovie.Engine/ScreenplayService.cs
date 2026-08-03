@@ -613,15 +613,11 @@ public static string NormalizeText(string text)
                 }
             }
 
-            // Prefer an existing user/project medium lock when present; else auto (model infers).
+            // UI / project medium preference (auto = model infers).
             string? preferredMedium = null;
             try
             {
-                var existingVision = ProjectVisionMeta.TryRead(projectDir);
-                if (existingVision is not null &&
-                    !string.IsNullOrWhiteSpace(existingVision.VisualMedium) &&
-                    !string.Equals(existingVision.VisualMedium, "auto", StringComparison.OrdinalIgnoreCase))
-                    preferredMedium = existingVision.VisualMedium;
+                preferredMedium = ProjectVisionMeta.GetAdaptationMediumPreference(projectDir);
             }
             catch { /* ignore */ }
 

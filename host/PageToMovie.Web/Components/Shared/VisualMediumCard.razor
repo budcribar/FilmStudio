@@ -1,0 +1,136 @@
+@namespace PageToMovie.Web.Components
+@*
+  Stage‑1 visual medium preference — Auto or lock before book → Fountain.
+*@
+@inject EngineApiClient Engine
+
+<div class="card mb-3 border-secondary border-opacity-25" data-testid="visual-medium-card">
+    <div class="card-body p-3">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+            <div>
+                <div class="fw-semibold">Look & medium</div>
+                <div class="small text-body-secondary mb-1">
+                    How characters and settings should look in the film
+                </div>
+                <div class="small text-muted">
+                    Applied when the screenplay is written. You can change this before re-import.
+                </div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_label))
+            {
+                <span class="badge text-bg-secondary">@_label</span>
+            }
+        </div>
+
+        <label class="form-label small mb-1" for="@_selectId">Visual medium</label>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <select id="@_selectId"
+                    class="form-select form-select-sm"
+                    style="max-width: 22rem;"
+                    @bind="_edit"
+                    disabled="@(_busy || Disabled)"
+                    data-testid="visual-medium-select">
+                @foreach (var opt in _options)
+                {
+                    <option value="@opt.Id">@opt.Label</option>
+                }
+            </select>
+            <button type="button"
+                    class="btn btn-sm btn-primary"
+                    disabled="@(_busy || Disabled || string.IsNullOrWhiteSpace(_edit))"
+                    data-testid="visual-medium-save"
+                    @onclick="SaveAsync">
+                @(_busy ? "Saving…" : "Save")
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="small text-success mt-2" data-testid="visual-medium-message">@_message</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="small text-danger mt-2" data-testid="visual-medium-error">@_error</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ProjectId { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private readonly string _selectId = "vm-" + Guid.NewGuid().ToString("N")[..8];
+    private string _edit = "auto";
+    private string? _label;
+    private string? _message;
+    private string? _error;
+    private bool _busy;
+    private string? _loadedFor;
+    private List<MediumOption> _options = DefaultOptions();
+
+    private static List<MediumOption> DefaultOptions() => new()
+    {
+        new("auto", "Auto (infer from book)"),
+        new("photoreal_live_action", "Photoreal / live action"),
+        new("illustrated_picture_book", "Picture book / illustrated"),
+        new("stylized_3d_animated", "Stylized 3D animation"),
+        new("other", "Other / stylized"),
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectId) || ProjectId == _loadedFor)
+            return;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectId)) return;
+        _error = null;
+        try
+        {
+            var dto = await Engine.GetVisualMediumAsync(ProjectId);
+            _loadedFor = ProjectId;
+            if (dto?.Options is { Count: > 0 })
+                _options = dto.Options.Select(o => new MediumOption(o.Id ?? "", o.Label ?? o.Id ?? "")).ToList();
+            _edit = string.IsNullOrWhiteSpace(dto?.VisualMedium) ? "auto" : dto!.VisualMedium!;
+            _label = _options.FirstOrDefault(o => o.Id == _edit)?.Label ?? _edit;
+        }
+        catch (Exception ex)
+        {
+            _loadedFor = ProjectId;
+            _error = ex.Message;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectId)) return;
+        _busy = true;
+        _message = null;
+        _error = null;
+        try
+        {
+            var dto = await Engine.SetVisualMediumAsync(ProjectId, _edit);
+            if (dto is null || !dto.Ok)
+                throw new InvalidOperationException(dto?.Error ?? "Save failed.");
+            _edit = dto.VisualMedium ?? _edit;
+            _label = _options.FirstOrDefault(o => o.Id == _edit)?.Label ?? _edit;
+            _message = dto.Message ?? "Saved.";
+            if (OnChanged.HasDelegate)
+                await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed record MediumOption(string Id, string Label);
+}

@@ -15,6 +15,7 @@ public static class ProjectVisionMeta
     public const string FileName = "vision_meta.json";
     public const string SchemaVersion = "vision_meta.v1";
 
+    public const string MediumAuto = "auto";
     public const string MediumPhotoreal = "photoreal_live_action";
     public const string MediumIllustrated = "illustrated_picture_book";
     public const string MediumStylized3d = "stylized_3d_animated";
@@ -213,6 +214,8 @@ public static class ProjectVisionMeta
     public static string NormalizeMedium(string? raw)
     {
         var s = (raw ?? "").Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
+        if (string.IsNullOrEmpty(s) || s is "auto" or "infer" or "default")
+            return MediumAuto;
         if (s is "photoreal" or "photo_real" or "live_action" or "liveaction" or "photoreal_live_action"
             or "period_drama" or "gothic_live_action")
             return MediumPhotoreal;
@@ -229,6 +232,43 @@ public static class ProjectVisionMeta
         if (s.Contains("photoreal") || s.Contains("live_action") || s.Contains("live action") || s.Contains("period"))
             return MediumPhotoreal;
         return MediumOther;
+    }
+
+    /// <summary>
+    /// User/UI preference for Stage‑1 MEDIUM DIRECTIVE. <see cref="MediumAuto"/> = model infers.
+    /// Stored on the vision document so convert can lock style before first Fountain.
+    /// </summary>
+    public static string GetAdaptationMediumPreference(string projectDir)
+    {
+        var doc = TryRead(projectDir);
+        if (doc is null || string.IsNullOrWhiteSpace(doc.VisualMedium))
+            return MediumAuto;
+        return NormalizeMedium(doc.VisualMedium);
+    }
+
+    public static Document SetAdaptationMediumPreference(string projectDir, string? medium, string? decidedBy = "user")
+    {
+        var med = NormalizeMedium(medium);
+        var doc = TryRead(projectDir) ?? new Document
+        {
+            SchemaVersion = SchemaVersion,
+            DecidedAt = DateTime.UtcNow.ToString("o"),
+        };
+        doc.VisualMedium = med;
+        doc.DecidedBy = string.IsNullOrWhiteSpace(decidedBy) ? "user" : decidedBy!;
+        doc.DecidedAt = DateTime.UtcNow.ToString("o");
+        if (med is MediumAuto)
+        {
+            doc.RenderStyleLock = null;
+            doc.Notes = "User preference: auto — Stage‑1 will infer medium from the book.";
+        }
+        else
+        {
+            doc.RenderStyleLock = DefaultStyleLock(med);
+            doc.Notes = $"User preference: lock medium to {med} for Stage‑1.";
+        }
+        Write(projectDir, doc);
+        return doc;
     }
 
     public static bool PrefersIllustrated(string? visualMedium) =>
