@@ -551,7 +551,7 @@ public static string NormalizeText(string text)
                 .ConfigureAwait(false);
             if (cached is not null)
             {
-                var cachedConversion = JsonSerializer.Deserialize<AdaptationConversionResult>(cached.Content);
+                var cachedConversion = JsonSerializer.Deserialize<ProjectAdaptationConversionResult>(cached.Content);
                 if (cachedConversion is { Fountain.Length: > 0, VisionMeta: not null })
                 {
                     onProgress?.Invoke($"Reused shared adaptation cache {cached.ArtifactId}.");
@@ -631,19 +631,19 @@ public static string NormalizeText(string text)
 
             var fountain = result.Fountain;
             var visionFromScript = BookToFountainConverter.MapVision(result.VisionMeta);
-            // Cache package shape remains Engine AdaptationConversionResult for registry compatibility.
-            var conversion = new AdaptationConversionResult
+            // Cache package shape remains Engine ProjectAdaptationConversionResult for registry compatibility.
+            var conversion = new ProjectAdaptationConversionResult
             {
                 Fountain = fountain,
                 VisionMeta = visionFromScript,
                 VisionMetaStatus = result.VisionMetaStatus switch
                 {
-                    AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,
-                    AdaptationVisionMetaStatus.RepairResponse => VisionMetaStatus.RepairResponse,
-                    AdaptationVisionMetaStatus.Missing => VisionMetaStatus.Missing,
-                    AdaptationVisionMetaStatus.Malformed => VisionMetaStatus.Malformed,
-                    AdaptationVisionMetaStatus.InvalidValue => VisionMetaStatus.InvalidValue,
-                    _ => VisionMetaStatus.Missing,
+                    AdaptationVisionMetaStatus.PrimaryResponse => ProjectVisionMetaStatus.PrimaryResponse,
+                    AdaptationVisionMetaStatus.RepairResponse => ProjectVisionMetaStatus.RepairResponse,
+                    AdaptationVisionMetaStatus.Missing => ProjectVisionMetaStatus.Missing,
+                    AdaptationVisionMetaStatus.Malformed => ProjectVisionMetaStatus.Malformed,
+                    AdaptationVisionMetaStatus.InvalidValue => ProjectVisionMetaStatus.InvalidValue,
+                    _ => ProjectVisionMetaStatus.Missing,
                 },
                 VisionMetaError = result.VisionMetaError,
             };

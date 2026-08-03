@@ -410,7 +410,7 @@ public class BookToFountainPathTests
         Assert.DoesNotContain("VISION_META", result.Fountain, StringComparison.OrdinalIgnoreCase);
         Assert.NotNull(result.VisionMeta);
         Assert.Equal(ProjectVisionMeta.MediumIllustrated, result.VisionMeta!.VisualMedium);
-        Assert.Equal(VisionMetaStatus.PrimaryResponse, result.VisionMetaStatus);
+        Assert.Equal(ProjectVisionMetaStatus.PrimaryResponse, result.VisionMetaStatus);
         Assert.Null(result.VisionMetaError);
     }
 
@@ -426,12 +426,12 @@ public class BookToFountainPathTests
             model: "grok-4.5");
 
         Assert.Null(result.VisionMeta);
-        Assert.Equal(VisionMetaStatus.Missing, result.VisionMetaStatus);
+        Assert.Equal(ProjectVisionMetaStatus.Missing, result.VisionMetaStatus);
         Assert.Contains("missing", result.VisionMetaError, StringComparison.OrdinalIgnoreCase);
     }
 
     
-    private static async Task<(string Fountain, PageToMovie.Engine.AdaptationConversionResult Mapped)> AdaptConvertAsync(
+    private static async Task<(string Fountain, PageToMovie.Engine.ProjectAdaptationConversionResult Mapped)> AdaptConvertAsync(
         string title,
         string bookText,
         RecordingChatClient chat,
@@ -453,18 +453,18 @@ public class BookToFountainPathTests
             chat,
             onProgress is null ? null : new Progress<string>(onProgress),
             budgetOverride: budgetOverride);
-        var mapped = new PageToMovie.Engine.AdaptationConversionResult
+        var mapped = new PageToMovie.Engine.ProjectAdaptationConversionResult
         {
             Fountain = result.Fountain,
             VisionMeta = PageToMovie.Engine.BookToFountainConverter.MapVision(result.VisionMeta),
             VisionMetaStatus = result.VisionMetaStatus switch
             {
-                AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,
-                AdaptationVisionMetaStatus.RepairResponse => VisionMetaStatus.RepairResponse,
-                AdaptationVisionMetaStatus.Missing => VisionMetaStatus.Missing,
-                AdaptationVisionMetaStatus.Malformed => VisionMetaStatus.Malformed,
-                AdaptationVisionMetaStatus.InvalidValue => VisionMetaStatus.InvalidValue,
-                _ => VisionMetaStatus.Missing,
+                AdaptationVisionMetaStatus.PrimaryResponse => ProjectVisionMetaStatus.PrimaryResponse,
+                AdaptationVisionMetaStatus.RepairResponse => ProjectVisionMetaStatus.RepairResponse,
+                AdaptationVisionMetaStatus.Missing => ProjectVisionMetaStatus.Missing,
+                AdaptationVisionMetaStatus.Malformed => ProjectVisionMetaStatus.Malformed,
+                AdaptationVisionMetaStatus.InvalidValue => ProjectVisionMetaStatus.InvalidValue,
+                _ => ProjectVisionMetaStatus.Missing,
             },
             VisionMetaError = result.VisionMetaError,
         };

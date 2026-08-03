@@ -12,7 +12,7 @@ namespace PageToMovie.Engine;
 /// Pure text helpers and LLM conversion live in <see cref="PageToMovie.Adaptation.Conversion.BookToFountainConverter"/>
 /// and <see cref="AdaptationService"/> — do not re-add forwarders here.
 /// </summary>
-public enum VisionMetaStatus
+public enum ProjectVisionMetaStatus
 {
     PrimaryResponse,
     RepairResponse,
@@ -22,13 +22,13 @@ public enum VisionMetaStatus
 }
 
 /// <summary>
-/// Engine-facing conversion result (maps Adaptation vision DTOs → <see cref="ProjectVisionMeta.Document"/>).
+/// Project-shaped conversion result (vision mapped to ProjectVisionMeta) (maps Adaptation vision DTOs → <see cref="ProjectVisionMeta.Document"/>).
 /// </summary>
-public sealed record AdaptationConversionResult
+public sealed record ProjectAdaptationConversionResult
 {
     public required string Fountain { get; init; }
     public ProjectVisionMeta.Document? VisionMeta { get; init; }
-    public VisionMetaStatus VisionMetaStatus { get; init; }
+    public ProjectVisionMetaStatus VisionMetaStatus { get; init; }
     public string? VisionMetaError { get; init; }
 }
 
@@ -39,7 +39,7 @@ public sealed record AdaptationConversionResult
 /// </summary>
 public static class BookToFountainConverter
 {
-    public static AdaptationConversionResult MapResult(AdaptationConversionResultCore core) => new()
+    public static ProjectAdaptationConversionResult MapResult(AdaptationConversionResultCore core) => new()
     {
         Fountain = core.Fountain,
         VisionMeta = MapVision(core.VisionMeta),
@@ -88,13 +88,13 @@ public static class BookToFountainConverter
         };
     }
 
-    private static VisionMetaStatus MapStatus(AdaptationVisionMetaStatus s) => s switch
+    private static ProjectVisionMetaStatus MapStatus(AdaptationVisionMetaStatus s) => s switch
     {
-        AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,
-        AdaptationVisionMetaStatus.RepairResponse => VisionMetaStatus.RepairResponse,
-        AdaptationVisionMetaStatus.Missing => VisionMetaStatus.Missing,
-        AdaptationVisionMetaStatus.Malformed => VisionMetaStatus.Malformed,
-        AdaptationVisionMetaStatus.InvalidValue => VisionMetaStatus.InvalidValue,
-        _ => VisionMetaStatus.Missing,
+        AdaptationVisionMetaStatus.PrimaryResponse => ProjectVisionMetaStatus.PrimaryResponse,
+        AdaptationVisionMetaStatus.RepairResponse => ProjectVisionMetaStatus.RepairResponse,
+        AdaptationVisionMetaStatus.Missing => ProjectVisionMetaStatus.Missing,
+        AdaptationVisionMetaStatus.Malformed => ProjectVisionMetaStatus.Malformed,
+        AdaptationVisionMetaStatus.InvalidValue => ProjectVisionMetaStatus.InvalidValue,
+        _ => ProjectVisionMetaStatus.Missing,
     };
 }

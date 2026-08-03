@@ -69,7 +69,7 @@ public sealed class CastFromScreenplayService
         public string? RawPath { get; init; }
         /// <summary>Dialogue speakers with no cast_seeds entry (deterministic membership check).</summary>
         public List<string> SpeakersMissingFromCast { get; init; } = new();
-        /// <summary>0–100 membership score from <see cref="CastPackageCrossCheck"/>.</summary>
+        /// <summary>0–100 membership score from <see cref="PageToMovie.Adaptation.Validation.CastPackageCrossCheck"/>.</summary>
         public double MembershipScore { get; init; }
         /// <summary>True when every required speaker has a cast seed.</summary>
         public bool MembershipOk { get; init; } = true;
