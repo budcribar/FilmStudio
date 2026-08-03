@@ -380,3 +380,6 @@ host/loadsim*.json
 # Never commit local nuget restore under host
 host/%USERPROFILE%/
 host/**/.nuget/
+
+# Local API key store — never commit
+data/keys/
