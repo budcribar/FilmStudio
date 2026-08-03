@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 2,
+  "ClipNumber": 8,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "That makes no sense in Buster\u0027s head!",
+  "DetectedSpeaker": "Narrator",
+  "TranscribedDialogue": "That makes no sense in Buster\u0027s head!",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027That makes no sense in Buster\u0027s head!\u0027 | Heard: \u0027That makes no sense in Buster\u0027s head!\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 4,
+  "WordCount": 7,
+  "SyllableCount": 10,
+  "SpeechDurationSeconds": 3.4,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 5,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:00:51.6329502Z"
+}

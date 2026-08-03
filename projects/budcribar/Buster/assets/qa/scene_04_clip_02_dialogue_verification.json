@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 4,
+  "ClipNumber": 2,
+  "ExpectedSpeaker": "None",
+  "ExpectedDialogue": "",
+  "DetectedSpeaker": "None",
+  "TranscribedDialogue": "",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "no_speech",
+  "SummaryNote": "No spoken dialogue planned for this clip.",
+  "EstimatedDurationSeconds": 0,
+  "WordCount": 0,
+  "SyllableCount": 0,
+  "SpeechDurationSeconds": 0,
+  "ActionDurationSeconds": 0,
+  "ActualDurationSeconds": 0,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:02:19.6742317Z"
+}

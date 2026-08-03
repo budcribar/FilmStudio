@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 7,
+  "ClipNumber": 4,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "He falls asleep, lays down his head. He\u0027s warm and soft and quite well \u2014 fed.",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "He falls asleep, lays down his head. He\u0027s warm and soft and quite well fed.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "The spoken dialogue matches the expected script perfectly and is delivered by the Narrator.",
+  "EstimatedDurationSeconds": 6,
+  "WordCount": 15,
+  "SyllableCount": 17,
+  "SpeechDurationSeconds": 6.3,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 8,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:08:13.5290772Z"
+}

@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 5,
+  "ClipNumber": 3,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "And then he climbs the many stairs To get to Mom and Daddy\u0027s room And",
+  "DetectedSpeaker": "Narrator",
+  "TranscribedDialogue": "And then he climbs the many stairs To get to Mom and Daddy\u0027s room And",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027And then he climbs the many stairs To get to Mom and Daddy\u0027s room And\u0027 | Heard: \u0027And then he climbs the many stairs To get to Mom and Daddy\u0027s room And\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 7,
+  "WordCount": 15,
+  "SyllableCount": 17,
+  "SpeechDurationSeconds": 6.3,
+  "ActionDurationSeconds": 2.4,
+  "ActualDurationSeconds": 10,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:04:19.413325Z"
+}

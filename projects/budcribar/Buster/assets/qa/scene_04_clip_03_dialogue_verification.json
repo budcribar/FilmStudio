@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 4,
+  "ClipNumber": 3,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "He has his drink of water too. This also would be good for you!",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "He has his drink of water too. This also would be good for you!",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027He has his drink of water too. This also would be good for you!\u0027 | Heard: \u0027He has his drink of water too. This also would be good for you!\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 6,
+  "WordCount": 14,
+  "SyllableCount": 16,
+  "SpeechDurationSeconds": 6,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 8,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:02:59.1397582Z"
+}

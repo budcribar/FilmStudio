@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 7,
+  "ClipNumber": 5,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "His Mommy pets him while he sleeps. This noodle head is loved for keeps.",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "His Mommy pets him while he sleeps. This noodle head is loved for keeps.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027His Mommy pets him while he sleeps. This noodle head is loved for keeps.\u0027 | Heard: \u0027His Mommy pets him while he sleeps. This noodle head is loved for keeps.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 6,
+  "WordCount": 14,
+  "SyllableCount": 18,
+  "SpeechDurationSeconds": 6,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 8,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:08:41.6032767Z"
+}

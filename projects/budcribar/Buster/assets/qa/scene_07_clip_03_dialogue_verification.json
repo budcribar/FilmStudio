@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 7,
+  "ClipNumber": 3,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "Another day for silly dogs To run and play and jump like frogs.",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "Another day for silly dogs to run and play and jump like frogs.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027Another day for silly dogs To run and play and jump like frogs.\u0027 | Heard: \u0027Another day for silly dogs to run and play and jump like frogs.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 6,
+  "WordCount": 13,
+  "SyllableCount": 17,
+  "SpeechDurationSeconds": 5.6,
+  "ActionDurationSeconds": 0.4,
+  "ActualDurationSeconds": 7,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:07:39.3985383Z"
+}

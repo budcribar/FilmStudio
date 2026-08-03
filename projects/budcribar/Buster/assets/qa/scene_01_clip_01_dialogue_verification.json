@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 1,
+  "ClipNumber": 1,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "He\u0027s Buster the Noodle Head Dog. He jumps around like a frog.",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "He\u0027s Buster the Noodle Head Dog. He jumps around like a frog.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027He\u0027s Buster the Noodle Head Dog. He jumps around like a frog.\u0027 | Heard: \u0027He\u0027s Buster the Noodle Head Dog. He jumps around like a frog.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 6,
+  "WordCount": 12,
+  "SyllableCount": 16,
+  "SpeechDurationSeconds": 5.2,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 6,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T16:57:06.7889695Z"
+}

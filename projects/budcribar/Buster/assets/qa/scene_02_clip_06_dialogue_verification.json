@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 2,
+  "ClipNumber": 6,
+  "ExpectedSpeaker": "Character_Mom",
+  "ExpectedDialogue": "A doggy goes outside.",
+  "DetectedSpeaker": "Narrator",
+  "TranscribedDialogue": "A doggy goes outside.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": false,
+  "Status": "speaker_swap",
+  "SummaryNote": "Expected: \u0027A doggy goes outside.\u0027 | Heard: \u0027A doggy goes outside.\u0027 (Match 100%, but spoken by a male narrator instead of Mom)",
+  "EstimatedDurationSeconds": 3,
+  "WordCount": 4,
+  "SyllableCount": 7,
+  "SpeechDurationSeconds": 2.6,
+  "ActionDurationSeconds": 2.4,
+  "ActualDurationSeconds": 6,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:00:18.0617693Z"
+}

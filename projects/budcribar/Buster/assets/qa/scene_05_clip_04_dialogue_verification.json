@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 5,
+  "ClipNumber": 4,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "jump in bed, and none too soon.",
+  "DetectedSpeaker": "Narrator",
+  "TranscribedDialogue": "jump in bed, and none too soon.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027jump in bed, and none too soon.\u0027 | Heard: \u0027jump in bed, and none too soon.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 4,
+  "WordCount": 7,
+  "SyllableCount": 8,
+  "SpeechDurationSeconds": 3.4,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 5,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:04:42.1554655Z"
+}

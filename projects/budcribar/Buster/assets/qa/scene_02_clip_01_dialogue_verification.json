@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 2,
+  "ClipNumber": 1,
+  "ExpectedSpeaker": "Character_Mom",
+  "ExpectedDialogue": "It\u0027s time for bed.",
+  "DetectedSpeaker": "Mom",
+  "TranscribedDialogue": "It\u0027s time for bed.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027It\u0027s time for bed.\u0027 | Heard: \u0027It\u0027s time for bed.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 4,
+  "WordCount": 4,
+  "SyllableCount": 5,
+  "SpeechDurationSeconds": 2.4,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 3,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T16:58:16.6241766Z"
+}

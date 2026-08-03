@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 5,
+  "ClipNumber": 1,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "Pajamas, black and white he wears.",
+  "DetectedSpeaker": "Narrator",
+  "TranscribedDialogue": "Pajamas, black and white he wears.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027Pajamas, black and white he wears.\u0027 | Heard: \u0027Pajamas, black and white he wears.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 6,
+  "WordCount": 6,
+  "SyllableCount": 9,
+  "SpeechDurationSeconds": 3,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 4,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:03:22.8888069Z"
+}

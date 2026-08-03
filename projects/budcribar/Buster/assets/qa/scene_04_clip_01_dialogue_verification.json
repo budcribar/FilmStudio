@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 4,
+  "ClipNumber": 1,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "He spins around to get a treat.",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "He spins around to get a treat.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027He spins around to get a treat.\u0027 | Heard: \u0027He spins around to get a treat.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 4,
+  "WordCount": 7,
+  "SyllableCount": 8,
+  "SpeechDurationSeconds": 3.4,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 4,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:02:00.266815Z"
+}

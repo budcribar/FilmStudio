@@ -8,5 +8,7 @@
   "description": "",
   "ownerUserId": "budcribar",
   "schema_version": "v2",
-  "migrated_at_utc": "2026-07-30T13:19:45.2126009Z"
+  "migrated_at_utc": "2026-07-30T13:19:45.2126009Z",
+  "studioPath": "simple-voice",
+  "visibilityMode": "Private"
 }

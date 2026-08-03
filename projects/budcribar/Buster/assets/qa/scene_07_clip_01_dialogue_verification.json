@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 7,
+  "ClipNumber": 1,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "He goes to sleep because they say Tomorrow is another day.",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "He goes to sleep because they say tomorrow is another day.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027He goes to sleep because they say Tomorrow is another day.\u0027 | Heard: \u0027He goes to sleep because they say tomorrow is another day.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 6,
+  "WordCount": 11,
+  "SyllableCount": 17,
+  "SpeechDurationSeconds": 4.9,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 5,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:06:42.6929625Z"
+}

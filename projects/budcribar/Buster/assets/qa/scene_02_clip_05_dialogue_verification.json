@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 2,
+  "ClipNumber": 5,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "Before he goes, he has to potty. Going on the floor is naughty!",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "Before he goes, he has to potty. Going on the floor is naughty!",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027Before he goes, he has to potty. Going on the floor is naughty!\u0027 | Heard: \u0027Before he goes, he has to potty. Going on the floor is naughty!\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 5,
+  "WordCount": 13,
+  "SyllableCount": 17,
+  "SpeechDurationSeconds": 5.6,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 7,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T16:59:49.1705214Z"
+}

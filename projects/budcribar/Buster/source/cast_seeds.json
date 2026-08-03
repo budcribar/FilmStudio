@@ -87,12 +87,16 @@
       "description": "Pure off-screen verse narrator; no on-camera body.",
       "canonical_given_name": "Narrator",
       "display_name_policy": "never_on_screen",
-      "voice_label": "Narrator (storybook V.O.)",
-      "voice_profile": "Warm adult storyteller, medium pitch, clear rhyming cadence, playful affection without baby-talk; steady gentle energy and identical timbre every cue.",
+      "voice_label": "Personal clone",
+      "voice_profile": "Provider voice (elevenlabs:uF7uLCdhawJiHOzSo0Aa). ElevenLabs instant clone from operator sample.",
       "reference_image_placeholder": "character_narrator_ref.png",
       "source_image_pages": [],
       "performance_notes": "Voice-over only; never appears on camera; reads the book\u2019s refrain and story beats over picture-book action.",
-      "visual_lock": "[Narrator] NARRATOR (V.O.)"
+      "visual_lock": "[Narrator] NARRATOR (V.O.)",
+      "voice_clone_sample": "voice_clone_sample.webm",
+      "voice_provider": "elevenlabs",
+      "voice_provider_voice_id": "uF7uLCdhawJiHOzSo0Aa",
+      "voice_clone_provider_id": "uF7uLCdhawJiHOzSo0Aa"
     }
   }
 }

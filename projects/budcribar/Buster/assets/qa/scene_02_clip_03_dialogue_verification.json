@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 2,
+  "ClipNumber": 3,
+  "ExpectedSpeaker": "Character_Mom",
+  "ExpectedDialogue": "Uh-uh.",
+  "DetectedSpeaker": "Mom",
+  "TranscribedDialogue": "Uh-uh.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027Uh-uh.\u0027 | Heard: \u0027Uh-uh.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 2,
+  "WordCount": 2,
+  "SyllableCount": 2,
+  "SpeechDurationSeconds": 1.8,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 3,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T16:58:57.3623824Z"
+}

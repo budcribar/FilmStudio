@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 6,
+  "ClipNumber": 1,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "He\u0027s not that smart, but still he knows He\u0027ll have a dream of fluffy snows,",
+  "DetectedSpeaker": "Character_Narrator",
+  "TranscribedDialogue": "He\u0027s not that smart, but still he knows he\u0027ll have a dream of fluffy snows,",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027He\u0027s not that smart, but still he knows He\u0027ll have a dream of fluffy snows,\u0027 | Heard: \u0027He\u0027s not that smart, but still he knows he\u0027ll have a dream of fluffy snows,\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 6,
+  "WordCount": 15,
+  "SyllableCount": 17,
+  "SpeechDurationSeconds": 6.3,
+  "ActionDurationSeconds": 3.1,
+  "ActualDurationSeconds": 9,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T17:05:15.3739949Z"
+}

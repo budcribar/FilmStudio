@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 6,
+  "ClipNumber": 2,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "Or bunnies running \u0027cross the yard And how he\u0027ll chase them very hard.",
+  "DetectedSpeaker": "Narrator",
+  "TranscribedDialogue": "Or bunnies running \u0027cross the yard and",
+  "DialogueAccuracyScore": 0.46,
+  "SpeakerMatch": true,
+  "Status": "mismatch",
+  "SummaryNote": "Expected: \u0027Or bunnies running \u0027cross the yard And how he\u0027ll chase them very hard.\u0027 | Heard: \u0027Or bunnies running \u0027cross the yard and\u0027 (Match 46%)",
+  "EstimatedDurationSeconds": 5,
+  "WordCount": 13,
+  "SyllableCount": 17,
+  "SpeechDurationSeconds": 5.6,
+  "ActionDurationSeconds": 5.2,
+  "ActualDurationSeconds": 10,
+  "SpeechTruncated": true,
+  "VerifiedAt": "2026-08-02T17:05:51.1952905Z"
+}

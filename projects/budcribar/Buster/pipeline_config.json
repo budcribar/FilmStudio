@@ -5,11 +5,11 @@
   "character_design_provider": "grok",
   "image_provider": "grok",
   "planning_provider": "grok",
-  "quality_provider": "grok",
+  "quality_provider": "gemini",
   "model_name": "grok-imagine-video",
   "image_model_name": "grok-imagine-image-quality",
   "planning_model_name": "grok-4.5",
-  "quality_model_name": "grok-4.5",
+  "quality_model_name": "gemini-3.6-flash",
   "aspect_ratio": "16:9",
   "resolution": "480p",
   "duration_seconds": 8,
@@ -39,5 +39,21 @@
     "assume_avg_retries": 0,
     "assume_ref_image_per_clip": true,
     "notes": "List rates from SupportedModelCatalog for the selected models. Not invoices. Runtime always re-reads catalog from model_name / image_model_name."
+  },
+  "voice_model_name": "eleven_voice_clone",
+  "version": 2,
+  "preferred_video_editor": "ClipChamp",
+  "vision_provider": "grok",
+  "vision_model_name": "grok-4.5",
+  "audio_model_name": "fal-ai/musicgen",
+  "enable_background_music": true,
+  "background_music_volume_percent": 20,
+  "model_selections": {
+    "video": "grok-imagine-video",
+    "image": "grok-imagine-image-quality",
+    "chat": "grok-4.5",
+    "vision": "grok-4.5",
+    "video-review": "gemini-3.6-flash",
+    "audio": "fal-ai/musicgen"
   }
 }

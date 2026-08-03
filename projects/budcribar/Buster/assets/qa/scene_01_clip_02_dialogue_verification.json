@@ -1,0 +1,20 @@
+{
+  "SceneNumber": 1,
+  "ClipNumber": 2,
+  "ExpectedSpeaker": "Character_Narrator",
+  "ExpectedDialogue": "He\u0027s small, black, and white- But not very bright! He\u0027s Buster the Noodle Head Dog.",
+  "DetectedSpeaker": "Narrator",
+  "TranscribedDialogue": "He\u0027s small, black, and white, but not very bright! He\u0027s Buster the Noodle Head Dog.",
+  "DialogueAccuracyScore": 1,
+  "SpeakerMatch": true,
+  "Status": "verified",
+  "SummaryNote": "Expected: \u0027He\u0027s small, black, and white- But not very bright! He\u0027s Buster the Noodle Head Dog.\u0027 | Heard: \u0027He\u0027s small, black, and white, but not very bright! He\u0027s Buster the Noodle Head Dog.\u0027 (Match 100%)",
+  "EstimatedDurationSeconds": 7,
+  "WordCount": 15,
+  "SyllableCount": 19,
+  "SpeechDurationSeconds": 6.3,
+  "ActionDurationSeconds": 0.6,
+  "ActualDurationSeconds": 8,
+  "SpeechTruncated": false,
+  "VerifiedAt": "2026-08-02T16:57:36.9411493Z"
+}
