@@ -1891,7 +1891,7 @@ public static class BookToFountainConverter
     private static int CountPageMarkers(string bookText) =>
         Regex.Matches(bookText, @"---\s*PAGE\s+\d+\s*---", RegexOptions.IgnoreCase).Count;
 
-    private static int CountSceneHeadings(string fountain) =>
+    public static int CountSceneHeadings(string? fountain) =>
         Regex.Matches(fountain ?? "", @"(?im)^(INT|EXT|EST|I/E)[\./ ]").Count;
 
     // ── fountain text surgery ────────────────────────────────────────────

@@ -713,6 +713,25 @@ public static string NormalizeText(string text)
                 onProgress?.Invoke("Adaptation report skipped: " + reportEx.Message);
             }
 
+            // Stage‑1 convert attribution (prompt / adaptation / runtime / model).
+            try
+            {
+                if (result.ConvertManifest is not null)
+                {
+                    ProjectStage1ConvertManifest.Write(
+                        projectDir,
+                        result.ConvertManifest,
+                        bookId: bookIdentity?.BookId);
+                    onProgress?.Invoke(
+                        $"Saved Stage‑1 convert manifest (adaptation={result.ConvertManifest.AdaptationVersion}, " +
+                        $"mode={result.ConvertManifest.RuntimeMode}, model={result.ConvertManifest.ModelId})");
+                }
+            }
+            catch (Exception manifestEx)
+            {
+                onProgress?.Invoke("Stage‑1 convert manifest skipped: " + manifestEx.Message);
+            }
+
             save.Message = "Screenplay draft ready — review and approve";
             return save;
         }

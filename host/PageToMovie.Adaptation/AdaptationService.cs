@@ -138,7 +138,8 @@ public sealed class AdaptationService
         string promptSha;
         try
         {
-            var prompt = await BuildSystemPromptAsync(minutes, ct).ConfigureAwait(false);
+            // Hash the same prompt the converter will load (null = unlimited directive).
+            var prompt = await BuildSystemPromptAsync(promptMinutes, ct).ConfigureAwait(false);
             promptSha = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(prompt))).ToLowerInvariant();
         }
         catch
@@ -180,6 +181,33 @@ public sealed class AdaptationService
             Notes = runtime.Notes,
         };
 
+        var sceneCount = 0;
+        try { sceneCount = BookToFountainConverter.CountSceneHeadings(conversion.Fountain); }
+        catch { /* ignore */ }
+
+        var manifest = new AdaptationConvertManifest
+        {
+            CompletedUtc = DateTime.UtcNow.ToString("o"),
+            ModelId = request.ModelId ?? "",
+            Temperature = request.Temperature,
+            ReasoningEffort = request.ReasoningEffort,
+            PromptContentSha256 = promptSha,
+            AdaptationVersion = AdaptationVersion.Current,
+            RuntimeMode = promptMinutes is null
+                ? "unlimited"
+                : NaturalRuntime.ResolveMode(runtime.NaturalMinutes, minutes),
+            NaturalRuntimeMinutes = runtime.NaturalMinutes,
+            TargetRuntimeMinutes = promptMinutes,
+            UsedHeuristicFallback = usedHeuristic,
+            VisionMetaStatus = conversion.VisionMetaStatus.ToString(),
+            AdaptationReportStatus = conversion.AdaptationReportStatus.ToString(),
+            BookFileSessionId = bookSession?.FileId,
+            Title = request.Title ?? "",
+            Author = request.Author,
+            FountainChars = conversion.Fountain.Length,
+            SceneCountApprox = sceneCount,
+        };
+
         return new AdaptationResult
         {
             Fountain = conversion.Fountain,
@@ -193,6 +221,7 @@ public sealed class AdaptationService
             Analysis = analysis,
             UsedHeuristicFallback = usedHeuristic,
             PromptContentSha256 = promptSha,
+            ConvertManifest = manifest,
             Notes = conversion.VisionMetaError,
         };
     }

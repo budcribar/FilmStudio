@@ -4,6 +4,7 @@ Last updated: 2026-08-03
 
 ## Done (recent)
 
+- [x] **Stage‑1 convert manifest** (`source/stage1_convert_manifest.json` — prompt/adaptation/runtime/model)
 - [x] **ADAPTATION_REPORT** parse/store (`SplitAdaptationTrailers`, `source/adaptation_report.json`)
 
 - [x] Default Stage‑1 runtime target = **unlimited** (prompt + FilmRuntime mode; retarget only when user sets minutes)
