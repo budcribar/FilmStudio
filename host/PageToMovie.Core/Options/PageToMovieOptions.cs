@@ -23,6 +23,12 @@ public sealed class PageToMovieOptions
     public bool UseFakes { get; set; }
 
     /// <summary>
+    /// Customer billing: charge multiplier applied to vendor list rates for estimates,
+    /// cost_ledger charges, and credit debits. Hot-editable via admin runtime config.
+    /// </summary>
+    public BillingOptions Billing { get; set; } = new();
+
+    /// <summary>
     /// When false (default), users must bring their own API keys (personal DB). Process
     /// env keys are not used for user jobs and do not count as "configured" — keep this
     /// off until server-side cost/credit control is solid. Set true only for local ops
@@ -457,4 +463,30 @@ public sealed class FakesOptions
     public double FailRate { get; set; }
     /// <summary>Throw rate-limit every N submits (0 = never).</summary>
     public int RateLimitEveryN { get; set; }
+}
+
+/// <summary>Customer-facing charge settings (list-rate markup).</summary>
+public sealed class BillingOptions
+{
+    /// <summary>
+    /// Multiplier on vendor list rates for estimates and customer charges.
+    /// 1.0 = list rate; 1.5 = 50% markup. Applied to cost estimates, ledger <c>usd</c>,
+    /// and credit debits. List rates remain available as <c>list_usd</c> on events.
+    /// </summary>
+    public double ChargeMultiplier { get; set; } = 1.0;
+
+    /// <summary>
+    /// User id that receives orphaned pre-attribution cost rows on DB migrate (Railway old DBs).
+    /// Default: <c>budcribar</c> (Bud Cribar).
+    /// </summary>
+    public string LegacyCostOwnerUserId { get; set; } = "budcribar";
+
+    /// <summary>Display username created if the legacy owner user does not exist yet.</summary>
+    public string LegacyCostOwnerUsername { get; set; } = "Bud Cribar";
+
+    /// <summary>
+    /// Project id stamped on cost rows that had no project (pre-attribution era).
+    /// Default: <c>development</c>.
+    /// </summary>
+    public string LegacyCostProjectId { get; set; } = "development";
 }

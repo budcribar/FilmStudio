@@ -365,6 +365,7 @@ public sealed class ClientMediaFolderService
                             snap.Scene == 18 ||
                             string.Equals(snap.Kind, "credits", StringComparison.OrdinalIgnoreCase);
             var isMusic = string.Equals(snap.Kind, "music", StringComparison.OrdinalIgnoreCase);
+            var isSpeakBatch = string.Equals(snap.Kind, "speak-batch", StringComparison.OrdinalIgnoreCase);
             var keepTail = isCredits
                 ? ClipSilenceTrimmer.DefaultKeepTailSeconds
                 : ClipSilenceTrimmer.SpeechBreathTailSeconds; // safe default without dialogue metadata
@@ -376,7 +377,8 @@ public sealed class ClientMediaFolderService
             // silence-trimming it further risks cutting real content rather than dead air, so skip
             // that pass entirely for this clip (unlike a plain fresh generation, which can be
             // arbitrarily longer than its useful content).
-            if (!isCredits && !isMusic && extendSliceBlobUrl is null)
+            // Music + speak-batch are pure audio files — never run video silence-trim.
+            if (!isCredits && !isMusic && !isSpeakBatch && extendSliceBlobUrl is null)
             {
                 var (trimmed, trimUrl, message) = await SilenceTrimAsync(
                     url,
@@ -422,7 +424,7 @@ public sealed class ClientMediaFolderService
                     RelativePath = snap.ClientRelativePath!,
                     Sha256 = saved.Sha256,
                     SizeBytes = saved.SizeBytes,
-                    Kind = isCredits ? "credits" : isMusic ? "music" : "clip",
+                    Kind = isCredits ? "credits" : isMusic ? "music" : isSpeakBatch ? "audio" : "clip",
                     Scene = scene,
                     Clip = clip,
                 });

@@ -246,7 +246,7 @@ else
                         <div class="flex-grow-1">
                             <div class="fw-semibold">You’re set</div>
                             <div class="small text-muted">
-                                Voice is on the film. Generate all scenes when you’re ready — no cast page, no extra steps.
+                                Next we keep the pictures and put your voice on every line — no video regen.
                             </div>
                         </div>
                         <button type="button"
@@ -254,7 +254,7 @@ else
                                 data-testid="simple-voice-make-movie"
                                 disabled="@_busy"
                                 @onclick="MakeMovieAsync">
-                            @(_busy ? "Starting…" : "Make my movie →")
+                            @(_busy ? "Opening…" : "Put my voice on the film →")
                         </button>
                     </div>
                 }
@@ -701,38 +701,8 @@ private async Task StartMicAsync()
         _error = null;
         try
         {
-            await ActiveProject.RefreshReadinessAsync(Engine);
-            // Prefer film page when ready; otherwise send to book/import so they can finish the library film first.
-            if (ActiveProject.CanScenes)
-            {
-                // Kick full batch (only missing) when scene list is available.
-                try
-                {
-                    var scenes = await Engine.GetScenesAsync(_projectId);
-                    var ids = scenes?.Scenes?
-                        .Select(s => s.SceneNumber)
-                        .Where(n => n > 0)
-                        .Distinct()
-                        .OrderBy(n => n)
-                        .ToList() ?? new List<int>();
-                    if (ids.Count > 0)
-                        await Engine.StartBatchGenAsync(_projectId, ids, onlyMissing: true);
-                }
-                catch
-                {
-                    // Non-fatal — still open Scenes so they can press generate there.
-                }
-                Nav.NavigateTo("scenes?simple=1");
-            }
-            else if (ActiveProject.CanCharacters || ActiveProject.CanEstimate)
-            {
-                // Shot plan / estimate gates — open film strip's book step
-                Nav.NavigateTo("adaptation");
-            }
-            else
-            {
-                Nav.NavigateTo("adaptation");
-            }
+            // Easy path: TTS with clone + client audio replace (not video batch gen).
+            Nav.NavigateTo("simple-revoice");
         }
         catch (Exception ex)
         {

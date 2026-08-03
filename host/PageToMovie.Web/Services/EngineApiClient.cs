@@ -1429,6 +1429,23 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return res?.Job;
     }
 
+    /// <summary>
+    /// Server-side batch TTS for re-voice. Progress over SignalR (kind <c>speak-batch</c>);
+    /// each finished line sets <see cref="JobSnapshot.ClientMediaUrl"/> for client media save.
+    /// </summary>
+    public async Task<JobSnapshot?> StartSpeakBatchAsync(
+        StartSpeakBatchRequest request,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync("/api/jobs/speak-batch", request, JsonOpts, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(raw) ?? $"{(int)resp.StatusCode}");
+        var res = JsonSerializer.Deserialize<GenBatchJobResponseDto>(raw, JsonOpts);
+        return res?.Job;
+    }
+
     private class GenBatchJobResponseDto
     {
         public bool Ok { get; set; }
@@ -2543,19 +2560,67 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             ct);
     }
 
-    /// <summary>Actual spend by provider (then category) for this project — for reconciling against a real vendor billing statement.</summary>
-    public async Task<CostByProviderDto?> GetCostByProviderAsync(string projectId, CancellationToken ct = default)
+    /// <summary>
+    /// Spend by provider for a project (default: signed-in user only).
+    /// Pass <paramref name="allUsers"/> true only as admin for full project totals.
+    /// </summary>
+    public async Task<CostByProviderDto?> GetCostByProviderAsync(
+        string projectId,
+        bool allUsers = false,
+        CancellationToken ct = default)
     {
+        SyncIdentityHeaders();
+        var qs = allUsers ? "?all=true" : "";
         return await _http.GetFromJsonAsync<CostByProviderDto>(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/by-provider",
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/by-provider{qs}",
             JsonOpts,
             ct);
+    }
+
+    /// <summary>Signed-in user's total / by-project / by-vendor spend.</summary>
+    public async Task<UserSpendSummaryDto?> GetMySpendAsync(
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var qs = string.IsNullOrWhiteSpace(projectId)
+            ? ""
+            : $"?projectId={Uri.EscapeDataString(projectId)}";
+        var dto = await _http.GetFromJsonAsync<MySpendDto>($"/api/me/spend{qs}", JsonOpts, ct);
+        return dto?.Summary;
+    }
+
+    public sealed class MySpendDto
+    {
+        public bool Ok { get; set; }
+        public UserSpendSummaryDto? Summary { get; set; }
+    }
+
+    public sealed class UserSpendSummaryDto
+    {
+        public string UserId { get; set; } = "";
+        public int TotalCalls { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
+        public List<ProjectSpendRowDto> ByProject { get; set; } = new();
+        public Dictionary<string, ProviderCostStatsDto> ByProvider { get; set; } = new();
+        public Dictionary<string, CategoryCostStatsDto> ByCategory { get; set; } = new();
+    }
+
+    public sealed class ProjectSpendRowDto
+    {
+        public string ProjectId { get; set; } = "";
+        public int Calls { get; set; }
+        public double ListUsd { get; set; }
+        public double ChargeUsd { get; set; }
     }
 
     public sealed class CostByProviderDto
     {
         public bool Ok { get; set; }
         public string? ProjectId { get; set; }
+        public string? UserId { get; set; }
+        public string? Scope { get; set; }
         public ApiCostByProviderStatsDto? Stats { get; set; }
     }
 
@@ -2563,6 +2628,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     {
         public int TotalCalls { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public Dictionary<string, ProviderCostStatsDto> ByProvider { get; set; } = new();
     }
 
@@ -2571,6 +2638,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public string Provider { get; set; } = "unknown";
         public int Count { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public Dictionary<string, CategoryCostStatsDto> ByCategory { get; set; } = new();
     }
 
@@ -2579,6 +2648,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public string Category { get; set; } = "other";
         public int Count { get; set; }
         public double TotalUsd { get; set; }
+        public double TotalListUsd { get; set; }
+        public double TotalChargeUsd { get; set; }
         public double AvgUsd { get; set; }
     }
 
@@ -3044,6 +3115,35 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return body;
     }
 
+    /// <summary>
+    /// TTS with the character's stored clone (or explicit voice id). Returns base64 audio and/or proxy URL.
+    /// </summary>
+    public async Task<SpeakVoiceDto> SpeakVoiceAsync(
+        string projectId,
+        string charKey,
+        string text,
+        string? voiceId = null,
+        string? model = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/speak",
+            new { text, voiceId, model },
+            JsonOpts,
+            ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        var body = JsonSerializer.Deserialize<SpeakVoiceDto>(raw, JsonOpts)
+                   ?? new SpeakVoiceDto { Ok = false, Error = "Empty response" };
+        if (!resp.IsSuccessStatusCode)
+        {
+            body.Ok = false;
+            if (string.IsNullOrWhiteSpace(body.Error))
+                body.Error = TryError(raw) ?? resp.ReasonPhrase ?? "Speech synthesis failed";
+        }
+        return body;
+    }
+
     public async Task<VoiceCatalogDto?> ListProviderVoicesAsync(CancellationToken ct = default)
     {
         SyncIdentityHeaders();
@@ -3403,6 +3503,21 @@ public sealed class VoiceApplyDto
     public string? PreviewUrl { get; set; }
     public string? VoiceLabel { get; set; }
     public double? EstimatedUsd { get; set; }
+}
+
+public sealed class SpeakVoiceDto
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public string? ClientUrl { get; set; }
+    public string? AudioBase64 { get; set; }
+    public string? ContentType { get; set; }
+    public string? FileExtension { get; set; }
+    public string? VoiceId { get; set; }
+    public int CharacterCount { get; set; }
+    public double? EstimatedUsd { get; set; }
+    public bool UsedMock { get; set; }
 }
 
 public sealed class VoiceCatalogDto

@@ -692,4 +692,119 @@ window.PageToMovieFfmpeg = {
             }
         });
     },
+
+    /**
+     * Strip all original audio from a clip and replace with a single TTS (or other) track.
+     * Video stream is copied; new audio is AAC. If TTS is shorter than video, pad with silence;
+     * if longer, cut to video length (-shortest against padded audio matching video duration).
+     * @param {string} videoUrl blob: or http(s) URL
+     * @param {string} audioUrl blob: / data: / http(s) URL for the replacement speech
+     * @returns {{ success:boolean, url?:string, error?:string }}
+     */
+    replaceVideoAudioAsync: async function (videoUrl, audioUrl, onProgress) {
+        if (!videoUrl) return { success: false, error: "No video URL" };
+        if (!audioUrl) return { success: false, error: "No audio URL" };
+
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return load;
+
+            const ffmpeg = self._ffmpeg;
+            const inVideo = "rv_in_video.mp4";
+            const inAudio = "rv_in_audio";
+            const outName = "rv_out.mp4";
+            try {
+                reportProgress(onProgress, 8, "Loading picture…");
+                await ffmpeg.writeFile(inVideo, await self._safeFetchFile(videoUrl));
+                reportProgress(onProgress, 28, "Loading voice…");
+                // Keep extension so ffmpeg can sniff container (mp3/wav/m4a)
+                let audioName = inAudio + ".bin";
+                if (typeof audioUrl === "string") {
+                    if (audioUrl.indexOf("audio/wav") >= 0 || /\.wav(\?|$)/i.test(audioUrl)) audioName = inAudio + ".wav";
+                    else if (audioUrl.indexOf("audio/mp4") >= 0 || /\.m4a(\?|$)/i.test(audioUrl)) audioName = inAudio + ".m4a";
+                    else if (audioUrl.indexOf("audio/mpeg") >= 0 || /\.mp3(\?|$)/i.test(audioUrl)) audioName = inAudio + ".mp3";
+                    else audioName = inAudio + ".mp3";
+                }
+                await ffmpeg.writeFile(audioName, await self._safeFetchFile(audioUrl));
+
+                const probe = await self._probeDurationMemfsAsync(inVideo);
+                const durationSec = probe.success && probe.seconds > 0 ? probe.seconds : 0;
+
+                reportProgress(onProgress, 50, "Replacing audio…");
+                // Drop original audio entirely; use TTS only. Pad TTS with silence to video length
+                // when known so picture does not cut short; -shortest still guards runaway audio.
+                if (durationSec > 0.05) {
+                    const filter =
+                        "[1:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=mono," +
+                        "apad=whole_dur=" + durationSec.toFixed(3) + "[a]";
+                    await ffmpeg.exec([
+                        "-hide_banner", "-y",
+                        "-i", inVideo, "-i", audioName,
+                        "-filter_complex", filter,
+                        "-map", "0:v", "-map", "[a]",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                        "-t", durationSec.toFixed(3),
+                        outName,
+                    ]);
+                } else {
+                    await ffmpeg.exec([
+                        "-hide_banner", "-y",
+                        "-i", inVideo, "-i", audioName,
+                        "-map", "0:v", "-map", "1:a",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                        "-shortest",
+                        outName,
+                    ]);
+                }
+
+                reportProgress(onProgress, 90, "Saving clip…");
+                const url = await self._readAndCleanupAsync(
+                    ffmpeg, outName, "video/mp4", [inVideo, audioName]);
+                reportProgress(onProgress, 100, "Ready");
+                return { success: true, url: url };
+            } catch (err) {
+                console.error("replaceVideoAudioAsync failed:", err);
+                for (const n of [inVideo, outName]) { try { await ffmpeg.deleteFile(n); } catch (_) { /* */ } }
+                return { success: false, error: err.message || String(err) };
+            }
+        });
+    },
+
+    /**
+     * Strip all audio from a video (silent picture). Used when a clip has no dialogue.
+     * @param {string} videoUrl
+     * @returns {{ success:boolean, url?:string, error?:string }}
+     */
+    stripVideoAudioAsync: async function (videoUrl, onProgress) {
+        if (!videoUrl) return { success: false, error: "No video URL" };
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return load;
+            const ffmpeg = self._ffmpeg;
+            const inVideo = "sa_in.mp4";
+            const outName = "sa_out.mp4";
+            try {
+                reportProgress(onProgress, 20, "Loading picture…");
+                await ffmpeg.writeFile(inVideo, await self._safeFetchFile(videoUrl));
+                reportProgress(onProgress, 55, "Removing audio…");
+                await ffmpeg.exec([
+                    "-hide_banner", "-y",
+                    "-i", inVideo,
+                    "-map", "0:v", "-an",
+                    "-c:v", "copy",
+                    outName,
+                ]);
+                reportProgress(onProgress, 90, "Saving…");
+                const url = await self._readAndCleanupAsync(ffmpeg, outName, "video/mp4", [inVideo]);
+                reportProgress(onProgress, 100, "Ready");
+                return { success: true, url: url };
+            } catch (err) {
+                console.error("stripVideoAudioAsync failed:", err);
+                for (const n of [inVideo, outName]) { try { await ffmpeg.deleteFile(n); } catch (_) { /* */ } }
+                return { success: false, error: err.message || String(err) };
+            }
+        });
+    },
 };
