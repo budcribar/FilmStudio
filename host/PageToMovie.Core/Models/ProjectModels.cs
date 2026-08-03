@@ -295,6 +295,10 @@ public sealed class CharacterSummary
     /// <summary>Provider-side voice id for TTS (ElevenLabs voice_id).</summary>
     public string? VoiceProviderVoiceId { get; set; }
     public bool VoiceOnly { get; set; }
+    /// <summary>Plural/ensemble cast (CHILDREN, CROWD, …) — no single-face portrait required.</summary>
+    public bool IsGroup { get; set; }
+    /// <summary>individual | group | voice_only (derived).</summary>
+    public string CastKind { get; set; } = "individual";
     public bool Locked { get; set; }
     public string? RefFileName { get; set; }
     public string? RefUrl { get; set; }

@@ -1,0 +1,98 @@
+namespace PageToMovie.Core.Models;
+
+/// <summary>
+/// Classifies cast seeds as individual, group/chorus, or voice-only (policy-driven).
+/// Used by ProjectStore listing, Characters UI, and Adaptation cast package checks.
+/// </summary>
+public static class CastKindClassifier
+{
+    /// <summary>Stable tokens that represent plural/ensemble cast, not a single face.</summary>
+    private static readonly HashSet<string> GroupTokens = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CHILDREN", "CHILD", "KIDS", "PUPILS", "STUDENTS", "CLASS", "CLASSMATES",
+        "CROWD", "MOB", "GROUP", "CHORUS", "ENSEMBLE", "VILLAGERS", "TOWNSFOLK",
+        "PEOPLE", "ONLOOKERS", "SPECTATORS", "SOLDIERS", "GUARDS", "SAILORS",
+        "GUESTS", "PARTYGOERS", "WORKERS", "TOWNSPEOPLE", "BYSTANDERS",
+    };
+
+    /// <summary>
+    /// True when this seed is a plural/ensemble cast member (not a single portrait identity).
+    /// Explicit <c>cast_kind</c> of group/chorus/ensemble wins; otherwise key/display heuristics.
+    /// </summary>
+    public static bool IsGroup(
+        string? key,
+        string? displayName = null,
+        string? castKind = null,
+        string? description = null)
+    {
+        if (!string.IsNullOrWhiteSpace(castKind))
+        {
+            var k = castKind.Trim();
+            if (k.Equals("group", StringComparison.OrdinalIgnoreCase) ||
+                k.Equals("chorus", StringComparison.OrdinalIgnoreCase) ||
+                k.Equals("ensemble", StringComparison.OrdinalIgnoreCase) ||
+                k.Equals("crowd", StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (k.Equals("individual", StringComparison.OrdinalIgnoreCase) ||
+                k.Equals("character", StringComparison.OrdinalIgnoreCase) ||
+                k.Equals("person", StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        if (TokenIsGroup(key)) return true;
+        if (TokenIsGroup(displayName)) return true;
+
+        // Weak prose signal from cast extract descriptions
+        var desc = description ?? "";
+        if (desc.Length >= 12 &&
+            (desc.Contains("group of", StringComparison.OrdinalIgnoreCase) ||
+             desc.Contains("several", StringComparison.OrdinalIgnoreCase) ||
+             desc.Contains("mixed boys and girls", StringComparison.OrdinalIgnoreCase) ||
+             desc.Contains("small group", StringComparison.OrdinalIgnoreCase)))
+        {
+            // Only if key/display also looks plural-ish or empty of a single proper name
+            if (TokenIsGroup(key) || TokenIsGroup(displayName) || LooksPluralToken(key) || LooksPluralToken(displayName))
+                return true;
+        }
+
+        return false;
+    }
+
+    public static bool IsVoiceOnlyPolicy(string? displayNamePolicy) =>
+        !string.IsNullOrWhiteSpace(displayNamePolicy) &&
+        displayNamePolicy.Contains("never", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Normalize Character_Foo → FOO for token checks.</summary>
+    public static string NormalizeToken(string? raw)
+    {
+        var t = (raw ?? "").Trim();
+        if (t.StartsWith("Character_", StringComparison.OrdinalIgnoreCase))
+            t = t["Character_".Length..];
+        t = t.Replace('_', ' ').Trim();
+        return t.ToUpperInvariant();
+    }
+
+    private static bool TokenIsGroup(string? raw)
+    {
+        var t = NormalizeToken(raw);
+        if (string.IsNullOrWhiteSpace(t)) return false;
+        if (GroupTokens.Contains(t)) return true;
+        // Multi-word: any segment matches
+        foreach (var part in t.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (GroupTokens.Contains(part))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool LooksPluralToken(string? raw)
+    {
+        var t = NormalizeToken(raw);
+        if (t.Length < 4) return false;
+        return t.EndsWith("S", StringComparison.Ordinal) &&
+               !t.EndsWith("SS", StringComparison.Ordinal) &&
+               !t.EndsWith("US", StringComparison.Ordinal) &&
+               !t.EndsWith("IS", StringComparison.Ordinal);
+    }
+}

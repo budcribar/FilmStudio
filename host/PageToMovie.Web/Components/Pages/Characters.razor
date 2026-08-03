@@ -248,6 +248,14 @@ else
                                 <span class="char-list-thumb__icon">♪</span>
                             </span>
                         }
+                        else if (c.IsGroup && thumb is null)
+                        {
+                            <span class="char-list-thumb char-list-thumb--group"
+                                  title="Group / chorus (no single face required)"
+                                  aria-hidden="true">
+                                <span class="char-list-thumb__icon">👥</span>
+                            </span>
+                        }
                         else if (thumb is { Length: > 0 })
                         {
                             <img src="@thumb" alt="" class="char-list-thumb" />
@@ -259,6 +267,10 @@ else
                             </span>
                         }
                         <span class="char-list-name text-truncate">@c.DisplayName</span>
+                        @if (c.IsGroup)
+                        {
+                            <span class="badge text-bg-info ms-1" title="Group / chorus cast">group</span>
+                        }
                         @if (!c.VoiceOnly && !hasVoice)
                         {
                             <span class="char-list-voice-miss" title="No voice profile" aria-label="No voice profile">♪</span>
@@ -307,6 +319,37 @@ else
                         <p class="small text-muted mb-3">
                             <strong>Voice style</strong> — used when this character speaks (for example narrator voice-over).
                         </p>
+                        @RenderVoiceEditor()
+                    </div>
+                </div>
+            }
+            else if (_selected.IsGroup)
+            {
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span><code>@_selected.Key</code> — @_selected.DisplayName</span>
+                        <span class="badge text-bg-info">group / chorus</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">
+                            This is a <strong>group</strong> (several people on screen together), not a single face.
+                            A solo portrait is optional. Description and voice are enough for filming.
+                        </p>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Group look (optional)</label>
+                            <textarea class="form-control form-control-sm" rows="3"
+                                      value="@_editDescription"
+                                      @oninput="OnLookDescriptionInput"
+                                      placeholder="How the group should look in every scene"></textarea>
+                            <label class="form-label small fw-semibold mt-2">Visual lock (optional)</label>
+                            <textarea class="form-control form-control-sm" rows="2"
+                                      value="@_editVisualLock"
+                                      @oninput="OnLookVisualLockInput"
+                                      placeholder="Hard constraints for the crowd / classmates"></textarea>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                    disabled="@(_busy || _savingLook)"
+                                    @onclick="() => SaveLookAsync()">Save description</button>
+                        </div>
                         @RenderVoiceEditor()
                     </div>
                 </div>
@@ -1205,7 +1248,10 @@ else
         _chars is { Count: > 0 } &&
         _chars.All(c =>
             HasVoiceProfile(c) &&
-            (c.VoiceOnly || c.HasPreferred || c.Locked));
+            (c.VoiceOnly ||
+             c.IsGroup || // group/chorus: no single-face lock required
+             c.HasPreferred ||
+             c.Locked));
 
     /// <summary>Show primary Build cast only when there is no cast yet.</summary>
     private bool NeedsCastBuild =>

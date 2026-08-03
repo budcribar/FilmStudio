@@ -53,7 +53,8 @@
 
 .char-list-thumb--empty,
 .char-list-thumb--voice,
-.char-list-thumb--voice-missing {
+.char-list-thumb--voice-missing,
+.char-list-thumb--group {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -86,6 +87,17 @@
 .char-list-thumb--voice-missing .char-list-thumb__icon {
     color: #842029;
 }
+
+.char-list-thumb--group {
+    background: rgba(13, 202, 240, 0.2);
+    border: 1px solid rgba(13, 202, 240, 0.45);
+}
+
+.char-list-thumb--group .char-list-thumb__icon {
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
 
 /* On-screen cast with a picture but no voice_profile */
 .char-list-voice-miss {

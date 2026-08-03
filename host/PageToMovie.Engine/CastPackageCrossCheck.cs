@@ -22,6 +22,10 @@ public static class CastPackageCrossCheck
         public Dictionary<string, CharacterQuality> Quality { get; set; } =
             new(StringComparer.OrdinalIgnoreCase);
         public List<string> SpeakersMissingFromBook { get; set; } = new();
+        public List<string> GroupCastKeys { get; set; } = new();
+        public double MembershipScore { get; set; }
+        public double DescriptionScore { get; set; }
+        public bool NoInventedNames => SpeakersMissingFromBook.Count == 0;
     }
 
     public sealed class CharacterQuality
@@ -59,6 +63,9 @@ public static class CastPackageCrossCheck
             Failures = r.Failures.ToList(),
             Warnings = r.Warnings.ToList(),
             SpeakersMissingFromBook = r.SpeakersMissingFromBook.ToList(),
+            GroupCastKeys = r.GroupCastKeys.ToList(),
+            MembershipScore = r.MembershipScore,
+            DescriptionScore = r.DescriptionScore,
         };
         foreach (var (key, q) in r.Quality)
         {

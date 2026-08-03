@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PageToMovie.Core.Models;
 using System.Text.RegularExpressions;
 using PageToMovie.Adaptation.Conversion;
 
@@ -44,6 +45,14 @@ public static class CastPackageCrossCheck
         /// Advisory — does not fail the package by itself.
         /// </summary>
         public List<string> SpeakersMissingFromBook { get; set; } = new();
+        /// <summary>Cast keys classified as group/chorus (no single-face portrait expected).</summary>
+        public List<string> GroupCastKeys { get; set; } = new();
+        /// <summary>0–100 membership sub-score (speakers found in seeds).</summary>
+        public double MembershipScore { get; set; }
+        /// <summary>0–100 description/visual quality sub-score.</summary>
+        public double DescriptionScore { get; set; }
+        /// <summary>True when no invented proper names were flagged against book text.</summary>
+        public bool NoInventedNames => SpeakersMissingFromBook.Count == 0;
     }
 
     public sealed class CharacterQuality
@@ -163,6 +172,45 @@ public static class CastPackageCrossCheck
         report.Score = maxPoints <= 0
             ? (report.Failures.Count == 0 ? 100 : 0)
             : Math.Round(100.0 * points / maxPoints, 1);
+
+        // Sub-scores for the cast-judge layer (benchmark / admin).
+        var memberOk = report.RequiredSpeakers.Count == 0
+            ? 100.0
+            : 100.0 * report.MatchedKeys.Count / Math.Max(1, report.RequiredSpeakers.Count);
+        report.MembershipScore = Math.Round(Math.Min(100.0, memberOk), 1);
+        var descPoints = 0.0;
+        var descMax = 0.0;
+        foreach (var q in report.Quality.Values)
+        {
+            descMax += 5;
+            if (q.HasDescription && q.DescriptionChars >= 24) descPoints += 2.5;
+            else if (q.HasDescription) descPoints += 1.0;
+            if (q.HasVisualLock) descPoints += 1.5;
+            if (q.HasWardrobe) descPoints += 0.5;
+            if (q.HasSpecies) descPoints += 0.5;
+        }
+        report.DescriptionScore = descMax <= 0
+            ? 0
+            : Math.Round(100.0 * descPoints / descMax, 1);
+
+        foreach (var key in report.CastKeys)
+        {
+            seeds.TryGetValue(key, out var seedEl);
+            string? castKind = null;
+            string? display = null;
+            string? desc = null;
+            if (seedEl.ValueKind == JsonValueKind.Object)
+            {
+                if (seedEl.TryGetProperty("cast_kind", out var ck) && ck.ValueKind == JsonValueKind.String)
+                    castKind = ck.GetString();
+                if (seedEl.TryGetProperty("canonical_given_name", out var cn) && cn.ValueKind == JsonValueKind.String)
+                    display = cn.GetString();
+                if (seedEl.TryGetProperty("description", out var ds) && ds.ValueKind == JsonValueKind.String)
+                    desc = ds.GetString();
+            }
+            if (CastKindClassifier.IsGroup(key, display, castKind, desc))
+                report.GroupCastKeys.Add(key);
+        }
 
         if (report.RequiredSpeakers.Count == 0 && seeds.Count > 0)
             report.Warnings.Add("No non-narrator dialogue cues found — cast membership could not be cross-checked.");

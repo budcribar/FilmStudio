@@ -2075,6 +2075,10 @@ public sealed class ProjectStore
                 : (info.TryGetProperty("voice_label", out var vl) && vl.GetString() is { Length: > 0 } lab
                     ? lab
                     : key.Replace("Character_", "").Replace("_", " "));
+            var descPreview = info.TryGetProperty("description", out var d0) ? d0.GetString() ?? "" : "";
+            var castKindRaw = info.TryGetProperty("cast_kind", out var ck0) ? ck0.GetString() : null;
+            var isGroup = !voiceOnly && CastKindClassifier.IsGroup(key, display, castKindRaw, descPreview);
+            var castKind = voiceOnly ? "voice_only" : (isGroup ? "group" : "individual");
 
             var refName = CharacterRefFileName(key);
             var resolvedRef = voiceOnly ? null : ResolveCharacterRefPath(projectId, key, allowNormalizedFallback: false);
@@ -2188,6 +2192,8 @@ public sealed class ProjectStore
                     ? vpid.GetString()
                     : null,
                 VoiceOnly = voiceOnly,
+                IsGroup = isGroup,
+                CastKind = castKind,
                 Locked = voiceOnly
                     ? !string.IsNullOrWhiteSpace(
                         info.TryGetProperty("voice_profile", out var vpr) ? vpr.GetString() : null)
@@ -5781,9 +5787,7 @@ public sealed class ProjectStore
         if (info.ValueKind == JsonValueKind.Object &&
             info.TryGetProperty("display_name_policy", out var pol))
         {
-            var p = pol.GetString() ?? "";
-            if (p.Contains("never", StringComparison.OrdinalIgnoreCase))
-                return true;
+            return CastKindClassifier.IsVoiceOnlyPolicy(pol.GetString());
         }
         return false;
     }
