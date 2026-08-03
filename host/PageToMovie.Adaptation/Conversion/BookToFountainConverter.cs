@@ -148,7 +148,9 @@ public static class BookToFountainConverter
         string? reasoningEffort = null,
         Func<StructuralGateFailure, CancellationToken, Task>? onStructuralGateFailure = null,
         double temperature = 0.2,
-        IBookFileSession? bookSession = null)
+        IBookFileSession? bookSession = null,
+        string? visualMedium = null,
+        AdaptationPromptTokens? promptTokens = null)
     {
         if (string.IsNullOrWhiteSpace(bookText))
             throw new InvalidOperationException("Book text is empty");
@@ -160,7 +162,8 @@ public static class BookToFountainConverter
                 "Connect service to build a screenplay draft from the book.");
 
         bookText = NormalizeBookText(bookText);
-        var system = await BuildSystemPromptAsync(totalRuntimeMinutes, ct)
+        var tokens = promptTokens ?? AdaptationPromptTokens.Default(totalRuntimeMinutes, visualMedium);
+        var system = await BuildSystemPromptAsync(totalRuntimeMinutes, ct, tokens)
             .ConfigureAwait(false);
         var pageCount = CountPageMarkers(bookText);
         var budget = budgetOverride ?? ResolvePromptBudget(model);
@@ -1241,11 +1244,13 @@ public static class BookToFountainConverter
     /// </param>
     public static Task<string> BuildSystemPromptAsync(
         int? totalRuntimeMinutes = null,
-        CancellationToken ct = default) =>
+        CancellationToken ct = default,
+        AdaptationPromptTokens? tokens = null) =>
         AdaptationPromptPack.LoadBookToFountainSystemPromptAsync(
             totalRuntimeMinutes,
             fallbackBody: FountainOutputOverride,
-            ct);
+            ct: ct,
+            tokens: tokens ?? AdaptationPromptTokens.Default(totalRuntimeMinutes));
 
     /// <summary>
     /// Split book into ordered chunks for multi-pass adaptation (public for tests).

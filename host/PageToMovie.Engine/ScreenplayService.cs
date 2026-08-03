@@ -613,6 +613,18 @@ public static string NormalizeText(string text)
                 }
             }
 
+            // Prefer an existing user/project medium lock when present; else auto (model infers).
+            string? preferredMedium = null;
+            try
+            {
+                var existingVision = ProjectVisionMeta.TryRead(projectDir);
+                if (existingVision is not null &&
+                    !string.IsNullOrWhiteSpace(existingVision.VisualMedium) &&
+                    !string.Equals(existingVision.VisualMedium, "auto", StringComparison.OrdinalIgnoreCase))
+                    preferredMedium = existingVision.VisualMedium;
+            }
+            catch { /* ignore */ }
+
             var result = await adaptation.ConvertAsync(
                 new AdaptationRequest
                 {
@@ -622,6 +634,7 @@ public static string NormalizeText(string text)
                     TargetRuntimeMinutes = minutes,
                     ModelId = model,
                     Temperature = generationTemperature,
+                    VisualMedium = preferredMedium,
                 },
                 chat,
                 progressAdapter,

@@ -73,8 +73,14 @@ public sealed class AdaptationService
     /// System prompt for book → Fountain (embedded <c>book_to_fountain.txt</c>).
     /// </summary>
     /// <param name="totalRuntimeMinutes">null or ≤0 = unlimited (default); positive = artificial target.</param>
-    public Task<string> BuildSystemPromptAsync(int? totalRuntimeMinutes = null, CancellationToken ct = default) =>
-        BookToFountainConverter.BuildSystemPromptAsync(totalRuntimeMinutes, ct);
+    public Task<string> BuildSystemPromptAsync(
+        int? totalRuntimeMinutes = null,
+        CancellationToken ct = default,
+        string? visualMedium = null) =>
+        BookToFountainConverter.BuildSystemPromptAsync(
+            totalRuntimeMinutes,
+            ct,
+            AdaptationPromptTokens.Default(totalRuntimeMinutes, visualMedium));
 
     /// <summary>
     /// Offline / test heuristic path (no chat).
@@ -139,7 +145,7 @@ public sealed class AdaptationService
         try
         {
             // Hash the same prompt the converter will load (null = unlimited directive).
-            var prompt = await BuildSystemPromptAsync(promptMinutes, ct).ConfigureAwait(false);
+            var prompt = await BuildSystemPromptAsync(promptMinutes, ct, request.VisualMedium).ConfigureAwait(false);
             promptSha = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(prompt))).ToLowerInvariant();
         }
         catch
@@ -161,7 +167,8 @@ public sealed class AdaptationService
             reasoningEffort: request.ReasoningEffort,
             onStructuralGateFailure: onStructuralGateFailure,
             temperature: request.Temperature,
-            bookSession: bookSession).ConfigureAwait(false);
+            bookSession: bookSession,
+            visualMedium: request.VisualMedium).ConfigureAwait(false);
 
         // Re-emit runtime with the clamped minutes actually used for generation.
         var runtimeUsed = new NaturalRuntimeEstimate

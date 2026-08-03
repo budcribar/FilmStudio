@@ -20,4 +20,10 @@ public sealed class AdaptationRequest
 
     /// <summary>Provider-neutral reasoning hint (low/medium/high/max); null = provider default.</summary>
     public string? ReasoningEffort { get; init; }
+
+    /// <summary>
+    /// Preferred visual medium for VISION_META / MEDIUM DIRECTIVE, or null/<c>auto</c> to infer.
+    /// Engine/UI may set photoreal, illustrated_picture_book, etc.
+    /// </summary>
+    public string? VisualMedium { get; init; }
 }
