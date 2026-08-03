@@ -1,6 +1,6 @@
 # Implementation plan: `PageToMovie.Adaptation` module
 
-**Status:** plan (2026-08-03)  
+**Status:** Phases 0–4 largely complete on master (2026-08-03); Phase 6 hardening ongoing  
 **Goal:** Self-contained Stage‑1 adaptation library with **well-defined interfaces**, **no storage**, **injected dependencies**.  
 **Related:** [runtime-and-mary-prompt-implementation-plan.md](./runtime-and-mary-prompt-implementation-plan.md), [film-provenance-critic-learning-architecture.md](./film-provenance-critic-learning-architecture.md)
 
@@ -236,8 +236,8 @@ public sealed class NaturalRuntimeEstimate
 
 | ID | Action | Done when |
 |----|--------|-----------|
-| **A4.1** | Move pure `CastPackageCrossCheck` (or equivalent) into Adaptation | Benchmark uses it from module |
-| **A4.2** | Optional: deterministic “speakers ⊆ book names” heuristic for Mary-style books | Test fixtures |
+| **A4.1** | Move pure `CastPackageCrossCheck` (or equivalent) into Adaptation | ✅ `Validation/CastPackageCrossCheck` + façade |
+| **A4.2** | Optional: deterministic “speakers ⊆ book names” heuristic for Mary-style books | ✅ `FindSpeakersMissingFromBook` + warnings |
 | **A4.3** | Do **not** move cast portrait / ElevenLabs here | Boundary held |
 
 **Exit:** Text-level package checks available without Engine.
@@ -263,7 +263,7 @@ public sealed class NaturalRuntimeEstimate
 | ID | Action | Done when |
 |----|--------|-----------|
 | **A6.1** | Architecture test: Adaptation csproj must not reference Engine | CI |
-| **A6.2** | Architecture test: no `ProjectStore` symbol in Adaptation | CI |
+| **A6.2** | Architecture test: no `ProjectStore` symbol in Adaptation | ✅ source scan test |
 | **A6.3** | Golden fixture tests: fixed book → structural fountain checks | Fast CI |
 | **A6.4** | Optional later: `IAdaptationChat` adapter if Engine chat API evolves | Clean |
 | **A6.5** | Do **not** fold Stage2/clip gen into this module without a new plan | Scope lock |
@@ -326,13 +326,13 @@ Import UI / `FilmLengthCard`: unchanged externally; API still Engine.
 
 ## 10. Definition of done (module)
 
-- [ ] `PageToMovie.Adaptation.dll` builds standalone with Core only (+ allowed packages)  
-- [ ] No `ProjectStore`, no project paths, no user DB inside Adaptation  
-- [ ] All Stage‑1 LLM conversion goes through `AdaptationService`  
-- [ ] Engine only orchestrates I/O + DI of chat  
-- [ ] Benchmark uses same façade + `adaptation_sha` in cache/history  
-- [ ] Unit + architecture tests green  
-- [ ] README boundary reviewed  
+- [x] `PageToMovie.Adaptation.dll` builds standalone with Core only (+ allowed packages)  
+- [x] No `ProjectStore`, no project paths, no user DB inside Adaptation  
+- [ ] All Stage‑1 LLM conversion goes through `AdaptationService` (Engine thin façade still used by some call sites)  
+- [x] Engine only orchestrates I/O + DI of chat  
+- [x] Benchmark uses same façade + `adaptation_sha` in cache/history  
+- [x] Unit + architecture tests green  
+- [x] README boundary reviewed  
 
 ---
 

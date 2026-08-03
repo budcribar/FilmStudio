@@ -40,6 +40,7 @@
 | `BuildSystemPromptAsync` | Wired → embedded `book_to_fountain.txt` |
 | `ConvertHeuristic` | Wired → offline stub |
 | `ConvertAsync` | Wired → `Conversion.BookToFountainConverter` |
+| `CrossCheckCast` | Wired → `Validation.CastPackageCrossCheck` |
 
 Pure helpers (no façade instance required):
 
@@ -64,6 +65,12 @@ See `Contracts/`:
 
 Engine maps `AdaptationVisionMeta` ↔ `ProjectVisionMeta.Document` at the orchestration boundary
 (`Engine.BookToFountainConverter` thin façade + `ScreenplayService.CreateDraftFromBookAsync`).
+
+## Validation (Phase 4)
+
+- `Validation/CastPackageCrossCheck.cs` — speaking Fountain cues ↔ cast_seeds membership + look quality
+- Optional book text flags invented proper names (ELI/CLARA style) as warnings
+- Group/role tokens (CHILDREN, TEACHER, …) allowed without book mention
 
 ## Conversion (Phase 2)
 

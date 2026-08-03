@@ -1,10 +1,24 @@
-using PageToMovie.Engine;
+using PageToMovie.Adaptation;
+using PageToMovie.Adaptation.Validation;
 using Xunit;
 
 namespace PageToMovie.Tests;
 
 public sealed class CastPackageCrossCheckTests
 {
+    private const string MaryBook = """
+        Mary had a little lamb,
+        Its fleece was white as snow.
+        And everywhere that Mary went,
+        The lamb was sure to go.
+        He followed her to school one day,
+        That was against the rule.
+        It made the children laugh and play
+        To see a lamb at school.
+        And so the teacher turned him out,
+        But still he lingered near.
+        """;
+
     private const string MaryFountain = """
         Title: MARY HAD A LITTLE LAMB
 
@@ -25,6 +39,24 @@ public sealed class CastPackageCrossCheckTests
         Why does he follow her?
 
         CLARA
+        What makes the lamb love Mary so?
+
+        TEACHER
+        Oh, Mary loves the lamb, you know.
+
+        FADE OUT.
+        """;
+
+    private const string MaryGroupFountain = """
+        Title: MARY HAD A LITTLE LAMB
+
+        FADE IN:
+
+        EXT. SCHOOLYARD - DAY
+
+        MARY stands with her LAMB. CHILDREN gather around.
+
+        CHILDREN
         What makes the lamb love Mary so?
 
         TEACHER
@@ -74,6 +106,33 @@ public sealed class CastPackageCrossCheckTests
               "visual_lock": "snowy fleece, red neck ribbon, small lamb",
               "species_kind": "animal",
               "display_name_policy": "ok_anytime"
+            }
+          }
+        }
+        """;
+
+    private const string GroupCast = """
+        {
+          "schema_version": "cast_seeds.v1",
+          "character_seed_tokens": {
+            "Character_Mary": {
+              "canonical_given_name": "Mary",
+              "description": "A young girl with brown braids, a blue pinafore, white apron, and straw bonnet.",
+              "visual_lock": "brown braids, blue pinafore, white apron, straw bonnet, school-age girl",
+              "wardrobe_always": ["blue pinafore"],
+              "species_kind": "human"
+            },
+            "Character_Children": {
+              "canonical_given_name": "Children",
+              "description": "A small group of school-age children in simple period play clothes.",
+              "visual_lock": "several young schoolchildren, eager faces, mixed hair colors",
+              "species_kind": "human"
+            },
+            "Character_Teacher": {
+              "canonical_given_name": "Teacher",
+              "description": "A middle-aged woman in a dark gray dress with pinned brown hair.",
+              "visual_lock": "middle-aged woman, pinned brown hair, dark gray dress",
+              "species_kind": "human"
             }
           }
         }
@@ -130,5 +189,35 @@ public sealed class CastPackageCrossCheckTests
         Assert.Contains(report.Failures, f => f.Contains("ELI", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(report.Failures, f => f.Contains("CLARA", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(report.Failures, f => f.Contains("TEACHER", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Invented_names_flagged_when_book_provided()
+    {
+        var report = CastPackageCrossCheck.Evaluate(MaryFountain, FullCast, MaryBook);
+        Assert.Contains("ELI", report.SpeakersMissingFromBook);
+        Assert.Contains("CLARA", report.SpeakersMissingFromBook);
+        Assert.DoesNotContain("MARY", report.SpeakersMissingFromBook);
+        Assert.DoesNotContain("TEACHER", report.SpeakersMissingFromBook);
+        Assert.Contains(report.Warnings, w => w.Contains("ELI", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Group_children_token_does_not_flag_invented_names()
+    {
+        var report = CastPackageCrossCheck.Evaluate(MaryGroupFountain, GroupCast, MaryBook);
+        Assert.True(report.Ok, string.Join("; ", report.Failures));
+        Assert.Empty(report.SpeakersMissingFromBook);
+        Assert.Contains("Character_Children", report.MatchedKeys);
+    }
+
+    [Fact]
+    public void Facade_CrossCheckCast_matches_static_Evaluate()
+    {
+        var viaFacade = new AdaptationService().CrossCheckCast(MaryGroupFountain, GroupCast, MaryBook);
+        var viaStatic = CastPackageCrossCheck.Evaluate(MaryGroupFountain, GroupCast, MaryBook);
+        Assert.Equal(viaStatic.Ok, viaFacade.Ok);
+        Assert.Equal(viaStatic.Score, viaFacade.Score);
+        Assert.Equal(viaStatic.MatchedKeys, viaFacade.MatchedKeys);
     }
 }

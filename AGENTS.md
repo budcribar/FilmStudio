@@ -63,6 +63,11 @@ When debugging or implementing against a sample project (e.g. Buster / Buster2 /
    - Coding agents must **never** run test suites, scripts, or benchmarks that hit live paid AI model endpoints (Grok, Gemini, Veo, Claude) under automated agent control.
    - All tests that make live network calls to AI model APIs must be placed in `PageToMovie.Tests.LiveApi` and decorated with `[LiveApiFact]` / `[LiveApiTheory]` so they are excluded from default `dotnet test` runs.
    - Live API tests run **only** under explicit human operator command with `PAGETOMOVIE_LIVE_API_TESTS=1`.
+10. **Stage‑1 adaptation logic lives only in `PageToMovie.Adaptation`.**
+   - Book → Fountain conversion, density / natural runtime math, Stage‑1 prompts, and pure cast package cross-checks belong in **`host/PageToMovie.Adaptation`**.
+   - **Do not** reimplement Stage‑1 heuristics or prompts in Engine/Web/Api. Engine may only **orchestrate** (load book, inject `IChatClient` / `IBookFileSession`, save fountain / vision_meta, jobs).
+   - Call sites should prefer **`AdaptationService`** (façade). Thin Engine wrappers that forward to Adaptation are temporary compatibility only.
+   - Module **must not** reference `ProjectStore`, project paths, SQLite, YouTube, Stage2, or media folders. Architecture tests enforce the boundary.
 
 Buster (and other fixtures) are **eval / demo projects**, not product requirements.
 

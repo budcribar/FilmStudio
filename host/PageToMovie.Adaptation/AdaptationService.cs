@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using PageToMovie.Adaptation.Contracts;
 using PageToMovie.Adaptation.Conversion;
+using PageToMovie.Adaptation.Validation;
 using PageToMovie.Core.Abstractions;
 
 namespace PageToMovie.Adaptation;
@@ -79,6 +80,16 @@ public sealed class AdaptationService
     /// </summary>
     public string ConvertHeuristic(string title, string bookText, string? author = null) =>
         BookToFountainConverter.ConvertHeuristic(title, bookText, author);
+
+    /// <summary>
+    /// Deterministic cast package gate: speaking Fountain cues must resolve to cast_seeds
+    /// with usable look fields. Optional <paramref name="bookText"/> flags invented names.
+    /// </summary>
+    public CastPackageCrossCheck.Report CrossCheckCast(
+        string? fountainText,
+        string? castSeedsJson,
+        string? bookText = null) =>
+        CastPackageCrossCheck.Evaluate(fountainText, castSeedsJson, bookText);
 
     /// <summary>
     /// Full Stage‑1 convert via <see cref="BookToFountainConverter"/>.

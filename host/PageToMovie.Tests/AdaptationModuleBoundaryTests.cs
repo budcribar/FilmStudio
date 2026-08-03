@@ -1,13 +1,15 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using PageToMovie.Adaptation;
+using PageToMovie.Adaptation.Validation;
 using Xunit;
 
 namespace PageToMovie.Tests;
 
 /// <summary>
-/// Architecture guards for <c>PageToMovie.Adaptation</c> (plan A6.1): pure Stage‑1 module must not
-/// reference Engine (or other product I/O hosts).
+/// Architecture guards for <c>PageToMovie.Adaptation</c> (plan A6.1–A6.2): pure Stage‑1 module must not
+/// reference Engine (or other product I/O hosts) or contain ProjectStore / product path symbols.
 /// </summary>
 public sealed class AdaptationModuleBoundaryTests
 {
@@ -53,6 +55,49 @@ public sealed class AdaptationModuleBoundaryTests
     }
 
     [Fact]
+    public void Adaptation_sources_do_not_mention_ProjectStore_or_product_paths()
+    {
+        var root = FindAdaptationSourceRoot();
+        Assert.True(Directory.Exists(root), $"Missing Adaptation sources at {root}");
+
+        // Forbidden product I/O symbols (plan A6.2). Allow the words only in comments that say "no …".
+        var forbidden = new Regex(
+            @"\b(ProjectStore|IProjectStore|SQLite|YouTubeAuth|FilmJobService)\b",
+            RegexOptions.Compiled);
+
+        var offenders = new List<string>();
+        foreach (var file in Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories))
+        {
+            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
+                file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                continue;
+
+            var lines = File.ReadAllLines(file);
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                var trimmed = line.TrimStart();
+                // Doc comments that forbid the symbol are OK (e.g. "No ProjectStore").
+                if (trimmed.StartsWith("//") || trimmed.StartsWith("///") || trimmed.StartsWith('*'))
+                    continue;
+                if (!forbidden.IsMatch(line))
+                    continue;
+                offenders.Add($"{Path.GetRelativePath(root, file)}:{i + 1}: {line.Trim()}");
+            }
+        }
+
+        Assert.True(offenders.Count == 0,
+            "Adaptation must not reference product I/O types:\n" + string.Join("\n", offenders.Take(20)));
+    }
+
+    [Fact]
+    public void CastPackageCrossCheck_lives_in_Adaptation_assembly()
+    {
+        var asm = typeof(CastPackageCrossCheck).Assembly;
+        Assert.Equal("PageToMovie.Adaptation", asm.GetName().Name);
+    }
+
+    [Fact]
     public void AdaptationVersion_Current_is_stable_short_hex()
     {
         var id = AdaptationVersion.Current;
@@ -77,5 +122,12 @@ public sealed class AdaptationModuleBoundaryTests
         }
 
         throw new DirectoryNotFoundException("PageToMovie.Adaptation.csproj not found from test base directory.");
+    }
+
+    private static string FindAdaptationSourceRoot()
+    {
+        var csproj = FindAdaptationCsproj();
+        return Path.GetDirectoryName(csproj)
+               ?? throw new DirectoryNotFoundException(csproj);
     }
 }
