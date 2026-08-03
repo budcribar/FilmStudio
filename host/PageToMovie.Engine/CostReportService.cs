@@ -118,7 +118,8 @@ public sealed class CostReportService
         }
 
         var ledger = await GetCostLedgerAsync(projectId, ct).ConfigureAwait(false);
-        var actual = SummarizeLedger(ledger);
+        var multEarly = GetChargeMultiplier();
+        var actual = SummarizeLedger(ledger, multEarly);
 
         var refinement = await BuildHistoryRefinementAsync(
             projectId, priorVideoMultiplier, qaRetryOnFail, qaMaxRetries, actual, ct)
@@ -286,7 +287,7 @@ public sealed class CostReportService
             _ => "Import a book to unlock a film estimate.",
         };
 
-        var mult = GetChargeMultiplier();
+        var mult = multEarly;
         // Snapshot list-rate category totals before applying charge multiplier for customer display.
         var estimateList = estimateByCategory.ToDictionary(
             kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
@@ -303,7 +304,7 @@ public sealed class CostReportService
             row.HeroUpgradeUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.HeroUpgradeUsd, mult));
             row.AllDraftUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.AllDraftUsd, mult));
             row.AllHeroUsd = ChargePricing.RoundMoney(ChargePricing.ToCharge(row.AllHeroUsd, mult));
-            // ActualUsd on scene rows already charged when events store charge amounts.
+            // ActualUsd on scene rows already charged in SummarizeLedger (list × multiplier).
         }
         foreach (var sc in scenarios)
         {
@@ -458,6 +459,9 @@ public sealed class CostReportService
                     clip.Continuation, "extend_previous", StringComparison.OrdinalIgnoreCase);
                 var rates = RatesFromModels(model, imageModel, cfg);
                 var priced = PriceVideo(duration, res, rates, assumeRef, isExtend, attempts: 1);
+                var mult = GetChargeMultiplier();
+                var listUsd = priced.Usd;
+                var chargeUsd = ChargePricing.ToCharge(listUsd, mult);
 
                 var evt = new Dictionary<string, object?>
                 {
@@ -481,7 +485,9 @@ public sealed class CostReportService
                     ["video_output_usd"] = priced.VideoOut,
                     ["ref_image_usd"] = priced.RefImg,
                     ["extend_input_usd"] = priced.ExtendIn,
-                    ["usd"] = priced.Usd,
+                    ["list_usd"] = listUsd,
+                    ["charge_multiplier"] = mult,
+                    ["usd"] = chargeUsd,
                     ["currency"] = "USD",
                     ["extra"] = new Dictionary<string, object?> { ["backfill"] = true },
                 };
@@ -491,7 +497,7 @@ public sealed class CostReportService
             }
         }
 
-        var summary = SummarizeLedger(await GetCostLedgerAsync(projectId, ct).ConfigureAwait(false));
+        var summary = SummarizeLedger(await GetCostLedgerAsync(projectId, ct).ConfigureAwait(false), GetChargeMultiplier());
         return new CostBackfillResult
         {
             Added = added,
@@ -587,10 +593,16 @@ public sealed class CostReportService
         string projectId,
         CancellationToken ct = default)
     {
+        var mult = GetChargeMultiplier();
         var raw = await GetCostLedgerRawAsync(projectId, ct).ConfigureAwait(false);
         var list = new List<CostEvent>();
         foreach (var e in raw)
-            list.Add(ParseEvent(e));
+        {
+            var evt = ParseEvent(e);
+            // Surface charged USD for UI pie/spend (legacy list-only rows get current multiplier).
+            evt.Usd = ChargePricing.ResolveChargeUsd(evt.Usd, evt.ListUsd, evt.ChargeMultiplier, mult);
+            list.Add(evt);
+        }
         return list;
     }
 
@@ -790,7 +802,7 @@ public sealed class CostReportService
         return (usd, duration, outRate, Math.Round(videoOut, 4), Math.Round(refImg, 4), Math.Round(extend, 4));
     }
 
-    private static CostLedgerSummary SummarizeLedger(IReadOnlyList<CostEvent> events)
+    private static CostLedgerSummary SummarizeLedger(IReadOnlyList<CostEvent> events, double currentMultiplier = 1.0)
     {
         double total = 0, listTotal = 0, videoSec = 0;
         var byKind = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -798,19 +810,26 @@ public sealed class CostReportService
         var byModel = new Dictionary<string, double>(StringComparer.Ordinal);
         var videoJobs = 0;
         var imageJobs = 0;
+        var mult = ChargePricing.ClampMultiplier(currentMultiplier);
         foreach (var e in events)
         {
-            total += e.Usd;
-            listTotal += e.ListUsd ?? e.Usd;
+            var charge = ChargePricing.ResolveChargeUsd(e.Usd, e.ListUsd, e.ChargeMultiplier, mult);
+            var list = e.ListUsd ?? (e.ChargeMultiplier is > 0
+                ? (e.ChargeMultiplier.Value > 0 ? e.Usd / e.ChargeMultiplier.Value : e.Usd)
+                : e.Usd);
+            if (!double.IsFinite(list) || list < 0) list = e.Usd;
+
+            total += charge;
+            listTotal += list;
             var kind = string.IsNullOrEmpty(e.Kind) ? "other" : e.Kind;
-            byKind[kind] = byKind.GetValueOrDefault(kind) + e.Usd;
+            byKind[kind] = byKind.GetValueOrDefault(kind) + charge;
             if (e.Scene is int sn)
             {
                 var key = sn.ToString(CultureInfo.InvariantCulture);
-                byScene[key] = byScene.GetValueOrDefault(key) + e.Usd;
+                byScene[key] = byScene.GetValueOrDefault(key) + charge;
             }
             if (!string.IsNullOrEmpty(e.Model))
-                byModel[e.Model] = byModel.GetValueOrDefault(e.Model) + e.Usd;
+                byModel[e.Model] = byModel.GetValueOrDefault(e.Model) + charge;
             if (string.Equals(kind, "video", StringComparison.OrdinalIgnoreCase))
             {
                 videoJobs++;

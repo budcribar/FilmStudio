@@ -1516,7 +1516,7 @@ public class UserDatabaseService
                     COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
                     COUNT(*),
                     COALESCE(SUM(estimated_usd), 0),
-                    COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
+                    COALESCE(SUM(COALESCE(charge_usd, estimated_usd * @chargeMult)), 0)
                 FROM user_api_calls
                 WHERE ok = 1
                   AND estimated_usd IS NOT NULL
@@ -1527,6 +1527,7 @@ public class UserDatabaseService
                 """;
             cmd.Parameters.AddWithValue("@userId", string.IsNullOrWhiteSpace(userId) ? "" : userId.Trim());
             cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            cmd.Parameters.AddWithValue("@chargeMult", PageToMovie.Core.Billing.ChargePricing.ClampMultiplier(_billing.ChargeMultiplier));
             using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
             while (await r.ReadAsync(ct).ConfigureAwait(false))
             {
@@ -1599,7 +1600,7 @@ public class UserDatabaseService
                         COALESCE(NULLIF(TRIM(project_id), ''), '(no project)') AS proj,
                         COUNT(*),
                         COALESCE(SUM(estimated_usd), 0),
-                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd * @chargeMult)), 0)
                     FROM user_api_calls
                     WHERE ok = 1
                       AND user_id = @userId
@@ -1611,6 +1612,7 @@ public class UserDatabaseService
                     """;
                 cmd.Parameters.AddWithValue("@userId", summary.UserId);
                 cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            cmd.Parameters.AddWithValue("@chargeMult", PageToMovie.Core.Billing.ChargePricing.ClampMultiplier(_billing.ChargeMultiplier));
                 using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
                 while (await r.ReadAsync(ct).ConfigureAwait(false))
                 {
@@ -1648,7 +1650,7 @@ public class UserDatabaseService
                         COALESCE(NULLIF(TRIM(category), ''), NULLIF(TRIM(kind), ''), 'other') AS cat,
                         COUNT(*),
                         COALESCE(SUM(estimated_usd), 0),
-                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd)), 0)
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd * @chargeMult)), 0)
                     FROM user_api_calls
                     WHERE ok = 1
                       AND user_id = @userId
@@ -1659,6 +1661,7 @@ public class UserDatabaseService
                     """;
                 cmd.Parameters.AddWithValue("@userId", summary.UserId);
                 cmd.Parameters.AddWithValue("@projectId", string.IsNullOrWhiteSpace(projectId) ? "" : projectId.Trim());
+            cmd.Parameters.AddWithValue("@chargeMult", PageToMovie.Core.Billing.ChargePricing.ClampMultiplier(_billing.ChargeMultiplier));
                 using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
                 while (await r.ReadAsync(ct).ConfigureAwait(false))
                 {

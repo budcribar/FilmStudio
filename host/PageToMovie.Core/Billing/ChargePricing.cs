@@ -23,4 +23,32 @@ public static class ChargePricing
 
     /// <summary>Money display round (2 dp).</summary>
     public static double RoundMoney(double usd) => Math.Round(usd, 2);
+
+    /// <summary>
+    /// Resolve customer charge for a ledger/API row.
+    /// New rows store list + write-time multiplier + charged <paramref name="storedUsd"/>.
+    /// Legacy rows only store list in <paramref name="storedUsd"/> / <paramref name="listUsd"/> —
+    /// reprice with <paramref name="currentMultiplier"/> so actuals match estimate markup.
+    /// </summary>
+    public static double ResolveChargeUsd(
+        double storedUsd,
+        double? listUsd,
+        double? eventMultiplier,
+        double currentMultiplier)
+    {
+        var current = ClampMultiplier(currentMultiplier);
+        if (eventMultiplier is double em && em > 0 && double.IsFinite(em))
+        {
+            // Write-time charge: prefer list × event mult when list is known; else trust stored usd.
+            if (listUsd is double lu && lu >= 0 && double.IsFinite(lu))
+                return ToCharge(lu, em);
+            return Math.Round(Math.Max(0, storedUsd), 6);
+        }
+
+        // Legacy: amounts were list rates only.
+        var list = listUsd is double l && l >= 0 && double.IsFinite(l)
+            ? l
+            : Math.Max(0, storedUsd);
+        return ToCharge(list, current);
+    }
 }
