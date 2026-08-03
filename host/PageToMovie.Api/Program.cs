@@ -355,6 +355,16 @@ else
     builder.Services.AddSingleton<IVisionClient, MultiProviderVisionClient>();
 }
 
+// xAI Files + Responses — Stage‑1 multi-turn (file_id + previous_response_id).
+// Registered in both real and fakes mode: TryCreateAsync returns null when unconfigured,
+// so DI always resolves IBookFileSessionFactory for FilmJobService / Stage1Service.
+ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<XaiResponsesClient>(c =>
+{
+    c.BaseAddress = new Uri("https://api.x.ai/v1/");
+    c.Timeout = TimeSpan.FromMinutes(20);
+}));
+builder.Services.AddSingleton<PageToMovie.Core.Abstractions.IBookFileSessionFactory, BookFileSessionFactory>();
+
 // Provider-agnostic telemetry/scoring services — registered regardless of PageToMovie:UseFakes
 // so admin route handlers that take them as parameters resolve as DI services rather than
 // being misinferred as request-body parameters, and so they're available at all in fakes mode.
@@ -867,6 +877,54 @@ app.MapGet("/api/admin/loadsim", (IUserContext user, LoadSimLiveStore store) =>
             statusCode: StatusCodes.Status403Forbidden);
     var state = store.GetState();
     return Results.Ok(new { ok = true, loadSim = state });
+});
+
+/// <summary>
+/// Admin: book text registry + adaptation_conversion artifacts + xAI provider file_id handles.
+/// </summary>
+app.MapGet("/api/admin/book-cache", async (
+    IUserContext user,
+    BookTextRegistryService books,
+    int? take,
+    CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+    var snap = await books.GetAdminCacheSnapshotAsync(take ?? 100, ct).ConfigureAwait(false);
+    return Results.Ok(new
+    {
+        ok = true,
+        bookCount = snap.BookCount,
+        artifactCount = snap.ArtifactCount,
+        providerFileCount = snap.ProviderFileCount,
+        totalBookBytes = snap.TotalBookBytes,
+        books = snap.Books.Select(b => new
+        {
+            bookId = b.BookId,
+            sha256 = b.Sha256,
+            byteCount = b.ByteCount,
+            createdAt = b.CreatedAt,
+            artifactCount = b.ArtifactCount,
+            accessLinkCount = b.AccessLinkCount,
+            provider = b.Provider,
+            providerFileId = b.ProviderFileId,
+            fileExpiresAtUnix = b.FileExpiresAtUnix,
+            lastResponseId = b.LastResponseId,
+            providerFileUpdatedAt = b.ProviderFileUpdatedAt,
+        }),
+        recentArtifacts = snap.RecentArtifacts.Select(a => new
+        {
+            artifactId = a.ArtifactId,
+            bookId = a.BookId,
+            artifactKind = a.ArtifactKind,
+            modelId = a.ModelId,
+            promptVersion = a.PromptVersion,
+            temperature = a.Temperature,
+            createdAt = a.CreatedAt,
+            contentBytes = a.ContentBytes,
+        }),
+    });
 });
 
 // ── Admin config + actions (Phase D) ────────────────────────────────────────
@@ -5148,6 +5206,7 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     UserDatabaseService userDb,
     IUserApiKeyProvider keys,
     IOptions<PageToMovieOptions> opts,
+    PageToMovie.Core.Abstractions.IBookFileSessionFactory? bookFileSessions,
     CancellationToken ct) =>
 {
     if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes, keys) is { } denied)
@@ -5155,7 +5214,8 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     try
     {
         var result = await ScreenplayService.CreateDraftFromBookAsync(
-            store, id, chat, ct: ct, bookRegistry: books, cacheUserId: user.UserId);
+            store, id, chat, ct: ct, bookRegistry: books, cacheUserId: user.UserId,
+            bookFileSessionFactory: bookFileSessions);
         if (!result.Ok)
             return Results.BadRequest(new { ok = false, error = result.Error });
 

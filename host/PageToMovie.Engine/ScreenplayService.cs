@@ -491,7 +491,8 @@ public static string NormalizeText(string text)
         string? jobId = null,
         BookTextRegistryService? bookRegistry = null,
         string? cacheUserId = null,
-        int? totalRuntimeMinutes = null)
+        int? totalRuntimeMinutes = null,
+        PageToMovie.Core.Abstractions.IBookFileSessionFactory? bookFileSessionFactory = null)
     {
         var projectDir = store.GetProjectDir(projectId);
         var bookPath = Path.Combine(projectDir, "source", "book_full.txt");
@@ -590,6 +591,24 @@ public static string NormalizeText(string text)
             if (chat is null || !chat.IsConfigured)
                 return new SaveResult { Ok = false, Error = "Connect service to build a screenplay draft from the book." };
 
+            PageToMovie.Core.Abstractions.IBookFileSession? bookSession = null;
+            if (bookFileSessionFactory is not null && bookIdentity is not null)
+            {
+                try
+                {
+                    bookSession = await bookFileSessionFactory.TryCreateAsync(
+                        bookIdentity.BookId, book, model, ct).ConfigureAwait(false);
+                    if (bookSession is { IsAvailable: true })
+                        onProgress?.Invoke(
+                            $"Book file session ready for {bookIdentity.BookId} (xAI file_id reuse / Responses multi-turn).");
+                }
+                catch (Exception ex)
+                {
+                    onProgress?.Invoke("Book file session unavailable — falling back to chat/completions: " + ex.Message);
+                    bookSession = null;
+                }
+            }
+
             var result = await adaptation.ConvertAsync(
                 new AdaptationRequest
                 {
@@ -603,7 +622,8 @@ public static string NormalizeText(string text)
                 chat,
                 progressAdapter,
                 ct,
-                onStructuralGateFailure: onGate).ConfigureAwait(false);
+                onStructuralGateFailure: onGate,
+                bookSession: bookSession).ConfigureAwait(false);
 
             var fountain = result.Fountain;
             var visionFromScript = BookToFountainConverter.MapVision(result.VisionMeta);

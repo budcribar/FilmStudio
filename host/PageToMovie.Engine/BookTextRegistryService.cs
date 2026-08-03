@@ -262,6 +262,175 @@ public sealed class BookTextRegistryService
             : null;
     }
 
+
+    // ── Provider file handles (xAI file_id, etc.) ─────────────────────────
+
+    public async Task<ProviderBookFile?> GetProviderFileAsync(
+        string bookId, string provider = "xai", CancellationToken ct = default)
+    {
+        await using var conn = new SqliteConnection(_connectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT book_id, provider, file_id, expires_at_unix, last_response_id, created_at, updated_at
+            FROM book_provider_files
+            WHERE book_id=@book AND provider=@provider
+            LIMIT 1;
+            """;
+        cmd.Parameters.AddWithValue("@book", bookId);
+        cmd.Parameters.AddWithValue("@provider", provider.Trim().ToLowerInvariant());
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        if (!await reader.ReadAsync(ct).ConfigureAwait(false)) return null;
+        return new ProviderBookFile(
+            reader.GetString(0),
+            reader.GetString(1),
+            reader.GetString(2),
+            reader.IsDBNull(3) ? null : reader.GetInt64(3),
+            reader.IsDBNull(4) ? null : reader.GetString(4),
+            reader.GetString(5),
+            reader.GetString(6));
+    }
+
+    public async Task UpsertProviderFileAsync(
+        string bookId,
+        string provider,
+        string fileId,
+        long? expiresAtUnix,
+        string? lastResponseId = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(bookId) || string.IsNullOrWhiteSpace(fileId))
+            throw new ArgumentException("bookId and fileId required.");
+        provider = provider.Trim().ToLowerInvariant();
+        var now = DateTime.UtcNow.ToString("o");
+        await using var conn = new SqliteConnection(_connectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO book_provider_files
+                (book_id, provider, file_id, expires_at_unix, last_response_id, created_at, updated_at)
+            VALUES (@book, @provider, @file, @exp, @resp, @now, @now)
+            ON CONFLICT(book_id, provider) DO UPDATE SET
+                file_id=excluded.file_id,
+                expires_at_unix=excluded.expires_at_unix,
+                last_response_id=COALESCE(excluded.last_response_id, book_provider_files.last_response_id),
+                updated_at=excluded.updated_at;
+            """;
+        cmd.Parameters.AddWithValue("@book", bookId);
+        cmd.Parameters.AddWithValue("@provider", provider);
+        cmd.Parameters.AddWithValue("@file", fileId);
+        cmd.Parameters.AddWithValue("@exp", (object?)expiresAtUnix ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@resp", (object?)lastResponseId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@now", now);
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task UpdateLastResponseIdAsync(
+        string bookId, string provider, string? responseId, CancellationToken ct = default)
+    {
+        await using var conn = new SqliteConnection(_connectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            UPDATE book_provider_files
+            SET last_response_id=@resp, updated_at=@now
+            WHERE book_id=@book AND provider=@provider;
+            """;
+        cmd.Parameters.AddWithValue("@book", bookId);
+        cmd.Parameters.AddWithValue("@provider", provider.Trim().ToLowerInvariant());
+        cmd.Parameters.AddWithValue("@resp", (object?)responseId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@now", DateTime.UtcNow.ToString("o"));
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Admin dashboard: books, derived artifacts, provider files.</summary>
+    public async Task<BookCacheAdminSnapshot> GetAdminCacheSnapshotAsync(
+        int takeBooks = 100, CancellationToken ct = default)
+    {
+        takeBooks = Math.Clamp(takeBooks, 1, 500);
+        await using var conn = new SqliteConnection(_connectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+
+        long bookCount = 0, artifactCount = 0, providerFileCount = 0, totalBookBytes = 0;
+        await using (var c = conn.CreateCommand())
+        {
+            c.CommandText = "SELECT COUNT(*), COALESCE(SUM(byte_count),0) FROM book_texts;";
+            await using var r = await c.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            if (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                bookCount = r.GetInt64(0);
+                totalBookBytes = r.GetInt64(1);
+            }
+        }
+        await using (var c = conn.CreateCommand())
+        {
+            c.CommandText = "SELECT COUNT(*) FROM book_derived_artifacts;";
+            artifactCount = Convert.ToInt64(await c.ExecuteScalarAsync(ct).ConfigureAwait(false) ?? 0);
+        }
+        await using (var c = conn.CreateCommand())
+        {
+            c.CommandText = "SELECT COUNT(*) FROM book_provider_files;";
+            try
+            {
+                providerFileCount = Convert.ToInt64(await c.ExecuteScalarAsync(ct).ConfigureAwait(false) ?? 0);
+            }
+            catch { providerFileCount = 0; }
+        }
+
+        var books = new List<BookCacheAdminRow>();
+        await using (var c = conn.CreateCommand())
+        {
+            c.CommandText = """
+                SELECT b.book_id, b.sha256, b.byte_count, b.created_at,
+                       (SELECT COUNT(*) FROM book_derived_artifacts d WHERE d.book_id=b.book_id) AS artifacts,
+                       (SELECT COUNT(*) FROM book_text_access a WHERE a.book_id=b.book_id) AS links,
+                       pf.file_id, pf.provider, pf.expires_at_unix, pf.last_response_id, pf.updated_at
+                FROM book_texts b
+                LEFT JOIN book_provider_files pf ON pf.book_id=b.book_id AND pf.provider='xai'
+                ORDER BY b.created_at DESC
+                LIMIT @take;
+                """;
+            c.Parameters.AddWithValue("@take", takeBooks);
+            await using var r = await c.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                books.Add(new BookCacheAdminRow(
+                    r.GetString(0),
+                    r.GetString(1),
+                    r.GetInt32(2),
+                    r.GetString(3),
+                    r.GetInt32(4),
+                    r.GetInt32(5),
+                    r.IsDBNull(6) ? null : r.GetString(6),
+                    r.IsDBNull(7) ? null : r.GetString(7),
+                    r.IsDBNull(8) ? null : r.GetInt64(8),
+                    r.IsDBNull(9) ? null : r.GetString(9),
+                    r.IsDBNull(10) ? null : r.GetString(10)));
+            }
+        }
+
+        var artifacts = new List<ArtifactCacheAdminRow>();
+        await using (var c = conn.CreateCommand())
+        {
+            c.CommandText = """
+                SELECT artifact_id, book_id, artifact_kind, model_id, prompt_version,
+                       temperature, created_at, LENGTH(content)
+                FROM book_derived_artifacts
+                ORDER BY created_at DESC
+                LIMIT 80;
+                """;
+            await using var r = await c.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                artifacts.Add(new ArtifactCacheAdminRow(
+                    r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3),
+                    r.GetString(4), r.GetDouble(5), r.GetString(6), r.GetInt32(7)));
+            }
+        }
+
+        return new BookCacheAdminSnapshot(bookCount, artifactCount, providerFileCount, totalBookBytes, books, artifacts);
+    }
+
     private void EnsureSchema()
     {
         using var conn = new SqliteConnection(_connectionString);
@@ -302,6 +471,18 @@ public sealed class BookTextRegistryService
             );
             CREATE INDEX IF NOT EXISTS idx_book_artifacts_book_kind
                 ON book_derived_artifacts(book_id, artifact_kind);
+            CREATE TABLE IF NOT EXISTS book_provider_files (
+                book_id TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                file_id TEXT NOT NULL,
+                expires_at_unix INTEGER,
+                last_response_id TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (book_id, provider),
+                FOREIGN KEY (book_id) REFERENCES book_texts(book_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_book_provider_files_file ON book_provider_files(file_id);
             """;
         cmd.ExecuteNonQuery();
         try
@@ -343,3 +524,43 @@ public sealed record DerivedBookArtifact(
     string ArtifactKind,
     string ContentSha256,
     string Content);
+
+public sealed record ProviderBookFile(
+    string BookId,
+    string Provider,
+    string FileId,
+    long? ExpiresAtUnix,
+    string? LastResponseId,
+    string CreatedAt,
+    string UpdatedAt);
+
+public sealed record BookCacheAdminRow(
+    string BookId,
+    string Sha256,
+    int ByteCount,
+    string CreatedAt,
+    int ArtifactCount,
+    int AccessLinkCount,
+    string? ProviderFileId,
+    string? Provider,
+    long? FileExpiresAtUnix,
+    string? LastResponseId,
+    string? ProviderFileUpdatedAt);
+
+public sealed record ArtifactCacheAdminRow(
+    string ArtifactId,
+    string BookId,
+    string ArtifactKind,
+    string ModelId,
+    string PromptVersion,
+    double Temperature,
+    string CreatedAt,
+    int ContentBytes);
+
+public sealed record BookCacheAdminSnapshot(
+    long BookCount,
+    long ArtifactCount,
+    long ProviderFileCount,
+    long TotalBookBytes,
+    IReadOnlyList<BookCacheAdminRow> Books,
+    IReadOnlyList<ArtifactCacheAdminRow> RecentArtifacts);

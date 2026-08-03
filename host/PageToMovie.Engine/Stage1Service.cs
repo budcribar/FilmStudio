@@ -23,6 +23,7 @@ public sealed class Stage1Service
     private readonly ILogger<Stage1Service> _log;
     private readonly BookTextRegistryService? _bookRegistry;
     private readonly IUserContext? _user;
+    private readonly PageToMovie.Core.Abstractions.IBookFileSessionFactory? _bookFileSessionFactory;
 
     public Stage1Service(
         ProjectStore projects,
@@ -32,7 +33,8 @@ public sealed class Stage1Service
         IOptions<PageToMovieOptions> opts,
         ILogger<Stage1Service> log,
         BookTextRegistryService? bookRegistry = null,
-        IUserContext? user = null)
+        IUserContext? user = null,
+        PageToMovie.Core.Abstractions.IBookFileSessionFactory? bookFileSessionFactory = null)
     {
         _projects = projects;
         _chat = chat;
@@ -42,6 +44,7 @@ public sealed class Stage1Service
         _log = log;
         _bookRegistry = bookRegistry;
         _user = user;
+        _bookFileSessionFactory = bookFileSessionFactory;
     }
 
     /// <summary>
@@ -117,7 +120,8 @@ public sealed class Stage1Service
             onProgress: onProgress,
             ct: ct,
             bookRegistry: _bookRegistry,
-            cacheUserId: _user?.UserId).ConfigureAwait(false);
+            cacheUserId: _user?.UserId,
+            bookFileSessionFactory: _bookFileSessionFactory).ConfigureAwait(false);
         if (!draft.Ok)
             throw new InvalidOperationException(draft.Error ?? "Could not create Fountain draft from book.");
 

@@ -144,7 +144,8 @@ public static class BookToFountainConverter
         Action<string>? onHeuristicFallback = null,
         string? reasoningEffort = null,
         Func<StructuralGateFailure, CancellationToken, Task>? onStructuralGateFailure = null,
-        double temperature = 0.2)
+        double temperature = 0.2,
+        IBookFileSession? bookSession = null)
     {
         if (string.IsNullOrWhiteSpace(bookText))
             throw new InvalidOperationException("Book text is empty");
@@ -162,12 +163,29 @@ public static class BookToFountainConverter
         var budget = budgetOverride ?? ResolvePromptBudget(model);
         totalRuntimeMinutes = Math.Clamp(totalRuntimeMinutes, 1, 180);
 
+        // Prefer xAI Files + Responses when the Engine opened a session for this book.
+        var prevSession = Stage1BookSessionScope.Current;
+        Stage1BookSessionScope.Current = bookSession is { IsAvailable: true } ? bookSession : null;
+        try
+        {
+        if (Stage1BookSessionScope.Current is { } sess)
+        {
+            onProgress?.Invoke("Stage‑1 using xAI file_id session (book uploaded once; follow-ups chain).");
+            await sess.EnsureUploadedAsync(ct).ConfigureAwait(false);
+        }
+
         string text;
         try
         {
-            if (FitsSingleShot(bookText, budget))
+            // With a file session the full book is attached by id — single-shot is preferred
+            // even when the inlined-token budget would force multi-chunk.
+            var preferSingle = Stage1BookSessionScope.Current is not null || FitsSingleShot(bookText, budget);
+            if (preferSingle)
             {
-                onProgress?.Invoke("Adapting book → Fountain (single pass)…");
+                onProgress?.Invoke(
+                    Stage1BookSessionScope.Current is not null
+                        ? "Adapting book → Fountain (single pass, book via file_id)…"
+                        : "Adapting book → Fountain (single pass)…");
                 var single = await TrySingleShotWithGateAsync(
                     system, title, author, pageCount, totalRuntimeMinutes, bookText,
                     chat, model, budget, onProgress, ct, reasoningEffort, temperature).ConfigureAwait(false);
@@ -176,7 +194,7 @@ public static class BookToFountainConverter
                 {
                     text = single;
                 }
-                else if (ShouldChunkFallback(bookText, budget))
+                else if (ShouldChunkFallback(bookText, budget) || Stage1BookSessionScope.Current is not null)
                 {
                     onProgress?.Invoke("Falling back to multi-chunk adapt…");
                     text = await ConvertMultiChunkAsync(
@@ -339,6 +357,11 @@ public static class BookToFountainConverter
             VisionMetaStatus = status,
             VisionMetaError = error,
         };
+        }
+        finally
+        {
+            Stage1BookSessionScope.Current = prevSession;
+        }
     }
 
     private static async Task<string> RepairVisionMetaAsync(
@@ -480,7 +503,8 @@ public static class BookToFountainConverter
                 system, user, model, temperature, mode, promptVersion,
                 correctionInstruction, reasoningEffort, deterministicFallback, operationName),
             validate,
-            ct).ConfigureAwait(false);
+            ct,
+            Stage1BookSessionScope.Current).ConfigureAwait(false);
         if (result.Source == Stage1ResultSource.CorrectiveResponse)
             onProgress?.Invoke($"{retryLabel} corrected after validation.");
         else if (!result.Success)
@@ -1573,6 +1597,7 @@ public static class BookToFountainConverter
         int chunkTotal,
         string? continuity = null)
     {
+        var attachBookAsFile = Stage1BookSessionScope.Current is { IsAvailable: true };
         var lines = new List<string>
         {
             $"TOTAL_RUNTIME_MINUTES = {totalMinutes}",
@@ -1617,8 +1642,30 @@ public static class BookToFountainConverter
         }
 
         lines.Add("");
-        lines.Add("BOOK_TEXT:");
-        lines.Add(bookForPrompt);
+        if (attachBookAsFile)
+        {
+            lines.Add("BOOK_TEXT: (attached as input_file by file_id — do not expect the full book inline below.)");
+            lines.Add("Use the complete attached book as the sole source of story, dialogue, and cast.");
+            if (chunkTotal > 1 && !string.IsNullOrWhiteSpace(bookForPrompt))
+            {
+                // Short anchors so multi-chunk knows which portion to adapt without re-billing full text.
+                var start = bookForPrompt.Length <= 360 ? bookForPrompt : bookForPrompt[..360];
+                var end = bookForPrompt.Length <= 360 ? "" : bookForPrompt[^Math.Min(360, bookForPrompt.Length)..];
+                lines.Add("");
+                lines.Add("PORTION ANCHOR (start of this chunk's source text):");
+                lines.Add(start.Trim());
+                if (!string.IsNullOrWhiteSpace(end))
+                {
+                    lines.Add("PORTION ANCHOR (end of this chunk's source text):");
+                    lines.Add(end.Trim());
+                }
+            }
+        }
+        else
+        {
+            lines.Add("BOOK_TEXT:");
+            lines.Add(bookForPrompt);
+        }
         return string.Join("\n", lines);
     }
 

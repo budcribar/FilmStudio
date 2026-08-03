@@ -376,6 +376,12 @@ public sealed class EngineApiClient
         return await SendJsonAsync<AdminStateDto>(req, ct);
     }
 
+    public async Task<BookCacheAdminDto?> GetAdminBookCacheAsync(int take = 100, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/admin/book-cache?take={take}");
+        return await SendJsonAsync<BookCacheAdminDto>(req, ct);
+    }
+
     public async Task<RuntimeConfigDto?> GetAdminConfigAsync(CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/config");
@@ -4177,3 +4183,41 @@ public sealed class ModelsCatalogSaveResponse
     public int ModelsCount { get; set; }
 }
 
+
+public sealed class BookCacheAdminDto
+{
+    public bool Ok { get; set; }
+    public long BookCount { get; set; }
+    public long ArtifactCount { get; set; }
+    public long ProviderFileCount { get; set; }
+    public long TotalBookBytes { get; set; }
+    public List<BookCacheAdminBookDto>? Books { get; set; }
+    public List<BookCacheAdminArtifactDto>? RecentArtifacts { get; set; }
+}
+
+public sealed class BookCacheAdminBookDto
+{
+    public string BookId { get; set; } = "";
+    public string Sha256 { get; set; } = "";
+    public int ByteCount { get; set; }
+    public string CreatedAt { get; set; } = "";
+    public int ArtifactCount { get; set; }
+    public int AccessLinkCount { get; set; }
+    public string? Provider { get; set; }
+    public string? ProviderFileId { get; set; }
+    public long? FileExpiresAtUnix { get; set; }
+    public string? LastResponseId { get; set; }
+    public string? ProviderFileUpdatedAt { get; set; }
+}
+
+public sealed class BookCacheAdminArtifactDto
+{
+    public string ArtifactId { get; set; } = "";
+    public string BookId { get; set; } = "";
+    public string ArtifactKind { get; set; } = "";
+    public string ModelId { get; set; } = "";
+    public string PromptVersion { get; set; } = "";
+    public double Temperature { get; set; }
+    public string CreatedAt { get; set; } = "";
+    public int ContentBytes { get; set; }
+}

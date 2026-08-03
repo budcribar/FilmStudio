@@ -82,13 +82,16 @@ public sealed class AdaptationService
 
     /// <summary>
     /// Full Stage‑1 convert via <see cref="BookToFountainConverter"/>.
+    /// Optional <paramref name="bookSession"/> enables provider file_id + multi-turn
+    /// (retry/coverage/merge/repair without re-billing full book tokens).
     /// </summary>
     public async Task<AdaptationResult> ConvertAsync(
         AdaptationRequest request,
         IChatClient chat,
         IProgress<string>? progress = null,
         CancellationToken ct = default,
-        Func<StructuralGateFailure, CancellationToken, Task>? onStructuralGateFailure = null)
+        Func<StructuralGateFailure, CancellationToken, Task>? onStructuralGateFailure = null,
+        IBookFileSession? bookSession = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(chat);
@@ -123,7 +126,8 @@ public sealed class AdaptationService
             onHeuristicFallback: _ => usedHeuristic = true,
             reasoningEffort: request.ReasoningEffort,
             onStructuralGateFailure: onStructuralGateFailure,
-            temperature: request.Temperature).ConfigureAwait(false);
+            temperature: request.Temperature,
+            bookSession: bookSession).ConfigureAwait(false);
 
         // Re-emit runtime with the clamped minutes actually used for generation.
         var runtimeUsed = new NaturalRuntimeEstimate

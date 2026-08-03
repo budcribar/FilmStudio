@@ -1,0 +1,267 @@
+@page "/admin/book-cache"
+@inject EngineApiClient Api
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Admin — Book cache</PageTitle>
+
+<div class="container-fluid py-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-0">Book & adaptation cache</h1>
+            <div class="text-muted small">
+                Content-addressed <code>book_id</code> · shared <code>adaptation_conversion</code> artifacts ·
+                xAI <code>file_id</code> / <code>last_response_id</code> (Responses multi-turn)
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/admin" class="btn btn-sm btn-outline-secondary">← Admin</a>
+            <button class="btn btn-sm btn-outline-primary" @onclick="RefreshAsync" disabled="@_busy">
+                @(_busy ? "Refreshing…" : "Refresh")
+            </button>
+        </div>
+    </div>
+
+    @if (!Session.IsAdmin)
+    {
+        <div class="alert alert-warning">
+            Admin session required. <a href="/admin/login">Sign in</a>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync">Retry</button>
+    }
+    else if (_snap is null)
+    {
+        <p class="text-muted">Loading cache snapshot…</p>
+    }
+    else
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Books</div>
+                        <div class="fs-4 fw-semibold">@_snap.BookCount</div>
+                        <div class="small text-muted">@FormatBytes(_snap.TotalBookBytes) stored</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Derived artifacts</div>
+                        <div class="fs-4 fw-semibold">@_snap.ArtifactCount</div>
+                        <div class="small text-muted">adaptation_conversion, etc.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Provider file handles</div>
+                        <div class="fs-4 fw-semibold">@_snap.ProviderFileCount</div>
+                        <div class="small text-muted">xAI file_id rows</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">How it works</div>
+                        <div class="small">
+                            Same book bytes → same <code>book_id</code>.
+                            Stage‑1 uploads once to xAI Files; retries chain with
+                            <code>previous_response_id</code> so the full book is not re-billed.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Registered books</span>
+                <span class="badge text-bg-secondary">@(_snap.Books?.Count ?? 0) shown</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle" style="font-size:0.85rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>book_id</th>
+                            <th>Bytes</th>
+                            <th>Artifacts</th>
+                            <th>Links</th>
+                            <th>xAI file_id</th>
+                            <th>last_response_id</th>
+                            <th>Expires</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_snap.Books is null || _snap.Books.Count == 0)
+                        {
+                            <tr><td colspan="8" class="text-muted p-3">No books registered yet. Prepare a book / run Stage‑1 to populate.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var b in _snap.Books)
+                            {
+                                <tr>
+                                    <td class="font-monospace" title="@b.Sha256">@ShortId(b.BookId)</td>
+                                    <td>@FormatBytes(b.ByteCount)</td>
+                                    <td>@b.ArtifactCount</td>
+                                    <td>@b.AccessLinkCount</td>
+                                    <td class="font-monospace">
+                                        @if (string.IsNullOrWhiteSpace(b.ProviderFileId))
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span title="@b.ProviderFileId">@ShortId(b.ProviderFileId)</span>
+                                        }
+                                    </td>
+                                    <td class="font-monospace">
+                                        @if (string.IsNullOrWhiteSpace(b.LastResponseId))
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span title="@b.LastResponseId">@ShortId(b.LastResponseId)</span>
+                                        }
+                                    </td>
+                                    <td>@FormatExpiry(b.FileExpiresAtUnix)</td>
+                                    <td class="text-nowrap">@FormatWhen(b.CreatedAt)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Recent derived artifacts</span>
+                <span class="badge text-bg-secondary">@(_snap.RecentArtifacts?.Count ?? 0)</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle" style="font-size:0.85rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>artifact_id</th>
+                            <th>book_id</th>
+                            <th>Kind</th>
+                            <th>Model</th>
+                            <th>Prompt version</th>
+                            <th>Temp</th>
+                            <th>Size</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_snap.RecentArtifacts is null || _snap.RecentArtifacts.Count == 0)
+                        {
+                            <tr><td colspan="8" class="text-muted p-3">No adaptation artifacts yet.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var a in _snap.RecentArtifacts)
+                            {
+                                <tr>
+                                    <td class="font-monospace" title="@a.ArtifactId">@ShortId(a.ArtifactId)</td>
+                                    <td class="font-monospace" title="@a.BookId">@ShortId(a.BookId)</td>
+                                    <td>@a.ArtifactKind</td>
+                                    <td class="font-monospace">@a.ModelId</td>
+                                    <td class="font-monospace small">@a.PromptVersion</td>
+                                    <td>@a.Temperature.ToString("0.##")</td>
+                                    <td>@FormatBytes(a.ContentBytes)</td>
+                                    <td class="text-nowrap">@FormatWhen(a.CreatedAt)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private BookCacheAdminDto? _snap;
+    private string? _error;
+    private bool _busy;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _started) return;
+        _started = true;
+        await Session.EnsureHydratedAsync();
+        if (!Session.IsAdmin)
+        {
+            Nav.NavigateTo("/admin/login", forceLoad: true);
+            return;
+        }
+        await RefreshAsync();
+        StateHasChanged();
+    }
+
+    private bool _started;
+
+    private async Task RefreshAsync()
+    {
+        if (!Session.IsAdmin) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            _snap = await Api.GetAdminBookCacheAsync(120);
+            if (_snap is null || !_snap.Ok)
+                _error = "Could not load book cache snapshot.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _snap = null;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string ShortId(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return "—";
+        return id.Length <= 14 ? id : id[..10] + "…";
+    }
+
+    private static string FormatBytes(long n)
+    {
+        if (n < 1024) return $"{n} B";
+        if (n < 1024 * 1024) return $"{n / 1024.0:0.#} KB";
+        return $"{n / (1024.0 * 1024.0):0.##} MB";
+    }
+
+    private static string FormatWhen(string? iso)
+    {
+        if (string.IsNullOrWhiteSpace(iso)) return "—";
+        if (DateTimeOffset.TryParse(iso, out var dt))
+            return dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+        return iso.Length > 16 ? iso[..16] : iso;
+    }
+
+    private static string FormatExpiry(long? unix)
+    {
+        if (unix is null or 0) return "—";
+        var dt = DateTimeOffset.FromUnixTimeSeconds(unix.Value);
+        var left = dt - DateTimeOffset.UtcNow;
+        if (left.TotalDays < 0) return "expired";
+        if (left.TotalDays >= 2) return $"{left.TotalDays:0}d left";
+        return $"{left.TotalHours:0}h left";
+    }
+}
