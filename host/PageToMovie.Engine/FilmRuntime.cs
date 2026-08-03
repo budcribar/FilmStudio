@@ -14,12 +14,14 @@ public static class FilmRuntime
 
     public sealed class Snapshot
     {
+        /// <summary>True when source/book_full.txt exists (natural length is meaningful).</summary>
+        public bool HasBookText { get; init; }
         public int NaturalMinutes { get; init; }
         public int TargetMinutes { get; init; }
         public string Mode { get; init; } = "natural"; // natural | reduced | custom
         public int? TextWords { get; init; }
         public string? BookKind { get; init; }
-        public string Source { get; init; } = ""; // config | extract_meta | density
+        public string Source { get; init; } = ""; // config | extract_meta | density | none
     }
 
     public static int ClampMinutes(int minutes) =>
@@ -66,13 +68,30 @@ public static class FilmRuntime
             catch { /* ignore */ }
         }
 
+        var hasBook = !string.IsNullOrWhiteSpace(bookText) || File.Exists(bookPath);
+
         int natural;
+        string densitySource;
         if (metaNatural is > 0)
+        {
             natural = ClampMinutes(metaNatural.Value);
+            densitySource = "extract_meta";
+        }
         else if (!string.IsNullOrWhiteSpace(bookText))
+        {
             natural = BookTextAnalyzer.ResolveStage1RuntimeMinutes(bookText);
+            densitySource = "density";
+        }
+        else if (metaTarget is > 0)
+        {
+            natural = ClampMinutes(metaTarget.Value);
+            densitySource = "extract_meta";
+        }
         else
-            natural = metaTarget is > 0 ? ClampMinutes(metaTarget.Value) : 10;
+        {
+            natural = 0;
+            densitySource = "none";
+        }
 
         var cfg = await store.GetConfigAsync(projectId, ct).ConfigureAwait(false);
         int? configTarget = null;
@@ -106,15 +125,22 @@ public static class FilmRuntime
             mode = target == natural ? "natural" : target < natural ? "reduced" : "custom";
             source = "extract_meta";
         }
-        else
+        else if (natural > 0)
         {
             target = natural;
             mode = "natural";
-            source = "density";
+            source = densitySource;
+        }
+        else
+        {
+            target = 0;
+            mode = "none";
+            source = "none";
         }
 
         return new Snapshot
         {
+            HasBookText = hasBook,
             NaturalMinutes = natural,
             TargetMinutes = target,
             Mode = mode,
@@ -134,6 +160,9 @@ public static class FilmRuntime
         CancellationToken ct = default)
     {
         var snap = await ResolveAsync(store, projectId, ct: ct).ConfigureAwait(false);
+        if (!snap.HasBookText || snap.NaturalMinutes <= 0)
+            throw new InvalidOperationException(
+                "Import the book first so we can measure a natural film length, then set a shorter target if you want.");
         targetMinutes = ClampMinutes(targetMinutes);
         var mode = targetMinutes == snap.NaturalMinutes
             ? "natural"
@@ -168,6 +197,7 @@ public static class FilmRuntime
 
         return new Snapshot
         {
+            HasBookText = snap.HasBookText,
             NaturalMinutes = snap.NaturalMinutes,
             TargetMinutes = targetMinutes,
             Mode = mode,

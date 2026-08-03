@@ -5079,6 +5079,7 @@ app.MapGet("/api/projects/{id}/film-runtime", async (
         {
             ok = true,
             projectId = id,
+            hasBookText = snap.HasBookText,
             naturalMinutes = snap.NaturalMinutes,
             targetMinutes = snap.TargetMinutes,
             mode = snap.Mode,
@@ -5119,6 +5120,7 @@ app.MapPut("/api/projects/{id}/film-runtime", async (
         {
             ok = true,
             projectId = id,
+            hasBookText = snap.HasBookText,
             naturalMinutes = snap.NaturalMinutes,
             targetMinutes = snap.TargetMinutes,
             mode = snap.Mode,

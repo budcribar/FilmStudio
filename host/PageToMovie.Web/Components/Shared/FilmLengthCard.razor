@@ -11,7 +11,8 @@
         <div class="card-body p-3">
             <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
                 <div>
-                    <div class="fw-semibold">Film length (target)</div>
+                    <div class="fw-semibold">Film length</div>
+                    <div class="small text-body-secondary mb-1">After import — shorten to save $</div>
                     <div class="small text-muted">
                         Natural ~<strong>@_natural</strong> min
                         @if (_words is int w && w > 0)
@@ -56,7 +57,7 @@
                 </button>
             </div>
             <p class="small text-muted mb-0 mt-2">
-                Set this <strong>before</strong> writing or re-drafting the screenplay so planning and cost use the same length.
+                Natural length is measured from your imported book. You can shorten the target to save cost, then write or re-draft the screenplay.
             </p>
             @if (!string.IsNullOrWhiteSpace(_message))
             {
@@ -110,12 +111,13 @@
         {
             var dto = await Engine.GetFilmRuntimeAsync(ProjectId);
             _loadedFor = ProjectId;
-            if (dto is null || !dto.Ok)
+            // Length is only meaningful after the book is imported / prepared.
+            if (dto is null || !dto.Ok || !dto.HasBookText || dto.NaturalMinutes <= 0)
             {
-                _visible = true;
+                _visible = false;
                 return;
             }
-            _natural = Math.Clamp(dto.NaturalMinutes > 0 ? dto.NaturalMinutes : 5, 2, 180);
+            _natural = Math.Clamp(dto.NaturalMinutes, 2, 180);
             _target = Math.Clamp(dto.TargetMinutes > 0 ? dto.TargetMinutes : _natural, 2, 180);
             _edit = _target;
             _mode = string.IsNullOrWhiteSpace(dto.Mode) ? "natural" : dto.Mode!;
@@ -126,8 +128,8 @@
         catch (Exception ex)
         {
             _loadedFor = ProjectId;
-            _visible = true;
-            _error = "Could not load saved length — showing defaults. " + ex.Message;
+            _visible = false;
+            _error = ex.Message;
         }
     }
 

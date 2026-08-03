@@ -10,11 +10,6 @@
 <AdaptationShell Host="this" Step="import">
     @if (Status is not null)
     {
-        @* Always load length from API (works even when extract_meta has no minutes yet). *@
-        <FilmLengthCard ProjectId="@ProjectId"
-                        Disabled="@(Busy || JobRunning || _importing)"
-                        OnChanged="OnFilmLengthChangedAsync" />
-
         @if (!ImportReady)
         {
             <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4"
@@ -154,6 +149,12 @@
                      aria-hidden="true">@_importStatus</div>
             </div>
         </div>
+
+        @* Natural length exists only after book text is prepared. *@
+        <FilmLengthCard @key="@(Status.Book.BookTextExists ? (Status.Book.SuggestedTotalMinutes ?? Status.Book.NaturalRuntimeMinutes ?? 1) : 0)"
+                        ProjectId="@ProjectId"
+                        Disabled="@(Busy || JobRunning || _importing)"
+                        OnChanged="OnFilmLengthChangedAsync" />
     }
 </AdaptationShell>
 

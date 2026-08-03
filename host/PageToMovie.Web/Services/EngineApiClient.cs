@@ -3940,6 +3940,7 @@ public sealed class FilmRuntimeDto
 {
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
+    public bool HasBookText { get; set; }
     public int NaturalMinutes { get; set; }
     public int TargetMinutes { get; set; }
     public string? Mode { get; set; }
