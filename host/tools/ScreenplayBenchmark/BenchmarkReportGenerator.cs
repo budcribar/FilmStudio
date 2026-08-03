@@ -46,6 +46,10 @@ public sealed class BenchmarkRunData
     public string BookPath { get; set; } = "";
     public string Timestamp { get; set; } = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
     public bool IsMockRun { get; set; }
+    /// <summary>Minutes injected into book_to_fountain (production BookTextAnalyzer or CLI override).</summary>
+    public int TargetRuntimeMinutes { get; set; }
+    /// <summary><c>book_text_analyzer</c> or <c>cli_override</c>.</summary>
+    public string TargetRuntimeSource { get; set; } = "book_text_analyzer";
     public List<ModelScoreSummary> Leaderboard { get; set; } = new();
     public Dictionary<string, Dictionary<string, double>> JudgeMatrix { get; set; } = new(); // JudgeModel -> (ScreenplayModel -> Score)
     public Dictionary<string, Dictionary<string, int>> JudgeRankMatrix { get; set; } = new(); // JudgeModel -> (ScreenplayModel -> Rank)
@@ -74,6 +78,13 @@ public static class BenchmarkReportGenerator
         sb.AppendLine("# 🏆 Screenplay Benchmark & Peer-Evaluation Report");
         sb.AppendLine($"*Generated at: {data.Timestamp}*  ");
         sb.AppendLine($"*Source Story File: `{Path.GetFileName(data.BookPath)}`*");
+        if (data.TargetRuntimeMinutes > 0)
+        {
+            var src = data.TargetRuntimeSource == "cli_override"
+                ? "CLI override"
+                : "BookTextAnalyzer (same as production Stage 1)";
+            sb.AppendLine($"*Target runtime: **{data.TargetRuntimeMinutes} min** · {src}*");
+        }
         if (data.IsMockRun)
         {
             sb.AppendLine();

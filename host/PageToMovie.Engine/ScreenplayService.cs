@@ -507,7 +507,7 @@ public static string NormalizeText(string text)
 
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
         var analysis = BookTextAnalyzer.Analyze(book);
-        var minutes = Math.Clamp(analysis.SuggestedTotalMinutes, 3, 180);
+        var minutes = BookTextAnalyzer.ResolveStage1RuntimeMinutes(book);
         const double generationTemperature = 0.2;
 
         BookTextIdentity? bookIdentity = null;

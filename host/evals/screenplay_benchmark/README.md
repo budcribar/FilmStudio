@@ -64,6 +64,16 @@ export OPENAI_API_KEY="your-openai-key"
 
 ---
 
+### Target runtime (production parity)
+
+By default the benchmark uses **`BookTextAnalyzer.ResolveStage1RuntimeMinutes`** — the same
+algorithm as production Stage 1 (`SuggestedTotalMinutes`, clamp 3–180). It no longer hard-codes
+10 minutes. Override only when needed:
+
+```bash
+dotnet run --project host/tools/ScreenplayBenchmark -- --book books/MaryHadALittleLamb.txt --target-runtime-minutes 5
+```
+
 ### Step 3: Run the Benchmark CLI
 
 Run `ScreenplayBenchmark` using one of the commands below depending on your workflow:

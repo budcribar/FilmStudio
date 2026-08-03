@@ -43,7 +43,9 @@ public static class Program
         bool syntaxOnly = false;
         bool adaptationSessionPilot = false;
         string adaptationModel = "grok-4.5";
-        int targetRuntimeMinutes = 10;
+        // null = production BookTextAnalyzer.SuggestedTotalMinutes (same as Stage 1).
+        // Set only via --target-runtime-minutes.
+        int? targetRuntimeMinutesOverride = null;
         string? judgeModel = null;
         string? judgeModel2 = null;
         string? videoModel = null;
@@ -82,7 +84,8 @@ public static class Program
             }
             else if (arg.Equals("--target-runtime-minutes", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
-                if (int.TryParse(args[++i], out var trm) && trm > 0) targetRuntimeMinutes = trm;
+                if (int.TryParse(args[++i], out var trm) && trm > 0)
+                    targetRuntimeMinutesOverride = trm;
             }
             else if (arg.Equals("--judge-model", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
@@ -224,8 +227,13 @@ public static class Program
                 Console.Error.WriteLine("   Commit prompts/book_to_fountain.txt, then run the pilot again.");
                 return 1;
             }
+            var pilotBookText = await File.ReadAllTextAsync(bookPath);
+            var pilotRuntimeMinutes = ResolveTargetRuntimeMinutes(pilotBookText, targetRuntimeMinutesOverride);
+            Console.WriteLine(
+                $"⏱️  Target runtime {pilotRuntimeMinutes} min " +
+                DescribeRuntimeSource(pilotBookText, targetRuntimeMinutesOverride));
             return await AdaptationSessionPilot.RunAsync(
-                bookPath, bookSlug, adaptationModel, targetRuntimeMinutes, workspaceRoot, pilotPromptRevision, CancellationToken.None,
+                bookPath, bookSlug, adaptationModel, pilotRuntimeMinutes, workspaceRoot, pilotPromptRevision, CancellationToken.None,
                 judgeModel, samplingTemperature, adaptationJudgeTemperature, adaptationClipShotPlan,
                 adaptationDualAttachClipPlan, adaptationDualAttachAll, judgeModel2, videoModel);
         }
@@ -324,7 +332,7 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility, targetRuntimeMinutesOverride);
             }
 
             // Generate updated HTML Dashboard after suite execution
@@ -346,7 +354,7 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, promptRevision, reasoningEffort, samplingTemperature, bypassCache, adaptationJudgeTemperature, useSharedCache, sharedCacheUser, sharedCacheVisibility, targetRuntimeMinutesOverride);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
@@ -376,7 +384,8 @@ public static class Program
         double judgeTemperature = 0.0,
         bool useSharedCache = true,
         string sharedCacheUser = "benchmark",
-        string sharedCacheVisibility = "Forkable")
+        string sharedCacheVisibility = "Forkable",
+        int? targetRuntimeMinutesOverride = null)
     {
         var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
         Directory.CreateDirectory(screenplaysDir);
@@ -415,10 +424,14 @@ public static class Program
         Console.WriteLine($"🤖 Candidate Models ({candidateModels.Count}): {string.Join(", ", candidateModels)}");
         Console.WriteLine($"⚖️  Judge Models ({judgeModels.Count}): {string.Join(", ", judgeModels)}");
         var bookText = await File.ReadAllTextAsync(bookPath);
+        // Same algorithm as production Stage 1 (ScreenplayService / Stage1Service).
+        var generationRuntimeMinutes = ResolveTargetRuntimeMinutes(bookText, targetRuntimeMinutesOverride);
+        Console.WriteLine(
+            $"⏱️  Target runtime {generationRuntimeMinutes} min " +
+            DescribeRuntimeSource(bookText, targetRuntimeMinutesOverride));
         BookTextRegistryService? sharedCache = null;
         BookTextIdentity? sharedBook = null;
         string? sharedPromptHash = null;
-        const int generationRuntimeMinutes = 10;
         if (useSharedCache && !bypassCache && !dryRun)
         {
             sharedCache = new BookTextRegistryService(Microsoft.Extensions.Options.Options.Create(
@@ -617,7 +630,7 @@ public static class Program
         // prompts/book_to_fountain.txt, so this is the exact text every model above just ran
         // under, not an approximation). Judges need to see this to suggest a REAL prompt fix
         // instead of guessing blind at what the prompt might already say.
-        var generationSystemPrompt = await BookToFountainConverter.BuildSystemPromptAsync(outDir, totalRuntimeMinutes: 10);
+        var generationSystemPrompt = await BookToFountainConverter.BuildSystemPromptAsync(outDir, totalRuntimeMinutes: generationRuntimeMinutes);
 
         // Fallback-poisoned screenplays are already excluded from scoring (IsGenerationFallback) —
         // don't also make every judge read them. They're near-duplicates of the raw book text, so
@@ -732,6 +745,10 @@ public static class Program
 
         // Phase 5: Aggregation & History Persistence
         var runData = AggregateBenchmarkData(bookPath, candidateModels, generatedScreenplays, deterministicResults, judgeEvaluations, generationFallbacks, castPackageResults);
+        runData.TargetRuntimeMinutes = generationRuntimeMinutes;
+        runData.TargetRuntimeSource = targetRuntimeMinutesOverride is > 0
+            ? "cli_override"
+            : "book_text_analyzer";
         var isMockRun = dryRun || judgeEvaluations.Values.All(v => v.IsMock);
         runData.IsMockRun = isMockRun;
 
@@ -1066,6 +1083,18 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             catch { /* legacy history remains safely untagged if Git metadata is unavailable */ }
         }
         return changed;
+    }
+
+    /// <summary>Same as production Stage 1: <see cref="BookTextAnalyzer.ResolveStage1RuntimeMinutes"/>.</summary>
+    internal static int ResolveTargetRuntimeMinutes(string bookText, int? overrideMinutes) =>
+        BookTextAnalyzer.ResolveStage1RuntimeMinutes(bookText, overrideMinutes);
+
+    private static string DescribeRuntimeSource(string bookText, int? overrideMinutes)
+    {
+        if (overrideMinutes is > 0)
+            return $"(CLI override --target-runtime-minutes={overrideMinutes.Value})";
+        var a = BookTextAnalyzer.Analyze(bookText ?? "");
+        return $"(BookTextAnalyzer · kind={a.BookKind} · words={a.TextWords} · pages={a.Pages} · same as production)";
     }
 
     private static string SanitizeFileName(string name) =>

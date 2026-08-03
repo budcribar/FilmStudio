@@ -102,8 +102,8 @@ public sealed class Stage1Service
                 "book_full.txt is still garbled OCR. Prepare the book with vision first.");
 
         var minutes = totalMinutes is > 0
-            ? Math.Clamp(totalMinutes.Value, 3, 180)
-            : Math.Clamp(analysis.SuggestedTotalMinutes, 3, 180);
+            ? BookTextAnalyzer.ResolveStage1RuntimeMinutes(book, totalMinutes)
+            : BookTextAnalyzer.ResolveStage1RuntimeMinutes(book);
 
         onProgress?.Invoke(
             $"Target runtime {minutes} min · building Fountain from book (prompts/book_to_fountain.txt)…");

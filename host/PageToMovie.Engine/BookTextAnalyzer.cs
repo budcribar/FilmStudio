@@ -145,6 +145,18 @@ public static class BookTextAnalyzer
     }
 
     /// <summary>
+    /// Stage 1 target runtime used by production (<see cref="ScreenplayService"/> /
+    /// <see cref="Stage1Service"/>) and the screenplay benchmark. Optional override is
+    /// clamped to 3–180; otherwise uses <see cref="BookTextAnalysis.SuggestedTotalMinutes"/>.
+    /// </summary>
+    public static int ResolveStage1RuntimeMinutes(string bookText, int? overrideMinutes = null)
+    {
+        if (overrideMinutes is > 0)
+            return Math.Clamp(overrideMinutes.Value, 3, 180);
+        return Math.Clamp(Analyze(bookText ?? "").SuggestedTotalMinutes, 3, 180);
+    }
+
+    /// <summary>
     /// Page bodies for density/quality heuristics. Same split rules as
     /// <see cref="BookContextService.ParseBookPages"/>: <c>--- PAGE N ---</c> markers
     /// when present, otherwise paragraph-based synthetic pages (plain .txt).
