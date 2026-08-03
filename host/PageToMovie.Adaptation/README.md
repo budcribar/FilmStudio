@@ -41,6 +41,7 @@
 | `ConvertHeuristic` | Wired → offline stub |
 | `ConvertAsync` | Wired → `Conversion.BookToFountainConverter` |
 | `CrossCheckCast` | Wired → `Validation.CastPackageCrossCheck` |
+| `NormalizeBookText` / `FixDraftDate` / `LooksLikeGoodFountain` | Wired pure helpers |
 
 Pure helpers (no façade instance required):
 

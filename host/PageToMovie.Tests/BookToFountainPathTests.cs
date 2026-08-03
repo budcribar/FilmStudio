@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using PageToMovie.Adaptation;
+using PageToMovie.Adaptation.Contracts;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
 using Xunit;
@@ -272,15 +274,13 @@ public class BookToFountainPathTests
                    + "--- PAGE 2 ---\nMorning comes and the dog stretches in the golden light of the kitchen.\n";
         var root = Path.GetTempPath();
 
-        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
-            workspaceRoot: root,
+        var (text, _) = await AdaptConvertAsync(
             title: "Short",
             bookText: book,
-            author: "A",
-            totalRuntimeMinutes: 6,
             chat: chat,
-            model: "grok-4.5");
-        var text = conversion.Fountain;
+            model: "grok-4.5",
+            totalRuntimeMinutes: 6,
+            author: "A");
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
         // One adaptation call plus up to two focused VISION_META lifecycle attempts.
@@ -297,14 +297,12 @@ public class BookToFountainPathTests
         var book = BuildChapteredBook(chapters: 14, bodyChars: 3_200);
         Assert.InRange(book.Length, BookToFountainConverter.SingleShotMaxChars + 1, BookToFountainConverter.DefaultSingleShotBookMaxChars);
 
-        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
-            workspaceRoot: Path.GetTempPath(),
+        var (text, _) = await AdaptConvertAsync(
             title: "Medium",
             bookText: book,
-            totalRuntimeMinutes: 20,
             chat: chat,
-            model: "grok-4.5");
-        var text = conversion.Fountain;
+            model: "grok-4.5",
+            totalRuntimeMinutes: 20);
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
         // Single-shot success plus up to two focused VISION_META lifecycle attempts.
@@ -344,15 +342,13 @@ public class BookToFountainPathTests
             book, BookToFountainConverter.ResolvePromptBudget("grok-4.5")));
 
         var progress = new List<string>();
-        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
-            workspaceRoot: Path.GetTempPath(),
+        var (text, _) = await AdaptConvertAsync(
             title: "Long",
             bookText: book,
-            totalRuntimeMinutes: 45,
             chat: chat,
             model: "grok-4.5",
+            totalRuntimeMinutes: 45,
             onProgress: s => progress.Add(s));
-        var text = conversion.Fountain;
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
         Assert.True(chat.Calls >= 3, $"expected chunk fallback (≥3 calls), got {chat.Calls}");
@@ -376,16 +372,14 @@ public class BookToFountainPathTests
         Assert.False(BookToFountainConverter.FitsSingleShot(book, tinyBudget));
 
         var progress = new List<string>();
-        var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
-            workspaceRoot: Path.GetTempPath(),
+        var (text, _) = await AdaptConvertAsync(
             title: "Over",
             bookText: book,
-            totalRuntimeMinutes: 15,
             chat: chat,
             model: "grok-4.5",
+            totalRuntimeMinutes: 15,
             onProgress: s => progress.Add(s),
             budgetOverride: tinyBudget);
-        var text = conversion.Fountain;
 
         Assert.True(BookToFountainConverter.LooksLikeGoodFountain(text));
         Assert.Contains(progress, p => p.Contains("exceeds model budget", StringComparison.OrdinalIgnoreCase));
@@ -405,8 +399,7 @@ public class BookToFountainPathTests
             """;
         var chat = new RecordingChatClient(_ => response);
 
-        var result = await BookToFountainConverter.ConvertWithMetadataAsync(
-            workspaceRoot: Path.GetTempPath(),
+        var (_, result) = await AdaptConvertAsync(
             title: "Metadata",
             bookText: "A small rabbit explores a painted nursery and returns home.",
             chat: chat,
@@ -424,8 +417,7 @@ public class BookToFountainPathTests
     {
         var chat = new RecordingChatClient(_ => GoodFountain(scenes: 4, withEnding: true));
 
-        var result = await BookToFountainConverter.ConvertWithMetadataAsync(
-            workspaceRoot: Path.GetTempPath(),
+        var (_, result) = await AdaptConvertAsync(
             title: "No metadata",
             bookText: "A traveler enters a room and tells a short story before leaving.",
             chat: chat,
@@ -434,6 +426,59 @@ public class BookToFountainPathTests
         Assert.Null(result.VisionMeta);
         Assert.Equal(VisionMetaStatus.Missing, result.VisionMetaStatus);
         Assert.Contains("missing", result.VisionMetaError, StringComparison.OrdinalIgnoreCase);
+    }
+
+    
+    private static async Task<(string Fountain, PageToMovie.Engine.AdaptationConversionResult Mapped)> AdaptConvertAsync(
+        string title,
+        string bookText,
+        RecordingChatClient chat,
+        string model = "grok-4.5",
+        int totalRuntimeMinutes = 10,
+        Action<string>? onProgress = null,
+        BookToFountainConverter.PromptBudget? budgetOverride = null,
+        string? author = null)
+    {
+        PageToMovie.Adaptation.Conversion.BookToFountainConverter.PromptBudget? coreBudget = null;
+        if (budgetOverride is not null)
+        {
+            coreBudget = new PageToMovie.Adaptation.Conversion.BookToFountainConverter.PromptBudget
+            {
+                ModelId = budgetOverride.ModelId,
+                SingleShotBookMaxChars = budgetOverride.SingleShotBookMaxChars,
+                ChunkSoftMaxChars = budgetOverride.ChunkSoftMaxChars,
+                MaxChunks = budgetOverride.MaxChunks,
+                ReservedOverheadChars = budgetOverride.ReservedOverheadChars,
+            };
+        }
+        var result = await new AdaptationService().ConvertAsync(
+            new AdaptationRequest
+            {
+                BookText = bookText,
+                Title = title,
+                Author = author,
+                TargetRuntimeMinutes = totalRuntimeMinutes,
+                ModelId = model,
+            },
+            chat,
+            onProgress is null ? null : new Progress<string>(onProgress),
+            budgetOverride: coreBudget);
+        var mapped = new AdaptationConversionResult
+        {
+            Fountain = result.Fountain,
+            VisionMeta = BookToFountainConverter.MapVision(result.VisionMeta),
+            VisionMetaStatus = result.VisionMetaStatus switch
+            {
+                AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,
+                AdaptationVisionMetaStatus.RepairResponse => VisionMetaStatus.RepairResponse,
+                AdaptationVisionMetaStatus.Missing => VisionMetaStatus.Missing,
+                AdaptationVisionMetaStatus.Malformed => VisionMetaStatus.Malformed,
+                AdaptationVisionMetaStatus.InvalidValue => VisionMetaStatus.InvalidValue,
+                _ => VisionMetaStatus.Missing,
+            },
+            VisionMetaError = result.VisionMetaError,
+        };
+        return (result.Fountain, mapped);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────

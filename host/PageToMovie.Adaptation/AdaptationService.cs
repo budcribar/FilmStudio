@@ -81,6 +81,18 @@ public sealed class AdaptationService
     public string ConvertHeuristic(string title, string bookText, string? author = null) =>
         BookToFountainConverter.ConvertHeuristic(title, bookText, author);
 
+    /// <summary>Normalize book text (Gutenberg strip + newlines) before convert/cache keys.</summary>
+    public string NormalizeBookText(string bookText) =>
+        BookToFountainConverter.NormalizeBookText(bookText);
+
+    /// <summary>Stamp/fix Draft date line on a Fountain draft.</summary>
+    public string FixDraftDate(string? fountain) =>
+        BookToFountainConverter.FixDraftDate(fountain);
+
+    /// <summary>Structural gate used by production quality checks.</summary>
+    public bool LooksLikeGoodFountain(string text, bool requirePageTags = false) =>
+        BookToFountainConverter.LooksLikeGoodFountain(text, requirePageTags);
+
     /// <summary>
     /// Deterministic cast package gate: speaking Fountain cues must resolve to cast_seeds
     /// with usable look fields. Optional <paramref name="bookText"/> flags invented names.
@@ -102,7 +114,8 @@ public sealed class AdaptationService
         IProgress<string>? progress = null,
         CancellationToken ct = default,
         Func<StructuralGateFailure, CancellationToken, Task>? onStructuralGateFailure = null,
-        IBookFileSession? bookSession = null)
+        IBookFileSession? bookSession = null,
+        BookToFountainConverter.PromptBudget? budgetOverride = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(chat);
@@ -134,6 +147,7 @@ public sealed class AdaptationService
             model: request.ModelId,
             onProgress: onProgress,
             ct: ct,
+            budgetOverride: budgetOverride,
             onHeuristicFallback: _ => usedHeuristic = true,
             reasoningEffort: request.ReasoningEffort,
             onStructuralGateFailure: onStructuralGateFailure,

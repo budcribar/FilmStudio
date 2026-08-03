@@ -264,7 +264,7 @@ public sealed class NaturalRuntimeEstimate
 |----|--------|-----------|
 | **A6.1** | Architecture test: Adaptation csproj must not reference Engine | CI |
 | **A6.2** | Architecture test: no `ProjectStore` symbol in Adaptation | ✅ source scan test |
-| **A6.3** | Golden fixture tests: fixed book → structural fountain checks | Fast CI |
+| **A6.3** | Golden fixture tests: fixed book → structural fountain checks | ✅ `AdaptationGoldenFixtureTests` (Mary/Buster) |
 | **A6.4** | Optional later: `IAdaptationChat` adapter if Engine chat API evolves | Clean |
 | **A6.5** | Do **not** fold Stage2/clip gen into this module without a new plan | Scope lock |
 
@@ -328,7 +328,7 @@ Import UI / `FilmLengthCard`: unchanged externally; API still Engine.
 
 - [x] `PageToMovie.Adaptation.dll` builds standalone with Core only (+ allowed packages)  
 - [x] No `ProjectStore`, no project paths, no user DB inside Adaptation  
-- [ ] All Stage‑1 LLM conversion goes through `AdaptationService` (Engine thin façade still used by some call sites)  
+- [x] All Stage‑1 LLM conversion goes through `AdaptationService` (Engine `ConvertWithMetadataAsync` obsolete façade)  
 - [x] Engine only orchestrates I/O + DI of chat  
 - [x] Benchmark uses same façade + `adaptation_sha` in cache/history  
 - [x] Unit + architecture tests green  

@@ -36,6 +36,7 @@
     <None Include="Fixtures\FountainOpenSource\**\*.fountain" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Fixtures\FountainOpenSource\**\*.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Fixtures\BookToFountainPackage\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fixtures\AdaptationGolden\**\*.*" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Fixtures\CastExtractGold\**\*.*" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Fixtures\TellTaleHeartV7\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

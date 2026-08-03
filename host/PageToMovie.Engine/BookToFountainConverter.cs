@@ -27,8 +27,9 @@ public sealed record AdaptationConversionResult
 }
 
 /// <summary>
-/// Thin Engine façade over <see cref="AdaptationConverter"/> for backward-compatible call sites.
-/// Production Stage‑1 path prefers <see cref="PageToMovie.Adaptation.AdaptationService.ConvertAsync"/>.
+/// Thin Engine façade over Adaptation for backward-compatible call sites.
+/// <b>Stage‑1 LLM conversion must go through <see cref="PageToMovie.Adaptation.AdaptationService"/>.</b>
+/// This type remains for pure helpers (strip tags, vague headings) and vision DTO mapping.
 /// </summary>
 public static class BookToFountainConverter
 {
@@ -96,6 +97,10 @@ public static class BookToFountainConverter
         };
     }
 
+    /// <summary>
+    /// Prefer <see cref="AdaptationService.ConvertAsync"/>. Kept for ScreenplayBenchmark / legacy callers.
+    /// </summary>
+    [Obsolete("Use PageToMovie.Adaptation.AdaptationService.ConvertAsync for Stage-1 generation.")]
     public static async Task<AdaptationConversionResult> ConvertWithMetadataAsync(
         string workspaceRoot,
         string title,
@@ -114,7 +119,10 @@ public static class BookToFountainConverter
         string? projectId = null,
         double temperature = 0.2)
     {
-        _ = workspaceRoot; // prompts are embedded in Adaptation; kept for call-site compatibility
+        _ = workspaceRoot;
+        if (chat is null)
+            throw new ArgumentNullException(nameof(chat));
+
         Func<StructuralGateFailure, CancellationToken, Task>? onFail = null;
         if (errorLogger is not null)
         {
@@ -134,22 +142,43 @@ public static class BookToFountainConverter
             };
         }
 
-        var core = await AdaptationConverter.ConvertWithMetadataAsync(
-            title: title,
-            bookText: bookText,
-            author: author,
-            totalRuntimeMinutes: totalRuntimeMinutes,
-            chat: chat,
-            model: model,
-            onProgress: onProgress,
-            ct: ct,
-            budgetOverride: budgetOverride?.ToCore(),
-            onHeuristicFallback: onHeuristicFallback,
-            reasoningEffort: reasoningEffort,
+        var adaptation = new PageToMovie.Adaptation.AdaptationService();
+        IProgress<string>? progress = onProgress is null ? null : new Progress<string>(onProgress);
+        var result = await adaptation.ConvertAsync(
+            new PageToMovie.Adaptation.Contracts.AdaptationRequest
+            {
+                BookText = bookText,
+                Title = title,
+                Author = author,
+                TargetRuntimeMinutes = totalRuntimeMinutes,
+                ModelId = model ?? "",
+                Temperature = temperature,
+                ReasoningEffort = reasoningEffort,
+            },
+            chat,
+            progress,
+            ct,
             onStructuralGateFailure: onFail,
-            temperature: temperature).ConfigureAwait(false);
+            budgetOverride: budgetOverride?.ToCore()).ConfigureAwait(false);
 
-        return MapResult(core);
+        if (result.UsedHeuristicFallback)
+            onHeuristicFallback?.Invoke("adaptation_heuristic_fallback");
+
+        return new AdaptationConversionResult
+        {
+            Fountain = result.Fountain,
+            VisionMeta = MapVision(result.VisionMeta),
+            VisionMetaStatus = result.VisionMetaStatus switch
+            {
+                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,
+                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.RepairResponse => VisionMetaStatus.RepairResponse,
+                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.Missing => VisionMetaStatus.Missing,
+                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.Malformed => VisionMetaStatus.Malformed,
+                PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.InvalidValue => VisionMetaStatus.InvalidValue,
+                _ => VisionMetaStatus.Missing,
+            },
+            VisionMetaError = result.VisionMetaError,
+        };
     }
 
     public static (string Fountain, ProjectVisionMeta.Document? Vision) SplitVisionMetaTrailer(string? text)

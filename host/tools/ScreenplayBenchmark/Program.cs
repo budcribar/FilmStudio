@@ -445,7 +445,7 @@ public static class Program
                 new PageToMovieOptions { WorkspaceRoot = workspaceRoot }));
             sharedBook = await sharedCache.RegisterAsync(
                 bookText, sharedCacheUser, $"benchmark:{bookSlug}", sharedCacheVisibility);
-            var sharedPrompt = await BookToFountainConverter.BuildSystemPromptAsync(outDir, generationRuntimeMinutes);
+            var sharedPrompt = await new AdaptationService().BuildSystemPromptAsync(generationRuntimeMinutes);
             sharedPromptHash = Convert.ToHexString(
                 SHA256.HashData(Encoding.UTF8.GetBytes(sharedPrompt))).ToLowerInvariant();
         }
@@ -459,8 +459,9 @@ public static class Program
         // used below to detect (and refuse to trust) both live fallbacks and previously-poisoned
         // disk cache entries, so a real generation failure never gets silently graded as a model's
         // actual output. See ModelScoreSummary.IsGenerationFallback.
-        var canonicalFallbackText = BookToFountainConverter.ConvertHeuristic(
-            Path.GetFileNameWithoutExtension(bookPath), BookToFountainConverter.NormalizeBookText(bookText), "Author");
+        var adaptationFacade = new AdaptationService();
+        var canonicalFallbackText = adaptationFacade.ConvertHeuristic(
+            Path.GetFileNameWithoutExtension(bookPath), adaptationFacade.NormalizeBookText(bookText), "Author");
         var generationFallbacks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // Effort suffix keeps a max-effort run from silently reusing (or clobbering) a cached
@@ -546,19 +547,52 @@ public static class Program
                     Console.Write("(ignoring stale fallback-poisoned cache, retrying live) ");
                 try
                 {
-                    var conversion = await BookToFountainConverter.ConvertWithMetadataAsync(
-                        workspaceRoot: outDir,
-                        title: Path.GetFileNameWithoutExtension(bookPath),
-                        bookText: bookText,
-                        author: "Author",
-                        chat: chat,
-                        model: modelId,
-                        onProgress: msg => Console.WriteLine($"    · {msg}"),
-                        onHeuristicFallback: reason => generationFallbacks[modelId] = reason,
-                        budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId),
-                        reasoningEffort: reasoningEffort, temperature: samplingTemperature);
-                    screenplayText = conversion.Fountain;
-                    visionMeta = conversion.VisionMeta;
+                    var budgetCore = ResolveRateLimitSafeBudgetOverride(modelId);
+                    PageToMovie.Adaptation.Conversion.BookToFountainConverter.PromptBudget? budget = null;
+                    if (budgetCore is not null)
+                    {
+                        budget = new PageToMovie.Adaptation.Conversion.BookToFountainConverter.PromptBudget
+                        {
+                            ModelId = budgetCore.ModelId,
+                            SingleShotBookMaxChars = budgetCore.SingleShotBookMaxChars,
+                            ChunkSoftMaxChars = budgetCore.ChunkSoftMaxChars,
+                            MaxChunks = budgetCore.MaxChunks,
+                            ReservedOverheadChars = budgetCore.ReservedOverheadChars,
+                        };
+                    }
+                    var adaptResult = await new AdaptationService().ConvertAsync(
+                        new PageToMovie.Adaptation.Contracts.AdaptationRequest
+                        {
+                            BookText = bookText,
+                            Title = Path.GetFileNameWithoutExtension(bookPath),
+                            Author = "Author",
+                            TargetRuntimeMinutes = generationRuntimeMinutes,
+                            ModelId = modelId,
+                            Temperature = samplingTemperature,
+                            ReasoningEffort = reasoningEffort,
+                        },
+                        chat,
+                        new Progress<string>(msg => Console.WriteLine($"    · {msg}")),
+                        budgetOverride: budget);
+                    if (adaptResult.UsedHeuristicFallback)
+                        generationFallbacks[modelId] = "adaptation_heuristic_fallback";
+                    screenplayText = adaptResult.Fountain;
+                    visionMeta = BookToFountainConverter.MapVision(adaptResult.VisionMeta);
+                    var conversion = new AdaptationConversionResult
+                    {
+                        Fountain = screenplayText,
+                        VisionMeta = visionMeta,
+                        VisionMetaStatus = adaptResult.VisionMetaStatus switch
+                        {
+                            PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.PrimaryResponse => VisionMetaStatus.PrimaryResponse,
+                            PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.RepairResponse => VisionMetaStatus.RepairResponse,
+                            PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.Missing => VisionMetaStatus.Missing,
+                            PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.Malformed => VisionMetaStatus.Malformed,
+                            PageToMovie.Adaptation.Contracts.AdaptationVisionMetaStatus.InvalidValue => VisionMetaStatus.InvalidValue,
+                            _ => VisionMetaStatus.Missing,
+                        },
+                        VisionMetaError = adaptResult.VisionMetaError,
+                    };
 
                     if (generationFallbacks.TryGetValue(modelId, out var fallbackReason))
                     {
@@ -640,7 +674,7 @@ public static class Program
         // prompts/book_to_fountain.txt, so this is the exact text every model above just ran
         // under, not an approximation). Judges need to see this to suggest a REAL prompt fix
         // instead of guessing blind at what the prompt might already say.
-        var generationSystemPrompt = await BookToFountainConverter.BuildSystemPromptAsync(outDir, totalRuntimeMinutes: generationRuntimeMinutes);
+        var generationSystemPrompt = await new AdaptationService().BuildSystemPromptAsync(generationRuntimeMinutes);
 
         // Fallback-poisoned screenplays are already excluded from scoring (IsGenerationFallback) —
         // don't also make every judge read them. They're near-duplicates of the raw book text, so
@@ -1497,7 +1531,7 @@ FADE OUT.";
             if (File.Exists(run.BookPath))
             {
                 var bookText = await File.ReadAllTextAsync(run.BookPath);
-                canonicalFallbackText = BookToFountainConverter.ConvertHeuristic(run.BookTitle, BookToFountainConverter.NormalizeBookText(bookText), "Author");
+                canonicalFallbackText = new AdaptationService().ConvertHeuristic(run.BookTitle, new AdaptationService().NormalizeBookText(bookText), "Author");
             }
 
             foreach (var m in run.ModelScores)

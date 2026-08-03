@@ -468,8 +468,8 @@ public static string NormalizeText(string text)
             return new SaveResult { Ok = false, Error = "Book text is empty" };
 
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
-        var fountain = BookToFountainConverter.ConvertHeuristic(title, book, author);
-        fountain = BookToFountainConverter.FixDraftDate(fountain);
+        var adaptation = new AdaptationService();
+        var fountain = adaptation.FixDraftDate(adaptation.ConvertHeuristic(title, book, author));
         var save = SaveDraft(store, projectId, fountain);
         if (!save.Ok) return save;
         save.Message = "Screenplay draft ready — review and approve";
@@ -528,8 +528,8 @@ public static string NormalizeText(string text)
             var project = await store.GetProjectAsync(projectId, ct).ConfigureAwait(false);
             bookIdentity = await bookRegistry.RegisterAsync(
                 book, cacheUserId, projectId, project?.VisibilityMode ?? "Private", ct).ConfigureAwait(false);
-            var prompt = await BookToFountainConverter.BuildSystemPromptAsync(
-                store.WorkspaceRoot, minutes, ct).ConfigureAwait(false);
+            var prompt = await new AdaptationService()
+                .BuildSystemPromptAsync(minutes, ct).ConfigureAwait(false);
             promptHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(prompt))).ToLowerInvariant();
             promptVersion = "book-to-fountain-" + promptHash[..12];
             behaviorVersions = JsonSerializer.Serialize(new
@@ -551,7 +551,7 @@ public static string NormalizeText(string text)
                 if (cachedConversion is { Fountain.Length: > 0, VisionMeta: not null })
                 {
                     onProgress?.Invoke($"Reused shared adaptation cache {cached.ArtifactId}.");
-                    var cachedFountain = BookToFountainConverter.FixDraftDate(cachedConversion.Fountain);
+                    var cachedFountain = new AdaptationService().FixDraftDate(cachedConversion.Fountain);
                     var cachedSave = SaveDraft(store, projectId, cachedFountain);
                     if (!cachedSave.Ok) return cachedSave;
                     ProjectVisionMeta.Write(projectDir, cachedConversion.VisionMeta);
@@ -655,7 +655,7 @@ public static string NormalizeText(string text)
                 onProgress?.Invoke($"Saved shared adaptation cache {cached.ArtifactId}.");
             }
 
-            fountain = BookToFountainConverter.FixDraftDate(fountain);
+            fountain = new AdaptationService().FixDraftDate(fountain);
             var save = SaveDraft(store, projectId, fountain);
             if (!save.Ok) return save;
 
@@ -798,7 +798,7 @@ public static string NormalizeText(string text)
 
     /// <summary>Heuristic book text → Fountain draft (offline stub path).</summary>
     public static string BookTextToFountainDraft(string title, string bookText) =>
-        BookToFountainConverter.ConvertHeuristic(title, bookText);
+        new AdaptationService().ConvertHeuristic(title, bookText);
 
     private static MetaDto ReadMeta(ProjectStore store, string projectId)
     {
