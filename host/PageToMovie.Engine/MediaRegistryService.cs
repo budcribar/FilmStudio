@@ -89,6 +89,17 @@ public sealed class MediaRegistryService
         return $"assets/audio/revoice/scene_{scene:D2}_clip_{clip:D2}_seg_{segment:D2}{e.ToLowerInvariant()}";
     }
 
+    /// <summary>
+    /// Whole-scene cloned-voice narration: one continuous read of all the scene's narrator lines,
+    /// synthesized in a single TTS call and overlaid onto the stitched scene (current strategy).
+    /// </summary>
+    public static string RevoiceSceneAudioRelativePath(int scene, string ext = ".mp3")
+    {
+        var e = string.IsNullOrWhiteSpace(ext) ? ".mp3" : ext.Trim();
+        if (!e.StartsWith('.')) e = "." + e;
+        return $"assets/audio/revoice/scene_{scene:D2}{e.ToLowerInvariant()}";
+    }
+
     /// <summary>One background-music segment (IAudioClient.MaxSegmentDurationSeconds-sized) for a
     /// scene — most scenes need only segment 1; longer scenes concatenate client-side.</summary>
     public static string MusicSegmentRelativePath(int scene, int segment) =>

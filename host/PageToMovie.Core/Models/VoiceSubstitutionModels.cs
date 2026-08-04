@@ -80,14 +80,31 @@ public sealed class ClipSpeechAlignment
 }
 
 /// <summary>
+/// Per-scene cloned-voice narration: one continuous read of all the scene's narrator lines,
+/// synthesized in a single TTS call so the prosody flows naturally across the scene instead of
+/// restarting every clip. Overlaid onto the whole stitched scene, not per clip — this is the
+/// current voice-substitution strategy.
+/// </summary>
+public sealed class SceneVoiceTrack
+{
+    public int Scene { get; set; }
+
+    /// <summary>Project-relative path of the whole-scene narration audio
+    /// (e.g. assets/audio/revoice/scene_01.mp3). Null until synthesized.</summary>
+    public string? VoiceAudioRelativePath { get; set; }
+
+    /// <summary>The concatenated narration text that was synthesized (for reference / regeneration).</summary>
+    public string Text { get; set; } = "";
+}
+
+/// <summary>
 /// Persisted, per-project voice-substitution alignment. Lives at
 /// <c>assets/alignment/voice_alignment.json</c> so it travels with the project on export/import.
-/// Records, per clip, which character says what and when, plus which cloned-voice audio replaces it.
-/// A re-run reuses this file's detected timestamps and skips re-detection.
+/// A re-run reuses this file and skips already-synthesized scenes.
 /// </summary>
 public sealed class ProjectVoiceAlignment
 {
-    public string SchemaVersion { get; set; } = "voice_alignment.v1";
+    public string SchemaVersion { get; set; } = "voice_alignment.v2";
     public string ProjectId { get; set; } = "";
 
     /// <summary>Character whose voice this alignment was last built for (informational).</summary>
@@ -95,10 +112,21 @@ public sealed class ProjectVoiceAlignment
 
     public DateTime GeneratedAtUtc { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// Per-scene continuous narration tracks — the current strategy (one voice per scene). Preferred
+    /// over the per-clip <see cref="Clips"/> segments below when present.
+    /// </summary>
+    public List<SceneVoiceTrack> SceneVoices { get; set; } = new();
+
+    /// <summary>Legacy per-clip segments (older per-clip strategy). Kept for back-compat / detected
+    /// timestamps; new runs populate <see cref="SceneVoices"/> instead.</summary>
     public List<ClipSpeechAlignment> Clips { get; set; } = new();
 
     public ClipSpeechAlignment? Find(int scene, int clip) =>
         Clips.Find(c => c.Scene == scene && c.Clip == clip);
+
+    public SceneVoiceTrack? FindScene(int scene) =>
+        SceneVoices.Find(v => v.Scene == scene);
 }
 
 /// <summary>

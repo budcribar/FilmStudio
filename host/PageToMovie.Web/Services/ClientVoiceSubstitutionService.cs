@@ -37,8 +37,8 @@ public sealed class ClientVoiceSubstitutionService
         _stitch = stitch;
     }
 
-    /// <summary>Result of applying cloned-voice overlay to one clip.</summary>
-    public sealed record ClipOverlayResult(int Scene, int Clip, bool Success, string? Url, string? Error);
+    /// <summary>Result of stitching one scene and overlaying its single cloned-voice narration track.</summary>
+    public sealed record SceneOverlayResult(int Scene, bool Success, string? Url, string? Error);
 
     /// <summary>Outcome of the full "dub this movie in my voice" flow.</summary>
     public sealed record DubMovieResult(bool Ok, string? DownloadUrl, int ClipsDubbed, int ClipsFailed, string? Error);
@@ -73,17 +73,17 @@ public sealed class ClientVoiceSubstitutionService
         onProgress?.Invoke("Syncing clips and audio…");
         try { await _media.SyncProjectMediaToClientAsync(projectId); } catch { /* best effort — overlay reads whatever is local */ }
 
-        onProgress?.Invoke("Placing your voice over each clip…");
+        onProgress?.Invoke("Placing your voice over each scene…");
         var overlays = await ApplyAcrossMovieAsync(projectId, ct);
         var ordered = overlays
             .Where(o => o.Success && !string.IsNullOrWhiteSpace(o.Url))
-            .OrderBy(o => o.Scene).ThenBy(o => o.Clip)
+            .OrderBy(o => o.Scene)
             .Select(o => o.Url!)
             .ToList();
         var failed = overlays.Count(o => !o.Success);
         if (ordered.Count == 0)
             return new DubMovieResult(false, null, 0, failed,
-                "No clips could be voiced — check that the movie's clips are available and a voice has been recorded.");
+                "No scenes could be voiced — check that the movie's clips are available and a voice has been recorded.");
 
         onProgress?.Invoke("Stitching your movie…");
         var stitched = await _stitch.ConcatAsync(ordered, ct);
@@ -102,154 +102,85 @@ public sealed class ClientVoiceSubstitutionService
     }
 
     /// <summary>
-    /// Apply cloned-voice overlay across every clip in the persisted alignment. Detects + persists
-    /// timestamps as needed. Returns one result per clip (final blob URL on success). Never throws for
-    /// a single-clip failure — that clip is reported as failed and the rest continue.
+    /// Overlay the cloned voice across the movie, one continuous narration track per SCENE: stitch the
+    /// scene's clips into a scene video, overlay the single scene voice track, and return one result
+    /// per scene (final blob URL on success). Never throws for a single-scene failure — that scene is
+    /// reported failed and the rest continue.
     /// </summary>
-    public async Task<IReadOnlyList<ClipOverlayResult>> ApplyAcrossMovieAsync(
+    public async Task<IReadOnlyList<SceneOverlayResult>> ApplyAcrossMovieAsync(
         string projectId, CancellationToken ct = default)
     {
-        var results = new List<ClipOverlayResult>();
+        var results = new List<SceneOverlayResult>();
         var alignment = await _engine.GetVoiceAlignmentAsync(projectId, ct);
-        if (alignment is null || alignment.Clips.Count == 0)
+        if (alignment is null || alignment.SceneVoices.Count == 0)
             return results;
 
-        var pendingTimestampUpdates = new List<ClipTimestampUpdate>();
-
-        foreach (var clip in alignment.Clips)
+        foreach (var sv in alignment.SceneVoices.OrderBy(v => v.Scene))
         {
             ct.ThrowIfCancellationRequested();
             try
             {
-                var clipUrl = await _stitch.ResolveClipUrlAsync(projectId, clip.Scene, clip.Clip, ct);
-                if (string.IsNullOrWhiteSpace(clipUrl))
+                // 1. Stitch the scene's clips into one scene video.
+                var clipUrls = await _stitch.CollectClipUrlsAsync(projectId, sv.Scene, ct: ct);
+                if (clipUrls.Count == 0)
                 {
-                    results.Add(new ClipOverlayResult(clip.Scene, clip.Clip, false, null, "clip video not found"));
+                    results.Add(new SceneOverlayResult(sv.Scene, false, null, "no clips on disk for scene"));
                     continue;
                 }
 
-                // 1. Detect speech windows unless we already have detected timestamps for this clip.
-                if (!clip.IsDetected)
+                string sceneVideoUrl;
+                if (clipUrls.Count == 1)
                 {
-                    var detect = await _js.InvokeAsync<JsSpeechDetectResult>(
-                        "PageToMovieFfmpeg.detectSpeechSegmentsAsync", ct, clipUrl, new { });
-                    if (detect is { Success: true } && detect.Segments is not null)
+                    sceneVideoUrl = clipUrls[0];
+                }
+                else
+                {
+                    var stitched = await _stitch.ConcatAsync(clipUrls, ct);
+                    if (!stitched.Success || string.IsNullOrWhiteSpace(stitched.Url))
                     {
-                        var update = new ClipTimestampUpdate
-                        {
-                            Scene = clip.Scene,
-                            Clip = clip.Clip,
-                            ClipDurationSeconds = detect.TotalSec,
-                            Windows = detect.Segments
-                                .Select(s => new SpeechWindow { StartSec = s.StartSec, EndSec = s.EndSec })
-                                .ToList(),
-                        };
-                        pendingTimestampUpdates.Add(update);
-
-                        // Apply to the in-memory copy too so the overlay below uses real windows.
-                        ApplyWindowsLocally(clip, detect);
+                        results.Add(new SceneOverlayResult(sv.Scene, false, null, stitched.Error ?? "scene stitch failed"));
+                        continue;
                     }
+                    sceneVideoUrl = stitched.Url!;
                 }
 
-                // 2. Build overlay segments from each segment's cloned-voice audio + its window.
-                var overlaySegments = new List<object>();
-                foreach (var seg in clip.Segments.OrderBy(s => s.Index))
+                // 2. No narration for this scene → keep it as-is (un-narrated).
+                if (string.IsNullOrWhiteSpace(sv.VoiceAudioRelativePath))
                 {
-                    if (string.IsNullOrWhiteSpace(seg.VoiceAudioRelativePath)) continue;
-                    var audioUrl = await _media.GetLocalBlobUrlAsync(projectId, seg.VoiceAudioRelativePath);
-                    if (string.IsNullOrWhiteSpace(audioUrl)) continue;
-                    overlaySegments.Add(new
-                    {
-                        audioUrl,
-                        startSec = seg.StartSec,
-                        endSec = seg.EndSec,
-                    });
-                }
-
-                if (overlaySegments.Count == 0)
-                {
-                    results.Add(new ClipOverlayResult(clip.Scene, clip.Clip, false, null, "no cloned-voice audio synced"));
+                    results.Add(new SceneOverlayResult(sv.Scene, true, sceneVideoUrl, null));
                     continue;
                 }
 
+                var audioUrl = await _media.GetLocalBlobUrlAsync(projectId, sv.VoiceAudioRelativePath);
+                if (string.IsNullOrWhiteSpace(audioUrl))
+                {
+                    // Voice not synced locally — keep the un-narrated scene rather than dropping it.
+                    results.Add(new SceneOverlayResult(sv.Scene, true, sceneVideoUrl, "voice audio not synced"));
+                    continue;
+                }
+
+                // 3. Overlay the single continuous narration onto the whole scene video (plays from the
+                //    scene start; the browser mix ducks the bed and boosts the voice).
+                var overlaySegments = new object[]
+                {
+                    new { audioUrl, startSec = 0.0, endSec = 0.0 },
+                };
                 var overlay = await _js.InvokeAsync<JsOverlayResult>(
                     "PageToMovieFfmpeg.overlayVoiceSegmentsAsync",
-                    ct, clipUrl, overlaySegments.ToArray(), new { });
+                    ct, sceneVideoUrl, overlaySegments, new { });
 
                 if (overlay is { Success: true } && !string.IsNullOrWhiteSpace(overlay.Url))
-                    results.Add(new ClipOverlayResult(clip.Scene, clip.Clip, true, overlay.Url, null));
+                    results.Add(new SceneOverlayResult(sv.Scene, true, overlay.Url, null));
                 else
-                    results.Add(new ClipOverlayResult(clip.Scene, clip.Clip, false, null, overlay?.Error ?? "overlay failed"));
+                    results.Add(new SceneOverlayResult(sv.Scene, false, null, overlay?.Error ?? "overlay failed"));
             }
             catch (Exception ex)
             {
-                results.Add(new ClipOverlayResult(clip.Scene, clip.Clip, false, null, ex.Message));
+                results.Add(new SceneOverlayResult(sv.Scene, false, null, ex.Message));
             }
-        }
-
-        // 3. Persist any newly detected timestamps so a re-run skips detection (best-effort).
-        if (pendingTimestampUpdates.Count > 0)
-        {
-            try { await _engine.PostVoiceAlignmentTimestampsAsync(projectId, pendingTimestampUpdates, ct); }
-            catch { /* non-fatal: overlay already produced; persistence can retry next run */ }
         }
 
         return results;
-    }
-
-    /// <summary>
-    /// Assign detected windows to the clip's segments by order/count (a light client-side mirror of
-    /// the server's authoritative match, used only so the immediate overlay uses real windows; the
-    /// server re-matches and persists the canonical result).
-    /// </summary>
-    private static void ApplyWindowsLocally(ClipSpeechAlignment clip, JsSpeechDetectResult detect)
-    {
-        var windows = (detect.Segments ?? new List<JsSpeechWindow>())
-            .Where(w => w.EndSec - w.StartSec >= 0.15)
-            .OrderBy(w => w.StartSec)
-            .ToList();
-        if (windows.Count == 0 || clip.Segments.Count == 0) return;
-
-        if (windows.Count == clip.Segments.Count)
-        {
-            for (var i = 0; i < clip.Segments.Count; i++)
-            {
-                clip.Segments[i].StartSec = windows[i].StartSec;
-                clip.Segments[i].EndSec = windows[i].EndSec;
-                clip.Segments[i].Source = SpeechTimestampSource.Silence;
-            }
-            return;
-        }
-
-        // Counts differ: spread the overall detected span across segments by text length.
-        var spanStart = windows[0].StartSec;
-        var spanEnd = Math.Max(windows[^1].EndSec, spanStart + 0.01);
-        var weights = clip.Segments.Select(s => (double)Math.Max(1, (s.DialogueText ?? "").Trim().Length)).ToList();
-        var total = weights.Sum();
-        var span = spanEnd - spanStart;
-        var cursor = spanStart;
-        for (var i = 0; i < clip.Segments.Count; i++)
-        {
-            var end = i == clip.Segments.Count - 1 ? spanEnd : cursor + span * (weights[i] / total);
-            clip.Segments[i].StartSec = Math.Round(cursor, 3);
-            clip.Segments[i].EndSec = Math.Round(end, 3);
-            clip.Segments[i].Source = SpeechTimestampSource.Silence;
-            cursor = end;
-        }
-    }
-
-    private sealed class JsSpeechDetectResult
-    {
-        public bool Success { get; set; }
-        public double TotalSec { get; set; }
-        public List<JsSpeechWindow>? Segments { get; set; }
-        public string? Error { get; set; }
-    }
-
-    private sealed class JsSpeechWindow
-    {
-        public double StartSec { get; set; }
-        public double EndSec { get; set; }
     }
 
     private sealed class JsOverlayResult

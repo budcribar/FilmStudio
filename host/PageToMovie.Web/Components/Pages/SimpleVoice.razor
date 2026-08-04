@@ -780,7 +780,7 @@ private async Task StartMicAsync()
                 _projectId,
                 charKey: _narratorKey,
                 onProgress: s => { _dubStatus = s; _ = InvokeAsync(StateHasChanged); });
-            _dubSummary = $"{res.ClipsDubbed} clip(s) in your voice"
+            _dubSummary = $"{res.ClipsDubbed} scene(s) in your voice"
                           + (res.ClipsFailed > 0 ? $" · {res.ClipsFailed} skipped" : "");
             if (res.Ok && !string.IsNullOrWhiteSpace(res.DownloadUrl))
                 _dubbedUrl = res.DownloadUrl;
