@@ -4440,8 +4440,10 @@ app.MapGet("/api/projects/forkable", async (
         return denied;
     var all = await store.ListProjectsAsync(ct);
     var forkable = all
-        .Where(p => string.Equals(p.VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(p.VisibilityMode, "PublicForkable", StringComparison.OrdinalIgnoreCase))
+        .Where(p => (string.Equals(p.VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(p.VisibilityMode, "PublicForkable", StringComparison.OrdinalIgnoreCase))
+                    // Exclude forks themselves — only original forkable sources are pickable stories.
+                    && string.IsNullOrWhiteSpace(p.ParentProjectId))
         .OrderBy(p => p.Label ?? p.Title ?? p.Id, StringComparer.OrdinalIgnoreCase)
         .Select(p => new
         {

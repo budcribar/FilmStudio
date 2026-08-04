@@ -1414,6 +1414,18 @@ public sealed class ProjectStore
             throw new InvalidOperationException($"Forking disabled for this project (Visibility mode: {source.VisibilityMode}). Only 'Open' (Public Forkable) projects can be forked by community members.");
         }
 
+        // Idempotent per (source, user): if this owner already has a fork of this source, reopen it
+        // rather than creating a duplicate. Otherwise each Easy Start "read in my voice" pick piled up
+        // a new fork (Buster-fork-xxxx, Buster-fork-yyyy, …).
+        var forkOwnerSeg = SanitizeUserSegment(newOwnerUserId);
+        var existingFork = (await ListProjectsAsync(ct).ConfigureAwait(false)).FirstOrDefault(p =>
+            !string.IsNullOrWhiteSpace(p.ParentProjectId)
+            && string.Equals(p.ParentProjectId, source.Id, StringComparison.OrdinalIgnoreCase)
+            && (p.Id ?? "").Contains('/')
+            && string.Equals((p.Id ?? "").Split('/')[0], forkOwnerSeg, StringComparison.OrdinalIgnoreCase));
+        if (existingFork is not null)
+            return existingFork;
+
         var baseName = source.Title ?? source.Id.Split('/').LastOrDefault() ?? source.Id;
         var slug = SanitizeProjectId($"{baseName}-fork-{Guid.NewGuid().ToString("N")[..6]}");
         if (slug.Length == 0)
@@ -1458,6 +1470,9 @@ public sealed class ProjectStore
         meta["title"] = $"{source.Title ?? source.Id} (fork)";
         meta["ownerUserId"] = newOwnerUserId.Trim();
         meta["parentProjectId"] = source.Id;
+        // A fork is the user's private working copy — don't inherit the source's "Open" visibility,
+        // or every fork would show up as its own pickable "story" in the forkable list.
+        meta["visibilityMode"] = "Private";
         meta["createdAt"] = DateTimeOffset.UtcNow.ToString("o");
         await File.WriteAllTextAsync(
             metaPath, JsonSerializer.Serialize(meta, JsonOpts) + "\n", ct).ConfigureAwait(false);
