@@ -502,6 +502,28 @@ public sealed class EngineApiClient
         return JsonSerializer.Deserialize<AdminProjectImportResultDto>(raw, JsonOpts);
     }
 
+    /// <summary>User-mode import: import a project zip into the current user's own namespace
+    /// (no admin required). Multipart field name: file.</summary>
+    public async Task<AdminProjectImportResultDto?> ImportProjectZipAsUserAsync(
+        Stream zipStream,
+        string fileName,
+        bool overwrite = false,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var content = new MultipartFormDataContent();
+        var streamContent = new StreamContent(zipStream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
+        content.Add(streamContent, "file", string.IsNullOrWhiteSpace(fileName) ? "project.zip" : fileName);
+        content.Add(new StringContent(overwrite ? "true" : "false"), "overwrite");
+
+        using var resp = await _http.PostAsync("/api/projects/import", content, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(raw) ?? resp.ReasonPhrase ?? "import failed");
+        return JsonSerializer.Deserialize<AdminProjectImportResultDto>(raw, JsonOpts);
+    }
+
     public async Task<AdminCreditsOverviewDto?> GetAdminUsersCreditsAsync(CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/users");

@@ -1643,6 +1643,58 @@ app.MapPost("/api/admin/projects/import", async (
     }
 });
 
+/// <summary>
+/// User-mode import: any signed-in user imports a project zip into their OWN namespace. The owner is
+/// forced to the caller (the zip's original owner is ignored) so a user can't import into — or
+/// overwrite — someone else's project. Multipart field <c>file</c>; optional <c>overwrite</c>=true.
+/// </summary>
+app.MapPost("/api/projects/import", async (
+    HttpRequest req,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    ProjectArchiveService archives,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (string.IsNullOrWhiteSpace(user.UserId))
+        return Results.Json(new { ok = false, error = "sign in required" },
+            statusCode: StatusCodes.Status401Unauthorized);
+    if (!req.HasFormContentType)
+        return Results.BadRequest(new { ok = false, error = "multipart form with file required" });
+
+    var form = await req.ReadFormAsync(ct);
+    var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+        return Results.BadRequest(new { ok = false, error = "file required (project zip)" });
+
+    var overwrite = string.Equals(form["overwrite"].ToString(), "true", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(form["overwrite"].ToString(), "1", StringComparison.OrdinalIgnoreCase);
+
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var result = await archives.ImportAsync(
+            stream,
+            preferredId: null,
+            overwrite: overwrite,
+            targetUserId: user.UserId,
+            forceOwnerUserId: user.UserId,
+            ct: ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = result.ProjectId,
+            active = result.Project,
+            message = result.Message,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/admin/users/credits", async (
     AdminGrantCreditsRequest body,
     IUserContext user,
