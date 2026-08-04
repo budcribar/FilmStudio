@@ -695,6 +695,58 @@ public sealed class EngineApiClient
         catch { return null; }
     }
 
+    // ── Checkpoints (named project snapshots, backed by the per-project git repo; video is
+    //     git-ignored, so reverting restores the plan/config without touching your clips) ──
+
+    /// <summary>Create a named checkpoint (a commit of the project's current text/plan state).</summary>
+    public async Task<(bool Ok, string? Error)> CreateCheckpointAsync(string projectId, string name, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/git/commit")
+        {
+            Content = JsonContent.Create(new { Message = name }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        return resp.IsSuccessStatusCode ? (true, null) : (false, TryError(body) ?? resp.ReasonPhrase);
+    }
+
+    /// <summary>List checkpoints (newest first).</summary>
+    public async Task<List<CheckpointDto>> ListCheckpointsAsync(string projectId, int limit = 30, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        try
+        {
+            var dto = await _http.GetFromJsonAsync<CheckpointHistoryEnvelope>(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/git/history?limit={limit}", JsonOpts, ct);
+            return dto?.History ?? new List<CheckpointDto>();
+        }
+        catch
+        {
+            return new List<CheckpointDto>();
+        }
+    }
+
+    /// <summary>Revert the project to a checkpoint (restores plan/config; clips are untouched).</summary>
+    public async Task<(bool Ok, string? Message, string? Error)> RevertToCheckpointAsync(string projectId, string commitHash, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/git/revert/{Uri.EscapeDataString(commitHash)}");
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            return (false, null, TryError(body) ?? resp.ReasonPhrase);
+        return (true, TrySceneMessage(body), null);
+    }
+
+    private sealed class CheckpointHistoryEnvelope
+    {
+        public bool Ok { get; set; }
+        public List<CheckpointDto>? History { get; set; }
+    }
+
     public async Task<SyncOriginResultDto?> SyncOriginAsync(
         string projectId,
         string parentProjectId,
@@ -4368,6 +4420,14 @@ public sealed class ForkableStoryDto
     public string Id { get; set; } = "";
     public string Title { get; set; } = "";
     public string? OwnerUserId { get; set; }
+}
+
+public sealed class CheckpointDto
+{
+    public string CommitHash { get; set; } = "";
+    public string? Author { get; set; }
+    public string? Message { get; set; }
+    public DateTime CommittedAt { get; set; }
 }
 
 public sealed class DemoForkResult
