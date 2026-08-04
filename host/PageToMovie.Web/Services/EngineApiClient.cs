@@ -1523,6 +1523,57 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return res?.Job;
     }
 
+    /// <summary>
+    /// Movie-wide "substitute my cloned voice" — walks every clip, synthesizes each line in the
+    /// character's cloned voice, and maintains the persisted speech alignment. Tracked job
+    /// (kind <c>voice-substitution</c>); per-line audio over <see cref="JobSnapshot.ClientMediaUrl"/>.
+    /// </summary>
+    public async Task<JobSnapshot?> StartVoiceSubstitutionAsync(
+        StartVoiceSubstitutionRequest request,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync("/api/jobs/voice-substitution", request, JsonOpts, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(raw) ?? $"{(int)resp.StatusCode}");
+        var res = JsonSerializer.Deserialize<GenBatchJobResponseDto>(raw, JsonOpts);
+        return res?.Job;
+    }
+
+    /// <summary>Load the persisted per-clip speech alignment (null when never built).</summary>
+    public async Task<ProjectVoiceAlignment?> GetVoiceAlignmentAsync(
+        string projectId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.GetAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/voice-alignment", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        var res = await resp.Content.ReadFromJsonAsync<VoiceAlignmentResponseDto>(JsonOpts, ct);
+        return res?.Alignment;
+    }
+
+    /// <summary>Persist client-detected speech windows so a future substitution skips detection.</summary>
+    public async Task PostVoiceAlignmentTimestampsAsync(
+        string projectId, IReadOnlyList<ClipTimestampUpdate> updates, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/voice-alignment/timestamps",
+            updates, JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? $"{(int)resp.StatusCode}");
+        }
+    }
+
+    private class VoiceAlignmentResponseDto
+    {
+        public bool Ok { get; set; }
+        public ProjectVoiceAlignment? Alignment { get; set; }
+    }
+
     private class GenBatchJobResponseDto
     {
         public bool Ok { get; set; }

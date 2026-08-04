@@ -403,6 +403,234 @@ window.PageToMovieFfmpeg = {
         });
     },
 
+    /**
+     * Run ffmpeg `silencedetect` over an in-MEMFS clip and return its raw log lines. The caller
+     * parses `silence_start` / `silence_end` from the log (see parseSilenceLog / ClipSilenceTrimmer).
+     * noiseDb (e.g. -30) and minSilenceSec (e.g. 0.3) are the silencedetect thresholds.
+     * @returns {{ success:boolean, log?:string, error?:string }}
+     */
+    _silenceDetectMemfsAsync: async function (inName, noiseDb, minSilenceSec) {
+        const ffmpeg = this._ffmpeg;
+        const db = (typeof noiseDb === "number" && noiseDb < 0) ? noiseDb : -30;
+        const minSil = (typeof minSilenceSec === "number" && minSilenceSec > 0) ? minSilenceSec : 0.3;
+        let log = "";
+        const logHandler = ({ message }) => {
+            if (typeof message === "string" && message.indexOf("silence_") >= 0) {
+                log += message + "\n";
+            }
+        };
+        ffmpeg.on("log", logHandler);
+        try {
+            // -af silencedetect writes silence_start/silence_end to the log; -f null discards output.
+            await ffmpeg.exec([
+                "-hide_banner",
+                "-i", inName,
+                "-af", "silencedetect=noise=" + db + "dB:d=" + minSil,
+                "-f", "null", "-",
+            ]);
+        } catch (err) {
+            ffmpeg.off("log", logHandler);
+            return { success: false, error: (err && err.message) ? err.message : String(err) };
+        }
+        ffmpeg.off("log", logHandler);
+        return { success: true, log: log };
+    },
+
+    /**
+     * Detect the NON-SILENT (speech) windows of a clip via silencedetect, returned as
+     * [{ startSec, endSec }] in clip time. This is the free, local, PRIMARY timestamp source for
+     * voice substitution — the known dialogue lines from the shot plan are matched onto these
+     * windows server-side (VoiceAlignmentStore.MatchSegmentsToLines).
+     * @param {string} url clip URL (blob: or http)
+     * @param {{noiseDb?:number,minSilenceSec?:number}} [opts]
+     * @returns {{ success:boolean, totalSec?:number, segments?:{startSec:number,endSec:number}[], error?:string }}
+     */
+    detectSpeechSegmentsAsync: async function (url, opts, onProgress) {
+        opts = opts || {};
+        if (!url) return { success: false, error: "No URL" };
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return { success: false, error: load.error || "ffmpeg load failed" };
+
+            const ffmpeg = self._ffmpeg;
+            const inName = "speechdet_in.mp4";
+            try {
+                reportProgress(onProgress, 10, "Loading clip…");
+                await ffmpeg.writeFile(inName, await self._safeFetchFile(url));
+
+                reportProgress(onProgress, 30, "Probing duration…");
+                const probe = await self._probeDurationMemfsAsync(inName);
+                const totalSec = probe.success && probe.seconds > 0 ? probe.seconds : 0;
+
+                reportProgress(onProgress, 55, "Detecting speech…");
+                const det = await self._silenceDetectMemfsAsync(inName, opts.noiseDb, opts.minSilenceSec);
+                if (!det.success) {
+                    return { success: false, error: det.error || "silence detect failed" };
+                }
+
+                const segments = self._invertSilenceToSpeech(det.log || "", totalSec, opts.minSilenceSec);
+                reportProgress(onProgress, 100, "Speech detected");
+                return { success: true, totalSec: totalSec, segments: segments };
+            } catch (err) {
+                return { success: false, error: (err && err.message) ? err.message : String(err) };
+            } finally {
+                try { await ffmpeg.deleteFile(inName); } catch (_) { /* */ }
+            }
+        });
+    },
+
+    /**
+     * Turn a silencedetect log into non-silent [start,end] windows over [0,totalSec].
+     * Silence runs are the complement of speech; a clip with no detected silence is one speech run.
+     */
+    _invertSilenceToSpeech: function (log, totalSec, minSilenceSec) {
+        const total = totalSec > 0 ? totalSec : 0;
+        const minGap = (typeof minSilenceSec === "number" && minSilenceSec > 0) ? minSilenceSec : 0.3;
+        // Collect (start,end) silence intervals from the log.
+        const silences = [];
+        let curStart = null;
+        const lines = String(log).split("\n");
+        for (const line of lines) {
+            let m = line.match(/silence_start:\s*(-?\d+(?:\.\d+)?)/);
+            if (m) { curStart = Math.max(0, parseFloat(m[1])); continue; }
+            m = line.match(/silence_end:\s*(-?\d+(?:\.\d+)?)/);
+            if (m) {
+                const end = parseFloat(m[1]);
+                if (curStart !== null) { silences.push([curStart, end]); curStart = null; }
+            }
+        }
+        if (curStart !== null && total > 0) silences.push([curStart, total]);
+
+        // Speech = complement of silence within [0,total].
+        if (total <= 0) {
+            // Unknown duration: fall back to a single open window if any speech implied.
+            return silences.length === 0 ? [] : [];
+        }
+        const speech = [];
+        let cursor = 0;
+        for (const [s, e] of silences) {
+            const gs = Math.max(0, s);
+            if (gs - cursor > 0.05) speech.push({ startSec: cursor, endSec: gs });
+            cursor = Math.max(cursor, Math.min(total, e));
+        }
+        if (total - cursor > 0.05) speech.push({ startSec: cursor, endSec: total });
+
+        // Merge windows separated by less than minGap (avoids chopping one line into fragments).
+        const merged = [];
+        for (const w of speech) {
+            if (merged.length > 0 && w.startSec - merged[merged.length - 1].endSec < minGap) {
+                merged[merged.length - 1].endSec = w.endSec;
+            } else {
+                merged.push({ startSec: w.startSec, endSec: w.endSec });
+            }
+        }
+        return merged;
+    },
+
+    /**
+     * Overlay cloned-voice speech clips onto a video's ORIGINAL audio at given time windows, ducking
+     * (lowering) the original only during those windows so ambience/music/SFX stay intact everywhere
+     * else. This is the client-side compose step for voice substitution — the API host never spawns
+     * native ffmpeg.
+     *
+     * Each segment: { audioUrl, startSec, endSec }. The cloned audio is delayed to startSec; the
+     * original track is ducked via a volume envelope that dips inside each [startSec,endSec] window.
+     * If a cloned line is longer than its window it simply plays past it (over ducked original); a
+     * future enhancement can atempo-fit it to the window (see design doc TODO).
+     *
+     * @param {string} videoUrl
+     * @param {{audioUrl:string,startSec:number,endSec:number}[]} segments
+     * @param {{duckVolume?:number}} [opts] duckVolume 0-1 for original during speech (default 0.15)
+     * @returns {{ success:boolean, url?:string, error?:string }}
+     */
+    overlayVoiceSegmentsAsync: async function (videoUrl, segments, opts, onProgress) {
+        if (!videoUrl) return { success: false, error: "No video URL" };
+        const list = Array.isArray(segments) ? segments.filter(s => s && s.audioUrl) : [];
+        if (list.length === 0) return { success: true, url: videoUrl }; // nothing to overlay
+
+        opts = opts || {};
+        const duck = Math.max(0, Math.min(1, opts.duckVolume != null ? opts.duckVolume : 0.15));
+
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return load;
+
+            const ffmpeg = self._ffmpeg;
+            const inVideo = "ov_in_video.mp4";
+            const outName = "ov_out.mp4";
+            const audioNames = [];
+            try {
+                reportProgress(onProgress, 8, "Loading picture…");
+                await ffmpeg.writeFile(inVideo, await self._safeFetchFile(videoUrl));
+
+                // Write each cloned-voice clip to MEMFS (keep extension so ffmpeg can sniff container).
+                for (let i = 0; i < list.length; i++) {
+                    reportProgress(onProgress, 8 + Math.round((i / list.length) * 22),
+                        "Loading voice " + (i + 1) + "/" + list.length + "…");
+                    const seg = list[i];
+                    let ext = ".mp3";
+                    if (/\.wav(\?|$)/i.test(seg.audioUrl) || (seg.audioUrl.indexOf("audio/wav") >= 0)) ext = ".wav";
+                    else if (/\.m4a(\?|$)/i.test(seg.audioUrl) || (seg.audioUrl.indexOf("audio/mp4") >= 0)) ext = ".m4a";
+                    const name = "ov_voice_" + i + ext;
+                    await ffmpeg.writeFile(name, await self._safeFetchFile(seg.audioUrl));
+                    audioNames.push(name);
+                }
+
+                // Build filter_complex:
+                //  - original audio [0:a] ducked by a volume expression that dips inside each window
+                //  - each cloned clip delayed to its startSec
+                //  - amix everything together
+                const inputs = ["-i", inVideo];
+                for (const n of audioNames) inputs.push("-i", n);
+
+                // Volume envelope for the original: multiply by `duck` when t is inside any window,
+                // else 1. Expressed as volume='if(between(t,s0,e0)+between(...)>0, duck, 1)'.
+                const conds = list.map(s =>
+                    "between(t," + Math.max(0, s.startSec).toFixed(3) + "," + Math.max(0, s.endSec).toFixed(3) + ")"
+                ).join("+");
+                const duckExpr = "volume='if(gt(" + conds + ",0)," + duck.toFixed(3) + ",1)':eval=frame";
+
+                const parts = [];
+                parts.push("[0:a]" + duckExpr + "[base]");
+                const mixLabels = ["[base]"];
+                for (let i = 0; i < list.length; i++) {
+                    const delayMs = Math.max(0, Math.round(list[i].startSec * 1000));
+                    // Input index is i+1 (0 is the video). adelay both channels; apad not needed.
+                    parts.push("[" + (i + 1) + ":a]adelay=" + delayMs + "|" + delayMs + "[v" + i + "]");
+                    mixLabels.push("[v" + i + "]");
+                }
+                parts.push(mixLabels.join("") + "amix=inputs=" + mixLabels.length +
+                    ":duration=first:dropout_transition=0:normalize=0[a]");
+                const filter = parts.join(";");
+
+                reportProgress(onProgress, 45, "Overlaying voice…");
+                await ffmpeg.exec([
+                    "-hide_banner", "-y",
+                    ...inputs,
+                    "-filter_complex", filter,
+                    "-map", "0:v", "-map", "[a]",
+                    "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                    "-shortest",
+                    outName,
+                ]);
+
+                reportProgress(onProgress, 90, "Saving clip…");
+                const url = await self._readAndCleanupAsync(
+                    ffmpeg, outName, "video/mp4", [inVideo].concat(audioNames));
+                reportProgress(onProgress, 100, "Ready");
+                return { success: true, url: url };
+            } catch (err) {
+                console.error("overlayVoiceSegmentsAsync failed:", err);
+                for (const n of [inVideo, outName].concat(audioNames)) {
+                    try { await ffmpeg.deleteFile(n); } catch (_) { /* */ }
+                }
+                return { success: false, error: err.message || String(err) };
+            }
+        });
+    },
+
     encodeSliceAsync: async function (token, startSec, durationSec, onProgress) {
         const self = this;
         return this._runExclusiveAsync(async function () {

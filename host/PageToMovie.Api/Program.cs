@@ -151,6 +151,7 @@ builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaSyncLocator>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<ClipSidecarService>();
+builder.Services.AddSingleton<VoiceAlignmentStore>();
 builder.Services.AddSingleton<MusicSidecarService>();
 builder.Services.AddSingleton<ProjectMigrationService>();
 builder.Services.AddSingleton<VolumeDiskTelemetryService>();
@@ -2543,6 +2544,83 @@ app.MapPost("/api/jobs/speak-batch", async (
     {
         return JobStartError(ex, jobService);
     }
+});
+
+/// <summary>
+/// Movie-wide voice substitution: walk every clip, associate each dialogue line with its speaker,
+/// synthesize the character's cloned voice per line, and maintain the persisted speech alignment.
+/// Tracked job (<c>Kind = voice-substitution</c>); per-line audio handoff over SignalR.
+/// </summary>
+app.MapPost("/api/jobs/voice-substitution", async (
+    StartVoiceSubstitutionRequest body,
+    FilmJobService jobService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb) =>
+{
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        if (string.IsNullOrWhiteSpace(body.CharKey))
+            body.CharKey = "Character_Narrator";
+        var job = await jobService.StartVoiceSubstitutionAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = job.Status == "queued"
+                ? "Queued voice substitution (waiting for lock/worker)"
+                : "Started voice substitution",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
+
+/// <summary>Read the persisted per-clip speech alignment for a project (empty when never built).</summary>
+app.MapGet("/api/projects/{id}/voice-alignment", async (
+    string id,
+    VoiceAlignmentStore alignmentStore,
+    CancellationToken ct) =>
+{
+    var alignment = await alignmentStore.LoadAsync(id, ct);
+    return Results.Ok(new { ok = true, alignment });
+});
+
+/// <summary>
+/// Persist client-detected speech timestamps (from browser ffmpeg silence detection) onto the saved
+/// alignment so a future voice substitution reuses them and skips re-detection. Merges by segment
+/// index; character/text/audio paths are preserved.
+/// </summary>
+app.MapPost("/api/projects/{id}/voice-alignment/timestamps", async (
+    string id,
+    List<ClipTimestampUpdate> updates,
+    VoiceAlignmentStore alignmentStore,
+    CancellationToken ct) =>
+{
+    if (updates is null || updates.Count == 0)
+        return Results.BadRequest(new { ok = false, error = "no updates" });
+
+    var alignment = await alignmentStore.LoadAsync(id, ct);
+    if (alignment is null)
+        return Results.BadRequest(new { ok = false, error = "no alignment to update — run voice substitution first" });
+
+    var applied = 0;
+    foreach (var u in updates)
+    {
+        var clip = alignment.Find(u.Scene, u.Clip);
+        if (clip is null) continue;
+        VoiceAlignmentStore.ApplyTimestamps(clip, u);
+        applied++;
+    }
+
+    await alignmentStore.SaveAsync(id, alignment, ct);
+    return Results.Ok(new { ok = true, clipsUpdated = applied });
 });
 
 /// <summary>

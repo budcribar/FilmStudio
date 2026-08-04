@@ -77,6 +77,18 @@ public sealed class MediaRegistryService
         return $"assets/audio/revoice/scene_{scene:D2}_clip_{clip:D2}{e.ToLowerInvariant()}";
     }
 
+    /// <summary>
+    /// Per-segment cloned-voice TTS for movie-wide voice substitution. A clip can hold more than one
+    /// spoken line (multi-speaker / back-to-back lines), so each line's audio is keyed by its segment
+    /// index alongside the single-line <see cref="RevoiceAudioRelativePath"/>.
+    /// </summary>
+    public static string RevoiceSegmentAudioRelativePath(int scene, int clip, int segment, string ext = ".mp3")
+    {
+        var e = string.IsNullOrWhiteSpace(ext) ? ".mp3" : ext.Trim();
+        if (!e.StartsWith('.')) e = "." + e;
+        return $"assets/audio/revoice/scene_{scene:D2}_clip_{clip:D2}_seg_{segment:D2}{e.ToLowerInvariant()}";
+    }
+
     /// <summary>One background-music segment (IAudioClient.MaxSegmentDurationSeconds-sized) for a
     /// scene — most scenes need only segment 1; longer scenes concatenate client-side.</summary>
     public static string MusicSegmentRelativePath(int scene, int segment) =>
