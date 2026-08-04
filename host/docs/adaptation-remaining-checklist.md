@@ -56,3 +56,9 @@ Last updated: 2026-08-03 (post v4 prompt + visual medium UI)
 | Adaptation report | `source/adaptation_report.json` |
 | Speaker ⊆ cast | `Adaptation.Validation.CastPackageCrossCheck` |
 | Fake chat Stage‑1 | `AdaptationFakeChatTests.cs` |
+
+---
+
+## Mary4 UI follow-up
+
+See **[mary4-ui-checklist.md](./mary4-ui-checklist.md)** for Estimate continue, runtime floor, screenplay/cast UI items (2026-08-03).

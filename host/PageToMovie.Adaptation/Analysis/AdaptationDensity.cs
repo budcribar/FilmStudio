@@ -135,7 +135,8 @@ public static class AdaptationDensity
                 words / StorybookWordsPerSecond,
                 syllables / Math.Max(0.1, StorybookSyllablesPerSecond));
             var filmSec = speechSec * VerseStagingMultiplier;
-            natural = Math.Clamp((int)Math.Round(filmSec / 60.0), 2, 15);
+            // Allow 1 min floor so true micro sources (Mary ~1–2 min) are not forced to 2–3.
+            natural = Math.Clamp((int)Math.Round(filmSec / 60.0), 1, 15);
             delta = natural / (words / 1000.0);
             method = "verse_speech_x_staging";
             notes =
@@ -153,8 +154,8 @@ public static class AdaptationDensity
                 syllables / 4.2);
             var filmMin = speechSec * ShortLiteraryStagingMultiplier / 60.0;
             natural = kind == "picture_book"
-                ? Math.Clamp((int)Math.Round(filmMin), 3, 40)
-                : Math.Clamp((int)Math.Round(filmMin), 5, 45);
+                ? Math.Clamp((int)Math.Round(filmMin), 1, 40)
+                : Math.Clamp((int)Math.Round(filmMin), 2, 45);
             delta = words > 0 ? natural / (words / 1000.0) : DeltaPictureBookPages;
             method = "short_literary_speech_x_staging";
             notes =

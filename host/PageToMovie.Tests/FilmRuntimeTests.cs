@@ -7,7 +7,8 @@ namespace PageToMovie.Tests;
 public class FilmRuntimeTests
 {
     [Theory]
-    [InlineData(1, 2)]
+    [InlineData(0, 1)]
+    [InlineData(1, 1)]
     [InlineData(2, 2)]
     [InlineData(10, 10)]
     [InlineData(200, 180)]

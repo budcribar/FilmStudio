@@ -2,6 +2,7 @@
 @inherits AdaptationPageBase
 @implements IAsyncDisposable
 @inject IJSRuntime Js
+@inject AdminSessionService Session
 
 <PageTitle>Book · Screenplay</PageTitle>
 
@@ -185,30 +186,30 @@
                 </div>
             </div>
 
-            <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
-                @if (Status?.Book.BookTextExists == true)
-                {
-                    <button class="btn btn-outline-secondary btn-sm"
-                            disabled="@(Busy || JobRunning)"
-                            @onclick="CreateFromBookAsync"
-                            title="Replace draft with a first pass from book text">
-                        Draft from book
-                    </button>
-                }
-                @if (CanRunOutline && Status?.XaiConfigured == true && Status?.Book.BookTextExists == true)
-                {
-                    <button class="btn btn-outline-secondary btn-sm"
-                            disabled="@(Busy || JobRunning)"
-                            @onclick="RunOutlineAsync"
-                            title="Draft screenplay from book and approve for shot planning">
-                        Draft &amp; approve from book
-                    </button>
-                }
-            </div>
-            <p class="small text-muted mt-2 mb-0">
-                Changes save automatically. <strong>Jump to scene</strong> navigates the editor;
-                <strong>Book</strong> next to a scene opens the source passage.
-            </p>
+            @* Manual re-draft controls are admin-only. *@
+            @if (Session.IsAdmin)
+            {
+                <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+                    @if (Status?.Book.BookTextExists == true)
+                    {
+                        <button class="btn btn-outline-secondary btn-sm"
+                                disabled="@(Busy || JobRunning)"
+                                @onclick="CreateFromBookAsync"
+                                title="Replace draft with a first pass from book text (admin)">
+                            Draft from book
+                        </button>
+                    }
+                    @if (CanRunOutline && Status?.XaiConfigured == true && Status?.Book.BookTextExists == true)
+                    {
+                        <button class="btn btn-outline-secondary btn-sm"
+                                disabled="@(Busy || JobRunning)"
+                                @onclick="RunOutlineAsync"
+                                title="Draft screenplay from book and approve for shot planning (admin)">
+                            Draft &amp; approve from book
+                        </button>
+                    }
+                </div>
+            }
         </div>
     </div>
 
@@ -392,6 +393,8 @@
                 _scenesEl,
                 Busy || JobRunning);
             _editorReady = true;
+            if (!Busy && !JobRunning)
+                await Js.InvokeVoidAsync("fountainEditor.setReadOnly", EditorId, false);
             StateHasChanged();
         }
         catch (Exception ex)
@@ -438,6 +441,8 @@
         {
             await Js.InvokeVoidAsync("fountainEditor.setValue", EditorId, _text);
             await Js.InvokeVoidAsync("fountainEditor.refresh", EditorId);
+            if (!Busy && !JobRunning)
+                await Js.InvokeVoidAsync("fountainEditor.setReadOnly", EditorId, false);
         }
         else
         {

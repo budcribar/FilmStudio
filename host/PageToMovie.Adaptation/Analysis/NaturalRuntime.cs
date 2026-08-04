@@ -7,7 +7,11 @@ namespace PageToMovie.Adaptation;
 /// </summary>
 public static class NaturalRuntime
 {
-    public const int MinMinutes = 2;
+    /// <summary>
+    /// Floor for target/natural minutes. 1 allows true micro films (nursery rhymes ~0.5–2 min)
+    /// without forcing a fake 2–3 min floor that inflates cost and pads Stage‑1.
+    /// </summary>
+    public const int MinMinutes = 1;
     public const int MaxMinutes = 180;
 
     public static int ClampMinutes(int minutes) =>

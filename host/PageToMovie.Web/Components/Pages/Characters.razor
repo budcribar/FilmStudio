@@ -236,6 +236,7 @@ else
                     var thumb = ListThumbUrl(c);
                     var hasVoice = HasVoiceProfile(c);
                     <button type="button"
+                            @key="c.Key"
                             class="list-group-item list-group-item-action char-list-item @(active ? "active" : "")"
                             disabled="@CastListLocked"
                             title="@(CastListLocked ? "Wait until the current action finishes" : null)"
@@ -258,7 +259,7 @@ else
                         }
                         else if (thumb is { Length: > 0 })
                         {
-                            <img src="@thumb" alt="" class="char-list-thumb" />
+                            <img @key="@(c.Key + "|" + thumb)" src="@thumb" alt="" class="char-list-thumb" loading="lazy" />
                         }
                         else
                         {
@@ -331,33 +332,33 @@ else
             }
             else
             {
-                @* Name + actions only — lock status already on the left list badges *@
+                @* Name + actions — no middle thumbnail (sidebar already shows look). *@
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    @if (PreferredImageUrl is { Length: > 0 } prefUrl)
-                    {
-                        <img src="@prefUrl" alt="" class="char-id-strip__thumb rounded border" />
-                    }
                     <div class="fw-semibold">@_selected.DisplayName</div>
                     <div class="ms-auto d-flex flex-wrap gap-1">
                         @if (_mode != Mode.PickSource)
                         {
                             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="BackToSource">← Edit</button>
                         }
-                        @if (_selected.Locked)
-                        {
-                            <button type="button" class="btn btn-sm btn-outline-warning" disabled="@_busy"
-                                    @onclick="UnlockAsync">Unlock</button>
-                        }
                     </div>
                 </div>
 
                 <div class="card mb-2 @(_mode == Mode.PickSource ? "border-primary" : "")">
-                    <button type="button"
-                            class="card-header py-1 px-2 d-flex justify-content-between align-items-center gap-2 char-panel-toggle border-0 bg-transparent w-100 text-start"
-                            @onclick="() => _panelPictureOpen = !_panelPictureOpen">
-                        <span><strong>Look & voice</strong></span>
-                        <span class="small text-muted">@(_panelPictureOpen ? "▲" : "▼")</span>
-                    </button>
+                    <div class="card-header py-1 px-2 d-flex justify-content-between align-items-center gap-2">
+                        <button type="button"
+                                class="char-panel-toggle border-0 bg-transparent text-start p-0 flex-grow-1 d-flex justify-content-between align-items-center gap-2"
+                                @onclick="() => _panelPictureOpen = !_panelPictureOpen">
+                            <span><strong>Look & voice</strong></span>
+                            <span class="small text-muted">@(_panelPictureOpen ? "▲" : "▼")</span>
+                        </button>
+                        @if (_selected.Locked)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-warning" disabled="@_busy"
+                                    title="Unlock this character look so it can be changed"
+                                    @onclick="UnlockAsync"
+                                    @onclick:stopPropagation="true">Unlock</button>
+                        }
+                    </div>
                     @if (_panelPictureOpen)
                     {
                         <div class="card-body py-2">
@@ -701,27 +702,44 @@ else
                                 }
                             }
 
-                            <hr class="my-3" />
-                            <div class="char-voice-inline" data-testid="char-voice-section">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                                    <div>
-                                        <strong class="small">Voice</strong>
-                                        <span class="badge text-bg-secondary ms-1" style="font-size:0.65rem">optional</span>
+                            @if (ShowVoiceFields(_selected))
+                            {
+                                <hr class="my-3" />
+                                <div class="char-voice-inline" data-testid="char-voice-section">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                        <div>
+                                            <strong class="small">Voice</strong>
+                                            <span class="badge text-bg-secondary ms-1" style="font-size:0.65rem">optional</span>
+                                        </div>
+                                        @if (HasVoiceProfile(_selected))
+                                        {
+                                            <span class="badge text-bg-success" style="font-size:0.65rem">Profile set</span>
+                                        }
+                                        else if (_selected.HasVoiceCloneSample)
+                                        {
+                                            <span class="badge text-bg-info text-dark" style="font-size:0.65rem">Clone sample</span>
+                                        }
                                     </div>
-                                    @if (HasVoiceProfile(_selected))
-                                    {
-                                        <span class="badge text-bg-success" style="font-size:0.65rem">Profile set</span>
-                                    }
-                                    else if (_selected.HasVoiceCloneSample)
-                                    {
-                                        <span class="badge text-bg-info text-dark" style="font-size:0.65rem">Clone sample</span>
-                                    }
+                                    <p class="small text-muted mb-2">
+                                        Describe the voice style, or record a clone sample below.
+                                    </p>
+                                    @RenderVoiceEditor()
                                 </div>
-                                <p class="small text-muted mb-2">
-                                    Describe the voice style, or record a clone sample below.
-                                </p>
-                                @RenderVoiceEditor()
-                            </div>
+                            }
+                            else
+                            {
+                                <hr class="my-3" />
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2" data-testid="char-voice-hidden-hint">
+                                    <p class="small text-muted mb-0">
+                                        No voice profile — optional (e.g. animal / non-speaking).
+                                    </p>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => _forceShowVoice = true">
+                                        Add voice…
+                                    </button>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -800,6 +818,17 @@ else
 
     private static bool HasVoiceProfile(CharacterSummary c) =>
         !string.IsNullOrWhiteSpace(c.VoiceProfile);
+
+    private bool ShowVoiceFields(CharacterSummary c)
+    {
+        if (_forceShowVoice) return true;
+        if (c.HasVoiceCloneSample) return true;
+        if (HasVoiceProfile(c)) return true;
+        if (!string.IsNullOrWhiteSpace(c.VoiceLabel)) return true;
+        if (!string.IsNullOrWhiteSpace(_editVoiceProfile) || !string.IsNullOrWhiteSpace(_editVoiceLabel))
+            return true;
+        return false;
+    }
 
     private string PreferredImageLabel =>
         _selected is null ? ""
@@ -941,6 +970,7 @@ else
     private string _editVoiceLabel = "";
     private string _editVoiceProfile = "";
     private bool _panelPictureOpen = true;
+    private bool _forceShowVoice;
     private bool _voicePreviewBusy;
     private string? _voicePreviewUrl;
     private string? _voicePreviewError;
@@ -1617,6 +1647,7 @@ else
             _lookSaveCts?.Cancel();
             _editVoiceLabel = _selected.VoiceLabel ?? "";
             _editVoiceProfile = _selected.VoiceProfile ?? "";
+            _forceShowVoice = false;
             RefreshVoiceClonePlayUrl();
             _voiceCloneHint = null;
             _voiceCloneError = null;

@@ -35,7 +35,7 @@
                        type="number"
                        class="form-control form-control-sm"
                        style="max-width: 7rem;"
-                       min="2"
+                       min="1"
                        max="180"
                        @bind="_edit"
                        @bind:event="oninput"
@@ -81,9 +81,9 @@
 
     private bool _visible;
     private bool _busy;
-    private int _natural = 5;
-    private int _target = 5;
-    private int _edit = 5;
+    private int _natural = 1;
+    private int _target = 1;
+    private int _edit = 1;
     private string _mode = "natural";
     private int? _words;
     private string? _bookKind;
@@ -117,8 +117,8 @@
                 _visible = false;
                 return;
             }
-            _natural = Math.Clamp(dto.NaturalMinutes, 2, 180);
-            _target = Math.Clamp(dto.TargetMinutes > 0 ? dto.TargetMinutes : _natural, 2, 180);
+            _natural = Math.Clamp(dto.NaturalMinutes, 1, 180);
+            _target = Math.Clamp(dto.TargetMinutes > 0 ? dto.TargetMinutes : _natural, 1, 180);
             _edit = _target;
             _mode = string.IsNullOrWhiteSpace(dto.Mode) ? "natural" : dto.Mode!;
             _words = dto.TextWords;

@@ -143,6 +143,24 @@
             </div>
         </div>
 
+        @* Primary action: confirm estimate and advance to Film (shot plan / generate). *@
+        @if (!string.IsNullOrWhiteSpace(_projectId) && ActiveProject.HasProject)
+        {
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 p-3 rounded border border-primary border-opacity-25 bg-primary bg-opacity-10">
+                <div class="small">
+                    <strong>Ready to generate?</strong>
+                    Confirm this estimate, then continue to the Film stage to build the shot plan and produce clips.
+                </div>
+                <button type="button"
+                        class="btn btn-primary fw-semibold px-4"
+                        data-testid="cost-agree-continue"
+                        disabled="@_busy"
+                        @onclick="AgreeAndContinueAsync">
+                    Agree &amp; Continue to Film →
+                </button>
+            </div>
+        }
+
         @if (!string.IsNullOrWhiteSpace(_report.Notes))
         {
             <p class="small text-muted mb-2" data-testid="cost-estimate-basis">@_report.Notes</p>
@@ -708,6 +726,15 @@
         {
             _mySpend = null;
         }
+    }
+
+    /// <summary>
+    /// Confirm the current estimate and advance to the Film stage (shot plan / generate).
+    /// </summary>
+    private void AgreeAndContinueAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_projectId)) return;
+        Nav.NavigateTo("scenes");
     }
 
     private async Task BackfillAsync()

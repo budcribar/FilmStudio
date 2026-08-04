@@ -159,7 +159,7 @@
               s.index +
               '" data-heading="' +
               hEnc +
-              '" title="Show book text for this scene">Book</button>' +
+              '" title="Show source passage">Book</button>' +
               "</li>"
           );
         }
