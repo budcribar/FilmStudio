@@ -6,11 +6,43 @@
 <PageTitle>About — PageToMovie</PageTitle>
 
 <h1>About PageToMovie</h1>
-<p class="text-muted">
-    Turn source text into a short film: Blazor WASM UI, REST + SignalR API, Grok generation,
-    and browser-side clip stitch (<code>ffmpeg.wasm</code>). No Python on the product path under <code>host/</code>.
+<p class="lead">Turn a book or story into a short film.</p>
+<p class="text-body-secondary">
+    Import your text and PageToMovie helps you shape it into a screenplay, choose a visual style,
+    cast the characters, and generate the scenes — then watch and share the finished short.
 </p>
 
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6">How it works</h2>
+                <ol class="small mb-0 ps-3">
+                    <li><strong>Book</strong> — import your story and shape the screenplay.</li>
+                    <li><strong>Look &amp; length</strong> — pick the visual style and fit the film to your budget.</li>
+                    <li><strong>Cast</strong> — give each character a look, and an optional voice.</li>
+                    <li><strong>Film</strong> — generate the scenes, then watch and share.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6">Good to know</h2>
+                <ul class="small mb-0 ps-3">
+                    <li>You review and approve each step before spending on generation.</li>
+                    <li>Your projects and media stay under your account.</li>
+                    <li>Change the film’s length any time to trade off cost and detail.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ————— Technical / operational detail: admin only ————— *@
+@if (Session.IsAdmin)
+{
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-warning py-2">@_error</div>
@@ -149,6 +181,7 @@ dotnet run --project host/PageToMovie.LoadSim -- --users 25 --duration 90</pre>
     @if (Session.IsAdmin) { <span>· admin session</span> }
     · Engine base: <code>@(EngineOpts.Value.BaseUrl)</code>
 </div>
+}
 
 @code {
     private bool _busy;
@@ -156,7 +189,12 @@ dotnet run --project host/PageToMovie.LoadSim -- --users 25 --duration 90</pre>
     private HealthInfo? _health;
     private CapacityDto? _capacity;
 
-    protected override async Task OnInitializedAsync() => await RefreshAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
+        if (Session.IsAdmin)
+            await RefreshAsync();
+    }
 
     private async Task RefreshAsync()
     {

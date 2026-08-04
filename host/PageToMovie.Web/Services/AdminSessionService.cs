@@ -26,8 +26,31 @@ public sealed class AdminSessionService
 
     public bool IsAuthenticated => !string.IsNullOrWhiteSpace(Token);
     public bool IsLoggedIn => IsAuthenticated;
-    public bool IsAdmin =>
+
+    /// <summary>True role-based admin status (ignores the preview toggle).</summary>
+    public bool IsRealAdmin =>
         Roles.Any(r => string.Equals(r, "admin", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Effective admin status used throughout the UI. A real admin can toggle
+    /// <see cref="ViewAsUser"/> to preview the regular-user experience; server-side
+    /// authorization is unaffected (this is a client-side view preference only).
+    /// </summary>
+    public bool IsAdmin => IsRealAdmin && !_viewAsUser;
+
+    private bool _viewAsUser;
+
+    /// <summary>When true, a real admin is previewing the app as a regular user.</summary>
+    public bool ViewAsUser => IsRealAdmin && _viewAsUser;
+
+    /// <summary>Toggle the admin "view as regular user" preview (no-op for non-admins).</summary>
+    public void SetViewAsUser(bool viewAsUser)
+    {
+        if (!IsRealAdmin) { _viewAsUser = false; return; }
+        if (_viewAsUser == viewAsUser) return;
+        _viewAsUser = viewAsUser;
+        Changed?.Invoke();
+    }
 
     /// <summary>
     /// Public @handle for UI (never show raw email). If an old account used email as username,

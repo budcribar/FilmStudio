@@ -168,6 +168,19 @@
                                @onclick="CloseUserMenu">
                                 Billing &amp; costs
                             </a>
+                            @if (Session.IsRealAdmin)
+                            {
+                                <button type="button"
+                                        class="nav-user-item"
+                                        role="menuitemcheckbox"
+                                        aria-checked="@(Session.ViewAsUser ? "true" : "false")"
+                                        data-testid="nav-view-as-user"
+                                        @onclick="ToggleViewAsUser">
+                                    @(Session.ViewAsUser
+                                        ? "✓ Viewing as user — back to admin"
+                                        : "View as regular user")
+                                </button>
+                            }
                             @if (Session.IsAdmin)
                             {
                                 <a class="nav-user-item" role="menuitem" href="/admin"
@@ -234,6 +247,14 @@ private bool _started;
     private void ToggleUserMenu() => _userMenuOpen = !_userMenuOpen;
 
     private void CloseUserMenu() => _userMenuOpen = false;
+
+    private void ToggleViewAsUser()
+    {
+        Session.SetViewAsUser(!Session.ViewAsUser);
+        _userMenuOpen = false;
+        // Land on Home so the preview applies immediately across the app (flag persists for the session).
+        Nav.NavigateTo("/");
+    }
 
     private RenderFragment NavItem(bool enabled, string href, string title, string iconClass, string label, string? testId = null) => __builder =>
     {
