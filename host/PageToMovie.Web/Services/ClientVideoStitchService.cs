@@ -468,7 +468,8 @@ public sealed class ClientVideoStitchService
         }
     }
 
-    private async Task<string?> ResolveClipUrlAsync(
+    /// <summary>Resolve a clip's playable URL: local media-folder blob when synced, else clip proxy.</summary>
+    public async Task<string?> ResolveClipUrlAsync(
         string projectId, int scene, int clip, CancellationToken ct)
     {
         _ = ct;
