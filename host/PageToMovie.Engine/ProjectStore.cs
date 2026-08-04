@@ -2180,6 +2180,7 @@ public sealed class ProjectStore
                 VisualLock = info.TryGetProperty("visual_lock", out var v) ? v.GetString() ?? "" : "",
                 VoiceProfile = info.TryGetProperty("voice_profile", out var vp) ? vp.GetString() ?? "" : "",
                 VoiceLabel = info.TryGetProperty("voice_label", out var vlab) ? vlab.GetString() ?? "" : "",
+                SpeciesKind = info.TryGetProperty("species_kind", out var spk) ? spk.GetString() : null,
                 HasVoiceCloneSample = File.Exists(GetVoiceCloneSamplePath(projectId, key)),
                 VoiceCloneFileName = File.Exists(GetVoiceCloneSamplePath(projectId, key))
                     ? Path.GetFileName(GetVoiceCloneSamplePath(projectId, key))
@@ -4715,12 +4716,13 @@ public sealed class ProjectStore
                 continue;
             }
 
-            // Non-speaking seed (no profile, no label, no clone sample — e.g. an animal like the Lamb):
-            // voice is not required. It still needs a locked image if it appears on screen.
-            var nonSpeaking = !hasVoice
-                && string.IsNullOrWhiteSpace(c.VoiceLabel)
-                && !c.HasVoiceCloneSample;
-            if (nonSpeaking)
+            // Animals / non-human seeds are non-speaking by default and do NOT require a voice — only a
+            // locked image if they appear on screen. (Humans still require a voice below.) Keyed on the
+            // seed's species_kind so the Lamb is never blocked for a missing voice. A talking animal that
+            // was given a voice profile still passes via hasVoice.
+            var isNonHuman = c.SpeciesKind is { Length: > 0 } sk
+                && !sk.Trim().Equals("human", StringComparison.OrdinalIgnoreCase);
+            if (isNonHuman && !hasVoice)
             {
                 if (!c.Locked)
                     missing.Add($"{c.Key}: locked image");

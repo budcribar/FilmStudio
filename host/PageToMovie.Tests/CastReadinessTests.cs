@@ -181,6 +181,60 @@ public class CastReadinessTests : IDisposable
         Assert.Contains(missing, m => m.Contains("voice", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void Animal_on_screen_without_voice_is_ready_with_locked_image()
+    {
+        // Reproduces Mary4: the Lamb (species_kind=animal, voice_label set but no voice profile)
+        // must NOT be blocked for a missing voice — only a locked image is required.
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Lamb": {
+                  "canonical_given_name": "Lamb",
+                  "species_kind": "animal",
+                  "voice_label": "Lamb",
+                  "voice_profile": "",
+                  "description": "a small white lamb"
+                }
+              }
+            }
+            """);
+
+        var charDir = Path.Combine(_store.GetProjectDir(ProjectId), "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllBytes(Path.Combine(charDir, "character_lamb_ref.png"), new byte[128]);
+
+        var lamb = Assert.Single(_store.ListCharacters(ProjectId));
+        Assert.Equal("animal", lamb.SpeciesKind);
+
+        var missing = _store.GetCastNotReadyForVideo(ProjectId);
+        Assert.DoesNotContain(missing, m => m.Contains("voice", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(missing); // locked image present → fully ready, no fake voice needed
+    }
+
+    [Fact]
+    public void Animal_on_screen_without_lock_needs_image_not_voice()
+    {
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Lamb": {
+                  "species_kind": "animal",
+                  "voice_label": "Lamb",
+                  "voice_profile": "",
+                  "description": "a small white lamb"
+                }
+              }
+            }
+            """);
+
+        var missing = _store.GetCastNotReadyForVideo(ProjectId);
+        Assert.Contains(missing, m => m.Contains("locked image", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(missing, m => m.Contains("voice", StringComparison.OrdinalIgnoreCase));
+    }
+
     private void WriteSeeds(string json)
     {
         var source = Path.Combine(_store.GetProjectDir(ProjectId), "source");

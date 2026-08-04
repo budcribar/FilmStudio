@@ -824,6 +824,10 @@ else
         if (_forceShowVoice) return true;
         if (c.HasVoiceCloneSample) return true;
         if (HasVoiceProfile(c)) return true;
+        // Animals / non-human seeds are non-speaking by default — no voice prompt (opt in via "Add voice…").
+        var isNonHuman = !string.IsNullOrWhiteSpace(c.SpeciesKind)
+            && !c.SpeciesKind!.Trim().Equals("human", StringComparison.OrdinalIgnoreCase);
+        if (isNonHuman) return false;
         if (!string.IsNullOrWhiteSpace(c.VoiceLabel)) return true;
         if (!string.IsNullOrWhiteSpace(_editVoiceProfile) || !string.IsNullOrWhiteSpace(_editVoiceLabel))
             return true;
