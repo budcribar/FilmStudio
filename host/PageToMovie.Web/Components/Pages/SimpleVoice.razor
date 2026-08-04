@@ -96,7 +96,7 @@ else
         <div class="card border-primary border-opacity-50 mb-3" data-testid="simple-voice-record">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
-                    <span class="badge text-bg-primary me-2">Step 2 of 2</span>
+                    <span class="badge text-bg-primary me-2">Step 2 of 3</span>
                     <span class="fw-semibold">Record your voice</span>
                     @if (!string.IsNullOrEmpty(_projectLabel))
                     {
@@ -272,57 +272,21 @@ else
                 @if (_hasSample && _applied)
                 {
                     <hr class="my-3" />
-                    @if (_dubbedUrl is not null)
-                    {
-                        <div data-testid="simple-voice-result">
-                            <div class="fw-semibold mb-2">Your movie, in your voice 🎉</div>
-                            <video class="w-100 rounded" style="max-height: 60vh; background:#000;"
-                                   src="@_dubbedUrl" controls autoplay playsinline
-                                   data-testid="simple-voice-player"></video>
-                            <div class="d-flex flex-wrap gap-2 mt-2">
-                                <button type="button" class="btn btn-primary"
-                                        data-testid="simple-voice-download"
-                                        @onclick="DownloadDubbedAsync">
-                                    Download
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary"
-                                        disabled="@_dubbing"
-                                        data-testid="simple-voice-remake"
-                                        @onclick="MakeMovieAsync">
-                                    Make again
-                                </button>
+                    <div class="d-flex flex-wrap align-items-center gap-2" data-testid="simple-voice-finish">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">You’re set</div>
+                            <div class="small text-muted">
+                                We keep the pictures and put your voice on every line — no video regen.
                             </div>
                         </div>
-                    }
-                    else if (_dubbing)
-                    {
-                        <div data-testid="simple-voice-progress">
-                            <div class="fw-semibold mb-2">Making your movie…</div>
-                            <div class="progress" role="progressbar" aria-label="Making your movie">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                     style="width: 100%"></div>
-                            </div>
-                            <div class="small text-muted mt-1">@(_dubStatus ?? "Working…")</div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="d-flex flex-wrap align-items-center gap-2" data-testid="simple-voice-finish">
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold">You’re set</div>
-                                <div class="small text-muted">
-                                    We keep the pictures and put your voice on every line — no video regen.
-                                </div>
-                            </div>
-                            <button type="button"
-                                    class="btn btn-primary btn-lg"
-                                    data-testid="simple-voice-make-movie"
-                                    disabled="@_busy"
-                                    @onclick="MakeMovieAsync">
-                                Make my movie →
-                            </button>
-                        </div>
-                    }
+                        <button type="button"
+                                class="btn btn-primary btn-lg"
+                                data-testid="simple-voice-make-movie"
+                                disabled="@_busy"
+                                @onclick="MakeMovieAsync">
+                            Make my movie →
+                        </button>
+                    </div>
                 }
             </div>
         </div>
@@ -334,10 +298,77 @@ else
             </button>
         </p>
     }
+
+    @* ── Step 3: your movie ───────────────────────────────────────────── *@
+    else if (_phase == Phase.Movie)
+    {
+        <div class="card border-primary border-opacity-50 mb-3" data-testid="simple-voice-movie">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <span class="badge text-bg-primary me-2">Step 3</span>
+                    <span class="fw-semibold">Your movie</span>
+                    @if (!string.IsNullOrEmpty(_projectLabel))
+                    {
+                        <span class="text-muted small ms-2">· @_projectLabel</span>
+                    }
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        disabled="@_dubbing"
+                        data-testid="simple-voice-movie-back"
+                        @onclick="@(() => { _phase = Phase.Done; _dubbedUrl = null; _error = null; })">
+                    ← Back to my voice
+                </button>
+            </div>
+            <div class="card-body">
+                @if (_dubbedUrl is not null)
+                {
+                    <div data-testid="simple-voice-result">
+                        <div class="fw-semibold mb-2">Your movie, in your voice 🎉</div>
+                        <video class="w-100 rounded" style="max-height: 60vh; background:#000;"
+                               src="@_dubbedUrl" controls autoplay playsinline
+                               data-testid="simple-voice-player"></video>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <button type="button" class="btn btn-primary"
+                                    data-testid="simple-voice-download"
+                                    @onclick="DownloadDubbedAsync">
+                                Download
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary"
+                                    disabled="@_dubbing"
+                                    data-testid="simple-voice-remake"
+                                    @onclick="MakeMovieAsync">
+                                Make again
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (_dubbing)
+                {
+                    <div data-testid="simple-voice-progress">
+                        <div class="fw-semibold mb-2">Making your movie…</div>
+                        <div class="progress" role="progressbar" aria-label="Making your movie">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 style="width: 100%"></div>
+                        </div>
+                        <div class="small text-muted mt-1">@(_dubStatus ?? "Working…")</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-danger py-2 small mb-2" data-testid="simple-voice-movie-error">
+                        @(_error ?? "Something went wrong making your movie.")
+                    </div>
+                    <button type="button" class="btn btn-primary" disabled="@_busy" @onclick="MakeMovieAsync">
+                        Try again
+                    </button>
+                }
+            </div>
+        </div>
+    }
 }
 
 @code {
-    private enum Phase { Pick, Record, Done }
+    private enum Phase { Pick, Record, Done, Movie }
 
     /// <summary>Step-2 capture path: pick one so Record and Upload are never shown together.</summary>
     private enum CaptureMode { Choose, Record, Upload }
@@ -731,6 +762,7 @@ private async Task StartMicAsync()
                 return;
             }
         }
+        _phase = Phase.Movie; // step 3
         _dubbing = true;
         _busy = true;
         _error = null;
