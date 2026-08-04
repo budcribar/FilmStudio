@@ -323,7 +323,11 @@ else
                 @if (_dubbedUrl is not null)
                 {
                     <div data-testid="simple-voice-result">
-                        <div class="fw-semibold mb-2">Your movie, in your voice 🎉</div>
+                        <div class="fw-semibold mb-1">Your movie, in your voice 🎉</div>
+                        @if (!string.IsNullOrEmpty(_dubSummary))
+                        {
+                            <div class="small text-muted mb-2" data-testid="simple-voice-dub-summary">@_dubSummary</div>
+                        }
                         <video class="w-100 rounded" style="max-height: 60vh; background:#000;"
                                src="@_dubbedUrl" controls autoplay playsinline
                                data-testid="simple-voice-player"></video>
@@ -380,6 +384,7 @@ else
     private bool _dubbing;
     private string? _dubStatus;
     private string? _dubbedUrl;
+    private string? _dubSummary;
     private string? _projectId;
     private string? _projectLabel;
     private string _narratorKey = "Character_Narrator";
@@ -775,6 +780,8 @@ private async Task StartMicAsync()
                 _projectId,
                 charKey: _narratorKey,
                 onProgress: s => { _dubStatus = s; _ = InvokeAsync(StateHasChanged); });
+            _dubSummary = $"{res.ClipsDubbed} clip(s) in your voice"
+                          + (res.ClipsFailed > 0 ? $" · {res.ClipsFailed} skipped" : "");
             if (res.Ok && !string.IsNullOrWhiteSpace(res.DownloadUrl))
                 _dubbedUrl = res.DownloadUrl;
             else
