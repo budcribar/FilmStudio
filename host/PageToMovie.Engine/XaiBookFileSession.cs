@@ -1,6 +1,8 @@
 using System.Text;
 using PageToMovie.Core.Abstractions;
 using PageToMovie.Core.Models;
+using PageToMovie.Core.Options;
+using Microsoft.Extensions.Options;
 
 namespace PageToMovie.Engine;
 
@@ -134,11 +136,16 @@ public sealed class BookFileSessionFactory : IBookFileSessionFactory
 {
     private readonly XaiResponsesClient _xai;
     private readonly BookTextRegistryService _registry;
+    private readonly PageToMovieOptions _opts;
 
-    public BookFileSessionFactory(XaiResponsesClient xai, BookTextRegistryService registry)
+    public BookFileSessionFactory(
+        XaiResponsesClient xai,
+        BookTextRegistryService registry,
+        IOptions<PageToMovieOptions> opts)
     {
         _xai = xai;
         _registry = registry;
+        _opts = opts.Value;
     }
 
     public Task<IBookFileSession?> TryCreateAsync(
@@ -147,6 +154,10 @@ public sealed class BookFileSessionFactory : IBookFileSessionFactory
         string modelId,
         CancellationToken ct = default)
     {
+        // Fakes mode: never open a real xAI Files + Responses session (that would upload the book
+        // to api.x.ai and spend). Return null so Stage 1 falls back to the fake IChatClient path.
+        if (_opts.UseFakes)
+            return Task.FromResult<IBookFileSession?>(null);
         if (string.IsNullOrWhiteSpace(bookId) || string.IsNullOrWhiteSpace(bookText))
             return Task.FromResult<IBookFileSession?>(null);
         if (!_xai.IsConfigured)

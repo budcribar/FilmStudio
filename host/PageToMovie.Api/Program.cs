@@ -125,12 +125,9 @@ builder.Services.AddHttpClient("elevenlabs", c =>
     c.BaseAddress = new Uri(SupportedModelCatalog.ElevenLabsApiBase.TrimEnd('/') + "/");
     c.Timeout = TimeSpan.FromMinutes(3);
 });
-builder.Services.AddSingleton<IVoiceClient>(sp =>
-{
-    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("elevenlabs");
-    var log = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ElevenLabsVoiceClient>>();
-    return new ElevenLabsVoiceClient(http, log, allowMockFallback: true);
-});
+// Real IVoiceClient (ElevenLabs) is registered only in the !useFakes branch below, alongside the
+// other provider clients — under PageToMovie:UseFakes it resolves to FakeVoiceClient (via
+// AddPageToMovieFakes) so voice clone / dialogue TTS never reaches ElevenLabs even when a key is set.
 builder.Services.AddSingleton<PageToMovie.Engine.VoiceApply.VoicePreviewStore>();
 // Strategy order: Fal first (specific CanHandle), ElevenLabs last (default / mock fallback).
 builder.Services.AddSingleton<IVoiceApplyStrategy, PageToMovie.Engine.VoiceApply.FalVoiceApplyStrategy>();
@@ -353,11 +350,22 @@ else
         sp.GetRequiredService<ILogger<CachingChatClient>>()));
     builder.Services.AddSingleton<IChatClient>(sp => sp.GetRequiredService<CachingChatClient>());
     builder.Services.AddSingleton<IVisionClient, MultiProviderVisionClient>();
+
+    // Voice clone + TTS (ElevenLabs). Real client only in the non-fakes branch; the fakes branch
+    // above binds IVoiceClient to FakeVoiceClient so no clone/TTS call reaches ElevenLabs.
+    builder.Services.AddSingleton<IVoiceClient>(sp =>
+    {
+        var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("elevenlabs");
+        var log = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ElevenLabsVoiceClient>>();
+        return new ElevenLabsVoiceClient(http, log, allowMockFallback: true);
+    });
 }
 
 // xAI Files + Responses — Stage‑1 multi-turn (file_id + previous_response_id).
-// Registered in both real and fakes mode: TryCreateAsync returns null when unconfigured,
-// so DI always resolves IBookFileSessionFactory for FilmJobService / Stage1Service.
+// Registered in both real and fakes mode so DI always resolves IBookFileSessionFactory for
+// FilmJobService / Stage1Service: TryCreateAsync returns null when xAI is unconfigured, and is
+// hard-disabled under PageToMovie:UseFakes (disableForFakes) so no book is ever uploaded to
+// api.x.ai in fakes mode — Stage 1 falls back to the fake IChatClient instead.
 ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<XaiResponsesClient>(c =>
 {
     c.BaseAddress = new Uri("https://api.x.ai/v1/");
