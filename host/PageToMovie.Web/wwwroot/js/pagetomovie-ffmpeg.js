@@ -676,9 +676,12 @@ window.PageToMovieFfmpeg = {
                 parts.push("[0:a]" + fmt + ",volume=" + bedVol + "[base]");
                 const mixLabels = ["[base]"];
                 for (let i = 0; i < list.length; i++) {
-                    const delayMs = Math.max(0, Math.round(list[i].startSec * 1000));
-                    parts.push("[" + (i + 1) + ":a]" + fmt +
-                        ",adelay=" + delayMs + ":all=1,volume=1.6,apad[v" + i + "]");
+                    // NO adelay. Evidence: the bed (which never goes through adelay) is always audible
+                    // in the mix, while the adelay'd voice never was — on every attempt. adelay is
+                    // zeroing the voice stream in this ffmpeg.wasm build. For a narrator dub the
+                    // sub-second start offset is negligible, so the voice just plays from the clip
+                    // start; amix(duration=first) silence-pads the tail to the clip length.
+                    parts.push("[" + (i + 1) + ":a]" + fmt + ",volume=1.6[v" + i + "]");
                     mixLabels.push("[v" + i + "]");
                 }
                 parts.push(mixLabels.join("") + "amix=inputs=" + mixLabels.length +
