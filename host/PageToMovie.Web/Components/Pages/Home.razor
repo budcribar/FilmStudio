@@ -689,6 +689,7 @@ else
     private bool _importing;
     private bool _backingUp;
     private string _importName = "";
+    private IBrowserFile? _importFile;
     private string _renameName = "";
     /// <summary>Home defaults to a one-row project picker; full project management
     /// (visibility, collaborate, delete, fork/sync) is opt-in via "Manage".</summary>
@@ -1225,29 +1226,36 @@ else
         <div class="small text-light mb-2">
             Import a Page to Movie project <code>.zip</code> export into your own workspace.
         </div>
-        <div class="small text-light mb-1"><span class="fw-semibold">1.</span> Name it (optional):</div>
         <div class="mb-2">
-            <input class="form-control form-control-sm bg-white text-dark border-secondary"
-                   style="max-width: 22rem;"
-                   data-testid="home-import-name"
-                   value="@_importName"
-                   @oninput="@(e => _importName = e.Value?.ToString() ?? "")"
-                   disabled="@(_busy || _importing)"
-                   maxlength="80"
-                   placeholder="Import as… (defaults to the file's name)"
-                   aria-label="Import as name" />
-        </div>
-        <div class="small text-light mb-1">
-            <span class="fw-semibold">2.</span> Choose your <code>.zip</code> — the import starts as soon as you pick the file.
-        </div>
-        <div class="d-flex flex-wrap align-items-center gap-2">
-            <InputFile OnChange="HandleImportAsync" accept=".zip"
+            <InputFile OnChange="OnImportFileSelected" accept=".zip"
                        class="form-control form-control-sm bg-white text-dark"
                        style="max-width: 22rem;"
                        disabled="@(_busy || _importing)" />
-            @if (_importing)
+        </div>
+        @if (_importFile is not null)
+        {
+            <div class="small text-light mb-1">Import as:</div>
+            <div class="mb-2">
+                <input class="form-control form-control-sm bg-white text-dark border-secondary"
+                       style="max-width: 22rem;"
+                       data-testid="home-import-name"
+                       value="@_importName"
+                       @oninput="@(e => _importName = e.Value?.ToString() ?? "")"
+                       disabled="@_importing"
+                       maxlength="80"
+                       placeholder="Project name"
+                       aria-label="Import as name" />
+            </div>
+        }
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @if (_importFile is not null)
             {
-                <span class="small text-light" data-testid="home-import-status">Importing…</span>
+                <button class="btn btn-success btn-sm"
+                        data-testid="home-import-confirm"
+                        disabled="@(_importing || string.IsNullOrWhiteSpace(_importName))"
+                        @onclick="HandleImportAsync">
+                    @(_importing ? "Importing…" : "Import")
+                </button>
             }
             <button class="btn btn-outline-secondary btn-sm text-light border-secondary"
                     disabled="@_importing"
@@ -1265,14 +1273,47 @@ else
             _showNew = false;
             _showRename = false;
         }
+        _importFile = null;
+        _importName = "";
         _error = null;
         _message = null;
     }
 
-    /// <summary>Import a project .zip into the current user's own workspace (user-mode import).</summary>
-    private async Task HandleImportAsync(InputFileChangeEventArgs e)
+    /// <summary>Stage 1 of import: a file was picked. Hold it and pre-fill an editable default name,
+    /// then reveal the Import button — the actual import waits for the user to confirm.</summary>
+    private void OnImportFileSelected(InputFileChangeEventArgs e)
     {
-        var file = e.File;
+        _importFile = e.File;
+        _error = null;
+        _message = null;
+        if (_importFile is not null)
+            _importName = DefaultNameFromFileName(_importFile.Name);
+        StateHasChanged();
+    }
+
+    /// <summary>Friendly default project name from an export file name — strips the .zip extension,
+    /// any owner/slug prefix, and the "PageToMovie_…_export"/timestamp decorations.</summary>
+    private static string DefaultNameFromFileName(string? fileName)
+    {
+        var name = (fileName ?? "").Trim();
+        var dot = name.LastIndexOf('.');
+        if (dot > 0) name = name[..dot];
+        name = name.Replace("%2F", "/", StringComparison.OrdinalIgnoreCase).Replace('\\', '/');
+        var slash = name.LastIndexOf('/');
+        if (slash >= 0 && slash < name.Length - 1) name = name[(slash + 1)..];
+        if (name.StartsWith("PageToMovie_", StringComparison.OrdinalIgnoreCase))
+            name = name["PageToMovie_".Length..];
+        name = System.Text.RegularExpressions.Regex.Replace(name, @"_\d{8}_\d{6}$", "");
+        if (name.EndsWith("_export", StringComparison.OrdinalIgnoreCase))
+            name = name[..^"_export".Length];
+        name = name.Trim(' ', '_', '-');
+        return name.Length > 80 ? name[..80] : name;
+    }
+
+    /// <summary>Stage 2 of import: user confirmed. Import the held file under the (editable) name.</summary>
+    private async Task HandleImportAsync()
+    {
+        var file = _importFile;
         if (file is null) return;
         _importing = true;
         _busy = true;
@@ -1286,6 +1327,7 @@ else
             var res = await Engine.ImportProjectZipAsUserAsync(
                 stream, file.Name, name: string.IsNullOrWhiteSpace(_importName) ? null : _importName.Trim());
             _showImport = false;
+            _importFile = null;
             _importName = "";
             _message = res?.Message ?? $"Imported “{res?.ProjectId}”.";
             await LoadAsync();
