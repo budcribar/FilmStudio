@@ -621,36 +621,33 @@ window.PageToMovieFfmpeg = {
                     audioNames.push(wavName);
                 }
 
-                // Build filter_complex:
-                //  - original audio [0:a] ducked by a volume expression that dips inside each window
-                //  - each cloned clip delayed to its startSec
-                //  - amix everything together
+                // Build filter_complex — deliberately simple. The earlier version used a per-frame
+                // volume='if(between(t,…))' envelope on the bed plus an un-padded, short second input;
+                // in ffmpeg.wasm that combination produced a mix where the (verified ~-28 dB) voice was
+                // absent while the bed survived. This version drops both fragile pieces:
+                //  - bed: constant gentle duck (no per-frame expression).
+                //  - voice: format-normalized, delayed on ALL channels, boosted, and apad-ed to full
+                //    length so amix never drops it partway.
                 const inputs = ["-i", inVideo];
                 for (const n of audioNames) inputs.push("-i", n);
 
-                // Volume envelope for the original: multiply by `duck` when t is inside any window,
-                // else 1. Expressed as volume='if(between(t,s0,e0)+between(...)>0, duck, 1)'.
-                const conds = list.map(s =>
-                    "between(t," + Math.max(0, s.startSec).toFixed(3) + "," + Math.max(0, s.endSec).toFixed(3) + ")"
-                ).join("+");
-                const duckExpr = "volume='if(gt(" + conds + ",0)," + duck.toFixed(3) + ",1)':eval=frame";
-
-                // Force every input to one sample rate + channel layout BEFORE mixing. amix does not
-                // resample: the cloned voice (TTS, often 22–24 kHz mono) vs the clip's baked audio
-                // (44.1/48 kHz stereo) mismatch made the voice silent in the mix. aformat fixes that.
+                // aformat first — amix does not resample, so a rate/layout mismatch silences an input.
                 const fmt = "aformat=sample_rates=48000:channel_layouts=stereo";
+                // Gentle constant bed level (e.g. duck 0.15 → ~0.40): quiet enough for the voice to sit
+                // on top, loud enough that ambience/music is still clearly there.
+                const bedVol = (1 - (1 - duck) * 0.7).toFixed(3);
 
                 const parts = [];
-                parts.push("[0:a]" + fmt + "," + duckExpr + "[base]");
+                parts.push("[0:a]" + fmt + ",volume=" + bedVol + "[base]");
                 const mixLabels = ["[base]"];
                 for (let i = 0; i < list.length; i++) {
                     const delayMs = Math.max(0, Math.round(list[i].startSec * 1000));
-                    // Input index is i+1 (0 is the video). Normalize format, then adelay both channels.
-                    parts.push("[" + (i + 1) + ":a]" + fmt + ",adelay=" + delayMs + "|" + delayMs + "[v" + i + "]");
+                    parts.push("[" + (i + 1) + ":a]" + fmt +
+                        ",adelay=" + delayMs + ":all=1,volume=1.6,apad[v" + i + "]");
                     mixLabels.push("[v" + i + "]");
                 }
                 parts.push(mixLabels.join("") + "amix=inputs=" + mixLabels.length +
-                    ":duration=first:dropout_transition=0:normalize=0[a]");
+                    ":duration=first:normalize=0[a]");
                 const filter = parts.join(";");
                 console.log("[dub] filter: " + filter);
 
