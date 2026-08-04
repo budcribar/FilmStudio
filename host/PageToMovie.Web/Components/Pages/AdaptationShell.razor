@@ -29,9 +29,11 @@
 @{
     var stepsLocked = Host.JobRunning;
     var importActive = Step == "import" || Step == "book";
+    var lookActive = Step == "look";
     var screenplayActive = Step == "screenplay";
     var castActive = Step == "characters";
     var shotsActive = Step == "shots";
+    var lookOff = !OutlineEnabled || stepsLocked;
     var screenplayOff = !OutlineEnabled || stepsLocked;
     var castOff = !ShotsEnabled || stepsLocked;
     var shotsOff = !ShotsEnabled || stepsLocked;
@@ -47,12 +49,23 @@
             <span class="ptm-step__hint">PDF · text · fountain</span>
         </span>
     </a>
+    <a class="ptm-step @(lookActive ? "is-active" : "") @(lookOff ? "is-disabled" : "")"
+       href="@(lookOff ? "javascript:void(0)" : "adaptation/look")"
+       @onclick:preventDefault="lookOff"
+       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? "Choose the visual style before the screenplay is written" : "Import a source first")"
+       data-testid="adapt-step-look">
+        <span class="ptm-step__num">2</span>
+        <span class="ptm-step__body">
+            <span class="ptm-step__label">Look & medium</span>
+            <span class="ptm-step__hint">Visual style</span>
+        </span>
+    </a>
     <a class="ptm-step @(screenplayActive ? "is-active" : "") @(screenplayOff ? "is-disabled" : "")"
        href="@(screenplayOff ? "javascript:void(0)" : "adaptation/screenplay")"
        @onclick:preventDefault="screenplayOff"
        title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? null : "Import a source first")"
        data-testid="adapt-step-screenplay">
-        <span class="ptm-step__num">2</span>
+        <span class="ptm-step__num">3</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Screenplay</span>
             <span class="ptm-step__hint">Edit · approve</span>
@@ -63,7 +76,7 @@
        @onclick:preventDefault="castOff"
        title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness and optional voice before clips" : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")"
        data-testid="adapt-step-cast">
-        <span class="ptm-step__num">3</span>
+        <span class="ptm-step__num">4</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Cast & voice</span>
             <span class="ptm-step__hint">Looks · optional clone</span>
@@ -74,7 +87,7 @@
        @onclick:preventDefault="shotsOff"
        title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")"
        data-testid="adapt-step-shots">
-        <span class="ptm-step__num">4</span>
+        <span class="ptm-step__num">5</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Shot plan</span>
             <span class="ptm-step__hint">Then film on Scenes</span>

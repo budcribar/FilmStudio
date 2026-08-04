@@ -1,0 +1,38 @@
+@page "/adaptation/look"
+@inherits AdaptationPageBase
+
+<PageTitle>Book · Look &amp; medium</PageTitle>
+
+<AdaptationShell Host="this" Step="look">
+    @if (!string.IsNullOrWhiteSpace(ProjectId))
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <p class="text-body-secondary mb-3">
+                    Choose how this film should look. This is applied when the screenplay is written, so you can
+                    change the style here without re-importing the book.
+                </p>
+                <VisualMediumCard ProjectId="@ProjectId"
+                                  Disabled="@(Busy || JobRunning)"
+                                  OnChanged="OnLookChangedAsync" />
+
+                <div class="d-flex justify-content-end">
+                    <a class="btn btn-primary btn-sm"
+                       href="adaptation/screenplay"
+                       data-testid="look-continue">
+                        Continue to Screenplay →
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</AdaptationShell>
+
+@code {
+    public override string StepKey => "look";
+
+    private async Task OnLookChangedAsync()
+    {
+        try { await SoftLoadAsync(); } catch { /* ignore */ }
+    }
+}

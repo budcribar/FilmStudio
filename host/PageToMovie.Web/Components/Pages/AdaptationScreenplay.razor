@@ -9,7 +9,7 @@
 <AdaptationShell Host="this" Step="screenplay">
     @if (!string.IsNullOrWhiteSpace(ProjectId))
     {
-        <VisualMediumCard ProjectId="@ProjectId" Disabled="@Busy" />
+        @* Visual style lives on its own "Look & medium" stage (adaptation/look). *@
         <FilmLengthCard ProjectId="@ProjectId"
                         Disabled="@(Busy || JobRunning)"
                         OnChanged="OnFilmLengthChangedAsync" />

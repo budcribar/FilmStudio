@@ -150,9 +150,7 @@
             </div>
         </div>
 
-        @* Medium lock applies on the next screenplay write (import or regenerate). *@
-        <VisualMediumCard ProjectId="@ProjectId"
-                          Disabled="@(Busy || JobRunning || _importing)" />
+        @* Visual style now lives on its own "Look & medium" stage (adaptation/look). *@
 
         @* Natural length exists only after book text is prepared. *@
         <FilmLengthCard @key="@(Status.Book.BookTextExists ? (Status.Book.SuggestedTotalMinutes ?? Status.Book.NaturalRuntimeMinutes ?? 1) : 0)"
