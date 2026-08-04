@@ -565,6 +565,9 @@ window.PageToMovieFfmpeg = {
                 reportProgress(onProgress, 8, "Loading picture…");
                 await ffmpeg.writeFile(inVideo, await self._safeFetchFile(videoUrl));
 
+                console.log("[dub] overlay: " + list.length + " voice segment(s)",
+                    list.map(s => ({ start: s.startSec, end: s.endSec, url: s.audioUrl })));
+
                 // Write each cloned-voice clip to MEMFS (keep extension so ffmpeg can sniff container).
                 for (let i = 0; i < list.length; i++) {
                     reportProgress(onProgress, 8 + Math.round((i / list.length) * 22),
@@ -574,7 +577,14 @@ window.PageToMovieFfmpeg = {
                     if (/\.wav(\?|$)/i.test(seg.audioUrl) || (seg.audioUrl.indexOf("audio/wav") >= 0)) ext = ".wav";
                     else if (/\.m4a(\?|$)/i.test(seg.audioUrl) || (seg.audioUrl.indexOf("audio/mp4") >= 0)) ext = ".m4a";
                     const name = "ov_voice_" + i + ext;
-                    await ffmpeg.writeFile(name, await self._safeFetchFile(seg.audioUrl));
+                    const bytes = await self._safeFetchFile(seg.audioUrl);
+                    // A near-empty voice file means the TTS produced silence (or an error page) — that
+                    // reads as "ducked ambience, no voice" in the final mix. Surface it loudly.
+                    console.log("[dub] voice " + i + ": " + (bytes ? bytes.length : 0) + " bytes (" + name + ")");
+                    if (!bytes || bytes.length < 512) {
+                        console.warn("[dub] voice " + i + " is suspiciously small — TTS likely returned silence/empty for this line.");
+                    }
+                    await ffmpeg.writeFile(name, bytes);
                     audioNames.push(name);
                 }
 
@@ -592,13 +602,18 @@ window.PageToMovieFfmpeg = {
                 ).join("+");
                 const duckExpr = "volume='if(gt(" + conds + ",0)," + duck.toFixed(3) + ",1)':eval=frame";
 
+                // Force every input to one sample rate + channel layout BEFORE mixing. amix does not
+                // resample: the cloned voice (TTS, often 22–24 kHz mono) vs the clip's baked audio
+                // (44.1/48 kHz stereo) mismatch made the voice silent in the mix. aformat fixes that.
+                const fmt = "aformat=sample_rates=48000:channel_layouts=stereo";
+
                 const parts = [];
-                parts.push("[0:a]" + duckExpr + "[base]");
+                parts.push("[0:a]" + fmt + "," + duckExpr + "[base]");
                 const mixLabels = ["[base]"];
                 for (let i = 0; i < list.length; i++) {
                     const delayMs = Math.max(0, Math.round(list[i].startSec * 1000));
-                    // Input index is i+1 (0 is the video). adelay both channels; apad not needed.
-                    parts.push("[" + (i + 1) + ":a]adelay=" + delayMs + "|" + delayMs + "[v" + i + "]");
+                    // Input index is i+1 (0 is the video). Normalize format, then adelay both channels.
+                    parts.push("[" + (i + 1) + ":a]" + fmt + ",adelay=" + delayMs + "|" + delayMs + "[v" + i + "]");
                     mixLabels.push("[v" + i + "]");
                 }
                 parts.push(mixLabels.join("") + "amix=inputs=" + mixLabels.length +
