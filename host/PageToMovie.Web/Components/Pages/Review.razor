@@ -67,37 +67,35 @@ else
         <button type="button" 
                 class="btn @(_activeTab == "play" ? "btn-success fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-play"
-                disabled="@(_busy || JobRunning || !CanPlayMovie)"
+                disabled="@(_busy || JobRunning || !HasGeneratedClips)"
                 @onclick='() => ToggleTabAsync("play")'
-                title="@WipPlayTitle">
+                title="@(HasGeneratedClips ? WipPlayTitle : "Generate clips first")">
             ▶ Play
         </button>
         <button type="button" 
                 class="btn @(_activeTab == "share" ? "btn-info text-white fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-share"
-                disabled="@(_busy || JobRunning || !CanShareMovie)"
-                @onclick='() => ToggleTabAsync("share")'>
+                disabled="@(_busy || JobRunning || !HasGeneratedClips)"
+                @onclick='() => ToggleTabAsync("share")'
+                title="@(HasGeneratedClips ? null : "Generate clips first")">
             📤 Share &amp; Export
         </button>
-        @if (CanPlayMovie)
-        {
-            <button type="button" 
-                    class="btn btn-outline-info text-info px-3"
-                    data-testid="review-open-editor"
-                    disabled="@(_busy || JobRunning)"
-                    @onclick="OpenInExternalEditorAsync"
-                    title="Open full cut video in @_preferredVideoEditor">
-                🎬 Open in @_preferredVideoEditor
-            </button>
-        }
+        <button type="button"
+                class="btn btn-outline-info text-info px-3"
+                data-testid="review-open-editor"
+                disabled="@(_busy || JobRunning || !HasGeneratedClips)"
+                @onclick="OpenInExternalEditorAsync"
+                title="@(HasGeneratedClips ? $"Open full cut video in {_preferredVideoEditor}" : "Generate clips first")">
+            🎬 Open in @_preferredVideoEditor
+        </button>
     </div>
 
     <div class="d-flex align-items-center gap-2">
         @if (_activeTab == "review")
         {
             <button class="btn btn-sm btn-outline-info fw-semibold" data-testid="review-auto-all"
-                    disabled="@(_busy || JobRunning || _isReviewing)"
-                    title="Run AI visual quality and continuity review on the full movie"
+                    disabled="@(_busy || JobRunning || _isReviewing || !HasGeneratedClips)"
+                    title="@(HasGeneratedClips ? "Run AI visual quality and continuity review on the full movie" : "Generate clips first")"
                     @onclick="StartFullMovieReviewAsync">
                 @if (_isReviewing)
                 {
@@ -1137,6 +1135,16 @@ else
 
     private bool CanPlayMovie =>
         _wipExists || _wipCanBuild || MediaFolder.IsConnected || MediaFolder.IsSyncing || _scenes.Any(s => s.CompositeExists || s.ClipsOnDisk > 0);
+
+    /// <summary>
+    /// True only once real video actually exists — a browser or server cut, a scene composite, or clips
+    /// on disk. Unlike <see cref="CanPlayMovie"/> this does NOT count a merely-connected media folder, so
+    /// clip-dependent actions (Play, Share, Open in editor, AI review) stay disabled until clips exist.
+    /// </summary>
+    private bool HasGeneratedClips =>
+        _wipExists
+        || !string.IsNullOrEmpty(_clientWipUrl)
+        || _scenes.Any(s => s.CompositeExists || s.ClipsOnDisk > 0);
 
     private SceneDetail? _selectedDetail;
     private bool _wipExists;
