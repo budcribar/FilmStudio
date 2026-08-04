@@ -414,6 +414,9 @@ builder.WebHost.ConfigureKestrel(o =>
 
 var app = builder.Build();
 
+if (useFakes)
+    app.Logger.LogWarning("DEV: fakes mode — login bypass ENABLED (auto dev-user sign-in via /api/auth/dev-login; provider calls resolve to fakes)");
+
 // Cross-Origin Isolation headers required for SharedArrayBuffer (ffmpeg.wasm, WebAssembly threads).
 // Must be applied to every response, including the Blazor index.html and all static assets.
 app.Use(async (ctx, next) =>
@@ -764,6 +767,19 @@ app.MapPost("/api/auth/operator-override", (OperatorOverrideRequest? body, IAdmi
     }
     limiter.RecordSuccess(key);
     return Results.Ok(result);
+});
+
+// DEV ONLY: fakes-mode login bypass. When the whole server runs on fakes
+// (PageToMovie:UseFakes), the WASM UI calls this on boot to auto-sign-in a deterministic dev user
+// so the app is browsable end-to-end without a login screen. Hard-gated on UseFakes at BOTH the
+// endpoint (returns 404) and the service (IssueDevFakesLogin fails closed) — a real (non-fakes)
+// deployment can never mint a session here.
+app.MapPost("/api/auth/dev-login", (IAdminAuthService auth, IOptions<PageToMovieOptions> opts) =>
+{
+    if (!opts.Value.UseFakes)
+        return Results.NotFound();
+    var result = auth.IssueDevFakesLogin();
+    return result.Ok ? Results.Ok(result) : Results.NotFound();
 });
 
 app.MapGet("/api/auth/me", async (IUserContext user, IUserApiKeyProvider keys, UserDatabaseService userDb) =>

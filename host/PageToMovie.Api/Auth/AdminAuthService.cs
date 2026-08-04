@@ -23,6 +23,12 @@ public interface IAdminAuthService
     Task<LoginResponse> SignupAsync(string username, string password, string? email = null, CancellationToken ct = default);
     /// <summary>Issue operator JWT when secret matches PageToMovie_LOGIN_OVERRIDE.</summary>
     LoginResponse LoginWithOperatorOverride(string secret);
+    /// <summary>
+    /// DEV ONLY: issue a deterministic dev-user JWT (login bypass) — succeeds only when the server
+    /// runs with <see cref="PageToMovieOptions.UseFakes"/> enabled, and fails closed otherwise so it
+    /// can never mint a session in production.
+    /// </summary>
+    LoginResponse IssueDevFakesLogin();
     ClaimsPrincipal? ValidateToken(string token);
     /// <summary>True when principal is a short-lived media token (allowed in ?mt=).</summary>
     bool IsMediaToken(ClaimsPrincipal? principal);
@@ -39,6 +45,7 @@ public sealed class AdminAuthService : IAdminAuthService
 {
     private readonly AuthOptions _auth;
     private readonly MailOptions _mail;
+    private readonly bool _useFakes;
     private readonly IHostEnvironment _env;
     private readonly UserDatabaseService _userDb;
     private readonly CreditService? _credits;
@@ -55,6 +62,7 @@ public sealed class AdminAuthService : IAdminAuthService
     {
         _auth = opts.Value.Auth ?? new AuthOptions();
         _mail = opts.Value.Mail ?? new MailOptions();
+        _useFakes = opts.Value.UseFakes;
         _env = env;
         _userDb = userDb;
         _credits = credits;
@@ -284,6 +292,20 @@ public sealed class AdminAuthService : IAdminAuthService
         if (!MatchesOperatorOverride(secret))
             return Fail("Operator override is not configured or secret does not match.");
         return IssueOperatorLogin();
+    }
+
+    public LoginResponse IssueDevFakesLogin()
+    {
+        // Hard gate: the dev-user login bypass exists only when the whole server runs on fakes.
+        // Fail closed if UseFakes is false so this can never authenticate anyone in production.
+        if (!_useFakes)
+            return Fail("Dev login is only available when the server runs with fakes enabled.");
+
+        var uid = string.IsNullOrWhiteSpace(_auth.FakesDevUserId)
+            ? "dev"
+            : _auth.FakesDevUserId.Trim();
+        // Same shape as the operator login (User + Admin) so the whole studio is browsable end-to-end.
+        return IssueOperatorLogin(uid);
     }
 
     private string OperatorUserId =>

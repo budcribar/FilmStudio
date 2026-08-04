@@ -345,6 +345,27 @@ public sealed class EngineApiClient
         return body;
     }
 
+    /// <summary>
+    /// DEV ONLY: fakes-mode login bypass. Returns a deterministic dev-user session when the server
+    /// runs with fakes enabled (the endpoint exists only then); returns null in any real deployment
+    /// (endpoint 404s), so the caller falls through to the normal login gate.
+    /// </summary>
+    public async Task<LoginResponse?> TryDevLoginAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/dev-login");
+            using var resp = await _http.SendAsync(req, ct);
+            if (!resp.IsSuccessStatusCode)
+                return null;
+            return await resp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts, ct);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public async Task LogoutAsync(CancellationToken ct = default)
     {
         try

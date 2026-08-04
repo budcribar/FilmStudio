@@ -337,6 +337,13 @@ public sealed class AuthOptions
     /// <summary>Default user id when no X-User-Id / JWT (single-operator mode).</summary>
     public string DefaultUserId { get; set; } = "local";
 
+    /// <summary>
+    /// Deterministic dev user auto-signed-in by <c>POST /api/auth/dev-login</c> when the whole
+    /// server runs on fakes (<see cref="PageToMovieOptions.UseFakes"/>). Only ever consulted in
+    /// fakes mode, so it can never open a real deployment.
+    /// </summary>
+    public string FakesDevUserId { get; set; } = "budcribar@gmail.com";
+
     /// <summary>User ids that receive admin role (in addition to admin login).</summary>
     public List<string> AdminUserIds { get; set; } = new();
 

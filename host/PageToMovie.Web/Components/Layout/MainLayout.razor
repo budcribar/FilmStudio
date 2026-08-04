@@ -119,6 +119,8 @@
         // Local/dev: ?admin=1 — Railway: ?me=LOGIN_OVERRIDE_SECRET
         await TryBootstrapAdminFromQueryAsync();
         await TryBootstrapOperatorOverrideFromQueryAsync();
+        // Dev-only: when the server runs on fakes, auto-sign-in a dev user (no login screen).
+        await TryBootstrapFakesDevLoginAsync();
 
         // Short-lived media tokens for &lt;img&gt;/&lt;video&gt; (never put session JWT in query).
         try
@@ -269,6 +271,30 @@
         catch
         {
             // silent
+        }
+    }
+
+    /// <summary>
+    /// Dev-only login bypass: when the server runs with fakes enabled it exposes
+    /// <c>POST /api/auth/dev-login</c>, which returns a deterministic dev-user session so the whole
+    /// UI is browsable without signing in. In any real deployment the endpoint 404s and this is a
+    /// silent no-op, so the normal login gate still applies. The server is the sole authority for
+    /// whether fakes mode is on — this cannot be forced on from the client.
+    /// </summary>
+    private async Task TryBootstrapFakesDevLoginAsync()
+    {
+        try
+        {
+            await Session.EnsureHydratedAsync();
+            if (Session.IsLoggedIn) return;
+
+            var login = await Engine.TryDevLoginAsync();
+            if (login?.Ok == true && !string.IsNullOrWhiteSpace(login.Token))
+                await Session.SetSessionAsync(login.Token!, login.UserId, login.Roles, login.ExpiresAt);
+        }
+        catch
+        {
+            // Not fakes mode (or endpoint unavailable) — fall through to the normal login gate.
         }
     }
 
