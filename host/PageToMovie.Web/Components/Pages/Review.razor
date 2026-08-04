@@ -8,6 +8,7 @@
 @inject IJSRuntime JS
 @inject ClientVideoStitchService Stitch
 @inject ClientMediaFolderService MediaFolder
+@inject ClientVoiceSubstitutionService VoiceSub
 @using PageToMovie.Core.Models
 
 <PageTitle>Review · final cut</PageTitle>
@@ -88,6 +89,18 @@ else
                 title="@(HasGeneratedClips ? $"Open full cut video in {_preferredVideoEditor}" : "Generate clips first")">
             🎬 Open in @_preferredVideoEditor
         </button>
+        <button type="button"
+                class="btn btn-outline-primary px-3"
+                data-testid="review-dub-my-voice"
+                disabled="@(_busy || JobRunning || !HasGeneratedClips || _dubbing)"
+                @onclick="DubInMyVoiceAsync"
+                title="@(HasGeneratedClips ? "Replace the narrator with your recorded voice, then download" : "Generate clips first")">
+            🎙️ @(_dubbing ? "Making your version…" : "Make it in my voice")
+        </button>
+        @if (_dubbing && !string.IsNullOrWhiteSpace(_dubStatus))
+        {
+            <span class="small text-info align-self-center" data-testid="review-dub-status">@_dubStatus</span>
+        }
     </div>
 
     <div class="d-flex align-items-center gap-2">
@@ -1414,6 +1427,8 @@ else
     }
 
     private string _preferredVideoEditor = "ClipChamp";
+    private bool _dubbing;
+    private string? _dubStatus;
     private bool _isReviewing;
     private int _reviewProgressPct;
     private string _reviewProgressStatus = "";
@@ -1432,6 +1447,55 @@ else
             }
         }
         catch { /* keep default */ }
+    }
+
+    /// <summary>Dub the whole movie in the user's cloned voice (narrator by default) and download it.
+    /// Server synthesizes the cloned voice per line; the browser overlays + stitches + downloads.</summary>
+    private async Task DubInMyVoiceAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_projectId)) return;
+        // The clips + synthesized audio live in the browser media folder — it must be connected.
+        if (!MediaFolder.IsConnected)
+        {
+            var connected = await MediaFolder.ConnectFolderAsync();
+            if (!connected && !MediaFolder.IsConnected)
+            {
+                _message = "Connect your media folder first so your movie can be built in your voice.";
+                return;
+            }
+        }
+        _dubbing = true;
+        _busy = true;
+        _error = null;
+        _message = null;
+        _dubStatus = "Starting…";
+        try
+        {
+            var res = await VoiceSub.DubMovieInMyVoiceAsync(
+                _projectId,
+                charKey: null, // narrator by default (server default)
+                onProgress: s => { _dubStatus = s; _ = InvokeAsync(StateHasChanged); });
+            if (res.Ok && !string.IsNullOrWhiteSpace(res.DownloadUrl))
+            {
+                await VoiceSub.DownloadAsync(res.DownloadUrl, "movie-in-my-voice.mp4");
+                _message = $"Your movie is ready — {res.ClipsDubbed} clip(s) in your voice"
+                           + (res.ClipsFailed > 0 ? $" ({res.ClipsFailed} skipped)" : "") + ". Download started.";
+            }
+            else
+            {
+                _error = res.Error ?? "Could not make your version.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _dubbing = false;
+            _busy = false;
+            _dubStatus = null;
+        }
     }
 
     private async Task OpenInExternalEditorAsync()

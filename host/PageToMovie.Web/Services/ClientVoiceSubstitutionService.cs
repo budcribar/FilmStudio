@@ -40,6 +40,67 @@ public sealed class ClientVoiceSubstitutionService
     /// <summary>Result of applying cloned-voice overlay to one clip.</summary>
     public sealed record ClipOverlayResult(int Scene, int Clip, bool Success, string? Url, string? Error);
 
+    /// <summary>Outcome of the full "dub this movie in my voice" flow.</summary>
+    public sealed record DubMovieResult(bool Ok, string? DownloadUrl, int ClipsDubbed, int ClipsFailed, string? Error);
+
+    /// <summary>
+    /// Full "make this movie in my cloned voice" flow, tying the server + client halves together:
+    /// start the voice-substitution job (cloned-voice TTS per line + alignment), wait for it, sync the
+    /// audio + clips locally, overlay the cloned voice onto each clip, stitch the dubbed clips into one
+    /// movie, and hand back a downloadable blob URL. Narrator by default (server defaults the CharKey).
+    /// Requires the media folder to be connected (clips + synthesized audio live there).
+    /// </summary>
+    public async Task<DubMovieResult> DubMovieInMyVoiceAsync(
+        string projectId,
+        string? charKey = null,
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
+    {
+        onProgress?.Invoke("Generating your voice for each line…");
+        var job = await _engine.StartVoiceSubstitutionAsync(
+            new StartVoiceSubstitutionRequest { ProjectId = projectId, CharKey = charKey ?? "" }, ct);
+        if (job is null)
+            return new DubMovieResult(false, null, 0, 0, "Could not start the voice job.");
+
+        var terminal = await _engine.WaitForJobTerminalAsync(job.JobId, TimeSpan.FromMinutes(15), ct);
+        var status = terminal?.Status ?? "";
+        var jobOk = string.Equals(status, "succeeded", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(status, "done", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(status, "completed", StringComparison.OrdinalIgnoreCase);
+        if (!jobOk)
+            return new DubMovieResult(false, null, 0, 0, terminal?.Error ?? terminal?.Message ?? "The voice job did not finish.");
+
+        onProgress?.Invoke("Syncing clips and audio…");
+        try { await _media.SyncProjectMediaToClientAsync(projectId); } catch { /* best effort — overlay reads whatever is local */ }
+
+        onProgress?.Invoke("Placing your voice over each clip…");
+        var overlays = await ApplyAcrossMovieAsync(projectId, ct);
+        var ordered = overlays
+            .Where(o => o.Success && !string.IsNullOrWhiteSpace(o.Url))
+            .OrderBy(o => o.Scene).ThenBy(o => o.Clip)
+            .Select(o => o.Url!)
+            .ToList();
+        var failed = overlays.Count(o => !o.Success);
+        if (ordered.Count == 0)
+            return new DubMovieResult(false, null, 0, failed,
+                "No clips could be voiced — check that the movie's clips are available and a voice has been recorded.");
+
+        onProgress?.Invoke("Stitching your movie…");
+        var stitched = await _stitch.ConcatAsync(ordered, ct);
+        if (!stitched.Success || string.IsNullOrWhiteSpace(stitched.Url))
+            return new DubMovieResult(false, null, ordered.Count, failed, stitched.Error ?? "Could not stitch the dubbed movie.");
+
+        return new DubMovieResult(true, stitched.Url, ordered.Count, failed, null);
+    }
+
+    /// <summary>Download a produced (blob) movie URL to the user's device.</summary>
+    public async Task DownloadAsync(string url, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return;
+        await _js.InvokeVoidAsync("PageToMovieMedia.downloadFromUrlAsync", url,
+            string.IsNullOrWhiteSpace(fileName) ? "movie-in-my-voice.mp4" : fileName);
+    }
+
     /// <summary>
     /// Apply cloned-voice overlay across every clip in the persisted alignment. Detects + persists
     /// timestamps as needed. Returns one result per clip (final blob URL on success). Never throws for
