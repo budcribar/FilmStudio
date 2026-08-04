@@ -6518,13 +6518,27 @@ app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}", async (
 });
 
 app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/clips/{clipNumber:int}/video",
-    (string id, int sceneNumber, int clipNumber, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
+    async (string id, int sceneNumber, int clipNumber, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
     try
     {
         var path = store.ResolveClipVideoPath(id, sceneNumber, clipNumber);
+        if (path is null)
+        {
+            // Fork fallback: a fork skips video (ForkSkipExtensions), so source the clip from its
+            // parent project — a forkable source keeps its media server-side (keep_media_on_server)
+            // — letting the client download it to dub/edit. The dubbed output stays per-user client-side.
+            try
+            {
+                var proj = await store.GetProjectAsync(id, ct);
+                var parent = proj?.ParentProjectId;
+                if (!string.IsNullOrWhiteSpace(parent))
+                    path = store.ResolveClipVideoPath(parent, sceneNumber, clipNumber);
+            }
+            catch { /* fall through to 404 */ }
+        }
         if (path is null)
             return Results.NotFound(new { ok = false, error = "clip video not found" });
         return Results.File(path, "video/mp4", enableRangeProcessing: true);
