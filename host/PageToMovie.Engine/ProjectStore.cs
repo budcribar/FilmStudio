@@ -4133,6 +4133,16 @@ public sealed class ProjectStore
             catch { /* non-fatal */ }
         }
 
+        // Which scenes already have a background-music take — one registry query for the whole list
+        // (rather than a per-scene HasSceneMusicAsync call) drives the overview's Audio-Takes affordance.
+        var musicScenes = new HashSet<int>();
+        if (_mediaRegistry is not null)
+        {
+            foreach (var mo in await _mediaRegistry.ListProjectAsync(projectId, ct).ConfigureAwait(false))
+                if (string.Equals(mo.Kind, "music", StringComparison.OrdinalIgnoreCase) && mo.Scene is int msc)
+                    musicScenes.Add(msc);
+        }
+
         var rows = new List<SceneSummary>();
         foreach (var s in scenesEl.EnumerateArray())
         {
@@ -4241,6 +4251,7 @@ public sealed class ProjectStore
                 PrimaryLocationId = primaryLoc,
                 Status = status,
                 IsApproved = isApproved,
+                HasBackgroundMusic = musicScenes.Contains(sn),
             });
         }
 

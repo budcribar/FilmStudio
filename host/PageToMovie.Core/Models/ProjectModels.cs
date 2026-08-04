@@ -724,6 +724,9 @@ public sealed class SceneSummary
     public string? PrimaryLocationId { get; set; }
     public string Status { get; set; } = "empty"; // empty | partial | complete
     public bool IsApproved { get; set; }
+    /// <summary>True when a background-music take is registered for this scene (drives the
+    /// "Audio Takes" affordance on the all-scenes overview).</summary>
+    public bool HasBackgroundMusic { get; set; }
 
     /// <summary>User holding scene lock (Phase D), if any.</summary>
     public string? LockOwnerUserId { get; set; }

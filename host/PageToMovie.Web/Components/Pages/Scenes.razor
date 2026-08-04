@@ -349,6 +349,37 @@ else if (_showPreviewPlayer && _clientStitching)
                             <span class="badge bg-secondary" style="font-size: 0.75rem;" title="Resolution locked because clips already exist for this project.">🔒 Locked</span>
                         }
                     </div>
+
+                    @* Shared music-scoring settings — the model + Sing choice used by each scene's
+                       "Score" button in the Music column below. *@
+                    <CapabilityLockedControl Enabled="@Caps.MusicReady"
+                                             BlockedReason="@Caps.MusicBlockedReason"
+                                             SettingsHref="@Caps.MusicSettingsHref"
+                                             TitleWhenEnabled="Music model used when you score a scene"
+                                             TestId="scenes-music-settings">
+                    <div class="d-flex align-items-center gap-1 ms-2 border rounded px-2 py-1"
+                         title="Music model & vocal setting used when you score a scene in the Music column">
+                        <span class="small">🎵</span>
+                        <select class="form-select form-select-sm bg-dark text-white border-secondary" style="width:auto"
+                                data-testid="scenes-music-model"
+                                disabled="@(_busy || JobRunning || _scoringMusic || !Caps.MusicReady)"
+                                value="@_selectedAudioModel"
+                                @onchange="@(e => _selectedAudioModel = e.Value?.ToString() ?? _selectedAudioModel)"
+                                title="Audio model for music generation">
+                            @foreach (var m in _audioModels)
+                            {
+                                <option value="@m.Id">@m.DisplayName</option>
+                            }
+                        </select>
+                        <div class="form-check form-switch m-0" title="@(SelectedAudioModelCanSing ? "Generate sung vocals instead of instrumental" : "The selected model has no vocal capability")">
+                            <input class="form-check-input" type="checkbox" id="wantVocalSwitch"
+                                   disabled="@(_busy || JobRunning || _scoringMusic || !SelectedAudioModelCanSing || !Caps.MusicReady)"
+                                   checked="@(_wantVocal && SelectedAudioModelCanSing)"
+                                   @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
+                            <label class="form-check-label small" for="wantVocalSwitch">Sing</label>
+                        </div>
+                    </div>
+                    </CapabilityLockedControl>
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
@@ -436,6 +467,7 @@ else if (_showPreviewPlayer && _clientStitching)
                         <th style="width:7.5rem; cursor:pointer; user-select:none;" @onclick='() => ToggleSort("duration")' title="Click to sort by Duration">
                             Dur @(_sortBy == "duration" ? (_sortAscending ? "▲" : "▼") : "⇅")
                         </th>
+                        <th style="width:9rem;" title="Score background music for this scene">Music</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -525,6 +557,25 @@ else if (_showPreviewPlayer && _clientStitching)
                                 else
                                 {
                                     <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td @onclick:stopPropagation="true" class="text-nowrap">
+                                <button type="button"
+                                        class="btn btn-sm btn-warning text-black fw-bold py-0 px-2"
+                                        data-testid="scene-row-score-music"
+                                        disabled="@(_busy || JobRunning || _scoringMusic || !Caps.MusicReady || s.LockedByOther)"
+                                        title="@(Caps.MusicReady ? (_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene" : "Score background music for this scene") : Caps.MusicBlockedReason)"
+                                        @onclick="() => ScoreSceneBackgroundMusicAsync(sn)">
+                                    @(_wantVocal && SelectedAudioModelCanSing ? "🎤" : "🎵") Score
+                                </button>
+                                @if (s.HasBackgroundMusic)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-link text-info p-0 ms-1 text-decoration-none"
+                                            title="View & compare past audio takes for this scene"
+                                            @onclick="() => OpenMusicCompareAsync(sn)">
+                                        🎧
+                                    </button>
                                 }
                             </td>
                         </tr>
@@ -669,48 +720,18 @@ else
                         @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Clip Dialogue")
                     </button>
                 }
-                <CapabilityLockedControl Enabled="@Caps.MusicReady"
-                                         BlockedReason="@Caps.MusicBlockedReason"
-                                         SettingsHref="@Caps.MusicSettingsHref"
-                                         TitleWhenEnabled="Background music for this scene"
-                                         TestId="scene-music-gate">
-                <div class="d-inline-flex align-items-center gap-1 border rounded px-2 py-1">
-                    <select class="form-select form-select-sm" style="width:auto"
-                            disabled="@(_busy || JobRunning || _scoringMusic || !Caps.MusicReady)"
-                            value="@_selectedAudioModel"
-                            @onchange="@(e => _selectedAudioModel = e.Value?.ToString() ?? _selectedAudioModel)"
-                            title="Audio model for music generation">
-                        @foreach (var m in _audioModels)
-                        {
-                            <option value="@m.Id">@m.DisplayName</option>
-                        }
-                    </select>
-                    <div class="form-check form-switch m-0" title="@(SelectedAudioModelCanSing ? "Generate sung vocals instead of instrumental" : "The selected model has no vocal capability")">
-                        <input class="form-check-input" type="checkbox" id="wantVocalSwitch"
-                               disabled="@(_busy || JobRunning || _scoringMusic || !SelectedAudioModelCanSing || !Caps.MusicReady)"
-                               checked="@(_wantVocal && SelectedAudioModelCanSing)"
-                               @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
-                        <label class="form-check-label small" for="wantVocalSwitch">Sing</label>
-                    </div>
+                @* Background music is scored from the All-scenes overview (one control per scene row),
+                   since music is a per-scene concern and this view is about the scene's clips. *@
+                @if (_detail.HasBackgroundMusic)
+                {
                     <button type="button"
-                            class="btn btn-sm btn-warning text-black fw-bold px-3 shadow-sm"
-                            disabled="@(_busy || JobRunning || _scoringMusic || !Caps.MusicReady)"
-                            title="@(Caps.MusicReady ? (_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene (auto-composed lyrics)" : "Generate AI background music score with automatic dialogue ducking") : Caps.MusicBlockedReason)"
-                            @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
-                        @(_wantVocal && SelectedAudioModelCanSing ? "🎤 Generate Singing" : "🎵 Score Background Music")
+                            class="btn btn-sm btn-outline-info"
+                            disabled="@(_busy || JobRunning)"
+                            title="View past audio takes & compare against the current one"
+                            @onclick="() => OpenMusicCompareAsync(_detail.SceneNumber)">
+                        🎧 Audio Takes
                     </button>
-                    @if (_detail.HasBackgroundMusic)
-                    {
-                        <button type="button"
-                                class="btn btn-sm btn-outline-info"
-                                disabled="@(_busy || JobRunning)"
-                                title="View past audio takes & compare against the current one"
-                                @onclick="() => OpenMusicCompareAsync(_detail.SceneNumber)">
-                            🎧 Audio Takes
-                        </button>
-                    }
-                </div>
-                </CapabilityLockedControl>
+                }
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
                 {
                     <button type="button"
