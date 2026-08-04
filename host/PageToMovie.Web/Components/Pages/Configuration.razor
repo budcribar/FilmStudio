@@ -1010,7 +1010,7 @@
             MakeCoverage("vision", "Image vision / OCR", "Book pages & image understanding", _visionModel, "vision", required: true),
             MakeCoverage("review", "Video review (QA)", "Dialogue check & auto-review", _qualityModel, "chat", required: true, preferVideoReview: true),
             MakeCoverage("music", "Background music", "Optional scores", _audioModel, "audio", required: false),
-            MakeCoverage("voice", "Voice clone", "Optional character voice sample", _voiceModel, "voice", required: false),
+            MakeCoverage("voice", "Voice clone & speech", "Clones your voice and speaks the dialogue (text-to-speech)", _voiceModel, "voice", required: false),
         };
         return rows;
     }
