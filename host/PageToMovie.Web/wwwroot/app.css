@@ -1045,6 +1045,13 @@ hr {
     color: var(--fs-text-muted);
     line-height: 1.3;
 }
+.ptm-step__badge {
+    cursor: pointer;
+    line-height: 1;
+}
+.ptm-step__badge:hover {
+    filter: brightness(1.12);
+}
 .ptm-hub-wait {
     color: var(--fs-text-muted);
 }
