@@ -31,7 +31,7 @@
 }
 else
 {
-    <StudioProcessStrip Active="@(_phase == Phase.Record || _phase == Phase.Done ? "cast" : "book")" SimpleMode="true" />
+    <StudioProcessStrip Active="@(_phase == Phase.Movie ? "film" : _phase is Phase.Record or Phase.Done ? "cast" : "book")" SimpleMode="true" />
 
     @if (!string.IsNullOrEmpty(_error))
     {

@@ -565,27 +565,39 @@ window.PageToMovieFfmpeg = {
                 reportProgress(onProgress, 8, "Loading picture…");
                 await ffmpeg.writeFile(inVideo, await self._safeFetchFile(videoUrl));
 
-                console.log("[dub] overlay: " + list.length + " voice segment(s)",
-                    list.map(s => ({ start: s.startSec, end: s.endSec, url: s.audioUrl })));
+                console.log("[dub] overlay: " + list.length + " voice segment(s)");
 
-                // Write each cloned-voice clip to MEMFS (keep extension so ffmpeg can sniff container).
+                // Write + PRE-DECODE each cloned-voice clip to a clean 48 kHz stereo WAV. Feeding the
+                // raw TTS mp3 straight into amix was unreliable: if ffmpeg.wasm couldn't decode that
+                // particular mp3 the mix silently fell back to just the (ducked) base — "background,
+                // no voice". Transcoding first makes decode failures loud and hands amix known-good PCM.
                 for (let i = 0; i < list.length; i++) {
                     reportProgress(onProgress, 8 + Math.round((i / list.length) * 22),
                         "Loading voice " + (i + 1) + "/" + list.length + "…");
                     const seg = list[i];
+                    // Flat log (survives console export) so bad timing is visible: start/end vs clip.
+                    console.log("[dub] seg " + i + ": start=" + seg.startSec + "s end=" + seg.endSec + "s");
                     let ext = ".mp3";
                     if (/\.wav(\?|$)/i.test(seg.audioUrl) || (seg.audioUrl.indexOf("audio/wav") >= 0)) ext = ".wav";
                     else if (/\.m4a(\?|$)/i.test(seg.audioUrl) || (seg.audioUrl.indexOf("audio/mp4") >= 0)) ext = ".m4a";
-                    const name = "ov_voice_" + i + ext;
+                    const rawName = "ov_voice_raw_" + i + ext;
+                    const wavName = "ov_voice_" + i + ".wav";
                     const bytes = await self._safeFetchFile(seg.audioUrl);
-                    // A near-empty voice file means the TTS produced silence (or an error page) — that
-                    // reads as "ducked ambience, no voice" in the final mix. Surface it loudly.
-                    console.log("[dub] voice " + i + ": " + (bytes ? bytes.length : 0) + " bytes (" + name + ")");
+                    console.log("[dub] voice " + i + ": " + (bytes ? bytes.length : 0) + " bytes");
                     if (!bytes || bytes.length < 512) {
-                        console.warn("[dub] voice " + i + " is suspiciously small — TTS likely returned silence/empty for this line.");
+                        console.warn("[dub] voice " + i + " suspiciously small — TTS likely returned silence/empty.");
                     }
-                    await ffmpeg.writeFile(name, bytes);
-                    audioNames.push(name);
+                    await ffmpeg.writeFile(rawName, bytes);
+                    try {
+                        await ffmpeg.exec(["-hide_banner", "-y", "-i", rawName,
+                            "-ar", "48000", "-ac", "2", wavName]);
+                    } catch (decErr) {
+                        console.error("[dub] voice " + i + " decode→wav FAILED:", decErr && decErr.message);
+                        try { await ffmpeg.deleteFile(rawName); } catch (_) { /* */ }
+                        throw new Error("Cloned voice audio could not be decoded (segment " + i + ")");
+                    }
+                    try { await ffmpeg.deleteFile(rawName); } catch (_) { /* */ }
+                    audioNames.push(wavName);
                 }
 
                 // Build filter_complex:
@@ -619,6 +631,7 @@ window.PageToMovieFfmpeg = {
                 parts.push(mixLabels.join("") + "amix=inputs=" + mixLabels.length +
                     ":duration=first:dropout_transition=0:normalize=0[a]");
                 const filter = parts.join(";");
+                console.log("[dub] filter: " + filter);
 
                 reportProgress(onProgress, 45, "Overlaying voice…");
                 await ffmpeg.exec([
