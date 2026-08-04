@@ -5310,6 +5310,50 @@ app.MapPost("/api/projects/{id}/adaptation/embellish", async (
     }
 });
 
+/// <summary>
+/// Trim the screenplay toward the project's current target runtime (Trim to cost/length).
+/// Derives the working draft from the immutable full-length base; re-running with a new target
+/// re-derives cheaply without re-import. Set the target first via PUT /film-runtime.
+/// </summary>
+app.MapPost("/api/projects/{id}/adaptation/trim", async (
+    string id,
+    ProjectStore store,
+    PageToMovie.Core.Abstractions.IChatClient chat,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+
+        var result = await ScreenplayService.TrimDraftAsync(store, id, chat, ct: ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+
+        if (result.Applied)
+            store.TriggerAutoGitCommit(id, "ptm:stage=trim");
+
+        return Results.Ok(new
+        {
+            ok = true,
+            applied = result.Applied,
+            projectId = id,
+            message = result.Message,
+            sceneCountBefore = result.SceneCountBefore,
+            sceneCountAfter = result.SceneCountAfter,
+            screenplay = result.Status,
+            adaptation = result.Applied ? store.GetAdaptationStatus(id, user.UserId) : null,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Get natural + target film length for cost/Stage1.</summary>
 app.MapGet("/api/projects/{id}/film-runtime", async (
     string id,

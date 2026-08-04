@@ -19,6 +19,8 @@ namespace PageToMovie.Engine;
 public static class ScreenplayService
 {
     public const string CanonicalFileName = "screenplay.fountain";
+    /// <summary>Immutable full-length base kept so Trim can re-derive cheaply without re-import (Track D).</summary>
+    public const string MaxBaseFileName = "screenplay.max.fountain";
     public const string MetaFileName = "screenplay_meta.json";
     /// <summary>Optional cast seed cache (plates / voice edits) under source/.</summary>
     public const string CastSeedsFileName = "cast_seeds.json";
@@ -495,6 +497,53 @@ public static string NormalizeText(string text)
 
         return ApplyDraftEdit(store, projectId, result,
             appliedMessage: $"Enriched the screenplay ({result.SceneCountAfter} scenes).");
+    }
+
+    /// <summary>Path to the immutable full-length base (may not exist until the first trim / a max generation).</summary>
+    public static string GetMaxBasePath(ProjectStore store, string projectId) =>
+        Path.Combine(store.GetProjectDir(projectId), "source", MaxBaseFileName);
+
+    /// <summary>
+    /// Trim the screenplay toward the project's current target runtime and save the result as the working
+    /// draft. Trims from the immutable full-length base (<see cref="MaxBaseFileName"/>), seeding that base
+    /// from the current draft on first use, so re-trimming to a different target never compounds. See
+    /// <see cref="AdaptationService.TrimAsync"/>.
+    /// </summary>
+    public static async Task<DraftEditResult> TrimDraftAsync(
+        ProjectStore store,
+        string projectId,
+        PageToMovie.Core.Abstractions.IChatClient chat,
+        string model = "",
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
+    {
+        // Establish / read the full-length base to trim from (never the already-trimmed working draft).
+        var basePath = GetMaxBasePath(store, projectId);
+        string baseFountain;
+        if (File.Exists(basePath))
+        {
+            baseFountain = await File.ReadAllTextAsync(basePath, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            baseFountain = Get(store, projectId).Text;
+            if (string.IsNullOrWhiteSpace(baseFountain))
+                return new DraftEditResult { Ok = false, Error = "No screenplay draft to trim yet." };
+            Directory.CreateDirectory(Path.GetDirectoryName(basePath)!);
+            await File.WriteAllTextAsync(basePath, baseFountain, ct).ConfigureAwait(false);
+        }
+
+        var runtime = await FilmRuntime.ResolveAsync(store, projectId, ct: ct).ConfigureAwait(false);
+        var target = runtime.TargetMinutes > 0 ? runtime.TargetMinutes : runtime.NaturalMinutes;
+        var natural = runtime.NaturalMinutes > 0 ? runtime.NaturalMinutes : target;
+
+        var progress = onProgress is null ? null : new Progress<string>(onProgress);
+        var result = await new AdaptationService()
+            .TrimAsync(baseFountain, target, natural, chat, model, progress, ct)
+            .ConfigureAwait(false);
+
+        return ApplyDraftEdit(store, projectId, result,
+            appliedMessage: $"Trimmed the screenplay toward ~{target} min ({result.SceneCountAfter} scenes).");
     }
 
     private static DraftEditResult ApplyDraftEdit(

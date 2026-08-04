@@ -1,0 +1,116 @@
+@page "/adaptation/trim"
+@inherits AdaptationPageBase
+
+<PageTitle>Book · Fit length &amp; budget</PageTitle>
+
+<AdaptationShell Host="this" Step="trim">
+    @if (!string.IsNullOrWhiteSpace(ProjectId))
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5 mb-2">Fit to your length &amp; budget</h2>
+                <p class="text-body-secondary mb-3">
+                    Set how long you want the film. We trim the screenplay to fit — condensing and, if needed,
+                    dropping the least essential scenes. Your full-length version is kept, so you can re-fit to a
+                    different length any time without starting over.
+                </p>
+
+                @if (Status?.Screenplay.DraftExists != true)
+                {
+                    <div class="alert alert-light border small mb-0">
+                        Write a screenplay first, then fit it to length here.
+                        <a class="ms-1" href="adaptation/screenplay">Go to Screenplay →</a>
+                    </div>
+                }
+                else
+                {
+                    <FilmLengthCard ProjectId="@ProjectId"
+                                    Disabled="@(Busy || JobRunning)"
+                                    OnChanged="OnLengthChangedAsync" />
+
+                    @if (_estimateUsd is double est)
+                    {
+                        <div class="alert alert-light border d-flex flex-wrap gap-2 align-items-center justify-content-between"
+                             data-testid="trim-cost-preview">
+                            <div class="small">
+                                Rough estimate at this length: <strong>@($"${est:0.00}")</strong>
+                                <span class="text-muted">— firms up after cast &amp; voice.</span>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                data-testid="trim-run"
+                                disabled="@(Busy || JobRunning)"
+                                @onclick="TrimAsync">
+                            Fit screenplay to this length
+                        </button>
+                        <a class="btn btn-outline-secondary btn-sm" href="adaptation/screenplay" data-testid="trim-review">
+                            Review on Screenplay →
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</AdaptationShell>
+
+@code {
+    public override string StepKey => "trim";
+
+    private double? _estimateUsd;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await RefreshEstimateAsync();
+    }
+
+    private async Task OnLengthChangedAsync()
+    {
+        try { await SoftLoadAsync(); } catch { /* ignore */ }
+        await RefreshEstimateAsync();
+    }
+
+    private async Task RefreshEstimateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectId)) return;
+        try
+        {
+            var dto = await Engine.GetCostAsync(ProjectId);
+            _estimateUsd = dto?.Cost?.Summary?.FullFilmAllDraftUsd;
+        }
+        catch
+        {
+            _estimateUsd = null;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task TrimAsync()
+    {
+        Busy = true;
+        BusyMessage = "Fitting the screenplay to length…";
+        Error = null;
+        Message = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var result = await Engine.TrimScreenplayAsync(ProjectId);
+            Message = result?.Message ?? "Done.";
+            await SoftLoadAsync();
+            await RefreshEstimateAsync();
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+        finally
+        {
+            Busy = false;
+            BusyMessage = null;
+        }
+    }
+}

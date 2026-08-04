@@ -20,6 +20,8 @@
                       LogicalName="PageToMovie.Adaptation.Prompts.fountain_reskin.txt" />
     <EmbeddedResource Include="..\..\prompts\embellish_scene.txt"
                       LogicalName="PageToMovie.Adaptation.Prompts.embellish_scene.txt" />
+    <EmbeddedResource Include="..\..\prompts\trim_scene.txt"
+                      LogicalName="PageToMovie.Adaptation.Prompts.trim_scene.txt" />
   </ItemGroup>
 
 </Project>

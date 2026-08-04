@@ -32,11 +32,13 @@
     var lookActive = Step == "look";
     var screenplayActive = Step == "screenplay";
     var embellishActive = Step == "embellish";
+    var trimActive = Step == "trim";
     var castActive = Step == "characters";
     var shotsActive = Step == "shots";
     var lookOff = !OutlineEnabled || stepsLocked;
     var screenplayOff = !OutlineEnabled || stepsLocked;
     var embellishOff = !OutlineEnabled || stepsLocked;
+    var trimOff = !OutlineEnabled || stepsLocked;
     var castOff = !ShotsEnabled || stepsLocked;
     var shotsOff = !ShotsEnabled || stepsLocked;
 }
@@ -84,12 +86,23 @@
             <span class="ptm-step__hint">Scene detail</span>
         </span>
     </a>
+    <a class="ptm-step @(trimActive ? "is-active" : "") @(trimOff ? "is-disabled" : "")"
+       href="@(trimOff ? "javascript:void(0)" : "adaptation/trim")"
+       @onclick:preventDefault="trimOff"
+       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? "Fit the film to your length and budget" : "Write a screenplay first")"
+       data-testid="adapt-step-trim">
+        <span class="ptm-step__num">5</span>
+        <span class="ptm-step__body">
+            <span class="ptm-step__label">Fit length</span>
+            <span class="ptm-step__hint">Length · budget</span>
+        </span>
+    </a>
     <a class="ptm-step @(castActive ? "is-active" : "") @(castOff ? "is-disabled" : "")"
        href="@(castOff ? "javascript:void(0)" : "characters")"
        @onclick:preventDefault="castOff"
        title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness and optional voice before clips" : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")"
        data-testid="adapt-step-cast">
-        <span class="ptm-step__num">5</span>
+        <span class="ptm-step__num">6</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Cast & voice</span>
             <span class="ptm-step__hint">Looks · optional clone</span>
@@ -100,7 +113,7 @@
        @onclick:preventDefault="shotsOff"
        title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")"
        data-testid="adapt-step-shots">
-        <span class="ptm-step__num">6</span>
+        <span class="ptm-step__num">7</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Shot plan</span>
             <span class="ptm-step__hint">Then film on Scenes</span>

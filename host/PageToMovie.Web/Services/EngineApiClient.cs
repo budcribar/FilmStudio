@@ -2609,6 +2609,21 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return JsonSerializer.Deserialize<DraftEditResultDto>(body, JsonOpts);
     }
 
+    /// <summary>
+    /// Trim the screenplay toward the project's current target runtime. Set the target first via
+    /// <see cref="SetFilmRuntimeAsync"/> (or the FilmLengthCard).
+    /// </summary>
+    public async Task<DraftEditResultDto?> TrimScreenplayAsync(
+        string projectId, CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/adaptation/trim", content: null, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase ?? "trim failed");
+        return JsonSerializer.Deserialize<DraftEditResultDto>(body, JsonOpts);
+    }
+
     public async Task<FilmRuntimeDto?> GetFilmRuntimeAsync(string projectId, CancellationToken ct = default)
     {
         using var resp = await _http.GetAsync(

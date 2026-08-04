@@ -18,6 +18,9 @@ public static class AdaptationPromptPack
     public const string EmbellishRelativePath = "prompts/embellish_scene.txt";
     public const string EmbellishEmbeddedLogicalName = "PageToMovie.Adaptation.Prompts.embellish_scene.txt";
 
+    public const string TrimRelativePath = "prompts/trim_scene.txt";
+    public const string TrimEmbeddedLogicalName = "PageToMovie.Adaptation.Prompts.trim_scene.txt";
+
     /// <summary>
     /// Injected when no artificial runtime target is set (product default).
     /// </summary>
@@ -212,6 +215,27 @@ public static class AdaptationPromptPack
         if (leftovers.Count > 0)
             throw new InvalidOperationException(
                 "embellish_scene prompt still has unresolved tokens: " +
+                string.Join(", ", leftovers.Select(t => "{{" + t + "}}")) + ".");
+        return body;
+    }
+
+    /// <summary>
+    /// Fountain → Fountain "trim" system prompt with the runtime targets resolved. Structure may shrink
+    /// (condense/merge/cut) toward the target; never expands.
+    /// </summary>
+    public static string BuildTrimSystemPrompt(int targetMinutes, int naturalMinutes)
+    {
+        var body = ReadPromptBody(TrimRelativePath, TrimEmbeddedLogicalName);
+        body = body.Replace("{{TARGET_MINUTES}}", Math.Max(1, targetMinutes).ToString(), StringComparison.Ordinal);
+        body = body.Replace("{{NATURAL_MINUTES}}", Math.Max(1, naturalMinutes).ToString(), StringComparison.Ordinal);
+
+        var leftovers = TokenPattern.Matches(body)
+            .Select(m => m.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (leftovers.Count > 0)
+            throw new InvalidOperationException(
+                "trim_scene prompt still has unresolved tokens: " +
                 string.Join(", ", leftovers.Select(t => "{{" + t + "}}")) + ".");
         return body;
     }

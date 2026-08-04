@@ -360,6 +360,56 @@ public sealed class AdaptationService
         return new FountainEditResult(true, cleaned, before, after, true, null);
     }
 
+    /// <summary>
+    /// Trim an existing Fountain screenplay toward a target runtime — condense / merge / cut only.
+    /// Unlike re-skin/embellish the scene count may shrink; it must not grow, and the output must be a
+    /// valid screenplay. On any drift/failure the original is kept.
+    /// </summary>
+    public async Task<FountainEditResult> TrimAsync(
+        string fountain,
+        int targetMinutes,
+        int naturalMinutes,
+        IChatClient chat,
+        string? model = null,
+        IProgress<string>? progress = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(chat);
+        fountain ??= "";
+        var before = SafeSceneCount(fountain);
+
+        if (string.IsNullOrWhiteSpace(fountain))
+            return new FountainEditResult(false, fountain, before, before, true, "No screenplay to trim.");
+        if (!chat.IsConfigured)
+            return new FountainEditResult(false, fountain, before, before, true, "AI service not configured.");
+
+        progress?.Report($"Trimming the screenplay toward ~{Math.Max(1, targetMinutes)} min…");
+        var system = AdaptationPromptPack.BuildTrimSystemPrompt(targetMinutes, naturalMinutes);
+
+        var raw = await chat.CompleteAsync(
+            system, fountain, model ?? "", mode: "fountain_trim", ct: ct).ConfigureAwait(false);
+
+        var cleaned = StripFences(raw);
+        if (string.IsNullOrWhiteSpace(cleaned))
+            return new FountainEditResult(false, fountain, before, before, true,
+                "The trim returned nothing; kept the original.");
+
+        cleaned = BookToFountainConverter.FixDraftDate(cleaned);
+        var after = SafeSceneCount(cleaned);
+
+        // Trimming must never expand the scene count.
+        if (before > 0 && after > before)
+            return new FountainEditResult(
+                false, fountain, before, after, false,
+                $"Trim added scenes ({before} → {after}); kept the original screenplay.");
+
+        if (!BookToFountainConverter.LooksLikeGoodFountain(cleaned))
+            return new FountainEditResult(false, fountain, before, after, false,
+                "Trim output did not look like a valid screenplay; kept the original.");
+
+        return new FountainEditResult(true, cleaned, before, after, true, null);
+    }
+
     private static int SafeSceneCount(string fountain)
     {
         try { return BookToFountainConverter.CountSceneHeadings(fountain); }
