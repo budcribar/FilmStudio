@@ -15,16 +15,20 @@ public sealed class MultiProviderAudioClient : IAudioClient
     private readonly FalAudioClient _fal;
     private readonly SunoClient _suno;
     private readonly AiMusicApiClient _aiMusicApi;
+    private readonly ElevenLabsMusicClient _elevenMusic;
 
-    public MultiProviderAudioClient(FalAudioClient fal, SunoClient suno, AiMusicApiClient aiMusicApi)
+    public MultiProviderAudioClient(
+        FalAudioClient fal, SunoClient suno, AiMusicApiClient aiMusicApi, ElevenLabsMusicClient elevenMusic)
     {
         _fal = fal;
         _suno = suno;
         _aiMusicApi = aiMusicApi;
+        _elevenMusic = elevenMusic;
     }
 
     /// <summary>True when at least one provider has an API key configured.</summary>
-    public bool IsConfigured => _fal.IsConfigured || _suno.IsConfigured || _aiMusicApi.IsConfigured;
+    public bool IsConfigured =>
+        _fal.IsConfigured || _suno.IsConfigured || _aiMusicApi.IsConfigured || _elevenMusic.IsConfigured;
 
     public Task<string?> GenerateMusicTrackAsync(
         string prompt,
@@ -44,6 +48,7 @@ public sealed class MultiProviderAudioClient : IAudioClient
         {
             ModelProviderFamily.Suno => _suno,
             ModelProviderFamily.AiMusicApi => _aiMusicApi,
+            ModelProviderFamily.ElevenLabs => _elevenMusic,
             _ => _fal,
         };
         return client.GenerateMusicTrackAsync(prompt, durationSeconds, entry.Id, ct, onProgress, isVocal, lyrics);

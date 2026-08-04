@@ -312,6 +312,11 @@ else
         c.BaseAddress = new Uri(AiMusicApiClient.ApiBase);
         c.Timeout = TimeSpan.FromMinutes(2);
     }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<ElevenLabsMusicClient>(c =>
+    {
+        c.BaseAddress = new Uri(SupportedModelCatalog.ElevenLabsApiBase.TrimEnd('/') + "/");
+        c.Timeout = TimeSpan.FromMinutes(5); // composing a full-scene track can take a while
+    }));
     builder.Services.AddSingleton<IAudioClient, MultiProviderAudioClient>();
     // Lip-sync and voice-clone narration: explicit, human-triggered actions only (never wired
     // into any automatic job/pipeline — see the lip-sync / voice/clone / voice/speak routes).
@@ -7504,6 +7509,24 @@ app.MapGet("/api/media/proxy/{token}", async (
     var url = tickets.TryTakeUrl(token);
     if (string.IsNullOrWhiteSpace(url))
         return Results.NotFound(new { ok = false, error = "Media ticket expired or invalid" });
+
+    // Inline provider bytes (e.g. ElevenLabs Music streams audio back rather than hosting a URL):
+    // decode the self-contained data: URL and serve it, so no media is persisted on the API host.
+    if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+    {
+        var comma = url.IndexOf(',');
+        var meta = comma > 0 ? url[5..comma] : "";
+        if (comma < 0 || !meta.Contains("base64", StringComparison.OrdinalIgnoreCase))
+            return Results.BadRequest(new { ok = false, error = "Unsupported data URL" });
+        var dataCtype = meta.Split(';')[0];
+        if (string.IsNullOrWhiteSpace(dataCtype)) dataCtype = "application/octet-stream";
+        byte[] dataBytes;
+        try { dataBytes = Convert.FromBase64String(url[(comma + 1)..]); }
+        catch { return Results.BadRequest(new { ok = false, error = "Malformed data URL" }); }
+        var ext = dataCtype.Contains("mpeg", StringComparison.OrdinalIgnoreCase) ? ".mp3"
+            : dataCtype.Contains("wav", StringComparison.OrdinalIgnoreCase) ? ".wav" : ".bin";
+        return Results.Bytes(dataBytes, contentType: dataCtype, fileDownloadName: "track" + ext);
+    }
 
     // Fakes-mode local fixture (no upstream provider to fetch from) — same ticket
     // mechanism as a real provider URL, just served from disk instead of proxied over HTTP.

@@ -853,6 +853,25 @@
       "providerLabel": "AI Music API (aimusicapi.ai)"
     },
     {
+      "id": "elevenlabs-music",
+      "displayName": "ElevenLabs Music",
+      "capability": "Audio",
+      "provider": "ElevenLabs",
+      "apiBase": "https://api.elevenlabs.io/v1",
+      "endpointPath": "music",
+      "requiredEnvKeys": [
+        "ElevenLabs_API_KEY"
+      ],
+      "enabled": true,
+      "maxAudioDurationSeconds": 600,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "notes": "ElevenLabs 'Eleven Music' (POST /v1/music, model music_v2). Uses the same ElevenLabs_API_KEY as narrator voice — no separate Suno reseller account. 3s–10min; instrumental by default, can sing. Streams audio bytes (served via data: URL through the media proxy).",
+      "providerId": "elevenlabs",
+      "providerLabel": "ElevenLabs"
+    },
+    {
       "id": "eleven_multilingual_v2",
       "displayName": "Multilingual voice",
       "capability": "Voice",
