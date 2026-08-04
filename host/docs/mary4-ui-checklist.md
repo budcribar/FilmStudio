@@ -22,15 +22,19 @@ Last updated: 2026-08-03 (commit on master)
 
 ## Open — Medium
 
-- [ ] **Cost page split**
-  - [ ] Current project estimate (focused)
-  - [ ] All projects / account cost overview (Account / Billing / Costs)
-- [ ] Live cost update when target length changes (smoke; OnChanged→LoadAsync may already work)
+- [x] **Cost page split** (Track B, commit b54df54e)
+  - [x] Current project estimate (focused) — `/cost` trimmed to active project
+  - [x] All projects / account cost overview — new `/account/costs` + account-menu entry
+- [ ] Live cost update when target length changes (smoke; OnChanged→LoadAsync already wired)
 
 ## Open — Pipeline structure
 
-- [ ] Promote **Look & medium** to its own stage (Book → Look & medium → Screenplay → …)
+- [x] Promote **Look & medium** to its own stage (Track C1, commit c6b5f548) — `/adaptation/look`
+      in the Book-pipeline strip (Book → Look → Screenplay → Cast → Shot plan)
+- [x] **Fountain→fountain re-skin** on medium change (Track C2, commit 1ffbea54) — change the look
+      without a re-import; `POST /adaptation/reskin`, descriptive layer only, scene-count guardrail
 - [ ] **Scene Embellishment** stage (after Screenplay, before Cast) — descriptive enrich only; no dialogue/beat/structure change
+- [ ] **Max fountain → embellish → trim → edit → cast** rework (plan Track D) — see mary4-implementation-plan.md
 
 ## Open — Later (handoff / quality)
 
