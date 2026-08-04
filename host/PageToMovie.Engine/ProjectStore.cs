@@ -4675,10 +4675,12 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// Project-wide cast gate before any video spend: every seed needs a voice profile;
+    /// Project-wide cast gate before any video spend: every <em>speaking</em> seed needs a voice profile;
     /// every single on-screen face needs a locked ref image (not just a variant draft).
     /// <see cref="CharacterSummary.VoiceOnly"/> skips the locked-image requirement.
     /// <see cref="CharacterSummary.IsGroup"/> never blocks (not shown for operator pin).
+    /// A non-speaking seed (no voice profile, no voice label, no clone sample — e.g. an animal like the
+    /// Lamb) does NOT require a voice; it still needs a locked image if it appears on screen.
     /// Empty cast is not ready. Returns human-readable missing items (empty when ready).
     /// </summary>
     public IReadOnlyList<string> GetCastNotReadyForVideo(string projectId)
@@ -4710,6 +4712,18 @@ public sealed class ProjectStore
             {
                 if (!hasVoice)
                     missing.Add($"{c.Key}: voice profile");
+                continue;
+            }
+
+            // Non-speaking seed (no profile, no label, no clone sample — e.g. an animal like the Lamb):
+            // voice is not required. It still needs a locked image if it appears on screen.
+            var nonSpeaking = !hasVoice
+                && string.IsNullOrWhiteSpace(c.VoiceLabel)
+                && !c.HasVoiceCloneSample;
+            if (nonSpeaking)
+            {
+                if (!c.Locked)
+                    missing.Add($"{c.Key}: locked image");
                 continue;
             }
 

@@ -309,6 +309,11 @@ public sealed class Stage2PlannerService
             plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
         }
 
+        // Heal: a character on-screen in a clip is by definition on-screen in the scene. Union each
+        // clip's cast into its scene cast so a model that under-listed the scene cast (e.g. omitting
+        // the lead) does not hard-fail the clip⊆scene validation below.
+        HealSceneCastFromClips(plan);
+
         var planIssues = StructuredOperationArtifacts.RequireJsonProperties(plan, "stage2_meta", "scenes")
             .Concat(Stage2AggregateValidator.Validate(plan))
             .ToArray();
@@ -1967,6 +1972,35 @@ public sealed class Stage2PlannerService
 
     public static List<object?> GetList(Dictionary<string, object?> d, string key) =>
         d.TryGetValue(key, out var v) && v is List<object?> list ? list : new();
+
+    /// <summary>
+    /// Ensure each scene's <c>characters_on_screen</c> is a superset of its clips' casts. A character
+    /// on-screen in a clip is on-screen in the scene, so this is a safe deterministic heal for models
+    /// that under-list the scene cast (prevents a spurious clip_cast_not_in_scene hard-fail).
+    /// </summary>
+    internal static void HealSceneCastFromClips(Dictionary<string, object?> plan)
+    {
+        foreach (var scene in GetList(plan, "scenes").OfType<Dictionary<string, object?>>())
+        {
+            var cast = GetList(scene, "characters_on_screen")
+                .Select(x => x?.ToString() ?? "")
+                .Where(s => s.Length > 0)
+                .ToList();
+            var seen = new HashSet<string>(cast, StringComparer.OrdinalIgnoreCase);
+            var changed = false;
+            foreach (var clip in GetList(scene, "veo_clips").OfType<Dictionary<string, object?>>())
+            {
+                foreach (var ch in GetList(clip, "characters_on_screen")
+                             .Select(x => x?.ToString() ?? "")
+                             .Where(s => s.Length > 0))
+                {
+                    if (seen.Add(ch)) { cast.Add(ch); changed = true; }
+                }
+            }
+            if (changed)
+                scene["characters_on_screen"] = cast.Cast<object?>().ToList();
+        }
+    }
 
     public static int ToInt(object? v) => v switch
     {
