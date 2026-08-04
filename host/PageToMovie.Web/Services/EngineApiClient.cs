@@ -626,6 +626,27 @@ public sealed class EngineApiClient
         return await SendJsonAsync<ProjectInfo>(req, ct);
     }
 
+    /// <summary>Public forkable movies (visibility "Open") — the Easy Start "story in your voice" picker.</summary>
+    public async Task<List<ForkableStoryDto>> ListForkableProjectsAsync(CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        try
+        {
+            var dto = await _http.GetFromJsonAsync<ForkableStoriesEnvelope>("/api/projects/forkable", JsonOpts, ct);
+            return dto?.Projects ?? new List<ForkableStoryDto>();
+        }
+        catch
+        {
+            return new List<ForkableStoryDto>();
+        }
+    }
+
+    private sealed class ForkableStoriesEnvelope
+    {
+        public bool Ok { get; set; }
+        public List<ForkableStoryDto>? Projects { get; set; }
+    }
+
     public async Task<SyncOriginResultDto?> SyncOriginAsync(
         string projectId,
         string parentProjectId,
@@ -4292,6 +4313,13 @@ public sealed class DemoListItem
     public string? YoutubeUploadStatus { get; set; }
     public string? YoutubeUploadError { get; set; }
     public ulong TotalStars => (ulong)Math.Max(0, UpvoteCount) + (YoutubeLikeCount ?? 0);
+}
+
+public sealed class ForkableStoryDto
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? OwnerUserId { get; set; }
 }
 
 public sealed class DemoForkResult

@@ -5,6 +5,7 @@
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
 @inject ClientMediaFolderService MediaFolder
+@inject ClientVoiceSubstitutionService VoiceSub
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 @using PageToMovie.Web.Services
@@ -50,39 +51,39 @@ else
                     <span class="badge text-bg-primary">Step 1 of 2</span>
                     <span class="badge text-bg-secondary">Voice-only · low cost</span>
                 </div>
-                <h2 class="h5 mb-2">Choose a library story</h2>
+                <h2 class="h5 mb-2">Choose a story</h2>
                 <p class="small text-muted mb-3">
-                    We open a matching project when you already have one, or create a new film for your voice.
+                    Pick a film — we make your own copy, then you record one sample and we put your voice on the narrator.
                 </p>
-                <div class="list-group mb-3">
-                    @foreach (var book in LibraryBooks)
-                    {
-                        var active = string.Equals(_pickedId, book.Id, StringComparison.OrdinalIgnoreCase);
-                        <button type="button"
-                                class="list-group-item list-group-item-action @(active ? "active" : "")"
-                                disabled="@_busy"
-                                data-testid="@($"simple-voice-book-{book.Id}")"
-                                @onclick="() => PickBookAsync(book)">
-                            <div class="d-flex justify-content-between gap-2">
-                                <div class="min-w-0 text-start">
-                                    <div class="fw-semibold">@book.Title</div>
-                                    <div class="small @(active ? "text-white-50" : "text-muted")">@book.Blurb</div>
+                @if (_storiesLoading)
+                {
+                    <p class="small text-muted">Loading stories…</p>
+                }
+                else if (_forkableStories.Count == 0)
+                {
+                    <div class="alert alert-light border small mb-3">
+                        No shareable stories yet. Mark a film “Public (Forkable)” in the full studio to see it here.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group mb-3">
+                        @foreach (var story in _forkableStories)
+                        {
+                            <button type="button"
+                                    class="list-group-item list-group-item-action"
+                                    disabled="@_busy"
+                                    data-testid="@($"simple-voice-story-{story.Id}")"
+                                    @onclick="() => SelectStoryAsync(story)">
+                                <div class="d-flex justify-content-between gap-2 align-items-center">
+                                    <div class="fw-semibold text-start">@story.Title</div>
+                                    <span class="small text-muted flex-shrink-0">Read in my voice →</span>
                                 </div>
-                                <span class="badge @(active ? "text-bg-light text-dark" : "text-bg-secondary") flex-shrink-0 align-self-center">
-                                    @book.Tag
-                                </span>
-                            </div>
-                        </button>
-                    }
-                </div>
-                <button type="button"
-                        class="btn btn-primary"
-                        data-testid="simple-voice-continue"
-                        disabled="@_busy"
-                        @onclick="ContinueToRecordAsync">
-                    @(_busy ? "Opening…" : "Continue → record my voice")
-                </button>
-                <a class="btn btn-link btn-sm ms-2" href="/" data-testid="simple-voice-home">
+                            </button>
+                        }
+                    </div>
+                }
+                <a class="btn btn-link btn-sm px-0" href="/" data-testid="simple-voice-home">
                     Full studio instead
                 </a>
             </div>
@@ -107,6 +108,20 @@ else
                 </button>
             </div>
             <div class="card-body">
+                @if (_hasSample && !_reRecording)
+                {
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2" data-testid="simple-voice-ready">
+                        <span class="badge text-bg-success">Your voice is ready</span>
+                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                disabled="@_busy"
+                                data-testid="simple-voice-rerecord"
+                                @onclick="StartReRecord">
+                            Re-record
+                        </button>
+                    </div>
+                }
+                @if (!_hasSample || _reRecording)
+                {
                 <p class="small text-muted mb-3">
                     One sample for the narrator. Library pictures stay as-is.
                     Read the script aloud, then tap Done — we save and apply automatically.
@@ -211,6 +226,7 @@ else
                     </div>
                     @* Record hidden while upload path is active *@
                 }
+                } @* end: show record UI only when no sample yet or re-recording *@
 
                 @if (!string.IsNullOrEmpty(_hint))
                 {
@@ -239,24 +255,60 @@ else
                     <audio class="mt-2 w-100" controls src="@_samplePlayUrl" @key="_samplePlayUrl"></audio>
                 }
 
-                @if (_phase == Phase.Done || (_hasSample && _applied))
+                @if (_hasSample && _applied)
                 {
                     <hr class="my-3" />
-                    <div class="d-flex flex-wrap align-items-center gap-2" data-testid="simple-voice-finish">
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold">You’re set</div>
-                            <div class="small text-muted">
-                                Next we keep the pictures and put your voice on every line — no video regen.
+                    @if (_dubbedUrl is not null)
+                    {
+                        <div data-testid="simple-voice-result">
+                            <div class="fw-semibold mb-2">Your movie, in your voice 🎉</div>
+                            <video class="w-100 rounded" style="max-height: 60vh; background:#000;"
+                                   src="@_dubbedUrl" controls autoplay playsinline
+                                   data-testid="simple-voice-player"></video>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                <button type="button" class="btn btn-primary"
+                                        data-testid="simple-voice-download"
+                                        @onclick="DownloadDubbedAsync">
+                                    Download
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                        disabled="@_dubbing"
+                                        data-testid="simple-voice-remake"
+                                        @onclick="MakeMovieAsync">
+                                    Make again
+                                </button>
                             </div>
                         </div>
-                        <button type="button"
-                                class="btn btn-primary btn-lg"
-                                data-testid="simple-voice-make-movie"
-                                disabled="@_busy"
-                                @onclick="MakeMovieAsync">
-                            @(_busy ? "Opening…" : "Put my voice on the film →")
-                        </button>
-                    </div>
+                    }
+                    else if (_dubbing)
+                    {
+                        <div data-testid="simple-voice-progress">
+                            <div class="fw-semibold mb-2">Making your movie…</div>
+                            <div class="progress" role="progressbar" aria-label="Making your movie">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                     style="width: 100%"></div>
+                            </div>
+                            <div class="small text-muted mt-1">@(_dubStatus ?? "Working…")</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-wrap align-items-center gap-2" data-testid="simple-voice-finish">
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">You’re set</div>
+                                <div class="small text-muted">
+                                    We keep the pictures and put your voice on every line — no video regen.
+                                </div>
+                            </div>
+                            <button type="button"
+                                    class="btn btn-primary btn-lg"
+                                    data-testid="simple-voice-make-movie"
+                                    disabled="@_busy"
+                                    @onclick="MakeMovieAsync">
+                                Make my movie →
+                            </button>
+                        </div>
+                    }
                 }
             </div>
         </div>
@@ -276,23 +328,13 @@ else
     /// <summary>Step-2 capture path: pick one so Record and Upload are never shown together.</summary>
     private enum CaptureMode { Choose, Record, Upload }
 
-    private sealed record LibraryBook(string Id, string Title, string Blurb, string Tag, string? PreferSubstring);
-
-    private static readonly LibraryBook[] LibraryBooks =
-    {
-        new("buster", "Buster",
-            "Gentle bedtime story — ideal for grandparent voice.",
-            "Kids", "buster"),
-        new("telltale", "The Tell-Tale Heart",
-            "Classic short — put your voice on the narrator.",
-            "Classic", "telltale"),
-        new("new-kids", "New film for my voice",
-            "Create a fresh project, then import a book and record.",
-            "New", null),
-    };
-
     private Phase _phase = Phase.Pick;
-    private string _pickedId = "buster";
+    private List<ForkableStoryDto> _forkableStories = new();
+    private bool _storiesLoading = true;
+    private bool _reRecording;
+    private bool _dubbing;
+    private string? _dubStatus;
+    private string? _dubbedUrl;
     private string? _projectId;
     private string? _projectLabel;
     private string _narratorKey = "Character_Narrator";
@@ -310,6 +352,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _storiesLoading = true;
+        try { _forkableStories = await Engine.ListForkableProjectsAsync(); }
+        catch { /* empty list shown */ }
+        finally { _storiesLoading = false; }
+
         // Resume mid-flow if active project is already on simple path.
         if (Session.IsLoggedIn
             && ActiveProject.IsSimpleVoice
@@ -325,89 +372,34 @@ else
         }
     }
 
-    private Task PickBookAsync(LibraryBook book)
-    {
-        _pickedId = book.Id;
-        _error = null;
-        _message = null;
-        return Task.CompletedTask;
-    }
-
-    private void BackToPick()
-    {
-        _phase = Phase.Pick;
-        _captureMode = CaptureMode.Choose;
-        _recording = false;
-        _error = null;
-        _message = null;
-        _hint = null;
-    }
-
-    private async Task ContinueToRecordAsync()
+    private async Task SelectStoryAsync(ForkableStoryDto story)
     {
         if (!Session.IsLoggedIn)
         {
             Nav.NavigateTo("login?returnUrl=/simple-voice");
             return;
         }
-
         _busy = true;
         _error = null;
         _message = null;
         try
         {
-            var book = LibraryBooks.FirstOrDefault(b => b.Id == _pickedId) ?? LibraryBooks[0];
-            var projects = await Engine.GetProjectsAsync();
-            string? projectId = null;
-            string? label = null;
+            // Make the user's own copy of the film (fork), then set up the voice step on it.
+            var fork = await Engine.ForkProjectAsync(story.Id);
+            var forkId = fork?.Id;
+            if (string.IsNullOrEmpty(forkId))
+                throw new InvalidOperationException("Could not open that story.");
 
-            if (!string.IsNullOrEmpty(book.PreferSubstring) && projects?.Projects is { Count: > 0 })
-            {
-                var match = projects.Projects.FirstOrDefault(p =>
-                    (p.Id?.Contains(book.PreferSubstring, StringComparison.OrdinalIgnoreCase) ?? false)
-                    || (p.Title?.Contains(book.PreferSubstring, StringComparison.OrdinalIgnoreCase) ?? false)
-                    || (p.Label?.Contains(book.PreferSubstring, StringComparison.OrdinalIgnoreCase) ?? false));
-                if (match?.Id is { Length: > 0 } mid)
-                {
-                    projectId = mid;
-                    label = match.Label ?? match.Title ?? mid;
-                }
-            }
-
-            if (string.IsNullOrEmpty(projectId))
-            {
-                var name = book.Id == "new-kids"
-                    ? $"My story {DateTime.Now:MMdd-HHmm}"
-                    : $"{book.Title} · my voice";
-                var result = await Engine.CreateProjectAsync(
-                    name, title: name, studioPath: ProjectStudioPaths.SimpleVoice);
-                projects = result ?? await Engine.GetProjectsAsync();
-                var created = projects?.Active;
-                projectId = created?.Id;
-                label = created?.Label ?? created?.Title ?? name;
-                if (string.IsNullOrEmpty(projectId))
-                    throw new InvalidOperationException("Could not create project.");
-                _message = $"Created “{label}”. If the book isn’t imported yet, finish import from Book, then come back here.";
-            }
-            else
-            {
-                await Engine.ActivateProjectAsync(projectId);
-                projects = await Engine.GetProjectsAsync();
-                var a = projects?.Active;
-                label = a?.Label ?? a?.Title ?? label ?? projectId;
-            }
-
-            try
-            {
-                await Engine.SetStudioPathAsync(projectId, ProjectStudioPaths.SimpleVoice);
-            }
+            try { await Engine.SetStudioPathAsync(forkId, ProjectStudioPaths.SimpleVoice); }
             catch { /* older API */ }
-
-            ActiveProject.Set(projectId, label, studioPath: ProjectStudioPaths.SimpleVoice);
+            await Engine.ActivateProjectAsync(forkId);
+            ActiveProject.Set(forkId, fork?.Title ?? story.Title, studioPath: ProjectStudioPaths.SimpleVoice);
             await ActiveProject.RefreshReadinessAsync(Engine);
 
-            _projectId = projectId;
-            _projectLabel = label;
+            _projectId = forkId;
+            _projectLabel = fork?.Title ?? story.Title;
+            _reRecording = false;
+            _dubbedUrl = null;
             _phase = Phase.Record;
             await EnsureVoiceModelAsync();
             await ResolveNarratorKeyAsync();
@@ -421,6 +413,24 @@ else
         {
             _busy = false;
         }
+    }
+
+    private void StartReRecord()
+    {
+        _reRecording = true;
+        _captureMode = CaptureMode.Choose;
+        _hint = null;
+        _error = null;
+    }
+
+    private void BackToPick()
+    {
+        _phase = Phase.Pick;
+        _captureMode = CaptureMode.Choose;
+        _recording = false;
+        _error = null;
+        _message = null;
+        _hint = null;
     }
 
     private async Task ResolveNarratorKeyAsync()
@@ -697,12 +707,32 @@ private async Task StartMicAsync()
     private async Task MakeMovieAsync()
     {
         if (string.IsNullOrEmpty(_projectId)) return;
+        // Clips + synthesized audio live in the browser media folder — it must be connected.
+        if (!MediaFolder.IsConnected)
+        {
+            var connected = await MediaFolder.ConnectFolderAsync();
+            if (!connected && !MediaFolder.IsConnected)
+            {
+                _error = "Connect your media folder so we can build your movie.";
+                return;
+            }
+        }
+        _dubbing = true;
         _busy = true;
         _error = null;
+        _message = null;
+        _dubbedUrl = null;
+        _dubStatus = "Starting…";
         try
         {
-            // Easy path: TTS with clone + client audio replace (not video batch gen).
-            Nav.NavigateTo("simple-revoice");
+            var res = await VoiceSub.DubMovieInMyVoiceAsync(
+                _projectId,
+                charKey: _narratorKey,
+                onProgress: s => { _dubStatus = s; _ = InvokeAsync(StateHasChanged); });
+            if (res.Ok && !string.IsNullOrWhiteSpace(res.DownloadUrl))
+                _dubbedUrl = res.DownloadUrl;
+            else
+                _error = res.Error ?? "Could not make your movie.";
         }
         catch (Exception ex)
         {
@@ -710,8 +740,17 @@ private async Task StartMicAsync()
         }
         finally
         {
+            _dubbing = false;
             _busy = false;
+            _dubStatus = null;
         }
+    }
+
+    private async Task DownloadDubbedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_dubbedUrl)) return;
+        var name = string.IsNullOrWhiteSpace(_projectLabel) ? "movie" : _projectLabel;
+        await VoiceSub.DownloadAsync(_dubbedUrl, $"{name}-in-my-voice.mp4");
     }
 
     private async Task SwitchToFullStudioAsync()

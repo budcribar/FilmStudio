@@ -4428,6 +4428,31 @@ app.MapPost("/api/invites/accept", async (
     }
 });
 
+/// <summary>Public forkable movies (visibility "Open"/"PublicForkable") — the source list for the
+/// Easy Start "story in your voice" picker. Any signed-in user can see them to fork.</summary>
+app.MapGet("/api/projects/forkable", async (
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var all = await store.ListProjectsAsync(ct);
+    var forkable = all
+        .Where(p => string.Equals(p.VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(p.VisibilityMode, "PublicForkable", StringComparison.OrdinalIgnoreCase))
+        .OrderBy(p => p.Label ?? p.Title ?? p.Id, StringComparer.OrdinalIgnoreCase)
+        .Select(p => new
+        {
+            id = p.Id,
+            title = p.Label ?? p.Title ?? p.Id,
+            ownerUserId = p.OwnerUserId,
+        })
+        .ToList();
+    return Results.Ok(new { ok = true, projects = forkable });
+});
+
 /// <summary>1-click community fork endpoint for Open (Public Forkable) projects.</summary>
 app.MapPost("/api/projects/{id}/fork", async (
     string id,
