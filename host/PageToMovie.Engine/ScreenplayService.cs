@@ -459,6 +459,7 @@ public static string NormalizeText(string text)
         if (string.IsNullOrWhiteSpace(current))
             return new DraftEditResult { Ok = false, Error = "No screenplay draft to re-skin yet." };
 
+        model = await ResolvePlanningModelAsync(store, projectId, model, "Re-skin screenplay", ct).ConfigureAwait(false);
         var progress = onProgress is null ? null : new Progress<string>(onProgress);
         var result = await new AdaptationService()
             .ReskinAsync(current, visualMedium, chat, model, progress, ct)
@@ -497,6 +498,7 @@ public static string NormalizeText(string text)
             catch { /* enrich without grounding */ }
         }
 
+        model = await ResolvePlanningModelAsync(store, projectId, model, "Enrich screenplay", ct).ConfigureAwait(false);
         var progress = onProgress is null ? null : new Progress<string>(onProgress);
         var result = await new AdaptationService()
             .EmbellishAsync(current, visualMedium, chat, bookText, model, progress, ct)
@@ -575,6 +577,7 @@ public static string NormalizeText(string text)
         var target = runtime.TargetMinutes > 0 ? runtime.TargetMinutes : runtime.NaturalMinutes;
         var natural = runtime.NaturalMinutes > 0 ? runtime.NaturalMinutes : target;
 
+        model = await ResolvePlanningModelAsync(store, projectId, model, "Fit screenplay to length", ct).ConfigureAwait(false);
         var progress = onProgress is null ? null : new Progress<string>(onProgress);
         var result = await new AdaptationService()
             .TrimAsync(baseFountain, target, natural, chat, model, progress, ct)
@@ -582,6 +585,20 @@ public static string NormalizeText(string text)
 
         return ApplyDraftEdit(store, projectId, result,
             appliedMessage: $"Trimmed the screenplay toward ~{target} min ({result.SceneCountAfter} scenes).");
+    }
+
+    /// <summary>
+    /// Resolve the project's Script &amp; planning (chat) model for a fountain edit. Uses the caller's
+    /// explicit id when given, else the project's configured planning model — never an empty id, which the
+    /// chat client rejects with "model is required".
+    /// </summary>
+    private static async Task<string> ResolvePlanningModelAsync(
+        ProjectStore store, string projectId, string model, string op, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(model))
+            return model;
+        var cfg = await store.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        return ProjectModelSelection.RequirePlanning(cfg, op);
     }
 
     /// <summary>

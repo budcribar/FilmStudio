@@ -69,7 +69,7 @@ public sealed class ScreenplayDraftEditTests : IDisposable
 
         // Trim to a shorter (3-scene) version.
         var chat = new StubChat(Fountain(3));
-        var result = await ScreenplayService.TrimDraftAsync(_store, ProjectId, chat);
+        var result = await ScreenplayService.TrimDraftAsync(_store, ProjectId, chat, model: "grok-4.5");
 
         Assert.True(result.Ok);
         Assert.True(result.Applied);
@@ -98,7 +98,7 @@ public sealed class ScreenplayDraftEditTests : IDisposable
         // Enrich (same scene count) — the base must become the enriched version so a later Fit length
         // trims from the enriched screenplay rather than discarding the enrichment.
         var chat = new StubChat(Fountain(4, "ENRICHED"));
-        var r = await ScreenplayService.EmbellishDraftAsync(_store, ProjectId, "auto", chat);
+        var r = await ScreenplayService.EmbellishDraftAsync(_store, ProjectId, "auto", chat, model: "grok-4.5");
 
         Assert.True(r.Applied);
         var baseText = File.ReadAllText(ScreenplayService.GetMaxBasePath(_store, ProjectId));

@@ -38,12 +38,11 @@
 
                     @if (_estimateUsd is double est)
                     {
-                        <div class="alert alert-light border d-flex flex-wrap gap-2 align-items-center justify-content-between"
+                        <div class="border rounded p-2 my-2 small text-body-secondary"
                              data-testid="trim-cost-preview">
-                            <div class="small">
-                                Rough estimate at this length: <strong>@($"${est:0.00}")</strong>
-                                <span class="text-muted">— firms up after cast &amp; voice.</span>
-                            </div>
+                            Rough estimate at this length:
+                            <strong class="text-body">@($"${est:0.00}")</strong>
+                            — firms up after cast &amp; voice.
                         </div>
                     }
 
