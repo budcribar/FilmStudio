@@ -192,8 +192,8 @@ public class BookToFountainPackageTests
         var body = File.ReadAllText(promptPath!);
         Assert.Contains("DIALOGUE FIDELITY", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Nevermore", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("book wording", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("do NOT emit JSON", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("exact dialogue", body, StringComparison.OrdinalIgnoreCase); // v4: "book's exact dialogue"
+        Assert.Contains("No JSON", body, StringComparison.OrdinalIgnoreCase);       // v4: "No JSON, no schemas, no arrays"
         Assert.Contains("Fountain 1.1", body, StringComparison.OrdinalIgnoreCase);
     }
 }

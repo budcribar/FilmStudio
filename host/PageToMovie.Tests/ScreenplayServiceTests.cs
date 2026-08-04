@@ -230,7 +230,7 @@ public class ScreenplayServiceTests : IDisposable
         Assert.Contains("NARRATOR", system, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("INT.", system, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("wardrobe", system, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("render medium", system, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("visual medium", system, StringComparison.OrdinalIgnoreCase); // v4 wording
         Assert.Contains("spoiler", system, StringComparison.OrdinalIgnoreCase);
     }
 
