@@ -7,13 +7,7 @@
 <PageTitle>Book · Screenplay</PageTitle>
 
 <AdaptationShell Host="this" Step="screenplay">
-    @if (!string.IsNullOrWhiteSpace(ProjectId))
-    {
-        @* Visual style lives on its own "Look & medium" stage (adaptation/look). *@
-        <FilmLengthCard ProjectId="@ProjectId"
-                        Disabled="@(Busy || JobRunning)"
-                        OnChanged="OnFilmLengthChangedAsync" />
-    }
+    @* Visual style → "Look & medium" stage; film length → "Fit length" stage. This step is edit-only. *@
 
     <div class="card mb-3">
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">

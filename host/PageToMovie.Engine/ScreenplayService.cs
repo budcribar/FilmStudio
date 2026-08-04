@@ -453,7 +453,9 @@ public static string NormalizeText(string text)
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
-        var current = Get(store, projectId).Text;
+        // Re-skin is a full-length edit — run it on the full-length base so it doesn't operate on an
+        // already-trimmed draft, and update the base so Fit length trims from the re-skinned version.
+        var current = ReadFullLengthSource(store, projectId);
         if (string.IsNullOrWhiteSpace(current))
             return new DraftEditResult { Ok = false, Error = "No screenplay draft to re-skin yet." };
 
@@ -463,7 +465,8 @@ public static string NormalizeText(string text)
             .ConfigureAwait(false);
 
         return ApplyDraftEdit(store, projectId, result,
-            appliedMessage: $"Re-applied the look to the screenplay ({result.SceneCountAfter} scenes).");
+            appliedMessage: $"Re-applied the look to the screenplay ({result.SceneCountAfter} scenes).",
+            updateBase: true);
     }
 
     /// <summary>
@@ -480,7 +483,9 @@ public static string NormalizeText(string text)
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
-        var current = Get(store, projectId).Text;
+        // Enrich is a full-length edit — run it on the full-length base and update the base so Fit length
+        // trims from the enriched version (otherwise trimming would discard the enrichment).
+        var current = ReadFullLengthSource(store, projectId);
         if (string.IsNullOrWhiteSpace(current))
             return new DraftEditResult { Ok = false, Error = "No screenplay draft to enrich yet." };
 
@@ -498,7 +503,8 @@ public static string NormalizeText(string text)
             .ConfigureAwait(false);
 
         return ApplyDraftEdit(store, projectId, result,
-            appliedMessage: $"Enriched the screenplay ({result.SceneCountAfter} scenes).");
+            appliedMessage: $"Enriched the screenplay ({result.SceneCountAfter} scenes).",
+            updateBase: true);
     }
 
     /// <summary>Path to the immutable full-length base (may not exist until the first trim / a max generation).</summary>
@@ -578,8 +584,32 @@ public static string NormalizeText(string text)
             appliedMessage: $"Trimmed the screenplay toward ~{target} min ({result.SceneCountAfter} scenes).");
     }
 
+    /// <summary>
+    /// The full-length source to run a full-length edit (enrich / re-skin) on: the immutable base if it
+    /// exists, else the current working draft (which then establishes the base). Never the trimmed draft.
+    /// </summary>
+    private static string ReadFullLengthSource(ProjectStore store, string projectId)
+    {
+        var basePath = GetMaxBasePath(store, projectId);
+        if (File.Exists(basePath))
+        {
+            try
+            {
+                var text = File.ReadAllText(basePath);
+                if (!string.IsNullOrWhiteSpace(text)) return text;
+            }
+            catch { /* fall back to the working draft */ }
+        }
+        return Get(store, projectId).Text;
+    }
+
+    /// <param name="updateBase">
+    /// True for full-length edits (enrich / re-skin): also overwrite the full-length base so Fit length
+    /// derives from the edited version. False for Trim, which shortens and must not touch the base.
+    /// </param>
     private static DraftEditResult ApplyDraftEdit(
-        ProjectStore store, string projectId, AdaptationService.FountainEditResult result, string appliedMessage)
+        ProjectStore store, string projectId, AdaptationService.FountainEditResult result, string appliedMessage,
+        bool updateBase = false)
     {
         if (!result.Ok)
             return new DraftEditResult
@@ -594,6 +624,9 @@ public static string NormalizeText(string text)
         var save = SaveDraft(store, projectId, result.Fountain);
         if (!save.Ok)
             return new DraftEditResult { Ok = false, Error = save.Error };
+
+        if (updateBase)
+            WriteMaxBase(store, projectId, result.Fountain); // full-length base = enriched / re-skinned
 
         return new DraftEditResult
         {

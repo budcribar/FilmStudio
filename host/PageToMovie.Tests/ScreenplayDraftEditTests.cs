@@ -86,7 +86,27 @@ public sealed class ScreenplayDraftEditTests : IDisposable
         Assert.False(status.ReadyForShots);
     }
 
-    private static string Fountain(int scenes)
+    [Fact]
+    public async Task EmbellishDraft_updates_base_so_fit_length_derives_from_enriched()
+    {
+        Directory.CreateDirectory(Path.Combine(_store.GetProjectDir(ProjectId), "source"));
+
+        // Simulate generation: both the working draft and the full-length base are the lean version.
+        ScreenplayService.SaveDraft(_store, ProjectId, Fountain(4, "PLAIN"));
+        ScreenplayService.WriteMaxBase(_store, ProjectId, Fountain(4, "PLAIN"));
+
+        // Enrich (same scene count) — the base must become the enriched version so a later Fit length
+        // trims from the enriched screenplay rather than discarding the enrichment.
+        var chat = new StubChat(Fountain(4, "ENRICHED"));
+        var r = await ScreenplayService.EmbellishDraftAsync(_store, ProjectId, "auto", chat);
+
+        Assert.True(r.Applied);
+        var baseText = File.ReadAllText(ScreenplayService.GetMaxBasePath(_store, ProjectId));
+        Assert.Contains("ENRICHED", baseText);
+        Assert.DoesNotContain("PLAIN", baseText);
+    }
+
+    private static string Fountain(int scenes, string marker = "action")
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("Title: Test");
@@ -96,7 +116,7 @@ public sealed class ScreenplayDraftEditTests : IDisposable
         {
             sb.AppendLine(i % 2 == 0 ? $"EXT. PLACE {i} - DAY" : $"INT. ROOM {i} - NIGHT");
             sb.AppendLine();
-            sb.AppendLine(new string('w', 50) + $" scene {i} action and description.");
+            sb.AppendLine(new string('w', 50) + $" scene {i} {marker} and description.");
             sb.AppendLine();
             sb.AppendLine("MARY");
             sb.AppendLine($"Come along, little lamb — line {i} with enough dialogue for the gate.");

@@ -26,8 +26,8 @@
                 @if (Status?.Screenplay.DraftExists != true)
                 {
                     <div class="alert alert-light border small mb-0">
-                        Write a screenplay first, then fit it to length here.
-                        <a class="ms-1" href="adaptation/screenplay">Go to Screenplay →</a>
+                        Import a book first — the screenplay is written automatically, then you fit it to length.
+                        <a class="ms-1" href="adaptation/import">Go to Book →</a>
                     </div>
                 }
                 else
@@ -55,8 +55,8 @@
                                 @onclick="TrimAsync">
                             Fit screenplay to this length
                         </button>
-                        <a class="btn btn-outline-secondary btn-sm" href="adaptation/screenplay" data-testid="trim-review">
-                            Review on Screenplay →
+                        <a class="btn btn-outline-primary btn-sm" href="adaptation/screenplay" data-testid="trim-review">
+                            Continue to Screenplay →
                         </a>
                     </div>
                 }

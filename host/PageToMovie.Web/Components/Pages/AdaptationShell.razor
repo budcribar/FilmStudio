@@ -64,23 +64,12 @@
             <span class="ptm-step__hint">Visual style</span>
         </span>
     </a>
-    <a class="ptm-step @(screenplayActive ? "is-active" : "") @(screenplayOff ? "is-disabled" : "")"
-       href="@(screenplayOff ? "javascript:void(0)" : "adaptation/screenplay")"
-       @onclick:preventDefault="screenplayOff"
-       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? null : "Import a source first")"
-       data-testid="adapt-step-screenplay">
-        <span class="ptm-step__num">3</span>
-        <span class="ptm-step__body">
-            <span class="ptm-step__label">Screenplay</span>
-            <span class="ptm-step__hint">Edit · approve</span>
-        </span>
-    </a>
     <a class="ptm-step @(embellishActive ? "is-active" : "") @(embellishOff ? "is-disabled" : "")"
        href="@(embellishOff ? "javascript:void(0)" : "adaptation/embellish")"
        @onclick:preventDefault="embellishOff"
-       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? "Enrich scene description before cast" : "Write a screenplay first")"
+       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? "Enrich scene description" : "Import a source first")"
        data-testid="adapt-step-embellish">
-        <span class="ptm-step__num">4</span>
+        <span class="ptm-step__num">3</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Enrich</span>
             <span class="ptm-step__hint">Scene detail</span>
@@ -89,12 +78,23 @@
     <a class="ptm-step @(trimActive ? "is-active" : "") @(trimOff ? "is-disabled" : "")"
        href="@(trimOff ? "javascript:void(0)" : "adaptation/trim")"
        @onclick:preventDefault="trimOff"
-       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? "Fit the film to your length and budget" : "Write a screenplay first")"
+       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? "Fit the film to your length and budget" : "Import a source first")"
        data-testid="adapt-step-trim">
-        <span class="ptm-step__num">5</span>
+        <span class="ptm-step__num">4</span>
         <span class="ptm-step__body">
             <span class="ptm-step__label">Fit length</span>
             <span class="ptm-step__hint">Length · budget</span>
+        </span>
+    </a>
+    <a class="ptm-step @(screenplayActive ? "is-active" : "") @(screenplayOff ? "is-disabled" : "")"
+       href="@(screenplayOff ? "javascript:void(0)" : "adaptation/screenplay")"
+       @onclick:preventDefault="screenplayOff"
+       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? "Edit and approve the final screenplay" : "Import a source first")"
+       data-testid="adapt-step-screenplay">
+        <span class="ptm-step__num">5</span>
+        <span class="ptm-step__body">
+            <span class="ptm-step__label">Screenplay</span>
+            <span class="ptm-step__hint">Edit · approve</span>
         </span>
     </a>
     <a class="ptm-step @(castActive ? "is-active" : "") @(castOff ? "is-disabled" : "")"

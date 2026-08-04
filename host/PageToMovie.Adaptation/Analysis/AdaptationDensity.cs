@@ -34,11 +34,12 @@ public static class AdaptationDensity
     public const double AudiobookWordsPerMinute = 150.0;
 
     /// <summary>
-    /// Natural storybook read-aloud rate for short verse/micro sources, words per second.
-    /// ~2.5 wps (≈150 wpm) is an unhurried read-aloud; the prior 1.15 (~69 wpm) over-inflated tiny
-    /// rhymes (e.g. Mary's 136 words → ~3 min instead of ~1–1.5). Staging is added separately below.
+    /// Storybook read-aloud rate for short verse/micro sources, words per second. ~1.8 wps (≈108 wpm) is an
+    /// expressive, unhurried children's read-aloud. Calibrated so a near-dialogue-free nursery rhyme still
+    /// yields a watchable ~2 min film (Mary's 136 words → ~2 min): 1.15 over-inflated (~3), 2.5 under-shot
+    /// (~1). Staging is added separately below.
     /// </summary>
-    public const double StorybookWordsPerSecond = 2.5;
+    public const double StorybookWordsPerSecond = 1.8;
 
     /// <summary>Slow syllable rate for short verse performance read.</summary>
     public const double StorybookSyllablesPerSecond = 3.2;
