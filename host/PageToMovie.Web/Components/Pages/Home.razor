@@ -6,6 +6,7 @@
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
 @inject IJSRuntime Js
+@inject ClientMediaFolderService MediaFolder
 @using PageToMovie.Core.Models
 @using PageToMovie.Core.Util
 
@@ -1167,9 +1168,31 @@ else
         _backingUp = true;
         _busy = true;
         _error = null;
-        _message = "Building backup (project files + all media)…";
         try
         {
+            // Offloaded video/audio lives in the browser media folder. If it isn't connected, prompt
+            // to connect it now (the folder picker needs THIS click's user activation, so do it before
+            // any network await), then sync so the folder is complete before the merge.
+            if (!MediaFolder.IsConnected)
+            {
+                _message = "Connect your media folder to include all video in the backup…";
+                var connected = await MediaFolder.ConnectFolderAsync();
+                if (connected)
+                {
+                    _message = "Syncing media into the folder…";
+                    StateHasChanged();
+                    try { await MediaFolder.SyncProjectMediaToClientAsync(id); }
+                    catch { /* best effort — merge takes whatever is present */ }
+                }
+                else
+                {
+                    _message = "Media folder not connected — backing up project files only.";
+                    StateHasChanged();
+                }
+            }
+
+            _message = "Building backup (project files + all media)…";
+            StateHasChanged();
             var (resp, fileName) = await Engine.ExportProjectZipAsUserAsync(id);
             using (resp)
             {
