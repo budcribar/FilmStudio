@@ -212,20 +212,27 @@
     {
         _busy = true;
         _error = null;
+        // Hard timeout so a stalled request can never leave the page (and the length control it
+        // disables via Disabled="@_busy") stuck loading.
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         try
         {
-            var dto = await Engine.GetCostAsync(_projectId, _draftRes, _heroRes, _retries);
+            var dto = await Engine.GetCostAsync(_projectId, _draftRes, _heroRes, _retries, cts.Token);
             _report = dto?.Cost;
             if (_report is not null && !string.IsNullOrWhiteSpace(_report.DraftResolution))
                 _draftRes = _report.DraftResolution;
             try
             {
-                _filmRuntime = await Engine.GetFilmRuntimeAsync(_projectId);
+                _filmRuntime = await Engine.GetFilmRuntimeAsync(_projectId, cts.Token);
             }
             catch
             {
                 _filmRuntime = null;
             }
+        }
+        catch (OperationCanceledException)
+        {
+            _error = "Loading the estimate timed out — check your connection and refresh.";
         }
         catch (Exception ex)
         {

@@ -38,11 +38,11 @@
                    @bind="_edit"
                    @bind:event="oninput"
                    @bind:after="ScheduleAutosave"
-                   disabled="@(_busy || Disabled)"
+                   disabled="@Disabled"
                    data-testid="film-length-input" />
             <button type="button"
                     class="btn btn-sm btn-outline-secondary"
-                    disabled="@(_busy || Disabled)"
+                    disabled="@(_saving || Disabled)"
                     data-testid="film-length-estimate"
                     @onclick="UseEstimateAsync">
                 Use estimate (@_natural min)
@@ -76,6 +76,7 @@
     private int _edit = 1;
     private string? _error;
     private CancellationTokenSource? _saveCts;
+    private bool _saving; // a save loop is in flight (coalesces rapid bumps)
 
     protected override async Task OnParametersSetAsync()
     {
@@ -128,41 +129,66 @@
             try
             {
                 await Task.Delay(700, ct);
-                await InvokeAsync(async () =>
-                {
-                    if (!ct.IsCancellationRequested)
-                        await SaveAsync();
-                });
             }
-            catch (OperationCanceledException) { /* superseded by a newer edit */ }
+            catch (OperationCanceledException) { return; /* superseded by a newer edit */ }
+            await InvokeAsync(SaveAsync);
         });
     }
 
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(ProjectId)) return;
-        var minutes = Math.Clamp(_edit, 1, 180);
-        if (minutes == _target) return; // no change
-        _busy = true;
-        _error = null;
+        if (_saving) return; // a save loop is already running; it will pick up the latest edit
+        _saving = true;
         try
         {
-            var dto = await Engine.SetFilmRuntimeAsync(ProjectId, minutes);
-            if (dto is null || !dto.Ok)
-                throw new InvalidOperationException("Save failed.");
-            _natural = dto.NaturalMinutes > 0 ? dto.NaturalMinutes : _natural;
-            _target = dto.TargetMinutes > 0 ? dto.TargetMinutes : minutes;
-            _edit = _target;
-            if (OnChanged.HasDelegate)
-                await OnChanged.InvokeAsync(); // refreshes the estimate
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
+            // Save until the persisted target matches the latest edit — this coalesces rapid
+            // bumps (each edit reschedules, but we never run two saves at once).
+            while (true)
+            {
+                var minutes = Math.Clamp(_edit, 1, 180);
+                if (minutes == _target) break; // up to date
+                _busy = true;
+                _error = null;
+                StateHasChanged();
+                try
+                {
+                    // Hard timeout so a stalled request can never leave the control stuck on "Saving…".
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+                    var dto = await Engine.SetFilmRuntimeAsync(ProjectId, minutes, cts.Token);
+                    if (dto is null || !dto.Ok)
+                        throw new InvalidOperationException("Save failed.");
+                    _natural = dto.NaturalMinutes > 0 ? dto.NaturalMinutes : _natural;
+                    _target = dto.TargetMinutes > 0 ? dto.TargetMinutes : minutes;
+                }
+                catch (OperationCanceledException)
+                {
+                    _error = "Saving is taking too long — check your connection and try again.";
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _error = ex.Message;
+                    break;
+                }
+                finally
+                {
+                    _busy = false;
+                    StateHasChanged();
+                }
+            }
         }
         finally
         {
-            _busy = false;
+            _saving = false;
+        }
+
+        // Refresh the estimate OUTSIDE the busy/save lock: OnChanged (the host page's reload) does its
+        // own network calls, and it must never be able to freeze this control if it stalls.
+        if (_error is null && OnChanged.HasDelegate)
+        {
+            try { await OnChanged.InvokeAsync(); }
+            catch { /* the host owns its own error surface */ }
         }
     }
 
