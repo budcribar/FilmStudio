@@ -1636,9 +1636,12 @@ public sealed class ProjectStore
         var p = await GetProjectAsync(projectId, ct).ConfigureAwait(false);
         if (p is null)
             return false;
-        if (string.IsNullOrWhiteSpace(p.OwnerUserId))
-            return false; // unowned / legacy → admin only
-        return string.Equals(p.OwnerUserId.Trim(), userId.Trim(), StringComparison.OrdinalIgnoreCase);
+        // Use the same alias-aware ownership rule the project LIST uses (ProjectOwnership.IsOwnedBy),
+        // not a strict OwnerUserId == userId match. Otherwise a project the user owns and sees in
+        // their list — e.g. one whose owner lives only in the "username/slug" folder segment with an
+        // empty OwnerUserId field — fails this gate, so the manage/rename affordance vanishes for it
+        // while it works for a sibling whose OwnerUserId happens to match exactly.
+        return ProjectOwnership.IsOwnedBy(p, ProjectOwnership.CollectAliases(userId));
     }
 
     private static string SanitizeProjectId(string raw) => SanitizeProjectIdPublic(raw);

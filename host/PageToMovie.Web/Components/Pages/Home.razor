@@ -326,8 +326,7 @@ else
                                 var id = _projects.Active?.Id ?? ActiveProject.ProjectId ?? "";
                                 var p = activeMeta ?? _projects.Projects.FirstOrDefault(x =>
                                     string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
-                                var canManage = p is not null && (Session.IsAdmin ||
-                                    string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase));
+                                var canManage = CanManageProject(p);
                             }
                             @if (p is not null)
                             {
@@ -1078,6 +1077,28 @@ else
             await CreateProjectAsync();
     }
 
+
+    /// <summary>
+    /// Whether the current user may manage (rename/settings) a project. Mirrors the server's
+    /// ownership rule (ProjectOwnership.IsOwnedBy) rather than a strict OwnerUserId == UserId match:
+    /// a real admin can manage anything, otherwise ownership is by the "username/slug" folder-owner
+    /// segment OR the OwnerUserId field. This keeps the button in step with the project LIST (which
+    /// is already scoped to owned projects) so a project you own with an empty OwnerUserId field
+    /// still shows its rename affordance.
+    /// </summary>
+    private bool CanManageProject(ProjectInfo? p)
+    {
+        if (p is null) return false;
+        if (Session.IsAdmin) return true;
+        var uid = (Session.UserId ?? "").Trim();
+        if (uid.Length == 0) return false;
+        if (!string.IsNullOrWhiteSpace(p.OwnerUserId) &&
+            string.Equals(p.OwnerUserId.Trim(), uid, StringComparison.OrdinalIgnoreCase))
+            return true;
+        var pid = (p.Id ?? "").Replace('\\', '/').Trim('/');
+        var slash = pid.IndexOf('/');
+        return slash > 0 && string.Equals(pid[..slash], uid, StringComparison.OrdinalIgnoreCase);
+    }
 
     private void BeginRenameAsync()
     {
