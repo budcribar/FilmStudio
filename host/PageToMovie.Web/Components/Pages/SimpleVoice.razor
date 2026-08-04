@@ -110,14 +110,28 @@ else
             <div class="card-body">
                 @if (_hasSample && !_reRecording)
                 {
-                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2" data-testid="simple-voice-ready">
-                        <span class="badge text-bg-success">Your voice is ready</span>
-                        <button type="button" class="btn btn-outline-secondary btn-sm"
-                                disabled="@_busy"
-                                data-testid="simple-voice-rerecord"
-                                @onclick="StartReRecord">
-                            Re-record
-                        </button>
+                    <div class="mb-3" data-testid="simple-voice-ready">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <span class="badge text-bg-success">Your voice is ready</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    disabled="@_busy"
+                                    data-testid="simple-voice-rerecord"
+                                    @onclick="StartReRecord">
+                                Re-record
+                            </button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_samplePlayUrl))
+                        {
+                            <div class="small text-muted mb-1">Have a listen to make sure it sounds like you:</div>
+                            <audio class="w-100" controls src="@_samplePlayUrl" @key="_samplePlayUrl"
+                                   data-testid="simple-voice-ready-audio"></audio>
+                        }
+                        else
+                        {
+                            <div class="small text-muted">
+                                Not sure it recorded? Tap <strong>Re-record</strong> to try again.
+                            </div>
+                        }
                     </div>
                 }
                 @if (!_hasSample || _reRecording)
@@ -250,7 +264,7 @@ else
                         </span>
                     </div>
                 }
-                @if (!string.IsNullOrEmpty(_samplePlayUrl))
+                @if (!string.IsNullOrEmpty(_samplePlayUrl) && (!_hasSample || _reRecording))
                 {
                     <audio class="mt-2 w-100" controls src="@_samplePlayUrl" @key="_samplePlayUrl"></audio>
                 }
