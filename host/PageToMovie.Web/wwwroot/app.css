@@ -1052,6 +1052,52 @@ hr {
 .ptm-step__badge:hover {
     filter: brightness(1.12);
 }
+
+/* Book sub-steps — a light pill drill-down under the top-level "Book" step. */
+.ptm-substrip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 1.35rem;
+}
+.ptm-substrip__lead {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--fs-text-muted);
+    margin-right: 0.2rem;
+}
+.ptm-substep {
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    text-decoration: none;
+    color: var(--fs-text-secondary, var(--fs-text-muted));
+    background: var(--fs-bg-card);
+    border: 1px solid var(--fs-border-color);
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+.ptm-substep:hover:not(.is-disabled) {
+    border-color: var(--fs-border-hover);
+    color: var(--fs-text-primary);
+}
+.ptm-substep.is-active {
+    border-color: var(--fs-accent-indigo);
+    background:
+        radial-gradient(ellipse 120% 120% at 0% 0%, rgba(107, 140, 174, 0.22), transparent 70%),
+        var(--fs-bg-card);
+    color: var(--fs-text-primary);
+    font-weight: 600;
+}
+.ptm-substep.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 .ptm-hub-wait {
     color: var(--fs-text-muted);
 }
