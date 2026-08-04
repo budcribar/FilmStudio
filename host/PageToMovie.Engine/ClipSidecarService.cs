@@ -51,6 +51,8 @@ public sealed class ClipSidecarService
         string sha256,
         long sizeBytes,
         string? mp4FileName = null,
+        string? sourceUrl = null,
+        string? sourceProvider = null,
         CancellationToken ct = default)
     {
         var videoDir = Path.Combine(projectDir, "assets", "video");
@@ -80,6 +82,16 @@ public sealed class ClipSidecarService
             ["size_bytes"] = sizeBytes,
             ["created_at_utc"] = DateTime.UtcNow.ToString("o"),
         };
+
+        // Provider-hosted source URL (e.g. xAI keeps generated videos for a long time). Persisting it
+        // lets a project export carry a re-downloadable pointer so a DIFFERENT user who imports the
+        // project can re-fetch the clip bytes, instead of landing with dead clips (bytes only ever
+        // lived in the original user's browser media folder). Only stored when the provider gives one.
+        if (!string.IsNullOrWhiteSpace(sourceUrl))
+        {
+            sidecar["source_url"] = sourceUrl.Trim();
+            sidecar["source_provider"] = string.IsNullOrWhiteSpace(sourceProvider) ? "" : sourceProvider.Trim();
+        }
 
         await WriteSidecarStreamAsync(sidecarPath, sidecar, ct).ConfigureAwait(false);
         _log.LogInformation("Written clip sidecar manifest → {Path}", sidecarPath);

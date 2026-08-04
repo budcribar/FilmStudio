@@ -3724,6 +3724,11 @@ public sealed class FilmJobService
                         durationSeconds: (double)duration,
                         sha256: "",
                         sizeBytes: 0,
+                        // Persist the provider-hosted video URL so an exported project can be re-hydrated
+                        // by another user on import (xAI/Grok URLs are long-lived). Provider is resolved
+                        // from the model via the catalog (SSoT) rather than hardcoded.
+                        sourceUrl: url,
+                        sourceProvider: SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).ProviderId,
                         ct: ct).ConfigureAwait(false);
                 }
                 catch (Exception ex)
