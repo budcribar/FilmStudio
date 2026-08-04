@@ -7126,6 +7126,11 @@ app.MapPost("/api/projects/{id}/media/register", async (
             user.UserId,
             ct);
 
+        // Character reference images are kept server-side (small; Cast readiness + thumbnails depend on
+        // the ref file surviving reload). Client-storage offload is for large video clips only.
+        var isCharacterImage = dto.RelativePath.Replace('\\', '/')
+            .Contains("assets/characters/", StringComparison.OrdinalIgnoreCase);
+
         // Sidecar so scene lists treat clip as present without server MP4.
         try
         {
@@ -7133,23 +7138,27 @@ app.MapPost("/api/projects/{id}/media/register", async (
             var rel = dto.RelativePath.Replace('/', Path.DirectorySeparatorChar);
             var full = Path.Combine(dir, rel);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);
-            var marker = full + ".client.json";
-            await File.WriteAllTextAsync(marker, System.Text.Json.JsonSerializer.Serialize(new
-            {
-                storage = "client",
-                sha256 = dto.Sha256,
-                sizeBytes = dto.SizeBytes,
-                registeredAt = dto.CreatedAt,
-                userId = user.UserId,
-            }) + "\n", ct);
 
-            // Reclaim server volume storage: if server MP4 exists and matches verified client registration size, delete server copy.
-            if (File.Exists(full))
+            if (!isCharacterImage)
             {
-                var fi = new FileInfo(full);
-                if (dto.SizeBytes <= 0 || fi.Length == dto.SizeBytes)
+                var marker = full + ".client.json";
+                await File.WriteAllTextAsync(marker, System.Text.Json.JsonSerializer.Serialize(new
                 {
-                    File.Delete(full);
+                    storage = "client",
+                    sha256 = dto.Sha256,
+                    sizeBytes = dto.SizeBytes,
+                    registeredAt = dto.CreatedAt,
+                    userId = user.UserId,
+                }) + "\n", ct);
+
+                // Reclaim server volume storage: if server MP4 exists and matches verified client registration size, delete server copy.
+                if (File.Exists(full))
+                {
+                    var fi = new FileInfo(full);
+                    if (dto.SizeBytes <= 0 || fi.Length == dto.SizeBytes)
+                    {
+                        File.Delete(full);
+                    }
                 }
             }
 
