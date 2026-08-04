@@ -239,27 +239,8 @@ window.PageToMovieFfmpeg = {
                 const listBody = written.map(n => "file '" + n + "'").join("\n");
                 await ffmpeg.writeFile("list.txt", listBody);
 
-                // Probe a MEMFS file's duration (parses ffmpeg's "Duration:" log line).
-                const probeDurationSec = async function (name) {
-                    let dur = 0;
-                    const h = ({ message }) => {
-                        if (!message) return;
-                        const mm = message.match(/Duration:\s*(\d+):(\d+):(\d+\.\d+)/);
-                        if (mm) dur = (+mm[1]) * 3600 + (+mm[2]) * 60 + parseFloat(mm[3]);
-                    };
-                    ffmpeg.on("log", h);
-                    try { await ffmpeg.exec(["-hide_banner", "-i", name]); } catch (_) { /* -i alone "fails" but logs */ }
-                    ffmpeg.off("log", h);
-                    return dur;
-                };
-
-                // Expected total = sum of the individual clip durations (before stitching).
-                let expectedSec = 0;
-                for (const n of written) expectedSec += await probeDurationSec(n);
-
                 reportProgress(onProgress, 55, "Stitching…");
                 let ok = false;
-                let stitchPath = "copy";
                 try {
                     await ffmpeg.exec([
                         "-f", "concat", "-safe", "0", "-i", "list.txt",
@@ -268,20 +249,8 @@ window.PageToMovieFfmpeg = {
                         "out.mp4",
                     ]);
                     ok = true;
-                    // -c copy can SILENTLY truncate when the copied streams' params differ across
-                    // clips (finishes instantly, no exception). If the stitched duration is well short
-                    // of the sum of inputs, force the reliable re-encode path instead.
-                    const stitchedSec = await probeDurationSec("out.mp4");
-                    if (expectedSec > 0 && stitchedSec > 0 && stitchedSec < expectedSec * 0.9) {
-                        console.warn("[concat] copy produced " + stitchedSec.toFixed(1) + "s of an expected " +
-                            expectedSec.toFixed(1) + "s — re-encoding to stitch reliably.");
-                        ok = false; // fall through to re-encode
-                    }
                 } catch (copyErr) {
                     self._log("copy concat failed, re-encoding: " + (copyErr && copyErr.message));
-                }
-                if (!ok) {
-                    stitchPath = "reencode";
                     try { await ffmpeg.deleteFile("out.mp4"); } catch (_) { /* */ }
                     await ffmpeg.exec([
                         "-f", "concat", "-safe", "0", "-i", "list.txt",
@@ -294,10 +263,7 @@ window.PageToMovieFfmpeg = {
                 }
 
                 if (!ok) return { success: false, error: "Stitch failed" };
-
-                const finalSec = await probeDurationSec("out.mp4");
-                console.log("[concat] " + written.length + " clips → " + finalSec.toFixed(1) +
-                    "s (expected ~" + expectedSec.toFixed(1) + "s), path=" + stitchPath);
+                console.log("[concat] stitched " + written.length + " clips");
 
                 reportProgress(onProgress, 92, "Preparing player…");
                 const out = await ffmpeg.readFile("out.mp4");
@@ -632,27 +598,6 @@ window.PageToMovieFfmpeg = {
                         throw new Error("Cloned voice audio could not be decoded (segment " + i + ")");
                     }
                     try { await ffmpeg.deleteFile(rawName); } catch (_) { /* */ }
-
-                    // Decisive check: measure the decoded voice's loudness. If mean_volume is near
-                    // -90 dB the "voice" is effectively silence (TTS/clone produced nothing usable) —
-                    // which reads as "ducked background, no voice" no matter how correct the mix is.
-                    try {
-                        let vd = "";
-                        const vh = ({ message }) => { if (message) vd += message + "\n"; };
-                        ffmpeg.on("log", vh);
-                        try { await ffmpeg.exec(["-hide_banner", "-i", wavName, "-af", "volumedetect", "-f", "null", "-"]); }
-                        catch (_) { /* volumedetect prints via log even as it "fails" on null muxer */ }
-                        ffmpeg.off("log", vh);
-                        const mean = vd.match(/mean_volume:\s*(-?\d+(?:\.\d+)?) dB/);
-                        const max = vd.match(/max_volume:\s*(-?\d+(?:\.\d+)?) dB/);
-                        console.log("[dub] voice " + i + " loudness: mean=" + (mean ? mean[1] : "?") +
-                            "dB max=" + (max ? max[1] : "?") + "dB");
-                        if (mean && parseFloat(mean[1]) < -80) {
-                            console.warn("[dub] voice " + i + " is effectively SILENT (mean " + mean[1] +
-                                "dB) — the cloned-voice TTS produced no audible audio.");
-                        }
-                    } catch (_) { /* diagnostic only */ }
-
                     audioNames.push(wavName);
                 }
 
@@ -668,20 +613,19 @@ window.PageToMovieFfmpeg = {
 
                 // aformat first — amix does not resample, so a rate/layout mismatch silences an input.
                 const fmt = "aformat=sample_rates=48000:channel_layouts=stereo";
-                // Gentle constant bed level (e.g. duck 0.15 → ~0.40): quiet enough for the voice to sit
-                // on top, loud enough that ambience/music is still clearly there.
-                const bedVol = (1 - (1 - duck) * 0.7).toFixed(3);
+                // Duck the bed to ~0.30 so the narrator clearly sits on top (ambience/music still audible).
+                const bedVol = "0.30";
 
                 const parts = [];
                 parts.push("[0:a]" + fmt + ",volume=" + bedVol + "[base]");
                 const mixLabels = ["[base]"];
                 for (let i = 0; i < list.length; i++) {
                     // NO adelay. Evidence: the bed (which never goes through adelay) is always audible
-                    // in the mix, while the adelay'd voice never was — on every attempt. adelay is
-                    // zeroing the voice stream in this ffmpeg.wasm build. For a narrator dub the
-                    // sub-second start offset is negligible, so the voice just plays from the clip
-                    // start; amix(duration=first) silence-pads the tail to the clip length.
-                    parts.push("[" + (i + 1) + ":a]" + fmt + ",volume=1.6[v" + i + "]");
+                    // in the mix, while the adelay'd voice never was — adelay zeroes the voice stream in
+                    // this ffmpeg.wasm build. For a narrator dub the sub-second start offset is
+                    // negligible, so the voice plays from the clip start; amix(duration=first)
+                    // silence-pads the tail. Boost ~2.2× so the narration is clearly on top of the bed.
+                    parts.push("[" + (i + 1) + ":a]" + fmt + ",volume=2.2[v" + i + "]");
                     mixLabels.push("[v" + i + "]");
                 }
                 parts.push(mixLabels.join("") + "amix=inputs=" + mixLabels.length +
