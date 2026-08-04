@@ -163,6 +163,11 @@
                                data-testid="nav-user-configuration">
                                 Settings
                             </a>
+                            <a class="nav-user-item" role="menuitem" href="/account/costs"
+                               data-testid="nav-user-account-costs"
+                               @onclick="CloseUserMenu">
+                                Billing &amp; costs
+                            </a>
                             @if (Session.IsAdmin)
                             {
                                 <a class="nav-user-item" role="menuitem" href="/admin"

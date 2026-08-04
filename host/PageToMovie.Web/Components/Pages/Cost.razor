@@ -237,115 +237,12 @@
             </div>
         }
 
-        @* —— My spend (this user): total · projects · vendors —— *@
-        @if (_mySpend is not null)
-        {
-            <div class="card mb-4" data-testid="cost-my-spend">
-                <div class="card-body">
-                    <div class="fw-semibold mb-1">Your spending</div>
-                    <p class="small text-muted mb-3">
-                        Tracked under your account (shown as list rate × admin multiplier; ledger stores list only).
-                        Vendor = catalog provider (xAI, Google, ElevenLabs, …).
-                    </p>
-                    <div class="row g-3 mb-3">
-                        <div class="col-sm-4">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted text-uppercase">All projects</div>
-                                <div class="fs-4 fw-semibold" data-testid="cost-my-total-charge">@Usd(_mySpend.TotalChargeUsd)</div>
-                                <div class="small text-muted">List @Usd(_mySpend.TotalListUsd) · @_mySpend.TotalCalls calls</div>
-                            </div>
-                        </div>
-                        <div class="col-sm-4">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted text-uppercase">This project</div>
-                                @{
-                                    var projRow = _mySpend.ByProject.FirstOrDefault(p =>
-                                        string.Equals(p.ProjectId, _projectId, StringComparison.OrdinalIgnoreCase));
-                                    var projCharge = projRow?.ChargeUsd ?? 0;
-                                    var projList = projRow?.ListUsd ?? 0;
-                                    var projCalls = projRow?.Calls ?? 0;
-                                }
-                                <div class="fs-4 fw-semibold" data-testid="cost-my-project-charge">@Usd(projCharge)</div>
-                                <div class="small text-muted">List @Usd(projList) · @projCalls calls</div>
-                            </div>
-                        </div>
-                        <div class="col-sm-4">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted text-uppercase">Projects with spend</div>
-                                <div class="fs-4 fw-semibold">@_mySpend.ByProject.Count(p => p.ChargeUsd > 0)</div>
-                                <div class="small text-muted">across your account</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if (_mySpend.ByProject.Count > 0)
-                    {
-                        <div class="fw-semibold small mb-2">By project</div>
-                        <div class="table-responsive mb-3">
-                            <table class="table table-sm mb-0" data-testid="cost-my-by-project">
-                                <thead>
-                                    <tr class="small text-muted">
-                                        <th>Project</th>
-                                        <th class="text-end">Calls</th>
-                                        <th class="text-end">List</th>
-                                        <th class="text-end">Charge</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var p in _mySpend.ByProject.OrderByDescending(x => x.ChargeUsd).Take(12))
-                                    {
-                                        <tr class="@(string.Equals(p.ProjectId, _projectId, StringComparison.OrdinalIgnoreCase) ? "table-primary" : "")">
-                                            <td>@p.ProjectId</td>
-                                            <td class="text-end">@p.Calls</td>
-                                            <td class="text-end">@Usd(p.ListUsd)</td>
-                                            <td class="text-end">@Usd(p.ChargeUsd)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-
-                    @if (_mySpend.ByProvider.Count > 0)
-                    {
-                        <div class="fw-semibold small mb-2">By vendor</div>
-                        <div class="table-responsive">
-                            <table class="table table-sm mb-0" data-testid="cost-my-by-vendor">
-                                <thead>
-                                    <tr class="small text-muted">
-                                        <th>Vendor</th>
-                                        <th class="text-end">Calls</th>
-                                        <th class="text-end">List</th>
-                                        <th class="text-end">Charge</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var kv in _mySpend.ByProvider.OrderByDescending(kv => kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd))
-                                    {
-                                        var charge = kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd;
-                                        var list = kv.Value.TotalListUsd > 0 ? kv.Value.TotalListUsd : kv.Value.TotalUsd;
-                                        <tr>
-                                            <td>@ProviderLabel(kv.Key)</td>
-                                            <td class="text-end">@kv.Value.Count</td>
-                                            <td class="text-end">@Usd(list)</td>
-                                            <td class="text-end">@Usd(charge)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                                <tfoot>
-                                    <tr class="fw-semibold">
-                                        <td>Total</td>
-                                        <td class="text-end">@_mySpend.TotalCalls</td>
-                                        <td class="text-end">@Usd(_mySpend.TotalListUsd)</td>
-                                        <td class="text-end">@Usd(_mySpend.TotalChargeUsd)</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
+        @* Account-wide spend (all projects / by vendor) lives on its own focused page. *@
+        <div class="d-flex justify-content-end mb-3">
+            <a class="btn btn-sm btn-outline-secondary" href="account/costs" data-testid="cost-account-link">
+                See all projects &amp; billing →
+            </a>
+        </div>
 
         @* —— Estimate pie —— *@
         <div class="card mb-4">
@@ -592,7 +489,6 @@
     private string? _openCategory;
     private bool _showAdvanced;
     private EngineApiClient.ApiCostByProviderStatsDto? _byProvider;
-    private EngineApiClient.UserSpendSummaryDto? _mySpend;
 
     private static readonly (string Id, string Label, string Color)[] Categories =
     {
@@ -715,16 +611,6 @@
         catch
         {
             _byProvider = null;
-        }
-
-        try
-        {
-            // Full account summary (all projects) for the signed-in user.
-            _mySpend = await Engine.GetMySpendAsync();
-        }
-        catch
-        {
-            _mySpend = null;
         }
     }
 
