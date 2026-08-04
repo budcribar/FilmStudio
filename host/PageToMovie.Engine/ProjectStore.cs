@@ -3548,6 +3548,135 @@ public sealed class ProjectStore
         return removedFromBlueprint;
     }
 
+    /// <summary>
+    /// Delete a whole scene: removes its node from the blueprint <c>scenes[]</c> and deletes its
+    /// clips' on-disk media. Like <see cref="DeleteClip"/> it does NOT renumber the remaining scenes
+    /// (renumbering would mean renaming every later scene's video files). Returns true when a scene
+    /// was removed from the blueprint.
+    /// </summary>
+    public bool DeleteScene(string projectId, int scene)
+    {
+        var projectDir = GetProjectDir(projectId);
+        var bpPath = FindBlueprintPathSync(projectId);
+        var removed = false;
+
+        if (bpPath is not null && File.Exists(bpPath))
+        {
+            var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
+                       as System.Text.Json.Nodes.JsonObject
+                       ?? throw new InvalidOperationException("Invalid blueprint JSON.");
+            var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
+                         ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+
+            for (var i = 0; i < scenes.Count; i++)
+            {
+                if (scenes[i] is not System.Text.Json.Nodes.JsonObject s) continue;
+                if (ReadJsonNodeInt(s["scene_number"]) != scene) continue;
+                scenes.RemoveAt(i);
+                removed = true;
+                break;
+            }
+
+            if (removed)
+                File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
+        }
+
+        // Remove this scene's on-disk media (clips, composite, sidecars, client markers).
+        var videoDir = Path.Combine(projectDir, "assets", "video");
+        if (Directory.Exists(videoDir))
+        {
+            foreach (var f in Directory.EnumerateFiles(videoDir, $"scene_{scene:D2}*", SearchOption.TopDirectoryOnly))
+            {
+                try { File.Delete(f); } catch { /* best effort */ }
+            }
+        }
+
+        if (!removed)
+            throw new InvalidOperationException($"Scene {scene} not found.");
+
+        InvalidateSceneListCache(projectId);
+        InvalidateReadCaches(projectId);
+        return removed;
+    }
+
+    /// <summary>Append a new, empty scene to the blueprint; returns its scene number (max existing + 1).</summary>
+    public int AddScene(string projectId, string? setting = null)
+    {
+        var (root, scenes, bpPath) = LoadBlueprintForEdit(projectId);
+        var next = NextSceneNumber(scenes);
+        var sceneObj = new System.Text.Json.Nodes.JsonObject
+        {
+            ["scene_number"] = next,
+            ["setting"] = string.IsNullOrWhiteSpace(setting) ? "INT. NEW SCENE - DAY" : setting.Trim(),
+            ["veo_clips"] = new System.Text.Json.Nodes.JsonArray(),
+        };
+        scenes.Add(sceneObj);
+        File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
+        InvalidateSceneListCache(projectId);
+        InvalidateReadCaches(projectId);
+        return next;
+    }
+
+    /// <summary>Append a prefilled (editable) end-credits scene; returns its scene number.</summary>
+    public int AddCreditsScene(string projectId)
+    {
+        var (root, scenes, bpPath) = LoadBlueprintForEdit(projectId);
+        var title = "The End";
+        try
+        {
+            if (root["movie_title"] is System.Text.Json.Nodes.JsonValue tv && tv.TryGetValue<string>(out var t) && !string.IsNullOrWhiteSpace(t))
+                title = t.Trim();
+        }
+        catch { /* default title */ }
+
+        var next = NextSceneNumber(scenes);
+        var clip = new System.Text.Json.Nodes.JsonObject
+        {
+            ["clip_number"] = 1,
+            ["timestamp"] = "",
+            ["veo_continuation_source"] = "none",
+            ["visual_prompt"] = $"End-credits card on a plain dark background: the title “{title}” centered in elegant serif, "
+                                + "then “Made with Page to Movie” beneath, held still with a gentle fade to black.",
+            ["audio_payload"] = new System.Text.Json.Nodes.JsonObject { ["speaker"] = "", ["dialogue"] = "" },
+        };
+        var sceneObj = new System.Text.Json.Nodes.JsonObject
+        {
+            ["scene_number"] = next,
+            ["setting"] = "END CREDITS",
+            ["veo_clips"] = new System.Text.Json.Nodes.JsonArray { clip },
+        };
+        scenes.Add(sceneObj);
+        File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
+        InvalidateSceneListCache(projectId);
+        InvalidateReadCaches(projectId);
+        return next;
+    }
+
+    private (System.Text.Json.Nodes.JsonObject Root, System.Text.Json.Nodes.JsonArray Scenes, string Path) LoadBlueprintForEdit(string projectId)
+    {
+        var bpPath = FindBlueprintPathSync(projectId)
+                     ?? throw new InvalidOperationException("Shot plan (blueprint) not found.");
+        var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
+                   as System.Text.Json.Nodes.JsonObject
+                   ?? throw new InvalidOperationException("Invalid blueprint JSON.");
+        var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray;
+        if (scenes is null)
+        {
+            scenes = new System.Text.Json.Nodes.JsonArray();
+            root["scenes"] = scenes;
+        }
+        return (root, scenes, bpPath);
+    }
+
+    private static int NextSceneNumber(System.Text.Json.Nodes.JsonArray scenes)
+    {
+        var next = 1;
+        foreach (var s in scenes)
+            if (s is System.Text.Json.Nodes.JsonObject so)
+                next = Math.Max(next, ReadJsonNodeInt(so["scene_number"]) + 1);
+        return next;
+    }
+
     public void UpdateCharacterSeedPlaceholder(string projectId, string charKey, string refFileName)
     {
         // Prefer explicit name when provided (e.g. clear on delete); else canonical lock name.

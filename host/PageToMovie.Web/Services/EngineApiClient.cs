@@ -647,6 +647,54 @@ public sealed class EngineApiClient
         public List<ForkableStoryDto>? Projects { get; set; }
     }
 
+    /// <summary>Persistently delete a whole scene from the shot plan (blueprint + on-disk media).</summary>
+    public async Task<(bool Ok, string? Message, string? Error)> DeleteSceneAsync(
+        string projectId, int scene, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(
+            HttpMethod.Delete, $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}");
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            return (false, null, TryError(body) ?? resp.ReasonPhrase);
+        return (true, TrySceneMessage(body), null);
+    }
+
+    /// <summary>Add a scene to the shot plan — a blank scene, or a prefilled credits scene when
+    /// <paramref name="credits"/> is true. Returns the new scene number.</summary>
+    public async Task<(bool Ok, int Scene, string? Message, string? Error)> AddSceneAsync(
+        string projectId, bool credits = false, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var path = credits
+            ? $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/credits"
+            : $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes";
+        using var req = new HttpRequestMessage(HttpMethod.Post, path);
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            return (false, 0, null, TryError(body) ?? resp.ReasonPhrase);
+        var sceneNo = 0;
+        try
+        {
+            using var d = JsonDocument.Parse(body);
+            if (d.RootElement.TryGetProperty("scene", out var sEl) && sEl.TryGetInt32(out var n)) sceneNo = n;
+        }
+        catch { /* ignore */ }
+        return (true, sceneNo, TrySceneMessage(body), null);
+    }
+
+    private static string? TrySceneMessage(string body)
+    {
+        try
+        {
+            using var d = JsonDocument.Parse(body);
+            return d.RootElement.TryGetProperty("message", out var m) ? m.GetString() : null;
+        }
+        catch { return null; }
+    }
+
     public async Task<SyncOriginResultDto?> SyncOriginAsync(
         string projectId,
         string parentProjectId,

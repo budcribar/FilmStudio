@@ -378,6 +378,22 @@ else if (_showPreviewPlayer && _clientStitching)
                             @onclick="RebuildShotPlanAsync">
                         🔄 Rebuild shot plan
                     </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            data-testid="scenes-add-scene"
+                            disabled="@(_busy || JobRunning)"
+                            title="Add a new empty scene to the shot plan"
+                            @onclick="() => AddSceneAsync(false)">
+                        ➕ Add scene
+                    </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            data-testid="scenes-add-credits"
+                            disabled="@(_busy || JobRunning)"
+                            title="Add a prefilled, editable end-credits scene"
+                            @onclick="() => AddSceneAsync(true)">
+                        🎬 Add credits
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary" data-testid="scenes-select-toggle"
                             disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
                         🔍 Filters @(HasActiveFilters ? " (Active)" : "")
@@ -2491,17 +2507,60 @@ else
 
     private void RequestDeleteScene(int sn) => _deleteSceneTarget = sn;
 
-    private Task ConfirmDeleteSceneAsync()
+    private async Task ConfirmDeleteSceneAsync()
     {
-        if (_deleteSceneTarget is not int sn) return Task.CompletedTask;
+        if (_deleteSceneTarget is not int sn) return;
         _deleteSceneTarget = null;
-        if (_scenes is not null)
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
         {
-            _scenes.RemoveAll(s => s.SceneNumber == sn);
+            // Persist: remove the scene from the shot plan (blueprint) so it doesn't reappear on reload.
+            var res = await Engine.DeleteSceneAsync(_projectId, sn);
+            if (!res.Ok)
+            {
+                _error = res.Error ?? "Could not delete the scene.";
+                return;
+            }
             _selected.Remove(sn);
-            StateHasChanged();
+            _message = res.Message ?? $"Deleted Scene {sn:D2}";
+            await SoftReloadAsync();
         }
-        return Task.CompletedTask;
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task AddSceneAsync(bool credits)
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var res = await Engine.AddSceneAsync(_projectId, credits);
+            if (!res.Ok)
+            {
+                _error = res.Error ?? "Could not add the scene.";
+                return;
+            }
+            _message = res.Message ?? (credits ? "Added credits scene" : $"Added Scene {res.Scene:D2}");
+            await SoftReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task RebuildShotPlanAsync()

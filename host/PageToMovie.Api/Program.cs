@@ -5992,6 +5992,71 @@ app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}", async (
     }
 });
 
+/// <summary>Delete a whole scene from the shot plan (persisted — removes it from the blueprint and
+/// deletes the scene's on-disk media). Owner/admin only.</summary>
+app.MapDelete("/api/projects/{id}/scenes/{scene:int}", async (
+    string id, int scene, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can edit the shot plan." },
+            statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var removed = store.DeleteScene(id, scene);
+        return Results.Ok(new { ok = true, projectId = id, scene, deleted = removed,
+            message = $"Deleted Scene {scene:D2}" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Append a new empty scene to the shot plan. Owner/admin only.</summary>
+app.MapPost("/api/projects/{id}/scenes", async (
+    string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can edit the shot plan." },
+            statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var sceneNo = store.AddScene(id);
+        return Results.Ok(new { ok = true, projectId = id, scene = sceneNo, message = $"Added Scene {sceneNo:D2}" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>One-click add a prefilled (editable) end-credits scene. Owner/admin only.</summary>
+app.MapPost("/api/projects/{id}/scenes/credits", async (
+    string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can edit the shot plan." },
+            statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var sceneNo = store.AddCreditsScene(id);
+        return Results.Ok(new { ok = true, projectId = id, scene = sceneNo, message = $"Added credits (Scene {sceneNo:D2}) — edit or generate it" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/approve", async (
     string id, int scene, SceneApproveRequest? body, EditLogService logs, CancellationToken ct) =>
 {
