@@ -452,6 +452,31 @@ public sealed class EngineApiClient
         return (resp, fileName);
     }
 
+    /// <summary>User-mode project export (no admin) — same server zip as the admin export, gated on
+    /// login rather than the admin role. Backs a user-facing full backup: caller merges local media
+    /// client-side. Returns the open response stream + suggested filename; caller disposes both.</summary>
+    public async Task<(HttpResponseMessage Response, string FileName)> ExportProjectZipAsUserAsync(
+        string projectId,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var req = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/export");
+        var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            resp.Dispose();
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "export failed");
+        }
+
+        var fileName = resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                       ?? resp.Content.Headers.ContentDisposition?.FileNameStar?.Trim('"')
+                       ?? $"PageToMovie_{projectId}.zip";
+        return (resp, fileName);
+    }
+
     /// <summary>
     /// Admin server diagnostic logs zip. Returns open response stream + suggested filename.
     /// Caller must dispose the response/stream.
@@ -507,6 +532,7 @@ public sealed class EngineApiClient
     public async Task<AdminProjectImportResultDto?> ImportProjectZipAsUserAsync(
         Stream zipStream,
         string fileName,
+        string? name = null,
         bool overwrite = false,
         CancellationToken ct = default)
     {
@@ -515,6 +541,8 @@ public sealed class EngineApiClient
         var streamContent = new StreamContent(zipStream);
         streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
         content.Add(streamContent, "file", string.IsNullOrWhiteSpace(fileName) ? "project.zip" : fileName);
+        if (!string.IsNullOrWhiteSpace(name))
+            content.Add(new StringContent(name.Trim()), "name");
         content.Add(new StringContent(overwrite ? "true" : "false"), "overwrite");
 
         using var resp = await _http.PostAsync("/api/projects/import", content, ct);

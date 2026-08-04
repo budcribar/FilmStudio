@@ -1653,6 +1653,7 @@ app.MapPost("/api/projects/import", async (
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     ProjectArchiveService archives,
+    ProjectStore store,
     CancellationToken ct) =>
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
@@ -1668,6 +1669,11 @@ app.MapPost("/api/projects/import", async (
     if (file is null || file.Length == 0)
         return Results.BadRequest(new { ok = false, error = "file required (project zip)" });
 
+    // Optional target name — import under a name of the caller's choosing instead of the zip's slug
+    // (forceOwnerUserId still re-namespaces it under the caller, so only the slug is taken from this).
+    var name = form["name"].ToString();
+    if (string.IsNullOrWhiteSpace(name)) name = form["projectId"].ToString();
+
     var overwrite = string.Equals(form["overwrite"].ToString(), "true", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(form["overwrite"].ToString(), "1", StringComparison.OrdinalIgnoreCase);
 
@@ -1676,16 +1682,26 @@ app.MapPost("/api/projects/import", async (
         await using var stream = file.OpenReadStream();
         var result = await archives.ImportAsync(
             stream,
-            preferredId: null,
+            preferredId: string.IsNullOrWhiteSpace(name) ? null : name.Trim(),
             overwrite: overwrite,
             targetUserId: user.UserId,
             forceOwnerUserId: user.UserId,
             ct: ct);
+
+        // A custom name only re-slugged the folder/id above; also set the display title to match so
+        // the imported project shows the chosen name, not the zip's original title.
+        var active = result.Project;
+        if (result.Ok && !string.IsNullOrWhiteSpace(name))
+        {
+            try { active = await store.RenameProjectAsync(result.ProjectId, name.Trim(), ct); }
+            catch { /* id/slug already correct; title is best-effort */ }
+        }
+
         return Results.Ok(new
         {
             ok = true,
             projectId = result.ProjectId,
-            active = result.Project,
+            active,
             message = result.Message,
         });
     }

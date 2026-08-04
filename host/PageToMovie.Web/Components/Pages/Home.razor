@@ -356,6 +356,13 @@ else
                                                 @onclick="BeginRenameAsync">
                                             Rename
                                         </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                disabled="@(_busy || _backingUp)"
+                                                data-testid="home-backup-project"
+                                                title="Download a full backup zip (project files + all media)"
+                                                @onclick="BackupProjectAsync">
+                                            @(_backingUp ? "Backing up…" : "Back up")
+                                        </button>
                                         <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
                                                 @onclick="() => OpenCollaboratorsModal(id)">
                                             Collaborate
@@ -530,6 +537,17 @@ else
                         <div class="small text-light mb-2">
                             Choose a Page to Movie project <code>.zip</code> export — it imports into your own workspace.
                         </div>
+                        <div class="mb-2">
+                            <input class="form-control form-control-sm bg-white text-dark border-secondary"
+                                   style="max-width: 22rem;"
+                                   data-testid="home-import-name"
+                                   value="@_importName"
+                                   @oninput="@(e => _importName = e.Value?.ToString() ?? "")"
+                                   disabled="@(_busy || _importing)"
+                                   maxlength="80"
+                                   placeholder="Import as… (optional — defaults to the file's name)"
+                                   aria-label="Import as name" />
+                        </div>
                         <div class="d-flex flex-wrap align-items-center gap-2">
                             <InputFile OnChange="HandleImportAsync" accept=".zip"
                                        class="form-control form-control-sm bg-white text-dark"
@@ -691,6 +709,8 @@ else
     private bool _showRename;
     private bool _showImport;
     private bool _importing;
+    private bool _backingUp;
+    private string _importName = "";
     private string _renameName = "";
     /// <summary>Home defaults to a one-row project picker; full project management
     /// (visibility, collaborate, delete, fork/sync) is opt-in via "Manage".</summary>
@@ -1135,6 +1155,69 @@ else
         return slash > 0 && string.Equals(pid[..slash], uid, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Full project backup: user-mode server export → the browser merges in local media-folder bytes
+    /// (video/audio the server offloaded) → download one complete zip. Falls back to a server-only zip
+    /// when the media folder isn't connected or the client merge is unavailable.
+    /// </summary>
+    private async Task BackupProjectAsync()
+    {
+        var id = _projects?.Active?.Id ?? ActiveProject.ProjectId;
+        if (string.IsNullOrWhiteSpace(id)) return;
+        _backingUp = true;
+        _busy = true;
+        _error = null;
+        _message = "Building backup (project files + all media)…";
+        try
+        {
+            var (resp, fileName) = await Engine.ExportProjectZipAsUserAsync(id);
+            using (resp)
+            {
+                await using var stream = await resp.Content.ReadAsStreamAsync();
+                using var streamRef = new Microsoft.JSInterop.DotNetStreamReference(stream);
+                var result = await Js.InvokeAsync<System.Text.Json.JsonElement>(
+                    "PageToMovieExport.mergeServerZipWithLocalMediaAsync", fileName, streamRef, id);
+                if (result.TryGetProperty("success", out var ok) && ok.GetBoolean())
+                {
+                    _message = result.TryGetProperty("message", out var m) && m.ValueKind == System.Text.Json.JsonValueKind.String
+                        ? m.GetString()
+                        : $"Backed up {fileName}";
+                }
+                else
+                {
+                    var err = result.TryGetProperty("error", out var e) ? e.GetString() : "media merge failed";
+                    _message = "Media merge unavailable — downloading project files only…";
+                    StateHasChanged();
+                    var (resp2, fileName2) = await Engine.ExportProjectZipAsUserAsync(id);
+                    using (resp2)
+                    {
+                        await using var stream2 = await resp2.Content.ReadAsStreamAsync();
+                        using var streamRef2 = new Microsoft.JSInterop.DotNetStreamReference(stream2);
+                        var plain = await Js.InvokeAsync<System.Text.Json.JsonElement>(
+                            "PageToMovieExport.downloadStreamAsync", fileName2, streamRef2);
+                        if (plain.TryGetProperty("success", out var ok2) && ok2.GetBoolean())
+                            _message = $"Backed up {fileName2} (project files only — connect your media folder to include video). Note: {err}";
+                        else
+                        {
+                            _error = err;
+                            _message = null;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _message = null;
+        }
+        finally
+        {
+            _backingUp = false;
+            _busy = false;
+        }
+    }
+
     private void ToggleImport()
     {
         _showImport = !_showImport;
@@ -1161,8 +1244,10 @@ else
             // Match the server/Kestrel multipart cap (512 MB) — project zips carry video.
             const long maxBytes = 512L * 1024 * 1024;
             await using var stream = file.OpenReadStream(maxBytes);
-            var res = await Engine.ImportProjectZipAsUserAsync(stream, file.Name);
+            var res = await Engine.ImportProjectZipAsUserAsync(
+                stream, file.Name, name: string.IsNullOrWhiteSpace(_importName) ? null : _importName.Trim());
             _showImport = false;
+            _importName = "";
             _message = res?.Message ?? $"Imported “{res?.ProjectId}”.";
             await LoadAsync();
             if (ActiveProject.HasProject)
