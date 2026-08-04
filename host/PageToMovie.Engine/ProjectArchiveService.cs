@@ -176,6 +176,7 @@ public sealed class ProjectArchiveService
         string? preferredId = null,
         bool overwrite = false,
         string? targetUserId = null,
+        string? forceOwnerUserId = null,
         CancellationToken ct = default)
     {
         if (zipStream is null || !zipStream.CanRead)
@@ -205,6 +206,18 @@ public sealed class ProjectArchiveService
                 : !string.IsNullOrWhiteSpace(idFromMeta)
                     ? idFromMeta!
                     : idFromFolder;
+
+            // User-mode / rename import: land the project in the importer's own namespace, taking only
+            // the slug (last path segment) from the zip's id and prefixing the forced owner. Stops one
+            // user from importing into another's namespace, and re-slug rename from keeping the old owner.
+            if (!string.IsNullOrWhiteSpace(forceOwnerUserId))
+            {
+                var basis = rawId.Replace('\\', '/').Trim('/');
+                var lastSlash = basis.LastIndexOf('/');
+                var slug = lastSlash >= 0 ? basis[(lastSlash + 1)..] : basis;
+                rawId = $"{forceOwnerUserId.Trim()}/{slug}";
+                targetUserId = forceOwnerUserId.Trim(); // stamp ownerUserId to match the namespace
+            }
 
             // Preserves an "owner/slug" split (SanitizeProjectIdPublic alone would collapse the "/"
             // into "_", landing the import at a flat projects/{owner}_{slug}/ instead of the
@@ -289,6 +302,105 @@ public sealed class ProjectArchiveService
         {
             try { if (File.Exists(tempZip)) File.Delete(tempZip); } catch { /* ignore */ }
             try { if (Directory.Exists(tempExtract)) Directory.Delete(tempExtract, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
+    /// <summary>
+    /// Rename a project by re-slugging its folder/id: export → import under the new
+    /// "{owner}/{newSlug}" id → set the display title → delete the old project → activate the new.
+    /// Reuses the export/import machinery so the id is remapped everywhere consistently instead of
+    /// hand-patching the media registry, active pointer, per-project git, etc. When the new slug
+    /// equals the current one this degrades to a display-title-only rename (no folder move).
+    /// </summary>
+    public async Task<ProjectRenameResult> RenameViaReimportAsync(
+        string oldId,
+        string newName,
+        bool force = false,
+        CancellationToken ct = default)
+    {
+        var old = ProjectStore.NormalizeProjectId((oldId ?? "").Trim());
+        if (string.IsNullOrEmpty(old))
+            throw new InvalidOperationException("Project id required");
+        var title = (newName ?? "").Trim();
+        if (title.Length == 0)
+            throw new InvalidOperationException("New project name is required.");
+        if (title.Length > 80) title = title[..80].Trim();
+
+        // Preserve the project's existing owner namespace (an admin renaming another user's project
+        // must not move it into the admin's namespace) — derive it from the old id, not the caller.
+        var owner = old.Contains('/', StringComparison.Ordinal)
+            ? ProjectStore.SanitizeUserSegment(old[..old.IndexOf('/', StringComparison.Ordinal)])
+            : "";
+        var newSlug = ProjectStore.SanitizeProjectIdPublic(title);
+        if (newSlug.Length == 0)
+            throw new InvalidOperationException("Project name has no usable characters.");
+
+        var oldSlug = old.Contains('/', StringComparison.Ordinal)
+            ? old[(old.LastIndexOf('/') + 1)..]
+            : old;
+
+        // Same slug → nothing to move; just update the display name in place.
+        if (string.Equals(newSlug, oldSlug, StringComparison.OrdinalIgnoreCase))
+        {
+            await _projects.RenameProjectAsync(old, title, ct).ConfigureAwait(false);
+            return new ProjectRenameResult
+            {
+                Ok = true,
+                OldId = old,
+                NewId = old,
+                ReSlugged = false,
+                Message = $"Renamed to “{title}” (display name; folder unchanged).",
+            };
+        }
+
+        // Clips whose bytes live only in the browser (offloaded) don't travel in the export. Once
+        // sidecars carry a provider source_url + just-in-time download exists they re-fetch on access,
+        // but until then surface the count so the caller can decide.
+        var offloaded = CountOffloadedMedia(_projects.GetProjectDir(old));
+
+        // export → import(new id, forced owner) → title → delete old → activate new.
+        await using var exp = await ExportAsync(old, ct).ConfigureAwait(false);
+        var import = await ImportAsync(
+            exp.Stream,
+            preferredId: string.IsNullOrEmpty(owner) ? newSlug : $"{owner}/{newSlug}",
+            overwrite: false,
+            targetUserId: string.IsNullOrEmpty(owner) ? null : owner,
+            forceOwnerUserId: string.IsNullOrEmpty(owner) ? null : owner,
+            ct: ct).ConfigureAwait(false);
+        if (!import.Ok)
+            throw new InvalidOperationException(import.Error ?? "Re-import failed during rename.");
+
+        await _projects.RenameProjectAsync(import.ProjectId, title, ct).ConfigureAwait(false);
+        await _projects.DeleteProjectAsync(old, ct).ConfigureAwait(false);
+        var info = await _projects.ActivateAsync(import.ProjectId, ct).ConfigureAwait(false);
+
+        var msg = $"Renamed to “{title}” (folder {oldSlug} → {newSlug}).";
+        if (offloaded > 0)
+            msg += $" {offloaded} clip(s) stored only in the browser will re-download on access once their source links are available.";
+        return new ProjectRenameResult
+        {
+            Ok = true,
+            OldId = old,
+            NewId = import.ProjectId,
+            ReSlugged = true,
+            OffloadedClipCount = offloaded,
+            Project = info,
+            Message = msg,
+        };
+    }
+
+    /// <summary>Count client-offloaded media markers (<c>*.client.json</c>) under a project's assets.</summary>
+    private static int CountOffloadedMedia(string projectDir)
+    {
+        var assets = Path.Combine(projectDir, "assets");
+        if (!Directory.Exists(assets)) return 0;
+        try
+        {
+            return Directory.EnumerateFiles(assets, "*.client.json", SearchOption.AllDirectories).Count();
+        }
+        catch
+        {
+            return 0;
         }
     }
 
@@ -511,6 +623,18 @@ public sealed class ProjectExportResult : IAsyncDisposable, IDisposable
     public void Dispose() => Stream.Dispose();
 
     public ValueTask DisposeAsync() => Stream.DisposeAsync();
+}
+
+public sealed class ProjectRenameResult
+{
+    public bool Ok { get; init; }
+    public string OldId { get; init; } = "";
+    public string NewId { get; init; } = "";
+    /// <summary>True when the folder/id actually moved; false for a display-name-only change.</summary>
+    public bool ReSlugged { get; init; }
+    public int OffloadedClipCount { get; init; }
+    public ProjectInfo? Project { get; init; }
+    public string? Message { get; init; }
 }
 
 public sealed class ProjectImportResult

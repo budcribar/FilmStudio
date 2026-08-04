@@ -4111,6 +4111,7 @@ app.MapPost("/api/projects/{id}/rename", async (
     string id,
     RenameProjectRequest? body,
     ProjectStore store,
+    ProjectArchiveService archives,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
@@ -4128,14 +4129,18 @@ app.MapPost("/api/projects/{id}/rename", async (
     try
     {
         var title = body?.Title ?? body?.Name ?? "";
-        var proj = await store.RenameProjectAsync(id, title, ct);
+        // Re-slug rename: export → import under the new id → delete old (folder + display name both
+        // change). Degrades to a display-name-only change when the slug is unchanged.
+        var result = await archives.RenameViaReimportAsync(id, title, force: false, ct: ct);
         return Results.Ok(new
         {
             ok = true,
-            projectId = proj.Id,
-            title = proj.Title,
-            label = proj.Label,
-            message = $"Renamed project to “{proj.Label ?? proj.Title}”",
+            projectId = result.NewId,
+            previousProjectId = result.OldId,
+            reSlugged = result.ReSlugged,
+            title = result.Project?.Title ?? title,
+            label = result.Project?.Label ?? title,
+            message = result.Message,
         });
     }
     catch (Exception ex)
