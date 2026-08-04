@@ -352,8 +352,10 @@ public static string NormalizeText(string text)
         void Consider(string path)
         {
             if (!File.Exists(path)) return;
-            if (Path.GetFileName(path).Equals(CanonicalFileName, StringComparison.OrdinalIgnoreCase))
-                return;
+            var name = Path.GetFileName(path);
+            if (name.Equals(CanonicalFileName, StringComparison.OrdinalIgnoreCase) ||
+                name.Equals(MaxBaseFileName, StringComparison.OrdinalIgnoreCase))
+                return; // canonical draft / immutable full-length base are not recovery candidates
             try
             {
                 var fi = new FileInfo(path);
@@ -502,6 +504,36 @@ public static string NormalizeText(string text)
     /// <summary>Path to the immutable full-length base (may not exist until the first trim / a max generation).</summary>
     public static string GetMaxBasePath(ProjectStore store, string projectId) =>
         Path.Combine(store.GetProjectDir(projectId), "source", MaxBaseFileName);
+
+    /// <summary>
+    /// True when a full-length base exists for this project (Track D0/D6). A fork inherits this file with
+    /// the copied project, so a forker can re-fit to their own length/budget without paying to regenerate.
+    /// </summary>
+    public static bool HasMaxBase(ProjectStore store, string projectId)
+    {
+        try
+        {
+            var p = GetMaxBasePath(store, projectId);
+            return File.Exists(p) && new FileInfo(p).Length > 0;
+        }
+        catch { return false; }
+    }
+
+    /// <summary>
+    /// Persist the full-length base that Trim derives from (Track D0). Written when a screenplay is
+    /// generated at natural/max length; overwrites any prior base so a fresh generation resets it.
+    /// </summary>
+    public static void WriteMaxBase(ProjectStore store, string projectId, string fountain)
+    {
+        if (string.IsNullOrWhiteSpace(fountain)) return;
+        try
+        {
+            var path = GetMaxBasePath(store, projectId);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, NormalizeText(fountain));
+        }
+        catch { /* base is an optimization; trim can re-seed from the draft if missing */ }
+    }
 
     /// <summary>
     /// Trim the screenplay toward the project's current target runtime and save the result as the working
@@ -665,14 +697,14 @@ public static string NormalizeText(string text)
 
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
         var analysis = BookTextAnalyzer.Analyze(book);
+        // Resolve + persist the target (Trim/Fit-length reads it) but do NOT constrain generation with it.
         var runtime = await FilmRuntime.ResolveAsync(store, projectId, book, overrideTargetMinutes: totalRuntimeMinutes, ct)
             .ConfigureAwait(false);
-        // 0 / unlimited mode → null TargetRuntimeMinutes so Stage‑1 prompt gets unlimited directive.
-        int? minutes = runtime.TargetMinutes > 0 ? runtime.TargetMinutes : null;
+        // Track D0: always generate at natural/max length (null → unlimited directive). The user's target
+        // only drives the Trim stage, which derives the working draft from the full-length base written below.
+        int? minutes = null;
         onProgress?.Invoke(
-            minutes is > 0
-                ? $"Film length target: {minutes} min (natural ~{runtime.NaturalMinutes} min, mode={runtime.Mode})."
-                : $"Film length: unlimited / natural (~{runtime.NaturalMinutes} min estimated; mode={runtime.Mode}).");
+            $"Writing the full-length screenplay (natural ~{runtime.NaturalMinutes} min); fit to your target on the next step.");
         const double generationTemperature = 0.2;
 
         BookTextIdentity? bookIdentity = null;
@@ -710,6 +742,7 @@ public static string NormalizeText(string text)
                     var cachedFountain = new AdaptationService().FixDraftDate(cachedConversion.Fountain);
                     var cachedSave = SaveDraft(store, projectId, cachedFountain);
                     if (!cachedSave.Ok) return cachedSave;
+                    WriteMaxBase(store, projectId, cachedFountain); // D0: full-length base for Trim
                     ProjectVisionMeta.Write(projectDir, cachedConversion.VisionMeta);
                     cachedSave.Message = "Screenplay draft ready — reused shared book adaptation";
                     return cachedSave;
@@ -823,6 +856,7 @@ public static string NormalizeText(string text)
             fountain = new AdaptationService().FixDraftDate(fountain);
             var save = SaveDraft(store, projectId, fountain);
             if (!save.Ok) return save;
+            WriteMaxBase(store, projectId, fountain); // D0: full-length base for Trim (Fit length)
 
             // Medium sidecar from the same adaptation response (preferred).
             // Fallback: one structured LLM call if the model omitted the trailer.

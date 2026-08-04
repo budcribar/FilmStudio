@@ -15,6 +15,14 @@
                     different length any time without starting over.
                 </p>
 
+                @if (!string.IsNullOrEmpty(ActiveProject.ParentProjectId))
+                {
+                    <div class="alert alert-info small" data-testid="trim-fork-note">
+                        This project was forked with a finished screenplay — just fit it to your own length and
+                        budget here. No need to re-import or rewrite.
+                    </div>
+                }
+
                 @if (Status?.Screenplay.DraftExists != true)
                 {
                     <div class="alert alert-light border small mb-0">
