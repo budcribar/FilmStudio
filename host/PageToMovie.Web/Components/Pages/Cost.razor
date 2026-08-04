@@ -55,7 +55,14 @@
         var totalSpent = slices.Sum(x => x.Usd);
         var estSlices = BuildEstimateSlices();
         var estTotal = estSlices.Sum(x => x.Usd);
-        var estimate = s.FullFilmAllDraftUsd;
+        // Before a shot plan exists the film isn't sized yet, so the top-line responds to the length +
+        // resolution you pick (minutes-based projection). Once the shot plan exists, use the real
+        // clip-based estimate (which changes when you trim to fewer scenes).
+        var hasShotPlan = string.Equals(_report.EstimateBasis, "shot_plan", StringComparison.OrdinalIgnoreCase);
+        var targetMin = (_filmRuntime?.TargetMinutes ?? 0) > 0
+            ? _filmRuntime!.TargetMinutes
+            : Math.Max(1, _filmRuntime?.NaturalMinutes ?? 1);
+        var estimate = hasShotPlan ? s.FullFilmAllDraftUsd : ProjectedEstimateUsd(targetMin);
 
         @* —— One card: resolution · film length · estimate/spent/remaining —— *@
         <div class="card mb-4">
@@ -91,7 +98,14 @@
                         <div class="text-muted small text-uppercase mb-1">Estimate</div>
                         <div class="fs-3 fw-semibold cost-hero-num" data-testid="cost-estimate">@Usd(estimate)</div>
                         <div class="small text-muted">
-                            @_report.DraftResolution@(_report.OutputRateDraft > 0 ? $" · {Usd(_report.OutputRateDraft)}/sec" : "")
+                            @if (hasShotPlan)
+                            {
+                                <span>@_report.DraftResolution · from shot plan</span>
+                            }
+                            else
+                            {
+                                <span>~@targetMin min · @_report.DraftResolution · projected</span>
+                            }
                         </div>
                     </div>
                     <div class="col-4">
@@ -784,6 +798,23 @@
                 DateTimeStyles.AssumeUniversal, out var dto))
             return dto.ToLocalTime().ToString("MMM d · HH:mm");
         return ts.Length <= 16 ? ts : ts[..16];
+    }
+
+    // ——— Minutes-based estimate projection (pre-shot-plan) ———
+    // Video scales with the selected resolution's list rate ($/sec) × target length; plus a small base
+    // for cast + planning. Deliberately simple so the number responds to the length + resolution the
+    // user picks. Tune these as we learn from real runs / user selections.
+    private const double ProjectionBaseUsd = 0.80;
+    private const double ProjectionPerMinFallbackUsd = 1.40; // used only if no live video rate yet
+
+    private double ProjectedEstimateUsd(int targetMinutes)
+    {
+        var minutes = Math.Max(1, targetMinutes);
+        var perSec = _report?.OutputRateDraft ?? 0;
+        var videoUsd = perSec > 0
+            ? perSec * minutes * 60.0
+            : ProjectionPerMinFallbackUsd * minutes;
+        return ProjectionBaseUsd + videoUsd;
     }
 
     private static string Usd(double v) => $"${v:0.00}";
