@@ -259,7 +259,10 @@ else
                         }
                         else if (thumb is { Length: > 0 })
                         {
-                            <img @key="@(c.Key + "|" + thumb)" src="@thumb" alt="" class="char-list-thumb" loading="lazy" />
+                            @* Stable @key so a cache-bust (_imgBust) from saving ANOTHER character updates
+                               this src in place instead of remounting the <img> (which blanked it and, with
+                               lazy loading, often didn't re-fetch — the §3 "look drops on switch" bug). *@
+                            <img @key="c.Key" src="@thumb" alt="" class="char-list-thumb" />
                         }
                         else
                         {
