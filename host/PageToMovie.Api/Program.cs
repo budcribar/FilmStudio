@@ -5265,6 +5265,51 @@ app.MapPost("/api/projects/{id}/adaptation/reskin", async (
     }
 });
 
+/// <summary>
+/// Enrich the current Fountain draft's descriptive layer for the stored medium (Scene Embellishment).
+/// Incorporates the book's own language where prepared text exists; dialogue / scenes / structure preserved.
+/// Saves the enriched result as the editable draft when the scene structure is preserved.
+/// </summary>
+app.MapPost("/api/projects/{id}/adaptation/embellish", async (
+    string id,
+    ProjectStore store,
+    PageToMovie.Core.Abstractions.IChatClient chat,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var medium = ProjectVisionMeta.GetAdaptationMediumPreference(store.GetProjectDir(id));
+
+        var result = await ScreenplayService.EmbellishDraftAsync(store, id, medium, chat, ct: ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+
+        if (result.Applied)
+            store.TriggerAutoGitCommit(id, "ptm:stage=embellish");
+
+        return Results.Ok(new
+        {
+            ok = true,
+            applied = result.Applied,
+            projectId = id,
+            message = result.Message,
+            sceneCountBefore = result.SceneCountBefore,
+            sceneCountAfter = result.SceneCountAfter,
+            screenplay = result.Status,
+            adaptation = result.Applied ? store.GetAdaptationStatus(id, user.UserId) : null,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Get natural + target film length for cost/Stage1.</summary>
 app.MapGet("/api/projects/{id}/film-runtime", async (
     string id,

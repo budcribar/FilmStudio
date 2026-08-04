@@ -422,12 +422,12 @@ public static string NormalizeText(string text)
         };
     }
 
-    /// <summary>Outcome of a Fountain → Fountain re-skin of the current draft.</summary>
-    public sealed class ReskinResult
+    /// <summary>Outcome of a Fountain → Fountain descriptive edit of the current draft.</summary>
+    public sealed class DraftEditResult
     {
         public bool Ok { get; init; }
         public string? Error { get; init; }
-        /// <summary>True when the re-skin was applied and saved (false = kept original).</summary>
+        /// <summary>True when the edit was applied and saved (false = kept original).</summary>
         public bool Applied { get; init; }
         public int SceneCountBefore { get; init; }
         public int SceneCountAfter { get; init; }
@@ -440,7 +440,7 @@ public static string NormalizeText(string text)
     /// as the new draft when the scene structure is preserved. Non-destructive to story/dialogue —
     /// see <see cref="AdaptationService.ReskinAsync"/>. Requires an approved/imported draft to exist.
     /// </summary>
-    public static async Task<ReskinResult> ReskinDraftAsync(
+    public static async Task<DraftEditResult> ReskinDraftAsync(
         ProjectStore store,
         string projectId,
         string? visualMedium,
@@ -451,15 +451,57 @@ public static string NormalizeText(string text)
     {
         var current = Get(store, projectId).Text;
         if (string.IsNullOrWhiteSpace(current))
-            return new ReskinResult { Ok = false, Error = "No screenplay draft to re-skin yet." };
+            return new DraftEditResult { Ok = false, Error = "No screenplay draft to re-skin yet." };
 
         var progress = onProgress is null ? null : new Progress<string>(onProgress);
         var result = await new AdaptationService()
             .ReskinAsync(current, visualMedium, chat, model, progress, ct)
             .ConfigureAwait(false);
 
+        return ApplyDraftEdit(store, projectId, result,
+            appliedMessage: $"Re-applied the look to the screenplay ({result.SceneCountAfter} scenes).");
+    }
+
+    /// <summary>
+    /// Enrich the current editable draft's descriptive layer for the stored medium, grounding in the
+    /// prepared book text when present, and save it when the scene structure is preserved. Story and
+    /// dialogue are untouched — see <see cref="AdaptationService.EmbellishAsync"/>.
+    /// </summary>
+    public static async Task<DraftEditResult> EmbellishDraftAsync(
+        ProjectStore store,
+        string projectId,
+        string? visualMedium,
+        PageToMovie.Core.Abstractions.IChatClient chat,
+        string model = "",
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
+    {
+        var current = Get(store, projectId).Text;
+        if (string.IsNullOrWhiteSpace(current))
+            return new DraftEditResult { Ok = false, Error = "No screenplay draft to enrich yet." };
+
+        string? bookText = null;
+        var bookPath = Path.Combine(store.GetProjectDir(projectId), "source", "book_full.txt");
+        if (File.Exists(bookPath))
+        {
+            try { bookText = await File.ReadAllTextAsync(bookPath, ct).ConfigureAwait(false); }
+            catch { /* enrich without grounding */ }
+        }
+
+        var progress = onProgress is null ? null : new Progress<string>(onProgress);
+        var result = await new AdaptationService()
+            .EmbellishAsync(current, visualMedium, chat, bookText, model, progress, ct)
+            .ConfigureAwait(false);
+
+        return ApplyDraftEdit(store, projectId, result,
+            appliedMessage: $"Enriched the screenplay ({result.SceneCountAfter} scenes).");
+    }
+
+    private static DraftEditResult ApplyDraftEdit(
+        ProjectStore store, string projectId, AdaptationService.FountainEditResult result, string appliedMessage)
+    {
         if (!result.Ok)
-            return new ReskinResult
+            return new DraftEditResult
             {
                 Ok = true,
                 Applied = false,
@@ -470,15 +512,15 @@ public static string NormalizeText(string text)
 
         var save = SaveDraft(store, projectId, result.Fountain);
         if (!save.Ok)
-            return new ReskinResult { Ok = false, Error = save.Error };
+            return new DraftEditResult { Ok = false, Error = save.Error };
 
-        return new ReskinResult
+        return new DraftEditResult
         {
             Ok = true,
             Applied = true,
             SceneCountBefore = result.SceneCountBefore,
             SceneCountAfter = result.SceneCountAfter,
-            Message = $"Re-applied the look to the screenplay ({result.SceneCountAfter} scenes).",
+            Message = appliedMessage,
             Status = save.Status,
         };
     }

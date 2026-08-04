@@ -1,0 +1,82 @@
+@page "/adaptation/embellish"
+@inherits AdaptationPageBase
+
+<PageTitle>Book · Scene enrichment</PageTitle>
+
+<AdaptationShell Host="this" Step="embellish">
+    @if (!string.IsNullOrWhiteSpace(ProjectId))
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5 mb-2">Scene enrichment</h2>
+                <p class="text-body-secondary mb-3">
+                    Add concrete visual detail — setting, lighting, small action — so the film has enough to work
+                    with, drawing on the book's own language where it's rich. Dialogue, scenes, and story stay the
+                    same. Review and re-approve on the Screenplay step afterward.
+                </p>
+
+                @if (Status?.Screenplay.DraftExists != true)
+                {
+                    <div class="alert alert-light border small mb-0">
+                        Write a screenplay first, then come back to enrich it.
+                        <a class="ms-1" href="adaptation/screenplay">Go to Screenplay →</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                data-testid="embellish-run"
+                                disabled="@(Busy || JobRunning)"
+                                @onclick="EmbellishAsync">
+                            Enrich the screenplay
+                        </button>
+                        <a class="btn btn-outline-secondary btn-sm" href="adaptation/screenplay" data-testid="embellish-review">
+                            Review on Screenplay →
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (Status?.Screenplay.DraftExists == true)
+        {
+            <div class="d-flex justify-content-end">
+                <a class="btn btn-outline-primary btn-sm"
+                   href="adaptation/screenplay"
+                   data-testid="embellish-continue">
+                    Continue →
+                </a>
+            </div>
+        }
+    }
+</AdaptationShell>
+
+@code {
+    public override string StepKey => "embellish";
+
+    private async Task EmbellishAsync()
+    {
+        Busy = true;
+        BusyMessage = "Enriching the screenplay…";
+        Error = null;
+        Message = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var result = await Engine.EmbellishScreenplayAsync(ProjectId);
+            Message = result?.Message ?? "Done.";
+            await SoftLoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+        finally
+        {
+            Busy = false;
+            BusyMessage = null;
+        }
+    }
+}

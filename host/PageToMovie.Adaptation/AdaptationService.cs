@@ -233,8 +233,8 @@ public sealed class AdaptationService
         };
     }
 
-    /// <summary>Result of a Fountain → Fountain re-skin pass.</summary>
-    public sealed record ReskinResult(
+    /// <summary>Result of a Fountain → Fountain descriptive-layer edit (re-skin or embellish).</summary>
+    public sealed record FountainEditResult(
         bool Ok,
         string Fountain,
         int SceneCountBefore,
@@ -247,51 +247,117 @@ public sealed class AdaptationService
     /// Dialogue, character cues, scene headings, and scene count/order are preserved; if the model
     /// changes the scene count the original is kept and the result is flagged not-preserved.
     /// </summary>
-    public async Task<ReskinResult> ReskinAsync(
+    public Task<FountainEditResult> ReskinAsync(
         string fountain,
         string? visualMedium,
         IChatClient chat,
         string? model = null,
         IProgress<string>? progress = null,
+        CancellationToken ct = default) =>
+        ApplyDescriptiveEditAsync(
+            fountain,
+            AdaptationPromptPack.BuildReskinSystemPrompt(visualMedium),
+            userContent: null,
+            operation: "re-skin",
+            mode: "fountain_reskin",
+            chat: chat,
+            model: model,
+            progress: progress,
+            progressMessage: "Applying look to the screenplay…",
+            ct: ct);
+
+    /// <summary>
+    /// Enrich an existing Fountain screenplay's descriptive layer for the target medium — incorporating
+    /// the best of the book's own language where <paramref name="bookText"/> is supplied. Dialogue, cues,
+    /// scene headings, and scene count/order are preserved; on drift the original is kept.
+    /// </summary>
+    public Task<FountainEditResult> EmbellishAsync(
+        string fountain,
+        string? visualMedium,
+        IChatClient chat,
+        string? bookText = null,
+        string? model = null,
+        IProgress<string>? progress = null,
         CancellationToken ct = default)
+    {
+        // Ground enrichment in the source when we have it (kept bounded to protect the prompt budget).
+        string? userContent = null;
+        if (!string.IsNullOrWhiteSpace(bookText))
+        {
+            const int maxBookChars = 40_000;
+            var book = bookText.Length <= maxBookChars ? bookText : bookText[..maxBookChars];
+            userContent =
+                "ORIGINAL BOOK TEXT (for descriptive grounding — do not add plot from it):\n" +
+                book + "\n\n---\n\nSCREENPLAY TO ENRICH:\n";
+        }
+
+        return ApplyDescriptiveEditAsync(
+            fountain,
+            AdaptationPromptPack.BuildEmbellishSystemPrompt(visualMedium),
+            userContent: userContent,
+            operation: "enrichment",
+            mode: "fountain_embellish",
+            chat: chat,
+            model: model,
+            progress: progress,
+            progressMessage: "Enriching the screenplay…",
+            ct: ct);
+    }
+
+    /// <summary>
+    /// Shared Fountain → Fountain descriptive-edit core: run a chat pass, clean the output, and enforce
+    /// the structural guardrail (scene count preserved) — keeping the original on any drift/failure.
+    /// </summary>
+    private static async Task<FountainEditResult> ApplyDescriptiveEditAsync(
+        string fountain,
+        string system,
+        string? userContent,
+        string operation,
+        string mode,
+        IChatClient chat,
+        string? model,
+        IProgress<string>? progress,
+        string progressMessage,
+        CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(chat);
         fountain ??= "";
         var before = SafeSceneCount(fountain);
 
         if (string.IsNullOrWhiteSpace(fountain))
-            return new ReskinResult(false, fountain, before, before, true, "No screenplay to re-skin.");
+            return new FountainEditResult(false, fountain, before, before, true, $"No screenplay to {operation}.");
         if (!chat.IsConfigured)
-            return new ReskinResult(false, fountain, before, before, true, "AI service not configured.");
+            return new FountainEditResult(false, fountain, before, before, true, "AI service not configured.");
 
-        progress?.Report("Applying look to the screenplay…");
-        var system = AdaptationPromptPack.BuildReskinSystemPrompt(visualMedium);
+        progress?.Report(progressMessage);
+        var userPrompt = userContent is null ? fountain : userContent + fountain;
 
         var raw = await chat.CompleteAsync(
             system,
-            fountain,
+            userPrompt,
             model ?? "",
-            mode: "fountain_reskin",
+            mode: mode,
             ct: ct).ConfigureAwait(false);
 
         var cleaned = StripFences(raw);
         if (string.IsNullOrWhiteSpace(cleaned))
-            return new ReskinResult(false, fountain, before, before, true, "The re-skin returned nothing; kept the original.");
+            return new FountainEditResult(false, fountain, before, before, true,
+                $"The {operation} returned nothing; kept the original.");
 
         cleaned = BookToFountainConverter.FixDraftDate(cleaned);
         var after = SafeSceneCount(cleaned);
 
         // Structural guardrail: the automated pass must not add/remove scenes.
         if (before > 0 && after != before)
-            return new ReskinResult(
+            return new FountainEditResult(
                 false, fountain, before, after, false,
-                $"Re-skin changed the scene count ({before} → {after}); kept the original screenplay.");
+                $"The {operation} changed the scene count ({before} → {after}); kept the original screenplay.");
 
         if (!BookToFountainConverter.LooksLikeGoodFountain(cleaned))
-            return new ReskinResult(false, fountain, before, after, false,
-                "Re-skin output did not look like a valid screenplay; kept the original.");
+            return new FountainEditResult(false, fountain, before, after, false,
+                $"The {operation} output did not look like a valid screenplay; kept the original.");
 
-        return new ReskinResult(true, cleaned, before, after, true, null);
+        return new FountainEditResult(true, cleaned, before, after, true, null);
     }
 
     private static int SafeSceneCount(string fountain)

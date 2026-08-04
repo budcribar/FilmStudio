@@ -15,6 +15,9 @@ public static class AdaptationPromptPack
     public const string ReskinRelativePath = "prompts/fountain_reskin.txt";
     public const string ReskinEmbeddedLogicalName = "PageToMovie.Adaptation.Prompts.fountain_reskin.txt";
 
+    public const string EmbellishRelativePath = "prompts/embellish_scene.txt";
+    public const string EmbellishEmbeddedLogicalName = "PageToMovie.Adaptation.Prompts.embellish_scene.txt";
+
     /// <summary>
     /// Injected when no artificial runtime target is set (product default).
     /// </summary>
@@ -185,6 +188,30 @@ public static class AdaptationPromptPack
         if (leftovers.Count > 0)
             throw new InvalidOperationException(
                 "fountain_reskin prompt still has unresolved tokens: " +
+                string.Join(", ", leftovers.Select(t => "{{" + t + "}}")) + ".");
+        return body;
+    }
+
+    /// <summary>
+    /// Fountain → Fountain "embellish" system prompt with the target medium resolved.
+    /// Enriches the descriptive layer only; dialogue / cues / scene count preserved.
+    /// </summary>
+    public static string BuildEmbellishSystemPrompt(string? visualMedium)
+    {
+        var body = ReadPromptBody(EmbellishRelativePath, EmbellishEmbeddedLogicalName);
+        var medium = string.IsNullOrWhiteSpace(visualMedium) ? "auto" : visualMedium.Trim();
+        var directive = string.Equals(medium, "auto", StringComparison.OrdinalIgnoreCase)
+            ? "auto — enrich in the medium the source already implies; do not switch styles"
+            : medium;
+        body = body.Replace("{{VISUAL_MEDIUM}}", directive, StringComparison.Ordinal);
+
+        var leftovers = TokenPattern.Matches(body)
+            .Select(m => m.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (leftovers.Count > 0)
+            throw new InvalidOperationException(
+                "embellish_scene prompt still has unresolved tokens: " +
                 string.Join(", ", leftovers.Select(t => "{{" + t + "}}")) + ".");
         return body;
     }
