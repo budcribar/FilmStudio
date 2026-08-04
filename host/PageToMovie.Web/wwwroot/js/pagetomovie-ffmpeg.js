@@ -597,6 +597,27 @@ window.PageToMovieFfmpeg = {
                         throw new Error("Cloned voice audio could not be decoded (segment " + i + ")");
                     }
                     try { await ffmpeg.deleteFile(rawName); } catch (_) { /* */ }
+
+                    // Decisive check: measure the decoded voice's loudness. If mean_volume is near
+                    // -90 dB the "voice" is effectively silence (TTS/clone produced nothing usable) —
+                    // which reads as "ducked background, no voice" no matter how correct the mix is.
+                    try {
+                        let vd = "";
+                        const vh = ({ message }) => { if (message) vd += message + "\n"; };
+                        ffmpeg.on("log", vh);
+                        try { await ffmpeg.exec(["-hide_banner", "-i", wavName, "-af", "volumedetect", "-f", "null", "-"]); }
+                        catch (_) { /* volumedetect prints via log even as it "fails" on null muxer */ }
+                        ffmpeg.off("log", vh);
+                        const mean = vd.match(/mean_volume:\s*(-?\d+(?:\.\d+)?) dB/);
+                        const max = vd.match(/max_volume:\s*(-?\d+(?:\.\d+)?) dB/);
+                        console.log("[dub] voice " + i + " loudness: mean=" + (mean ? mean[1] : "?") +
+                            "dB max=" + (max ? max[1] : "?") + "dB");
+                        if (mean && parseFloat(mean[1]) < -80) {
+                            console.warn("[dub] voice " + i + " is effectively SILENT (mean " + mean[1] +
+                                "dB) — the cloned-voice TTS produced no audible audio.");
+                        }
+                    } catch (_) { /* diagnostic only */ }
+
                     audioNames.push(wavName);
                 }
 
