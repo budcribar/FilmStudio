@@ -67,32 +67,7 @@
         @* —— One card: resolution · film length · estimate/spent/remaining —— *@
         <div class="card mb-4">
             <div class="card-body">
-                <div class="row g-3 align-items-start">
-                    <div class="col-md-4">
-                        <label class="form-label small mb-1">Video resolution</label>
-                        <div class="btn-group d-flex" role="group" aria-label="Video resolution">
-                            @foreach (var res in new[] { "480p", "720p", "1080p" })
-                            {
-                                <button type="button"
-                                        class="btn btn-sm @(_draftRes == res ? "btn-primary" : "btn-outline-secondary")"
-                                        data-testid="@($"cost-res-{res}")"
-                                        disabled="@_busy"
-                                        @onclick="() => SetDraftResolutionAsync(res)">
-                                    @res
-                                </button>
-                            }
-                        </div>
-                    </div>
-                    <div class="col-md-8">
-                        @if (!string.IsNullOrWhiteSpace(_projectId))
-                        {
-                            <FilmLengthCard Embedded="true" ProjectId="@_projectId" Disabled="@_busy" OnChanged="LoadAsync" />
-                        }
-                    </div>
-                </div>
-
-                <hr class="my-3" />
-
+                @* Headline numbers on top *@
                 <div class="row g-3 text-center">
                     <div class="col-4">
                         <div class="text-muted small text-uppercase mb-1">Estimate</div>
@@ -119,6 +94,33 @@
                         <div class="small text-muted">est − spent</div>
                     </div>
                 </div>
+
+                <hr class="my-3" />
+
+                @* Two balanced columns that stay centered on resize *@
+                <div class="row g-3 align-items-start">
+                    <div class="col-md-6">
+                        <label class="form-label small mb-1">Video resolution</label>
+                        <div class="btn-group d-flex" role="group" aria-label="Video resolution">
+                            @foreach (var res in new[] { "480p", "720p", "1080p" })
+                            {
+                                <button type="button"
+                                        class="btn btn-sm @(_draftRes == res ? "btn-primary" : "btn-outline-secondary")"
+                                        data-testid="@($"cost-res-{res}")"
+                                        disabled="@_busy"
+                                        @onclick="() => SetDraftResolutionAsync(res)">
+                                    @res
+                                </button>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        @if (!string.IsNullOrWhiteSpace(_projectId))
+                        {
+                            <FilmLengthCard Embedded="true" ProjectId="@_projectId" Disabled="@_busy" OnChanged="LoadAsync" />
+                        }
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -135,7 +137,7 @@
                         data-testid="cost-agree-continue"
                         disabled="@_busy"
                         @onclick="AgreeAndContinueAsync">
-                    Agree &amp; Continue to Film →
+                    Agree &amp; Continue →
                 </button>
             </div>
         }
@@ -195,7 +197,7 @@
         }
 
         <details class="cost-breakdown mb-4" data-testid="cost-breakdown">
-            <summary class="small fw-semibold text-body mb-2" style="cursor:pointer;">Cost breakdown</summary>
+            <summary class="small fw-semibold text-body mb-2" style="cursor:pointer;">Project cost breakdown</summary>
         @if (_report.Scenarios.Count > 0)
         {
             <div class="card mb-3 border-secondary border-opacity-25 mt-2">
