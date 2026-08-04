@@ -2103,7 +2103,7 @@ else
             else
                 throw new InvalidOperationException($"Cannot lock look kind '{c.Kind}'.");
 
-            _message = $"Saved look for {display}";
+            // Saved thumbnail/icon is the confirmation — no redundant "Saved look" banner.
             _pendingLockCandidate = null;
             _chosenCandidateKey = null;
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -2231,8 +2231,7 @@ else
                     _editVisualLock = result.VisualLock;
             }
 
-            if (!silent)
-                _message = $"Saved look for {displayName}";
+            // Saved thumbnail/icon is the confirmation — no redundant "Saved look" banner.
 
             // Soft reload on silent is fine but keep editors stable if scrub didn't rewrite.
             await SoftReloadAsync();
@@ -2906,7 +2905,7 @@ else
         {
             await using var stream = new MemoryStream(bytes, writable: false);
             await Engine.UploadCharacterRefAsync(_projectId, charKey, stream, fileName);
-            _message = $"Saved look for {display}.";
+            // Saved thumbnail/icon is the confirmation — no redundant "Saved look" banner.
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             await SoftReloadAsync();
             try { await ActiveProject.RefreshReadinessAsync(Engine); } catch { /* nav */ }
