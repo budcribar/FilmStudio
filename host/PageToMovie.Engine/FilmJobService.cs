@@ -1349,6 +1349,7 @@ public sealed class FilmJobService
             var segmentCount = (int)Math.Ceiling(totalDuration / (double)segLen);
             var savedSegments = 0;
             var segmentFileNames = new List<string>();
+            string? lastProviderNote = null;
 
             for (var seg = 1; seg <= segmentCount; seg++)
             {
@@ -1359,7 +1360,7 @@ public sealed class FilmJobService
                 await AppendLogAsync($"  [{entry.DisplayName}] generating segment {seg}/{segmentCount} ({segDuration}s)…");
                 var url = await _audio.GenerateMusicTrackAsync(
                     prompt, segDuration, entry.Id, ct,
-                    onProgress: msg => { _ = AppendLogAsync("  " + msg); },
+                    onProgress: msg => { lastProviderNote = msg; _ = AppendLogAsync("  " + msg); },
                     isVocal: effectiveIsVocal, lyrics: lyrics).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(url))
                 {
@@ -1389,9 +1390,20 @@ public sealed class FilmJobService
                 // that *some* audio provider has a key, not that the one audio_model_name actually
                 // routes to (MultiProviderAudioClient) does. A key set for a different provider than
                 // the configured audio_model_name fails every scene this way, silently otherwise.
-                await FinishAsync("error", "Music synthesis failed.",
-                    $"Music synthesis failed for all segments via {entry.DisplayName} ({entry.Id}). " +
-                    "Check that its API key is configured, or change the audio model in Configuration.");
+                // Surface the provider's real reason instead of a generic "synthesis failed": the
+                // audio client sends its HTTP error via onProgress before returning null.
+                var providerDetail = !string.IsNullOrWhiteSpace(lastProviderNote)
+                    && (lastProviderNote.Contains("fail", StringComparison.OrdinalIgnoreCase)
+                        || lastProviderNote.Contains("error", StringComparison.OrdinalIgnoreCase)
+                        || lastProviderNote.Contains("HTTP", StringComparison.OrdinalIgnoreCase)
+                        || lastProviderNote.Contains("key", StringComparison.OrdinalIgnoreCase))
+                    ? $" {entry.DisplayName} said: “{lastProviderNote.Trim()}”."
+                    : "";
+                await FinishAsync("error",
+                    $"No music came back from {entry.DisplayName}.{providerDetail} " +
+                    "Most likely its API key isn’t configured — the audio gate only checks that some " +
+                    "provider has a key, not the one this model uses. Add its key in Configuration, or pick a different audio model.",
+                    $"Music synthesis failed for all segments via {entry.DisplayName} ({entry.Id}).{providerDetail}");
                 return;
             }
 
