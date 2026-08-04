@@ -7314,7 +7314,23 @@ app.MapPost("/api/projects/{id}/media/register", async (
             var full = Path.Combine(dir, rel);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);
 
-            if (!isCharacterImage)
+            // Curated/forkable source projects opt out of offload (project.json "keep_media_on_server":
+            // true) so their clips stay server-side and remain available to forks + the voice-dub input.
+            // A stopgap for clips generated before source_url capture; rebuilt movies re-fetch by URL.
+            var keepMediaOnServer = false;
+            try
+            {
+                var pjPath = Path.Combine(dir, "project.json");
+                if (File.Exists(pjPath))
+                {
+                    using var pjDoc = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(pjPath, ct));
+                    keepMediaOnServer = pjDoc.RootElement.TryGetProperty("keep_media_on_server", out var kEl)
+                        && kEl.ValueKind == System.Text.Json.JsonValueKind.True;
+                }
+            }
+            catch { /* default: offload as usual */ }
+
+            if (!isCharacterImage && !keepMediaOnServer)
             {
                 var marker = full + ".client.json";
                 await File.WriteAllTextAsync(marker, System.Text.Json.JsonSerializer.Serialize(new
