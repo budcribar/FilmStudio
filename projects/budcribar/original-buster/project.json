@@ -1,0 +1,13 @@
+{
+  "id": "budcribar/original-buster",
+  "title": "Original Buster",
+  "blueprint_file": "blueprint.clips.grok.json",
+  "scenes_file": "scenes.json",
+  "config_file": "pipeline_config.json",
+  "state_file": "pipeline_state.json",
+  "description": "Imported from an earlier Buster backup (July 2026).",
+  "ownerUserId": "budcribar",
+  "keep_media_on_server": true,
+  "schema_version": "v2",
+  "visibilityMode": "Open"
+}
