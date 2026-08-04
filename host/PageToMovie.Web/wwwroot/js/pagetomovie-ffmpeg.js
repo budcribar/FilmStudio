@@ -239,8 +239,27 @@ window.PageToMovieFfmpeg = {
                 const listBody = written.map(n => "file '" + n + "'").join("\n");
                 await ffmpeg.writeFile("list.txt", listBody);
 
+                // Probe a MEMFS file's duration (parses ffmpeg's "Duration:" log line).
+                const probeDurationSec = async function (name) {
+                    let dur = 0;
+                    const h = ({ message }) => {
+                        if (!message) return;
+                        const mm = message.match(/Duration:\s*(\d+):(\d+):(\d+\.\d+)/);
+                        if (mm) dur = (+mm[1]) * 3600 + (+mm[2]) * 60 + parseFloat(mm[3]);
+                    };
+                    ffmpeg.on("log", h);
+                    try { await ffmpeg.exec(["-hide_banner", "-i", name]); } catch (_) { /* -i alone "fails" but logs */ }
+                    ffmpeg.off("log", h);
+                    return dur;
+                };
+
+                // Expected total = sum of the individual clip durations (before stitching).
+                let expectedSec = 0;
+                for (const n of written) expectedSec += await probeDurationSec(n);
+
                 reportProgress(onProgress, 55, "Stitching…");
                 let ok = false;
+                let stitchPath = "copy";
                 try {
                     await ffmpeg.exec([
                         "-f", "concat", "-safe", "0", "-i", "list.txt",
@@ -249,8 +268,20 @@ window.PageToMovieFfmpeg = {
                         "out.mp4",
                     ]);
                     ok = true;
+                    // -c copy can SILENTLY truncate when the copied streams' params differ across
+                    // clips (finishes instantly, no exception). If the stitched duration is well short
+                    // of the sum of inputs, force the reliable re-encode path instead.
+                    const stitchedSec = await probeDurationSec("out.mp4");
+                    if (expectedSec > 0 && stitchedSec > 0 && stitchedSec < expectedSec * 0.9) {
+                        console.warn("[concat] copy produced " + stitchedSec.toFixed(1) + "s of an expected " +
+                            expectedSec.toFixed(1) + "s — re-encoding to stitch reliably.");
+                        ok = false; // fall through to re-encode
+                    }
                 } catch (copyErr) {
                     self._log("copy concat failed, re-encoding: " + (copyErr && copyErr.message));
+                }
+                if (!ok) {
+                    stitchPath = "reencode";
                     try { await ffmpeg.deleteFile("out.mp4"); } catch (_) { /* */ }
                     await ffmpeg.exec([
                         "-f", "concat", "-safe", "0", "-i", "list.txt",
@@ -263,6 +294,10 @@ window.PageToMovieFfmpeg = {
                 }
 
                 if (!ok) return { success: false, error: "Stitch failed" };
+
+                const finalSec = await probeDurationSec("out.mp4");
+                console.log("[concat] " + written.length + " clips → " + finalSec.toFixed(1) +
+                    "s (expected ~" + expectedSec.toFixed(1) + "s), path=" + stitchPath);
 
                 reportProgress(onProgress, 92, "Preparing player…");
                 const out = await ffmpeg.readFile("out.mp4");
