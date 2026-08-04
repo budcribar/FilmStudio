@@ -25,13 +25,14 @@
         }
         else if (IsUsablePlanningModel(Status.PlanningModel))
         {
-            <div class="alert alert-success py-2 small mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2"
-                 data-testid="import-planning-ready">
-                <span>
-                    <strong>Script & planning ready:</strong>
-                    <span class="text-body-secondary">@Status.PlanningModel</span>
-                </span>
-                <a class="small" href="configuration?focus=planning">Change in Settings</a>
+            <div class="mb-3 d-flex flex-wrap align-items-center gap-2" data-testid="import-planning-ready">
+                <span class="badge text-bg-success">Ready to import</span>
+                @* Model name is provider jargon — admin only (respects the "view as user" toggle). *@
+                @if (Session.IsAdmin)
+                {
+                    <span class="badge text-bg-secondary fw-normal" data-testid="import-planning-model">@Status.PlanningModel</span>
+                }
+                <a class="small link-secondary" href="configuration?focus=planning">Change in Settings</a>
             </div>
         }
 
