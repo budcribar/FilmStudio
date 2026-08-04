@@ -40,7 +40,7 @@ public sealed class AdaptationGoldenFixtureTests
         Assert.True(analysis.TextWords > 20, $"words={analysis.TextWords}");
         Assert.True(analysis.ReadyForStage1, string.Join("; ", analysis.Notes));
         // Short nursery rhyme — natural film length stays small (not 10+ min pad).
-        Assert.InRange(runtime.NaturalMinutes, 2, 8);
+        Assert.InRange(runtime.NaturalMinutes, 1, 8);
         Assert.Equal(runtime.NaturalMinutes, runtime.TargetMinutes);
         Assert.Equal("natural", runtime.Mode);
     }

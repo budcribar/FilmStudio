@@ -14,14 +14,15 @@ public sealed class Stage1RuntimeMinutesTests
         var minutes = BookTextAnalyzer.ResolveStage1RuntimeMinutes(book);
 
         Assert.InRange(analysis.TextWords, 80, 200);
-        Assert.InRange(minutes, 2, 3);
+        // Natural read-aloud (2.5 wps) × staging → ~1–2 min for a short nursery rhyme (not 8–10, not ~3).
+        Assert.InRange(minutes, 1, 2);
         Assert.Equal(analysis.SuggestedTotalMinutes, minutes);
     }
 
     [Fact]
     public void Override_is_clamped_like_production()
     {
-        Assert.Equal(2, BookTextAnalyzer.ResolveStage1RuntimeMinutes("hello world", 1));
+        Assert.Equal(1, BookTextAnalyzer.ResolveStage1RuntimeMinutes("hello world", 1)); // MinMinutes floor is 1
         Assert.Equal(180, BookTextAnalyzer.ResolveStage1RuntimeMinutes("hello world", 999));
         Assert.Equal(12, BookTextAnalyzer.ResolveStage1RuntimeMinutes("hello world", 12));
     }

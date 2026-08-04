@@ -7,14 +7,16 @@ namespace PageToMovie.Tests;
 public sealed class AdaptationDensityTests
 {
     [Fact]
-    public void Mary_natural_is_about_two_to_three_minutes_high_density()
+    public void Mary_natural_is_about_one_to_two_minutes_high_density()
     {
         var book = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "MaryHadALittleLamb.txt"));
         var e = AdaptationDensity.EstimateNatural(book);
 
-        Assert.InRange(e.NaturalFilmMinutes, 2, 3);
+        // Natural storybook read-aloud (2.5 wps) × staging: a 136-word rhyme is ~1–2 min of film,
+        // not the ~3 the old 1.15-wps rate produced.
+        Assert.InRange(e.NaturalFilmMinutes, 1, 2);
         Assert.Equal("verse_speech_x_staging", e.Method);
-        Assert.True(e.MinutesPerThousandWords > 8, $"δ={e.MinutesPerThousandWords}");
+        Assert.True(e.MinutesPerThousandWords > 5, $"δ={e.MinutesPerThousandWords}");
         Assert.Null(AdaptationDensity.SuggestReducedBenchmarkMinutes(e));
     }
 
