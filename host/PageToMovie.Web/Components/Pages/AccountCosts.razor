@@ -14,6 +14,11 @@
     </p>
 </div>
 
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <a href="cost" class="btn btn-sm btn-outline-secondary" data-testid="account-back">← Estimate</a>
+    <button class="btn btn-sm btn-outline-secondary" disabled="@_loading" @onclick="LoadAsync">Refresh</button>
+</div>
+
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-danger">@_error</div>
@@ -23,104 +28,129 @@
 {
     <p class="text-muted">Loading…</p>
 }
-else if (_mySpend is null)
+else if (_mySpend is null || (_mySpend.ByProject.Count == 0 && _mySpend.ByProvider.Count == 0))
 {
     <div class="alert alert-light border">No tracked spend yet.</div>
 }
 else
 {
-    <div class="card mb-4" data-testid="account-my-spend">
-        <div class="card-body">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-                <div class="fw-semibold">Your spending</div>
-                <button class="btn btn-sm btn-outline-secondary" disabled="@_loading" @onclick="LoadAsync">Refresh</button>
-            </div>
-            <p class="small text-muted mb-3">
-                Tracked under your account (shown as list rate × admin multiplier; ledger stores list only).
-                Vendor = catalog provider (xAI, Google, ElevenLabs, …).
-            </p>
-            <div class="row g-3 mb-3">
-                <div class="col-sm-6">
-                    <div class="border rounded p-3 h-100">
-                        <div class="small text-muted text-uppercase">All projects</div>
-                        <div class="fs-4 fw-semibold" data-testid="account-my-total-charge">@Usd(_mySpend.TotalChargeUsd)</div>
-                        <div class="small text-muted">List @Usd(_mySpend.TotalListUsd) · @_mySpend.TotalCalls calls</div>
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="border rounded p-3 h-100">
-                        <div class="small text-muted text-uppercase">Projects with spend</div>
-                        <div class="fs-4 fw-semibold">@_mySpend.ByProject.Count(p => p.ChargeUsd > 0)</div>
-                        <div class="small text-muted">across your account</div>
-                    </div>
-                </div>
-            </div>
+    var projectSlices = BuildProjectSlices();
+    var vendorSlices = BuildVendorSlices();
+    var projectTotal = projectSlices.Sum(x => x.Usd);
+    var vendorTotal = vendorSlices.Sum(x => x.Usd);
 
-            @if (_mySpend.ByProject.Count > 0)
-            {
-                <div class="fw-semibold small mb-2">By project</div>
-                <div class="table-responsive mb-3">
-                    <table class="table table-sm mb-0" data-testid="account-my-by-project">
-                        <thead>
-                            <tr class="small text-muted">
-                                <th>Project</th>
-                                <th class="text-end">Calls</th>
-                                <th class="text-end">List</th>
-                                <th class="text-end">Charge</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var p in _mySpend.ByProject.OrderByDescending(x => x.ChargeUsd))
-                            {
-                                <tr class="@(string.Equals(p.ProjectId, _activeProjectId, StringComparison.OrdinalIgnoreCase) ? "table-primary" : "")">
-                                    <td>@p.ProjectId</td>
-                                    <td class="text-end">@p.Calls</td>
-                                    <td class="text-end">@Usd(p.ListUsd)</td>
-                                    <td class="text-end">@Usd(p.ChargeUsd)</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6">
+            <div class="border rounded p-3 h-100">
+                <div class="small text-muted text-uppercase">All projects</div>
+                <div class="fs-4 fw-semibold" data-testid="account-my-total-charge">@Usd(_mySpend.TotalChargeUsd)</div>
+                <div class="small text-muted">List @Usd(_mySpend.TotalListUsd) · @_mySpend.TotalCalls calls</div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="border rounded p-3 h-100">
+                <div class="small text-muted text-uppercase">Projects with spend</div>
+                <div class="fs-4 fw-semibold">@_mySpend.ByProject.Count(p => p.ChargeUsd > 0)</div>
+                <div class="small text-muted">across your account</div>
+            </div>
+        </div>
+    </div>
 
-            @if (_mySpend.ByProvider.Count > 0)
-            {
-                <div class="fw-semibold small mb-2">By vendor</div>
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0" data-testid="account-my-by-vendor">
-                        <thead>
-                            <tr class="small text-muted">
-                                <th>Vendor</th>
-                                <th class="text-end">Calls</th>
-                                <th class="text-end">List</th>
-                                <th class="text-end">Charge</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var kv in _mySpend.ByProvider.OrderByDescending(kv => kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd))
-                            {
-                                var charge = kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd;
-                                var list = kv.Value.TotalListUsd > 0 ? kv.Value.TotalListUsd : kv.Value.TotalUsd;
-                                <tr>
-                                    <td>@ProviderLabel(kv.Key)</td>
-                                    <td class="text-end">@kv.Value.Count</td>
-                                    <td class="text-end">@Usd(list)</td>
-                                    <td class="text-end">@Usd(charge)</td>
-                                </tr>
-                            }
-                        </tbody>
-                        <tfoot>
-                            <tr class="fw-semibold">
-                                <td>Total</td>
-                                <td class="text-end">@_mySpend.TotalCalls</td>
-                                <td class="text-end">@Usd(_mySpend.TotalListUsd)</td>
-                                <td class="text-end">@Usd(_mySpend.TotalChargeUsd)</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+    <div class="row g-4">
+        @* —— By project —— *@
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="fw-semibold mb-2">By project</div>
+                    <div class="row g-3 align-items-center">
+                        <div class="col-5 d-flex justify-content-center">
+                            @RenderPie(projectSlices, projectTotal, "Total", "account-project-pie")
+                        </div>
+                        <div class="col-7">
+                            @RenderLegend(projectSlices, projectTotal)
+                        </div>
+                    </div>
+                    <details class="mt-3" data-testid="account-project-details">
+                        <summary class="small fw-semibold text-body" style="cursor:pointer;">Show table</summary>
+                        <div class="table-responsive mt-2">
+                            <table class="table table-sm mb-0" data-testid="account-my-by-project">
+                                <thead>
+                                    <tr class="small text-muted">
+                                        <th>Project</th>
+                                        <th class="text-end">Calls</th>
+                                        <th class="text-end">List</th>
+                                        <th class="text-end">Charge</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in _mySpend.ByProject.OrderByDescending(x => x.ChargeUsd))
+                                    {
+                                        <tr class="@(string.Equals(p.ProjectId, _activeProjectId, StringComparison.OrdinalIgnoreCase) ? "table-primary" : "")">
+                                            <td>@p.ProjectId</td>
+                                            <td class="text-end">@p.Calls</td>
+                                            <td class="text-end">@Usd(p.ListUsd)</td>
+                                            <td class="text-end">@Usd(p.ChargeUsd)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
                 </div>
-            }
+            </div>
+        </div>
+
+        @* —— By vendor —— *@
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="fw-semibold mb-2">By vendor</div>
+                    <div class="row g-3 align-items-center">
+                        <div class="col-5 d-flex justify-content-center">
+                            @RenderPie(vendorSlices, vendorTotal, "Total", "account-vendor-pie")
+                        </div>
+                        <div class="col-7">
+                            @RenderLegend(vendorSlices, vendorTotal)
+                        </div>
+                    </div>
+                    <details class="mt-3" data-testid="account-vendor-details">
+                        <summary class="small fw-semibold text-body" style="cursor:pointer;">Show table</summary>
+                        <div class="table-responsive mt-2">
+                            <table class="table table-sm mb-0" data-testid="account-my-by-vendor">
+                                <thead>
+                                    <tr class="small text-muted">
+                                        <th>Vendor</th>
+                                        <th class="text-end">Calls</th>
+                                        <th class="text-end">List</th>
+                                        <th class="text-end">Charge</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var kv in _mySpend.ByProvider.OrderByDescending(kv => kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd))
+                                    {
+                                        var charge = kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd;
+                                        var list = kv.Value.TotalListUsd > 0 ? kv.Value.TotalListUsd : kv.Value.TotalUsd;
+                                        <tr>
+                                            <td>@ProviderLabel(kv.Key)</td>
+                                            <td class="text-end">@kv.Value.Count</td>
+                                            <td class="text-end">@Usd(list)</td>
+                                            <td class="text-end">@Usd(charge)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="fw-semibold">
+                                        <td>Total</td>
+                                        <td class="text-end">@_mySpend.TotalCalls</td>
+                                        <td class="text-end">@Usd(_mySpend.TotalListUsd)</td>
+                                        <td class="text-end">@Usd(_mySpend.TotalChargeUsd)</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </details>
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -131,6 +161,15 @@ else
     private string _activeProjectId = "";
     private EngineApiClient.UserSpendSummaryDto? _mySpend;
 
+    private sealed record Slice(string Label, double Usd, string Color);
+
+    // Categorical palette (distinct hues; reused across both pies).
+    private static readonly string[] Palette =
+    {
+        "#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#f472b6",
+        "#fb923c", "#60a5fa", "#f87171", "#4ade80", "#c084fc", "#94a3b8",
+    };
+
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
@@ -139,7 +178,6 @@ else
         _error = null;
         try
         {
-            // Active project only to highlight its row — this page is account-wide.
             try
             {
                 var projs = await Engine.GetProjectsAsync();
@@ -156,6 +194,105 @@ else
         }
         finally { _loading = false; }
     }
+
+    /// <summary>Top projects by charge, remainder grouped as "Other" so the pie stays readable.</summary>
+    private List<Slice> BuildProjectSlices()
+    {
+        if (_mySpend is null) return new();
+        var rows = _mySpend.ByProject
+            .Where(p => p.ChargeUsd > 0)
+            .OrderByDescending(p => p.ChargeUsd)
+            .ToList();
+        return ToSlices(rows.Select(p => (p.ProjectId, p.ChargeUsd)));
+    }
+
+    private List<Slice> BuildVendorSlices()
+    {
+        if (_mySpend is null) return new();
+        var rows = _mySpend.ByProvider
+            .Select(kv => (Label: ProviderLabel(kv.Key),
+                           Usd: kv.Value.TotalChargeUsd > 0 ? kv.Value.TotalChargeUsd : kv.Value.TotalUsd))
+            .Where(x => x.Usd > 0)
+            .OrderByDescending(x => x.Usd)
+            .ToList();
+        return ToSlices(rows.Select(x => (x.Label, x.Usd)));
+    }
+
+    private List<Slice> ToSlices(IEnumerable<(string Label, double Usd)> rows)
+    {
+        const int maxSlices = 8;
+        var list = rows.ToList();
+        var slices = new List<Slice>();
+        for (var i = 0; i < list.Count && i < maxSlices; i++)
+            slices.Add(new Slice(list[i].Label, Math.Round(list[i].Usd, 2), Palette[i % Palette.Length]));
+        if (list.Count > maxSlices)
+        {
+            var otherSum = list.Skip(maxSlices).Sum(x => x.Usd);
+            if (otherSum > 0)
+                slices.Add(new Slice("Other", Math.Round(otherSum, 2), Palette[maxSlices % Palette.Length]));
+        }
+        return slices;
+    }
+
+    private RenderFragment RenderPie(List<Slice> slices, double total, string centerLabel, string testId) => __builder =>
+    {
+        if (total <= 0.0001)
+        {
+            <div class="cost-pie-empty text-center text-muted py-4" data-testid="@testId">
+                <div class="cost-pie-placeholder mb-2" aria-hidden="true"></div>
+                <div class="small">Nothing yet</div>
+            </div>
+        }
+        else
+        {
+            <svg class="cost-pie" viewBox="0 0 42 42" width="180" height="180"
+                 role="img" aria-label="@centerLabel by slice" data-testid="@testId">
+                <circle cx="21" cy="21" r="15.915" fill="transparent"
+                        stroke="rgba(148,163,184,0.15)" stroke-width="6" />
+                @{
+                    var offset = 25.0;
+                    foreach (var slice in slices.Where(x => x.Usd > 0))
+                    {
+                        var pct = 100.0 * slice.Usd / total;
+                        <circle class="cost-pie-slice"
+                                cx="21" cy="21" r="15.915"
+                                fill="transparent"
+                                stroke="@slice.Color"
+                                stroke-width="6"
+                                stroke-dasharray="@pct.ToString("0.###", CultureInfo.InvariantCulture) @((100 - pct).ToString("0.###", CultureInfo.InvariantCulture))"
+                                stroke-dashoffset="@offset.ToString("0.###", CultureInfo.InvariantCulture)" />
+                        offset -= pct;
+                    }
+                }
+                <circle cx="21" cy="21" r="11.5" class="cost-pie-hole" />
+                <text x="21" y="20.2" text-anchor="middle" class="cost-pie-center-label">@centerLabel</text>
+                <text x="21" y="24.5" text-anchor="middle" class="cost-pie-center-value">@Usd(total)</text>
+            </svg>
+        }
+    };
+
+    private RenderFragment RenderLegend(List<Slice> slices, double total) => __builder =>
+    {
+        <ul class="list-unstyled mb-0 cost-legend">
+            @foreach (var slice in slices)
+            {
+                var pct = total > 0 ? 100.0 * slice.Usd / total : 0;
+                <li class="d-flex align-items-center justify-content-between gap-2 py-1">
+                    <span class="d-flex align-items-center gap-2 min-w-0">
+                        <span class="cost-swatch" style="background:@slice.Color"></span>
+                        <span class="text-truncate">@slice.Label</span>
+                    </span>
+                    <span class="text-nowrap small">
+                        <strong>@Usd(slice.Usd)</strong>
+                        @if (total > 0 && slice.Usd > 0)
+                        {
+                            <span class="text-muted ms-1">(@pct.ToString("0")%)</span>
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+    };
 
     private static string Usd(double v) => $"${v:0.00}";
 
