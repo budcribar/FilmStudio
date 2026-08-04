@@ -16,6 +16,26 @@
                                   Disabled="@(Busy || JobRunning)"
                                   OnChanged="OnLookChangedAsync" />
 
+                @* Re-skin: only meaningful once a screenplay draft exists. *@
+                @if (Status?.Screenplay.DraftExists == true)
+                {
+                    <div class="alert alert-light border d-flex flex-wrap align-items-center justify-content-between gap-2"
+                         data-testid="look-reskin">
+                        <div class="small">
+                            <strong>Re-apply the look to your screenplay.</strong>
+                            Rewrites the visual description to match the medium above — dialogue, scenes, and story
+                            stay the same. Review and re-approve afterward.
+                        </div>
+                        <button type="button"
+                                class="btn btn-outline-primary btn-sm"
+                                data-testid="look-reskin-apply"
+                                disabled="@(Busy || JobRunning)"
+                                @onclick="ReskinAsync">
+                            Re-apply look to screenplay
+                        </button>
+                    </div>
+                }
+
                 <div class="d-flex justify-content-end">
                     <a class="btn btn-primary btn-sm"
                        href="adaptation/screenplay"
@@ -34,5 +54,29 @@
     private async Task OnLookChangedAsync()
     {
         try { await SoftLoadAsync(); } catch { /* ignore */ }
+    }
+
+    private async Task ReskinAsync()
+    {
+        Busy = true;
+        BusyMessage = "Applying the look to your screenplay…";
+        Error = null;
+        Message = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var result = await Engine.ReskinScreenplayAsync(ProjectId);
+            Message = result?.Message ?? "Done.";
+            await SoftLoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+        finally
+        {
+            Busy = false;
+            BusyMessage = null;
+        }
     }
 }

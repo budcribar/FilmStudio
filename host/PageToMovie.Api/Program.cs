@@ -5201,6 +5201,70 @@ app.MapPut("/api/projects/{id}/visual-medium", async (
     }
 });
 
+/// <summary>
+/// Re-skin the current Fountain draft to a visual medium (descriptive layer only).
+/// Lightweight fountain → fountain regeneration so changing the look does not require a re-import.
+/// Body (optional): { "visualMedium": "..." } — defaults to the stored preference.
+/// Saves the result as the editable draft when the scene structure is preserved.
+/// </summary>
+app.MapPost("/api/projects/{id}/adaptation/reskin", async (
+    string id,
+    HttpRequest req,
+    ProjectStore store,
+    PageToMovie.Core.Abstractions.IChatClient chat,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var dir = store.GetProjectDir(id);
+
+        string? medium = null;
+        if (req.ContentLength is > 0)
+        {
+            try
+            {
+                using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("visualMedium", out var vm) && vm.ValueKind == JsonValueKind.String)
+                    medium = vm.GetString();
+                else if (root.TryGetProperty("visual_medium", out var vm2) && vm2.ValueKind == JsonValueKind.String)
+                    medium = vm2.GetString();
+            }
+            catch { /* no/invalid body — fall back to stored preference */ }
+        }
+        if (string.IsNullOrWhiteSpace(medium))
+            medium = ProjectVisionMeta.GetAdaptationMediumPreference(dir);
+
+        var result = await ScreenplayService.ReskinDraftAsync(store, id, medium, chat, ct: ct);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+
+        if (result.Applied)
+            store.TriggerAutoGitCommit(id, $"ptm:stage=reskin medium={medium}");
+
+        return Results.Ok(new
+        {
+            ok = true,
+            applied = result.Applied,
+            projectId = id,
+            message = result.Message,
+            sceneCountBefore = result.SceneCountBefore,
+            sceneCountAfter = result.SceneCountAfter,
+            screenplay = result.Status,
+            adaptation = result.Applied ? store.GetAdaptationStatus(id, user.UserId) : null,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Get natural + target film length for cost/Stage1.</summary>
 app.MapGet("/api/projects/{id}/film-runtime", async (
     string id,

@@ -12,6 +12,9 @@ public static class AdaptationPromptPack
     public const string BookToFountainRelativePath = "prompts/book_to_fountain.txt";
     public const string EmbeddedLogicalName = "PageToMovie.Adaptation.Prompts.book_to_fountain.txt";
 
+    public const string ReskinRelativePath = "prompts/fountain_reskin.txt";
+    public const string ReskinEmbeddedLogicalName = "PageToMovie.Adaptation.Prompts.fountain_reskin.txt";
+
     /// <summary>
     /// Injected when no artificial runtime target is set (product default).
     /// </summary>
@@ -159,13 +162,40 @@ public static class AdaptationPromptPack
         return body;
     }
 
-    public static string ReadBookToFountainBody()
+    public static string ReadBookToFountainBody() =>
+        ReadPromptBody(BookToFountainRelativePath, EmbeddedLogicalName);
+
+    /// <summary>
+    /// Fountain → Fountain "re-skin" system prompt with the target medium resolved.
+    /// Descriptive layer only; dialogue / cues / scene count preserved.
+    /// </summary>
+    public static string BuildReskinSystemPrompt(string? visualMedium)
     {
-        var fromOverride = TryReadOverrideFile(BookToFountainRelativePath);
+        var body = ReadPromptBody(ReskinRelativePath, ReskinEmbeddedLogicalName);
+        var medium = string.IsNullOrWhiteSpace(visualMedium) ? "auto" : visualMedium.Trim();
+        var directive = string.Equals(medium, "auto", StringComparison.OrdinalIgnoreCase)
+            ? "auto — keep the medium the source already implies; do not switch styles"
+            : medium;
+        body = body.Replace("{{VISUAL_MEDIUM}}", directive, StringComparison.Ordinal);
+
+        var leftovers = TokenPattern.Matches(body)
+            .Select(m => m.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (leftovers.Count > 0)
+            throw new InvalidOperationException(
+                "fountain_reskin prompt still has unresolved tokens: " +
+                string.Join(", ", leftovers.Select(t => "{{" + t + "}}")) + ".");
+        return body;
+    }
+
+    private static string ReadPromptBody(string relativePath, string logicalName)
+    {
+        var fromOverride = TryReadOverrideFile(relativePath);
         if (!string.IsNullOrEmpty(fromOverride))
             return fromOverride;
 
-        using var stream = ThisAssembly.GetManifestResourceStream(EmbeddedLogicalName);
+        using var stream = ThisAssembly.GetManifestResourceStream(logicalName);
         if (stream is not null)
         {
             using var reader = new StreamReader(stream);
@@ -175,7 +205,7 @@ public static class AdaptationPromptPack
         var available = string.Join(", ", ThisAssembly.GetManifestResourceNames()
             .Where(n => n.Contains("Prompt", StringComparison.OrdinalIgnoreCase)));
         throw new InvalidOperationException(
-            $"Prompt not embedded: {BookToFountainRelativePath}. " +
+            $"Prompt not embedded: {relativePath}. " +
             $"Available: {(string.IsNullOrEmpty(available) ? "(none — rebuild Adaptation with prompts/)" : available)}. " +
             "Or set PAGETOMOVIE_PROMPTS_DIR to a folder with the .txt file.");
     }

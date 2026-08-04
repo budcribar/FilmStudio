@@ -16,6 +16,8 @@
   <ItemGroup Condition="Exists('..\..\prompts')">
     <EmbeddedResource Include="..\..\prompts\book_to_fountain.txt"
                       LogicalName="PageToMovie.Adaptation.Prompts.book_to_fountain.txt" />
+    <EmbeddedResource Include="..\..\prompts\fountain_reskin.txt"
+                      LogicalName="PageToMovie.Adaptation.Prompts.fountain_reskin.txt" />
   </ItemGroup>
 
 </Project>

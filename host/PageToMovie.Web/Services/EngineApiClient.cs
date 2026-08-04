@@ -2577,6 +2577,24 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         return JsonSerializer.Deserialize<VisualMediumDto>(body, JsonOpts);
     }
 
+    /// <summary>
+    /// Re-skin the current screenplay draft to a visual medium (descriptive layer only).
+    /// Pass a medium to override the stored preference, or null to use it.
+    /// </summary>
+    public async Task<ReskinResultDto?> ReskinScreenplayAsync(
+        string projectId, string? visualMedium = null, CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/adaptation/reskin",
+            new { visualMedium },
+            JsonOpts,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase ?? "re-skin failed");
+        return JsonSerializer.Deserialize<ReskinResultDto>(body, JsonOpts);
+    }
+
     public async Task<FilmRuntimeDto?> GetFilmRuntimeAsync(string projectId, CancellationToken ct = default)
     {
         using var resp = await _http.GetAsync(
@@ -4017,6 +4035,19 @@ public sealed class VisualMediumOptionDto
 {
     public string? Id { get; set; }
     public string? Label { get; set; }
+}
+
+public sealed class ReskinResultDto
+{
+    public bool Ok { get; set; }
+    /// <summary>True when the re-skin was applied and saved (false = kept original / no-op).</summary>
+    public bool Applied { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Message { get; set; }
+    public int SceneCountBefore { get; set; }
+    public int SceneCountAfter { get; set; }
+    public ScreenplayStatus? Screenplay { get; set; }
+    public string? Error { get; set; }
 }
 
 public sealed class FilmRuntimeDto

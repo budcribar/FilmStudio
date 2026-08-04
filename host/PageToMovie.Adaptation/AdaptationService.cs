@@ -233,6 +233,87 @@ public sealed class AdaptationService
         };
     }
 
+    /// <summary>Result of a Fountain → Fountain re-skin pass.</summary>
+    public sealed record ReskinResult(
+        bool Ok,
+        string Fountain,
+        int SceneCountBefore,
+        int SceneCountAfter,
+        bool StructurePreserved,
+        string? Warning);
+
+    /// <summary>
+    /// Re-skin an existing Fountain screenplay to a new visual medium — descriptive layer only.
+    /// Dialogue, character cues, scene headings, and scene count/order are preserved; if the model
+    /// changes the scene count the original is kept and the result is flagged not-preserved.
+    /// </summary>
+    public async Task<ReskinResult> ReskinAsync(
+        string fountain,
+        string? visualMedium,
+        IChatClient chat,
+        string? model = null,
+        IProgress<string>? progress = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(chat);
+        fountain ??= "";
+        var before = SafeSceneCount(fountain);
+
+        if (string.IsNullOrWhiteSpace(fountain))
+            return new ReskinResult(false, fountain, before, before, true, "No screenplay to re-skin.");
+        if (!chat.IsConfigured)
+            return new ReskinResult(false, fountain, before, before, true, "AI service not configured.");
+
+        progress?.Report("Applying look to the screenplay…");
+        var system = AdaptationPromptPack.BuildReskinSystemPrompt(visualMedium);
+
+        var raw = await chat.CompleteAsync(
+            system,
+            fountain,
+            model ?? "",
+            mode: "fountain_reskin",
+            ct: ct).ConfigureAwait(false);
+
+        var cleaned = StripFences(raw);
+        if (string.IsNullOrWhiteSpace(cleaned))
+            return new ReskinResult(false, fountain, before, before, true, "The re-skin returned nothing; kept the original.");
+
+        cleaned = BookToFountainConverter.FixDraftDate(cleaned);
+        var after = SafeSceneCount(cleaned);
+
+        // Structural guardrail: the automated pass must not add/remove scenes.
+        if (before > 0 && after != before)
+            return new ReskinResult(
+                false, fountain, before, after, false,
+                $"Re-skin changed the scene count ({before} → {after}); kept the original screenplay.");
+
+        if (!BookToFountainConverter.LooksLikeGoodFountain(cleaned))
+            return new ReskinResult(false, fountain, before, after, false,
+                "Re-skin output did not look like a valid screenplay; kept the original.");
+
+        return new ReskinResult(true, cleaned, before, after, true, null);
+    }
+
+    private static int SafeSceneCount(string fountain)
+    {
+        try { return BookToFountainConverter.CountSceneHeadings(fountain); }
+        catch { return 0; }
+    }
+
+    /// <summary>Strip an accidental leading/trailing ``` code fence (with optional language tag).</summary>
+    private static string StripFences(string? text)
+    {
+        var t = (text ?? "").Trim();
+        if (t.StartsWith("```", StringComparison.Ordinal))
+        {
+            var nl = t.IndexOf('\n');
+            if (nl >= 0) t = t[(nl + 1)..];
+            if (t.EndsWith("```", StringComparison.Ordinal))
+                t = t[..^3];
+        }
+        return t.Trim();
+    }
+
     private static NaturalRuntimeEstimate ToNaturalRuntimeEstimate(
         AdaptationDensity.Estimate e,
         int targetMinutes,

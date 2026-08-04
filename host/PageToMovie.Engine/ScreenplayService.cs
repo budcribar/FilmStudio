@@ -422,6 +422,67 @@ public static string NormalizeText(string text)
         };
     }
 
+    /// <summary>Outcome of a Fountain → Fountain re-skin of the current draft.</summary>
+    public sealed class ReskinResult
+    {
+        public bool Ok { get; init; }
+        public string? Error { get; init; }
+        /// <summary>True when the re-skin was applied and saved (false = kept original).</summary>
+        public bool Applied { get; init; }
+        public int SceneCountBefore { get; init; }
+        public int SceneCountAfter { get; init; }
+        public string? Message { get; init; }
+        public ScreenplayStatus? Status { get; init; }
+    }
+
+    /// <summary>
+    /// Re-skin the current editable draft to a visual medium (descriptive layer only) and save it
+    /// as the new draft when the scene structure is preserved. Non-destructive to story/dialogue —
+    /// see <see cref="AdaptationService.ReskinAsync"/>. Requires an approved/imported draft to exist.
+    /// </summary>
+    public static async Task<ReskinResult> ReskinDraftAsync(
+        ProjectStore store,
+        string projectId,
+        string? visualMedium,
+        PageToMovie.Core.Abstractions.IChatClient chat,
+        string model = "",
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
+    {
+        var current = Get(store, projectId).Text;
+        if (string.IsNullOrWhiteSpace(current))
+            return new ReskinResult { Ok = false, Error = "No screenplay draft to re-skin yet." };
+
+        var progress = onProgress is null ? null : new Progress<string>(onProgress);
+        var result = await new AdaptationService()
+            .ReskinAsync(current, visualMedium, chat, model, progress, ct)
+            .ConfigureAwait(false);
+
+        if (!result.Ok)
+            return new ReskinResult
+            {
+                Ok = true,
+                Applied = false,
+                SceneCountBefore = result.SceneCountBefore,
+                SceneCountAfter = result.SceneCountAfter,
+                Message = result.Warning ?? "Kept the original screenplay.",
+            };
+
+        var save = SaveDraft(store, projectId, result.Fountain);
+        if (!save.Ok)
+            return new ReskinResult { Ok = false, Error = save.Error };
+
+        return new ReskinResult
+        {
+            Ok = true,
+            Applied = true,
+            SceneCountBefore = result.SceneCountBefore,
+            SceneCountAfter = result.SceneCountAfter,
+            Message = $"Re-applied the look to the screenplay ({result.SceneCountAfter} scenes).",
+            Status = save.Status,
+        };
+    }
+
     /// <summary>Import Fountain text as the editable draft (does not materialise Stage 1).</summary>
     public static SaveResult ImportAsDraft(
         ProjectStore store,
