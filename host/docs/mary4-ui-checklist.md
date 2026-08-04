@@ -33,8 +33,15 @@ Last updated: 2026-08-03 (commit on master)
       in the Book-pipeline strip (Book → Look → Screenplay → Cast → Shot plan)
 - [x] **Fountain→fountain re-skin** on medium change (Track C2, commit 1ffbea54) — change the look
       without a re-import; `POST /adaptation/reskin`, descriptive layer only, scene-count guardrail
-- [ ] **Scene Embellishment** stage (after Screenplay, before Cast) — descriptive enrich only; no dialogue/beat/structure change
-- [ ] **Max fountain → embellish → trim → edit → cast** rework (plan Track D) — see mary4-implementation-plan.md
+- [x] **Scene Embellishment** stage (Track D1, ac77f581) — `/adaptation/embellish`, descriptive enrich only,
+      scene-count guardrail
+- [x] **Max fountain → embellish → trim → edit → cast** rework (plan Track D) — all landed:
+  - [x] D0 generate at natural/max + persist `screenplay.max.fountain` base (9eb10ca3)
+  - [x] D2 Fit-length (Trim) stage derives working draft from the base (4f05db1b)
+  - [x] D5 cast reflects final screenplay via the dirty/re-approve cascade (no sign-off refactor)
+  - [x] D6 fork reuse: base rides the project copy; `HasMaxBase()` + fork note
+  - [ ] D6 auto-land forkers on Fit-length — deferred (needs fork-state modeling + live smoke)
+  - [ ] **Live end-to-end smoke** of the new pipeline (Book→Look→Screenplay→Enrich→Fit length→Cast) — pending
 
 ## Open — Later (handoff / quality)
 
