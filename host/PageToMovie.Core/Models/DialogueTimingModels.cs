@@ -29,6 +29,9 @@ public sealed class DialogueTimingRow
     /// <summary>Per-word STT timings, 0-based within the window.</summary>
     public List<VoiceCaptureWord> Words { get; set; } = new();
 
+    /// <summary>True once a reviewer has checked/corrected this line (survives in the cache).</summary>
+    public bool Reviewed { get; set; }
+
     public double DurationSec => Math.Max(0, WindowEndSec - WindowStartSec);
 }
 

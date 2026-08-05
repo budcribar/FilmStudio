@@ -13,6 +13,7 @@
     .dt-row { border: 1px solid var(--bs-border-color, #333); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
     .dt-row.dt-warn { border-color: #b8860b; }
     .dt-row.dt-extra { border-style: dashed; opacity: .9; }
+    .dt-row.dt-ok { border-color: #2e7d32; }
     .dt-label { width: 58px; flex-shrink: 0; font-size: .75rem; color: #93a3b8; text-transform: uppercase; letter-spacing: .04em; }
     .dt-line { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
     .dt-w { display: inline-block; padding: 0 4px; border-radius: 4px; margin-right: 2px; }
@@ -83,7 +84,13 @@ else
         </button>
         @if (_current is not null)
         {
-            <span class="dt-meta">@_current.Rows.Count line(s) · @(_current.Rows.Count(r => r.MatchScore >= 0.7)) clear match(es)</span>
+            <button class="btn btn-success btn-sm" disabled="@(_busy || !_dirty)" data-testid="dt-save" @onclick="SaveSceneAsync">
+                @(_dirty ? "Save changes" : "Saved ✓")
+            </button>
+            <span class="dt-meta">
+                @_current.Rows.Count line(s) · @(_current.Rows.Count(r => r.MatchScore >= 0.7)) clear ·
+                @(_current.Rows.Count(r => r.Reviewed)) reviewed
+            </span>
         }
         @if (!string.IsNullOrEmpty(_status))
         {
@@ -105,7 +112,8 @@ else
             var scriptWords = SplitWords(row.ScriptText);
             var heardSet = TokenSet(row.HeardText);
             var scriptSet = TokenSet(row.ScriptText);
-            var rowClass = string.IsNullOrEmpty(row.ScriptText) ? "dt-row dt-extra"
+            var rowClass = row.Reviewed ? "dt-row dt-ok"
+                : string.IsNullOrEmpty(row.ScriptText) ? "dt-row dt-extra"
                 : row.MatchScore >= 0.7 ? "dt-row" : "dt-row dt-warn";
 
             <div class="@rowClass">
@@ -118,11 +126,17 @@ else
                             <span> · @row.WindowStartSec.ToString("0.00")–@row.WindowEndSec.ToString("0.00")s</span>
                         }
                         <span> · match @((int)Math.Round(row.MatchScore * 100))%</span>
+                        @if (row.Reviewed) { <span class="text-success"> · ✓ reviewed</span> }
                     </div>
-                    @if (row.WindowEndSec > row.WindowStartSec)
-                    {
-                        <button class="btn btn-sm btn-outline-secondary py-0" disabled="@_busy" @onclick="() => PlayWindowAsync(row)">▶ Play</button>
-                    }
+                    <div class="d-flex gap-1 flex-shrink-0">
+                        @if (row.WindowEndSec > row.WindowStartSec)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary py-0" disabled="@_busy" @onclick="() => PlayWindowAsync(row)">▶</button>
+                        }
+                        <button class="btn btn-sm btn-outline-primary py-0" disabled="@_busy" @onclick="() => ToggleEdit(row)">
+                            @(_editing.Contains(row) ? "Done" : "Edit")
+                        </button>
+                    </div>
                 </div>
 
                 @if (!string.IsNullOrEmpty(row.ScriptText))
@@ -172,6 +186,36 @@ else
                         }
                     </div>
                 }
+
+                @if (_editing.Contains(row))
+                {
+                    <div class="mt-2 pt-2 border-top">
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-0">Script (the intended line)</label>
+                            <textarea class="form-control form-control-sm" rows="1" @bind="row.ScriptText" @bind:after="() => OnRowChanged(row)"></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-0">Heard (fix here if speech-to-text is wrong)</label>
+                            <textarea class="form-control form-control-sm" rows="1" @bind="row.HeardText" @bind:after="() => OnRowChanged(row)"></textarea>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-end gap-2">
+                            <div>
+                                <label class="form-label small text-muted mb-0">Start (s)</label>
+                                <input type="number" step="0.05" class="form-control form-control-sm" style="width:104px;" @bind="row.WindowStartSec" @bind:after="() => OnRowChanged(row)" />
+                            </div>
+                            <div>
+                                <label class="form-label small text-muted mb-0">End (s)</label>
+                                <input type="number" step="0.05" class="form-control form-control-sm" style="width:104px;" @bind="row.WindowEndSec" @bind:after="() => OnRowChanged(row)" />
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="() => ReSttAsync(row)">Re-run STT on window</button>
+                            <div class="form-check ms-1">
+                                <input class="form-check-input" type="checkbox" id="rev-@_current.Rows.IndexOf(row)" @bind="row.Reviewed" @bind:after="MarkDirty" />
+                                <label class="form-check-label small" for="rev-@_current.Rows.IndexOf(row)">Reviewed</label>
+                            </div>
+                        </div>
+                        <div class="small text-muted mt-1">Script edits are stored on this review only — they don't rewrite the shot plan.</div>
+                    </div>
+                }
             </div>
         }
     }
@@ -191,6 +235,9 @@ else
     private int _scene;
     private DialogueTimingDoc? _doc;
     private DialogueTimingScene? _current;
+
+    private readonly HashSet<DialogueTimingRow> _editing = new();
+    private bool _dirty;
 
     private readonly Dictionary<int, string> _sceneUrls = new();
 
@@ -224,6 +271,7 @@ else
     private async Task LoadProjectAsync()
     {
         _sceneLines = new(); _doc = null; _current = null; _scene = 0; _sceneUrls.Clear();
+        _editing.Clear(); _dirty = false;
         _error = null; _status = null;
         if (string.IsNullOrEmpty(_projectId)) { StateHasChanged(); return; }
         try
@@ -244,6 +292,7 @@ else
     {
         _scene = int.TryParse(e.Value?.ToString(), out var n) ? n : 0;
         _current = _doc?.Scenes.FirstOrDefault(s => s.Scene == _scene);
+        _editing.Clear(); _dirty = false;
         _status = null;
         StateHasChanged();
         return Task.CompletedTask;
@@ -267,6 +316,7 @@ else
 
             await Engine.SaveDialogueTimingSceneAsync(_projectId, scene);
             _current = scene;
+            _editing.Clear(); _dirty = false;
             _doc ??= new DialogueTimingDoc { ProjectId = _projectId };
             _doc.Scenes.RemoveAll(s => s.Scene == _scene);
             _doc.Scenes.Add(scene);
@@ -274,6 +324,74 @@ else
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; StateHasChanged(); }
+    }
+
+    private void ToggleEdit(DialogueTimingRow row)
+    {
+        if (!_editing.Add(row)) _editing.Remove(row);
+    }
+
+    private void MarkDirty() => _dirty = true;
+
+    // Recompute the match % live as the script/heard text or window is edited.
+    private void OnRowChanged(DialogueTimingRow row)
+    {
+        row.MatchScore = Math.Round(Overlap(row.ScriptText, row.HeardText), 3);
+        _dirty = true;
+    }
+
+    // Re-run speech-to-text over this row's (possibly edited) window and refresh heard text + timings.
+    private async Task ReSttAsync(DialogueTimingRow row)
+    {
+        if (string.IsNullOrEmpty(_projectId) || row.WindowEndSec <= row.WindowStartSec) return;
+        _busy = true; _status = "Re-running speech-to-text…"; StateHasChanged();
+        try
+        {
+            var url = await GetSceneUrlAsync(_scene);
+            if (string.IsNullOrEmpty(url)) { _status = "Couldn't load the scene."; return; }
+            var audio = await Js.InvokeAsync<byte[]>(
+                "PageToMovieFfmpeg.extractAudioSegmentAsync", url, row.WindowStartSec, row.WindowEndSec);
+            if (audio is null || audio.Length < 256) { _status = "No audio in that window."; return; }
+
+            var transcript = await Engine.TranscribeSegmentAsync(audio, "segment.wav");
+            row.HeardText = (transcript?.Text ?? "").Trim();
+            row.Words = (transcript?.Words ?? new())
+                .Where(tw => !string.IsNullOrWhiteSpace(tw.Text) &&
+                             !string.Equals(tw.Type, "spacing", StringComparison.OrdinalIgnoreCase))
+                .Select(tw => new VoiceCaptureWord { Text = tw.Text.Trim(), StartSec = Math.Max(0, tw.Start), EndSec = Math.Max(0, tw.End) })
+                .ToList();
+            row.MatchScore = Math.Round(Overlap(row.ScriptText, row.HeardText), 3);
+            _dirty = true; _status = "Updated.";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; StateHasChanged(); }
+    }
+
+    private async Task SaveSceneAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId) || _current is null) return;
+        _busy = true; StateHasChanged();
+        try
+        {
+            if (await Engine.SaveDialogueTimingSceneAsync(_projectId, _current))
+            {
+                _doc ??= new DialogueTimingDoc { ProjectId = _projectId };
+                _doc.Scenes.RemoveAll(s => s.Scene == _current.Scene);
+                _doc.Scenes.Add(_current);
+                _dirty = false; _status = "Saved.";
+            }
+            else _error = "Save failed.";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; StateHasChanged(); }
+    }
+
+    private static double Overlap(string? script, string? heard)
+    {
+        var e = SplitWords(script).Select(NormTok).Where(s => s.Length > 0).ToList();
+        if (e.Count == 0) return 0;
+        var h = new HashSet<string>(SplitWords(heard).Select(NormTok).Where(s => s.Length > 0));
+        return (double)e.Count(w => h.Contains(w)) / e.Count;
     }
 
     private async Task PlayWindowAsync(DialogueTimingRow row)
