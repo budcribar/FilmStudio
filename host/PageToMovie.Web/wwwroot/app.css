@@ -231,12 +231,15 @@ label,
  * bright for body help text; placeholders use a dimmer treatment so long examples
  * (film stock, color palette) never read as filled-in data.
  */
+/*
+ * Each placeholder pseudo-element MUST be its own rule. CSS drops an entire grouped
+ * selector list if any one selector is unknown, so mixing ::-webkit-input-placeholder /
+ * ::-moz-placeholder / :-ms-input-placeholder into one list silently invalidated the whole
+ * rule and let Bootstrap's dark --bs-secondary-color win (dark-on-dark). The unprefixed
+ * ::placeholder is supported by every current browser and is enough on its own.
+ */
 .form-control::placeholder,
-.form-select::placeholder,
-.form-control::-webkit-input-placeholder,
-.form-select::-webkit-input-placeholder,
-.form-control::-moz-placeholder,
-.form-select::-moz-placeholder {
+.form-select::placeholder {
     /* Was --fs-text-secondary (undefined → unreadable). Keep clearly lighter than field bg. */
     color: var(--fs-text-secondary, #c8d0e0) !important;
     opacity: 1 !important;
