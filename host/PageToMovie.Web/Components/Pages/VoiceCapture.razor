@@ -21,6 +21,13 @@
     .ptm-red-off { background: #3a1310; } .ptm-red-on { background: #ff3b30; box-shadow: 0 0 14px #ff3b30; }
     .ptm-yellow-off { background: #3a3210; } .ptm-yellow-on { background: #ffcc00; box-shadow: 0 0 14px #ffcc00; }
     .ptm-green-off { background: #123a1f; } .ptm-green-on { background: #34c759; box-shadow: 0 0 14px #34c759; }
+    /* Teleprompter: words scroll left past a fixed marker; read the word at the line. */
+    .tele-viewport { position: relative; overflow: hidden; height: 1.9em; }
+    .tele-pointer { position: absolute; left: 28%; top: -3px; bottom: -3px; width: 3px; border-radius: 2px;
+        background: #ffc107; box-shadow: 0 0 10px #ffc107; z-index: 2; }
+    .tele-text { position: absolute; left: 28%; white-space: nowrap; will-change: transform; }
+    .tele-run { animation: tele-scroll var(--tele-dur, 3s) linear forwards; }
+    @@keyframes tele-scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 </style>
 
 <div class="ptm-page-head mb-3">
@@ -93,33 +100,36 @@ else
         </div>
         <div class="card-body">
             @{ var words = SplitWords(CurrentPhrase.Text); }
-            @* Scroll wrapper so very long phrases don't break the layout. The inner block shrinks to the
-               text (one line), and the ball track fills that same width — so the ball spans the phrase. *@
-            <div style="overflow-x:auto; max-width:100%;" class="mb-1">
-                <div class="d-inline-block">
-                    <p class="fs-5 mb-1" data-testid="voice-capture-text" style="white-space:nowrap;">
+            @if (_recording)
+            {
+                @* Teleprompter: the words scroll left past the fixed marker — read the word at the line. *@
+                <div class="tele-viewport mb-1">
+                    <div class="tele-pointer"></div>
+                    <div @key="_recordSession" class="tele-text tele-run fs-5"
+                         style="--tele-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");">
+                        @CurrentPhrase.Text
+                    </div>
+                </div>
+                <div class="small text-danger mb-3">● Read the word at the line</div>
+            }
+            else
+            {
+                <div style="overflow-x:auto; max-width:100%;" class="mb-1">
+                    <p class="fs-5 mb-0" data-testid="voice-capture-text" style="white-space:nowrap;">
                         @for (var wi = 0; wi < words.Count; wi++)
                         {
                             <span style="@WordStyle(wi)">@words[wi]</span>@(" ")
                         }
                     </p>
-                    <div class="ptm-ball-track" style="@(_recording ? "" : "visibility:hidden;")">
-                        <div @key="_recordSession" class="ptm-ball-dot @(_recording ? "ptm-ball-run" : "")"
-                             style="--ptm-ball-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");"></div>
-                    </div>
                 </div>
-            </div>
-            @if (_recording)
-            {
-                <div class="small text-danger mb-3">● Follow the ball</div>
-            }
-            else if (_regions is { Count: > 0 })
-            {
-                <div class="small text-muted mb-3">Colours show where your rhythm matched — aim to turn the red/orange words green.</div>
-            }
-            else
-            {
-                <div class="mb-3"></div>
+                @if (_regions is { Count: > 0 })
+                {
+                    <div class="small text-muted mb-3">Colours show where your rhythm matched — aim to turn the red/orange words green.</div>
+                }
+                else
+                {
+                    <div class="mb-3"></div>
+                }
             }
 
             @* Listen *@
