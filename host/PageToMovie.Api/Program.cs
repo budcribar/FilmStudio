@@ -317,6 +317,11 @@ else
         c.BaseAddress = new Uri(SupportedModelCatalog.ElevenLabsApiBase.TrimEnd('/') + "/");
         c.Timeout = TimeSpan.FromMinutes(5); // composing a full-scene track can take a while
     }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<ElevenLabsScribeClient>(c =>
+    {
+        c.BaseAddress = new Uri(SupportedModelCatalog.ElevenLabsApiBase.TrimEnd('/') + "/");
+        c.Timeout = TimeSpan.FromMinutes(3); // STT on a short dialogue segment
+    }));
     builder.Services.AddSingleton<IAudioClient, MultiProviderAudioClient>();
     // Lip-sync and voice-clone narration: explicit, human-triggered actions only (never wired
     // into any automatic job/pipeline — see the lip-sync / voice/clone / voice/speak routes).
@@ -7499,6 +7504,44 @@ app.MapGet("/api/projects/{id}/media", async (
 });
 
 /// <summary>CORS-safe download of provider video URL (short-lived ticket from gen job).</summary>
+// Speech-to-text (ElevenLabs Scribe) for voice-capture verification: the client uploads an
+// extracted dialogue segment and we return the transcript (+ word timings). Used to confirm a
+// detected window contains the expected narrator line — never for the user's own takes.
+app.MapPost("/api/transcribe", async (
+    HttpRequest request,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    ElevenLabsScribeClient scribe,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!request.HasFormContentType)
+        return Results.BadRequest(new { ok = false, error = "multipart form with audio 'file' required" });
+
+    var form = await request.ReadFormAsync(ct);
+    var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+        return Results.BadRequest(new { ok = false, error = "audio file required" });
+
+    var lang = form["language_code"].ToString();
+    await using var ms = new MemoryStream();
+    await file.CopyToAsync(ms, ct);
+
+    var result = await scribe.TranscribeAsync(
+        ms.ToArray(), file.FileName, string.IsNullOrWhiteSpace(lang) ? null : lang, ct);
+    if (!result.Ok)
+        return Results.Json(new { ok = false, error = result.Error }, statusCode: StatusCodes.Status502BadGateway);
+
+    return Results.Ok(new
+    {
+        ok = true,
+        text = result.Text,
+        languageCode = result.LanguageCode,
+        words = result.Words.Select(w => new { text = w.Text, start = w.Start, end = w.End, type = w.Type }),
+    });
+});
+
 app.MapGet("/api/media/proxy/{token}", async (
     string token,
     MediaProxyTicketStore tickets,

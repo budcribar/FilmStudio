@@ -94,8 +94,8 @@ setting. (Matches the app's clean, jargon-free UI rule.)
 ## Phases / checklist
 
 ### Phase 1 — Extract + Scribe verify + confident mapping (also improves the dub today)
-- [ ] `ElevenLabsScribeClient` (STT via `POST /v1/speech-to-text`, `scribe_v1`) + DI + HttpClient.
-- [ ] Server endpoint: audio segment → transcript (keeps the ElevenLabs key server-side).
+- [x] `ElevenLabsScribeClient` (STT via `POST /v1/speech-to-text`, `scribe_v1`) + DI + HttpClient.
+- [x] Server endpoint `POST /api/transcribe`: audio segment → transcript (ElevenLabs key server-side).
 - [ ] Client JS `extractAudioSegmentAsync(videoUrl, startSec, endSec)` → audio blob.
 - [ ] Client: transcribe each detected window, fuzzy-match to blueprint line → confident pairs.
 - [ ] Wire confident (line↔window) pairs into the dub overlay placement (replace guessing where confirmed).
