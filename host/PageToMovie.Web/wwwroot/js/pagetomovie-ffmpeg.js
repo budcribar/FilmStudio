@@ -566,18 +566,56 @@ window.PageToMovieFfmpeg = {
      * Play two audio URLs at once (narrator + your take) — unison when the rhythm matches, an echo
      * when it drifts. Resolves when both finish.
      */
-    playOverlayAsync: function (urlA, urlB) {
-        return new Promise(function (resolve) {
-            if (!urlA || !urlB) { resolve(false); return; }
-            try {
-                const a = new Audio(urlA), b = new Audio(urlB);
+    playOverlayAsync: async function (urlA, urlB) {
+        if (!urlA || !urlB) return false;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AC();
+        try {
+            const decode = async function (url) { return ctx.decodeAudioData(await (await fetch(url)).arrayBuffer()); };
+            const bufA = await decode(urlA);
+            const bufB = await decode(urlB);
+            // Start each at its FIRST SOUND at the same context time, so a matched take plays in unison
+            // (an echo means the rhythm drifted). Narrator panned left, you right, so they're distinct.
+            const leadA = this._leadSilenceOfBuffer(bufA);
+            const leadB = this._leadSilenceOfBuffer(bufB);
+            try { await ctx.resume(); } catch (_) { /* */ }
+            return await new Promise(function (resolve) {
                 let done = 0;
-                const fin = function () { done++; if (done >= 2) resolve(true); };
-                a.onended = fin; a.onerror = fin; b.onended = fin; b.onerror = fin;
-                const pa = a.play(); if (pa && pa.catch) pa.catch(fin);
-                const pb = b.play(); if (pb && pb.catch) pb.catch(fin);
-            } catch (_) { resolve(false); }
-        });
+                const fin = function () { done++; if (done >= 2) { try { ctx.close(); } catch (_) { /* */ } resolve(true); } };
+                const mk = function (buf, pan) {
+                    const src = ctx.createBufferSource(); src.buffer = buf;
+                    if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; src.connect(p).connect(ctx.destination); }
+                    else { src.connect(ctx.destination); }
+                    src.onended = fin;
+                    return src;
+                };
+                const t0 = ctx.currentTime + 0.06;
+                mk(bufA, -0.6).start(t0, Math.max(0, leadA));
+                mk(bufB, 0.6).start(t0, Math.max(0, leadB));
+            });
+        } catch (_) {
+            try { await ctx.close(); } catch (e) { /* */ }
+            return false;
+        }
+    },
+
+    /** Leading-silence duration (seconds) of a decoded buffer — first bin at/above 8% of peak RMS. */
+    _leadSilenceOfBuffer: function (buf) {
+        const ch = buf.getChannelData(0);
+        const n = ch.length;
+        const fine = 400;
+        const per = Math.max(1, Math.floor(n / fine));
+        const raw = new Float32Array(fine);
+        let mx = 0;
+        for (let i = 0; i < fine; i++) {
+            let sum = 0, c = 0; const s = i * per, e = Math.min(n, s + per);
+            for (let j = s; j < e; j++) { sum += ch[j] * ch[j]; c++; }
+            raw[i] = c ? Math.sqrt(sum / c) : 0; if (raw[i] > mx) mx = raw[i];
+        }
+        const thr = mx * 0.08;
+        let lo = 0; while (lo < fine && raw[lo] < thr) lo++;
+        if (lo >= fine) lo = 0;
+        return (lo * per) / buf.sampleRate;
     },
 
     /**
@@ -803,6 +841,89 @@ window.PageToMovieFfmpeg = {
         for (let i = 0; i < n; i++) { const a = x[i] - mx, b = y[i] - my; num += a * b; dx += a * a; dy += b * b; }
         const den = Math.sqrt(dx * dy);
         return den > 1e-9 ? num / den : 0;
+    },
+
+    /**
+     * Build the voice-clone sample from the kept takes: trim each take's ragged leading/trailing
+     * silence (the countdown-to-speak delay), then stitch them back with a CONSISTENT natural pause
+     * (`gapSec`) between them — so the clone keeps real between-sentence dead air instead of either a
+     * random offset or run-on speech. Returns mono 16-bit PCM WAV bytes (Uint8Array → C# byte[]).
+     */
+    buildCloneSampleAsync: async function (urls, gapSec) {
+        const list = Array.isArray(urls) ? urls.filter(u => u) : [];
+        if (list.length === 0) throw new Error("no audio urls");
+        const AC = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AC();
+        try {
+            const sr = ctx.sampleRate;
+            const gap = Math.max(0, gapSec == null ? 0.4 : gapSec);
+            const gapSamples = Math.round(gap * sr);
+            const pad = Math.round(0.03 * sr); // keep 30 ms either side so we don't clip soft edges
+
+            const slices = [];
+            let total = 0;
+            for (const url of list) {
+                const resp = await fetch(url);
+                const arr = await resp.arrayBuffer();
+                let decoded;
+                try { decoded = await ctx.decodeAudioData(arr); } catch (_) { continue; }
+                const ch = decoded.getChannelData(0);
+                const n = ch.length;
+
+                // Fine RMS envelope → speech span (< 8% of peak = silence), same trim as the scorer.
+                const fine = 400;
+                const per = Math.max(1, Math.floor(n / fine));
+                const raw = new Float32Array(fine);
+                let mx = 0;
+                for (let i = 0; i < fine; i++) {
+                    let sum = 0, c = 0; const s = i * per, e = Math.min(n, s + per);
+                    for (let j = s; j < e; j++) { sum += ch[j] * ch[j]; c++; }
+                    raw[i] = c ? Math.sqrt(sum / c) : 0; if (raw[i] > mx) mx = raw[i];
+                }
+                const thr = mx * 0.08;
+                let lo = 0, hi = fine - 1;
+                while (lo < fine && raw[lo] < thr) lo++;
+                while (hi > lo && raw[hi] < thr) hi--;
+                if (lo >= hi) { lo = 0; hi = fine - 1; }
+
+                const sStart = Math.max(0, lo * per - pad);
+                const sEnd = Math.min(n, (hi + 1) * per + pad);
+                if (sEnd > sStart) { slices.push(ch.subarray(sStart, sEnd)); total += (sEnd - sStart); }
+            }
+            if (slices.length === 0) throw new Error("no decodable takes");
+
+            const totalLen = total + gapSamples * (slices.length - 1);
+            const out = new Float32Array(totalLen); // gaps stay as zeros = the natural pause
+            let pos = 0;
+            for (let k = 0; k < slices.length; k++) {
+                out.set(slices[k], pos);
+                pos += slices[k].length;
+                if (k < slices.length - 1) pos += gapSamples;
+            }
+            return this._encodeWavPcm16(out, sr);
+        } finally {
+            try { await ctx.close(); } catch (_) { /* */ }
+        }
+    },
+
+    /** Encode a mono Float32 buffer to a 16-bit PCM WAV (Uint8Array). */
+    _encodeWavPcm16: function (samples, sampleRate) {
+        const n = samples.length;
+        const buffer = new ArrayBuffer(44 + n * 2);
+        const view = new DataView(buffer);
+        const wr = function (off, str) { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        wr(0, "RIFF"); view.setUint32(4, 36 + n * 2, true); wr(8, "WAVE");
+        wr(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+        wr(36, "data"); view.setUint32(40, n * 2, true);
+        let off = 44;
+        for (let i = 0; i < n; i++) {
+            let s = Math.max(-1, Math.min(1, samples[i]));
+            view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            off += 2;
+        }
+        return new Uint8Array(buffer);
     },
 
     /**

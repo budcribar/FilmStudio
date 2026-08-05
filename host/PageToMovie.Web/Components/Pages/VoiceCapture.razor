@@ -605,7 +605,9 @@ else
         StateHasChanged();
         try
         {
-            var bytes = await Js.InvokeAsync<byte[]>("PageToMovieFfmpeg.concatAudioToBytesAsync", (object)_kept.ToArray());
+            // Trim each take's ragged edge silence, then rejoin with a natural ~0.4 s pause between
+            // sentences — a clean clone sample that still has real between-sentence dead air.
+            var bytes = await Js.InvokeAsync<byte[]>("PageToMovieFfmpeg.buildCloneSampleAsync", (object)_kept.ToArray(), 0.4);
             if (bytes is null || bytes.Length < 512) { _error = "Couldn't assemble your takes."; return; }
 
             const string rel = "assets/characters/" + NarratorKey + "/voice_clone_sample.wav";
