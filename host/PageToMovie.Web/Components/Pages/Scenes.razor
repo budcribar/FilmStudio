@@ -4167,11 +4167,10 @@ else
     private string _selectedAudioModel = "fal-ai/stable-audio";
     private bool _wantVocal;
 
-    /// <summary>Only vocal-capable providers can sing — the toggle is disabled/forced off for any
-    /// other selected model (e.g. Fal.ai Stable Audio has no vocal capability at all).</summary>
+    /// <summary>Catalog <c>supportsVocals</c> on the selected audio model — not provider id.</summary>
     private bool SelectedAudioModelCanSing =>
         _audioModels.FirstOrDefault(m => string.Equals(m.Id, _selectedAudioModel, StringComparison.OrdinalIgnoreCase))
-            ?.Provider is "suno" or "aimusicapi" or "elevenlabs";
+            ?.SupportsVocals == true;
 
     private async Task LoadAudioModelsAsync()
     {

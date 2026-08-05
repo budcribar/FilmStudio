@@ -40,21 +40,21 @@ public static class ImageApiLimits
         return "";
     }
 
-    /// <summary>Hard max reference images for multi-image edit on this provider.</summary>
+    /// <summary>
+    /// Hard max reference images from the catalog entry only.
+    /// Provider constants remain as documentation / last-ditch when model id is unknown.
+    /// </summary>
     public static int MaxReferenceImages(string? imageProvider, string? imageModel)
     {
         var entry = PageToMovie.Core.Models.SupportedModelCatalog.Find(
             imageModel, PageToMovie.Core.Models.ModelCapability.Image)
             ?? PageToMovie.Core.Models.SupportedModelCatalog.Find(imageModel);
-        if (entry?.MaxReferenceImages is { } catalogMax && catalogMax > 0)
-            return catalogMax;
+        if (entry?.MaxReferenceImages is { } catalogMax)
+            return catalogMax; // include 0 = no refs
 
-        return ResolveProvider(imageProvider, imageModel) switch
-        {
-            ProviderGemini or "google" => GeminiMaxReferenceImages,
-            ProviderGrok or "xai" => GrokMaxReferenceImages,
-            _ => DefaultMaxReferenceImages,
-        };
+        // Unknown model id — no silent provider invention of capability; use conservative default.
+        // Prefer fixing catalog maxReferenceImages on every Image row over expanding this switch.
+        return DefaultMaxReferenceImages;
     }
 
     /// <summary>

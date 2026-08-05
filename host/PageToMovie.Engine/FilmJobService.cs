@@ -1322,13 +1322,11 @@ public sealed class FilmJobService
 
             var entry = SupportedModelCatalog.ResolveOrDefault(audioModel, ModelCapability.Audio);
 
-            // Only Suno-family providers can sing — downgrade to instrumental rather than fail the
-            // whole take if a vocal request somehow reaches a non-vocal-capable model (the UI is
-            // expected to disable the vocal toggle for those models, this is the defensive backstop).
-            var canSing = entry.Provider is ModelProviderFamily.Suno or ModelProviderFamily.AiMusicApi or ModelProviderFamily.ElevenLabs;
+            // Catalog SupportsVocals only — never infer from provider family.
+            var canSing = entry.SupportsVocals;
             var effectiveIsVocal = isVocal && canSing;
             if (isVocal && !canSing)
-                await AppendLogAsync($"  [{entry.DisplayName}] has no vocal capability — generating instrumental instead.");
+                await AppendLogAsync($"  [{entry.DisplayName}] has no vocal capability (supportsVocals=false) — generating instrumental instead.");
 
             string? lyrics = null;
             if (effectiveIsVocal)

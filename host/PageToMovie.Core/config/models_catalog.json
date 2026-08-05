@@ -171,7 +171,7 @@
       "maxInputTokens": 400000,
       "inputCostPerMillionTokens": 2.5,
       "outputCostPerMillionTokens": 10.0,
-      "notes": "Replaces gpt-4o. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=400,000 and max output=128,000 per published spec. Pricing is still an unverified placeholder copied from gpt-4o — update when a real source is available. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists.",
+      "notes": "Replaces gpt-4o. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=400,000 and max output=128,000 per published spec. Pricing is still an unverified placeholder copied from gpt-4o \u2014 update when a real source is available. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists.",
       "providerId": "openai",
       "providerLabel": "OpenAI"
     },
@@ -189,7 +189,7 @@
       "maxInputTokens": 128000,
       "inputCostPerMillionTokens": 2.5,
       "outputCostPerMillionTokens": 10.0,
-      "notes": "Replaces gpt-4o alongside gpt-5.6-sol. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens is officially unpublished by OpenAI (unlike Sol's 400,000 and Luna's 1,050,000) — 128,000 kept here as a deliberately conservative placeholder floor, not a real spec; raise it if a real source turns up. Pricing is also an unverified placeholder copied from gpt-4o. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists.",
+      "notes": "Replaces gpt-4o alongside gpt-5.6-sol. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens is officially unpublished by OpenAI (unlike Sol's 400,000 and Luna's 1,050,000) \u2014 128,000 kept here as a deliberately conservative placeholder floor, not a real spec; raise it if a real source turns up. Pricing is also an unverified placeholder copied from gpt-4o. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists.",
       "providerId": "openai",
       "providerLabel": "OpenAI"
     },
@@ -207,7 +207,7 @@
       "maxInputTokens": 1050000,
       "inputCostPerMillionTokens": 2.5,
       "outputCostPerMillionTokens": 10.0,
-      "notes": "Third gpt-5.6 variant alongside sol/terra, added to try to beat sol's benchmark lead. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=1,050,000 per published spec (largest of the three variants). Pricing is an unverified placeholder copied from gpt-4o — update when a real source is available.",
+      "notes": "Third gpt-5.6 variant alongside sol/terra, added to try to beat sol's benchmark lead. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=1,050,000 per published spec (largest of the three variants). Pricing is an unverified placeholder copied from gpt-4o \u2014 update when a real source is available.",
       "providerId": "openai",
       "providerLabel": "OpenAI"
     },
@@ -281,7 +281,7 @@
         "2:3"
       ],
       "defaultAspectRatio": "16:9",
-      "notes": "Also uses videos/extensions for clip continue. Fresh text/image-to-video allows 1-15s; the new portion of a reference/continue call is tighter (often <=10s, not independently confirmed to the second — maxExtensionSeconds is a conservative estimate, not a documented exact figure). 1080p pricing (0.25/s) may actually belong to a separate 'Grok Imagine 1.5' variant not yet split out as its own catalog entry — base model 480p/720p rates (0.05/0.07) are confirmed against docs.x.ai. aspect_ratio/resolution are NOT accepted on videos/extensions -- the extension output always matches the source clip's aspect ratio (docs.x.ai).",
+      "notes": "Also uses videos/extensions for clip continue. Fresh text/image-to-video allows 1-15s; the new portion of a reference/continue call is tighter (often <=10s, not independently confirmed to the second \u2014 maxExtensionSeconds is a conservative estimate, not a documented exact figure). 1080p pricing (0.25/s) may actually belong to a separate 'Grok Imagine 1.5' variant not yet split out as its own catalog entry \u2014 base model 480p/720p rates (0.05/0.07) are confirmed against docs.x.ai. aspect_ratio/resolution are NOT accepted on videos/extensions -- the extension output always matches the source clip's aspect ratio (docs.x.ai).",
       "providerId": "grok",
       "providerLabel": "xAI"
     },
@@ -317,7 +317,7 @@
         "9:16"
       ],
       "defaultAspectRatio": "16:9",
-      "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs. Billed as a flat ~$0.40/video (frame-count-based generation, not duration-based) — NOT per-second; a prior per-second rate here (0.005/s) underpriced a 5s clip by ~16x ($0.025 vs the real ~$0.40 flat fee). Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading. Deliberately no min/max/absMaxClipDurationSeconds: the real API parameter is num_frames (85 or 129) + fps, not seconds — forcing a seconds-shaped min/max onto a frame-count model would itself be a wrong approximation; now represented directly via shortClipFrameCount/longClipFrameCount (the model's real NumberofFramesEnum: 85 or 129, default 129) rather than a generic duration bound. numInferenceSteps default 30 confirmed against fal.ai/models/fal-ai/hunyuan-video/api. Supports 16:9 or 9:16 aspect ratio (fal.ai/models/fal-ai/hunyuan-video/api).",
+      "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs. Billed as a flat ~$0.40/video (frame-count-based generation, not duration-based) \u2014 NOT per-second; a prior per-second rate here (0.005/s) underpriced a 5s clip by ~16x ($0.025 vs the real ~$0.40 flat fee). Single init/reference image only (true i2v) \u2014 not Grok-style multi-plate identity conditioning; attaching more than one is misleading. Deliberately no min/max/absMaxClipDurationSeconds: the real API parameter is num_frames (85 or 129) + fps, not seconds \u2014 forcing a seconds-shaped min/max onto a frame-count model would itself be a wrong approximation; now represented directly via shortClipFrameCount/longClipFrameCount (the model's real NumberofFramesEnum: 85 or 129, default 129) rather than a generic duration bound. numInferenceSteps default 30 confirmed against fal.ai/models/fal-ai/hunyuan-video/api. Supports 16:9 or 9:16 aspect ratio (fal.ai/models/fal-ai/hunyuan-video/api).",
       "providerId": "fal",
       "providerLabel": "Fal.ai"
     },
@@ -358,7 +358,7 @@
         "1:1"
       ],
       "defaultAspectRatio": "auto",
-      "notes": "Alibaba Wan 2.1 open-weights image-to-video model hosted on Fal.ai serverless GPUs. Billed as a flat fee per video (frame-count-based generation, not duration-based), not per-second — a prior per-second rate here (0.025/s) underpriced a 5s 720p clip by ~3x ($0.125 vs the real ~$0.40 flat fee). 1080p flat fee not independently documented; assumed equal to 720p pending confirmation. Duration is a narrow ~5-6s band (81-100 frames @ 5-24fps typical), NOT the generic 3-10s range — approximated here in seconds even though frames+fps is the more precise real parameter. Single init/reference image only (true i2v) — not Grok-style multi-plate identity conditioning; attaching more than one is misleading. numInferenceSteps default 30 confirmed against fal.ai/models/fal-ai/wan-i2v/api. Deliberately no shortClipFrameCount/longClipFrameCount: Wan's real num_frames (default 81, range 81-100 per fal-ai/wan-i2v) is a continuous range, not Hunyuan's discrete short/long enum, and FalVideoClient does not send an explicit num_frames override for Wan today — this entry stays duration-native via min/max/absMaxClipDurationSeconds above instead. \"auto\" (default) infers aspect ratio from the input image (fal.ai/models/fal-ai/wan-i2v/api).",
+      "notes": "Alibaba Wan 2.1 open-weights image-to-video model hosted on Fal.ai serverless GPUs. Billed as a flat fee per video (frame-count-based generation, not duration-based), not per-second \u2014 a prior per-second rate here (0.025/s) underpriced a 5s 720p clip by ~3x ($0.125 vs the real ~$0.40 flat fee). 1080p flat fee not independently documented; assumed equal to 720p pending confirmation. Duration is a narrow ~5-6s band (81-100 frames @ 5-24fps typical), NOT the generic 3-10s range \u2014 approximated here in seconds even though frames+fps is the more precise real parameter. Single init/reference image only (true i2v) \u2014 not Grok-style multi-plate identity conditioning; attaching more than one is misleading. numInferenceSteps default 30 confirmed against fal.ai/models/fal-ai/wan-i2v/api. Deliberately no shortClipFrameCount/longClipFrameCount: Wan's real num_frames (default 81, range 81-100 per fal-ai/wan-i2v) is a continuous range, not Hunyuan's discrete short/long enum, and FalVideoClient does not send an explicit num_frames override for Wan today \u2014 this entry stays duration-native via min/max/absMaxClipDurationSeconds above instead. \"auto\" (default) infers aspect ratio from the input image (fal.ai/models/fal-ai/wan-i2v/api).",
       "providerId": "fal",
       "providerLabel": "Fal.ai"
     },
@@ -394,7 +394,7 @@
         "9:16"
       ],
       "defaultAspectRatio": "16:9",
-      "notes": "Wired via GeminiVideoClient (text/image-to-video only). Documented duration is exactly 4, 6, or 8 seconds (not an arbitrary range) — 1080p/4K surfaces often restrict to 8s only; no 480p support. Some surfaces document up to 3 multi-image 'ingredients' reference images, but GeminiVideoClient does not implement that conditioning path — it throws NotSupportedException rather than silently ignoring reference images, so maxReferenceImages is 0 here (fail loud) until ingredients support is actually built. Confirmed via Gemini video docs / AI Studio Veo / Cloud Veo 3.1 pages, not yet verified against a live account. ai.google.dev/gemini-api/docs/veo: landscape 16:9 (default) or portrait 9:16.",
+      "notes": "Wired via GeminiVideoClient (text/image-to-video only). Documented duration is exactly 4, 6, or 8 seconds (not an arbitrary range) \u2014 1080p/4K surfaces often restrict to 8s only; no 480p support. Some surfaces document up to 3 multi-image 'ingredients' reference images, but GeminiVideoClient does not implement that conditioning path \u2014 it throws NotSupportedException rather than silently ignoring reference images, so maxReferenceImages is 0 here (fail loud) until ingredients support is actually built. Confirmed via Gemini video docs / AI Studio Veo / Cloud Veo 3.1 pages, not yet verified against a live account. ai.google.dev/gemini-api/docs/veo: landscape 16:9 (default) or portrait 9:16.",
       "providerId": "gemini",
       "providerLabel": "Google"
     },
@@ -476,7 +476,8 @@
       "imageCostPerImage": 0.025,
       "notes": "Open-source Flux.1 Dev model via Fal.ai serverless GPU (~$0.025/image).",
       "providerId": "fal",
-      "providerLabel": "Fal.ai"
+      "providerLabel": "Fal.ai",
+      "maxReferenceImages": 1
     },
     {
       "id": "fal-ai/flux/schnell",
@@ -496,7 +497,8 @@
       "imageCostPerImage": 0.003,
       "notes": "Ultra-fast open-source Flux.1 Schnell model via Fal.ai (~$0.003/image).",
       "providerId": "fal",
-      "providerLabel": "Fal.ai"
+      "providerLabel": "Fal.ai",
+      "maxReferenceImages": 1
     },
     {
       "id": "grok-4.5",
@@ -516,7 +518,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Stage planning, cast scrub, screenplay helpers. maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens — not documented per-model, this is xAI's platform-wide default cap on visible output tokens ('Defaults to 128,000 when unset; set a larger value to allow longer generations') that applies uniformly across chat/completions models, so it's the real ceiling any Grok chat call hits today unless the caller explicitly overrides it.",
+      "notes": "Stage planning, cast scrub, screenplay helpers. maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens \u2014 not documented per-model, this is xAI's platform-wide default cap on visible output tokens ('Defaults to 128,000 when unset; set a larger value to allow longer generations') that applies uniformly across chat/completions models, so it's the real ceiling any Grok chat call hits today unless the caller explicitly overrides it.",
       "providerId": "grok",
       "providerLabel": "xAI"
     },
@@ -538,7 +540,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset, platform-wide (not a per-model published figure) — see grok-4.5 note for full citation detail.",
+      "notes": "maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset, platform-wide (not a per-model published figure) \u2014 see grok-4.5 note for full citation detail.",
       "providerId": "grok",
       "providerLabel": "xAI"
     },
@@ -560,7 +562,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) — discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text — GrokChatClient's self-heal matches both spellings) — it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M). maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset platform-wide (per max_completion_tokens's own definition this excludes reasoning tokens, so this is the visible-JSON-output ceiling even for the reasoning variant — not a per-model published figure).",
+      "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) \u2014 discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text \u2014 GrokChatClient's self-heal matches both spellings) \u2014 it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M). maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset platform-wide (per max_completion_tokens's own definition this excludes reasoning tokens, so this is the visible-JSON-output ceiling even for the reasoning variant \u2014 not a per-model published figure).",
       "providerId": "grok",
       "providerLabel": "xAI"
     },
@@ -604,7 +606,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 — update when a real source is available. maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Opus 5 max output: 128k tokens).",
+      "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 \u2014 update when a real source is available. maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Opus 5 max output: 128k tokens).",
       "providerId": "anthropic",
       "providerLabel": "Anthropic"
     },
@@ -625,7 +627,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review. Was gemini-2.5-pro, which Google retired for new API keys (404 \"no longer available to new users\") — GeminiChatClient was already silently falling back to gemini-2.5-flash on that 404, so this just makes the catalog match what was actually running.",
+      "notes": "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review. Was gemini-2.5-pro, which Google retired for new API keys (404 \"no longer available to new users\") \u2014 GeminiChatClient was already silently falling back to gemini-2.5-flash on that 404, so this just makes the catalog match what was actually running.",
       "providerId": "gemini",
       "providerLabel": "Google"
     },
@@ -646,7 +648,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "Wired via GeminiChatClient. Reasoning/\"thinking\" model per Google's own model metadata (thinking: true) — same class as OpenAI's o-series; watch for similar quirks (temperature/param rejection, thinking tokens counting toward output budget). Pricing copied from gemini-2.5-flash as a placeholder — not verified against a real source, update when known.",
+      "notes": "Wired via GeminiChatClient. Reasoning/\"thinking\" model per Google's own model metadata (thinking: true) \u2014 same class as OpenAI's o-series; watch for similar quirks (temperature/param rejection, thinking tokens counting toward output budget). Pricing copied from gemini-2.5-flash as a placeholder \u2014 not verified against a real source, update when known.",
       "providerId": "gemini",
       "providerLabel": "Google"
     },
@@ -667,7 +669,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "First Gemini Pro-tier model in this catalog — every other Gemini entry so far is Flash-tier. Added to try to beat gpt-5.6-sol's benchmark lead. Wired via GeminiChatClient. Confirmed live via direct Google API call: thinking:true, inputTokenLimit 1,048,576, outputTokenLimit 65,536; thinkingConfig.thinkingLevel confirmed up to \"high\" (Gemini's ceiling — no \"max\"/\"xhigh\" tier exists). \"-preview\" tag means Google could change or retire this id without notice; pricing copied from gemini-3.6-flash as a placeholder, not verified against a real source.",
+      "notes": "First Gemini Pro-tier model in this catalog \u2014 every other Gemini entry so far is Flash-tier. Added to try to beat gpt-5.6-sol's benchmark lead. Wired via GeminiChatClient. Confirmed live via direct Google API call: thinking:true, inputTokenLimit 1,048,576, outputTokenLimit 65,536; thinkingConfig.thinkingLevel confirmed up to \"high\" (Gemini's ceiling \u2014 no \"max\"/\"xhigh\" tier exists). \"-preview\" tag means Google could change or retire this id without notice; pricing copied from gemini-3.6-flash as a placeholder, not verified against a real source.",
       "providerId": "gemini",
       "providerLabel": "Google"
     },
@@ -731,7 +733,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only). Was gemini-2.5-pro, retired by Google for new API keys — see the Chat entry's note.",
+      "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only). Was gemini-2.5-pro, retired by Google for new API keys \u2014 see the Chat entry's note.",
       "providerId": "gemini",
       "providerLabel": "Google"
     },
@@ -753,7 +755,8 @@
       "maxAudioDurationSeconds": 30,
       "notes": "Meta MusicGen model hosted on Fal.ai. Pure instrumental background scoring with zero vocal hallucination.",
       "providerId": "fal",
-      "providerLabel": "Fal.ai"
+      "providerLabel": "Fal.ai",
+      "supportsVocals": false
     },
     {
       "id": "fal-ai/udio",
@@ -773,7 +776,8 @@
       "maxAudioDurationSeconds": 60,
       "notes": "Udio model hosted on Fal.ai. High-fidelity 44.1kHz studio music scoring with rich dynamic range.",
       "providerId": "fal",
-      "providerLabel": "Fal.ai"
+      "providerLabel": "Fal.ai",
+      "supportsVocals": false
     },
     {
       "id": "fal-ai/minimax/music",
@@ -793,7 +797,8 @@
       "maxAudioDurationSeconds": 60,
       "notes": "MiniMax Music model hosted on Fal.ai for cinematic themes and dynamic background scores.",
       "providerId": "fal",
-      "providerLabel": "Fal.ai"
+      "providerLabel": "Fal.ai",
+      "supportsVocals": false
     },
     {
       "id": "fal-ai/stable-audio-2.0",
@@ -813,7 +818,8 @@
       "maxAudioDurationSeconds": 180,
       "notes": "Stability AI Stable Audio 2.0 hosted on Fal.ai with improved stereo width and multi-minute structural coherence.",
       "providerId": "fal",
-      "providerLabel": "Fal.ai"
+      "providerLabel": "Fal.ai",
+      "supportsVocals": false
     },
     {
       "id": "suno-v5-5",
@@ -830,9 +836,10 @@
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
       "maxAudioDurationSeconds": 360,
-      "notes": "Model: Suno v5.5. Provider: Suno API (sunoapi.org) — unofficial reseller. Documented duration 10-360s on V5_5 custom mode.",
+      "notes": "Model: Suno v5.5. Provider: Suno API (sunoapi.org) \u2014 unofficial reseller. Documented duration 10-360s on V5_5 custom mode.",
       "providerId": "suno",
-      "providerLabel": "Suno API (sunoapi.org)"
+      "providerLabel": "Suno API (sunoapi.org)",
+      "supportsVocals": true
     },
     {
       "id": "aimusicapi-suno",
@@ -848,9 +855,10 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Model: Suno. Provider: AI Music API (aimusicapi.ai) — different unofficial reseller. No documented duration control; client mix trims to scene length.",
+      "notes": "Model: Suno. Provider: AI Music API (aimusicapi.ai) \u2014 different unofficial reseller. No documented duration control; client mix trims to scene length.",
       "providerId": "aimusicapi",
-      "providerLabel": "AI Music API (aimusicapi.ai)"
+      "providerLabel": "AI Music API (aimusicapi.ai)",
+      "supportsVocals": true
     },
     {
       "id": "elevenlabs-music",
@@ -867,9 +875,10 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "ElevenLabs 'Eleven Music' (POST /v1/music, model music_v2). Uses the same ElevenLabs_API_KEY as narrator voice — no separate Suno reseller account. 3s–10min; instrumental by default, can sing. Streams audio bytes (served via data: URL through the media proxy).",
+      "notes": "ElevenLabs 'Eleven Music' (POST /v1/music, model music_v2). Uses the same ElevenLabs_API_KEY as narrator voice \u2014 no separate Suno reseller account. 3s\u201310min; instrumental by default, can sing. Streams audio bytes (served via data: URL through the media proxy).",
       "providerId": "elevenlabs",
-      "providerLabel": "ElevenLabs"
+      "providerLabel": "ElevenLabs",
+      "supportsVocals": true
     },
     {
       "id": "eleven_multilingual_v2",
@@ -904,7 +913,7 @@
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
       "isVoiceCloneStep": true,
-      "notes": "Creates a voice profile from a short mic/upload sample (Cast → Voice clone sample). Optional paid add-on path. Requires an ElevenLabs API key with Instant Voice Cloning permission (create_instant_voice_clone). Keys without that scope return 401 missing_permissions — switch to fal-ai/minimax/voice-clone or upgrade the key.",
+      "notes": "Creates a voice profile from a short mic/upload sample (Cast \u2192 Voice clone sample). Optional paid add-on path. Requires an ElevenLabs API key with Instant Voice Cloning permission (create_instant_voice_clone). Keys without that scope return 401 missing_permissions \u2014 switch to fal-ai/minimax/voice-clone or upgrade the key.",
       "providerId": "elevenlabs",
       "providerLabel": "ElevenLabs"
     },
@@ -925,7 +934,7 @@
       "supportsVideoReview": false,
       "isVoiceCloneStep": true,
       "costPerCloneUsd": 1.5,
-      "notes": "Clones a voice from a reference sample (>=10s, reuses this project's existing assets/characters/{key}/voice_clone_sample.* upload) via Fal.ai's queue API (fal.ai/models/fal-ai/minimax/voice-clone). Input: audio_url (URL or data URI). Output: custom_voice_id, reused across many fal-ai/minimax/speech-02-hd calls so the clone cost is paid once. $1.50 per clone call — confirmed via fal.ai's own model/pricing page and openapi schema (2026-08). A preview-text option exists ($0.30/1000 chars) but this app's client never requests it. MiniMax retains the cloned voice only if used by a speech call at least once within 7 days of creation (provider-side retention, not enforced by this app).",
+      "notes": "Clones a voice from a reference sample (>=10s, reuses this project's existing assets/characters/{key}/voice_clone_sample.* upload) via Fal.ai's queue API (fal.ai/models/fal-ai/minimax/voice-clone). Input: audio_url (URL or data URI). Output: custom_voice_id, reused across many fal-ai/minimax/speech-02-hd calls so the clone cost is paid once. $1.50 per clone call \u2014 confirmed via fal.ai's own model/pricing page and openapi schema (2026-08). A preview-text option exists ($0.30/1000 chars) but this app's client never requests it. MiniMax retains the cloned voice only if used by a speech call at least once within 7 days of creation (provider-side retention, not enforced by this app).",
       "providerId": "fal",
       "providerLabel": "Fal.ai"
     },
@@ -946,7 +955,7 @@
       "supportsVideoReview": false,
       "costPerThousandCharsUsd": 0.1,
       "maxPromptLength": 5000,
-      "notes": "Text-to-speech via Fal.ai's queue API (fal.ai/models/fal-ai/minimax/speech-02-hd) using a voice cloned by fal-ai/minimax/voice-clone (custom_voice_id passed as voice_setting.voice_id — confirmed against MiniMax's own platform.minimax.io voice-cloning docs, same convention). Input: text (max 5000 chars per call, this app does not auto-chunk longer narration), voice_setting {voice_id, speed 0.5-2.0, vol, pitch, emotion}. Output: audio.url + duration_ms. $0.10 per 1000 characters — confirmed via fal.ai's own model/pricing page (2026-08).",
+      "notes": "Text-to-speech via Fal.ai's queue API (fal.ai/models/fal-ai/minimax/speech-02-hd) using a voice cloned by fal-ai/minimax/voice-clone (custom_voice_id passed as voice_setting.voice_id \u2014 confirmed against MiniMax's own platform.minimax.io voice-cloning docs, same convention). Input: text (max 5000 chars per call, this app does not auto-chunk longer narration), voice_setting {voice_id, speed 0.5-2.0, vol, pitch, emotion}. Output: audio.url + duration_ms. $0.10 per 1000 characters \u2014 confirmed via fal.ai's own model/pricing page (2026-08).",
       "providerId": "fal",
       "providerLabel": "Fal.ai"
     },
@@ -966,7 +975,7 @@
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
       "costPerMinuteUsd": 5.0,
-      "notes": "Sync Labs Lipsync 2 Pro via Fal.ai's queue API (fal.ai/models/fal-ai/sync-lipsync/v2/pro). Input: video_url, audio_url (both URL or data URI), optional sync_mode (cut_off default | loop | bounce | silence | remap) for when the two durations differ. Output: video.url. Zero-shot — no fine-tuning needed; preserves natural teeth/facial detail per Fal's own listing. ~$5/min of output video (~$0.083/s) — sourced via targeted search during research (fal.ai's own pricing page returned HTTP 429 rate-limiting when fetched directly; cross-checked against Sync Labs' own sync.so/pricing page, which lists the same figure for their Pro tier). Confirm against fal.ai's live pricing page before relying on this for a large narration/dub run.",
+      "notes": "Sync Labs Lipsync 2 Pro via Fal.ai's queue API (fal.ai/models/fal-ai/sync-lipsync/v2/pro). Input: video_url, audio_url (both URL or data URI), optional sync_mode (cut_off default | loop | bounce | silence | remap) for when the two durations differ. Output: video.url. Zero-shot \u2014 no fine-tuning needed; preserves natural teeth/facial detail per Fal's own listing. ~$5/min of output video (~$0.083/s) \u2014 sourced via targeted search during research (fal.ai's own pricing page returned HTTP 429 rate-limiting when fetched directly; cross-checked against Sync Labs' own sync.so/pricing page, which lists the same figure for their Pro tier). Confirm against fal.ai's live pricing page before relying on this for a large narration/dub run.",
       "providerId": "fal",
       "providerLabel": "Fal.ai"
     },
@@ -985,7 +994,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Newest Sync Labs model on Fal.ai (fal.ai/models/fal-ai/sync-lipsync/v3), same core video_url/audio_url/sync_mode input as v2 Pro plus an optional `options` object (model_mode: lips/face/head/lipsync/emotion/talking_head, prompt: emotion tag, temperature, active_speaker_detection, occlusion_detection_enabled) that this app's client does not yet expose. Pricing not confirmed — fal.ai's pricing page returned HTTP 429 during research and no third-party source for v3 specifically was found; left null rather than guessed. Not the capability default until pricing is confirmed.",
+      "notes": "Newest Sync Labs model on Fal.ai (fal.ai/models/fal-ai/sync-lipsync/v3), same core video_url/audio_url/sync_mode input as v2 Pro plus an optional `options` object (model_mode: lips/face/head/lipsync/emotion/talking_head, prompt: emotion tag, temperature, active_speaker_detection, occlusion_detection_enabled) that this app's client does not yet expose. Pricing not confirmed \u2014 fal.ai's pricing page returned HTTP 429 during research and no third-party source for v3 specifically was found; left null rather than guessed. Not the capability default until pricing is confirmed.",
       "providerId": "fal",
       "providerLabel": "Fal.ai"
     }

@@ -30,8 +30,7 @@ public sealed class FakeAudioClient : IAudioClient
     }
 
     /// <summary>
-    /// Mirrors Scenes.SelectedAudioModelCanSing: only suno / aimusicapi / elevenlabs providers
-    /// may request vocals. Catalog has no supportsVocals field yet — providerId is the source of truth.
+    /// Catalog <see cref="SupportedModelEntry.SupportsVocals"/> only — no provider-id heuristic.
     /// </summary>
     public static void ValidateVocalRequest(string? model, bool isVocal)
     {
@@ -39,22 +38,17 @@ public sealed class FakeAudioClient : IAudioClient
             return;
         if (string.IsNullOrWhiteSpace(model))
             throw new InvalidOperationException(
-                "Fake audio: vocal generation requires an audio model id (suno / aimusicapi / elevenlabs).");
+                "Fake audio: vocal generation requires an audio model id with supportsVocals=true.");
 
         var entry = SupportedModelCatalog.Find(model.Trim(), ModelCapability.Audio);
-        var provider = (entry?.ProviderId ?? entry?.Provider.ToString() ?? "").ToLowerInvariant();
-        // Provider enum may stringify differently; also check id prefixes.
-        var id = model.Trim().ToLowerInvariant();
-        var canSing =
-            provider is "suno" or "aimusicapi" or "elevenlabs" ||
-            id.StartsWith("suno", StringComparison.Ordinal) ||
-            id.StartsWith("aimusicapi", StringComparison.Ordinal) ||
-            id.StartsWith("elevenlabs", StringComparison.Ordinal);
-        if (!canSing)
+        if (entry is null)
+            throw new InvalidOperationException(
+                $"Fake audio: model '{model}' is not in the catalog as Audio.");
+
+        if (!entry.SupportsVocals)
         {
             throw new InvalidOperationException(
-                $"Fake audio: model '{model}' has no vocal/sing capability " +
-                $"(provider '{provider ?? "unknown"}'). Use suno, aimusicapi, or elevenlabs-music.");
+                $"Fake audio: model '{entry.Id}' has no vocal/sing capability (supportsVocals=false).");
         }
     }
 

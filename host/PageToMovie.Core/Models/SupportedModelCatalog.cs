@@ -234,6 +234,12 @@ public sealed class SupportedModelEntry
     public int? MaxAudioDurationSeconds { get; init; }
 
     /// <summary>
+    /// When true, this Audio model can generate sung vocals (not instrumental-only).
+    /// Catalog-driven — do not infer from provider id (suno/fal/etc.).
+    /// </summary>
+    public bool SupportsVocals { get; init; }
+
+    /// <summary>
     /// Maximum character length for visual prompts passed to the API (Video/Image models).
     /// Null defaults to 4096 (Grok's budget). Models with tighter limits (e.g. Fal.ai / HunyuanVideo max 1000)
     /// specify their limit here so prompt builders automatically trim to fit without API 400 errors.
@@ -1018,6 +1024,7 @@ public static class SupportedModelCatalog
         AllowedDurationsSeconds = e.AllowedDurationsSeconds is { } ad ? new List<int>(ad) : null,
         MaxExtensionSeconds = e.MaxExtensionSeconds,
         MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
+        SupportsVocals = e.SupportsVocals,
         NumInferenceSteps = e.NumInferenceSteps,
         ShortClipFrameCount = e.ShortClipFrameCount,
         LongClipFrameCount = e.LongClipFrameCount,
@@ -1070,6 +1077,7 @@ public static class SupportedModelCatalog
         AllowedDurationsSeconds = d.AllowedDurationsSeconds,
         MaxExtensionSeconds = d.MaxExtensionSeconds,
         MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
+        SupportsVocals = d.SupportsVocals,
         NumInferenceSteps = d.NumInferenceSteps,
         ShortClipFrameCount = d.ShortClipFrameCount,
         LongClipFrameCount = d.LongClipFrameCount,
@@ -1193,6 +1201,7 @@ public sealed class SupportedModelDto
     public List<int>? AllowedDurationsSeconds { get; set; }
     public int? MaxExtensionSeconds { get; set; }
     public int? MaxAudioDurationSeconds { get; set; }
+    public bool SupportsVocals { get; set; }
     public int? NumInferenceSteps { get; set; }
     public int? ShortClipFrameCount { get; set; }
     public int? LongClipFrameCount { get; set; }
