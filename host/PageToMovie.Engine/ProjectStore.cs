@@ -4828,6 +4828,22 @@ public sealed class ProjectStore
                     continue;
                 }
 
+                // Animals / non-human seeds are non-speaking by default and do NOT require a voice —
+                // only a locked image if they appear on screen. Mirrors GetCastNotReadyForVideo so this
+                // readiness gate (Scenes "Cast incomplete" banner + Generate button) agrees with the
+                // video-spend gate; otherwise the Lamb passes the spend gate but the UI still shows it
+                // incomplete — with no voice field to "fix" (animals hide it). Keyed on species_kind.
+                var isNonHuman = c.SpeciesKind is { Length: > 0 } sk
+                    && !sk.Trim().Equals("human", StringComparison.OrdinalIgnoreCase);
+                if (isNonHuman && !hasVoice)
+                {
+                    if (c.Locked)
+                        ready++;
+                    else
+                        missing.Add(c.Key);
+                    continue;
+                }
+
                 // Locked only — HasPreferred can be unlocked variant_01 and is not enough to spend on video.
                 if (c.Locked && hasVoice)
                     ready++;

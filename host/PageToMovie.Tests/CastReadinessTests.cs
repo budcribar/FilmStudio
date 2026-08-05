@@ -303,4 +303,60 @@ public class CastReadinessTests : IDisposable
         Assert.Empty(_store.GetCastNotReadyForVideo(ProjectId));
     }
 
+    [Fact]
+    public void Animal_with_locked_image_and_no_voice_is_ready_for_shots()
+    {
+        // Mary-had-a-little-lamb: the Lamb (species_kind=animal, locked image, no voice) must be
+        // counted ready by the Scenes readiness gate, not just the video-spend gate. Regression for
+        // the gate divergence where ReadCastStatus still demanded a voice the animal never needs.
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Lamb": {
+                  "canonical_given_name": "Lamb",
+                  "species_kind": "animal",
+                  "voice_label": "Lamb",
+                  "voice_profile": "",
+                  "description": "A small white lamb"
+                }
+              }
+            }
+            """);
+
+        var charDir = Path.Combine(_store.GetProjectDir(ProjectId), "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllBytes(Path.Combine(charDir, "character_lamb_ref.png"), new byte[128]);
+
+        var status = _store.ReadCastStatus(ProjectId);
+        Assert.True(status.ReadyForShots, string.Join("; ", status.Missing));
+        Assert.DoesNotContain(status.Missing, m => m.Contains("Lamb", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(_store.GetCastNotReadyForVideo(ProjectId));
+    }
+
+    [Fact]
+    public void Animal_without_locked_image_is_not_ready_but_needs_image_not_voice()
+    {
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Lamb": {
+                  "canonical_given_name": "Lamb",
+                  "species_kind": "animal",
+                  "voice_profile": "",
+                  "description": "A small white lamb"
+                }
+              }
+            }
+            """);
+
+        // No locked ref image → not ready. The blocker is the image, never a voice.
+        var status = _store.ReadCastStatus(ProjectId);
+        Assert.False(status.ReadyForShots);
+        Assert.Contains(status.Missing, m => m.Contains("Lamb", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(_store.GetCastNotReadyForVideo(ProjectId),
+            m => m.Contains("voice", StringComparison.OrdinalIgnoreCase));
+    }
+
 }
