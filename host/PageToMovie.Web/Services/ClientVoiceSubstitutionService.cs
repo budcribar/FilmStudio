@@ -173,36 +173,61 @@ public sealed class ClientVoiceSubstitutionService
                     .ToList();
                 var sceneDur = detect?.TotalSec ?? 0;
 
-                // Match each cloned line to a window: 1:1 when the counts agree; otherwise spread the
-                // lines across the detected speech span (or the whole scene if nothing was detected).
+                // Match each cloned line to where the original dialog is. Silence detection is imperfect
+                // (it over-/under-segments when the narration runs with few gaps), so rather than trust
+                // the raw window count we COMBINE the windows into one speech timeline and use each
+                // line's WORD COUNT to find its slice of it — a longer line gets a longer slot, and the
+                // slice maps back to real time through the actual windows, skipping the silences.
+                static int WordCount(string? t) =>
+                    string.IsNullOrWhiteSpace(t) ? 1 : Math.Max(1, t.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length);
+                var words = lines.Select(l => WordCount(l.Text)).ToList();
+                var totalWords = (double)Math.Max(1, words.Sum());
+                var totalSpeech = windows.Sum(w => Math.Max(0, w.EndSec - w.StartSec));
+
+                // A point on the concatenated-speech timeline → real clip time (walks the windows).
+                double RealTime(double speechT)
+                {
+                    if (windows.Count == 0) return speechT;
+                    double acc = 0;
+                    foreach (var w in windows)
+                    {
+                        var dur = Math.Max(0, w.EndSec - w.StartSec);
+                        if (speechT <= acc + dur) return w.StartSec + (speechT - acc);
+                        acc += dur;
+                    }
+                    return windows[^1].EndSec;
+                }
+
                 var segs = new List<object>();
+                double cumWords = 0;
                 for (var i = 0; i < lines.Count; i++)
                 {
                     var lineUrl = await _media.GetLocalBlobUrlAsync(projectId, lines[i].VoiceAudioRelativePath!);
-                    if (string.IsNullOrWhiteSpace(lineUrl)) continue;
-
-                    double startSec, endSec;
-                    if (windows.Count == lines.Count)
+                    if (!string.IsNullOrWhiteSpace(lineUrl))
                     {
-                        startSec = windows[i].StartSec;
-                        endSec = windows[i].EndSec;
+                        double startSec, endSec;
+                        if (windows.Count == lines.Count)
+                        {
+                            // Detection lines up 1:1 — trust the real window boundaries.
+                            startSec = windows[i].StartSec;
+                            endSec = windows[i].EndSec;
+                        }
+                        else if (windows.Count > 0 && totalSpeech > 0.1)
+                        {
+                            // Combine windows + word count: each line's word-weighted slice of real speech.
+                            startSec = RealTime(cumWords / totalWords * totalSpeech);
+                            endSec = RealTime((cumWords + words[i]) / totalWords * totalSpeech);
+                        }
+                        else
+                        {
+                            // Nothing detected — spread across the scene by word count.
+                            var total = sceneDur > 0 ? sceneDur : lines.Count * 3.0;
+                            startSec = cumWords / totalWords * total;
+                            endSec = (cumWords + words[i]) / totalWords * total;
+                        }
+                        segs.Add(new { audioUrl = lineUrl, startSec, endSec });
                     }
-                    else if (windows.Count > 0)
-                    {
-                        var spanStart = windows[0].StartSec;
-                        var spanEnd = Math.Max(windows[^1].EndSec, spanStart + 0.5);
-                        var slot = (spanEnd - spanStart) / lines.Count;
-                        startSec = spanStart + i * slot;
-                        endSec = startSec + slot;
-                    }
-                    else
-                    {
-                        var total = sceneDur > 0 ? sceneDur : lines.Count * 3.0;
-                        var slot = total / lines.Count;
-                        startSec = i * slot;
-                        endSec = startSec + slot;
-                    }
-                    segs.Add(new { audioUrl = lineUrl, startSec, endSec });
+                    cumWords += words[i];
                 }
 
                 if (segs.Count == 0)
