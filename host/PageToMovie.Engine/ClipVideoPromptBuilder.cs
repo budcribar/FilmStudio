@@ -106,7 +106,9 @@ public static class ClipVideoPromptBuilder
             ? SupportedModelCatalog.DefaultModelIdForCapability("video")
             : videoModel;
         var promptMaxLen = SupportedModelCatalog.ResolveOrDefault(selectedVideoModel, ModelCapability.Video)
-            .MaxPromptLength ?? VideoPromptHardCapChars;
+            .MaxPromptLength
+            ?? throw new InvalidOperationException(
+                $"Model has no maxPromptLength in models_catalog.json for video prompt budget.");
 
         // Mode follows actual media inputs, not blueprint cont alone.
         // Cast-change reseed (PR2) clears previousClipVideoPath while blueprint may still say

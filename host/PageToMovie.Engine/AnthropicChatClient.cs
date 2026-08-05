@@ -28,14 +28,19 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     public const int DefaultMaxTokens = 16_000;
 
     /// <summary>
-    /// Resolves the <c>max_tokens</c> request field from the model catalog's confirmed
-    /// per-model ceiling (<see cref="SupportedModelEntry.MaxOutputTokens"/>), falling back to
-    /// <see cref="DefaultMaxTokens"/> when the catalog has no entry or hasn't confirmed a real
-    /// number for this model. Never guesses a per-model max — an unconfirmed catalog entry means
-    /// "use the safe default", not "make one up".
+    /// Resolves <c>max_tokens</c> from the catalog only. Missing model or maxOutputTokens → error.
     /// </summary>
-    private static int ResolveMaxTokens(string model) =>
-        SupportedModelCatalog.Find(model, ModelCapability.Chat)?.MaxOutputTokens ?? DefaultMaxTokens;
+    private static int ResolveMaxTokens(string model)
+    {
+        var entry = SupportedModelCatalog.Find(model, ModelCapability.Chat)
+            ?? throw new InvalidOperationException(
+                $"Chat model '{model}' is not in models_catalog.json. Unknown models have no maxOutputTokens.");
+        if (entry.MaxOutputTokens is not { } max || max <= 0)
+            throw new InvalidOperationException(
+                $"Chat model '{entry.Id}' has no maxOutputTokens in models_catalog.json. " +
+                "Add the real API limit — do not invent a default.");
+        return max;
+    }
 
     private readonly HttpClient _http;
     private readonly ProjectTelemetryService _telemetry;

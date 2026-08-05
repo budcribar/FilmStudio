@@ -59,15 +59,25 @@ public class FakeVideoCatalogCapabilityTests
     }
 
     [Fact]
-    public void Veo_rejects_any_reference_images()
+    public void Veo_allows_up_to_three_reference_images()
+    {
+        FakeGrokVideoClient.ValidateAgainstCatalog(
+            "veo-3.1",
+            durationSeconds: 4,
+            referenceImagePaths: new[] { "a.png", "b.png", "c.png" },
+            continueFromVideoPath: null);
+    }
+
+    [Fact]
+    public void Veo_rejects_more_than_three_reference_images()
     {
         var ex = Assert.Throws<InvalidOperationException>(() =>
             FakeGrokVideoClient.ValidateAgainstCatalog(
                 "veo-3.1",
                 durationSeconds: 4,
-                referenceImagePaths: new[] { "a.png" },
+                referenceImagePaths: new[] { "a.png", "b.png", "c.png", "d.png" },
                 continueFromVideoPath: null));
-        Assert.Contains("does not support reference", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("at most 3", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

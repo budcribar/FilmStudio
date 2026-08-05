@@ -37,7 +37,7 @@ public class SupportedModelCatalogTests
     [InlineData("grok-imagine-video", 7)]   // multi-plate identity conditioning
     [InlineData("hunyuan-video", 1)]        // single init/reference image only (true i2v)
     [InlineData("fal-ai/wan-2.1", 1)]       // single init/reference image only (true i2v)
-    [InlineData("veo-3.1", 0)]              // not implemented — fail loud, not silently ignored
+    [InlineData("veo-3.1", 3)]              // Vertex Veo 3.1: up to 3 asset reference images
     public void MaxReferenceImages_MatchesRealPerModelCapability(string modelId, int expectedMax)
     {
         var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
@@ -155,7 +155,8 @@ public class SupportedModelCatalogTests
         Assert.Contains("GEMINI_API_KEY", m.RequiredEnvKeys);
         // Capability flags gate multi-clip / cast-locked gen before API spend
         Assert.False(m.SupportsVideoContinue);
-        Assert.False(m.SupportsReferenceImages);
+        Assert.True(m.SupportsReferenceImages);
+        Assert.Equal(3, m.MaxReferenceImages);
     }
 
     [Fact]

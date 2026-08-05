@@ -62,24 +62,34 @@ public sealed class FalVideoClient : IVideoClient
             ?? throw new InvalidOperationException($"Fal.ai API key is missing. Set {SupportedModelCatalog.FalApiKeyEnv} in environment or Configuration.");
 
         var catalogEntry = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
-        var maxLen = catalogEntry.MaxPromptLength ?? 1000;
+        var maxLen = catalogEntry.MaxPromptLength
+            ?? throw new InvalidOperationException(
+                $"Fal video: model '{catalogEntry.Id}' has no maxPromptLength in models_catalog.json.");
         if (prompt.Length > maxLen)
         {
             prompt = ClipVideoPromptBuilder.FitPromptToVideoBudget(prompt, maxLen);
         }
 
-        var numFrames = durationSeconds is > 0 and <= 4
-            ? catalogEntry.ShortClipFrameCount ?? 85
-            : catalogEntry.LongClipFrameCount ?? 129;
-        var numInferenceSteps = catalogEntry.NumInferenceSteps ?? 30;
-
+        // Frame/step params only when the catalog declares them (Hunyuan). Duration-native
+        // models (Wan) omit these — do not invent defaults.
         var payload = new Dictionary<string, object?>
         {
             ["prompt"] = prompt,
             ["aspect_ratio"] = ResolveAspectRatio(model),
-            ["num_frames"] = numFrames,
-            ["num_inference_steps"] = numInferenceSteps,
         };
+        if (catalogEntry.ShortClipFrameCount is not null || catalogEntry.LongClipFrameCount is not null)
+        {
+            var numFrames = durationSeconds is > 0 and <= 4
+                ? catalogEntry.ShortClipFrameCount
+                    ?? throw new InvalidOperationException(
+                        $"Fal video: model '{catalogEntry.Id}' has longClipFrameCount but no shortClipFrameCount.")
+                : catalogEntry.LongClipFrameCount
+                    ?? throw new InvalidOperationException(
+                        $"Fal video: model '{catalogEntry.Id}' has shortClipFrameCount but no longClipFrameCount.");
+            payload["num_frames"] = numFrames;
+        }
+        if (catalogEntry.NumInferenceSteps is { } steps)
+            payload["num_inference_steps"] = steps;
 
         var imagePath = !string.IsNullOrWhiteSpace(startFrameImagePath) && File.Exists(startFrameImagePath)
             ? startFrameImagePath
@@ -98,7 +108,9 @@ public sealed class FalVideoClient : IVideoClient
         {
             if (!endpoint.Contains("image-to-video", StringComparison.OrdinalIgnoreCase))
                 endpoint = endpoint.TrimEnd('/') + "-image-to-video";
-            var maxDim = catalogEntry.MaxReferenceImageDimension ?? 1280;
+            var maxDim = catalogEntry.MaxReferenceImageDimension
+                ?? throw new InvalidOperationException(
+                    $"Fal video: model '{catalogEntry.Id}' has no maxReferenceImageDimension in models_catalog.json.");
             payload["image_url"] = await PrepareOptimizedImageDataUriAsync(imagePath, maxDim, ct).ConfigureAwait(false);
         }
 

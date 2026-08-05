@@ -137,7 +137,9 @@ public sealed class FalVoiceCloneClient : IVoiceCloneClient
             throw new ArgumentException("voiceId required — clone a voice first.", nameof(voiceId));
 
         var entry = ResolveSpeakModel(model);
-        var maxLen = entry.MaxPromptLength ?? 5000;
+        var maxLen = entry.MaxPromptLength
+            ?? throw new InvalidOperationException(
+                $"Voice model '{entry.Id}' has no maxPromptLength in models_catalog.json.");
         if (text.Length > maxLen)
             throw new InvalidOperationException(
                 $"Text is {text.Length} characters — exceeds this voice model's {maxLen}-character limit per call. Split into multiple calls.");

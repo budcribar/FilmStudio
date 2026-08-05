@@ -2722,7 +2722,9 @@ public sealed class FilmJobService
             ProviderId = providerId,
             UseEleven = useEleven,
             SpeakModelId = speakModelId ?? "",
-            MaxLen = entry?.MaxPromptLength ?? 5000,
+            MaxLen = entry?.MaxPromptLength
+                ?? throw new InvalidOperationException(
+                    $"Model '{entry?.Id ?? "(null)"}' has no maxPromptLength in models_catalog.json."),
         }, null);
     }
 
@@ -3774,7 +3776,9 @@ public sealed class FilmJobService
             if (string.IsNullOrWhiteSpace(resolution))
                 resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
 
-            var modelMaxPromptLen = modelEntry.MaxPromptLength ?? ClipVideoPromptBuilder.VideoPromptHardCapChars;
+            var modelMaxPromptLen = modelEntry.MaxPromptLength
+                ?? throw new InvalidOperationException(
+                    $"Video model '{modelEntry.Id}' has no maxPromptLength in models_catalog.json.");
 
             // Pre-budget to model-specific prompt limit (e.g. 1000 for Fal.ai, 4096 for Grok).
             // Avoids a guaranteed first-attempt 400 on every clip.

@@ -117,7 +117,9 @@ public sealed class GrokVideoClient : IVideoClient
         // Model-aware retry cap — a future model with a different prompt budget only needs its
         // models_catalog.json MaxPromptLength updated, never a code change here.
         var promptHardCap = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video)
-            .MaxPromptLength ?? ClipVideoPromptBuilder.VideoPromptHardCapChars;
+            .MaxPromptLength
+            ?? throw new InvalidOperationException(
+                $"Video model has no maxPromptLength in models_catalog.json.");
 
         for (var attempt = 0; attempt <= MaxPromptLengthRetries; attempt++)
         {
