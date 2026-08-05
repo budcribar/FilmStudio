@@ -610,6 +610,41 @@ window.PageToMovieFfmpeg = {
     },
 
     /**
+     * Concatenate several kept take audio clips (blob/data URLs) into one mono 44.1 kHz WAV, returned
+     * as raw bytes (Uint8Array → C# byte[]) for the voice-clone sample. Uses the concat FILTER (decodes
+     * each) so mismatched containers/codecs still join cleanly. Throws on failure.
+     */
+    concatAudioToBytesAsync: async function (urls, onProgress) {
+        const list = Array.isArray(urls) ? urls.filter(u => u) : [];
+        if (list.length === 0) throw new Error("no audio urls");
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) throw new Error(load.error || "ffmpeg load failed");
+            const ffmpeg = self._ffmpeg;
+            const names = [];
+            const outName = "cat_out.wav";
+            try {
+                const inputs = [];
+                for (let i = 0; i < list.length; i++) {
+                    const nm = "cat_in_" + i;
+                    await ffmpeg.writeFile(nm, await self._safeFetchFile(list[i]));
+                    names.push(nm);
+                    inputs.push("-i", nm);
+                }
+                const labels = names.map((_, i) => "[" + i + ":a]").join("");
+                const filter = labels + "concat=n=" + names.length + ":v=0:a=1[a]";
+                await ffmpeg.exec(["-hide_banner", "-y", ...inputs,
+                    "-filter_complex", filter, "-map", "[a]", "-ar", "44100", "-ac", "1", outName]);
+                return await ffmpeg.readFile(outName); // Uint8Array → C# byte[]
+            } finally {
+                for (const n of names) { try { await ffmpeg.deleteFile(n); } catch (_) { /* */ } }
+                try { await ffmpeg.deleteFile(outName); } catch (_) { /* */ }
+            }
+        });
+    },
+
+    /**
      * Turn a silencedetect log into non-silent [start,end] windows over [0,totalSec].
      * Silence runs are the complement of speech; a clip with no detected silence is one speech run.
      */

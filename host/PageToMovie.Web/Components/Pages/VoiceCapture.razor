@@ -1,0 +1,341 @@
+@page "/voice-capture"
+@using PageToMovie.Core.Models
+@inject EngineApiClient Engine
+@inject ClientVideoStitchService Stitch
+@inject ClientMediaFolderService MediaFolder
+@inject ActiveProjectState ActiveProject
+@inject IJSRuntime Js
+
+<PageTitle>Match your voice · PageToMovie</PageTitle>
+
+<style>
+    .ptm-ball-track { position: relative; height: 10px; background: rgba(255,255,255,.12); border-radius: 6px; overflow: hidden; }
+    .ptm-ball-dot { position: absolute; top: -5px; width: 20px; height: 20px; border-radius: 50%;
+        background: #ffc107; box-shadow: 0 0 10px #ffc107; }
+    .ptm-ball-run { animation: ptm-ball-move var(--ptm-ball-dur, 3s) linear forwards; }
+    @@keyframes ptm-ball-move { from { left: 0; } to { left: calc(100% - 20px); } }
+</style>
+
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">Voice match</span>
+    <h1 class="ptm-adapt-title mb-1">Read along in your voice</h1>
+    <p class="ptm-adapt-lede mb-0">Listen, then read it back the same way. We keep your best takes.</p>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger" data-testid="voice-capture-error">@_error</div>
+}
+
+@if (string.IsNullOrEmpty(_projectId))
+{
+    <div class="alert alert-info">Open a film first, then come back to match your voice.</div>
+}
+else if (_loading)
+{
+    <p class="text-muted">Getting your phrases ready…</p>
+}
+else if (_phrases.Count == 0)
+{
+    <div class="alert alert-info">
+        No phrases yet. Make the movie once ("Make it in my voice") — that prepares the phrases — then come back here.
+    </div>
+}
+else if (_done)
+{
+    <div class="card border-success mb-3">
+        <div class="card-body text-center">
+            <div class="h4 mb-2">🎉 Your voice is ready</div>
+            <p class="text-muted mb-0">@_status</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-primary border-opacity-50 mb-3" data-testid="voice-capture-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Phrase @(_i + 1) of @_phrases.Count</span>
+            <span class="badge text-bg-secondary">@_kept.Count kept</span>
+        </div>
+        <div class="card-body">
+            <p class="fs-5 mb-3" data-testid="voice-capture-text">“@CurrentPhrase.Text”</p>
+
+            @* Listen *@
+            <div class="mb-3">
+                <div class="small text-muted mb-1">Listen</div>
+                @if (!string.IsNullOrEmpty(_originalUrl))
+                {
+                    <audio controls src="@_originalUrl" class="w-100" style="max-width:420px;"></audio>
+                }
+                else
+                {
+                    <span class="text-muted small">Loading original…</span>
+                }
+            </div>
+
+            @* Pacing ball (visible while recording) *@
+            @if (_recording)
+            {
+                <div class="mb-3">
+                    <div class="ptm-ball-track">
+                        <div class="ptm-ball-dot ptm-ball-run" style="--ptm-ball-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");"></div>
+                    </div>
+                    <div class="small text-danger mt-1">● Recording — follow the ball</div>
+                </div>
+            }
+
+            @* Take + score *@
+            @if (!string.IsNullOrEmpty(_takeUrl) && !_recording)
+            {
+                <div class="mb-3">
+                    <div class="small text-muted mb-1">Your take</div>
+                    <audio controls src="@_takeUrl" class="w-100" style="max-width:420px;"></audio>
+                    @if (_score is int sc)
+                    {
+                        <div class="mt-2 fw-semibold @ScoreClass(sc)" data-testid="voice-capture-score">
+                            @ScoreStars(sc) &nbsp; @ScoreLabel(sc)
+                        </div>
+                    }
+                </div>
+            }
+
+            @* Controls *@
+            <div class="d-flex flex-wrap gap-2">
+                @if (!_recording)
+                {
+                    <button class="btn btn-danger" disabled="@(_busy || string.IsNullOrEmpty(_originalUrl))"
+                            data-testid="voice-capture-record" @onclick="RecordAsync">
+                        🔴 @(_takeUrl is null ? "Record" : "Re-record")
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="StopAndScoreAsync">
+                        ⏹ Stop
+                    </button>
+                }
+
+                @if (!string.IsNullOrEmpty(_takeUrl) && !_recording)
+                {
+                    <button class="btn btn-primary" disabled="@_busy" data-testid="voice-capture-keep" @onclick="KeepAndNextAsync">
+                        Keep &amp; @(_i + 1 < _phrases.Count ? "next →" : "finish")
+                    </button>
+                }
+
+                @if (_kept.Count > 0 && !_recording)
+                {
+                    <button class="btn btn-success ms-auto" disabled="@_busy" data-testid="voice-capture-finish" @onclick="FinishAsync">
+                        ✓ Create my voice (@_kept.Count)
+                    </button>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(_status))
+            {
+                <div class="small text-muted mt-2">@_status</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private const string NarratorKey = "Character_Narrator";
+    private const int MaxPhrases = 8;
+
+    private string? _projectId;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _done;
+    private string? _error;
+    private string? _status;
+
+    private List<VoiceCapturePhrase> _phrases = new();
+    private int _i;
+
+    // Scene stitched video URLs, cached so we only stitch a scene once.
+    private readonly Dictionary<int, string> _sceneUrls = new();
+
+    private string? _originalUrl;   // extracted original segment (Listen)
+    private string? _takeUrl;       // user's recording as a data: URL
+    private int? _score;
+
+    private bool _recording;
+    private double _ballDurationSec = 3;
+    private int _recordSession;
+
+    private readonly List<string> _kept = new(); // kept take data URLs
+
+    private VoiceCapturePhrase CurrentPhrase => _phrases[Math.Clamp(_i, 0, _phrases.Count - 1)];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projectId = ActiveProject.ProjectId;
+        if (string.IsNullOrEmpty(_projectId)) { _loading = false; return; }
+        try
+        {
+            var data = await Engine.GetVoiceCapturePhrasesAsync(_projectId);
+            _phrases = (data?.Phrases ?? new())
+                .Where(p => p.Confident)
+                .OrderBy(p => p.Rank < 0 ? int.MaxValue : p.Rank)
+                .ThenByDescending(p => p.DurationSec)
+                .Take(MaxPhrases)
+                .ToList();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        _loading = false;
+        if (_phrases.Count > 0)
+            await PreparePhraseAsync();
+    }
+
+    private async Task PreparePhraseAsync()
+    {
+        _originalUrl = null;
+        _takeUrl = null;
+        _score = null;
+        StateHasChanged();
+
+        var p = CurrentPhrase;
+        _ballDurationSec = Math.Max(1.0, p.DurationSec);
+        try
+        {
+            var sceneUrl = await GetSceneUrlAsync(p.Scene);
+            if (string.IsNullOrEmpty(sceneUrl)) { _status = "Couldn't load that scene."; return; }
+            var res = await Js.InvokeAsync<ExtractUrlResult>(
+                "PageToMovieFfmpeg.extractAudioSegmentToUrlAsync", sceneUrl, p.WindowStartSec, p.WindowEndSec);
+            if (res is { Success: true }) _originalUrl = res.Url;
+            else _status = res?.Error ?? "Couldn't load the original clip.";
+        }
+        catch (Exception ex) { _status = ex.Message; }
+        StateHasChanged();
+    }
+
+    private async Task<string?> GetSceneUrlAsync(int scene)
+    {
+        if (_sceneUrls.TryGetValue(scene, out var cached)) return cached;
+        var clipUrls = await Stitch.CollectClipUrlsAsync(_projectId!, scene);
+        if (clipUrls.Count == 0) return null;
+        string url;
+        if (clipUrls.Count == 1) url = clipUrls[0];
+        else
+        {
+            var stitched = await Stitch.ConcatAsync(clipUrls);
+            if (!stitched.Success || string.IsNullOrWhiteSpace(stitched.Url)) return null;
+            url = stitched.Url!;
+        }
+        _sceneUrls[scene] = url;
+        return url;
+    }
+
+    private async Task RecordAsync()
+    {
+        _error = null; _status = null; _takeUrl = null; _score = null;
+        try
+        {
+            await Js.InvokeAsync<object>("PageToMovieVoiceCapture.start");
+            _recording = true;
+            var session = ++_recordSession;
+            StateHasChanged();
+            // Auto-stop a beat after the ball finishes.
+            _ = AutoStopAsync(session, (int)((_ballDurationSec + 1.0) * 1000));
+        }
+        catch (Exception ex) { _error = "Microphone failed: " + ex.Message; _recording = false; }
+    }
+
+    private async Task AutoStopAsync(int session, int delayMs)
+    {
+        await Task.Delay(delayMs);
+        if (_recording && session == _recordSession)
+            await InvokeAsync(StopAndScoreAsync);
+    }
+
+    private async Task StopAndScoreAsync()
+    {
+        if (!_recording) return;
+        _busy = true;
+        _recording = false;
+        _recordSession++; // invalidate any pending auto-stop
+        StateHasChanged();
+        try
+        {
+            var result = await Js.InvokeAsync<VoiceCaptureStopResult>("PageToMovieVoiceCapture.stop");
+            if (result is null || !result.Ok || string.IsNullOrEmpty(result.Base64))
+            {
+                _status = result?.Error ?? "No audio captured.";
+                return;
+            }
+            var mime = MimeFor(result.FileName);
+            _takeUrl = $"data:{mime};base64,{result.Base64}";
+            StateHasChanged();
+
+            if (!string.IsNullOrEmpty(_originalUrl))
+            {
+                var s = await Js.InvokeAsync<RhythmResult>(
+                    "PageToMovieFfmpeg.analyzeRhythmMatchAsync", _originalUrl, _takeUrl);
+                if (s is { Success: true }) _score = s.Score;
+            }
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; StateHasChanged(); }
+    }
+
+    private async Task KeepAndNextAsync()
+    {
+        if (!string.IsNullOrEmpty(_takeUrl)) _kept.Add(_takeUrl);
+        if (_i + 1 < _phrases.Count)
+        {
+            _i++;
+            await PreparePhraseAsync();
+        }
+        else
+        {
+            await FinishAsync();
+        }
+    }
+
+    private async Task FinishAsync()
+    {
+        if (_kept.Count == 0 || string.IsNullOrEmpty(_projectId)) return;
+        _busy = true; _error = null; _status = "Building your voice from your best takes…";
+        StateHasChanged();
+        try
+        {
+            var bytes = await Js.InvokeAsync<byte[]>("PageToMovieFfmpeg.concatAudioToBytesAsync", (object)_kept.ToArray());
+            if (bytes is null || bytes.Length < 512) { _error = "Couldn't assemble your takes."; return; }
+
+            const string rel = "assets/characters/" + NarratorKey + "/voice_clone_sample.wav";
+            if (!MediaFolder.IsConnected) await MediaFolder.TryReconnectAsync();
+            try { await MediaFolder.SaveBytesAsync(_projectId, rel, bytes, promptToConnectFolder: false); } catch { /* best effort */ }
+
+            await using var ms = new MemoryStream(bytes);
+            await Engine.UploadVoiceCloneSampleAsync(_projectId, NarratorKey, ms, "voice_clone_sample.wav");
+
+            _status = "Applying your voice…";
+            StateHasChanged();
+            var apply = await Engine.ApplyVoiceCloneAsync(_projectId, NarratorKey);
+            _done = true;
+            _status = apply.Ok
+                ? (apply.UsedMock ? "Demo voice applied. You can make the movie." : "Voice applied. You can make the movie.")
+                : ("Takes saved. " + (apply.Error ?? apply.Message ?? "Could not apply the voice."));
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; StateHasChanged(); }
+    }
+
+    private static string MimeFor(string? fileName) =>
+        Path.GetExtension(fileName ?? "").ToLowerInvariant() switch
+        {
+            ".wav" => "audio/wav",
+            ".mp3" => "audio/mpeg",
+            ".m4a" or ".aac" => "audio/mp4",
+            ".ogg" => "audio/ogg",
+            _ => "audio/webm",
+        };
+
+    private static string ScoreStars(int s) => new string('★', Math.Clamp(s / 20, 0, 5)).PadRight(5, '☆');
+    private static string ScoreLabel(int s) => s >= 80 ? "Great match!" : s >= 60 ? "Nice!" : s >= 40 ? "Good — try the rhythm again" : "Give it another go";
+    private static string ScoreClass(int s) => s >= 60 ? "text-success" : s >= 40 ? "text-warning" : "text-muted";
+
+    private sealed class ExtractUrlResult { public bool Success { get; set; } public string? Url { get; set; } public string? Error { get; set; } }
+    private sealed class RhythmResult { public bool Success { get; set; } public int Score { get; set; } public string? Error { get; set; } }
+    private sealed class VoiceCaptureStopResult { public bool Ok { get; set; } public string? Error { get; set; } public string? Base64 { get; set; } public string? FileName { get; set; } }
+}

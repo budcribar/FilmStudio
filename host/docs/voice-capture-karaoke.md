@@ -115,13 +115,22 @@ setting. (Matches the app's clean, jargon-free UI rule.)
 - [x] Rhythm-match scorer `analyzeRhythmMatchAsync(originalUrl, takeUrl)` — Web Audio: normalized RMS
       envelope Pearson-correlation (shape) + duration closeness → 0–100. Timbre-independent, generous.
 - [x] Phrase persistence save/load (done in Phase 1).
-- [ ] Capture page `VoiceCapture.razor`: load top confident phrases → per phrase Listen (play original)
-      → Record (reuse `PageToMovieVoiceCapture.start/stop`) with a ball paced to the window duration
-      → `analyzeRhythmMatchAsync` "how'd I do" → Again / Next; keep best take.
-- [ ] Finish: stitch kept takes (audio concat) → persist as the voice sample → `ApplyVoiceCloneAsync`.
+- [x] Capture page `VoiceCapture.razor` (route `/voice-capture`): loads top confident phrases → per
+      phrase Listen (play original) → Record (`PageToMovieVoiceCapture.start/stop`) with a ball paced to
+      the window duration + auto-stop → `analyzeRhythmMatchAsync` "how'd I do" (stars + label) → Re-record
+      / Keep & next.
+- [x] Finish: `concatAudioToBytesAsync` stitches kept takes → save + `UploadVoiceCloneSampleAsync` →
+      `ApplyVoiceCloneAsync` (Phase 3 folded in here).
 
 ### Phase 3 — Stitch → clone
-- [ ] Stitch kept takes (existing concat) → clone (existing clone call); wire into the flow.
+- [x] Done as the capture page's Finish step (`concatAudioToBytesAsync` → upload sample → apply clone).
+
+### Follow-ups
+- [ ] Nav link to `/voice-capture` (currently reached by URL); ideally reuse the phrases build from
+      here so the user can prepare + capture without running a full dub first.
+- [ ] Per-segment dynamic-range ranking + LLM expressiveness/spread selection for the phrase pool.
+- [ ] Optional pitch-contour overlay (Smule-style) on the score.
+- [ ] Live browser test: mic record + Web Audio score + audio concat + clone round-trip.
 
 ## Out of scope / v2
 - Pitch-contour overlay (Smule-style visual), pitch-normalized intonation scoring.
