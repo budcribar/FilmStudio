@@ -1,32 +1,57 @@
-# UI fix-order checklist (from fakes audit 2026-08-05)
+# UI fix-order checklist (fakes audit 2026-08-05+)
 
-Priority order for product UI bugs exposed by the audit. Does **not** include Grok-loop / Imagine long-dialogue work.
+Priority order for product UI bugs. Does **not** include Grok-loop / Imagine long-dialogue work.
+
+Legend: `[ ]` open · `[~]` partial / needs browser confirm · `[x]` done
 
 ## P0 — Correctness / dead ends
 
-- [ ] **Unknown routes blank main** — `/film`, `/billing` (and other typos) show empty chrome instead of Not Found. Wire Router NotFound so users see `NotFound.razor` (or redirect `/film` → `/scenes` if intentional alias).
-- [ ] **Cost length card missing when project id late** — `FilmLengthCard` only renders when `_projectId` set; ensure Estimate always shows length controls or an explicit “select project” empty state after activate.
+- [ ] **Unknown routes blank main** — `/film`, `/billing` show empty chrome instead of Not Found. Prefer `NotFound.razor`, or alias `/film` → `/scenes`.
+- [ ] **Cost length card when project id late** — always show `FilmLengthCard` or explicit “select project” empty state.
+- [ ] **Agree & Continue vs CanScenes** — do not navigate to Film when shot plan / scenes readiness is false; disable or show `ScenesBlockedReason`.
+- [ ] **Create project empty name** — block submit and show “name required” (today: silent no-op).
 
-## P1 — Discoverability
+## P1 — Discoverability & sequence UX
 
-- [ ] **Create project one-click** — `+ New` / `home-new-project` should reveal the name field immediately (or inline form), not only after Manage expands.
-- [ ] **Delete project visible path** — document or surface delete under Manage; audit only verified API delete.
-- [ ] **Pipeline stages in nav/strip** — Look / Embellish / Trim exist as routes but are easy to miss; align `StudioProcessStrip` + sidebar labels with Film = `/scenes`.
+- [ ] **Create project one-click** — `home-new-project` should show name field immediately (not only after Manage expands).
+- [ ] **Delete project visible path** — surface under Manage; audit only verified API delete.
+- [ ] **Pipeline stages in nav/strip** — Look / Embellish / Trim discoverable; Film label → `/scenes`.
+- [ ] **Deep link empty states** — `/cost`, `/scenes`, `/characters`, `/adaptation/import` without project: clear CTA to create/select.
 
-## P2 — Polish
+## P2 — Input & control-state (explicit tests required)
 
-- [ ] **Console 404** — identify missing static/API resource from Home/Import network tab.
-- [ ] **Home favicon `alt=""`** — decorative OK; confirm intentional.
-- [ ] **Docs: `/billing` vs `/account/costs`** — fix any remaining links to dead `/billing`.
+- [ ] **Film length boundaries** — `""`, `0`, `-1`, `1`, `180`, `181`, non-numeric → clamp 1–180 + visible feedback.
+- [ ] **Primary buttons vs Busy/JobRunning** — Import, Convert, Generate, Save: disabled and no double-submit.
+- [ ] **Strip readiness matches page CTAs** — same `CanEstimate` / `CanScenes` / `CanCharacters` on strip and page buttons.
+- [ ] **Back-navigation staleness** — change book after estimate; Film/Generate must re-gate.
 
-## P3 — Deeper fakes coverage (follow-up soaks)
+## P3 — Polish
 
-- [ ] End-to-end: create → import fountain → screenplay → cast → estimate → gen scene clips → review → delete (with enhanced video fixtures).
-- [ ] Character thumb stability on switch (Mary regression) under fakes images.
+- [ ] **Console 404** — identify missing static/API resource.
+- [ ] **Home favicon `alt=""`** — confirm decorative.
+- [ ] **Docs links** — `/billing` → `/account/costs`.
+
+## P4 — Deeper fakes soaks
+
+- [ ] E2E: create → import fountain → screenplay → cast → estimate → gen clips → review → delete (real fixtures).
+- [ ] Character thumb stability on switch (Mary) under fakes images.
 - [ ] Live cost refresh when target minutes change.
 
-## Shipped with this change
+## Sequence test matrix (explicit browser)
 
-- [x] UI audit report committed under `host/docs/ui-audit-report-2026-08-05.*`
-- [x] Real MP4 fake fixtures (1s / 5s / 10s / scene-colored 3s)
-- [x] `FakeGrokVideoClient` duration-aware fixtures + optional ffmpeg extend-concat + accurate duration sidecars
+| # | Setup | Assert |
+|---|--------|--------|
+| S1 | No project | Import/Cost/Scenes/Characters primaries disabled or CTA-only |
+| S2 | Project, no book | Import enabled; Cast/Estimate/Film blocked with reasons |
+| S3 | Book, no screenplay approve | Cast/Estimate/Film per `ActiveProjectState` |
+| S4 | Screenplay OK, no shots | Estimate may open; Film/Generate blocked |
+| S5 | Ready to film | Generate enabled once; disabled while job runs |
+| S6 | Length card | Boundary values clamp; estimate refreshes |
+| S7 | Create project | Empty/spaces rejected with message; double-click safe |
+| S8 | Back-nav after book change | Stale CanScenes false until ready again |
+
+## Shipped
+
+- [x] UI audit report `host/docs/ui-audit-report-2026-08-05.*`
+- [x] Real MP4 fake fixtures + smarter `FakeGrokVideoClient` (`0bf913a`)
+- [x] Docs updated for sequence/button/input gap (this revision)
