@@ -93,27 +93,34 @@ else
         </div>
         <div class="card-body">
             @{ var words = SplitWords(CurrentPhrase.Text); }
-            <div class="mb-3" style="max-width:640px;">
-                <p class="fs-5 mb-1" data-testid="voice-capture-text">
-                    @for (var wi = 0; wi < words.Count; wi++)
-                    {
-                        <span style="@WordStyle(wi)">@words[wi]</span>@(" ")
-                    }
-                </p>
-                @* Pacing ball — right under the text, sized to it *@
-                <div class="ptm-ball-track" style="@(_recording ? "" : "visibility:hidden;")">
-                    <div @key="_recordSession" class="ptm-ball-dot @(_recording ? "ptm-ball-run" : "")"
-                         style="--ptm-ball-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");"></div>
+            @* Scroll wrapper so very long phrases don't break the layout. The inner block shrinks to the
+               text (one line), and the ball track fills that same width — so the ball spans the phrase. *@
+            <div style="overflow-x:auto; max-width:100%;" class="mb-1">
+                <div class="d-inline-block">
+                    <p class="fs-5 mb-1" data-testid="voice-capture-text" style="white-space:nowrap;">
+                        @for (var wi = 0; wi < words.Count; wi++)
+                        {
+                            <span style="@WordStyle(wi)">@words[wi]</span>@(" ")
+                        }
+                    </p>
+                    <div class="ptm-ball-track" style="@(_recording ? "" : "visibility:hidden;")">
+                        <div @key="_recordSession" class="ptm-ball-dot @(_recording ? "ptm-ball-run" : "")"
+                             style="--ptm-ball-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");"></div>
+                    </div>
                 </div>
-                @if (_recording)
-                {
-                    <div class="small text-danger mt-1">● Follow the ball</div>
-                }
-                @if (_regions is { Count: > 0 } && !_recording)
-                {
-                    <div class="small text-muted mt-1">Colours show where your rhythm matched — aim to turn the red/orange words green.</div>
-                }
             </div>
+            @if (_recording)
+            {
+                <div class="small text-danger mb-3">● Follow the ball</div>
+            }
+            else if (_regions is { Count: > 0 })
+            {
+                <div class="small text-muted mb-3">Colours show where your rhythm matched — aim to turn the red/orange words green.</div>
+            }
+            else
+            {
+                <div class="mb-3"></div>
+            }
 
             @* Listen *@
             <div class="mb-3">
