@@ -563,6 +563,79 @@ window.PageToMovieFfmpeg = {
     },
 
     /**
+     * Play two audio URLs at once (narrator + your take) — unison when the rhythm matches, an echo
+     * when it drifts. Resolves when both finish.
+     */
+    playOverlayAsync: function (urlA, urlB) {
+        return new Promise(function (resolve) {
+            if (!urlA || !urlB) { resolve(false); return; }
+            try {
+                const a = new Audio(urlA), b = new Audio(urlB);
+                let done = 0;
+                const fin = function () { done++; if (done >= 2) resolve(true); };
+                a.onended = fin; a.onerror = fin; b.onended = fin; b.onerror = fin;
+                const pa = a.play(); if (pa && pa.catch) pa.catch(fin);
+                const pb = b.play(); if (pb && pb.catch) pb.catch(fin);
+            } catch (_) { resolve(false); }
+        });
+    },
+
+    /**
+     * Draw an RMS-loudness waveform strip for an audio URL into a canvas. When `regions` (per-part
+     * rhythm match, 0..1) is given, bars are coloured green/amber/red by how well that part matched —
+     * so the "you" strip doubles as the feedback. Narrator strip passes null ⇒ a neutral blue.
+     */
+    renderWaveformAsync: async function (canvasId, url, regions) {
+        let actx = null;
+        try {
+            const cv = document.getElementById(canvasId);
+            if (!cv || !url) return false;
+            const w = Math.max(80, Math.floor(cv.clientWidth || cv.width || 320));
+            const h = cv.height || 34;
+            cv.width = w; // match backing store to the displayed width
+            const ctx = cv.getContext("2d");
+            ctx.clearRect(0, 0, w, h);
+
+            const resp = await fetch(url);
+            const arr = await resp.arrayBuffer();
+            const AC = window.AudioContext || window.webkitAudioContext;
+            actx = new AC();
+            const audio = await actx.decodeAudioData(arr);
+            const data = audio.getChannelData(0);
+
+            const bins = Math.min(w, 220);
+            const step = Math.max(1, Math.floor(data.length / bins));
+            const env = new Array(bins).fill(0);
+            let mx = 1e-6;
+            for (let i = 0; i < bins; i++) {
+                let sum = 0, c = 0;
+                for (let j = i * step; j < (i + 1) * step && j < data.length; j++) { sum += data[j] * data[j]; c++; }
+                const rms = c ? Math.sqrt(sum / c) : 0;
+                env[i] = rms; if (rms > mx) mx = rms;
+            }
+
+            const barW = w / bins;
+            const hasReg = Array.isArray(regions) && regions.length > 0;
+            for (let i = 0; i < bins; i++) {
+                const v = env[i] / mx;
+                const bh = Math.max(1, v * (h - 2));
+                let color = "rgba(147,197,253,.9)"; // neutral blue (narrator)
+                if (hasReg) {
+                    const m = regions[Math.min(regions.length - 1, Math.floor(i / bins * regions.length))];
+                    color = m >= 0.7 ? "rgba(52,199,89,.95)" : m >= 0.5 ? "rgba(255,204,0,.95)" : "rgba(255,59,48,.95)";
+                }
+                ctx.fillStyle = color;
+                ctx.fillRect(i * barW, (h - bh) / 2, Math.max(1, barW - 0.5), bh);
+            }
+            return true;
+        } catch (_) {
+            return false;
+        } finally {
+            if (actx) { try { await actx.close(); } catch (_) { /* */ } }
+        }
+    },
+
+    /**
      * Teleprompter (#tele-text): PARK each word's left edge at the fixed marker for exactly its
      * spoken span [starts[i], ends[i]] (seconds from the start), then slide to the next word. A
      * stretched word therefore dwells at the marker longest — an exact copy of the narrator's

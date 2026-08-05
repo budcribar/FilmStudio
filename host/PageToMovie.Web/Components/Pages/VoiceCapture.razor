@@ -31,6 +31,10 @@
     .tele-text { position: absolute; left: 6%; white-space: nowrap; will-change: transform; }
     .tele-w { display: inline-block; margin-right: 0.32em; } /* measurable per-word box; margin = the inter-word gap */
     .tele-w.tele-active { background: rgba(255,193,7,.32); border-radius: 4px; } /* the word currently at the marker */
+    /* Waveform compare strips */
+    .ptm-wave-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .ptm-wave-label { width: 62px; flex-shrink: 0; font-size: .8rem; color: #93a3b8; }
+    .ptm-wave { flex-grow: 1; width: 100%; max-width: 520px; height: 34px; background: rgba(255,255,255,.05); border-radius: 6px; }
 </style>
 
 <div class="ptm-page-head mb-3">
@@ -152,33 +156,44 @@ else
                 }
             }
 
-            @* Listen — plays the original and scrolls it across so you can watch the narrator's pace. *@
+            @* Compare — play the narrator, yourself, or both together; the strips show the rhythm. *@
             <div class="mb-3">
-                <button class="btn btn-outline-primary btn-sm"
-                        disabled="@(_busy || _recording || _light > 0 || _listening || string.IsNullOrEmpty(_originalUrl))"
-                        data-testid="voice-capture-listen" @onclick="ListenAsync">
-                    @(_listening ? "▶ Listening…" : "▶ Listen")
-                </button>
-                @if (string.IsNullOrEmpty(_originalUrl))
-                {
-                    <span class="text-muted small ms-2">Loading original…</span>
-                }
-            </div>
-
-            @* Take + score *@
-            @if (!string.IsNullOrEmpty(_takeUrl) && !_recording)
-            {
-                <div class="mb-3">
-                    <div class="small text-muted mb-1">Your take</div>
-                    <audio controls src="@_takeUrl" class="w-100" style="max-width:420px;"></audio>
-                    @if (_score is int sc)
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <button class="btn btn-outline-primary btn-sm"
+                            disabled="@(_busy || _recording || _light > 0 || _listening || string.IsNullOrEmpty(_originalUrl))"
+                            data-testid="voice-capture-listen" @onclick="ListenAsync">
+                        @(_listening ? "▶ Narrator…" : "▶ Narrator")
+                    </button>
+                    @if (!string.IsNullOrEmpty(_takeUrl))
                     {
-                        <div class="mt-2 fw-semibold @ScoreClass(sc)" data-testid="voice-capture-score">
-                            @ScoreStars(sc) &nbsp; @ScoreLabel(sc)
-                        </div>
+                        <button class="btn btn-outline-secondary btn-sm" disabled="@(_busy || _recording || _light > 0 || _listening)"
+                                data-testid="voice-capture-play-you" @onclick="PlayYouAsync">▶ You</button>
+                        <button class="btn btn-outline-secondary btn-sm" disabled="@(_busy || _recording || _light > 0 || _listening)"
+                                data-testid="voice-capture-play-both" @onclick="PlayBothAsync">▶ Both</button>
+                    }
+                    @if (string.IsNullOrEmpty(_originalUrl))
+                    {
+                        <span class="text-muted small align-self-center">Loading original…</span>
                     }
                 </div>
-            }
+
+                @* Waveform strips — Narrator on top, You below (coloured by how well the rhythm matched). *@
+                <div class="ptm-wave-row">
+                    <span class="ptm-wave-label">Narrator</span>
+                    <canvas id="ptm-wave-narrator" class="ptm-wave" height="34"></canvas>
+                </div>
+                @if (!string.IsNullOrEmpty(_takeUrl))
+                {
+                    <div class="ptm-wave-row">
+                        <span class="ptm-wave-label">You</span>
+                        <canvas id="ptm-wave-you" class="ptm-wave" height="34"></canvas>
+                    </div>
+                    @if (_score is int sc)
+                    {
+                        <div class="mt-1 small fw-semibold @ScoreClass(sc)" data-testid="voice-capture-score">@ScoreLabel(sc)</div>
+                    }
+                }
+            </div>
 
             @* Controls (hidden during the light countdown) *@
             <div class="d-flex flex-wrap gap-2">
@@ -249,6 +264,8 @@ else
     private int _recordSession;
     private int _teleSession; // bumped to (re)start the teleprompter scroll (Listen and on "Go")
     private bool _teleStartPending; // set when a scroll should start on the next render (spans in DOM)
+    private bool _renderNarratorWave; // draw the narrator strip on the next render
+    private bool _renderYouWave;      // draw the "you" strip (coloured by match) on the next render
 
     private readonly List<string> _kept = new(); // kept take data URLs
 
@@ -341,7 +358,7 @@ else
             if (string.IsNullOrEmpty(sceneUrl)) { _status = "Couldn't load that scene."; return; }
             var res = await Js.InvokeAsync<ExtractUrlResult>(
                 "PageToMovieFfmpeg.extractAudioSegmentToUrlAsync", sceneUrl, p.WindowStartSec, p.WindowEndSec);
-            if (res is { Success: true }) _originalUrl = res.Url;
+            if (res is { Success: true }) { _originalUrl = res.Url; _renderNarratorWave = true; }
             else _status = res?.Error ?? "Couldn't load the original clip.";
         }
         catch (Exception ex) { _status = ex.Message; }
@@ -384,11 +401,40 @@ else
     // positions), so we arm it and kick it off here after the render that shows the teleprompter.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_teleStartPending) return;
-        _teleStartPending = false;
-        var (starts, ends) = BuildWordTimeline(SplitWords(CurrentPhrase.Text), _ballDurationSec);
-        try { await Js.InvokeVoidAsync("PageToMovieFfmpeg.startWordTeleprompter", starts, ends, _ballDurationSec); }
-        catch { /* ignore */ }
+        if (_teleStartPending)
+        {
+            _teleStartPending = false;
+            var (starts, ends) = BuildWordTimeline(SplitWords(CurrentPhrase.Text), _ballDurationSec);
+            try { await Js.InvokeVoidAsync("PageToMovieFfmpeg.startWordTeleprompter", starts, ends, _ballDurationSec); }
+            catch { /* ignore */ }
+        }
+        if (_renderNarratorWave && !string.IsNullOrEmpty(_originalUrl))
+        {
+            _renderNarratorWave = false;
+            try { await Js.InvokeVoidAsync("PageToMovieFfmpeg.renderWaveformAsync", "ptm-wave-narrator", _originalUrl, (object?)null); }
+            catch { /* ignore */ }
+        }
+        if (_renderYouWave && !string.IsNullOrEmpty(_takeUrl))
+        {
+            _renderYouWave = false;
+            try { await Js.InvokeVoidAsync("PageToMovieFfmpeg.renderWaveformAsync", "ptm-wave-you", _takeUrl, _regions); }
+            catch { /* ignore */ }
+        }
+    }
+
+    private async Task PlayYouAsync()
+    {
+        if (string.IsNullOrEmpty(_takeUrl) || _busy || _recording || _light > 0 || _listening) return;
+        try { await Js.InvokeAsync<bool>("PageToMovieFfmpeg.playAudioAsync", _takeUrl); }
+        catch { /* ignore playback errors */ }
+    }
+
+    private async Task PlayBothAsync()
+    {
+        if (string.IsNullOrEmpty(_takeUrl) || string.IsNullOrEmpty(_originalUrl) || _busy || _recording || _light > 0 || _listening) return;
+        // Play the narrator and your take together — unison when your rhythm matches, an echo when it drifts.
+        try { await Js.InvokeAsync<bool>("PageToMovieFfmpeg.playOverlayAsync", _originalUrl, _takeUrl); }
+        catch { /* ignore playback errors */ }
     }
 
     // When each display word is spoken (start,end seconds from the start), so the teleprompter can
@@ -531,7 +577,7 @@ else
                 var wc = SplitWords(CurrentPhrase.Text).Count;
                 var s = await Js.InvokeAsync<RhythmResult>(
                     "PageToMovieFfmpeg.analyzeRhythmMatchAsync", _originalUrl, _takeUrl, wc);
-                if (s is { Success: true }) { _score = s.Score; _regions = s.Regions; }
+                if (s is { Success: true }) { _score = s.Score; _regions = s.Regions; _renderYouWave = true; }
             }
         }
         catch (Exception ex) { _error = ex.Message; }
