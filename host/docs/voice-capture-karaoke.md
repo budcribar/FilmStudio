@@ -129,6 +129,13 @@ setting. (Matches the app's clean, jargon-free UI rule.)
 - [x] Build phrases standalone from the capture page (no dub needed): `GET
       /api/projects/{id}/voice-capture/narrator-lines` (blueprint-derived) + a "Prepare phrases" button
       → `ClientVoiceCaptureService.BuildPhrasesAsync` now sources lines from that endpoint.
+- [x] Capture UX: ready-set-go traffic light; the pacing ball became a **teleprompter** (words scroll
+      past a fixed marker, light to its left, shown through the countdown); **Listen** plays + scrolls the
+      original in sync.
+- [x] **Per-word pacing:** persist Scribe per-word timestamps (`VoiceCapturePhrase.Words`) and drive the
+      teleprompter scroll off them (`startWordTeleprompter` + `BuildWordTimeline`) so it copies the
+      narrator's real rhythm (linger on stretched words) instead of an even glide. *Needs a one-time
+      re-run of "Prepare phrases" per book to populate `Words` in existing caches.*
 - [ ] Nav link to `/voice-capture` (currently reached by URL).
 - [ ] Per-segment dynamic-range ranking + LLM expressiveness/spread selection for the phrase pool.
 - [ ] Optional pitch-contour overlay (Smule-style) on the score.
