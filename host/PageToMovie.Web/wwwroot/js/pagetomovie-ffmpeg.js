@@ -642,7 +642,10 @@ window.PageToMovieFfmpeg = {
                         : [segInfo[0], segInfo[Math.floor(segInfo.length / 2)], segInfo[segInfo.length - 1]];
                     const ratios = sample.map(s => s.ratio).sort((a, b) => a - b);
                     let tempo = ratios.length ? ratios[Math.floor(ratios.length / 2)] : 1.0;
-                    tempo = Math.max(0.5, Math.min(2.0, tempo));
+                    // Cap the stretch to a natural range: beyond ~±25% atempo starts to warble, so we
+                    // prefer a natural-sounding voice (with gaps if the window is longer) over filling
+                    // the window at any cost. Record close to the original pace and this barely engages.
+                    tempo = Math.max(0.8, Math.min(1.25, tempo));
                     console.log("[dub] calibrated stretch factor: " + tempo.toFixed(3) +
                         " (from " + sample.length + " of " + segInfo.length + " line(s))");
 
