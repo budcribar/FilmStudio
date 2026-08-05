@@ -98,9 +98,13 @@ setting. (Matches the app's clean, jargon-free UI rule.)
 - [x] Server endpoint `POST /api/transcribe`: audio segment → transcript (ElevenLabs key server-side).
 - [x] Client JS `extractAudioSegmentAsync(videoUrl, startSec, endSec)` → mono 16 kHz WAV bytes.
 - [x] Client `EngineApiClient.TranscribeSegmentAsync(bytes)` → transcript.
-- [ ] Verification loop: per window, extract → transcribe → fuzzy-match to blueprint line → confident pairs.
-      *(Run once and CACHE — do not re-Scribe on every dub run; see phrases.json / alignment.)*
+- [x] `VoiceCapturePhrases`/`VoiceCapturePhrase` model + `GET/POST /api/projects/{id}/voice-capture/phrases`
+      (cached at `assets/voice_capture/phrases.json`) + client get/save methods.
+- [x] Verification loop `ClientVoiceCaptureService.BuildPhrasesAsync`: per narrator-only scene, stitch →
+      detect windows → extract each → Scribe transcribe → word-overlap match to the blueprint line
+      (≥0.7 = confident) → rank confident by duration → **save phrases.json** (the once-per-book cache).
 - [ ] Wire confident (line↔window) pairs into the dub overlay placement (replace guessing where confirmed).
+- [ ] *(refinement)* dynamic-range measurement per segment for ranking; LLM expressiveness/spread pass; trigger UI.
 
 ### Phase 2 — Selection + persistence + capture UI
 - [ ] Rank/select phrases (dynamic range + LLM + spread) → `phrases.json`; save/load endpoints.

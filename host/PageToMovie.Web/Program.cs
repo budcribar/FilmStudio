@@ -14,6 +14,7 @@ builder.Services.AddScoped<ThemeState>();
 builder.Services.AddScoped<ClientVideoStitchService>();
 builder.Services.AddScoped<ClientMediaFolderService>();
 builder.Services.AddScoped<ClientVoiceSubstitutionService>();
+builder.Services.AddScoped<ClientVoiceCaptureService>();
 
 // Same-origin by default (Api hosts this WASM). Override EngineApi:BaseUrl only when
 // the API is on a different origin (local split ports).

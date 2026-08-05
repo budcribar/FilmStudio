@@ -1727,6 +1727,41 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public string? Type { get; set; }
     }
 
+    /// <summary>Load the cached voice-capture phrase set for a project (null if not built yet).</summary>
+    public async Task<VoiceCapturePhrases?> GetVoiceCapturePhrasesAsync(string projectId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        try
+        {
+            using var resp = await _http.GetAsync(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/voice-capture/phrases", ct);
+            if (!resp.IsSuccessStatusCode) return null;
+            var dto = await resp.Content.ReadFromJsonAsync<VoiceCapturePhrasesResponseDto>(JsonOpts, ct);
+            return dto?.Phrases;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>Persist the computed voice-capture phrase set (the once-per-book cache).</summary>
+    public async Task<bool> SaveVoiceCapturePhrasesAsync(
+        string projectId, VoiceCapturePhrases phrases, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        try
+        {
+            using var resp = await _http.PostAsJsonAsync(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/voice-capture/phrases", phrases, JsonOpts, ct);
+            return resp.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
+    private class VoiceCapturePhrasesResponseDto
+    {
+        public bool Ok { get; set; }
+        public VoiceCapturePhrases? Phrases { get; set; }
+    }
+
     private class VoiceAlignmentResponseDto
     {
         public bool Ok { get; set; }

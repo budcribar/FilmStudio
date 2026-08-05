@@ -7542,6 +7542,47 @@ app.MapPost("/api/transcribe", async (
     });
 });
 
+// Voice-capture phrase cache (per project, computed once per book): the confident STT-verified
+// dialogue phrases used by the capture UI and by the dub overlay's line↔window mapping.
+app.MapGet("/api/projects/{id}/voice-capture/phrases", async (
+    string id, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var path = Path.Combine(store.GetProjectDir(id), "assets", "voice_capture", "phrases.json");
+    if (!File.Exists(path))
+        return Results.Ok(new { ok = true, phrases = (VoiceCapturePhrases?)null });
+    try
+    {
+        var json = await File.ReadAllTextAsync(path, ct);
+        var data = System.Text.Json.JsonSerializer.Deserialize<VoiceCapturePhrases>(
+            json, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        return Results.Ok(new { ok = true, phrases = data });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { ok = false, error = ex.Message }, statusCode: StatusCodes.Status500InternalServerError);
+    }
+});
+
+app.MapPost("/api/projects/{id}/voice-capture/phrases", async (
+    string id, VoiceCapturePhrases body, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (body is null)
+        return Results.BadRequest(new { ok = false, error = "phrases body required" });
+    var dir = Path.Combine(store.GetProjectDir(id), "assets", "voice_capture");
+    Directory.CreateDirectory(dir);
+    body.ProjectId = id;
+    body.GeneratedAtUtc = DateTime.UtcNow;
+    var writeOpts = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web) { WriteIndented = true };
+    await File.WriteAllTextAsync(
+        Path.Combine(dir, "phrases.json"),
+        System.Text.Json.JsonSerializer.Serialize(body, writeOpts) + "\n", ct);
+    return Results.Ok(new { ok = true, count = body.Phrases?.Count ?? 0 });
+});
+
 app.MapGet("/api/media/proxy/{token}", async (
     string token,
     MediaProxyTicketStore tickets,
