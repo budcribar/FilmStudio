@@ -224,6 +224,9 @@ else
 @code {
     private static readonly System.Globalization.CultureInfo Ci = System.Globalization.CultureInfo.InvariantCulture;
 
+    [Parameter, SupplyParameterFromQuery(Name = "scene")]
+    public int? SceneParam { get; set; }
+
     private string? _projectId;
     private List<ProjectInfo> _projects = new();
     private bool _loading = true;
@@ -281,6 +284,9 @@ else
             if (_sceneLines.Count > 0)
             {
                 _scene = _sceneLines[0].Scene;
+                // Honor ?scene=N from a link (e.g. the Scenes editor) when that scene has dialogue.
+                if (SceneParam is int sp && _sceneLines.Any(s => s.Scene == sp))
+                    _scene = sp;
                 _current = _doc?.Scenes.FirstOrDefault(s => s.Scene == _scene);
             }
         }

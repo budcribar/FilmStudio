@@ -79,21 +79,25 @@ public sealed class ClientDialogueTimingService
             heardWindows.Add(new HeardWindow(w.StartSec, w.EndSec, heard, words));
         }
 
-        // Align heard windows onto the script lines in order (monotonic, small lookahead best-overlap).
+        // Align: each script line takes its BEST-overlap unused window anywhere in the scene (order and
+        // duplicates don't break it). Ties/no-overlap leave the line unmatched. Leftover windows are
+        // surfaced as "heard but not in script" so extra/misheard speech is visible too.
         var rows = new List<DialogueTimingRow>();
-        var cursor = 0;
+        var used = new bool[heardWindows.Count];
         foreach (var line in lines)
         {
             var bestIdx = -1;
             var bestScore = 0.0;
-            for (var j = cursor; j < heardWindows.Count && j <= cursor + 2; j++)
+            for (var j = 0; j < heardWindows.Count; j++)
             {
+                if (used[j]) continue;
                 var s = WordOverlap(line.Text, heardWindows[j].Heard);
                 if (s > bestScore) { bestScore = s; bestIdx = j; }
             }
 
-            if (bestIdx >= 0)
+            if (bestIdx >= 0 && bestScore > 0)
             {
+                used[bestIdx] = true;
                 var hw = heardWindows[bestIdx];
                 rows.Add(new DialogueTimingRow
                 {
@@ -106,11 +110,10 @@ public sealed class ClientDialogueTimingService
                     MatchScore = Math.Round(bestScore, 3),
                     Words = hw.Words,
                 });
-                cursor = bestIdx + 1;
             }
             else
             {
-                // No window matched this script line — surface it so the reviewer can see the gap.
+                // No window matched this script line — surface the gap.
                 rows.Add(new DialogueTimingRow
                 {
                     Clip = line.Clip,
@@ -122,13 +125,11 @@ public sealed class ClientDialogueTimingService
             }
         }
 
-        // Any heard windows never matched to a script line — extra/misheard speech, shown at the end.
+        // Leftover heard windows never matched to a script line — extra/misheard speech.
         for (var j = 0; j < heardWindows.Count; j++)
         {
-            if (rows.Any(r => r.WindowStartSec == heardWindows[j].StartSec && r.WindowEndSec == heardWindows[j].EndSec && !string.IsNullOrEmpty(r.HeardText)))
-                continue;
+            if (used[j] || string.IsNullOrWhiteSpace(heardWindows[j].Heard)) continue;
             var hw = heardWindows[j];
-            if (string.IsNullOrWhiteSpace(hw.Heard)) continue;
             rows.Add(new DialogueTimingRow
             {
                 Clip = 0,

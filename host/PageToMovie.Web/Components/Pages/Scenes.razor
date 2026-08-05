@@ -193,12 +193,13 @@ else
                        onloadeddata="this.play().catch(function(){})">
                     Your browser does not support HTML5 video.
                 </video>
-                @if (string.IsNullOrEmpty(_clientSceneUrl))
-                {
-                    <div class="mt-2">
+                <div class="mt-2 d-flex flex-wrap gap-3 align-items-center">
+                    <a href="/dialogue-timing?scene=@playSn" class="small" data-testid="scene-dialogue-timing">Review dialogue timing →</a>
+                    @if (string.IsNullOrEmpty(_clientSceneUrl))
+                    {
                         <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
-                    </div>
-                }
+                    }
+                </div>
             }
         </div>
     </div>
