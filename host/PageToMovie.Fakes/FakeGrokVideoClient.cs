@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
@@ -47,6 +48,10 @@ public sealed class FakeGrokVideoClient : IVideoClient
 
         if (fakes.FailRate > 0 && Random.Shared.NextDouble() < fakes.FailRate)
             throw new InvalidOperationException("Fake video generation failed (FailRate)");
+
+        // Honor catalog feature flags for the selected video model so fakes can exercise
+        // continue / ref-count / duration combinations the same way real providers would.
+        ValidateAgainstCatalog(model, durationSeconds, referenceImagePaths, continueFromVideoPath);
 
         var id = "fake-" + Guid.NewGuid().ToString("N")[..12];
         var fixture = ResolveFixturePath(fakes.VideoMode, durationSeconds, Interlocked.Increment(ref _clipRoundRobin));
@@ -132,6 +137,65 @@ public sealed class FakeGrokVideoClient : IVideoClient
         catch { /* ignore */ }
 
         _log.LogInformation("Fake download {Bytes} bytes ({Sec:0.##}s) → {Path}", new FileInfo(destPath).Length, seconds, destPath);
+    }
+
+    /// <summary>
+    /// Apply <see cref="SupportedModelCatalog"/> limits for <paramref name="model"/>.
+    /// Unknown model ids are allowed (caller may use non-catalog test ids) — only known
+    /// Video entries enforce continue / refs / duration.
+    /// </summary>
+    public static void ValidateAgainstCatalog(
+        string? model,
+        int durationSeconds,
+        IReadOnlyList<string>? referenceImagePaths,
+        string? continueFromVideoPath)
+    {
+        if (string.IsNullOrWhiteSpace(model))
+            return;
+
+        var entry = SupportedModelCatalog.Find(model.Trim(), ModelCapability.Video);
+        if (entry is null || !entry.Enabled)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(continueFromVideoPath) && !entry.SupportsVideoContinue)
+        {
+            throw new InvalidOperationException(
+                $"Fake video: model '{entry.Id}' does not support video continue/extend " +
+                $"(supportsVideoContinue=false). Choose a model with continue, or omit continueFromVideoPath.");
+        }
+
+        var refCount = referenceImagePaths?.Count ?? 0;
+        if (entry.MaxReferenceImages == 0 && refCount > 0)
+        {
+            throw new InvalidOperationException(
+                $"Fake video: model '{entry.Id}' does not support reference images (maxReferenceImages=0).");
+        }
+
+        if (entry.MaxReferenceImages is { } maxRefs && maxRefs > 0 && refCount > maxRefs)
+        {
+            throw new InvalidOperationException(
+                $"Fake video: model '{entry.Id}' allows at most {maxRefs} reference image(s); got {refCount}.");
+        }
+
+        if (entry.AllowedDurationsSeconds is { Count: > 0 } allowed &&
+            !allowed.Contains(durationSeconds))
+        {
+            throw new InvalidOperationException(
+                $"Fake video: model '{entry.Id}' only allows durations [{string.Join(", ", allowed)}]s; got {durationSeconds}s.");
+        }
+
+        if (entry.MinClipDurationSeconds is { } minD && durationSeconds < minD)
+        {
+            throw new InvalidOperationException(
+                $"Fake video: model '{entry.Id}' min duration is {minD}s; got {durationSeconds}s.");
+        }
+
+        var maxD = entry.AbsMaxClipDurationSeconds ?? entry.MaxClipDurationSeconds;
+        if (maxD is { } max && durationSeconds > max)
+        {
+            throw new InvalidOperationException(
+                $"Fake video: model '{entry.Id}' max duration is {max}s; got {durationSeconds}s.");
+        }
     }
 
     /// <summary>Pick fixture by duration band; rotate scene-colored clips when available.</summary>
