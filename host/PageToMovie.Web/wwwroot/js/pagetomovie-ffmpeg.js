@@ -707,20 +707,20 @@ window.PageToMovieFfmpeg = {
             const n = Math.min(spans.length, (starts || []).length);
             if (n === 0) return false;
             const D = durationSec;
-            const lefts = [];
-            for (let i = 0; i < n; i++) lefts.push(spans[i].offsetLeft);
+            const centers = [];
+            for (let i = 0; i < n; i++) centers.push(spans[i].offsetLeft + spans[i].offsetWidth / 2);
 
-            // Two keyframes per word (park at its left edge from start→end), then slide to the next.
-            const frames = [{ transform: "translateX(0px)", offset: 0 }];
+            // Two keyframes per word (park it CENTRED on the cursor from start→end), then slide to the next.
+            const frames = [{ transform: "translateX(" + (-centers[0]) + "px)", offset: 0 }];
             for (let i = 0; i < n; i++) {
                 let s = starts[i] / D, e = (ends && ends[i] != null ? ends[i] : starts[i]) / D;
                 if (!(s >= 0)) s = 0; if (s > 1) s = 1;
                 if (!(e >= s)) e = s; if (e > 1) e = 1;
-                const tx = "translateX(" + (-lefts[i]) + "px)";
+                const tx = "translateX(" + (-centers[i]) + "px)";
                 frames.push({ transform: tx, offset: s });
                 frames.push({ transform: tx, offset: e });
             }
-            frames.push({ transform: "translateX(" + (-lefts[n - 1]) + "px)", offset: 1 });
+            frames.push({ transform: "translateX(" + (-centers[n - 1]) + "px)", offset: 1 });
             // Offsets must be non-decreasing for the Web Animations API; nudge any that regress.
             for (let i = 1; i < frames.length; i++)
                 if (frames[i].offset <= frames[i - 1].offset)
