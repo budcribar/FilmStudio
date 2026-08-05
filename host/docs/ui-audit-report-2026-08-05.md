@@ -4,21 +4,26 @@
 
 **Base:** `http://127.0.0.1:5088` · `useFakes=true`
 
+## Product decisions (docs only — no code yet)
+
+| Topic | Decision |
+|-------|----------|
+| **`/demo` and terms** | **Requires terms.** Same `TermsAgreementModal` gate as the rest of the studio. Not an exemption. |
+| Code changes | Deferred until after remaining sequence tests and fix-order agreement |
+
 ## Pass 4 summary
 
-**23 checks · 3 failures**
+**23 checks · 3 failures** (one of which was “demo without terms” as a *question* — resolved as **must require terms**)
 
-### Pre-terms (what must stay blocked)
+### Pre-terms (UI)
 
 | Check | Result |
 |-------|--------|
 | Terms modal on first load | PASS |
 | Agree & continue disabled until checkbox | PASS |
 | Clicks blocked: New project, nav Cost/Adaptation/Configuration | PASS |
-| Direct URLs still show modal: `/cost`, `/scenes`, `/import`, `/characters`, `/admin`, `/demo`, `/configuration` | PASS |
+| Direct URLs show modal: `/cost`, `/scenes`, `/import`, `/characters`, `/admin`, **`/demo`**, `/configuration` | PASS (demo included by design) |
 | **API `POST /api/projects` without terms** | **FAIL — allowed (200)** |
-
-UI shell is gated by the modal; **REST create is not**. A client that skips the UI can create projects without accepting terms.
 
 ### Accept terms
 
@@ -33,17 +38,10 @@ UI shell is gated by the modal; **REST create is not**. A client that skips the 
 |-------|--------|
 | S7 empty name → Create disabled | PASS |
 | S7 UI create with valid name | PASS |
-| S2 Agree & Continue enabled (project, no book) | PASS |
-| S2 Agree → `/scenes` with blocked empty-state hint | PASS (`blockedHint=true`) |
-| Strip Film step disabled without shots | PASS |
-| **Film length number input on Cost** | **FAIL — not visible** |
-| **S6 length boundaries** | **FAIL — no input to test** |
-
-## Earlier issues (still open)
-
-- `/film`, `/billing` blank (no routes)
-- Console 404 resource
-- Agree enabled before film-ready (navigates to scenes; empty state soft-blocks)
+| S2 Agree & Continue → `/scenes` with blocked hint | PASS |
+| Strip Film disabled without shots | PASS |
+| **Film length input on Cost** | **FAIL — not visible** |
+| **S6 length boundaries** | **FAIL — blocked by missing input** |
 
 ## Terms accept snippet (Playwright)
 
@@ -52,4 +50,4 @@ await page.locator("#termsCheck").check({ force: true });
 await page.locator(".modal.show button.btn-primary").click({ force: true });
 ```
 
-Artifacts: `artifacts/ui-audit/terms-sequence-report.md` + `terms-*.png`
+Artifacts: `artifacts/ui-audit/terms-sequence-report.md`, `terms-*.png`
