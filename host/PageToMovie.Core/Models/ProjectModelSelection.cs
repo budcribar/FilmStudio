@@ -56,11 +56,19 @@ public static class ProjectModelSelection
             throw new InvalidOperationException(
                 $"{jobLabel}: no model selected. Open Settings → Studio coverage and choose a model for this job.");
 
-        var entry = SupportedModelCatalog.Find(id, capability) ?? SupportedModelCatalog.Find(id);
+        // Capability-scoped lookup only. Do not fall back to Find(id) without capability —
+        // that allowed a Chat model in the Video slot (and similar mismatches).
+        // Chat↔Vision overlap remains inside SupportedModelCatalog.Find for those two caps.
+        var entry = SupportedModelCatalog.Find(id, capability);
         if (entry is null || !entry.Enabled)
+        {
+            var wrongCap = SupportedModelCatalog.Find(id) is { } other
+                ? $" Model '{id}' is catalogued as {other.Capability}, not {capability}."
+                : "";
             throw new InvalidOperationException(
-                $"{jobLabel}: model '{id}' is not in the models catalog (or is disabled). " +
-                "Open Settings and pick a current model.");
+                $"{jobLabel}: model '{id}' is not in the models catalog for {capability} (or is disabled).{wrongCap} " +
+                "Open Settings → Studio coverage and pick a model that matches this job.");
+        }
 
         return entry.Id;
     }
