@@ -170,6 +170,12 @@ else
     protected override async Task OnInitializedAsync()
     {
         _projectId = ActiveProject.ProjectId;
+        if (string.IsNullOrEmpty(_projectId))
+        {
+            // No project open in this session — resolve the server's active project (last worked on).
+            try { await ActiveProject.RefreshFromApiAsync(Engine); } catch { /* fall through to prompt */ }
+            _projectId = ActiveProject.ProjectId;
+        }
         if (string.IsNullOrEmpty(_projectId)) { _loading = false; return; }
         try
         {
