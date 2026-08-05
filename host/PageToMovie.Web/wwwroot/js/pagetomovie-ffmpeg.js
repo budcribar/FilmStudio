@@ -514,6 +514,102 @@ window.PageToMovieFfmpeg = {
     },
 
     /**
+     * Same as extractAudioSegmentAsync but returns a playable blob URL (WAV) for the Listen step.
+     */
+    extractAudioSegmentToUrlAsync: async function (videoUrl, startSec, endSec, onProgress) {
+        if (!videoUrl) return { success: false, error: "No video URL" };
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return { success: false, error: load.error || "ffmpeg load failed" };
+            const ffmpeg = self._ffmpeg;
+            const inName = "segurl_in.mp4";
+            const outName = "segurl_out.wav";
+            try {
+                await ffmpeg.writeFile(inName, await self._safeFetchFile(videoUrl));
+                const start = Math.max(0, +startSec || 0);
+                const dur = Math.max(0.1, (+endSec || 0) - start);
+                const args = ["-hide_banner", "-y"];
+                if (start > 0.001) args.push("-ss", String(start));
+                args.push("-i", inName, "-t", String(dur), "-vn", "-ar", "44100", "-ac", "1", outName);
+                await ffmpeg.exec(args);
+                const out = await ffmpeg.readFile(outName);
+                const url = URL.createObjectURL(new Blob([out.buffer], { type: "audio/wav" }));
+                return { success: true, url: url };
+            } catch (err) {
+                return { success: false, error: err.message || String(err) };
+            } finally {
+                try { await ffmpeg.deleteFile(inName); } catch (_) { /* */ }
+                try { await ffmpeg.deleteFile(outName); } catch (_) { /* */ }
+            }
+        });
+    },
+
+    /**
+     * "How'd I do" rhythm score: compare the loudness ENVELOPE shape (where emphasis/syllables land)
+     * of a take against the original, plus duration closeness. Timbre-independent by construction
+     * (normalized RMS envelope) — a different voice with the same rhythm scores high. Returns 0..100.
+     */
+    analyzeRhythmMatchAsync: async function (originalUrl, takeUrl) {
+        try {
+            const frames = 64;
+            const a = await this._loudnessEnvelope(originalUrl, frames);
+            const b = await this._loudnessEnvelope(takeUrl, frames);
+            const shape = Math.max(0, this._pearson(a.env, b.env)); // clamp negative → 0
+            const dr = a.durationSec > 0 && b.durationSec > 0
+                ? Math.min(a.durationSec, b.durationSec) / Math.max(a.durationSec, b.durationSec) : 0;
+            // Weight the rhythm shape over raw duration; generous so a decent take feels good.
+            const score = Math.round(100 * (0.65 * shape + 0.35 * dr));
+            return {
+                success: true, score: Math.max(0, Math.min(100, score)),
+                shape: +shape.toFixed(3), durationRatio: +dr.toFixed(3),
+                originalSec: +a.durationSec.toFixed(2), takeSec: +b.durationSec.toFixed(2),
+            };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+    /** Decode audio → normalized RMS loudness envelope resampled to `frames` points, + duration. */
+    _loudnessEnvelope: async function (url, frames) {
+        const resp = await fetch(url);
+        const buf = await resp.arrayBuffer();
+        const AC = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AC();
+        try {
+            const decoded = await ctx.decodeAudioData(buf);
+            const ch = decoded.getChannelData(0);
+            const n = ch.length;
+            const env = new Float32Array(frames);
+            const per = Math.max(1, Math.floor(n / frames));
+            for (let i = 0; i < frames; i++) {
+                let sum = 0, cnt = 0;
+                const s = i * per, e = Math.min(n, s + per);
+                for (let j = s; j < e; j++) { sum += ch[j] * ch[j]; cnt++; }
+                env[i] = cnt ? Math.sqrt(sum / cnt) : 0;
+            }
+            let mx = 0; for (let i = 0; i < frames; i++) if (env[i] > mx) mx = env[i];
+            if (mx > 0) for (let i = 0; i < frames; i++) env[i] /= mx;
+            return { env: env, durationSec: decoded.duration };
+        } finally {
+            try { await ctx.close(); } catch (_) { /* */ }
+        }
+    },
+
+    /** Pearson correlation of two equal-length series, -1..1. */
+    _pearson: function (x, y) {
+        const n = Math.min(x.length, y.length);
+        if (n === 0) return 0;
+        let sx = 0, sy = 0;
+        for (let i = 0; i < n; i++) { sx += x[i]; sy += y[i]; }
+        const mx = sx / n, my = sy / n;
+        let num = 0, dx = 0, dy = 0;
+        for (let i = 0; i < n; i++) { const a = x[i] - mx, b = y[i] - my; num += a * b; dx += a * a; dy += b * b; }
+        const den = Math.sqrt(dx * dy);
+        return den > 1e-9 ? num / den : 0;
+    },
+
+    /**
      * Turn a silencedetect log into non-silent [start,end] windows over [0,totalSec].
      * Silence runs are the complement of speech; a clip with no detected silence is one speech run.
      */

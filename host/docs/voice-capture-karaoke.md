@@ -110,10 +110,15 @@ setting. (Matches the app's clean, jargon-free UI rule.)
 - [ ] *(refinement)* dynamic-range measurement per segment for ranking; LLM expressiveness/spread pass;
       dedicated "prepare phrases" trigger UI (currently auto-builds inside the dub).
 
-### Phase 2 — Selection + persistence + capture UI
-- [ ] Rank/select phrases (dynamic range + LLM + spread) → `phrases.json`; save/load endpoints.
-- [ ] Capture page: Listen → Record + ball → local rhythm score → Again/Next.
-- [ ] Rhythm score (duration + envelope correlation), client-side.
+### Phase 2 — Capture UI + ball + rhythm score
+- [x] Playback extractor `extractAudioSegmentToUrlAsync(videoUrl, start, end)` → WAV blob URL for Listen.
+- [x] Rhythm-match scorer `analyzeRhythmMatchAsync(originalUrl, takeUrl)` — Web Audio: normalized RMS
+      envelope Pearson-correlation (shape) + duration closeness → 0–100. Timbre-independent, generous.
+- [x] Phrase persistence save/load (done in Phase 1).
+- [ ] Capture page `VoiceCapture.razor`: load top confident phrases → per phrase Listen (play original)
+      → Record (reuse `PageToMovieVoiceCapture.start/stop`) with a ball paced to the window duration
+      → `analyzeRhythmMatchAsync` "how'd I do" → Again / Next; keep best take.
+- [ ] Finish: stitch kept takes (audio concat) → persist as the voice sample → `ApplyVoiceCloneAsync`.
 
 ### Phase 3 — Stitch → clone
 - [ ] Stitch kept takes (existing concat) → clone (existing clone call); wire into the flow.
