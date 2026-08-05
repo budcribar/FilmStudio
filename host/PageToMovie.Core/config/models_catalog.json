@@ -331,8 +331,7 @@
       "maxClipDurationSeconds": 5,
       "absMaxClipDurationSeconds": 5,
       "maxPromptLength": 1000,
-      "maxReferenceImageDimension": 1280,
-      "maxExtensionSeconds": 0
+      "maxReferenceImageDimension": 1280
     },
     {
       "id": "fal-ai/wan-2.1",
@@ -375,8 +374,7 @@
       "providerId": "fal",
       "providerLabel": "Fal.ai",
       "maxPromptLength": 800,
-      "maxReferenceImageDimension": 2000,
-      "maxExtensionSeconds": 0
+      "maxReferenceImageDimension": 2000
     },
     {
       "id": "veo-3.1",
@@ -413,8 +411,7 @@
       "notes": "Wired via GeminiVideoClient (text/image-to-video only). Documented duration is exactly 4, 6, or 8 seconds (not an arbitrary range) \u2014 1080p/4K surfaces often restrict to 8s only; no 480p support. Some surfaces document up to 3 multi-image 'ingredients' reference images, but GeminiVideoClient does not implement that conditioning path \u2014 it throws NotSupportedException rather than silently ignoring reference images, so maxReferenceImages is 0 here (fail loud) until ingredients support is actually built. Confirmed via Gemini video docs / AI Studio Veo / Cloud Veo 3.1 pages, not yet verified against a live account. ai.google.dev/gemini-api/docs/veo: landscape 16:9 (default) or portrait 9:16.",
       "providerId": "gemini",
       "providerLabel": "Google",
-      "maxPromptLength": 4000,
-      "maxExtensionSeconds": 0
+      "maxPromptLength": 4000
     },
     {
       "id": "grok-imagine-image-quality",

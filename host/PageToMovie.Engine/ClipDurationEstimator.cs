@@ -130,13 +130,16 @@ public static class ClipDurationEstimator
 
         if (isExtensionMode)
         {
-            // maxExtensionSeconds <= 0 (or missing with no continue) means cannot extend —
-            // do not clamp to 0 and submit a zero-length clip.
+            // Primary gate: supportsVideoContinue. maxExtensionSeconds is only meaningful when
+            // continue is enabled — require a positive value then; do not invent a default.
+            if (!entry.SupportsVideoContinue)
+                throw new InvalidOperationException(
+                    $"Video model '{entry.Id}' does not support video continue/extend " +
+                    "(supportsVideoContinue=false).");
             if (entry.MaxExtensionSeconds is not { } extMax || extMax <= 0)
                 throw new InvalidOperationException(
-                    $"Video model '{entry.Id}' cannot extend (maxExtensionSeconds=" +
-                    $"{entry.MaxExtensionSeconds?.ToString() ?? "null"}). " +
-                    "Use a model with supportsVideoContinue and a positive maxExtensionSeconds.");
+                    $"Video model '{entry.Id}' supports continue but has no positive " +
+                    "maxExtensionSeconds in models_catalog.json.");
             if (resolved > extMax)
                 resolved = extMax;
         }
@@ -153,13 +156,17 @@ public static class ClipDurationEstimator
     /// </summary>
     public static int ResolveExtensionMaxForModel(string? modelId, int fallbackMax)
     {
-        // Unknown/empty model throws. maxExtensionSeconds <= 0 means cannot extend (return 0).
-        // Positive value is the extend segment cap; null is legacy "same as fresh max".
+        // Unknown/empty model throws. No continue → 0 (never read maxExtensionSeconds).
+        // Continue models must declare a positive maxExtensionSeconds in the catalog.
         _ = ResolveBoundsForModel(modelId);
         var entry = SupportedModelCatalog.Find(modelId!.Trim(), ModelCapability.Video)!;
-        if (entry.MaxExtensionSeconds is { } ext)
-            return ext <= 0 ? 0 : ext;
-        return fallbackMax;
+        if (!entry.SupportsVideoContinue)
+            return 0;
+        if (entry.MaxExtensionSeconds is not { } ext || ext <= 0)
+            throw new InvalidOperationException(
+                $"Video model '{entry.Id}' supports continue but has no positive " +
+                "maxExtensionSeconds in models_catalog.json.");
+        return ext;
     }
 
     /// <summary>

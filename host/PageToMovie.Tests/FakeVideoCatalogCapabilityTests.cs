@@ -33,7 +33,7 @@ public class FakeVideoCatalogCapabilityTests
                 durationSeconds: 5,
                 referenceImagePaths: null,
                 continueFromVideoPath: "/tmp/prev.mp4"));
-        Assert.Contains("cannot extend", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("does not support video continue", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -130,12 +130,12 @@ public class FakeVideoCatalogCapabilityTests
     }
 
     [Fact]
-    public void Wan_maxExtensionSeconds_is_zero()
+    public void Wan_omits_maxExtensionSeconds_when_no_continue()
     {
         var e = SupportedModelCatalog.Find("fal-ai/wan-2.1", ModelCapability.Video);
         Assert.NotNull(e);
         Assert.False(e!.SupportsVideoContinue);
-        Assert.Equal(0, e.MaxExtensionSeconds);
+        Assert.Null(e.MaxExtensionSeconds);
     }
 
     [Fact]
@@ -148,12 +148,12 @@ public class FakeVideoCatalogCapabilityTests
     }
 
     [Fact]
-    public void ResolveActualDuration_extension_mode_throws_when_maxExtension_zero()
+    public void ResolveActualDuration_extension_mode_throws_when_no_continue()
     {
         var ex = Assert.Throws<InvalidOperationException>(() =>
             PageToMovie.Engine.ClipDurationEstimator.ResolveActualDurationForModel(
                 "fal-ai/wan-2.1", requestedSeconds: 5, isExtensionMode: true));
-        Assert.Contains("cannot extend", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("does not support video continue", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
