@@ -1,0 +1,324 @@
+@page "/dialogue-timing"
+@using PageToMovie.Core.Models
+@inject EngineApiClient Engine
+@inject ClientDialogueTimingService Timing
+@inject ClientVideoStitchService Stitch
+@inject ActiveProjectState ActiveProject
+@inject AdminSessionService Session
+@inject IJSRuntime Js
+
+<PageTitle>Dialogue timing · PageToMovie</PageTitle>
+
+<style>
+    .dt-row { border: 1px solid var(--bs-border-color, #333); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+    .dt-row.dt-warn { border-color: #b8860b; }
+    .dt-row.dt-extra { border-style: dashed; opacity: .9; }
+    .dt-label { width: 58px; flex-shrink: 0; font-size: .75rem; color: #93a3b8; text-transform: uppercase; letter-spacing: .04em; }
+    .dt-line { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+    .dt-w { display: inline-block; padding: 0 4px; border-radius: 4px; margin-right: 2px; }
+    .dt-hit { background: rgba(52,199,89,.20); }
+    .dt-miss { background: rgba(255,59,48,.22); }
+    .dt-extra-w { background: rgba(255,204,0,.20); }
+    .dt-time { font-size: .62rem; color: #93a3b8; margin-right: 7px; vertical-align: super; }
+    .dt-timeline { position: relative; height: 20px; background: rgba(255,255,255,.05); border-radius: 5px; margin-top: 6px; overflow: hidden; }
+    .dt-seg { position: absolute; top: 2px; bottom: 2px; background: rgba(147,197,253,.35); border-left: 1px solid rgba(147,197,253,.9); font-size: .58rem; color: #cbd5e1; overflow: hidden; white-space: nowrap; padding-left: 2px; }
+    .dt-meta { font-size: .75rem; color: #93a3b8; }
+</style>
+
+<div class="ptm-page-head mb-3">
+    <span class="ptm-adapt-kicker">Advanced</span>
+    <h1 class="ptm-adapt-title mb-1">Dialogue timing</h1>
+    <p class="ptm-adapt-lede mb-0">Compare the script against what speech-to-text actually heard, per line — spot where the words, the timing, or the delineation are off.</p>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger" data-testid="dt-error">@_error</div>
+}
+
+@if (_projects.Count > 0)
+{
+    <div class="d-flex flex-wrap gap-3 mb-3" style="max-width:720px;">
+        <div style="flex:1 1 260px;">
+            <label class="form-label small text-muted mb-1">Film</label>
+            <select class="form-select" value="@_projectId" @onchange="SelectProjectAsync" disabled="@_busy" data-testid="dt-project">
+                @foreach (var p in _projects)
+                {
+                    <option value="@p.Id">@(p.Label ?? p.Title ?? p.Id)</option>
+                }
+            </select>
+        </div>
+        @if (_sceneLines.Count > 0)
+        {
+            <div style="flex:0 0 160px;">
+                <label class="form-label small text-muted mb-1">Scene</label>
+                <select class="form-select" value="@_scene" @onchange="SelectSceneAsync" disabled="@_busy" data-testid="dt-scene">
+                    @foreach (var s in _sceneLines)
+                    {
+                        <option value="@s.Scene">Scene @s.Scene @(HasCached(s.Scene) ? "✓" : "")</option>
+                    }
+                </select>
+            </div>
+        }
+    </div>
+}
+
+@if (_loading)
+{
+    <p class="text-muted">Getting things ready…</p>
+}
+else if (_projects.Count == 0)
+{
+    <div class="alert alert-info">No films yet — create one first, then come back.</div>
+}
+else if (_sceneLines.Count == 0)
+{
+    <div class="alert alert-info">No dialogue found for this film yet — generate the shot plan first.</div>
+}
+else
+{
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <button class="btn btn-primary btn-sm" disabled="@_busy" data-testid="dt-analyze" @onclick="AnalyzeAsync">
+            @(_busy ? "Analyzing…" : _current is null ? "Analyze scene (speech-to-text)" : "Re-analyze scene")
+        </button>
+        @if (_current is not null)
+        {
+            <span class="dt-meta">@_current.Rows.Count line(s) · @(_current.Rows.Count(r => r.MatchScore >= 0.7)) clear match(es)</span>
+        }
+        @if (!string.IsNullOrEmpty(_status))
+        {
+            <span class="small text-muted">@_status</span>
+        }
+    </div>
+
+    @if (_current is null)
+    {
+        <div class="alert alert-secondary">
+            This scene hasn't been analyzed yet. Click <strong>Analyze scene</strong> to run speech-to-text over its dialogue windows.
+            (This scene has @(_sceneLines.FirstOrDefault(s => s.Scene == _scene)?.Lines.Count ?? 0) script line(s).)
+        </div>
+    }
+    else
+    {
+        @foreach (var row in _current.Rows)
+        {
+            var scriptWords = SplitWords(row.ScriptText);
+            var heardSet = TokenSet(row.HeardText);
+            var scriptSet = TokenSet(row.ScriptText);
+            var rowClass = string.IsNullOrEmpty(row.ScriptText) ? "dt-row dt-extra"
+                : row.MatchScore >= 0.7 ? "dt-row" : "dt-row dt-warn";
+
+            <div class="@rowClass">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="dt-meta">
+                        @if (!string.IsNullOrEmpty(row.Speaker)) { <span class="fw-semibold text-body">@Pretty(row.Speaker)</span> }
+                        else { <span class="fst-italic">Heard but not in script</span> }
+                        @if (row.WindowEndSec > row.WindowStartSec)
+                        {
+                            <span> · @row.WindowStartSec.ToString("0.00")–@row.WindowEndSec.ToString("0.00")s</span>
+                        }
+                        <span> · match @((int)Math.Round(row.MatchScore * 100))%</span>
+                    </div>
+                    @if (row.WindowEndSec > row.WindowStartSec)
+                    {
+                        <button class="btn btn-sm btn-outline-secondary py-0" disabled="@_busy" @onclick="() => PlayWindowAsync(row)">▶ Play</button>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(row.ScriptText))
+                {
+                    <div class="dt-line">
+                        <span class="dt-label">Script</span>
+                        <span>
+                            @foreach (var w in scriptWords)
+                            {
+                                var cls = heardSet.Contains(NormTok(w)) ? "dt-w dt-hit" : "dt-w dt-miss";
+                                <span class="@cls">@w</span><text> </text>
+                            }
+                        </span>
+                    </div>
+                }
+
+                <div class="dt-line">
+                    <span class="dt-label">Heard</span>
+                    <span>
+                        @if (row.Words is { Count: > 0 })
+                        {
+                            @foreach (var wd in row.Words)
+                            {
+                                var cls = scriptSet.Count == 0 ? "dt-w" : (scriptSet.Contains(NormTok(wd.Text)) ? "dt-w dt-hit" : "dt-w dt-extra-w");
+                                <span class="@cls" title="@wd.StartSec.ToString("0.00")–@wd.EndSec.ToString("0.00")s">@wd.Text</span><span class="dt-time">@wd.StartSec.ToString("0.0")</span><text> </text>
+                            }
+                        }
+                        else if (!string.IsNullOrEmpty(row.HeardText))
+                        {
+                            <span class="fst-italic">@row.HeardText</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">— nothing heard for this line —</span>
+                        }
+                    </span>
+                </div>
+
+                @if (row.Words is { Count: > 0 } && row.DurationSec > 0.01)
+                {
+                    <div class="dt-timeline">
+                        @foreach (var wd in row.Words)
+                        {
+                            var left = Math.Clamp(wd.StartSec / row.DurationSec, 0, 1) * 100;
+                            var width = Math.Clamp((wd.EndSec - wd.StartSec) / row.DurationSec, 0.002, 1) * 100;
+                            <div class="dt-seg" style="left:@left.ToString(Ci)%; width:@width.ToString(Ci)%;" title="@wd.Text">@wd.Text</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+}
+
+@code {
+    private static readonly System.Globalization.CultureInfo Ci = System.Globalization.CultureInfo.InvariantCulture;
+
+    private string? _projectId;
+    private List<ProjectInfo> _projects = new();
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private string? _status;
+
+    private List<EngineApiClient.DialogueSceneLinesDto> _sceneLines = new();
+    private int _scene;
+    private DialogueTimingDoc? _doc;
+    private DialogueTimingScene? _current;
+
+    private readonly Dictionary<int, string> _sceneUrls = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { await Session.EnsureHydratedAsync(); } catch { /* ignore */ }
+
+        try { var pr = await Engine.GetProjectsAsync(); _projects = pr?.Projects ?? new(); }
+        catch (Exception ex) { _error = ex.Message; }
+
+        _projectId = ActiveProject.ProjectId;
+        if (string.IsNullOrEmpty(_projectId))
+        {
+            try { await ActiveProject.RefreshFromApiAsync(Engine); } catch { /* ignore */ }
+            _projectId = ActiveProject.ProjectId;
+        }
+        if (string.IsNullOrEmpty(_projectId) && _projects.Count > 0)
+            _projectId = _projects[0].Id;
+
+        _loading = false;
+        if (!string.IsNullOrEmpty(_projectId))
+            await LoadProjectAsync();
+    }
+
+    private async Task SelectProjectAsync(ChangeEventArgs e)
+    {
+        _projectId = e.Value?.ToString();
+        await LoadProjectAsync();
+    }
+
+    private async Task LoadProjectAsync()
+    {
+        _sceneLines = new(); _doc = null; _current = null; _scene = 0; _sceneUrls.Clear();
+        _error = null; _status = null;
+        if (string.IsNullOrEmpty(_projectId)) { StateHasChanged(); return; }
+        try
+        {
+            _sceneLines = await Engine.GetDialogueLinesAsync(_projectId);
+            _doc = await Engine.GetDialogueTimingAsync(_projectId);
+            if (_sceneLines.Count > 0)
+            {
+                _scene = _sceneLines[0].Scene;
+                _current = _doc?.Scenes.FirstOrDefault(s => s.Scene == _scene);
+            }
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        StateHasChanged();
+    }
+
+    private Task SelectSceneAsync(ChangeEventArgs e)
+    {
+        _scene = int.TryParse(e.Value?.ToString(), out var n) ? n : 0;
+        _current = _doc?.Scenes.FirstOrDefault(s => s.Scene == _scene);
+        _status = null;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private bool HasCached(int scene) => _doc?.Scenes.Any(s => s.Scene == scene) == true;
+
+    private async Task AnalyzeAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId) || _scene <= 0) return;
+        var lines = _sceneLines.FirstOrDefault(s => s.Scene == _scene)?.Lines ?? new();
+        if (lines.Count == 0) { _status = "No script lines for this scene."; return; }
+
+        _busy = true; _error = null; _status = "Starting…";
+        StateHasChanged();
+        try
+        {
+            var scene = await Timing.AnalyzeSceneAsync(
+                _projectId, _scene, lines, s => { _status = s; _ = InvokeAsync(StateHasChanged); });
+            if (scene is null) { _status = "Couldn't load that scene's clips."; return; }
+
+            await Engine.SaveDialogueTimingSceneAsync(_projectId, scene);
+            _current = scene;
+            _doc ??= new DialogueTimingDoc { ProjectId = _projectId };
+            _doc.Scenes.RemoveAll(s => s.Scene == _scene);
+            _doc.Scenes.Add(scene);
+            _status = "Done.";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; StateHasChanged(); }
+    }
+
+    private async Task PlayWindowAsync(DialogueTimingRow row)
+    {
+        if (string.IsNullOrEmpty(_projectId) || row.WindowEndSec <= row.WindowStartSec) return;
+        try
+        {
+            var url = await GetSceneUrlAsync(_scene);
+            if (string.IsNullOrEmpty(url)) return;
+            var res = await Js.InvokeAsync<ExtractUrlResult>(
+                "PageToMovieFfmpeg.extractAudioSegmentToUrlAsync", url, row.WindowStartSec, row.WindowEndSec);
+            if (res is { Success: true } && !string.IsNullOrEmpty(res.Url))
+                await Js.InvokeAsync<bool>("PageToMovieFfmpeg.playAudioAsync", res.Url);
+        }
+        catch { /* ignore playback errors */ }
+    }
+
+    private async Task<string?> GetSceneUrlAsync(int scene)
+    {
+        if (_sceneUrls.TryGetValue(scene, out var cached)) return cached;
+        var clipUrls = await Stitch.CollectClipUrlsAsync(_projectId!, scene);
+        if (clipUrls.Count == 0) return null;
+        string url;
+        if (clipUrls.Count == 1) url = clipUrls[0];
+        else
+        {
+            var stitched = await Stitch.ConcatAsync(clipUrls);
+            if (!stitched.Success || string.IsNullOrWhiteSpace(stitched.Url)) return null;
+            url = stitched.Url!;
+        }
+        _sceneUrls[scene] = url;
+        return url;
+    }
+
+    private static List<string> SplitWords(string? t) =>
+        string.IsNullOrWhiteSpace(t) ? new() : t.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+    private static HashSet<string> TokenSet(string? t) =>
+        new(SplitWords(t).Select(NormTok).Where(s => s.Length > 0));
+
+    private static string NormTok(string? s) =>
+        string.IsNullOrEmpty(s) ? "" : new string(s.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+
+    private static string Pretty(string? key) =>
+        string.IsNullOrWhiteSpace(key) ? "" : key.Replace("Character_", "").Replace('_', ' ').Trim();
+
+    private sealed class ExtractUrlResult { public bool Success { get; set; } public string? Url { get; set; } public string? Error { get; set; } }
+}

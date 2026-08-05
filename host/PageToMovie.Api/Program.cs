@@ -7624,6 +7624,89 @@ app.MapPost("/api/projects/{id}/voice-capture/phrases", async (
     return Results.Ok(new { ok = true, count = body.Phrases?.Count ?? 0 });
 });
 
+// All dialogue lines (every speaker) per scene, straight from the blueprint — the "script" side of
+// the dialogue-timing review. No STT here; the client runs that pass and posts the result below.
+app.MapGet("/api/projects/{id}/dialogue/lines", async (
+    string id, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    using var blueprint = await store.LoadBlueprintAsync(id, ct);
+    if (blueprint is null)
+        return Results.Ok(new { ok = true, scenes = Array.Empty<object>() });
+
+    var clips = VoiceAlignmentStore.BuildDialogueLinesFromBlueprint(blueprint.RootElement, null);
+    var scenes = clips
+        .GroupBy(c => c.Scene)
+        .OrderBy(g => g.Key)
+        .Select(g => new
+        {
+            scene = g.Key,
+            lines = g.OrderBy(c => c.Clip)
+                     .SelectMany(c => c.Lines.Select(l => new { clip = c.Clip, speaker = l.CharacterKey, text = l.Text }))
+                     .ToList(),
+        })
+        .Where(s => s.lines.Count > 0)
+        .ToList();
+
+    return Results.Ok(new { ok = true, scenes });
+});
+
+// Cached dialogue-timing review (STT vs script per scene). Computed once per scene by the client.
+app.MapGet("/api/projects/{id}/dialogue/timing", async (
+    string id, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var path = Path.Combine(store.GetProjectDir(id), "assets", "alignment", "dialogue_timing.json");
+    if (!File.Exists(path))
+        return Results.Ok(new { ok = true, timing = (DialogueTimingDoc?)null });
+    try
+    {
+        var json = await File.ReadAllTextAsync(path, ct);
+        var data = System.Text.Json.JsonSerializer.Deserialize<DialogueTimingDoc>(
+            json, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        return Results.Ok(new { ok = true, timing = data });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { ok = false, error = ex.Message }, statusCode: StatusCodes.Status500InternalServerError);
+    }
+});
+
+// Merge one analyzed/edited scene into the cache (scenes are reviewed independently).
+app.MapPost("/api/projects/{id}/dialogue/timing/scene", async (
+    string id, DialogueTimingScene body, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (body is null || body.Scene <= 0)
+        return Results.BadRequest(new { ok = false, error = "scene body with a scene number required" });
+
+    var dir = Path.Combine(store.GetProjectDir(id), "assets", "alignment");
+    Directory.CreateDirectory(dir);
+    var path = Path.Combine(dir, "dialogue_timing.json");
+    var webOpts = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+
+    DialogueTimingDoc doc;
+    if (File.Exists(path))
+    {
+        try { doc = System.Text.Json.JsonSerializer.Deserialize<DialogueTimingDoc>(await File.ReadAllTextAsync(path, ct), webOpts) ?? new(); }
+        catch { doc = new(); }
+    }
+    else doc = new();
+
+    doc.ProjectId = id;
+    doc.GeneratedAtUtc = DateTime.UtcNow;
+    doc.Scenes.RemoveAll(s => s.Scene == body.Scene);
+    doc.Scenes.Add(body);
+    doc.Scenes.Sort((a, b) => a.Scene.CompareTo(b.Scene));
+
+    var writeOpts = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web) { WriteIndented = true };
+    await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(doc, writeOpts) + "\n", ct);
+    return Results.Ok(new { ok = true, scene = body.Scene, rows = body.Rows?.Count ?? 0 });
+});
+
 app.MapGet("/api/media/proxy/{token}", async (
     string token,
     MediaProxyTicketStore tickets,
