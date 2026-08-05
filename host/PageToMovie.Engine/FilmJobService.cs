@@ -1340,10 +1340,12 @@ public sealed class FilmJobService
             // own timestamp would scatter one take's files across unrelated-looking history entries).
             var takeId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
 
-            // Providers without a documented duration control (MaxAudioDurationSeconds null, e.g.
-            // AIMusicAPI) collapse this to one call requesting the full scene length — the
-            // provider decides the actual length, no client-side stitching to do.
-            var segLen = Math.Max(1, entry.MaxAudioDurationSeconds ?? totalDuration);
+            // Catalog maxAudioDurationSeconds only — never invent full-scene length as a segment cap.
+            if (entry.MaxAudioDurationSeconds is not { } maxAudio || maxAudio <= 0)
+                throw new InvalidOperationException(
+                    $"Audio model '{entry.Id}' has no maxAudioDurationSeconds in models_catalog.json. " +
+                    "Add the real API limit — do not invent a default.");
+            var segLen = Math.Max(1, maxAudio);
             var segmentCount = (int)Math.Ceiling(totalDuration / (double)segLen);
             var savedSegments = 0;
             var segmentFileNames = new List<string>();
@@ -3741,9 +3743,9 @@ public sealed class FilmJobService
                 previousClipVisualPrompt: prevVisual,
                 previousClipVideoPath: prevVideoPath,
                 startFrameImagePath: null,
-                // Model-aware, not a hardcoded 5 — Grok's real max is 7; Wan/Hunyuan only take a
-                // single init/reference image; Veo doesn't implement reference conditioning at all.
-                maxRefs: modelEntry.MaxReferenceImages ?? 5,
+                maxRefs: modelEntry.MaxReferenceImages
+                    ?? throw new InvalidOperationException(
+                        $"Video model '{modelEntry.Id}' has no maxReferenceImages in models_catalog.json."),
                 styleHead: styleHead,
                 videoModel: model);
 

@@ -21,12 +21,6 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
 {
     public const string ApiBase = SupportedModelCatalog.AnthropicApiBase;
     public const string ApiVersion = "2023-06-01";
-    // 4096 silently truncated full-book single-shot screenplay adaptations mid-scene (Anthropic
-    // returns 200 OK with stop_reason "max_tokens", not an error, so nothing caught it). Other
-    // models' full adaptations of the same book ran 3.6K-9.7K output tokens already close to or
-    // past the old cap; 16K leaves real headroom without guessing per-model.
-    public const int DefaultMaxTokens = 16_000;
-
     /// <summary>
     /// Resolves <c>max_tokens</c> from the catalog only. Missing model or maxOutputTokens → error.
     /// </summary>
