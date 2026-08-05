@@ -552,6 +552,9 @@ window.PageToMovieFfmpeg = {
 
         opts = opts || {};
         const duck = Math.max(0, Math.min(1, opts.duckVolume != null ? opts.duckVolume : 0.15));
+        // muteBase: drop the original clip audio entirely and use the cloned voice as the whole
+        // soundtrack (narrator-only scenes) — no bed to duck, so no double voice.
+        const muteBase = !!opts.muteBase;
 
         const self = this;
         return this._runExclusiveAsync(async function () {
@@ -613,25 +616,38 @@ window.PageToMovieFfmpeg = {
 
                 // aformat first — amix does not resample, so a rate/layout mismatch silences an input.
                 const fmt = "aformat=sample_rates=48000:channel_layouts=stereo";
-                // Duck the bed to ~0.30 so the narrator clearly sits on top (ambience/music still audible).
-                const bedVol = "0.30";
 
                 const parts = [];
-                parts.push("[0:a]" + fmt + ",volume=" + bedVol + "[base]");
-                const mixLabels = ["[base]"];
-                for (let i = 0; i < list.length; i++) {
-                    // NO adelay. Evidence: the bed (which never goes through adelay) is always audible
-                    // in the mix, while the adelay'd voice never was — adelay zeroes the voice stream in
-                    // this ffmpeg.wasm build. For a narrator dub the sub-second start offset is
-                    // negligible, so the voice plays from the clip start; amix(duration=first)
-                    // silence-pads the tail. Boost ~2.2× so the narration is clearly on top of the bed.
-                    parts.push("[" + (i + 1) + ":a]" + fmt + ",volume=2.2[v" + i + "]");
-                    mixLabels.push("[v" + i + "]");
+                let filter;
+                if (muteBase) {
+                    // Narrator-only scene: original clip audio is dropped; the cloned narration is the
+                    // whole soundtrack. apad runs it to the full picture length; -shortest trims back.
+                    const vl = [];
+                    for (let i = 0; i < list.length; i++) {
+                        parts.push("[" + (i + 1) + ":a]" + fmt + ",volume=1.3[v" + i + "]");
+                        vl.push("[v" + i + "]");
+                    }
+                    if (vl.length === 1)
+                        parts.push(vl[0] + "apad[a]");
+                    else
+                        parts.push(vl.join("") + "amix=inputs=" + vl.length +
+                            ":duration=longest:normalize=0,apad[a]");
+                    filter = parts.join(";");
+                } else {
+                    // Duck the bed to ~0.30 so the narrator sits on top (ambience/music still audible).
+                    parts.push("[0:a]" + fmt + ",volume=0.30[base]");
+                    const mixLabels = ["[base]"];
+                    for (let i = 0; i < list.length; i++) {
+                        // No adelay (it zeroes the voice in this ffmpeg.wasm build); the narrator plays
+                        // from the clip start, amix silence-pads the tail. Boost ~2.2× to sit over the bed.
+                        parts.push("[" + (i + 1) + ":a]" + fmt + ",volume=2.2[v" + i + "]");
+                        mixLabels.push("[v" + i + "]");
+                    }
+                    parts.push(mixLabels.join("") + "amix=inputs=" + mixLabels.length +
+                        ":duration=first:normalize=0[a]");
+                    filter = parts.join(";");
                 }
-                parts.push(mixLabels.join("") + "amix=inputs=" + mixLabels.length +
-                    ":duration=first:normalize=0[a]");
-                const filter = parts.join(";");
-                console.log("[dub] filter: " + filter);
+                console.log("[dub] filter" + (muteBase ? " (muteBase)" : "") + ": " + filter);
 
                 reportProgress(onProgress, 45, "Overlaying voice…");
                 await ffmpeg.exec([

@@ -95,6 +95,14 @@ public sealed class SceneVoiceTrack
 
     /// <summary>The concatenated narration text that was synthesized (for reference / regeneration).</summary>
     public string Text { get; set; } = "";
+
+    /// <summary>
+    /// True when the scene contains dialogue from a non-narrator speaker (e.g. the mom) baked into the
+    /// clip audio. Those scenes are left with their original audio intact (we can't isolate one speaker
+    /// from a mixed track). A narrator-only scene (false) has its original audio muted and fully
+    /// replaced by the cloned narration — no double voice.
+    /// </summary>
+    public bool HasOtherSpeakers { get; set; }
 }
 
 /// <summary>

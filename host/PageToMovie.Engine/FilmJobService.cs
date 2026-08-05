@@ -2897,6 +2897,17 @@ public sealed class FilmJobService
                 return;
             }
 
+            // Which scenes contain a non-narrator speaker (e.g. the mom) baked into the clip audio —
+            // those keep their original audio; narrator-only scenes get muted + fully replaced by the
+            // clone. Only meaningful under NarratorOnly (otherwise every speaker is being replaced).
+            var scenesWithOtherSpeakers = new HashSet<int>();
+            if (req.NarratorOnly)
+            {
+                foreach (var cl in VoiceAlignmentStore.BuildDialogueLinesFromBlueprint(blueprint.RootElement, null))
+                    if (cl.Lines.Any(l => !IsNarratorSpeaker(l.CharacterKey, charKey)))
+                        scenesWithOtherSpeakers.Add(cl.Scene);
+            }
+
             // Per-SCENE strategy: concatenate every narrator line in a scene into one continuous read
             // and synthesize it in a single TTS call, so the prosody flows across the whole scene
             // instead of restarting every clip. The browser overlays one track onto the stitched scene.
@@ -2939,7 +2950,12 @@ public sealed class FilmJobService
                          .Select(l => l.Text.Trim())
                          .Where(t => t.Length > 0)).Trim();
 
-                var track = new SceneVoiceTrack { Scene = sceneNo, Text = sceneText };
+                var track = new SceneVoiceTrack
+                {
+                    Scene = sceneNo,
+                    Text = sceneText,
+                    HasOtherSpeakers = scenesWithOtherSpeakers.Contains(sceneNo),
+                };
 
                 if (sceneText.Length == 0)
                 {

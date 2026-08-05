@@ -144,7 +144,16 @@ public sealed class ClientVoiceSubstitutionService
                     sceneVideoUrl = stitched.Url!;
                 }
 
-                // 2. No narration for this scene → keep it as-is (un-narrated).
+                // 2. Scene has a non-narrator speaker (e.g. the mom) baked into the clip audio → leave
+                //    it fully original. We can't isolate one speaker from a mixed track, and muting
+                //    would drop her lines too.
+                if (sv.HasOtherSpeakers)
+                {
+                    results.Add(new SceneOverlayResult(sv.Scene, true, sceneVideoUrl, null));
+                    continue;
+                }
+
+                // 3. No narration for this scene → keep it as-is (un-narrated).
                 if (string.IsNullOrWhiteSpace(sv.VoiceAudioRelativePath))
                 {
                     results.Add(new SceneOverlayResult(sv.Scene, true, sceneVideoUrl, null));
@@ -159,15 +168,16 @@ public sealed class ClientVoiceSubstitutionService
                     continue;
                 }
 
-                // 3. Overlay the single continuous narration onto the whole scene video (plays from the
-                //    scene start; the browser mix ducks the bed and boosts the voice).
+                // 4. Narrator-only scene: mute the original clip audio entirely and replace it with the
+                //    cloned narration (muteBase) — no double voice, no faint misaligned ghost. Ambience
+                //    is dropped with it; background music can be scored separately per scene.
                 var overlaySegments = new object[]
                 {
                     new { audioUrl, startSec = 0.0, endSec = 0.0 },
                 };
                 var overlay = await _js.InvokeAsync<JsOverlayResult>(
                     "PageToMovieFfmpeg.overlayVoiceSegmentsAsync",
-                    ct, sceneVideoUrl, overlaySegments, new { });
+                    ct, sceneVideoUrl, overlaySegments, new { muteBase = true });
 
                 if (overlay is { Success: true } && !string.IsNullOrWhiteSpace(overlay.Url))
                     results.Add(new SceneOverlayResult(sv.Scene, true, overlay.Url, null));
