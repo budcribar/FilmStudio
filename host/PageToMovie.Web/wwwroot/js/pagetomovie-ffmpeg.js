@@ -546,6 +546,23 @@ window.PageToMovieFfmpeg = {
     },
 
     /**
+     * Play an audio URL and resolve when it finishes (or errors). Used by the voice-capture
+     * "Listen" step so the teleprompter can scroll in sync with the original playback.
+     */
+    playAudioAsync: function (url) {
+        return new Promise(function (resolve) {
+            if (!url) { resolve(false); return; }
+            try {
+                const a = new Audio(url);
+                a.onended = function () { resolve(true); };
+                a.onerror = function () { resolve(false); };
+                const p = a.play();
+                if (p && typeof p.catch === "function") p.catch(function () { resolve(false); });
+            } catch (_) { resolve(false); }
+        });
+    },
+
+    /**
      * "How'd I do" rhythm score: compare the loudness ENVELOPE shape (where emphasis/syllables land)
      * of a take against the original, plus duration closeness. Timbre-independent by construction
      * (normalized RMS envelope) — a different voice with the same rhythm scores high. Returns 0..100.

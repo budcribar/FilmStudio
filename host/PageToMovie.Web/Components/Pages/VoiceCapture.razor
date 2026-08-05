@@ -21,11 +21,14 @@
     .ptm-red-off { background: #3a1310; } .ptm-red-on { background: #ff3b30; box-shadow: 0 0 14px #ff3b30; }
     .ptm-yellow-off { background: #3a3210; } .ptm-yellow-on { background: #ffcc00; box-shadow: 0 0 14px #ffcc00; }
     .ptm-green-off { background: #123a1f; } .ptm-green-on { background: #34c759; box-shadow: 0 0 14px #34c759; }
-    /* Teleprompter: words scroll left past a fixed marker; read the word at the line. */
+    /* Compact horizontal light that sits just left of the teleprompter marker. */
+    .ptm-light-box-h { display: inline-flex; flex-direction: row; gap: 6px; padding: 6px 8px; border-radius: 10px; background: #1b1b1b; }
+    .ptm-light-sm { width: 18px; height: 18px; border-radius: 50%; }
+    /* Teleprompter: words scroll left past a fixed marker near the left; read the word at the line. */
     .tele-viewport { position: relative; overflow: hidden; height: 1.9em; }
-    .tele-pointer { position: absolute; left: 28%; top: -3px; bottom: -3px; width: 3px; border-radius: 2px;
+    .tele-pointer { position: absolute; left: 6%; top: -3px; bottom: -3px; width: 3px; border-radius: 2px;
         background: #ffc107; box-shadow: 0 0 10px #ffc107; z-index: 2; }
-    .tele-text { position: absolute; left: 28%; white-space: nowrap; will-change: transform; }
+    .tele-text { position: absolute; left: 6%; white-space: nowrap; will-change: transform; }
     .tele-run { animation: tele-scroll var(--tele-dur, 3s) linear forwards; }
     @@keyframes tele-scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 </style>
@@ -100,17 +103,32 @@ else
         </div>
         <div class="card-body">
             @{ var words = SplitWords(CurrentPhrase.Text); }
-            @if (_recording)
+            @{ var inTele = _recording || _light > 0 || _listening; }
+            @if (inTele)
             {
-                @* Teleprompter: the words scroll left past the fixed marker — read the word at the line. *@
-                <div class="tele-viewport mb-1">
-                    <div class="tele-pointer"></div>
-                    <div @key="_recordSession" class="tele-text tele-run fs-5"
-                         style="--tele-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");">
-                        @CurrentPhrase.Text
+                @* The light sits just left of the marker, so your eye flows light → start → scrolling
+                   words. Shown for Listen (original scrolls), the countdown (static), and recording. *@
+                <div class="d-flex align-items-center gap-3 mb-1">
+                    <div class="ptm-light-box-h" data-testid="voice-capture-light">
+                        <span class="ptm-light-sm @(_light == 1 ? "ptm-red-on" : "ptm-red-off")"></span>
+                        <span class="ptm-light-sm @(_light == 2 ? "ptm-yellow-on" : "ptm-yellow-off")"></span>
+                        <span class="ptm-light-sm @(_light == 3 ? "ptm-green-on" : "ptm-green-off")"></span>
+                    </div>
+                    <div class="tele-viewport flex-grow-1">
+                        <div class="tele-pointer"></div>
+                        <div @key="_teleSession" class="tele-text fs-5 @((_recording || _listening) ? "tele-run" : "")"
+                             style="--tele-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");">
+                            @CurrentPhrase.Text
+                        </div>
                     </div>
                 </div>
-                <div class="small text-danger mb-3">● Read the word at the line</div>
+                <div class="small mb-3 @(_listening ? "text-info" : "text-danger")">
+                    @(_light == 1 ? "Get ready…"
+                        : _light == 2 ? "Set…"
+                        : _light == 3 ? "Go — read it!"
+                        : _listening ? "This is how the narrator reads it — watch the words"
+                        : "● Read the word at the line")
+                </div>
             }
             else
             {
@@ -132,31 +150,18 @@ else
                 }
             }
 
-            @* Listen *@
+            @* Listen — plays the original and scrolls it across so you can watch the narrator's pace. *@
             <div class="mb-3">
-                <div class="small text-muted mb-1">Listen</div>
-                @if (!string.IsNullOrEmpty(_originalUrl))
+                <button class="btn btn-outline-primary btn-sm"
+                        disabled="@(_busy || _recording || _light > 0 || _listening || string.IsNullOrEmpty(_originalUrl))"
+                        data-testid="voice-capture-listen" @onclick="ListenAsync">
+                    @(_listening ? "▶ Listening…" : "▶ Listen")
+                </button>
+                @if (string.IsNullOrEmpty(_originalUrl))
                 {
-                    <audio controls src="@_originalUrl" class="w-100" style="max-width:420px;"></audio>
-                }
-                else
-                {
-                    <span class="text-muted small">Loading original…</span>
+                    <span class="text-muted small ms-2">Loading original…</span>
                 }
             </div>
-
-            @* Ready-set-go traffic light *@
-            @if (_light > 0)
-            {
-                <div class="d-flex align-items-center gap-3 mb-3" data-testid="voice-capture-light">
-                    <div class="ptm-light-box">
-                        <span class="ptm-light @(_light == 1 ? "ptm-red-on" : "ptm-red-off")"></span>
-                        <span class="ptm-light @(_light == 2 ? "ptm-yellow-on" : "ptm-yellow-off")"></span>
-                        <span class="ptm-light @(_light == 3 ? "ptm-green-on" : "ptm-green-off")"></span>
-                    </div>
-                    <span class="fs-5 fw-semibold">@(_light == 1 ? "Get ready…" : _light == 2 ? "Set…" : "Go — read it!")</span>
-                </div>
-            }
 
             @* Take + score *@
             @if (!string.IsNullOrEmpty(_takeUrl) && !_recording)
@@ -236,9 +241,11 @@ else
     private List<double>? _regions; // per-word rhythm match (0..1), for colouring
 
     private bool _recording;
+    private bool _listening; // playing the original + scrolling it so the user sees the narrator's pace
     private int _light; // 0 = off, 1 = red, 2 = yellow, 3 = green (go)
     private double _ballDurationSec = 3;
     private int _recordSession;
+    private int _teleSession; // bumped to (re)start the teleprompter scroll (Listen and on "Go")
 
     private readonly List<string> _kept = new(); // kept take data URLs
 
@@ -355,6 +362,20 @@ else
         return url;
     }
 
+    private async Task ListenAsync()
+    {
+        if (string.IsNullOrEmpty(_originalUrl) || _listening || _recording || _light > 0) return;
+        // Scroll the original across the teleprompter (same pacing) while it plays, so the user
+        // sees how the narrator reads it — then read it back the same way.
+        _listening = true;
+        _teleSession++;
+        StateHasChanged();
+        try { await Js.InvokeAsync<bool>("PageToMovieFfmpeg.playAudioAsync", _originalUrl); }
+        catch { /* ignore playback errors */ }
+        _listening = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task RecordAsync()
     {
         _error = null; _status = null; _takeUrl = null; _score = null; _regions = null;
@@ -368,6 +389,7 @@ else
         {
             await Js.InvokeAsync<object>("PageToMovieVoiceCapture.start");
             _recording = true;
+            _teleSession++; // restart the teleprompter scroll from the start on "Go"
             var session = ++_recordSession;
             StateHasChanged();
             _ = ClearLightAsync();
