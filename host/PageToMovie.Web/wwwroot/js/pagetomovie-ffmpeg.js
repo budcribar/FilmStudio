@@ -602,22 +602,41 @@ window.PageToMovieFfmpeg = {
             actx = new AC();
             const audio = await actx.decodeAudioData(arr);
             const data = audio.getChannelData(0);
+            const n = data.length;
 
+            // Fine RMS envelope, then trim leading/trailing silence (< 8% of peak) — the SAME trim the
+            // scorer uses, so both strips start at the first sound (no leading-silence offset) and the
+            // "you" colour regions line up with the speech instead of the dead air at the front.
+            const fine = 400;
+            const per = Math.max(1, Math.floor(n / fine));
+            const raw = new Float32Array(fine);
+            let mx = 0;
+            for (let i = 0; i < fine; i++) {
+                let sum = 0, c = 0; const s = i * per, e = Math.min(n, s + per);
+                for (let j = s; j < e; j++) { sum += data[j] * data[j]; c++; }
+                raw[i] = c ? Math.sqrt(sum / c) : 0; if (raw[i] > mx) mx = raw[i];
+            }
+            const thr = mx * 0.08;
+            let lo = 0, hi = fine - 1;
+            while (lo < fine && raw[lo] < thr) lo++;
+            while (hi > lo && raw[hi] < thr) hi--;
+            if (lo >= hi) { lo = 0; hi = fine - 1; } // all quiet → keep everything
+            const spanLen = hi - lo + 1;
+
+            // Resample the SPEECH span (lo..hi) across the strip.
             const bins = Math.min(w, 220);
-            const step = Math.max(1, Math.floor(data.length / bins));
             const env = new Array(bins).fill(0);
-            let mx = 1e-6;
+            let mx2 = 1e-6;
             for (let i = 0; i < bins; i++) {
-                let sum = 0, c = 0;
-                for (let j = i * step; j < (i + 1) * step && j < data.length; j++) { sum += data[j] * data[j]; c++; }
-                const rms = c ? Math.sqrt(sum / c) : 0;
-                env[i] = rms; if (rms > mx) mx = rms;
+                const idx = lo + Math.floor(i * spanLen / bins);
+                env[i] = raw[Math.min(fine - 1, idx)];
+                if (env[i] > mx2) mx2 = env[i];
             }
 
             const barW = w / bins;
             const hasReg = Array.isArray(regions) && regions.length > 0;
             for (let i = 0; i < bins; i++) {
-                const v = env[i] / mx;
+                const v = env[i] / mx2;
                 const bh = Math.max(1, v * (h - 2));
                 let color = "rgba(147,197,253,.9)"; // neutral blue (narrator)
                 if (hasReg) {
