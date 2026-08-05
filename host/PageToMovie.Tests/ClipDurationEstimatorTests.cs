@@ -101,12 +101,19 @@ public class ClipDurationEstimatorTests
     }
 
     [Fact]
-    public void ResolveBoundsForModel_FallsBackToGlobalDefaultsForUnknownModel()
+    public void ResolveBoundsForModel_UnknownModel_Throws()
     {
-        var (min, max, absMax) = ClipDurationEstimator.ResolveBoundsForModel("totally-unknown-model-id");
-        Assert.Equal(ClipDurationEstimator.MinSeconds, min);
-        Assert.Equal(ClipDurationEstimator.MaxSeconds, max);
-        Assert.Equal(ClipDurationEstimator.AbsMaxSeconds, absMax);
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ClipDurationEstimator.ResolveBoundsForModel("totally-unknown-model-id"));
+        Assert.Contains("not in models_catalog", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ResolveBoundsForModel_EmptyModel_Throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ClipDurationEstimator.ResolveBoundsForModel(null));
+        Assert.Contains("required", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

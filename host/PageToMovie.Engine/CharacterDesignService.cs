@@ -85,15 +85,8 @@ public sealed class CharacterDesignService
         var imageProvider = await GetConfigStringAsync(projectId, "image_provider", _opts.ImageProvider, ct)
             .ConfigureAwait(false);
         var providerId = ImageApiLimits.ResolveProvider(imageProvider, imageModel);
+        // Catalog maxReferenceImages only (ClampMaxRefs → ImageApiLimits fail-fast).
         var maxRefs = ImageApiLimits.ClampMaxRefs(opts.MaxRefs, imageProvider, imageModel);
-        // Wired client today is GrokImageClient (≤3). When GeminiImageClient lands, raise this.
-        var clientCap = ImageApiLimits.GrokMaxReferenceImages;
-        if (maxRefs > clientCap)
-        {
-            onProgress?.Invoke(
-                $"Provider {providerId} allows {maxRefs} refs; active image client cap is {clientCap} — sending {clientCap}");
-            maxRefs = clientCap;
-        }
         var maxBook = Math.Clamp(opts.MaxBookHints < 0 ? Math.Max(0, maxRefs - 1) : opts.MaxBookHints, 0, maxRefs);
 
         // Shared uniform lock: reuse (or generate once) a costume-only reference plate so

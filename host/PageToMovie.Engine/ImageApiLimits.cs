@@ -9,12 +9,6 @@ public static class ImageApiLimits
     public const string ProviderGrok = "grok";
     public const string ProviderGemini = "gemini";
 
-    /// <summary>Historical Grok Imagine edit cap (documentation only — prefer catalog).</summary>
-    public const int GrokMaxReferenceImages = 3;
-
-    /// <summary>Historical Gemini image ref soft max (documentation only — prefer catalog).</summary>
-    public const int GeminiMaxReferenceImages = 14;
-
     /// <summary>
     /// Resolve provider id from model catalog only. Empty when unknown — never invents "grok".
     /// </summary>

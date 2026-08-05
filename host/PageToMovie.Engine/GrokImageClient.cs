@@ -170,13 +170,10 @@ public sealed class GrokImageClient : IImageClient
                 "a paid image generation call with an unverified reference-image limit. Populate " +
                 "models_catalog.json for this model before using it.");
         }
+        // Catalog maxReferenceImages is SSoT — no second invented client ceiling.
         var cap = maxRefs > 0
             ? Math.Clamp(maxRefs, 1, catalogCap)
             : catalogCap;
-        // This client is Grok-only — never exceed the Grok hard cap even if modelName/catalog
-        // somehow resolved to a non-Grok entry (e.g. misconfigured project ImageProvider). This is
-        // a deterministic architectural ceiling, not a guessed value, so it stays as a clamp here.
-        cap = Math.Min(cap, ImageApiLimits.GrokMaxReferenceImages);
 
         var hasCostumeRef = !string.IsNullOrWhiteSpace(costumeRefPath) && File.Exists(costumeRefPath);
         // Reserve one slot for the costume ref so identity refs + costume ref never exceed cap

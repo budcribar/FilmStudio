@@ -13,7 +13,7 @@ namespace PageToMovie.Engine;
 /// <summary>
 /// Google Gemini image generate + edit client for character portraits, via
 /// <c>generateContent</c> with an image response modality (the "Gemini 3 image" / Imagen
-/// family — see <see cref="ImageApiLimits.GeminiMaxReferenceImages"/>). Response-shape notes
+/// family — max refs from catalog <c>maxReferenceImages</c>). Response-shape notes
 /// below are built from Gemini's public documented format; verify against a live call before
 /// relying on this in production.
 /// </summary>

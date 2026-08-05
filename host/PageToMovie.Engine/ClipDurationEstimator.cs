@@ -68,11 +68,30 @@ public static class ClipDurationEstimator
     /// </summary>
     public static (int MinSeconds, int MaxSeconds, int AbsMaxSeconds) ResolveBoundsForModel(string? modelId)
     {
-        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
-        return (
-            entry?.MinClipDurationSeconds ?? MinSeconds,
-            entry?.MaxClipDurationSeconds ?? MaxSeconds,
-            entry?.AbsMaxClipDurationSeconds ?? AbsMaxSeconds);
+        if (string.IsNullOrWhiteSpace(modelId))
+            throw new InvalidOperationException(
+                "Video model is required for clip duration bounds. " +
+                "Open Settings → Studio coverage and choose a video model.");
+
+        var entry = SupportedModelCatalog.Find(modelId.Trim(), ModelCapability.Video)
+            ?? throw new InvalidOperationException(
+                $"Video model '{modelId}' is not in models_catalog.json. " +
+                "Unknown models have no duration capabilities.");
+
+        if (!entry.Enabled)
+            throw new InvalidOperationException(
+                $"Video model '{entry.Id}' is disabled in the catalog.");
+
+        if (entry.MinClipDurationSeconds is not { } min
+            || entry.MaxClipDurationSeconds is not { } max)
+        {
+            throw new InvalidOperationException(
+                $"Video model '{entry.Id}' is missing minClipDurationSeconds/maxClipDurationSeconds in models_catalog.json. " +
+                "Add duration bounds to the catalog — do not invent defaults.");
+        }
+
+        var abs = entry.AbsMaxClipDurationSeconds ?? max;
+        return (min, max, abs);
     }
 
     /// <summary>
@@ -92,9 +111,12 @@ public static class ClipDurationEstimator
     public static int ResolveActualDurationForModel(
         string? modelId, int requestedSeconds, bool isExtensionMode = false)
     {
-        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
+        // ResolveBoundsForModel throws on unknown/empty/incomplete catalog rows.
+        var (min, max, _) = ResolveBoundsForModel(modelId);
+        var entry = SupportedModelCatalog.Find(modelId!.Trim(), ModelCapability.Video)!;
+
         int resolved;
-        if (entry?.AllowedDurationsSeconds is { Count: > 0 } allowed)
+        if (entry.AllowedDurationsSeconds is { Count: > 0 } allowed)
         {
             resolved = allowed
                 .OrderBy(d => Math.Abs(d - requestedSeconds))
@@ -103,11 +125,10 @@ public static class ClipDurationEstimator
         }
         else
         {
-            var (min, max, _) = ResolveBoundsForModel(modelId);
             resolved = Math.Clamp(requestedSeconds, min, max);
         }
 
-        if (isExtensionMode && entry?.MaxExtensionSeconds is { } extMax && resolved > extMax)
+        if (isExtensionMode && entry.MaxExtensionSeconds is { } extMax && resolved > extMax)
             resolved = extMax;
 
         return resolved;
@@ -122,8 +143,11 @@ public static class ClipDurationEstimator
     /// </summary>
     public static int ResolveExtensionMaxForModel(string? modelId, int fallbackMax)
     {
-        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
-        return entry?.MaxExtensionSeconds ?? fallbackMax;
+        // Unknown/empty model throws; missing MaxExtensionSeconds means "same as fresh max"
+        // (caller typically passes that as fallbackMax from ResolveBoundsForModel).
+        _ = ResolveBoundsForModel(modelId);
+        var entry = SupportedModelCatalog.Find(modelId!.Trim(), ModelCapability.Video)!;
+        return entry.MaxExtensionSeconds ?? fallbackMax;
     }
 
     /// <summary>
