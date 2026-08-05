@@ -16,6 +16,11 @@
         background: #ffc107; box-shadow: 0 0 10px #ffc107; }
     .ptm-ball-run { animation: ptm-ball-move var(--ptm-ball-dur, 3s) linear forwards; }
     @@keyframes ptm-ball-move { from { left: 0; } to { left: calc(100% - 20px); } }
+    .ptm-light-box { display: inline-flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; background: #1b1b1b; }
+    .ptm-light { width: 34px; height: 34px; border-radius: 50%; transition: background .15s, box-shadow .15s; }
+    .ptm-red-off { background: #3a1310; } .ptm-red-on { background: #ff3b30; box-shadow: 0 0 14px #ff3b30; }
+    .ptm-yellow-off { background: #3a3210; } .ptm-yellow-on { background: #ffcc00; box-shadow: 0 0 14px #ffcc00; }
+    .ptm-green-off { background: #123a1f; } .ptm-green-on { background: #34c759; box-shadow: 0 0 14px #34c759; }
 </style>
 
 <div class="ptm-page-head mb-3">
@@ -102,6 +107,19 @@ else
                 }
             </div>
 
+            @* Ready-set-go traffic light *@
+            @if (_light > 0)
+            {
+                <div class="d-flex align-items-center gap-3 mb-3" data-testid="voice-capture-light">
+                    <div class="ptm-light-box">
+                        <span class="ptm-light @(_light == 1 ? "ptm-red-on" : "ptm-red-off")"></span>
+                        <span class="ptm-light @(_light == 2 ? "ptm-yellow-on" : "ptm-yellow-off")"></span>
+                        <span class="ptm-light @(_light == 3 ? "ptm-green-on" : "ptm-green-off")"></span>
+                    </div>
+                    <span class="fs-5 fw-semibold">@(_light == 1 ? "Get ready…" : _light == 2 ? "Set…" : "Go — read it!")</span>
+                </div>
+            }
+
             @* Pacing ball (visible while recording) *@
             @if (_recording)
             {
@@ -128,34 +146,34 @@ else
                 </div>
             }
 
-            @* Controls *@
+            @* Controls (hidden during the light countdown) *@
             <div class="d-flex flex-wrap gap-2">
-                @if (!_recording)
-                {
-                    <button class="btn btn-danger" disabled="@(_busy || string.IsNullOrEmpty(_originalUrl))"
-                            data-testid="voice-capture-record" @onclick="RecordAsync">
-                        🔴 @(_takeUrl is null ? "Record" : "Re-record")
-                    </button>
-                }
-                else
+                @if (_recording)
                 {
                     <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="StopAndScoreAsync">
                         ⏹ Stop
                     </button>
                 }
-
-                @if (!string.IsNullOrEmpty(_takeUrl) && !_recording)
+                else if (_light == 0)
                 {
-                    <button class="btn btn-primary" disabled="@_busy" data-testid="voice-capture-keep" @onclick="KeepAndNextAsync">
-                        Keep &amp; @(_i + 1 < _phrases.Count ? "next →" : "finish")
+                    <button class="btn btn-danger" disabled="@(_busy || string.IsNullOrEmpty(_originalUrl))"
+                            data-testid="voice-capture-record" @onclick="RecordAsync">
+                        🔴 @(_takeUrl is null ? "Record" : "Re-record")
                     </button>
-                }
 
-                @if (_kept.Count > 0 && !_recording)
-                {
-                    <button class="btn btn-success ms-auto" disabled="@_busy" data-testid="voice-capture-finish" @onclick="FinishAsync">
-                        ✓ Create my voice (@_kept.Count)
-                    </button>
+                    @if (!string.IsNullOrEmpty(_takeUrl))
+                    {
+                        <button class="btn btn-primary" disabled="@_busy" data-testid="voice-capture-keep" @onclick="KeepAndNextAsync">
+                            Keep &amp; @(_i + 1 < _phrases.Count ? "next →" : "finish")
+                        </button>
+                    }
+
+                    @if (_kept.Count > 0)
+                    {
+                        <button class="btn btn-success ms-auto" disabled="@_busy" data-testid="voice-capture-finish" @onclick="FinishAsync">
+                            ✓ Create my voice (@_kept.Count)
+                        </button>
+                    }
                 }
             </div>
 
@@ -190,6 +208,7 @@ else
     private int? _score;
 
     private bool _recording;
+    private int _light; // 0 = off, 1 = red, 2 = yellow, 3 = green (go)
     private double _ballDurationSec = 3;
     private int _recordSession;
 
@@ -311,16 +330,30 @@ else
     private async Task RecordAsync()
     {
         _error = null; _status = null; _takeUrl = null; _score = null;
+
+        // Red → yellow → green. Recording (and the ball) start on green, so you're not caught mid-click.
+        _light = 1; StateHasChanged(); await Task.Delay(650); // red
+        _light = 2; StateHasChanged(); await Task.Delay(650); // yellow
+        _light = 3; StateHasChanged();                        // green = go
+
         try
         {
             await Js.InvokeAsync<object>("PageToMovieVoiceCapture.start");
             _recording = true;
             var session = ++_recordSession;
             StateHasChanged();
+            _ = ClearLightAsync();
             // Auto-stop a beat after the ball finishes.
             _ = AutoStopAsync(session, (int)((_ballDurationSec + 1.0) * 1000));
         }
-        catch (Exception ex) { _error = "Microphone failed: " + ex.Message; _recording = false; }
+        catch (Exception ex) { _error = "Microphone failed: " + ex.Message; _recording = false; _light = 0; }
+    }
+
+    private async Task ClearLightAsync()
+    {
+        await Task.Delay(650); // let the green light linger a beat once recording is live
+        _light = 0;
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task AutoStopAsync(int session, int delayMs)
@@ -335,6 +368,7 @@ else
         if (!_recording) return;
         _busy = true;
         _recording = false;
+        _light = 0;
         _recordSession++; // invalidate any pending auto-stop
         StateHasChanged();
         try
