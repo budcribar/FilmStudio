@@ -621,11 +621,44 @@ window.PageToMovieFfmpeg = {
                 let filter;
                 if (muteBase) {
                     // Narrator-only scene: original clip audio is dropped; the cloned narration is the
-                    // whole soundtrack. apad runs it to the full picture length; -shortest trims back.
-                    const vl = [];
+                    // whole soundtrack. Rather than warp each line to its own window (varying pace), we
+                    // calibrate ONE stretch factor from up to 3 sample points (median of natural ÷ window
+                    // ratios) so the voice keeps a single consistent pace matched to the original speaker,
+                    // then place each line at its window start via a leading silence and mix.
+                    const segInfo = [];
                     for (let i = 0; i < list.length; i++) {
-                        parts.push("[" + (i + 1) + ":a]" + fmt + ",volume=1.3[v" + i + "]");
-                        vl.push("[v" + i + "]");
+                        const seg = list[i];
+                        const startSec = Math.max(0, +seg.startSec || 0);
+                        const targetDur = Math.max(0.2, (+seg.endSec || 0) - startSec);
+                        const probe = await self._probeDurationMemfsAsync(audioNames[i]);
+                        const natSec = probe && probe.success && probe.seconds > 0 ? probe.seconds : targetDur;
+                        segInfo.push({ i: i, startSec: startSec, natSec: natSec, ratio: natSec / targetDur });
+                    }
+
+                    // Sample up to 3 points (first / middle / last for a representative spread), take the
+                    // median ratio → one calibrated stretch factor (atempo). Clamp so we never warble.
+                    const sample = segInfo.length <= 3
+                        ? segInfo.slice()
+                        : [segInfo[0], segInfo[Math.floor(segInfo.length / 2)], segInfo[segInfo.length - 1]];
+                    const ratios = sample.map(s => s.ratio).sort((a, b) => a - b);
+                    let tempo = ratios.length ? ratios[Math.floor(ratios.length / 2)] : 1.0;
+                    tempo = Math.max(0.5, Math.min(2.0, tempo));
+                    console.log("[dub] calibrated stretch factor: " + tempo.toFixed(3) +
+                        " (from " + sample.length + " of " + segInfo.length + " line(s))");
+
+                    const vl = [];
+                    for (const s of segInfo) {
+                        const voice = "[" + (s.i + 1) + ":a]" + fmt + ",atempo=" + tempo.toFixed(4) +
+                            ",volume=1.3,asetpts=PTS-STARTPTS";
+                        if (s.startSec >= 0.05) {
+                            parts.push("anullsrc=channel_layout=stereo:sample_rate=48000,atrim=duration=" +
+                                s.startSec.toFixed(3) + ",asetpts=PTS-STARTPTS[sil" + s.i + "]");
+                            parts.push(voice + "[sv" + s.i + "]");
+                            parts.push("[sil" + s.i + "][sv" + s.i + "]concat=n=2:v=0:a=1[v" + s.i + "]");
+                        } else {
+                            parts.push(voice + "[v" + s.i + "]");
+                        }
+                        vl.push("[v" + s.i + "]");
                     }
                     if (vl.length === 1)
                         parts.push(vl[0] + "apad[a]");

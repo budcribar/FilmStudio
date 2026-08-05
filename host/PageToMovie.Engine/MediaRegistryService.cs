@@ -100,6 +100,15 @@ public sealed class MediaRegistryService
         return $"assets/audio/revoice/scene_{scene:D2}{e.ToLowerInvariant()}";
     }
 
+    /// <summary>One narrator line within a scene, synthesized on its own so the client can place +
+    /// time-stretch it onto the detected speech window.</summary>
+    public static string RevoiceSceneLineAudioRelativePath(int scene, int line, string ext = ".mp3")
+    {
+        var e = string.IsNullOrWhiteSpace(ext) ? ".mp3" : ext.Trim();
+        if (!e.StartsWith('.')) e = "." + e;
+        return $"assets/audio/revoice/scene_{scene:D2}_line_{line:D2}{e.ToLowerInvariant()}";
+    }
+
     /// <summary>One background-music segment (IAudioClient.MaxSegmentDurationSeconds-sized) for a
     /// scene — most scenes need only segment 1; longer scenes concatenate client-side.</summary>
     public static string MusicSegmentRelativePath(int scene, int segment) =>

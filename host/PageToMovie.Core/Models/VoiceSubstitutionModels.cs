@@ -85,16 +85,24 @@ public sealed class ClipSpeechAlignment
 /// restarting every clip. Overlaid onto the whole stitched scene, not per clip — this is the
 /// current voice-substitution strategy.
 /// </summary>
+/// <summary>One narrator line inside a scene, synthesized on its own so the browser can place it at
+/// the window where the original spoke and time-stretch it to that window's duration.</summary>
+public sealed class SceneVoiceLine
+{
+    /// <summary>Order of this line within the scene (0-based).</summary>
+    public int Index { get; set; }
+
+    /// <summary>The line text that was synthesized.</summary>
+    public string Text { get; set; } = "";
+
+    /// <summary>Project-relative path of the cloned-voice audio for this line
+    /// (e.g. assets/audio/revoice/scene_01_line_00.mp3). Null until synthesized.</summary>
+    public string? VoiceAudioRelativePath { get; set; }
+}
+
 public sealed class SceneVoiceTrack
 {
     public int Scene { get; set; }
-
-    /// <summary>Project-relative path of the whole-scene narration audio
-    /// (e.g. assets/audio/revoice/scene_01.mp3). Null until synthesized.</summary>
-    public string? VoiceAudioRelativePath { get; set; }
-
-    /// <summary>The concatenated narration text that was synthesized (for reference / regeneration).</summary>
-    public string Text { get; set; } = "";
 
     /// <summary>
     /// True when the scene contains dialogue from a non-narrator speaker (e.g. the mom) baked into the
@@ -103,6 +111,10 @@ public sealed class SceneVoiceTrack
     /// replaced by the cloned narration — no double voice.
     /// </summary>
     public bool HasOtherSpeakers { get; set; }
+
+    /// <summary>The scene's narrator lines in order, each synthesized separately so the client can
+    /// place + stretch them onto the detected speech windows.</summary>
+    public List<SceneVoiceLine> Lines { get; set; } = new();
 }
 
 /// <summary>

@@ -153,31 +153,69 @@ public sealed class ClientVoiceSubstitutionService
                     continue;
                 }
 
-                // 3. No narration for this scene → keep it as-is (un-narrated).
-                if (string.IsNullOrWhiteSpace(sv.VoiceAudioRelativePath))
+                // 3. Narrator-only scene. Find where the original narrator spoke (silence detection on
+                //    the still-original scene audio), then place each cloned line at its window.
+                var lines = sv.Lines
+                    .Where(l => !string.IsNullOrWhiteSpace(l.VoiceAudioRelativePath))
+                    .OrderBy(l => l.Index)
+                    .ToList();
+                if (lines.Count == 0)
                 {
-                    results.Add(new SceneOverlayResult(sv.Scene, true, sceneVideoUrl, null));
+                    results.Add(new SceneOverlayResult(sv.Scene, true, sceneVideoUrl, null)); // nothing to voice
                     continue;
                 }
 
-                var audioUrl = await _media.GetLocalBlobUrlAsync(projectId, sv.VoiceAudioRelativePath);
-                if (string.IsNullOrWhiteSpace(audioUrl))
+                var detect = await _js.InvokeAsync<JsSpeechDetectResult>(
+                    "PageToMovieFfmpeg.detectSpeechSegmentsAsync", ct, sceneVideoUrl, new { });
+                var windows = (detect?.Segments ?? new List<JsSpeechWindow>())
+                    .Where(w => w.EndSec - w.StartSec >= 0.15)
+                    .OrderBy(w => w.StartSec)
+                    .ToList();
+                var sceneDur = detect?.TotalSec ?? 0;
+
+                // Match each cloned line to a window: 1:1 when the counts agree; otherwise spread the
+                // lines across the detected speech span (or the whole scene if nothing was detected).
+                var segs = new List<object>();
+                for (var i = 0; i < lines.Count; i++)
                 {
-                    // Voice not synced locally — keep the un-narrated scene rather than dropping it.
+                    var lineUrl = await _media.GetLocalBlobUrlAsync(projectId, lines[i].VoiceAudioRelativePath!);
+                    if (string.IsNullOrWhiteSpace(lineUrl)) continue;
+
+                    double startSec, endSec;
+                    if (windows.Count == lines.Count)
+                    {
+                        startSec = windows[i].StartSec;
+                        endSec = windows[i].EndSec;
+                    }
+                    else if (windows.Count > 0)
+                    {
+                        var spanStart = windows[0].StartSec;
+                        var spanEnd = Math.Max(windows[^1].EndSec, spanStart + 0.5);
+                        var slot = (spanEnd - spanStart) / lines.Count;
+                        startSec = spanStart + i * slot;
+                        endSec = startSec + slot;
+                    }
+                    else
+                    {
+                        var total = sceneDur > 0 ? sceneDur : lines.Count * 3.0;
+                        var slot = total / lines.Count;
+                        startSec = i * slot;
+                        endSec = startSec + slot;
+                    }
+                    segs.Add(new { audioUrl = lineUrl, startSec, endSec });
+                }
+
+                if (segs.Count == 0)
+                {
                     results.Add(new SceneOverlayResult(sv.Scene, true, sceneVideoUrl, "voice audio not synced"));
                     continue;
                 }
 
-                // 4. Narrator-only scene: mute the original clip audio entirely and replace it with the
-                //    cloned narration (muteBase) — no double voice, no faint misaligned ghost. Ambience
-                //    is dropped with it; background music can be scored separately per scene.
-                var overlaySegments = new object[]
-                {
-                    new { audioUrl, startSec = 0.0, endSec = 0.0 },
-                };
+                // 4. Mute the original clip audio and lay the placed + time-stretched lines onto silence
+                //    (muteBase) — one narrator (you), timed to where the original spoke, no double voice.
                 var overlay = await _js.InvokeAsync<JsOverlayResult>(
                     "PageToMovieFfmpeg.overlayVoiceSegmentsAsync",
-                    ct, sceneVideoUrl, overlaySegments, new { muteBase = true });
+                    ct, sceneVideoUrl, segs.ToArray(), new { muteBase = true });
 
                 if (overlay is { Success: true } && !string.IsNullOrWhiteSpace(overlay.Url))
                     results.Add(new SceneOverlayResult(sv.Scene, true, overlay.Url, null));
@@ -198,5 +236,19 @@ public sealed class ClientVoiceSubstitutionService
         public bool Success { get; set; }
         public string? Url { get; set; }
         public string? Error { get; set; }
+    }
+
+    private sealed class JsSpeechDetectResult
+    {
+        public bool Success { get; set; }
+        public double TotalSec { get; set; }
+        public List<JsSpeechWindow>? Segments { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class JsSpeechWindow
+    {
+        public double StartSec { get; set; }
+        public double EndSec { get; set; }
     }
 }

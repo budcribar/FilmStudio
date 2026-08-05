@@ -2926,12 +2926,13 @@ public sealed class FilmJobService
             var maxLen = ctx.MaxLen;
             var projectDir = _projects.GetProjectDir(projectId);
             var totalScenes = sceneGroups.Count;
+            var totalLines = clipLines.Sum(c => c.Lines.Count);
 
             await UpdateAsync(s =>
             {
-                s.Total = totalScenes;
+                s.Total = totalLines;
                 s.Index = 0;
-                s.Message = $"Voice substitution: {totalScenes} scene(s) · {ctx.ProviderId}";
+                s.Message = $"Voice substitution: {totalLines} line(s) across {totalScenes} scene(s) · {ctx.ProviderId}";
             }).ConfigureAwait(false);
             await AppendLogAsync(Snapshot.Message!).ConfigureAwait(false);
 
@@ -2943,86 +2944,90 @@ public sealed class FilmJobService
                 ct.ThrowIfCancellationRequested();
                 var sceneNo = group.Key;
 
-                // Join every narrator line in the scene (clip order, then line order) into one read.
-                var sceneText = string.Join(" ",
-                    group.OrderBy(c => c.Clip)
-                         .SelectMany(c => c.Lines)
-                         .Select(l => l.Text.Trim())
-                         .Where(t => t.Length > 0)).Trim();
-
                 var track = new SceneVoiceTrack
                 {
                     Scene = sceneNo,
-                    Text = sceneText,
                     HasOtherSpeakers = scenesWithOtherSpeakers.Contains(sceneNo),
                 };
 
-                if (sceneText.Length == 0)
-                {
-                    alignment.SceneVoices.Add(track);
-                    var idxEmpty = Interlocked.Increment(ref done);
-                    await UpdateAsync(s => { s.Index = idxEmpty; s.Scene = sceneNo; }).ConfigureAwait(false);
-                    continue;
-                }
+                // Each narrator line in the scene (clip order, then line order) is synthesized on its
+                // own so the browser can place + time-stretch it onto the detected speech window.
+                var sceneLines = group
+                    .OrderBy(c => c.Clip)
+                    .SelectMany(c => c.Lines)
+                    .Select(l => l.Text.Trim())
+                    .Where(t => t.Length > 0)
+                    .ToList();
 
-                if (sceneText.Length > maxLen)
+                var lineNo = 0;
+                foreach (var lineTextRaw in sceneLines)
                 {
+                    ct.ThrowIfCancellationRequested();
+                    var text = lineTextRaw;
+                    if (text.Length > maxLen)
+                    {
+                        await AppendLogAsync(
+                                $"  S{sceneNo:D2} L{lineNo:D2}: {text.Length} chars exceeds model limit {maxLen} — truncating.")
+                            .ConfigureAwait(false);
+                        text = text[..maxLen];
+                    }
+
+                    var svl = new SceneVoiceLine { Index = lineNo, Text = text };
+                    var relPath = MediaRegistryService.RevoiceSceneLineAudioRelativePath(sceneNo, lineNo);
+                    var absPath = Path.Combine(projectDir, relPath.Replace('/', Path.DirectorySeparatorChar));
+
+                    if (req.OnlyMissing && File.Exists(absPath))
+                    {
+                        svl.VoiceAudioRelativePath = relPath;
+                        track.Lines.Add(svl);
+                        var idxSkip = Interlocked.Increment(ref done);
+                        await UpdateAsync(s => { s.Index = idxSkip; s.Scene = sceneNo; }).ConfigureAwait(false);
+                        await AppendLogAsync($"  S{sceneNo:D2} L{lineNo:D2}: reuse existing → {relPath}").ConfigureAwait(false);
+                        lineNo++;
+                        continue;
+                    }
+
+                    var (audioBytes, ext, err) = await SynthesizeLineAsync(
+                        ctx, projectId, charKey, text, "voice_substitution", ct).ConfigureAwait(false);
+
+                    if (audioBytes is not { Length: > 0 })
+                    {
+                        await AppendLogAsync($"  S{sceneNo:D2} L{lineNo:D2}: fail — {err ?? "no audio"}").ConfigureAwait(false);
+                        Interlocked.Increment(ref failed);
+                        Interlocked.Increment(ref done);
+                        track.Lines.Add(svl);
+                        lineNo++;
+                        continue;
+                    }
+
+                    relPath = MediaRegistryService.RevoiceSceneLineAudioRelativePath(sceneNo, lineNo, ext);
+                    absPath = Path.Combine(projectDir, relPath.Replace('/', Path.DirectorySeparatorChar));
+                    Directory.CreateDirectory(Path.GetDirectoryName(absPath)!);
+                    await File.WriteAllBytesAsync(absPath, audioBytes, ct).ConfigureAwait(false);
+                    svl.VoiceAudioRelativePath = relPath;
+                    track.Lines.Add(svl);
+
+                    var ticket = _mediaProxy.Issue($"{projectId}:{relPath}", TimeSpan.FromMinutes(45));
+                    var clientUrl =
+                        $"/api/projects/{Uri.EscapeDataString(projectId)}/media/file" +
+                        $"?path={Uri.EscapeDataString(relPath)}&ticket={ticket}";
+
+                    var idx = Interlocked.Increment(ref done);
+                    await UpdateAsync(s =>
+                    {
+                        s.Index = idx;
+                        s.Scene = sceneNo;
+                        s.ClientMediaUrl = clientUrl;
+                        s.ClientRelativePath = relPath;
+                        s.Message = $"Voice substitution: S{sceneNo:D2} L{lineNo:D2} ({idx}/{totalLines})…";
+                    }).ConfigureAwait(false);
                     await AppendLogAsync(
-                            $"  S{sceneNo:D2}: narration {sceneText.Length} chars exceeds model limit {maxLen} — truncating.")
+                            $"  S{sceneNo:D2} L{lineNo:D2}: ready → {relPath} ({audioBytes.Length / 1024} KB)")
                         .ConfigureAwait(false);
-                    sceneText = sceneText[..maxLen];
-                    track.Text = sceneText;
+                    lineNo++;
                 }
 
-                var relPath = MediaRegistryService.RevoiceSceneAudioRelativePath(sceneNo);
-                var absPath = Path.Combine(projectDir, relPath.Replace('/', Path.DirectorySeparatorChar));
-
-                if (req.OnlyMissing && File.Exists(absPath))
-                {
-                    track.VoiceAudioRelativePath = relPath;
-                    alignment.SceneVoices.Add(track);
-                    var idxSkip = Interlocked.Increment(ref done);
-                    await UpdateAsync(s => { s.Index = idxSkip; s.Scene = sceneNo; }).ConfigureAwait(false);
-                    await AppendLogAsync($"  S{sceneNo:D2}: reuse existing → {relPath}").ConfigureAwait(false);
-                    continue;
-                }
-
-                var (audioBytes, ext, err) = await SynthesizeLineAsync(
-                    ctx, projectId, charKey, sceneText, "voice_substitution", ct).ConfigureAwait(false);
-
-                if (audioBytes is not { Length: > 0 })
-                {
-                    await AppendLogAsync($"  S{sceneNo:D2}: fail — {err ?? "no audio"}").ConfigureAwait(false);
-                    Interlocked.Increment(ref failed);
-                    Interlocked.Increment(ref done);
-                    alignment.SceneVoices.Add(track);
-                    continue;
-                }
-
-                relPath = MediaRegistryService.RevoiceSceneAudioRelativePath(sceneNo, ext);
-                absPath = Path.Combine(projectDir, relPath.Replace('/', Path.DirectorySeparatorChar));
-                Directory.CreateDirectory(Path.GetDirectoryName(absPath)!);
-                await File.WriteAllBytesAsync(absPath, audioBytes, ct).ConfigureAwait(false);
-                track.VoiceAudioRelativePath = relPath;
                 alignment.SceneVoices.Add(track);
-
-                var ticket = _mediaProxy.Issue($"{projectId}:{relPath}", TimeSpan.FromMinutes(45));
-                var clientUrl =
-                    $"/api/projects/{Uri.EscapeDataString(projectId)}/media/file" +
-                    $"?path={Uri.EscapeDataString(relPath)}&ticket={ticket}";
-
-                var idx = Interlocked.Increment(ref done);
-                await UpdateAsync(s =>
-                {
-                    s.Index = idx;
-                    s.Scene = sceneNo;
-                    s.ClientMediaUrl = clientUrl;
-                    s.ClientRelativePath = relPath;
-                    s.Message = $"Voice substitution: S{sceneNo:D2} ({idx}/{totalScenes})…";
-                }).ConfigureAwait(false);
-                await AppendLogAsync(
-                        $"  S{sceneNo:D2}: ready → {relPath} ({audioBytes.Length / 1024} KB)")
-                    .ConfigureAwait(false);
             }
 
             // Persist the alignment (per-scene voice tracks) as a project file.
@@ -3030,14 +3035,14 @@ public sealed class FilmJobService
             await AppendLogAsync($"Alignment saved → {VoiceAlignmentStore.RelativePath}").ConfigureAwait(false);
 
             if (failed == 0)
-                await FinishAsync("done", $"Voice substitution ready — {totalScenes} scene(s)").ConfigureAwait(false);
-            else if (failed >= totalScenes)
-                await FinishAsync("error", $"Voice substitution failed — all {failed} scene(s) failed", "all failed")
+                await FinishAsync("done", $"Voice substitution ready — {totalLines} line(s) across {totalScenes} scene(s)").ConfigureAwait(false);
+            else if (failed >= totalLines)
+                await FinishAsync("error", $"Voice substitution failed — all {failed} line(s) failed", "all failed")
                     .ConfigureAwait(false);
             else
                 await FinishAsync(
                         "partial",
-                        $"Voice substitution partial — {totalScenes - failed} ok, {failed} failed")
+                        $"Voice substitution partial — {totalLines - failed} ok, {failed} failed")
                     .ConfigureAwait(false);
         }
         catch (OperationCanceledException)
