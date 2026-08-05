@@ -31,7 +31,7 @@
 | Issue | Detail |
 |-------|--------|
 | Stage2 models | Project config must set `model_name` + `planning_model_name` |
-| Scene gen key check | `XAI_API_KEY` must be non-empty even when `UseFakes=true` |
+| Scene gen key check | **Fixed:** `UseFakes` skips provider env key gate in `EnsureVideoProviderConfiguredAsync`. Dummy `XAI_API_KEY=fake` also works if preferred. |
 | Concurrent gen | API allows multiple gen-scene jobs; rely on UI busy disable for double-submit UX |
 
 ## Artifacts

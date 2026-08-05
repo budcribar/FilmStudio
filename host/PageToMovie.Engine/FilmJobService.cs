@@ -4575,6 +4575,12 @@ public sealed class FilmJobService
     /// </summary>
     private async Task EnsureVideoProviderConfiguredAsync(string projectId, CancellationToken ct)
     {
+        // Fakes register FakeGrokVideoClient (IsConfigured=true). Do not demand real provider
+        // env keys — soaks use PageToMovie__UseFakes without XAI_API_KEY. Optional XAI_API_KEY=fake
+        // also works (any non-empty ambient key), but is not required when UseFakes is on.
+        if (_opts.UseFakes)
+            return;
+
         var modelId = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
         var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
 
