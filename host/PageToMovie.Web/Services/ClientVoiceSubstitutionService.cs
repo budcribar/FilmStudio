@@ -24,17 +24,20 @@ public sealed class ClientVoiceSubstitutionService
     private readonly EngineApiClient _engine;
     private readonly ClientMediaFolderService _media;
     private readonly ClientVideoStitchService _stitch;
+    private readonly ClientVoiceCaptureService _capture;
 
     public ClientVoiceSubstitutionService(
         IJSRuntime js,
         EngineApiClient engine,
         ClientMediaFolderService media,
-        ClientVideoStitchService stitch)
+        ClientVideoStitchService stitch,
+        ClientVoiceCaptureService capture)
     {
         _js = js;
         _engine = engine;
         _media = media;
         _stitch = stitch;
+        _capture = capture;
     }
 
     /// <summary>Result of stitching one scene and overlaying its single cloned-voice narration track.</summary>
@@ -72,6 +75,15 @@ public sealed class ClientVoiceSubstitutionService
 
         onProgress?.Invoke("Syncing clips and audio…");
         try { await _media.SyncProjectMediaToClientAsync(projectId); } catch { /* best effort — overlay reads whatever is local */ }
+
+        // Once per book: STT-verify the dialogue windows so the overlay can place confirmed lines
+        // exactly where the original spoke. Built + cached the first time; reused thereafter.
+        try
+        {
+            if (await _engine.GetVoiceCapturePhrasesAsync(projectId, ct) is null)
+                await _capture.BuildPhrasesAsync(projectId, onProgress, ct);
+        }
+        catch { /* best effort — overlay falls back to word-count/WPS placement if this fails */ }
 
         onProgress?.Invoke("Placing your voice over each scene…");
         var overlays = await ApplyAcrossMovieAsync(projectId, ct);
@@ -114,6 +126,15 @@ public sealed class ClientVoiceSubstitutionService
         var alignment = await _engine.GetVoiceAlignmentAsync(projectId, ct);
         if (alignment is null || alignment.SceneVoices.Count == 0)
             return results;
+
+        // STT-verified (line ↔ window) pairs from the once-per-book phrase cache, keyed by scene. When
+        // a line matches one of these, we trust its verified window outright instead of guessing.
+        var phrases = await _engine.GetVoiceCapturePhrasesAsync(projectId, ct);
+        var confidentByScene = phrases?.Phrases
+            .Where(pp => pp.Confident)
+            .GroupBy(pp => pp.Scene)
+            .ToDictionary(g => g.Key, g => g.OrderBy(pp => pp.WindowStartSec).ToList())
+            ?? new Dictionary<int, List<VoiceCapturePhrase>>();
 
         static int WordCount(string? t) =>
             string.IsNullOrWhiteSpace(t) ? 1 : Math.Max(1, t.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length);
@@ -241,6 +262,12 @@ public sealed class ClientVoiceSubstitutionService
                     return windows[^1].EndSec;
                 }
 
+                // STT-verified windows for this scene (consumed as matched, in order).
+                var sceneConfident = confidentByScene.TryGetValue(p.Scene, out var cs)
+                    ? new List<VoiceCapturePhrase>(cs)
+                    : new List<VoiceCapturePhrase>();
+                var confirmedUsed = 0;
+
                 var segs = new List<object>();
                 double cumWords = 0;
                 for (var i = 0; i < lines.Count; i++)
@@ -248,23 +275,40 @@ public sealed class ClientVoiceSubstitutionService
                     var lineUrl = await _media.GetLocalBlobUrlAsync(projectId, lines[i].VoiceAudioRelativePath!);
                     if (!string.IsNullOrWhiteSpace(lineUrl))
                     {
-                        // WHERE the dialog starts: the real 1:1 window when detection agrees, else the
-                        // word-weighted slice of the combined speech timeline (or the scene if none).
-                        double startSec;
-                        if (windows.Count == lines.Count)
-                            startSec = windows[i].StartSec;
-                        else if (windows.Count > 0 && totalSpeech > 0.1)
-                            startSec = RealTime(cumWords / totalWords * totalSpeech);
+                        double startSec, endSec;
+                        var confirmed = TakeConfidentMatch(sceneConfident, lines[i].Text);
+                        if (confirmed is not null)
+                        {
+                            // Scribe verified this exact line is in this window → trust it outright.
+                            startSec = confirmed.WindowStartSec;
+                            endSec = confirmed.WindowEndSec;
+                            confirmedUsed++;
+                        }
                         else
-                            startSec = cumWords / totalWords * (p.SceneDur > 0 ? p.SceneDur : lines.Count * 3.0);
+                        {
+                            // WHERE the dialog starts: the real 1:1 window when detection agrees, else the
+                            // word-weighted slice of the combined speech timeline (or the scene if none).
+                            if (windows.Count == lines.Count)
+                                startSec = windows[i].StartSec;
+                            else if (windows.Count > 0 && totalSpeech > 0.1)
+                                startSec = RealTime(cumWords / totalWords * totalSpeech);
+                            else
+                                startSec = cumWords / totalWords * (p.SceneDur > 0 ? p.SceneDur : lines.Count * 3.0);
 
-                        // HOW LONG the line should take at the narrator's LEARNED pace — the calibration
-                        // target the browser stretches the clone toward (clone → speaker pace). Immune to
-                        // inflated windows (trailing silence), which is what broke placement before.
-                        var endSec = startSec + Math.Max(0.4, words[i] / speakerWps);
+                            // HOW LONG the line should take at the narrator's LEARNED pace — the calibration
+                            // target the browser stretches the clone toward (clone → speaker pace). Immune to
+                            // inflated windows (trailing silence), which is what broke placement before.
+                            endSec = startSec + Math.Max(0.4, words[i] / speakerWps);
+                        }
                         segs.Add(new { audioUrl = lineUrl, startSec, endSec });
                     }
                     cumWords += words[i];
+                }
+
+                if (confirmedUsed > 0)
+                {
+                    try { await _js.InvokeVoidAsync("console.log", $"[dub] scene {p.Scene:D2}: {confirmedUsed} line(s) placed from STT-verified windows"); }
+                    catch { /* logging only */ }
                 }
 
                 if (segs.Count == 0)
@@ -305,6 +349,32 @@ public sealed class ClientVoiceSubstitutionService
         public List<SceneVoiceLine>? Lines { get; set; }
         public List<JsSpeechWindow>? Windows { get; set; }
         public double SceneDur { get; set; }
+    }
+
+    /// <summary>Find (and consume) a confident phrase whose text matches the line, so each verified
+    /// window is used at most once per scene.</summary>
+    private static VoiceCapturePhrase? TakeConfidentMatch(List<VoiceCapturePhrase> pool, string? lineText)
+    {
+        var target = NormText(lineText);
+        if (target.Length == 0) return null;
+        for (var i = 0; i < pool.Count; i++)
+        {
+            if (NormText(pool[i].Text) == target)
+            {
+                var m = pool[i];
+                pool.RemoveAt(i);
+                return m;
+            }
+        }
+        return null;
+    }
+
+    private static string NormText(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return "";
+        var toks = new string(s.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray())
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join(" ", toks);
     }
 
     private sealed class JsOverlayResult

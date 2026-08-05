@@ -103,8 +103,12 @@ setting. (Matches the app's clean, jargon-free UI rule.)
 - [x] Verification loop `ClientVoiceCaptureService.BuildPhrasesAsync`: per narrator-only scene, stitch →
       detect windows → extract each → Scribe transcribe → word-overlap match to the blueprint line
       (≥0.7 = confident) → rank confident by duration → **save phrases.json** (the once-per-book cache).
-- [ ] Wire confident (line↔window) pairs into the dub overlay placement (replace guessing where confirmed).
-- [ ] *(refinement)* dynamic-range measurement per segment for ranking; LLM expressiveness/spread pass; trigger UI.
+- [x] Wire confident (line↔window) pairs into the overlay: `ApplyAcrossMovieAsync` reads phrases.json and
+      places any line matching a confident window at that verified window; else WPS/word-count fallback.
+      Auto-builds the cache on the first dub if missing (once per book) — logs
+      `[dub] scene NN: N line(s) placed from STT-verified windows`.
+- [ ] *(refinement)* dynamic-range measurement per segment for ranking; LLM expressiveness/spread pass;
+      dedicated "prepare phrases" trigger UI (currently auto-builds inside the dub).
 
 ### Phase 2 — Selection + persistence + capture UI
 - [ ] Rank/select phrases (dynamic range + LLM + spread) → `phrases.json`; save/load endpoints.
