@@ -96,12 +96,26 @@ public class FakeVideoCatalogCapabilityTests
     }
 
     [Fact]
-    public void Unknown_model_id_does_not_throw()
+    public void Unknown_model_id_throws()
     {
-        FakeGrokVideoClient.ValidateAgainstCatalog(
-            "not-in-catalog-test-id",
-            durationSeconds: 99,
-            referenceImagePaths: Enumerable.Range(0, 20).Select(i => $"r{i}.png").ToList(),
-            continueFromVideoPath: "/tmp/x.mp4");
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            FakeGrokVideoClient.ValidateAgainstCatalog(
+                "not-in-catalog-test-id",
+                durationSeconds: 99,
+                referenceImagePaths: null,
+                continueFromVideoPath: null));
+        Assert.Contains("not in models_catalog", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Empty_model_id_throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            FakeGrokVideoClient.ValidateAgainstCatalog(
+                "",
+                durationSeconds: 5,
+                referenceImagePaths: null,
+                continueFromVideoPath: null));
+        Assert.Contains("required", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

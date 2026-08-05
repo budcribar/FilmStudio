@@ -1,25 +1,19 @@
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Provider-specific caps for multi-reference image edit / portrait seeds.
-/// Keep UI and API aligned so we never offer more seeds than the active backend accepts.
+/// Image multi-reference caps from the models catalog only.
+/// Unknown model ids or missing <c>maxReferenceImages</c> are errors — never invent defaults.
 /// </summary>
 public static class ImageApiLimits
 {
     public const string ProviderGrok = "grok";
     public const string ProviderGemini = "gemini";
 
-    /// <summary>xAI Grok Imagine image edits: up to 3 reference images per request.</summary>
+    /// <summary>Historical Grok Imagine edit cap (documentation only — prefer catalog).</summary>
     public const int GrokMaxReferenceImages = 3;
 
-    /// <summary>
-    /// Gemini 3 image models: up to 14 reference images.
-    /// Older Flash image paths are lower — still use 14 as soft max for selection ranking;
-    /// actual client may clamp further if needed.
-    /// </summary>
+    /// <summary>Historical Gemini image ref soft max (documentation only — prefer catalog).</summary>
     public const int GeminiMaxReferenceImages = 14;
-
-    public const int DefaultMaxReferenceImages = GrokMaxReferenceImages;
 
     /// <summary>
     /// Resolve provider id from model catalog only. Empty when unknown — never invents "grok".
@@ -41,28 +35,47 @@ public static class ImageApiLimits
     }
 
     /// <summary>
-    /// Hard max reference images from the catalog entry only.
-    /// Provider constants remain as documentation / last-ditch when model id is unknown.
+    /// Max reference images for this image model from the catalog.
+    /// Throws if <paramref name="imageModel"/> is missing, not in the catalog, or has no
+    /// <c>maxReferenceImages</c> — never defaults by provider.
     /// </summary>
     public static int MaxReferenceImages(string? imageProvider, string? imageModel)
     {
-        var entry = PageToMovie.Core.Models.SupportedModelCatalog.Find(
-            imageModel, PageToMovie.Core.Models.ModelCapability.Image)
-            ?? PageToMovie.Core.Models.SupportedModelCatalog.Find(imageModel);
-        if (entry?.MaxReferenceImages is { } catalogMax)
-            return catalogMax; // include 0 = no refs
+        if (string.IsNullOrWhiteSpace(imageModel))
+            throw new InvalidOperationException(
+                "Image model is required for max reference images. " +
+                "Open Settings → Studio coverage and choose an image model.");
 
-        // Unknown model id — no silent provider invention of capability; use conservative default.
-        // Prefer fixing catalog maxReferenceImages on every Image row over expanding this switch.
-        return DefaultMaxReferenceImages;
+        var entry = PageToMovie.Core.Models.SupportedModelCatalog.Find(
+            imageModel.Trim(), PageToMovie.Core.Models.ModelCapability.Image)
+            ?? PageToMovie.Core.Models.SupportedModelCatalog.Find(imageModel.Trim());
+
+        if (entry is null)
+            throw new InvalidOperationException(
+                $"Image model '{imageModel}' is not in models_catalog.json. " +
+                "Unknown models have no capabilities — pick a catalog image model in Settings.");
+
+        if (entry.Capability != PageToMovie.Core.Models.ModelCapability.Image)
+            throw new InvalidOperationException(
+                $"Model '{entry.Id}' is catalogued as {entry.Capability}, not Image. " +
+                "Choose an image model in Settings → Studio coverage.");
+
+        if (entry.MaxReferenceImages is not { } catalogMax)
+            throw new InvalidOperationException(
+                $"Image model '{entry.Id}' has no maxReferenceImages in models_catalog.json. " +
+                "Add the field to the catalog — do not invent a default.");
+
+        return catalogMax;
     }
 
     /// <summary>
-    /// Clamp a requested max-refs to the active provider limit.
+    /// Clamp a requested max-refs to the catalog limit for this image model.
     /// </summary>
     public static int ClampMaxRefs(int requested, string? imageProvider, string? imageModel)
     {
         var cap = MaxReferenceImages(imageProvider, imageModel);
+        if (cap <= 0)
+            return 0;
         if (requested <= 0)
             return cap;
         return Math.Clamp(requested, 1, cap);

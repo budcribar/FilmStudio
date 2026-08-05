@@ -151,11 +151,18 @@ public sealed class FakeGrokVideoClient : IVideoClient
         string? continueFromVideoPath)
     {
         if (string.IsNullOrWhiteSpace(model))
-            return;
+            throw new InvalidOperationException(
+                "Fake video: model id is required. Unknown/empty models have no capabilities.");
 
         var entry = SupportedModelCatalog.Find(model.Trim(), ModelCapability.Video);
-        if (entry is null || !entry.Enabled)
-            return;
+        if (entry is null)
+            throw new InvalidOperationException(
+                $"Fake video: model '{model}' is not in models_catalog.json as Video. " +
+                "Unknown models have no capabilities.");
+
+        if (!entry.Enabled)
+            throw new InvalidOperationException(
+                $"Fake video: model '{entry.Id}' is disabled in the catalog.");
 
         if (!string.IsNullOrWhiteSpace(continueFromVideoPath) && !entry.SupportsVideoContinue)
         {

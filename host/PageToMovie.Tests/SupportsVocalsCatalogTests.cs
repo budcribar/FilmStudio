@@ -58,4 +58,28 @@ public class SupportsVocalsCatalogTests
         var n = ImageApiLimits.MaxReferenceImages(null, "fal-ai/flux/dev");
         Assert.Equal(1, n);
     }
+
+    [Fact]
+    public void Unknown_image_model_throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ImageApiLimits.MaxReferenceImages(null, "not-a-real-image-model"));
+        Assert.Contains("not in models_catalog", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Empty_image_model_throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ImageApiLimits.MaxReferenceImages(null, null));
+        Assert.Contains("required", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Chat_model_as_image_throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ImageApiLimits.MaxReferenceImages(null, "grok-4.5"));
+        Assert.Contains("not Image", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }
