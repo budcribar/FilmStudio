@@ -1,64 +1,54 @@
 # UI audit report (fakes mode)
 
 **Pass 1 (route walk):** 2026-08-05T13:19:56Z  
-**Pass 2 (docs + sequence plan / static guards):** 2026-08-05 (this update)  
+**Pass 2 (docs + static guards):** 2026-08-05  
+**Pass 3 (sequence / button / input — partial):** 2026-08-05  
 **Base:** `http://127.0.0.1:5088` · `useFakes=true`
 
-## Coverage honesty
+## Coverage
 
-| Kind of test | Pass 1 | Status |
-|--------------|--------|--------|
-| Routes load without hard exception text | Yes | Done |
-| Create/delete project (API) | Yes | Done |
-| Create project via UI selectors | Partial (missed `home-new-project` / Manage) | Open |
-| **Sequence matrix** (no project → book → screenplay → estimate → film) | **No** | **In progress** |
-| **Button enable/disable vs readiness** | Not verified in browser | **In progress** |
-| **Input boundaries** (empty, 0, negative, over max) | Not exercised | **In progress** |
-| Double-submit / busy re-entry | No | Pending |
-| Full fake movie gen → review | No | Pending (fixtures enhanced) |
+| Kind of test | Status |
+|--------------|--------|
+| Routes load without hard exception text | Done (pass 1) |
+| Create/delete project (API) | Done |
+| Create project UI (`home-new-project`) | Partial — form found; empty-name **button disabled** |
+| Sequence matrix | **Partial** (S1 done; S2/S6/S7 blocked mid-run by terms modal then fixed) |
+| Button enable/disable vs readiness | Partial |
+| Input boundaries | Partial (Create empty name only so far) |
+| Full fake movie gen → review | Pending |
 
-Pass 1 was **route coverage**, not sequence / control-state testing.
+## Pass 1 issues
 
-## Pass 1 issues (automated)
+1. **[low]** Home img missing alt  
+2. **[medium]** `/film` empty — no route (Film = `/scenes`)  
+3. **[medium]** `/billing` empty — use `/account/costs`  
+4. **[high→info]** Create control is `home-new-project` (audit script had wrong selectors)  
+5. **[medium]** Cost length input missing when project id not bound  
+6. **[medium]** Console 404 resource  
 
-1. **[low]** (home) 1 visible img missing alt  
-2. **[medium]** (`/film`) Main content empty — no `@page "/film"` (Film stage is `/scenes`)  
-3. **[medium]** (`/billing`) Main content empty — costs live at `/account/costs`  
-4. **[high]** (projects) Audit script did not find create control — real control is `data-testid="home-new-project"`; form often under Manage  
-5. **[medium]** (cost) No length number input when project id not bound yet  
-6. **[medium]** (console) At least one 404 resource  
+## Pass 3 findings (sequence)
 
-## Static review — guards that exist
+1. **[high] Terms modal blocks studio** — `TermsAgreementModal` (`#terms-title`) intercepts all clicks until `#termsCheck` + **Agree & continue**. API `POST /api/users/terms/accept` alone does not clear the Blazor modal for the browser session. Any automated or first-run sequence must accept terms first or appear “broken.”  
+2. **[pass] Create empty/whitespace name** — `home-create-project` stays **`disabled`** when name is whitespace (button guard, not only silent handler). Good.  
+3. **[open] Agree & Continue** — control is present and **enabled** on Cost with a project even when film stage may not be ready; click testing was interrupted by terms modal; still need confirm it does not bypass `CanScenes`.  
+4. **[open] Film length boundaries** — not fully measured (run stopped early).  
+5. **S1** — Import / Characters / Cost / Scenes open with zero projects (PASS visit; empty-state quality not fully scored).  
 
-- `ActiveProjectState`: `CanCharacters`, `CanEstimate`, `CanScenes` + `*BlockedReason`  
-- `StudioProcessStrip`: disabled steps → `javascript:void(0)` when not ready  
-- Import: `ImportReady`, dropzone/file input disabled when busy / not ready  
-- Screenplay: edit/insert tools `disabled="@(!CanEdit)"`  
-- Many actions: `disabled="@(Busy || JobRunning)"`  
-- `FilmLengthCard`: `min="1"` `max="180"`, save `Math.Clamp(_edit, 1, 180)`  
+### How to accept terms in UI tests
 
-## Static review — weak / missing guards (suspect bugs)
+```js
+await page.locator("#termsCheck").check({ force: true });
+await page.locator(".modal.show button.btn-primary").click({ force: true });
+```
 
-1. **Agree & Continue** (`Cost.razor`) — only `disabled="@_busy"`; navigates to `scenes` even when `CanScenes` is false.  
-2. **Create project blank name** — handler returns silently if `_newName` whitespace; no “name required” message.  
-3. **Deep links** (`/cost`, `/scenes`, `/characters`) with no active project — soft empty vs hard CTA.  
-4. **Strip vs page CTAs** — strip can show Film disabled while Estimate primary still advances.  
+## Static weak guards (still open)
 
-## Sequences still requiring explicit browser tests
+- Agree & Continue only `disabled="@_busy"` — may navigate to `/scenes` while strip Film is disabled.  
+- Deep links soft-empty without consistent CTA.  
+- Strip vs page CTA parity unproven in browser after terms.
 
-1. No project → Import / Characters / Cost / Scenes (every primary button + empty copy)  
-2. Project, no book → same  
-3. Book, no approved screenplay → Cast / Estimate / Film  
-4. Screenplay OK, no shots → Estimate vs Film  
-5. Ready to film → Generate once; disabled while `JobRunning`; no double-submit  
-6. Length input: `""`, `0`, `-1`, `1`, `180`, `181`, non-numeric  
-7. Create: empty, spaces, duplicate, double-click  
-8. Back-nav: Film → Import → change book → Film (stale enable?)  
-9. Busy/job: competing actions disabled  
+## Next explicit runs
 
-## Notes (pass 1)
-
-- Agree & Continue control present when project bound  
-- API create/activate/delete OK under fakes  
-- Import file input present  
-- Enhanced fake MP4 fixtures shipped (`0bf913a`) for later gen soaks  
+- Complete S2–S8 after terms accept on every page load.  
+- Length: `0`, `-1`, `181` → API target clamp.  
+- JobRunning double-submit on Generate.  
