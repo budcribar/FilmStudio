@@ -8601,6 +8601,29 @@ try
 }
 catch { /* non-fatal */ }
 
+// One-time self-heal: legacy demo records may store an email in CreatedBy (before ownership ids
+// were normalized to a non-email UserId). Rewrite each to the account's canonical id so the public
+// byline shows a handle and ownership checks line up. Idempotent — no-ops once records are clean.
+try
+{
+    var demosService = app.Services.GetRequiredService<DemoCatalogService>();
+    var userDb = app.Services.GetRequiredService<UserDatabaseService>();
+    var migrated = demosService.MigrateEmailCreatedBy(email =>
+    {
+        var u = userDb.GetUserByEmailAsync(email).GetAwaiter().GetResult();
+        if (u is null) return null;
+        return string.IsNullOrWhiteSpace(u.UserId)
+            ? (string.IsNullOrWhiteSpace(u.Username) ? null : u.Username.Trim())
+            : u.UserId.Trim();
+    });
+    if (migrated > 0)
+        Console.WriteLine($"Startup demo migration: healed CreatedBy on {migrated} demo record(s).");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Demo CreatedBy migration error: {ex.Message}");
+}
+
 app.Run();
 
 namespace PageToMovie.Api
