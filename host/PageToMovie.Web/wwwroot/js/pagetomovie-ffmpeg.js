@@ -550,19 +550,31 @@ window.PageToMovieFfmpeg = {
      * of a take against the original, plus duration closeness. Timbre-independent by construction
      * (normalized RMS envelope) — a different voice with the same rhythm scores high. Returns 0..100.
      */
-    analyzeRhythmMatchAsync: async function (originalUrl, takeUrl) {
+    analyzeRhythmMatchAsync: async function (originalUrl, takeUrl, regionCount) {
         try {
-            const frames = 64;
+            const frames = 96;
             const a = await this._loudnessEnvelope(originalUrl, frames);
             const b = await this._loudnessEnvelope(takeUrl, frames);
-            const shape = Math.max(0, this._pearson(a.env, b.env)); // clamp negative → 0
+
+            // Per-region match (0..1) so we can color each word red/yellow/green: both envelopes are
+            // normalized + resampled to the same frames, so they're time-aligned; a region's match is
+            // 1 − (mean absolute envelope difference), scaled for sensitivity. Timbre-independent.
+            const rc = Math.max(1, Math.min(frames, (regionCount | 0) || 8));
+            const regions = [];
+            for (let r = 0; r < rc; r++) {
+                const s = Math.floor(r * frames / rc);
+                const e = Math.max(s + 1, Math.floor((r + 1) * frames / rc));
+                let sum = 0, cnt = 0;
+                for (let i = s; i < e && i < frames; i++) { sum += Math.abs(a.env[i] - b.env[i]); cnt++; }
+                const md = cnt ? sum / cnt : 1;
+                regions.push(Math.max(0, Math.min(1, 1 - 1.6 * md)));
+            }
+            const meanMatch = regions.reduce((x, y) => x + y, 0) / (regions.length || 1);
             const dr = a.durationSec > 0 && b.durationSec > 0
                 ? Math.min(a.durationSec, b.durationSec) / Math.max(a.durationSec, b.durationSec) : 0;
-            // Weight the rhythm shape over raw duration; generous so a decent take feels good.
-            const score = Math.round(100 * (0.65 * shape + 0.35 * dr));
+            const score = Math.round(100 * (0.8 * meanMatch + 0.2 * dr));
             return {
-                success: true, score: Math.max(0, Math.min(100, score)),
-                shape: +shape.toFixed(3), durationRatio: +dr.toFixed(3),
+                success: true, score: Math.max(0, Math.min(100, score)), regions: regions,
                 originalSec: +a.durationSec.toFixed(2), takeSec: +b.durationSec.toFixed(2),
             };
         } catch (err) {

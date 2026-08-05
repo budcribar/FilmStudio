@@ -92,7 +92,28 @@ else
             <span class="badge text-bg-secondary">@_kept.Count kept</span>
         </div>
         <div class="card-body">
-            <p class="fs-5 mb-3" data-testid="voice-capture-text">“@CurrentPhrase.Text”</p>
+            @{ var words = SplitWords(CurrentPhrase.Text); }
+            <div class="mb-3" style="max-width:640px;">
+                <p class="fs-5 mb-1" data-testid="voice-capture-text">
+                    @for (var wi = 0; wi < words.Count; wi++)
+                    {
+                        <span style="@WordStyle(wi)">@words[wi]</span>@(" ")
+                    }
+                </p>
+                @* Pacing ball — right under the text, sized to it *@
+                <div class="ptm-ball-track" style="@(_recording ? "" : "visibility:hidden;")">
+                    <div @key="_recordSession" class="ptm-ball-dot @(_recording ? "ptm-ball-run" : "")"
+                         style="--ptm-ball-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");"></div>
+                </div>
+                @if (_recording)
+                {
+                    <div class="small text-danger mt-1">● Follow the ball</div>
+                }
+                @if (_regions is { Count: > 0 } && !_recording)
+                {
+                    <div class="small text-muted mt-1">Colours show where your rhythm matched — aim to turn the red/orange words green.</div>
+                }
+            </div>
 
             @* Listen *@
             <div class="mb-3">
@@ -117,17 +138,6 @@ else
                         <span class="ptm-light @(_light == 3 ? "ptm-green-on" : "ptm-green-off")"></span>
                     </div>
                     <span class="fs-5 fw-semibold">@(_light == 1 ? "Get ready…" : _light == 2 ? "Set…" : "Go — read it!")</span>
-                </div>
-            }
-
-            @* Pacing ball (visible while recording) *@
-            @if (_recording)
-            {
-                <div class="mb-3">
-                    <div class="ptm-ball-track">
-                        <div class="ptm-ball-dot ptm-ball-run" style="--ptm-ball-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");"></div>
-                    </div>
-                    <div class="small text-danger mt-1">● Recording — follow the ball</div>
                 </div>
             }
 
@@ -206,6 +216,7 @@ else
     private string? _originalUrl;   // extracted original segment (Listen)
     private string? _takeUrl;       // user's recording as a data: URL
     private int? _score;
+    private List<double>? _regions; // per-word rhythm match (0..1), for colouring
 
     private bool _recording;
     private int _light; // 0 = off, 1 = red, 2 = yellow, 3 = green (go)
@@ -250,7 +261,7 @@ else
     private async Task LoadPhrasesAsync()
     {
         _phrases = new(); _i = 0; _sceneUrls.Clear();
-        _originalUrl = null; _takeUrl = null; _score = null;
+        _originalUrl = null; _takeUrl = null; _score = null; _regions = null;
         _kept.Clear(); _done = false; _error = null; _status = null;
         if (string.IsNullOrEmpty(_projectId)) { StateHasChanged(); return; }
         try
@@ -292,7 +303,7 @@ else
     {
         _originalUrl = null;
         _takeUrl = null;
-        _score = null;
+        _score = null; _regions = null;
         StateHasChanged();
 
         var p = CurrentPhrase;
@@ -329,7 +340,7 @@ else
 
     private async Task RecordAsync()
     {
-        _error = null; _status = null; _takeUrl = null; _score = null;
+        _error = null; _status = null; _takeUrl = null; _score = null; _regions = null;
 
         // Red → yellow → green. Recording (and the ball) start on green, so you're not caught mid-click.
         _light = 1; StateHasChanged(); await Task.Delay(650); // red
@@ -385,9 +396,10 @@ else
 
             if (!string.IsNullOrEmpty(_originalUrl))
             {
+                var wc = SplitWords(CurrentPhrase.Text).Count;
                 var s = await Js.InvokeAsync<RhythmResult>(
-                    "PageToMovieFfmpeg.analyzeRhythmMatchAsync", _originalUrl, _takeUrl);
-                if (s is { Success: true }) _score = s.Score;
+                    "PageToMovieFfmpeg.analyzeRhythmMatchAsync", _originalUrl, _takeUrl, wc);
+                if (s is { Success: true }) { _score = s.Score; _regions = s.Regions; }
             }
         }
         catch (Exception ex) { _error = ex.Message; }
@@ -447,11 +459,23 @@ else
             _ => "audio/webm",
         };
 
+    private static List<string> SplitWords(string? t) =>
+        string.IsNullOrWhiteSpace(t) ? new() : t.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+    // Per-word background from the rhythm-match regions (green good, yellow medium, red poor).
+    private string WordStyle(int wordIndex)
+    {
+        if (_recording || _regions is not { Count: > 0 } r) return "";
+        var m = r[Math.Min(wordIndex, r.Count - 1)];
+        var (rr, gg, bb) = m >= 0.7 ? (52, 199, 89) : m >= 0.5 ? (255, 204, 0) : (255, 59, 48);
+        return $"background: rgba({rr},{gg},{bb},.32); border-radius:4px; padding:0 3px;";
+    }
+
     private static string ScoreStars(int s) => new string('★', Math.Clamp(s / 20, 0, 5)).PadRight(5, '☆');
     private static string ScoreLabel(int s) => s >= 80 ? "Great match!" : s >= 60 ? "Nice!" : s >= 40 ? "Good — try the rhythm again" : "Give it another go";
     private static string ScoreClass(int s) => s >= 60 ? "text-success" : s >= 40 ? "text-warning" : "text-muted";
 
     private sealed class ExtractUrlResult { public bool Success { get; set; } public string? Url { get; set; } public string? Error { get; set; } }
-    private sealed class RhythmResult { public bool Success { get; set; } public int Score { get; set; } public string? Error { get; set; } }
+    private sealed class RhythmResult { public bool Success { get; set; } public int Score { get; set; } public List<double>? Regions { get; set; } public string? Error { get; set; } }
     private sealed class VoiceCaptureStopResult { public bool Ok { get; set; } public string? Error { get; set; } public string? Base64 { get; set; } public string? FileName { get; set; } }
 }
