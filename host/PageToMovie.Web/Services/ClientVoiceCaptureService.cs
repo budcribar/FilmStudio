@@ -78,7 +78,8 @@ public sealed class ClientVoiceCaptureService
                 .OrderBy(w => w.StartSec)
                 .ToList();
 
-            // Extract + transcribe + match each window.
+            // First pass: extract + transcribe + best-line-match each detected window.
+            var perWindow = new List<WindowMatch>();
             for (var wi = 0; wi < windows.Count; wi++)
             {
                 ct.ThrowIfCancellationRequested();
@@ -98,12 +99,11 @@ public sealed class ClientVoiceCaptureService
                 var heard = (transcript?.Text ?? "").Trim();
                 if (heard.Length == 0) continue;
 
-                // Keep the per-word timings (they're 0-based within this extracted window) so the
-                // capture teleprompter can copy the narrator's exact rhythm, not an even glide.
+                // Per-word timings (0-based within this window) so the teleprompter can copy the exact rhythm.
                 var timedWords = (transcript?.Words ?? new())
-                    .Where(w => !string.IsNullOrWhiteSpace(w.Text) &&
-                                !string.Equals(w.Type, "spacing", StringComparison.OrdinalIgnoreCase))
-                    .Select(w => new VoiceCaptureWord { Text = w.Text.Trim(), StartSec = Math.Max(0, w.Start), EndSec = Math.Max(0, w.End) })
+                    .Where(tw => !string.IsNullOrWhiteSpace(tw.Text) &&
+                                 !string.Equals(tw.Type, "spacing", StringComparison.OrdinalIgnoreCase))
+                    .Select(tw => new VoiceCaptureWord { Text = tw.Text.Trim(), StartSec = Math.Max(0, tw.Start), EndSec = Math.Max(0, tw.End) })
                     .ToList();
 
                 // Best-matching expected narrator line for this window.
@@ -115,18 +115,51 @@ public sealed class ClientVoiceCaptureService
                     if (s > bestScore) { bestScore = s; bestLine = line; }
                 }
 
+                perWindow.Add(new WindowMatch(w.StartSec, w.EndSec, bestLine, heard, timedWords));
+            }
+
+            // Second pass: a line the narrator says with an internal pause (e.g. after a comma) gets split
+            // into two speech windows, and matching each alone drops the short fragment — losing that word
+            // from the captured audio. Rejoin consecutive windows that matched the SAME line (within a
+            // short gap) into one phrase spanning the whole line, transcript and word-timings included.
+            const double maxMergeGapSec = 1.5;
+            var idx = 0;
+            while (idx < perWindow.Count)
+            {
+                if (string.IsNullOrEmpty(perWindow[idx].Line)) { idx++; continue; }
+
+                var startI = idx;
+                var endI = idx;
+                while (endI + 1 < perWindow.Count &&
+                       perWindow[endI + 1].Line == perWindow[startI].Line &&
+                       perWindow[endI + 1].StartSec - perWindow[endI].EndSec < maxMergeGapSec)
+                    endI++;
+
+                var first = perWindow[startI];
+                var last = perWindow[endI];
+                var heard = string.Join(" ", Enumerable.Range(startI, endI - startI + 1).Select(k => perWindow[k].Heard));
+                var mergedWords = new List<VoiceCaptureWord>();
+                for (var k = startI; k <= endI; k++)
+                {
+                    var off = perWindow[k].StartSec - first.StartSec; // re-base to the combined window start
+                    foreach (var wd in perWindow[k].Words)
+                        mergedWords.Add(new VoiceCaptureWord { Text = wd.Text, StartSec = wd.StartSec + off, EndSec = wd.EndSec + off });
+                }
+                var score = WordOverlap(first.Line, heard);
+
                 phrases.Phrases.Add(new VoiceCapturePhrase
                 {
                     Scene = sc.Scene,
                     Clip = 0,
-                    WindowStartSec = w.StartSec,
-                    WindowEndSec = w.EndSec,
-                    Text = bestLine,
+                    WindowStartSec = first.StartSec,
+                    WindowEndSec = last.EndSec,
+                    Text = first.Line,
                     TranscribedText = heard,
-                    MatchScore = Math.Round(bestScore, 3),
-                    Confident = bestScore >= ConfidenceThreshold,
-                    Words = timedWords.Count > 0 ? timedWords : null,
+                    MatchScore = Math.Round(score, 3),
+                    Confident = score >= ConfidenceThreshold,
+                    Words = mergedWords.Count > 0 ? mergedWords : null,
                 });
+                idx = endI + 1;
             }
         }
 
@@ -153,6 +186,9 @@ public sealed class ClientVoiceCaptureService
         new string((s ?? "").ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray())
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .ToList();
+
+    /// <summary>One detected window's STT result: its time span, best-matched line, transcript, and word timings.</summary>
+    private sealed record WindowMatch(double StartSec, double EndSec, string Line, string Heard, List<VoiceCaptureWord> Words);
 
     private sealed class JsSpeechDetectResult
     {
