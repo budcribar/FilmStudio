@@ -1,0 +1,85 @@
+{
+  "generatedAt": "2026-08-05T13:19:56.755Z",
+  "base": "http://127.0.0.1:5088",
+  "health": {
+    "ok": true,
+    "service": "PageToMovie.Api",
+    "workspace": "/tmp/ptm-workspace",
+    "activeProject": "local/UIAudit_API_1785935793196",
+    "useFakes": true,
+    "enableReadCaches": true,
+    "capacity": {
+      "maxVideoInFlight": 4,
+      "maxVideoInFlightPerUser": 1,
+      "maxQueuePerUser": 5
+    },
+    "xaiConfigured": true,
+    "xaiKeyPresent": false,
+    "userId": "local",
+    "isAdmin": true
+  },
+  "issueCount": 6,
+  "bySeverity": {
+    "critical": 0,
+    "high": 1,
+    "medium": 4,
+    "low": 1
+  },
+  "issues": [
+    {
+      "sev": "low",
+      "area": "home",
+      "title": "1 visible img(s) missing alt",
+      "detail": "",
+      "at": "2026-08-05T13:16:51.738Z"
+    },
+    {
+      "sev": "medium",
+      "area": "/film",
+      "title": "Main content very short/empty",
+      "detail": "len=0",
+      "at": "2026-08-05T13:18:07.682Z"
+    },
+    {
+      "sev": "medium",
+      "area": "/billing",
+      "title": "Main content very short/empty",
+      "detail": "len=0",
+      "at": "2026-08-05T13:18:42.532Z"
+    },
+    {
+      "sev": "high",
+      "area": "projects",
+      "title": "Could not find New/Create project control on Home",
+      "detail": "",
+      "at": "2026-08-05T13:18:45.035Z"
+    },
+    {
+      "sev": "medium",
+      "area": "cost",
+      "title": "No number input for film length on Cost page",
+      "detail": "",
+      "at": "2026-08-05T13:19:06.259Z"
+    },
+    {
+      "sev": "medium",
+      "area": "console",
+      "title": "Browser console error",
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "at": "2026-08-05T13:19:56.646Z"
+    }
+  ],
+  "notes": [
+    "BASE=http://127.0.0.1:5088 API=http://127.0.0.1:5088",
+    "useFakes=true isAdmin=true",
+    "nav links: /, /demo, /configuration, /adaptation, /cost, /admin, /admin/users, /admin/config, /admin/learning, /admin/book-cache, configuration, javascript:void(0)",
+    "API created project: {\"id\":\"local/UIAudit_API_1785935925035\",\"label\":\"UI Audit API Project\",\"title\":\"UI Audit API Project\",\"path\":\"/tmp/ptm-workspace/projects/local/UIAudit_API_1785935925035\",\"ownerUserId\":\"local\",\"parent",
+    "project count=2",
+    "activate local/UIAudit_API_1785935793196 status=200",
+    "file inputs on import: 1",
+    "character list items: 1",
+    "Agree & Continue present",
+    "created delete-me project local/UIAudit_DeleteMe_1785935983960",
+    "API delete status=200"
+  ]
+}
