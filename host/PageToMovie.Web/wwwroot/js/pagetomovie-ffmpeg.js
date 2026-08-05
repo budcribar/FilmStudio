@@ -728,7 +728,9 @@ window.PageToMovieFfmpeg = {
             el.getAnimations().forEach(function (a) { a.cancel(); });
             el.animate(frames, { duration: D * 1000, easing: "linear", fill: "forwards" });
 
-            // Highlight the word at the marker for its spoken span (kills any "which word?" doubt).
+            // Highlight the word at the marker ONLY while it's actually spoken [start,end], then unlight
+            // it — so a pause (e.g. after a comma) is an unlit breath, not a highlight stuck on the last
+            // word. Light-on timers are scheduled before light-off so back-to-back words don't cancel.
             if (el._teleTimers) el._teleTimers.forEach(function (t) { clearTimeout(t); });
             el._teleTimers = [];
             const clearAll = function () { for (let k = 0; k < n; k++) spans[k].classList.remove("tele-active"); };
@@ -736,6 +738,12 @@ window.PageToMovieFfmpeg = {
                 el._teleTimers.push(setTimeout((function (idx) {
                     return function () { clearAll(); spans[idx].classList.add("tele-active"); };
                 })(i), Math.max(0, starts[i] * 1000)));
+            }
+            for (let i = 0; i < n; i++) {
+                const endMs = Math.max(0, (ends && ends[i] != null ? ends[i] : starts[i]) * 1000);
+                el._teleTimers.push(setTimeout((function (idx) {
+                    return function () { spans[idx].classList.remove("tele-active"); };
+                })(i), endMs));
             }
             el._teleTimers.push(setTimeout(clearAll, Math.max(0, D * 1000)));
             return true;
