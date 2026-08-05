@@ -582,7 +582,12 @@ window.PageToMovieFfmpeg = {
         }
     },
 
-    /** Decode audio → normalized RMS loudness envelope resampled to `frames` points, + duration. */
+    /**
+     * Decode audio → normalized RMS loudness envelope resampled to `frames` points, with leading and
+     * trailing silence TRIMMED so two clips align at the start of speech (and the returned duration is
+     * speech-only, making the comparison meaningful). No time-stretching — a length mismatch stays
+     * visible in the score.
+     */
     _loudnessEnvelope: async function (url, frames) {
         const resp = await fetch(url);
         const buf = await resp.arrayBuffer();
@@ -592,17 +597,37 @@ window.PageToMovieFfmpeg = {
             const decoded = await ctx.decodeAudioData(buf);
             const ch = decoded.getChannelData(0);
             const n = ch.length;
-            const env = new Float32Array(frames);
-            const per = Math.max(1, Math.floor(n / frames));
-            for (let i = 0; i < frames; i++) {
+
+            // Fine envelope first, so we can find the speech span.
+            const fine = 400;
+            const raw = new Float32Array(fine);
+            const per = Math.max(1, Math.floor(n / fine));
+            for (let i = 0; i < fine; i++) {
                 let sum = 0, cnt = 0;
                 const s = i * per, e = Math.min(n, s + per);
                 for (let j = s; j < e; j++) { sum += ch[j] * ch[j]; cnt++; }
-                env[i] = cnt ? Math.sqrt(sum / cnt) : 0;
+                raw[i] = cnt ? Math.sqrt(sum / cnt) : 0;
             }
-            let mx = 0; for (let i = 0; i < frames; i++) if (env[i] > mx) mx = env[i];
-            if (mx > 0) for (let i = 0; i < frames; i++) env[i] /= mx;
-            return { env: env, durationSec: decoded.duration };
+            let mx = 0; for (let i = 0; i < fine; i++) if (raw[i] > mx) mx = raw[i];
+
+            // Trim leading/trailing silence (bins below 8% of peak).
+            const thr = mx * 0.08;
+            let lo = 0, hi = fine - 1;
+            while (lo < fine && raw[lo] < thr) lo++;
+            while (hi > lo && raw[hi] < thr) hi--;
+            if (lo >= hi) { lo = 0; hi = fine - 1; } // all quiet → keep everything
+            const span = hi - lo + 1;
+
+            // Resample the speech span to `frames`, normalized.
+            const env = new Float32Array(frames);
+            for (let i = 0; i < frames; i++) {
+                const idx = lo + Math.floor(i * span / frames);
+                env[i] = raw[Math.min(fine - 1, idx)];
+            }
+            let mx2 = 0; for (let i = 0; i < frames; i++) if (env[i] > mx2) mx2 = env[i];
+            if (mx2 > 0) for (let i = 0; i < frames; i++) env[i] /= mx2;
+
+            return { env: env, durationSec: decoded.duration * (span / fine) };
         } finally {
             try { await ctx.close(); } catch (_) { /* */ }
         }
