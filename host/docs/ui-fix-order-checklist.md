@@ -1,88 +1,50 @@
 # UI fix-order checklist (fakes audit 2026-08-05+)
 
-Legend: `[ ]` open · `[~]` partial · `[x]` done / verified · code deferred until tests/go-ahead
+Legend: `[ ]` open · `[~]` partial · `[x]` verified
 
-## Product decisions (documentation)
+## Product
 
-- [x] **`/demo` is public — terms not required.** Gallery must work with no Terms modal.
-- [ ] **Fix:** stop showing `TermsAgreementModal` on `/demo` (and any other public routes). Pass 4 observed modal on demo → bug.
-- [ ] Broader code fixes — after remaining tests or explicit go-ahead
+- [x] **`/demo` is public — terms not required** (docs)
+- [ ] **Code:** do not show Terms modal on `/demo`
 
-## P0 — Correctness / dead ends
+## P0 — Confirmed failures (pass 5)
 
-- [ ] **Demo without terms** — `/demo` must not show Terms modal; content usable while logged out / terms not accepted.
-- [ ] **Unknown routes blank main** — `/film`, `/billing` → Not Found or `/film` → `/scenes`.
-- [ ] **Cost length card missing** — active project + terms, length input still absent.
-- [ ] **API terms enforcement (studio only)** — mutating studio routes (e.g. `POST /api/projects`) require terms; **not** public demo GETs.
-- [~] **Agree & Continue vs CanScenes** — soft navigate to `/scenes`; prefer disable or clearer not-ready UX.
-- [x] **Create empty name** — Create stays disabled for whitespace.
-- [x] **Terms modal blocks studio chrome** — verified (Home, Cost, Adaptation, etc.).
-- [x] **Terms accept persists on reload** — verified.
+- [ ] **Demo without terms** — modal must not appear on `/demo`
+- [ ] **Not Found** — `/film`, `/billing`, unknown paths show Not Found (not blank `main`)
+- [ ] **API terms** — `POST /api/projects` without terms → 4xx
+- [ ] **Cost length card** — number input with active project (after import still missing)
 
-## P1 — Discoverability
+## P0 — Other
 
-- [ ] Create project one-click name field.
-- [ ] Delete project under Manage.
-- [ ] Look / Embellish / Trim discoverable.
-- [ ] Deep-link empty CTAs without project.
+- [~] Agree & Continue vs CanScenes (soft empty on `/scenes`)
+- [x] Create empty name disabled
+- [x] Terms blocks studio chrome
+- [x] Terms accept persists on reload
+- [x] S9 Delete visible under Manage
 
-## P2 — Input & control-state
+## P1–P4
 
-- [ ] Film length boundaries once card visible.
-- [ ] Busy/JobRunning double-submit.
-- [ ] Strip vs page CTA parity.
-- [ ] Back-nav after book change.
-
-## P3 — Polish
-
-- [ ] Console 404.
-- [ ] Home favicon alt.
-- [ ] Docs links `/billing` → `/account/costs`.
-
-## P4 — Fakes soaks
-
-- [ ] E2E gen → review with real fixtures.
-- [ ] Character thumbs.
-- [ ] Live cost on length change.
+- [ ] Create one-click name field; Look/Embellish/Trim discoverability
+- [ ] Length boundaries once card visible; JobRunning double-submit; back-nav
+- [ ] Console 404; favicon alt; docs `/billing` → `/account/costs`
+- [ ] E2E fake gen → review; character thumbs; live cost
 
 ## Testing still needed
 
-### A. Sequence matrix (terms accepted — **studio** paths only)
-
-| # | Test |
-|---|------|
-| S2b | Cost after book/import — does length card appear? |
-| S3 | Book, screenplay not approved → Cast / Estimate / Film |
-| S4 | Screenplay OK, no shots → Estimate vs Generate |
-| S5 | Ready to film → Generate once; job disables re-entry |
-| S6 | Length boundaries once input visible |
-| S8 | Change book after estimate → re-gate |
-| S9 | Delete project via UI (Manage) |
-
-### B. Terms / public vs studio
-
-| # | Test |
-|---|------|
-| T1 | `POST /api/projects` without terms → should 4xx after fix |
-| T2 | Other **studio** mutating APIs without terms |
-| T3 | **`/demo` with no terms accept → no modal, gallery usable** (regression) |
-| T4 | Fresh user on studio Home → modal; on `/demo` → no modal |
-| T5 | After terms accept, studio works; demo still works |
-
-### C. Not Found & navigation
-
-| # | Test |
-|---|------|
-| N1 | `/film`, `/billing`, junk → Not Found (not blank) |
-| N2 | Strip Film → `/scenes` |
-
-### D. Optional later (P4)
-
-- Full fake clip gen → Review  
-- Character image switch  
-- Cost $ on length change  
+| ID | Status |
+|----|--------|
+| T3 demo no modal | FAIL confirmed |
+| T1 API terms | FAIL confirmed |
+| N1 Not Found | FAIL confirmed |
+| S2b length card | FAIL confirmed |
+| S3–S5 readiness after real screenplay approve | Pending (need successful convert/approve) |
+| S6 length boundaries | Blocked until length card shows |
+| S8 book change re-gate | Pending |
+| S9 UI delete **click** (confirm dialog + gone) | Control visible only |
+| T2 other mutating APIs without terms | Pending |
+| Full fake gen soak | Pending |
 
 ## Shipped
 
-- [x] Audit + checklist on `master` (**demo is public / no terms** decision corrected)
-- [x] Real MP4 fake fixtures + FakeGrokVideoClient improvements
+- [x] Docs + fake MP4 fixtures on `master`
+- [x] Pass 5 continue-tests report under `artifacts/ui-audit/`
