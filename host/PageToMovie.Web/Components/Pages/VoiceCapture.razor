@@ -28,13 +28,31 @@
     <div class="alert alert-danger" data-testid="voice-capture-error">@_error</div>
 }
 
-@if (string.IsNullOrEmpty(_projectId))
+@if (_projects.Count > 0)
 {
-    <div class="alert alert-info">Open a film first, then come back to match your voice.</div>
+    <div class="mb-3" style="max-width:440px;">
+        <label class="form-label small text-muted mb-1">Film</label>
+        <select class="form-select" value="@_projectId" @onchange="SelectProjectAsync"
+                disabled="@_busy" data-testid="voice-capture-project">
+            @foreach (var p in _projects)
+            {
+                <option value="@p.Id">@(p.Label ?? p.Title ?? p.Id)</option>
+            }
+        </select>
+    </div>
 }
-else if (_loading)
+
+@if (_loading)
 {
-    <p class="text-muted">Getting your phrases ready…</p>
+    <p class="text-muted">Getting things ready…</p>
+}
+else if (_projects.Count == 0)
+{
+    <div class="alert alert-info">No films yet — create one first, then come back.</div>
+}
+else if (string.IsNullOrEmpty(_projectId))
+{
+    <div class="alert alert-info">Pick a film above to match your voice.</div>
 }
 else if (_phrases.Count == 0)
 {
@@ -153,6 +171,7 @@ else
     private const int MaxPhrases = 8;
 
     private string? _projectId;
+    private List<ProjectInfo> _projects = new();
     private bool _loading = true;
     private bool _busy;
     private bool _done;
@@ -179,29 +198,54 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Load the film list for the picker.
+        try { var pr = await Engine.GetProjectsAsync(); _projects = pr?.Projects ?? new(); }
+        catch (Exception ex) { _error = ex.Message; }
+
+        // Default selection: the active project (client or server), else the first film.
         _projectId = ActiveProject.ProjectId;
         if (string.IsNullOrEmpty(_projectId))
         {
-            // No project open in this session — resolve the server's active project (last worked on).
-            try { await ActiveProject.RefreshFromApiAsync(Engine); } catch { /* fall through to prompt */ }
+            try { await ActiveProject.RefreshFromApiAsync(Engine); } catch { /* ignore */ }
             _projectId = ActiveProject.ProjectId;
         }
-        if (string.IsNullOrEmpty(_projectId)) { _loading = false; return; }
+        if (string.IsNullOrEmpty(_projectId) && _projects.Count > 0)
+            _projectId = _projects[0].Id;
+
+        _loading = false;
+        if (!string.IsNullOrEmpty(_projectId))
+            await LoadPhrasesAsync();
+    }
+
+    private async Task SelectProjectAsync(ChangeEventArgs e)
+    {
+        _projectId = e.Value?.ToString();
+        await LoadPhrasesAsync();
+    }
+
+    private async Task LoadPhrasesAsync()
+    {
+        _phrases = new(); _i = 0; _sceneUrls.Clear();
+        _originalUrl = null; _takeUrl = null; _score = null;
+        _kept.Clear(); _done = false; _error = null; _status = null;
+        if (string.IsNullOrEmpty(_projectId)) { StateHasChanged(); return; }
         try
         {
             var data = await Engine.GetVoiceCapturePhrasesAsync(_projectId);
-            _phrases = (data?.Phrases ?? new())
-                .Where(p => p.Confident)
-                .OrderBy(p => p.Rank < 0 ? int.MaxValue : p.Rank)
-                .ThenByDescending(p => p.DurationSec)
-                .Take(MaxPhrases)
-                .ToList();
+            _phrases = SelectPool(data?.Phrases);
         }
         catch (Exception ex) { _error = ex.Message; }
-        _loading = false;
-        if (_phrases.Count > 0)
-            await PreparePhraseAsync();
+        if (_phrases.Count > 0) await PreparePhraseAsync();
+        StateHasChanged();
     }
+
+    private static List<VoiceCapturePhrase> SelectPool(List<VoiceCapturePhrase>? all) =>
+        (all ?? new())
+            .Where(p => p.Confident)
+            .OrderBy(p => p.Rank < 0 ? int.MaxValue : p.Rank)
+            .ThenByDescending(p => p.DurationSec)
+            .Take(MaxPhrases)
+            .ToList();
 
     private async Task PreparePhrasesAsync()
     {
@@ -211,12 +255,7 @@ else
         try
         {
             var built = await Capture.BuildPhrasesAsync(_projectId, s => { _status = s; _ = InvokeAsync(StateHasChanged); });
-            _phrases = (built?.Phrases ?? new())
-                .Where(p => p.Confident)
-                .OrderBy(p => p.Rank < 0 ? int.MaxValue : p.Rank)
-                .ThenByDescending(p => p.DurationSec)
-                .Take(MaxPhrases)
-                .ToList();
+            _phrases = SelectPool(built?.Phrases);
             if (_phrases.Count == 0)
                 _status = "Couldn't find clear narrator dialogue to match — make sure the clips are generated.";
             else { _i = 0; await PreparePhraseAsync(); }
