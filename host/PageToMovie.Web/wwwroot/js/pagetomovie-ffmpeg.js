@@ -482,6 +482,38 @@ window.PageToMovieFfmpeg = {
     },
 
     /**
+     * Extract a video's audio for the window [startSec, endSec] as a mono 16 kHz WAV, returned as
+     * raw bytes (Uint8Array → C# byte[]). Used to send a detected dialogue segment to Scribe (STT)
+     * for verification. Throws on failure.
+     */
+    extractAudioSegmentAsync: async function (videoUrl, startSec, endSec, onProgress) {
+        if (!videoUrl) throw new Error("No video URL");
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) throw new Error(load.error || "ffmpeg load failed");
+            const ffmpeg = self._ffmpeg;
+            const inName = "seg_in.mp4";
+            const outName = "seg_out.wav";
+            try {
+                await ffmpeg.writeFile(inName, await self._safeFetchFile(videoUrl));
+                const start = Math.max(0, +startSec || 0);
+                const dur = Math.max(0.1, (+endSec || 0) - start);
+                const args = ["-hide_banner", "-y"];
+                if (start > 0.001) args.push("-ss", String(start));
+                args.push("-i", inName, "-t", String(dur),
+                    "-vn", "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", outName);
+                await ffmpeg.exec(args);
+                const out = await ffmpeg.readFile(outName);
+                return out; // Uint8Array → marshals to C# byte[]
+            } finally {
+                try { await ffmpeg.deleteFile(inName); } catch (_) { /* */ }
+                try { await ffmpeg.deleteFile(outName); } catch (_) { /* */ }
+            }
+        });
+    },
+
+    /**
      * Turn a silencedetect log into non-silent [start,end] windows over [0,totalSec].
      * Silence runs are the complement of speech; a clip with no detected silence is one speech run.
      */

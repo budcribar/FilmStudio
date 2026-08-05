@@ -1689,6 +1689,44 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         }
     }
 
+    /// <summary>Transcribe an extracted audio segment via server-side Scribe (STT). Used to verify a
+    /// detected window contains the expected narrator line (confident line↔window mapping); returns
+    /// null on any failure.</summary>
+    public async Task<TranscriptDto?> TranscribeSegmentAsync(
+        byte[] audio, string fileName = "segment.wav", CancellationToken ct = default)
+    {
+        if (audio is null || audio.Length < 128) return null;
+        SyncIdentityHeaders();
+        try
+        {
+            using var form = new MultipartFormDataContent();
+            var content = new ByteArrayContent(audio);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/wav");
+            form.Add(content, "file", string.IsNullOrWhiteSpace(fileName) ? "segment.wav" : fileName);
+            using var resp = await _http.PostAsync("/api/transcribe", form, ct);
+            if (!resp.IsSuccessStatusCode) return null;
+            return await resp.Content.ReadFromJsonAsync<TranscriptDto>(JsonOpts, ct);
+        }
+        catch { return null; }
+    }
+
+    public sealed class TranscriptDto
+    {
+        public bool Ok { get; set; }
+        public string? Text { get; set; }
+        public string? LanguageCode { get; set; }
+        public List<TranscriptWordDto>? Words { get; set; }
+        public string? Error { get; set; }
+    }
+
+    public sealed class TranscriptWordDto
+    {
+        public string Text { get; set; } = "";
+        public double Start { get; set; }
+        public double End { get; set; }
+        public string? Type { get; set; }
+    }
+
     private class VoiceAlignmentResponseDto
     {
         public bool Ok { get; set; }
