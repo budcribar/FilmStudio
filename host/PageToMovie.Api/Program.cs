@@ -7542,6 +7542,47 @@ app.MapPost("/api/transcribe", async (
     });
 });
 
+// Per-scene narrator lines straight from the blueprint (no dub / TTS needed) — lets the capture
+// page build its phrase cache standalone. Returns each scene's narrator line texts + whether the
+// scene also has a non-narrator speaker (those scenes aren't capture material).
+app.MapGet("/api/projects/{id}/voice-capture/narrator-lines", async (
+    string id, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    using var blueprint = await store.LoadBlueprintAsync(id, ct);
+    if (blueprint is null)
+        return Results.Ok(new { ok = true, scenes = Array.Empty<object>() });
+
+    static bool IsNarr(string? spk) =>
+        !string.IsNullOrWhiteSpace(spk) &&
+        (string.Equals(spk.Trim(), "Character_Narrator", StringComparison.OrdinalIgnoreCase) ||
+         spk.Contains("narrator", StringComparison.OrdinalIgnoreCase));
+
+    var all = VoiceAlignmentStore.BuildDialogueLinesFromBlueprint(blueprint.RootElement, null);
+    var scenesWithOther = new HashSet<int>();
+    foreach (var cl in all)
+        if (cl.Lines.Any(l => !IsNarr(l.CharacterKey)))
+            scenesWithOther.Add(cl.Scene);
+
+    var byScene = VoiceAlignmentStore.BuildDialogueLinesFromBlueprint(blueprint.RootElement, IsNarr)
+        .GroupBy(c => c.Scene)
+        .OrderBy(g => g.Key)
+        .Select(g => new
+        {
+            scene = g.Key,
+            hasOtherSpeakers = scenesWithOther.Contains(g.Key),
+            lines = g.OrderBy(c => c.Clip)
+                .SelectMany(c => c.Lines)
+                .Select(l => l.Text)
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .ToList(),
+        })
+        .ToList();
+
+    return Results.Ok(new { ok = true, scenes = byScene });
+});
+
 // Voice-capture phrase cache (per project, computed once per book): the confident STT-verified
 // dialogue phrases used by the capture UI and by the dub overlay's line↔window mapping.
 app.MapGet("/api/projects/{id}/voice-capture/phrases", async (

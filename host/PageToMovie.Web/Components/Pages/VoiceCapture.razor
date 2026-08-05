@@ -2,6 +2,7 @@
 @using PageToMovie.Core.Models
 @inject EngineApiClient Engine
 @inject ClientVideoStitchService Stitch
+@inject ClientVoiceCaptureService Capture
 @inject ClientMediaFolderService MediaFolder
 @inject ActiveProjectState ActiveProject
 @inject IJSRuntime Js
@@ -37,8 +38,17 @@ else if (_loading)
 }
 else if (_phrases.Count == 0)
 {
-    <div class="alert alert-info">
-        No phrases yet. Make the movie once ("Make it in my voice") — that prepares the phrases — then come back here.
+    <div class="card mb-3">
+        <div class="card-body text-center">
+            <p class="text-muted mb-3">We just need to find your dialogue first — a one-time step (about a minute).</p>
+            <button class="btn btn-primary" disabled="@_busy" data-testid="voice-capture-prepare" @onclick="PreparePhrasesAsync">
+                @(_busy ? "Preparing…" : "Prepare phrases")
+            </button>
+            @if (!string.IsNullOrEmpty(_status))
+            {
+                <div class="small text-muted mt-3">@_status</div>
+            }
+        </div>
     </div>
 }
 else if (_done)
@@ -191,6 +201,28 @@ else
         _loading = false;
         if (_phrases.Count > 0)
             await PreparePhraseAsync();
+    }
+
+    private async Task PreparePhrasesAsync()
+    {
+        if (string.IsNullOrEmpty(_projectId)) return;
+        _busy = true; _error = null; _status = "Finding your dialogue…";
+        StateHasChanged();
+        try
+        {
+            var built = await Capture.BuildPhrasesAsync(_projectId, s => { _status = s; _ = InvokeAsync(StateHasChanged); });
+            _phrases = (built?.Phrases ?? new())
+                .Where(p => p.Confident)
+                .OrderBy(p => p.Rank < 0 ? int.MaxValue : p.Rank)
+                .ThenByDescending(p => p.DurationSec)
+                .Take(MaxPhrases)
+                .ToList();
+            if (_phrases.Count == 0)
+                _status = "Couldn't find clear narrator dialogue to match — make sure the clips are generated.";
+            else { _i = 0; await PreparePhraseAsync(); }
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; StateHasChanged(); }
     }
 
     private async Task PreparePhraseAsync()

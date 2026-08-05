@@ -36,26 +36,27 @@ public sealed class ClientVoiceCaptureService
     public async Task<VoiceCapturePhrases?> BuildPhrasesAsync(
         string projectId, Action<string>? onProgress = null, CancellationToken ct = default)
     {
-        // Source of the expected narrator line texts + which scenes are narrator-only.
-        var alignment = await _engine.GetVoiceAlignmentAsync(projectId, ct);
-        if (alignment is null || alignment.SceneVoices.Count == 0)
+        // Expected narrator line texts + which scenes are narrator-only, straight from the blueprint —
+        // no dub/TTS needed, so this runs standalone from the capture page.
+        var scenes = await _engine.GetNarratorLinesAsync(projectId, ct);
+        if (scenes is null || scenes.Count == 0)
             return null;
 
         var phrases = new VoiceCapturePhrases { ProjectId = projectId, ConfidenceThreshold = ConfidenceThreshold };
 
-        foreach (var sv in alignment.SceneVoices.Where(s => !s.HasOtherSpeakers).OrderBy(s => s.Scene))
+        foreach (var sc in scenes.Where(s => !s.HasOtherSpeakers).OrderBy(s => s.Scene))
         {
             ct.ThrowIfCancellationRequested();
-            var expectedLines = sv.Lines
-                .Select(l => (l.Text ?? "").Trim())
+            var expectedLines = sc.Lines
+                .Select(t => (t ?? "").Trim())
                 .Where(t => t.Length > 0)
                 .ToList();
             if (expectedLines.Count == 0) continue;
 
-            onProgress?.Invoke($"Scanning scene {sv.Scene:D2}…");
+            onProgress?.Invoke($"Scanning scene {sc.Scene:D2}…");
 
             // Stitch the scene's clips into one video.
-            var clipUrls = await _stitch.CollectClipUrlsAsync(projectId, sv.Scene, ct: ct);
+            var clipUrls = await _stitch.CollectClipUrlsAsync(projectId, sc.Scene, ct: ct);
             if (clipUrls.Count == 0) continue;
             string sceneVideoUrl;
             if (clipUrls.Count == 1)
@@ -82,7 +83,7 @@ public sealed class ClientVoiceCaptureService
             {
                 ct.ThrowIfCancellationRequested();
                 var w = windows[wi];
-                onProgress?.Invoke($"Scene {sv.Scene:D2}: verifying phrase {wi + 1}/{windows.Count}…");
+                onProgress?.Invoke($"Scene {sc.Scene:D2}: verifying phrase {wi + 1}/{windows.Count}…");
 
                 byte[]? audio;
                 try
@@ -108,7 +109,7 @@ public sealed class ClientVoiceCaptureService
 
                 phrases.Phrases.Add(new VoiceCapturePhrase
                 {
-                    Scene = sv.Scene,
+                    Scene = sc.Scene,
                     Clip = 0,
                     WindowStartSec = w.StartSec,
                     WindowEndSec = w.EndSec,

@@ -1762,6 +1762,35 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public VoiceCapturePhrases? Phrases { get; set; }
     }
 
+    /// <summary>Per-scene narrator lines from the blueprint (no dub needed) — lets the capture page
+    /// build its phrase cache standalone.</summary>
+    public async Task<List<NarratorSceneLinesDto>> GetNarratorLinesAsync(string projectId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        try
+        {
+            using var resp = await _http.GetAsync(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/voice-capture/narrator-lines", ct);
+            if (!resp.IsSuccessStatusCode) return new();
+            var dto = await resp.Content.ReadFromJsonAsync<NarratorLinesResponseDto>(JsonOpts, ct);
+            return dto?.Scenes ?? new();
+        }
+        catch { return new(); }
+    }
+
+    public sealed class NarratorSceneLinesDto
+    {
+        public int Scene { get; set; }
+        public bool HasOtherSpeakers { get; set; }
+        public List<string> Lines { get; set; } = new();
+    }
+
+    private class NarratorLinesResponseDto
+    {
+        public bool Ok { get; set; }
+        public List<NarratorSceneLinesDto>? Scenes { get; set; }
+    }
+
     private class VoiceAlignmentResponseDto
     {
         public bool Ok { get; set; }

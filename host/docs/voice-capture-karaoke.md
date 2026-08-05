@@ -126,8 +126,10 @@ setting. (Matches the app's clean, jargon-free UI rule.)
 - [x] Done as the capture page's Finish step (`concatAudioToBytesAsync` → upload sample → apply clone).
 
 ### Follow-ups
-- [ ] Nav link to `/voice-capture` (currently reached by URL); ideally reuse the phrases build from
-      here so the user can prepare + capture without running a full dub first.
+- [x] Build phrases standalone from the capture page (no dub needed): `GET
+      /api/projects/{id}/voice-capture/narrator-lines` (blueprint-derived) + a "Prepare phrases" button
+      → `ClientVoiceCaptureService.BuildPhrasesAsync` now sources lines from that endpoint.
+- [ ] Nav link to `/voice-capture` (currently reached by URL).
 - [ ] Per-segment dynamic-range ranking + LLM expressiveness/spread selection for the phrase pool.
 - [ ] Optional pitch-contour overlay (Smule-style) on the score.
 - [ ] Live browser test: mic record + Web Audio score + audio concat + clone round-trip.
