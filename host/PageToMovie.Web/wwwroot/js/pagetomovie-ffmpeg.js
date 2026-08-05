@@ -563,6 +563,41 @@ window.PageToMovieFfmpeg = {
     },
 
     /**
+     * Scroll the teleprompter (#tele-text) so each word reaches the fixed marker at its own spoken
+     * time. `starts[i]` is when word i should be at the marker (seconds from the start), so the
+     * scroll lingers on stretched words (a big gap to the next word) and hurries the quick ones —
+     * an exact copy of the narrator's rhythm. Falls back to nothing if the element isn't there.
+     */
+    startWordTeleprompter: function (starts, durationSec) {
+        try {
+            const el = document.getElementById("tele-text");
+            if (!el || !durationSec) return false;
+            const spans = el.querySelectorAll(".tele-w");
+            const n = Math.min(spans.length, (starts || []).length);
+            if (n === 0) return false;
+            const D = durationSec;
+            const lefts = [];
+            for (let i = 0; i < n; i++) lefts.push(spans[i].offsetLeft);
+            // Word i's LEFT edge sits at the marker when translateX = -lefts[i]. Piecewise-linear
+            // between word times ⇒ the marker sweeps slowly across long-held words, fast across short.
+            const frames = [{ transform: "translateX(0px)", offset: 0 }];
+            for (let i = 0; i < n; i++) {
+                let off = starts[i] / D;
+                if (!(off >= 0)) off = 0; if (off > 1) off = 1;
+                frames.push({ transform: "translateX(" + (-lefts[i]) + "px)", offset: off });
+            }
+            frames.push({ transform: "translateX(" + (-lefts[n - 1]) + "px)", offset: 1 });
+            // Offsets must be non-decreasing for the Web Animations API; nudge any that regress.
+            for (let i = 1; i < frames.length; i++)
+                if (frames[i].offset <= frames[i - 1].offset)
+                    frames[i].offset = Math.min(1, frames[i - 1].offset + 0.0001);
+            el.getAnimations().forEach(function (a) { a.cancel(); });
+            el.animate(frames, { duration: D * 1000, easing: "linear", fill: "forwards" });
+            return true;
+        } catch (_) { return false; }
+    },
+
+    /**
      * "How'd I do" rhythm score: compare the loudness ENVELOPE shape (where emphasis/syllables land)
      * of a take against the original, plus duration closeness. Timbre-independent by construction
      * (normalized RMS envelope) — a different voice with the same rhythm scores high. Returns 0..100.

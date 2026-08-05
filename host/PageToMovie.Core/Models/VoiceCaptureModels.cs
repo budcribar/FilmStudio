@@ -37,7 +37,20 @@ public sealed class VoiceCapturePhrase
     /// <summary>Selection rank among confident phrases (0 = best). -1 = not selected.</summary>
     public int Rank { get; set; } = -1;
 
+    /// <summary>Per-word timings from Scribe (seconds relative to the window start), so the capture
+    /// teleprompter can pace each word exactly like the narrator — lingering on stretched words and
+    /// zipping through quick ones — instead of an even glide. Null/empty ⇒ fall back to even spacing.</summary>
+    public List<VoiceCaptureWord>? Words { get; set; }
+
     public double DurationSec => Math.Max(0, WindowEndSec - WindowStartSec);
+}
+
+/// <summary>One transcribed word with its timing within the phrase window (seconds from window start).</summary>
+public sealed class VoiceCaptureWord
+{
+    public string Text { get; set; } = "";
+    public double StartSec { get; set; }
+    public double EndSec { get; set; }
 }
 
 /// <summary>

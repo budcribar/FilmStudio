@@ -98,6 +98,14 @@ public sealed class ClientVoiceCaptureService
                 var heard = (transcript?.Text ?? "").Trim();
                 if (heard.Length == 0) continue;
 
+                // Keep the per-word timings (they're 0-based within this extracted window) so the
+                // capture teleprompter can copy the narrator's exact rhythm, not an even glide.
+                var timedWords = (transcript?.Words ?? new())
+                    .Where(w => !string.IsNullOrWhiteSpace(w.Text) &&
+                                !string.Equals(w.Type, "spacing", StringComparison.OrdinalIgnoreCase))
+                    .Select(w => new VoiceCaptureWord { Text = w.Text.Trim(), StartSec = Math.Max(0, w.Start), EndSec = Math.Max(0, w.End) })
+                    .ToList();
+
                 // Best-matching expected narrator line for this window.
                 var bestLine = "";
                 var bestScore = 0.0;
@@ -117,6 +125,7 @@ public sealed class ClientVoiceCaptureService
                     TranscribedText = heard,
                     MatchScore = Math.Round(bestScore, 3),
                     Confident = bestScore >= ConfidenceThreshold,
+                    Words = timedWords.Count > 0 ? timedWords : null,
                 });
             }
         }

@@ -29,8 +29,7 @@
     .tele-pointer { position: absolute; left: 6%; top: -3px; bottom: -3px; width: 3px; border-radius: 2px;
         background: #ffc107; box-shadow: 0 0 10px #ffc107; z-index: 2; }
     .tele-text { position: absolute; left: 6%; white-space: nowrap; will-change: transform; }
-    .tele-run { animation: tele-scroll var(--tele-dur, 3s) linear forwards; }
-    @@keyframes tele-scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+    .tele-w { display: inline-block; } /* measurable per-word box for the paced scroll */
 </style>
 
 <div class="ptm-page-head mb-3">
@@ -116,9 +115,11 @@ else
                     </div>
                     <div class="tele-viewport flex-grow-1">
                         <div class="tele-pointer"></div>
-                        <div @key="_teleSession" class="tele-text fs-5 @((_recording || _listening) ? "tele-run" : "")"
-                             style="--tele-dur:@($"{_ballDurationSec.ToString(System.Globalization.CultureInfo.InvariantCulture)}s");">
-                            @CurrentPhrase.Text
+                        <div id="tele-text" @key="_teleSession" class="tele-text fs-5">
+                            @foreach (var w in words)
+                            {
+                                <span class="tele-w">@w</span><text> </text>
+                            }
                         </div>
                     </div>
                 </div>
@@ -246,6 +247,7 @@ else
     private double _ballDurationSec = 3;
     private int _recordSession;
     private int _teleSession; // bumped to (re)start the teleprompter scroll (Listen and on "Go")
+    private bool _teleStartPending; // set when a scroll should start on the next render (spans in DOM)
 
     private readonly List<string> _kept = new(); // kept take data URLs
 
@@ -365,15 +367,85 @@ else
     private async Task ListenAsync()
     {
         if (string.IsNullOrEmpty(_originalUrl) || _listening || _recording || _light > 0) return;
-        // Scroll the original across the teleprompter (same pacing) while it plays, so the user
-        // sees how the narrator reads it — then read it back the same way.
+        // Scroll the original across the teleprompter (paced to the narrator's own word timings)
+        // while it plays, so the user sees how the narrator reads it — then reads it back the same way.
         _listening = true;
         _teleSession++;
+        _teleStartPending = true; // the scroll starts in OnAfterRenderAsync, once the spans render
         StateHasChanged();
         try { await Js.InvokeAsync<bool>("PageToMovieFfmpeg.playAudioAsync", _originalUrl); }
         catch { /* ignore playback errors */ }
         _listening = false;
         await InvokeAsync(StateHasChanged);
+    }
+
+    // The paced scroll can only start once the word spans exist in the DOM (we measure their pixel
+    // positions), so we arm it and kick it off here after the render that shows the teleprompter.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_teleStartPending) return;
+        _teleStartPending = false;
+        var starts = BuildWordTimeline(SplitWords(CurrentPhrase.Text), _ballDurationSec);
+        try { await Js.InvokeVoidAsync("PageToMovieFfmpeg.startWordTeleprompter", starts, _ballDurationSec); }
+        catch { /* ignore */ }
+    }
+
+    // When each display word should sit at the marker (seconds from the start). Anchored to Scribe's
+    // real word timings so stretched words linger; unmatched words interpolate; no timings ⇒ even.
+    private double[] BuildWordTimeline(List<string> disp, double durSec)
+    {
+        var n = disp.Count;
+        var starts = new double[n];
+        if (n == 0) return starts;
+
+        var words = CurrentPhrase.Words;
+        if (words is null || words.Count == 0)
+        {
+            for (var i = 0; i < n; i++) starts[i] = durSec * i / n;
+            return starts;
+        }
+
+        // In-order anchor match: pair each display word to the next matching timed word (small lookahead).
+        var known = new double?[n];
+        var si = 0;
+        for (var di = 0; di < n; di++)
+        {
+            var dt = NormTok(disp[di]);
+            if (dt.Length == 0) continue;
+            for (var j = si; j < words.Count && j <= si + 4; j++)
+            {
+                if (NormTok(words[j].Text) == dt) { known[di] = Math.Max(0, words[j].StartSec); si = j + 1; break; }
+            }
+        }
+
+        // Interpolate the un-anchored words linearly by index between anchors (0 at the front, durSec at the end).
+        int prevIdx = -1; double prevTime = 0;
+        for (var di = 0; di < n; di++)
+        {
+            if (known[di] is not double kt) continue;
+            for (var g = prevIdx + 1; g < di; g++)
+                starts[g] = prevTime + (kt - prevTime) * (g - prevIdx) / (di - prevIdx);
+            starts[di] = kt; prevIdx = di; prevTime = kt;
+        }
+        for (var g = prevIdx + 1; g < n; g++)
+            starts[g] = prevTime + (durSec - prevTime) * (g - prevIdx) / (n - prevIdx);
+
+        // Clamp to a non-decreasing 0..durSec sequence.
+        double last = 0;
+        for (var i = 0; i < n; i++)
+        {
+            if (starts[i] < last) starts[i] = last;
+            if (starts[i] > durSec) starts[i] = durSec;
+            last = starts[i];
+        }
+        return starts;
+    }
+
+    private static string NormTok(string? s)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        var chars = s.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray();
+        return new string(chars);
     }
 
     private async Task RecordAsync()
@@ -389,7 +461,8 @@ else
         {
             await Js.InvokeAsync<object>("PageToMovieVoiceCapture.start");
             _recording = true;
-            _teleSession++; // restart the teleprompter scroll from the start on "Go"
+            _teleSession++;             // fresh teleprompter element on "Go"
+            _teleStartPending = true;   // its paced scroll starts in OnAfterRenderAsync
             var session = ++_recordSession;
             StateHasChanged();
             _ = ClearLightAsync();
