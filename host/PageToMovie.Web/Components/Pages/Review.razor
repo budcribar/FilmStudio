@@ -1289,6 +1289,17 @@ else
 
             try { await Hub.StartAsync(); } catch { /* optional */ }
             await LoadAsync();
+
+            // Contextual sync: Review plays this project's media, so pull it to the local folder now
+            // (replaces the old sync-on-every-page-load behaviour).
+            try
+            {
+                await MediaFolder.EnsureHubHookAsync();
+                if (!MediaFolder.IsConnected) await MediaFolder.TryReconnectAsync();
+                MediaFolder.TriggerAutoSyncIfConnected();
+            }
+            catch { /* media folder optional for browse */ }
+
             HandleYouTubeOAuthRedirect();
         }
         catch (Exception ex)

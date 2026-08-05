@@ -454,7 +454,9 @@ window.PageToMovieMedia = {
             const fh = await this._resolveFileHandleAsync(relativePath);
             if (!fh) return { success: false, error: "Not found in media folder" };
             const file = await fh.getFile();
-            if (!file || file.size < 1024)
+            // Only truly empty files count as absent. A 1 KB threshold here reported valid small
+            // media (sidecars, tiny images) as missing, so the sync re-downloaded them every visit.
+            if (!file || file.size <= 0)
                 return { success: false, error: "File missing or empty" };
             return { success: true, sizeBytes: file.size, lastModifiedMs: file.lastModified };
         } catch (err) {
@@ -468,7 +470,7 @@ window.PageToMovieMedia = {
             const fh = await this._resolveFileHandleAsync(relativePath);
             if (!fh) return { success: false, error: "Not found in media folder" };
             const file = await fh.getFile();
-            if (!file || file.size < 1024)
+            if (!file || file.size <= 0)
                 return { success: false, error: "File missing or empty" };
             const buf = await file.arrayBuffer();
             const sha = await this._sha256Hex(buf);

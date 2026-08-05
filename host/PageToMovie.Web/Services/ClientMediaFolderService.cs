@@ -32,22 +32,15 @@ public sealed class ClientMediaFolderService
         _api = api;
         _hub = hub;
         _activeProject = activeProject;
-        _activeProject.Changed += OnActiveProjectChanged;
     }
 
     /// <summary>
-    /// When true, connecting a local folder or logging in will check if any local media files are missing or out of date,
-    /// syncing only missing/updated files. Defaults to true.
+    /// When true, an explicit trigger (connecting a folder, or opening a project's media pages)
+    /// checks whether any local media files are missing or out of date and syncs only those.
+    /// Deliberately NOT fired on every page load / active-project change — that pulled the active
+    /// project's whole media set on unrelated pages like the home screen. Defaults to true.
     /// </summary>
     public bool AutoSyncOnLogin { get; set; } = true;
-
-    private void OnActiveProjectChanged()
-    {
-        if (AutoSyncOnLogin)
-        {
-            TriggerAutoSyncIfConnected();
-        }
-    }
 
     public void TriggerAutoSyncIfConnected()
     {
@@ -217,7 +210,9 @@ public sealed class ClientMediaFolderService
                 PendingReconnectFolderName = null;
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
-                TriggerAutoSyncIfConnected();
+                // NOTE: no auto-sync here. This silent reconnect runs on app start (any page), so
+                // syncing here re-pulled the active project's media on the home screen. The project's
+                // own media pages trigger the sync explicitly instead.
                 return;
             }
             if (string.Equals(r?.Reason, "prompt", StringComparison.OrdinalIgnoreCase))
@@ -744,25 +739,35 @@ public sealed class ClientMediaFolderService
                 return 0;
             }
 
-            // Smart Double-Lock Pre-Check: Filter out files that already exist locally with matching size AND content hash
+            // Smart Double-Lock Pre-Check: skip files that already exist locally with matching size AND
+            // content hash. Each skip/fetch decision is logged (browser console) with its reason so a
+            // file that keeps re-downloading every visit can be pinned to missing / size / hash.
             var outOfDateFiles = new List<ProjectMediaSyncFile>();
+            var reasons = new List<string>();
             foreach (var file in syncList.Files)
             {
                 var (found, localSize) = await StatLocalFileAsync(projectId, file.RelativePath);
-                if (!found || file.SizeBytes <= 0 || localSize != file.SizeBytes)
-                {
-                    outOfDateFiles.Add(file);
-                }
+                string? reason = null;
+                if (!found) reason = "missing locally";
+                else if (file.SizeBytes <= 0) reason = "server size unknown";
+                else if (localSize != file.SizeBytes) reason = $"size {localSize} != server {file.SizeBytes}";
                 else if (!string.IsNullOrWhiteSpace(file.Sha256))
                 {
-                    // Size matched! Double-check SHA-256 hash to catch byte-level content changes
+                    // Size matched — double-check the SHA-256 to catch byte-level content changes.
                     var (hasSha, localSha, _) = await Sha256LocalFileAsync(projectId, file.RelativePath);
-                    if (!hasSha || !string.Equals(localSha, file.Sha256, StringComparison.OrdinalIgnoreCase))
-                    {
-                        outOfDateFiles.Add(file);
-                    }
+                    if (!hasSha) reason = "local hash unavailable";
+                    else if (!string.Equals(localSha, file.Sha256, StringComparison.OrdinalIgnoreCase)) reason = "hash differs";
+                }
+
+                if (reason is not null)
+                {
+                    outOfDateFiles.Add(file);
+                    reasons.Add($"{file.RelativePath} — {reason}");
                 }
             }
+
+            if (reasons.Count > 0)
+                Console.WriteLine($"[media-sync] {projectId}: fetching {reasons.Count}/{syncList.Files.Count} —\n  " + string.Join("\n  ", reasons));
 
             if (outOfDateFiles.Count == 0)
             {

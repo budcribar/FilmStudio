@@ -2651,6 +2651,10 @@ else
             {
                 await Hub.StartAsync();
                 await MediaFolder.EnsureHubHookAsync();
+                // Contextual sync: pull this project's media to the local folder now that we're
+                // actually in it (this replaces the old sync-on-every-page-load behaviour).
+                if (!MediaFolder.IsConnected) await MediaFolder.TryReconnectAsync();
+                MediaFolder.TriggerAutoSyncIfConnected();
             }
             catch { /* SignalR / media folder optional for browse */ }
 
