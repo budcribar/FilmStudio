@@ -563,12 +563,13 @@ window.PageToMovieFfmpeg = {
     },
 
     /**
-     * Scroll the teleprompter (#tele-text) so each word reaches the fixed marker at its own spoken
-     * time. `starts[i]` is when word i should be at the marker (seconds from the start), so the
-     * scroll lingers on stretched words (a big gap to the next word) and hurries the quick ones —
-     * an exact copy of the narrator's rhythm. Falls back to nothing if the element isn't there.
+     * Teleprompter (#tele-text): PARK each word's left edge at the fixed marker for exactly its
+     * spoken span [starts[i], ends[i]] (seconds from the start), then slide to the next word. A
+     * stretched word therefore dwells at the marker longest — an exact copy of the narrator's
+     * rhythm — and the word currently at the marker is highlighted, so which word is "now" is
+     * never ambiguous. No-op if the element isn't there.
      */
-    startWordTeleprompter: function (starts, durationSec) {
+    startWordTeleprompter: function (starts, ends, durationSec) {
         try {
             const el = document.getElementById("tele-text");
             if (!el || !durationSec) return false;
@@ -578,24 +579,35 @@ window.PageToMovieFfmpeg = {
             const D = durationSec;
             const lefts = [];
             for (let i = 0; i < n; i++) lefts.push(spans[i].offsetLeft);
-            // Word i's LEFT edge sits at the marker when translateX = -lefts[i]. Piecewise-linear
-            // between word times ⇒ the marker sweeps slowly across long-held words, fast across short.
+
+            // Two keyframes per word (park at its left edge from start→end), then slide to the next.
             const frames = [{ transform: "translateX(0px)", offset: 0 }];
             for (let i = 0; i < n; i++) {
-                let off = starts[i] / D;
-                if (!(off >= 0)) off = 0; if (off > 1) off = 1;
-                frames.push({ transform: "translateX(" + (-lefts[i]) + "px)", offset: off });
+                let s = starts[i] / D, e = (ends && ends[i] != null ? ends[i] : starts[i]) / D;
+                if (!(s >= 0)) s = 0; if (s > 1) s = 1;
+                if (!(e >= s)) e = s; if (e > 1) e = 1;
+                const tx = "translateX(" + (-lefts[i]) + "px)";
+                frames.push({ transform: tx, offset: s });
+                frames.push({ transform: tx, offset: e });
             }
-            // Sweep across the LAST word to its right edge by the end — otherwise the marker parks at
-            // the start of the final word ("spin") and never traverses it.
-            const lastRight = lefts[n - 1] + (spans[n - 1].offsetWidth || 0);
-            frames.push({ transform: "translateX(" + (-lastRight) + "px)", offset: 1 });
+            frames.push({ transform: "translateX(" + (-lefts[n - 1]) + "px)", offset: 1 });
             // Offsets must be non-decreasing for the Web Animations API; nudge any that regress.
             for (let i = 1; i < frames.length; i++)
                 if (frames[i].offset <= frames[i - 1].offset)
                     frames[i].offset = Math.min(1, frames[i - 1].offset + 0.0001);
             el.getAnimations().forEach(function (a) { a.cancel(); });
             el.animate(frames, { duration: D * 1000, easing: "linear", fill: "forwards" });
+
+            // Highlight the word at the marker for its spoken span (kills any "which word?" doubt).
+            if (el._teleTimers) el._teleTimers.forEach(function (t) { clearTimeout(t); });
+            el._teleTimers = [];
+            const clearAll = function () { for (let k = 0; k < n; k++) spans[k].classList.remove("tele-active"); };
+            for (let i = 0; i < n; i++) {
+                el._teleTimers.push(setTimeout((function (idx) {
+                    return function () { clearAll(); spans[idx].classList.add("tele-active"); };
+                })(i), Math.max(0, starts[i] * 1000)));
+            }
+            el._teleTimers.push(setTimeout(clearAll, Math.max(0, D * 1000)));
             return true;
         } catch (_) { return false; }
     },

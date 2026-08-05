@@ -30,6 +30,7 @@
         background: #ffc107; box-shadow: 0 0 10px #ffc107; z-index: 2; }
     .tele-text { position: absolute; left: 6%; white-space: nowrap; will-change: transform; }
     .tele-w { display: inline-block; margin-right: 0.32em; } /* measurable per-word box; margin = the inter-word gap */
+    .tele-w.tele-active { background: rgba(255,193,7,.32); border-radius: 4px; } /* the word currently at the marker */
 </style>
 
 <div class="ptm-page-head mb-3">
@@ -385,28 +386,31 @@ else
     {
         if (!_teleStartPending) return;
         _teleStartPending = false;
-        var starts = BuildWordTimeline(SplitWords(CurrentPhrase.Text), _ballDurationSec);
-        try { await Js.InvokeVoidAsync("PageToMovieFfmpeg.startWordTeleprompter", starts, _ballDurationSec); }
+        var (starts, ends) = BuildWordTimeline(SplitWords(CurrentPhrase.Text), _ballDurationSec);
+        try { await Js.InvokeVoidAsync("PageToMovieFfmpeg.startWordTeleprompter", starts, ends, _ballDurationSec); }
         catch { /* ignore */ }
     }
 
-    // When each display word should sit at the marker (seconds from the start). Anchored to Scribe's
-    // real word timings so stretched words linger; unmatched words interpolate; no timings ⇒ even.
-    private double[] BuildWordTimeline(List<string> disp, double durSec)
+    // When each display word is spoken (start,end seconds from the start), so the teleprompter can
+    // PARK each word at the marker for exactly its spoken span. Anchored to Scribe's real word
+    // timings so stretched words dwell longest; unmatched words interpolate; no timings ⇒ even.
+    private (double[] starts, double[] ends) BuildWordTimeline(List<string> disp, double durSec)
     {
         var n = disp.Count;
         var starts = new double[n];
-        if (n == 0) return starts;
+        var ends = new double[n];
+        if (n == 0) return (starts, ends);
 
         var words = CurrentPhrase.Words;
         if (words is null || words.Count == 0)
         {
-            for (var i = 0; i < n; i++) starts[i] = durSec * i / n;
-            return starts;
+            for (var i = 0; i < n; i++) { starts[i] = durSec * i / n; ends[i] = durSec * (i + 1) / n; }
+            return (starts, ends);
         }
 
         // In-order anchor match: pair each display word to the next matching timed word (small lookahead).
-        var known = new double?[n];
+        var knownStart = new double?[n];
+        var knownEnd = new double?[n];
         var si = 0;
         for (var di = 0; di < n; di++)
         {
@@ -414,15 +418,21 @@ else
             if (dt.Length == 0) continue;
             for (var j = si; j < words.Count && j <= si + 4; j++)
             {
-                if (NormTok(words[j].Text) == dt) { known[di] = Math.Max(0, words[j].StartSec); si = j + 1; break; }
+                if (NormTok(words[j].Text) == dt)
+                {
+                    knownStart[di] = Math.Max(0, words[j].StartSec);
+                    knownEnd[di] = Math.Max(words[j].StartSec, words[j].EndSec);
+                    si = j + 1;
+                    break;
+                }
             }
         }
 
-        // Interpolate the un-anchored words linearly by index between anchors (0 at the front, durSec at the end).
+        // Interpolate the un-anchored words' starts linearly by index between anchors (0 front, durSec end).
         int prevIdx = -1; double prevTime = 0;
         for (var di = 0; di < n; di++)
         {
-            if (known[di] is not double kt) continue;
+            if (knownStart[di] is not double kt) continue;
             for (var g = prevIdx + 1; g < di; g++)
                 starts[g] = prevTime + (kt - prevTime) * (g - prevIdx) / (di - prevIdx);
             starts[di] = kt; prevIdx = di; prevTime = kt;
@@ -430,7 +440,7 @@ else
         for (var g = prevIdx + 1; g < n; g++)
             starts[g] = prevTime + (durSec - prevTime) * (g - prevIdx) / (n - prevIdx);
 
-        // Clamp to a non-decreasing 0..durSec sequence.
+        // Non-decreasing, clamped starts.
         double last = 0;
         for (var i = 0; i < n; i++)
         {
@@ -438,7 +448,17 @@ else
             if (starts[i] > durSec) starts[i] = durSec;
             last = starts[i];
         }
-        return starts;
+
+        // Ends: prefer the anchored spoken end; otherwise dwell until the next word's start.
+        for (var i = 0; i < n; i++)
+        {
+            var cap = i + 1 < n ? starts[i + 1] : durSec;
+            var e = knownEnd[i] ?? cap;
+            if (e < starts[i]) e = starts[i];
+            if (e > cap) e = cap;
+            ends[i] = e;
+        }
+        return (starts, ends);
     }
 
     private static string NormTok(string? s)
