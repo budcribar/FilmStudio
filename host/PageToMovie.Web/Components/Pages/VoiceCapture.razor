@@ -29,7 +29,7 @@
     .tele-pointer { position: absolute; left: 6%; top: -3px; bottom: -3px; width: 3px; border-radius: 2px;
         background: #ffc107; box-shadow: 0 0 10px #ffc107; z-index: 2; }
     .tele-text { position: absolute; left: 6%; white-space: nowrap; will-change: transform; }
-    .tele-w { display: inline-block; } /* measurable per-word box for the paced scroll */
+    .tele-w { display: inline-block; margin-right: 0.32em; } /* measurable per-word box; margin = the inter-word gap */
 </style>
 
 <div class="ptm-page-head mb-3">
@@ -118,7 +118,7 @@ else
                         <div id="tele-text" @key="_teleSession" class="tele-text fs-5">
                             @foreach (var w in words)
                             {
-                                <span class="tele-w">@w</span><text> </text>
+                                <span class="tele-w">@w</span>
                             }
                         </div>
                     </div>

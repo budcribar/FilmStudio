@@ -586,7 +586,10 @@ window.PageToMovieFfmpeg = {
                 if (!(off >= 0)) off = 0; if (off > 1) off = 1;
                 frames.push({ transform: "translateX(" + (-lefts[i]) + "px)", offset: off });
             }
-            frames.push({ transform: "translateX(" + (-lefts[n - 1]) + "px)", offset: 1 });
+            // Sweep across the LAST word to its right edge by the end — otherwise the marker parks at
+            // the start of the final word ("spin") and never traverses it.
+            const lastRight = lefts[n - 1] + (spans[n - 1].offsetWidth || 0);
+            frames.push({ transform: "translateX(" + (-lastRight) + "px)", offset: 1 });
             // Offsets must be non-decreasing for the Web Animations API; nudge any that regress.
             for (let i = 1; i < frames.length; i++)
                 if (frames[i].offset <= frames[i - 1].offset)
