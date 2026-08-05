@@ -326,10 +326,18 @@ public sealed class Stage2PlannerService
         if (planIssues.Any(i => i.Severity == ModelValidationSeverity.Error))
             throw new InvalidOperationException(string.Join(" ", planIssues.Select(i => i.Message)));
 
-        await File.WriteAllTextAsync(
-            outPath,
-            JsonSerializer.Serialize(plan, JsonWrite) + "\n",
-            ct).ConfigureAwait(false);
+        // Fail loud at the source if the plan has duplicate clip numbers in a scene — that doubles the
+        // scene downstream (the stitch concatenates one file per veo_clips entry). Throwing here catches
+        // the bug during generation, before any video spend, and never touches an already-saved movie.
+        var planJson = JsonSerializer.Serialize(plan, JsonWrite);
+        using (var planDoc = System.Text.Json.JsonDocument.Parse(planJson))
+        {
+            if (BlueprintClipValidation.DescribeDuplicates(planDoc.RootElement) is { } dupDesc)
+                throw new InvalidOperationException(
+                    "Shot plan has duplicate clip numbers (each duplicate would double its scene): " + dupDesc);
+        }
+
+        await File.WriteAllTextAsync(outPath, planJson + "\n", ct).ConfigureAwait(false);
         var meta = GetDict(plan, "stage2_meta");
         var totalClips = ToInt(meta.TryGetValue("total_clips", out var tc) ? tc : 0);
         var sceneCount = GetList(plan, "scenes").Count;

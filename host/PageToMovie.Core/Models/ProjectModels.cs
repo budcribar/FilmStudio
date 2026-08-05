@@ -801,6 +801,11 @@ public sealed class SceneDetail
     public List<string> LocationIds { get; set; } = new();
     public string? PrimaryLocationId { get; set; }
     public List<ClipSummary> Clips { get; set; } = new();
+
+    /// <summary>Clip numbers that appeared more than once in this scene's shot plan (malformed data).
+    /// The read path keeps the first and drops the rest so the scene still works, but flags it here so
+    /// an admin surface can show the problem instead of silently hiding it. Empty = clean.</summary>
+    public List<int> DuplicateClipNumbers { get; set; } = new();
 }
 
 public sealed class MusicScoreInfo

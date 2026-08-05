@@ -4311,12 +4311,25 @@ public sealed class ProjectStore
         var scenesIndex = await GetDirIndexAsync(scenesDir, ct).ConfigureAwait(false);
 
         var clips = new List<ClipSummary>();
+        var duplicateClipNumbers = new List<int>();
+        var seenClipNumbers = new HashSet<int>();
         if (sEl.TryGetProperty("veo_clips", out var vc) && vc.ValueKind == JsonValueKind.Array)
         {
             foreach (var c in vc.EnumerateArray())
             {
                 var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var n) ? n : 0;
                 if (cn <= 0) continue;
+
+                // Malformed shot plan: the same clip_number twice would double the scene when stitched
+                // (one file per veo_clips entry). Keep the first, drop the rest so existing movies still
+                // work, and flag it (SceneDetail.DuplicateClipNumbers) so an admin surface can show it
+                // rather than hiding it. The shot-plan write path throws on this at the source.
+                if (!seenClipNumbers.Add(cn))
+                {
+                    if (!duplicateClipNumbers.Contains(cn)) duplicateClipNumbers.Add(cn);
+                    Console.WriteLine($"[blueprint] {projectId} scene {sceneNumber}: duplicate clip_number {cn} in veo_clips — deduped (kept first).");
+                    continue;
+                }
 
                 var fileName = $"scene_{sceneNumber:D2}_clip_{cn:D2}.mp4";
                 var onDisk = ClipOnDisk(videoIndex, sceneNumber, cn);
@@ -4518,6 +4531,7 @@ public sealed class ProjectStore
                 ? pl.GetString()
                 : null,
             Clips = clips,
+            DuplicateClipNumbers = duplicateClipNumbers,
         };
         }
         finally

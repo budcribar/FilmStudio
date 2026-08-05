@@ -200,6 +200,12 @@ else
                         <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
                     }
                 </div>
+                @if (Session.IsAdmin && _detail is { } _dd && _dd.SceneNumber == playSn && _dd.DuplicateClipNumbers.Count > 0)
+                {
+                    <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small" data-testid="scene-dup-clips">
+                        ⚠ Malformed shot plan: clip @(string.Join(", ", _dd.DuplicateClipNumbers)) appears more than once in this scene, which doubles it. Deduped for playback — regenerate the shot plan to fix the data.
+                    </div>
+                }
             }
         </div>
     </div>
