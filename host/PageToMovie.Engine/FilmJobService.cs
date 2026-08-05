@@ -3644,7 +3644,10 @@ public sealed class FilmJobService
         // model that doesn't support continue) always falls back to fresh gen + locked refs,
         // exactly as before this feature existed — never blocks clip generation.
         string? extendSourcePath = null;
-        if (clip > 1 && modelEntry.SupportsVideoContinue)
+        if (clip > 1
+            && modelEntry.SupportsVideoContinue
+            && modelEntry.MaxExtensionSeconds is { } maxExt
+            && maxExt > 0)
         {
             var candidate = Path.Combine(
                 projectDir, "assets", "video", $"_extend_src_s{scene:D2}c{clip:D2}.mp4");

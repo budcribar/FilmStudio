@@ -128,8 +128,18 @@ public static class ClipDurationEstimator
             resolved = Math.Clamp(requestedSeconds, min, max);
         }
 
-        if (isExtensionMode && entry.MaxExtensionSeconds is { } extMax && resolved > extMax)
-            resolved = extMax;
+        if (isExtensionMode)
+        {
+            // maxExtensionSeconds <= 0 (or missing with no continue) means cannot extend —
+            // do not clamp to 0 and submit a zero-length clip.
+            if (entry.MaxExtensionSeconds is not { } extMax || extMax <= 0)
+                throw new InvalidOperationException(
+                    $"Video model '{entry.Id}' cannot extend (maxExtensionSeconds=" +
+                    $"{entry.MaxExtensionSeconds?.ToString() ?? "null"}). " +
+                    "Use a model with supportsVideoContinue and a positive maxExtensionSeconds.");
+            if (resolved > extMax)
+                resolved = extMax;
+        }
 
         return resolved;
     }
@@ -143,11 +153,13 @@ public static class ClipDurationEstimator
     /// </summary>
     public static int ResolveExtensionMaxForModel(string? modelId, int fallbackMax)
     {
-        // Unknown/empty model throws; missing MaxExtensionSeconds means "same as fresh max"
-        // (caller typically passes that as fallbackMax from ResolveBoundsForModel).
+        // Unknown/empty model throws. maxExtensionSeconds <= 0 means cannot extend (return 0).
+        // Positive value is the extend segment cap; null is legacy "same as fresh max".
         _ = ResolveBoundsForModel(modelId);
         var entry = SupportedModelCatalog.Find(modelId!.Trim(), ModelCapability.Video)!;
-        return entry.MaxExtensionSeconds ?? fallbackMax;
+        if (entry.MaxExtensionSeconds is { } ext)
+            return ext <= 0 ? 0 : ext;
+        return fallbackMax;
     }
 
     /// <summary>

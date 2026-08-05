@@ -33,7 +33,7 @@ public class FakeVideoCatalogCapabilityTests
                 durationSeconds: 5,
                 referenceImagePaths: null,
                 continueFromVideoPath: "/tmp/prev.mp4"));
-        Assert.Contains("does not support video continue", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cannot extend", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -127,5 +127,39 @@ public class FakeVideoCatalogCapabilityTests
                 referenceImagePaths: null,
                 continueFromVideoPath: null));
         Assert.Contains("required", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Wan_maxExtensionSeconds_is_zero()
+    {
+        var e = SupportedModelCatalog.Find("fal-ai/wan-2.1", ModelCapability.Video);
+        Assert.NotNull(e);
+        Assert.False(e!.SupportsVideoContinue);
+        Assert.Equal(0, e.MaxExtensionSeconds);
+    }
+
+    [Fact]
+    public void Grok_maxExtensionSeconds_is_positive()
+    {
+        var e = SupportedModelCatalog.Find("grok-imagine-video", ModelCapability.Video);
+        Assert.NotNull(e);
+        Assert.True(e!.SupportsVideoContinue);
+        Assert.True(e.MaxExtensionSeconds is > 0);
+    }
+
+    [Fact]
+    public void ResolveActualDuration_extension_mode_throws_when_maxExtension_zero()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            PageToMovie.Engine.ClipDurationEstimator.ResolveActualDurationForModel(
+                "fal-ai/wan-2.1", requestedSeconds: 5, isExtensionMode: true));
+        Assert.Contains("cannot extend", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ResolveExtensionMax_returns_zero_for_non_continue_model()
+    {
+        var n = PageToMovie.Engine.ClipDurationEstimator.ResolveExtensionMaxForModel("veo-3.1", fallbackMax: 8);
+        Assert.Equal(0, n);
     }
 }

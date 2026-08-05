@@ -164,11 +164,14 @@ public sealed class FakeGrokVideoClient : IVideoClient
             throw new InvalidOperationException(
                 $"Fake video: model '{entry.Id}' is disabled in the catalog.");
 
-        if (!string.IsNullOrWhiteSpace(continueFromVideoPath) && !entry.SupportsVideoContinue)
+        if (!string.IsNullOrWhiteSpace(continueFromVideoPath))
         {
-            throw new InvalidOperationException(
-                $"Fake video: model '{entry.Id}' does not support video continue/extend " +
-                $"(supportsVideoContinue=false). Choose a model with continue, or omit continueFromVideoPath.");
+            if (!entry.SupportsVideoContinue || entry.MaxExtensionSeconds is not { } ext || ext <= 0)
+            {
+                throw new InvalidOperationException(
+                    $"Fake video: model '{entry.Id}' cannot extend " +
+                    $"(supportsVideoContinue={entry.SupportsVideoContinue}, maxExtensionSeconds={entry.MaxExtensionSeconds?.ToString() ?? "null"}).");
+            }
         }
 
         var refCount = referenceImagePaths?.Count ?? 0;
