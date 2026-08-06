@@ -92,6 +92,7 @@ Buster (and other fixtures) are **eval / demo projects**, not product requiremen
 4. **Optional “None”** for music/voice is UI state (feature off), not a catalog provider.
 5. **New model?** Add/enable a row in JSON (and a client only if the HTTP API is new). **New reseller/provider?** Add `providers[]` + model rows with that `providerId` — do not special-case labels in Razor/C#.
 6. Engine defaults in options/DTOs that still contain literal model strings are **tech debt** — prefer `SupportedModelCatalog.DefaultModelIdForCapability(...)` / project config; do not add more literals.
+7. **Model-agnostic, capability-driven — never branch on which model is selected, never invent defaults for one.** No `if (model == "veo-3.1")` / `switch` on a model id, and no per-model code paths. Ask the catalog row what a model can do (`supportsVocals`, `supportsReferenceImages`, `minClipDurationSeconds` / `absMaxClipDurationSeconds`, endpoints, costs, flags) and drive behavior off those fields. When a project has **no** model selected, surface the "choose a model" error — do not fabricate bounds, ids, or a fallback model on its behalf (see `ClipDurationEstimator.ResolveBoundsForModel`, which throws rather than guessing). **The bar: swapping the selected model at runtime — a project-config change or a catalog edit — must just work, with zero code changes.**
 
 Loader: `SupportedModelCatalog.TryLoadFromJson` / `EnsureLoaded`. WASM hydrates via `GetModelsCatalogJsonAsync` before relying on static catalog APIs.
 
