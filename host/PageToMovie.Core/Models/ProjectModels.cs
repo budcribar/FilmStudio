@@ -286,8 +286,14 @@ public sealed class CharacterSummary
     public string VisualLock { get; set; } = "";
     public string VoiceProfile { get; set; } = "";
     public string VoiceLabel { get; set; } = "";
-    /// <summary>human | animal | creature | object … from the cast seed. Animals don't require a voice.</summary>
+    /// <summary>human | animal | creature | object … from the cast seed. Silent animals don't require a voice.</summary>
     public string? SpeciesKind { get; set; }
+    /// <summary>
+    /// True when this character actually speaks a line in the screenplay (a Character cue with dialogue).
+    /// Talking cast — including talking animals — need a voice; silent cast (e.g. a background lamb) do not.
+    /// Keys voice UI/gates on whether the character speaks, not on species alone.
+    /// </summary>
+    public bool Speaks { get; set; }
     /// <summary>Operator uploaded/recorded audio used as a voice-clone template (future TTS providers).</summary>
     public bool HasVoiceCloneSample { get; set; }
     public string? VoiceCloneFileName { get; set; }

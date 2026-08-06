@@ -826,12 +826,13 @@ else
     {
         if (_forceShowVoice) return true;               // explicit "Add voice…" opt-in
         if (c.HasVoiceCloneSample) return true;         // user recorded a clone sample
-        // Animals / non-human seeds are non-speaking by default — no voice prompt. Check this BEFORE the
-        // voice_profile below: cast extraction can auto-fill a descriptive profile (e.g. "soft lamb bleat")
-        // that must not force the voice field to show. Opt in explicitly via "Add voice…".
+        // A SILENT non-human (background animal, e.g. a lamb) gets no voice prompt — and a cast-extraction
+        // auto-fill (e.g. "soft lamb bleat") must not force it to show. A TALKING animal speaks, so it gets a
+        // voice like any speaker and falls through. Keyed on whether the character speaks, not species alone.
         var isNonHuman = !string.IsNullOrWhiteSpace(c.SpeciesKind)
             && !c.SpeciesKind!.Trim().Equals("human", StringComparison.OrdinalIgnoreCase);
-        if (isNonHuman) return false;
+        if (isNonHuman && !c.Speaks) return false;
+        if (c.Speaks) return true;                      // any speaking role offers a voice
         if (HasVoiceProfile(c)) return true;
         if (!string.IsNullOrWhiteSpace(c.VoiceLabel)) return true;
         if (!string.IsNullOrWhiteSpace(_editVoiceProfile) || !string.IsNullOrWhiteSpace(_editVoiceLabel))

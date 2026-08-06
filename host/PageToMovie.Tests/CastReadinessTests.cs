@@ -242,6 +242,92 @@ public class CastReadinessTests : IDisposable
         File.WriteAllText(Path.Combine(source, "cast_seeds.json"), json);
     }
 
+    private void WriteScreenplay(string fountain)
+    {
+        var source = Path.Combine(_store.GetProjectDir(ProjectId), "source");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "screenplay.fountain"), fountain);
+    }
+
+    private void WriteLambRef()
+    {
+        var charDir = Path.Combine(_store.GetProjectDir(ProjectId), "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllBytes(Path.Combine(charDir, "character_lamb_ref.png"), new byte[128]);
+    }
+
+    private const string LambAnimalSeeds = """
+        {
+          "schema_version": "cast_seeds.v1",
+          "character_seed_tokens": {
+            "Character_Lamb": {
+              "canonical_given_name": "Lamb",
+              "species_kind": "animal",
+              "voice_profile": "",
+              "description": "A small white lamb"
+            }
+          }
+        }
+        """;
+
+    [Fact]
+    public void Silent_animal_with_locked_image_needs_no_voice()
+    {
+        // The lamb never speaks a line → exempt from the voice requirement (locked image only).
+        WriteSeeds(LambAnimalSeeds);
+        WriteScreenplay("Title: Test\n\nINT. FIELD - DAY\n\nThe lamb grazes quietly in the sun.\n");
+        WriteLambRef();
+
+        var lamb = Assert.Single(_store.ListCharacters(ProjectId));
+        Assert.False(lamb.Speaks);
+        var status = _store.ReadCastStatus(ProjectId);
+        Assert.True(status.ReadyForShots, string.Join("; ", status.Missing));
+        Assert.Empty(_store.GetCastNotReadyForVideo(ProjectId));
+    }
+
+    [Fact]
+    public void Talking_animal_needs_a_voice_like_any_speaker()
+    {
+        // The lamb has a dialogue cue → it is a speaking role and must have a voice, animal or not.
+        WriteSeeds(LambAnimalSeeds);
+        WriteScreenplay("Title: Test\n\nINT. FIELD - DAY\n\nThe lamb turns to Mary.\n\nLAMB\nI am not afraid, Mary.\n");
+        WriteLambRef();
+
+        var lamb = Assert.Single(_store.ListCharacters(ProjectId));
+        Assert.True(lamb.Speaks);
+        var status = _store.ReadCastStatus(ProjectId);
+        Assert.False(status.ReadyForShots); // now needs a voice
+        Assert.Contains(status.Missing, m => m.Contains("Lamb", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(_store.GetCastNotReadyForVideo(ProjectId),
+            m => m.Contains("voice", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Talking_animal_with_voice_and_lock_is_ready()
+    {
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Lamb": {
+                  "canonical_given_name": "Lamb",
+                  "species_kind": "animal",
+                  "voice_profile": "gentle young lamb voice",
+                  "description": "A small talking lamb"
+                }
+              }
+            }
+            """);
+        WriteScreenplay("Title: Test\n\nINT. FIELD - DAY\n\nThe lamb turns to Mary.\n\nLAMB\nI am not afraid, Mary.\n");
+        WriteLambRef();
+
+        var lamb = Assert.Single(_store.ListCharacters(ProjectId));
+        Assert.True(lamb.Speaks);
+        var status = _store.ReadCastStatus(ProjectId);
+        Assert.True(status.ReadyForShots, string.Join("; ", status.Missing)); // voice + lock present
+        Assert.Empty(_store.GetCastNotReadyForVideo(ProjectId));
+    }
+
     [Fact]
     public void Group_with_voice_no_locked_image_is_ready()
     {

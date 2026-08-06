@@ -2079,10 +2079,51 @@ public sealed class ProjectStore
     /// <summary>
     /// Character seeds from blueprint, falling back to Stage 1 scenes.json.
     /// </summary>
+    /// <summary>
+    /// Normalized tokens (e.g. "CHARLOTTE", "BUSTER") of every character who actually speaks a line in the
+    /// screenplay — a Fountain Character cue followed by non-empty dialogue. Lets the cast tell talking roles
+    /// (including talking animals) from silent ones, so voice is keyed on speaking, not species alone.
+    /// </summary>
+    private HashSet<string> ReadScreenplaySpeakerTokens(string projectId)
+    {
+        var speakers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var fountainPath = Path.Combine(GetProjectDir(projectId), "source", "screenplay.fountain");
+            if (!File.Exists(fountainPath)) return speakers;
+            var parsed = FountainParser.Parse(File.ReadAllText(fountainPath));
+            string? pending = null;
+            foreach (var el in parsed.Elements)
+            {
+                switch (el.Type)
+                {
+                    case FountainParser.ElementType.Character:
+                        var name = el.Text ?? "";
+                        var paren = name.IndexOf('(');          // drop "(V.O.)" / "(CONT'D)" extension
+                        if (paren >= 0) name = name[..paren];
+                        pending = CastKindClassifier.NormalizeToken(name);
+                        break;
+                    case FountainParser.ElementType.Parenthetical:
+                        break;                                  // keeps the pending speaker
+                    case FountainParser.ElementType.Dialogue:
+                        if (!string.IsNullOrWhiteSpace(pending) && !string.IsNullOrWhiteSpace(el.Text))
+                            speakers.Add(pending!);
+                        break;
+                    default:
+                        pending = null;
+                        break;
+                }
+            }
+        }
+        catch { /* no speakers derivable */ }
+        return speakers;
+    }
+
     public IReadOnlyList<CharacterSummary> ListCharacters(string projectId)
     {
         var seeds = LoadCharacterSeeds(projectId);
         var projectDir = GetProjectDir(projectId);
+        var speakerTokens = ReadScreenplaySpeakerTokens(projectId);
         var rows = new List<CharacterSummary>();
         foreach (var (key, info) in seeds)
         {
@@ -2199,6 +2240,8 @@ public sealed class ProjectStore
                 VoiceProfile = info.TryGetProperty("voice_profile", out var vp) ? vp.GetString() ?? "" : "",
                 VoiceLabel = info.TryGetProperty("voice_label", out var vlab) ? vlab.GetString() ?? "" : "",
                 SpeciesKind = info.TryGetProperty("species_kind", out var spk) ? spk.GetString() : null,
+                Speaks = speakerTokens.Contains(CastKindClassifier.NormalizeToken(key))
+                    || (!string.IsNullOrWhiteSpace(display) && speakerTokens.Contains(CastKindClassifier.NormalizeToken(display))),
                 HasVoiceCloneSample = File.Exists(GetVoiceCloneSamplePath(projectId, key)),
                 VoiceCloneFileName = File.Exists(GetVoiceCloneSamplePath(projectId, key))
                     ? Path.GetFileName(GetVoiceCloneSamplePath(projectId, key))
@@ -5020,14 +5063,13 @@ public sealed class ProjectStore
                     continue;
                 }
 
-                // Animals / non-human seeds are non-speaking by default and do NOT require a voice —
-                // only a locked image if they appear on screen. Mirrors GetCastNotReadyForVideo so this
-                // readiness gate (Scenes "Cast incomplete" banner + Generate button) agrees with the
-                // video-spend gate; otherwise the Lamb passes the spend gate but the UI still shows it
-                // incomplete — with no voice field to "fix" (animals hide it). Keyed on species_kind.
+                // A SILENT non-human seed (animal that never speaks) does NOT require a voice — only a locked
+                // image if it appears on screen. A talking animal (has dialogue) is a speaking role and needs
+                // a voice like any speaker, so it falls through below. Mirrors GetCastNotReadyForVideo so this
+                // readiness gate (Scenes "Cast incomplete" banner + Generate button) agrees with the spend gate.
                 var isNonHuman = c.SpeciesKind is { Length: > 0 } sk
                     && !sk.Trim().Equals("human", StringComparison.OrdinalIgnoreCase);
-                if (isNonHuman && !hasVoice)
+                if (isNonHuman && !c.Speaks && !hasVoice)
                 {
                     if (c.Locked)
                         ready++;
@@ -5096,13 +5138,12 @@ public sealed class ProjectStore
                 continue;
             }
 
-            // Animals / non-human seeds are non-speaking by default and do NOT require a voice — only a
-            // locked image if they appear on screen. (Humans still require a voice below.) Keyed on the
-            // seed's species_kind so the Lamb is never blocked for a missing voice. A talking animal that
-            // was given a voice profile still passes via hasVoice.
+            // A SILENT non-human seed (animal that never speaks) does NOT require a voice — only a locked
+            // image if it appears on screen. A talking animal (has dialogue) is a speaking role and needs a
+            // voice like any speaker, so it falls through to the voice+image requirement below.
             var isNonHuman = c.SpeciesKind is { Length: > 0 } sk
                 && !sk.Trim().Equals("human", StringComparison.OrdinalIgnoreCase);
-            if (isNonHuman && !hasVoice)
+            if (isNonHuman && !c.Speaks && !hasVoice)
             {
                 if (!c.Locked)
                     missing.Add($"{c.Key}: locked image");
