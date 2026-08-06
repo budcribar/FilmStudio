@@ -42,7 +42,9 @@ public static class Stage2AggregateValidator
                 issues.Add(new("missing_clips", "Every planned scene must contain at least one clip.", scenePath + ".veo_clips"));
 
             var beatMap = Strings(GetList(scene, "stage1_beat_map"));
-            var credits = Value(scene, "is_credits") is true;
+            // Single credits predicate (scene/clip is_credits or CREDITS heading/setting) so a
+            // credits card is exempt from the beat/clip 1:1 rule however it is marked.
+            var credits = ProjectStore.IsCreditsScene(scene);
             if (!credits && beatMap.Count != clips.Count)
                 issues.Add(new("beat_clip_mismatch", "Stage 1 beat references must map one-to-one to planned clips.", scenePath + ".stage1_beat_map"));
 

@@ -4312,6 +4312,36 @@ public sealed class ProjectStore
         return false;
     }
 
+    /// <summary>
+    /// Dictionary-shape overload of <see cref="IsCreditsScene(JsonElement?)"/> for Stage 2 planning
+    /// and aggregate validation, which build/hold scenes as <c>Dictionary&lt;string, object?&gt;</c>
+    /// before serialization. Same rule, same order — including the clip-level <c>is_credits</c> flag —
+    /// so a credits card is recognized however it happens to be stored (older auto-inserts marked it
+    /// on the setting; the durable structural signal is the clip flag both writers set).
+    /// </summary>
+    internal static bool IsCreditsScene(IReadOnlyDictionary<string, object?>? scene)
+    {
+        if (scene is null) return false;
+        if (DictBoolTrue(scene, "is_credits")) return true;
+        if (DictContains(scene, "setting", "CREDITS")) return true;
+        if (DictContains(scene, "scene_heading", "CREDITS")) return true;
+        if (scene.TryGetValue("veo_clips", out var clipsObj) && clipsObj is IEnumerable<object?> clips)
+        {
+            foreach (var c in clips)
+                if (c is IReadOnlyDictionary<string, object?> cd && DictBoolTrue(cd, "is_credits"))
+                    return true;
+        }
+        return false;
+    }
+
+    private static bool DictBoolTrue(IReadOnlyDictionary<string, object?> d, string key) =>
+        d.TryGetValue(key, out var v) &&
+        (v is true || (v?.ToString()?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false));
+
+    private static bool DictContains(IReadOnlyDictionary<string, object?> d, string key, string needle) =>
+        d.TryGetValue(key, out var v) &&
+        (v?.ToString()?.Contains(needle, StringComparison.OrdinalIgnoreCase) ?? false);
+
     public Task<IReadOnlyList<SceneSummary>> ListScenesAsync(
         string projectId,
         bool probeDurations = true,

@@ -93,4 +93,56 @@ public class CreditsSceneDetectionTests : IDisposable
         Assert.False(scenes.Single(s => s.SceneNumber == 1).IsCredits);
         Assert.True(scenes.Single(s => s.SceneNumber == 3).IsCredits);
     }
+
+    // Dictionary-shape overload: Stage 2 planning and aggregate validation hold scenes as
+    // Dictionary<string,object?> and must apply the SAME rule as the JsonElement/Scenes-list path.
+    private static Dictionary<string, object?> ClipFlagOnlyCreditsSceneDict(int sceneNumber) => new()
+    {
+        ["scene_number"] = sceneNumber,
+        ["setting"] = "FADE OUT",
+        ["veo_clips"] = new List<object?>
+        {
+            new Dictionary<string, object?> { ["clip_number"] = 1, ["is_credits"] = true },
+        },
+    };
+
+    [Fact]
+    public void Dict_overload_detects_clip_flag_only_credits_scene()
+    {
+        Assert.True(ProjectStore.IsCreditsScene(ClipFlagOnlyCreditsSceneDict(3)));
+
+        var ordinary = new Dictionary<string, object?>
+        {
+            ["scene_number"] = 1,
+            ["setting"] = "INT. BARE ROOM - NIGHT",
+            ["veo_clips"] = new List<object?>
+            {
+                new Dictionary<string, object?> { ["clip_number"] = 1 },
+            },
+        };
+        Assert.False(ProjectStore.IsCreditsScene(ordinary));
+        Assert.False(ProjectStore.IsCreditsScene((IReadOnlyDictionary<string, object?>?)null));
+    }
+
+    [Fact]
+    public void EnsureEndCreditsScene_does_not_append_second_card_when_only_clip_flag_marks_credits()
+    {
+        // The bug fixed in audit #5: the inline dedupe omitted the clip-level is_credits check, so a
+        // plan whose credits scene was marked only on the clip got a SECOND credits card on re-plan.
+        var scenes = new List<Dictionary<string, object?>>
+        {
+            new()
+            {
+                ["scene_number"] = 1,
+                ["setting"] = "INT. ROOM - DAY",
+                ["veo_clips"] = new List<object?> { new Dictionary<string, object?> { ["clip_number"] = 1 } },
+            },
+            ClipFlagOnlyCreditsSceneDict(2),
+        };
+
+        Stage2PlannerService.EnsureEndCreditsScene(scenes);
+
+        Assert.Equal(2, scenes.Count); // no extra credits card appended
+        Assert.Single(scenes, ProjectStore.IsCreditsScene);
+    }
 }

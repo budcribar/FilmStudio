@@ -425,16 +425,11 @@ public sealed class Stage2PlannerService
     {
         if (scenes == null || scenes.Count == 0) return;
 
-        // Dedupe on the same signals ProjectStore.IsCreditsScene uses (flag, or CREDITS in
-        // scene_heading/setting) so a re-plan never appends a second credits card to a plan whose
-        // credits scene was stored setting-based (older auto-inserts) rather than heading-based.
-        if (scenes.Any(s =>
-            (s.TryGetValue("is_credits", out var ic) && (ic is true || ic?.ToString()?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)) ||
-            (s.TryGetValue("scene_heading", out var sh) && sh?.ToString()?.Contains("CREDITS", StringComparison.OrdinalIgnoreCase) == true) ||
-            (s.TryGetValue("setting", out var st) && st?.ToString()?.Contains("CREDITS", StringComparison.OrdinalIgnoreCase) == true)))
-        {
+        // Dedupe via the single credits predicate (ProjectStore.IsCreditsScene) so a re-plan never
+        // appends a second credits card — including when the existing credits scene is only marked by
+        // its clip-level is_credits flag (older auto-inserts) rather than a heading/setting.
+        if (scenes.Any(ProjectStore.IsCreditsScene))
             return;
-        }
 
         var maxSn = scenes.Select(s => ToInt(s.TryGetValue("scene_number", out var sn) ? sn : 0)).DefaultIfEmpty(0).Max();
         var creditsSceneNumber = maxSn + 1;
