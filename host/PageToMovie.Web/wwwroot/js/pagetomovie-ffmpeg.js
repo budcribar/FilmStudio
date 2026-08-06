@@ -312,6 +312,16 @@ window.PageToMovieFfmpeg = {
         });
     },
 
+    /** Load an image URL into an HTMLImageElement (for compositing the logo onto the credits card). */
+    _loadImageAsync: function (url) {
+        return new Promise(function (res, rej) {
+            const im = new Image();
+            im.onload = function () { res(im); };
+            im.onerror = function () { rej(new Error("image load failed: " + url)); };
+            im.src = url;
+        });
+    },
+
     /**
      * Draw the deterministic end-credits card on a canvas. We render the EXACT strings ourselves
      * (never a generative model), so text + our branding are always crisp and correct. Returns a
@@ -382,13 +392,32 @@ window.PageToMovieFfmpeg = {
         }
 
         // Thin divider.
-        y += h * 0.11;
+        y += h * 0.10;
         g.strokeStyle = "rgba(230,226,216,0.35)";
         g.lineWidth = Math.max(1, Math.round(h * 0.0025));
         g.beginPath(); g.moveTo(cx - w * 0.09, y); g.lineTo(cx + w * 0.09, y); g.stroke();
 
+        // Logo mark — the same favicon the home page shows — rounded + centered above the footer.
+        if (opts.logoImg) {
+            const size = Math.round(h * 0.12);
+            y += h * 0.05 + size / 2;
+            const lx = Math.round(cx - size / 2), ly = Math.round(y - size / 2);
+            const r = Math.round(size * 0.22);
+            g.save();
+            g.beginPath();
+            g.moveTo(lx + r, ly);
+            g.arcTo(lx + size, ly, lx + size, ly + size, r);
+            g.arcTo(lx + size, ly + size, lx, ly + size, r);
+            g.arcTo(lx, ly + size, lx, ly, r);
+            g.arcTo(lx, ly, lx + size, ly, r);
+            g.closePath(); g.clip();
+            g.drawImage(opts.logoImg, lx, ly, size, size);
+            g.restore();
+            y += size / 2;
+        }
+
         // Software + site footer.
-        y += h * 0.085;
+        y += h * 0.075;
         const soft = (opts.softwareName || "PageToMovie").trim();
         const site = (opts.siteUrl || "pagetomovie.com").trim();
         g.fillStyle = "rgba(230,226,216,0.82)";
@@ -418,7 +447,11 @@ window.PageToMovieFfmpeg = {
             if (!load.success) return load;
             const ffmpeg = self._ffmpeg;
             try {
-                const cv = self._drawCreditsCard({ ...opts, width: w, height: h });
+                // Same-origin favicon → drawing it does not taint the canvas, so export still works.
+                let logoImg = null;
+                try { logoImg = await self._loadImageAsync(opts.logoUrl || "/favicon.png"); }
+                catch (_) { /* logo is optional — the card still renders without it */ }
+                const cv = self._drawCreditsCard({ ...opts, width: w, height: h, logoImg: logoImg });
                 const blob = await new Promise((res) => cv.toBlob(res, "image/png"));
                 if (!blob) return { success: false, error: "canvas toBlob failed" };
                 const png = new Uint8Array(await blob.arrayBuffer());
