@@ -157,6 +157,17 @@ public sealed class SupportedModelEntry
     /// </summary>
     public string? PricingNotes { get; init; }
 
+    /// <summary>
+    /// ISO date (yyyy-MM-dd) when cost fields on this row were last verified against the vendor.
+    /// Used to audit stale rates — not used in math.
+    /// </summary>
+    public string? PricingUpdatedAt { get; init; }
+
+    /// <summary>
+    /// ISO date (yyyy-MM-dd) when this model row was last checked for complete required fields.
+    /// </summary>
+    public string? LastVerifiedAt { get; init; }
+
     public string? Notes { get; init; }
 
     /// <summary>
@@ -617,7 +628,12 @@ public static class SupportedModelCatalog
             try
             {
                 if (TryLoadFromJson(File.ReadAllText(path)))
+                {
+                    // Production/file load: self-test required fields before any pipeline use.
+                    if (!OperatingSystem.IsBrowser())
+                        EnsureEnabledModelsComplete();
                     return;
+                }
             }
             catch
             {
@@ -637,7 +653,11 @@ public static class SupportedModelCatalog
                 if (stream is null) continue;
                 using var reader = new StreamReader(stream);
                 if (TryLoadFromJson(reader.ReadToEnd()))
+                {
+                    if (!OperatingSystem.IsBrowser())
+                        EnsureEnabledModelsComplete();
                     return;
+                }
             }
         }
         catch
@@ -988,6 +1008,97 @@ public static class SupportedModelCatalog
         return missing;
     }
 
+
+    /// <summary>
+    /// Self-test: every enabled model must have the required capability + cost fields for its
+    /// capability. Returns human-readable errors (empty = OK). Call after catalog load / in tests
+    /// so deploy fails before movie generation, not mid-pipeline.
+    /// </summary>
+    public static IReadOnlyList<string> ValidateEnabledModels()
+    {
+        EnsureLoaded();
+        var errors = new List<string>();
+        foreach (var e in Entries.Where(x => x.Enabled))
+            ValidateOne(e, errors);
+        return errors;
+    }
+
+    /// <summary>Throws <see cref="InvalidOperationException"/> if any enabled model is incomplete.</summary>
+    public static void EnsureEnabledModelsComplete()
+    {
+        var errors = ValidateEnabledModels();
+        if (errors.Count == 0) return;
+        throw new InvalidOperationException(
+            "models_catalog.json failed self-test (" + errors.Count + " issue(s)):\n- " +
+            string.Join("\n- ", errors));
+    }
+
+    private static void ValidateOne(SupportedModelEntry e, List<string> errors)
+    {
+        void Need(bool ok, string field)
+        {
+            if (!ok)
+                errors.Add($"{e.Id} ({e.Capability}): missing or invalid {field}");
+        }
+
+        Need(!string.IsNullOrWhiteSpace(e.Id), "id");
+        Need(!string.IsNullOrWhiteSpace(e.DisplayName), "displayName");
+        Need(!string.IsNullOrWhiteSpace(e.LastVerifiedAt), "lastVerifiedAt");
+
+        switch (e.Capability)
+        {
+            case ModelCapability.Chat:
+            case ModelCapability.Vision:
+                Need(e.MaxInputTokens is > 0, "maxInputTokens");
+                Need(e.MaxOutputTokens is > 0, "maxOutputTokens");
+                Need(e.InputCostPerMillionTokens is not null, "inputCostPerMillionTokens");
+                Need(e.OutputCostPerMillionTokens is not null, "outputCostPerMillionTokens");
+                Need(!string.IsNullOrWhiteSpace(e.PricingNotes), "pricingNotes");
+                Need(!string.IsNullOrWhiteSpace(e.PricingUpdatedAt), "pricingUpdatedAt");
+                break;
+
+            case ModelCapability.Video:
+                Need(e.MinClipDurationSeconds is not null, "minClipDurationSeconds");
+                Need(e.MaxClipDurationSeconds is not null, "maxClipDurationSeconds");
+                Need(e.AbsMaxClipDurationSeconds is not null, "absMaxClipDurationSeconds");
+                Need(e.MaxReferenceImages is not null, "maxReferenceImages");
+                Need(e.MaxPromptLength is > 0, "maxPromptLength");
+                Need(
+                    e.VideoCostPerSecondByResolution is { Count: > 0 } ||
+                    e.VideoBaseCostByResolution is { Count: > 0 },
+                    "videoCostPerSecondByResolution or videoBaseCostByResolution");
+                Need(e.VideoReferenceImageCost is not null, "videoReferenceImageCost");
+                if (e.SupportsVideoContinue)
+                    Need(e.VideoExtendCostPerSecond is not null, "videoExtendCostPerSecond");
+                Need(!string.IsNullOrWhiteSpace(e.PricingNotes), "pricingNotes");
+                Need(!string.IsNullOrWhiteSpace(e.PricingUpdatedAt), "pricingUpdatedAt");
+                break;
+
+            case ModelCapability.Image:
+                Need(e.MaxReferenceImages is not null, "maxReferenceImages");
+                Need(e.MaxPromptLength is > 0, "maxPromptLength");
+                Need(e.ImageCostPerImage is not null, "imageCostPerImage");
+                Need(!string.IsNullOrWhiteSpace(e.PricingNotes), "pricingNotes");
+                Need(!string.IsNullOrWhiteSpace(e.PricingUpdatedAt), "pricingUpdatedAt");
+                break;
+
+            case ModelCapability.Audio:
+                Need(e.MaxAudioDurationSeconds is > 0, "maxAudioDurationSeconds");
+                Need(e.MaxPromptLength is > 0, "maxPromptLength");
+                // supportsVocals is bool — always present
+                break;
+
+            case ModelCapability.Voice:
+                Need(e.MaxPromptLength is > 0, "maxPromptLength");
+                break;
+
+            case ModelCapability.LipSync:
+                // costPerMinuteUsd optional until catalog filled for every lip model
+                break;
+        }
+    }
+
+
     public static IReadOnlyList<SupportedModelDto> ToDtoList(bool enabledOnly = true) =>
         Entries.Where(e => !enabledOnly || e.Enabled)
             .Select(ToDto)
@@ -1017,6 +1128,8 @@ public static class SupportedModelCatalog
         VideoReferenceImageCost = e.VideoReferenceImageCost,
         VideoExtendCostPerSecond = e.VideoExtendCostPerSecond,
         PricingNotes = e.PricingNotes,
+        PricingUpdatedAt = e.PricingUpdatedAt,
+        LastVerifiedAt = e.LastVerifiedAt,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
         ProviderId = e.ProviderId,
@@ -1073,6 +1186,8 @@ public static class SupportedModelCatalog
         VideoReferenceImageCost = d.VideoReferenceImageCost,
         VideoExtendCostPerSecond = d.VideoExtendCostPerSecond,
         PricingNotes = d.PricingNotes,
+        PricingUpdatedAt = d.PricingUpdatedAt,
+        LastVerifiedAt = d.LastVerifiedAt,
         Notes = d.Notes,
         FeatureRequestUrl = d.FeatureRequestUrl,
         SupportsVideoContinue = d.SupportsVideoContinue,
@@ -1195,8 +1310,10 @@ public sealed class SupportedModelDto
     public double? ImageCostPerImage { get; set; }
     public double? VideoReferenceImageCost { get; set; }
     public double? VideoExtendCostPerSecond { get; set; }
-    public string? PricingNotes { get; set; }
-    public string? Notes { get; set; }
+        public string? PricingNotes { get; set; }
+        public string? PricingUpdatedAt { get; set; }
+        public string? LastVerifiedAt { get; set; }
+public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
     public string? ProviderId { get; set; }
     public string? ProviderLabel { get; set; }

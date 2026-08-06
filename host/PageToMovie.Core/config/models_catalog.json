@@ -157,7 +157,9 @@
       "providerId": "openai",
       "providerLabel": "OpenAI",
       "maxOutputTokens": 16384,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "gpt-5.6-sol",
@@ -177,7 +179,9 @@
       "providerId": "openai",
       "providerLabel": "OpenAI",
       "maxOutputTokens": 128000,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "gpt-5.6-terra",
@@ -197,7 +201,9 @@
       "providerId": "openai",
       "providerLabel": "OpenAI",
       "maxOutputTokens": 128000,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "gpt-5.6-luna",
@@ -217,7 +223,9 @@
       "providerId": "openai",
       "providerLabel": "OpenAI",
       "maxOutputTokens": 128000,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "gpt-4o-mini",
@@ -237,7 +245,9 @@
       "providerId": "openai",
       "providerLabel": "OpenAI",
       "maxOutputTokens": 16384,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "o3-mini",
@@ -257,7 +267,9 @@
       "providerId": "openai",
       "providerLabel": "OpenAI",
       "maxOutputTokens": 100000,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "grok-imagine-video",
@@ -299,7 +311,9 @@
       "maxPromptLength": 4000,
       "videoReferenceImageCost": 0.0,
       "videoExtendCostPerSecond": 0.07,
-      "pricingNotes": "Video $/sec by resolution from product catalog (verify docs.x.ai/developers pricing). As of 2026-08 xAI publishes generation pricing, not a separate ref-image or extend line item (docs.x.ai video + pricing). videoReferenceImageCost=0 means no separate ref fee. videoExtendCostPerSecond uses same billing unit as generation new seconds; set to 0.07 (720p catalog rate) for planning when resolution-specific extend rates are not published."
+      "pricingNotes": "Video $/sec by resolution from product catalog (verify docs.x.ai/developers pricing). As of 2026-08 xAI publishes generation pricing, not a separate ref-image or extend line item (docs.x.ai video + pricing). videoReferenceImageCost=0 means no separate ref fee. videoExtendCostPerSecond uses same billing unit as generation new seconds; set to 0.07 (720p catalog rate) for planning when resolution-specific extend rates are not published.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "hunyuan-video",
@@ -342,7 +356,9 @@
       "maxPromptLength": 1000,
       "maxReferenceImageDimension": 1280,
       "videoReferenceImageCost": 0.0,
-      "pricingNotes": "Update from vendor pricing page when rates change; Engine has no USD fallbacks."
+      "pricingNotes": "Update from vendor pricing page when rates change; Engine has no USD fallbacks.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/wan-2.1",
@@ -387,7 +403,9 @@
       "maxPromptLength": 800,
       "maxReferenceImageDimension": 2000,
       "videoReferenceImageCost": 0.0,
-      "pricingNotes": "Flat base $/video from fal.ai wan pricing pages (per generation). per-sec=0. Refs are the single init image included in generation price \u2192 videoReferenceImageCost=0. No continue \u2192 no extend rate."
+      "pricingNotes": "Flat base $/video from fal.ai wan pricing pages (per generation). per-sec=0. Refs are the single init image included in generation price \u2192 videoReferenceImageCost=0. No continue \u2192 no extend rate.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "veo-3.1",
@@ -426,7 +444,9 @@
       "providerLabel": "Google",
       "maxPromptLength": 4000,
       "videoReferenceImageCost": 0.0,
-      "pricingNotes": "Vertex/Gemini Veo published $/sec class rates in catalog; confirm cloud.google.com Veo pricing. Ref images: no separate published add-on in our matrix \u2192 0. No continue \u2192 no extend rate."
+      "pricingNotes": "Vertex/Gemini Veo published $/sec class rates in catalog; confirm cloud.google.com Veo pricing. Ref images: no separate published add-on in our matrix \u2192 0. No continue \u2192 no extend rate.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "grok-imagine-image-quality",
@@ -448,7 +468,9 @@
       "providerId": "grok",
       "providerLabel": "xAI",
       "maxPromptLength": 4000,
-      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "grok-imagine-image",
@@ -470,7 +492,9 @@
       "providerId": "grok",
       "providerLabel": "xAI",
       "maxPromptLength": 4000,
-      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "gemini-2.5-pro-image",
@@ -492,7 +516,9 @@
       "providerId": "gemini",
       "providerLabel": "Google",
       "maxPromptLength": 4000,
-      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/flux/dev",
@@ -516,7 +542,9 @@
       "maxReferenceImages": 1,
       "maxPromptLength": 1000,
       "maxReferenceImageDimension": 1536,
-      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/flux/schnell",
@@ -540,7 +568,9 @@
       "maxReferenceImages": 1,
       "maxPromptLength": 1000,
       "maxReferenceImageDimension": 1536,
-      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "grok-4.5",
@@ -563,7 +593,9 @@
       "notes": "Stage planning, cast scrub, screenplay helpers. maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens \u2014 not documented per-model, this is xAI's platform-wide default cap on visible output tokens ('Defaults to 128,000 when unset; set a larger value to allow longer generations') that applies uniformly across chat/completions models, so it's the real ceiling any Grok chat call hits today unless the caller explicitly overrides it.",
       "providerId": "grok",
       "providerLabel": "xAI",
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "grok-4",
@@ -586,7 +618,9 @@
       "notes": "maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset, platform-wide (not a per-model published figure) \u2014 see grok-4.5 note for full citation detail.",
       "providerId": "grok",
       "providerLabel": "xAI",
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "grok-4.20-reasoning",
@@ -609,7 +643,9 @@
       "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) \u2014 discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text \u2014 GrokChatClient's self-heal matches both spellings) \u2014 it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M). maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset platform-wide (per max_completion_tokens's own definition this excludes reasoning tokens, so this is the visible-JSON-output ceiling even for the reasoning variant \u2014 not a per-model published figure).",
       "providerId": "grok",
       "providerLabel": "xAI",
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "claude-sonnet-5",
@@ -632,7 +668,9 @@
       "notes": "Wired via AnthropicChatClient. maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Sonnet 5 max output: 128k tokens).",
       "providerId": "anthropic",
       "providerLabel": "Anthropic",
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "claude-opus-5",
@@ -655,7 +693,9 @@
       "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 \u2014 update when a real source is available. maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Opus 5 max output: 128k tokens).",
       "providerId": "anthropic",
       "providerLabel": "Anthropic",
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "gemini-2.5-flash",
@@ -678,7 +718,9 @@
       "providerId": "gemini",
       "providerLabel": "Google",
       "maxOutputTokens": 65536,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "gemini-3.6-flash",
@@ -701,7 +743,9 @@
       "providerId": "gemini",
       "providerLabel": "Google",
       "maxOutputTokens": 65536,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "gemini-3.1-pro-preview",
@@ -724,7 +768,9 @@
       "providerId": "gemini",
       "providerLabel": "Google",
       "maxOutputTokens": 65536,
-      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "grok-4.5",
@@ -746,7 +792,10 @@
       "notes": "GrokVisionClient: book-page OCR, cast-on-image classify, and multi-image frame review.",
       "providerId": "grok",
       "providerLabel": "xAI",
-      "maxOutputTokens": 128000
+      "maxOutputTokens": 128000,
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05",
+      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page."
     },
     {
       "id": "claude-sonnet-5",
@@ -768,7 +817,10 @@
       "supportsVideoReview": false,
       "notes": "Wired for clip/frame review via MultiProviderVisionClient (OCR/cast-classify stay Grok-only). maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Sonnet 5 max output: 128k tokens).",
       "providerId": "anthropic",
-      "providerLabel": "Anthropic"
+      "providerLabel": "Anthropic",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05",
+      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page."
     },
     {
       "id": "gemini-2.5-flash",
@@ -790,7 +842,10 @@
       "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only). Was gemini-2.5-pro, retired by Google for new API keys \u2014 see the Chat entry's note.",
       "providerId": "gemini",
       "providerLabel": "Google",
-      "maxOutputTokens": 65536
+      "maxOutputTokens": 65536,
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05",
+      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page."
     },
     {
       "id": "fal-ai/musicgen",
@@ -812,7 +867,8 @@
       "providerId": "fal",
       "providerLabel": "Fal.ai",
       "supportsVocals": false,
-      "maxPromptLength": 1000
+      "maxPromptLength": 1000,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/udio",
@@ -834,7 +890,8 @@
       "providerId": "fal",
       "providerLabel": "Fal.ai",
       "supportsVocals": false,
-      "maxPromptLength": 1000
+      "maxPromptLength": 1000,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/minimax/music",
@@ -856,7 +913,8 @@
       "providerId": "fal",
       "providerLabel": "Fal.ai",
       "supportsVocals": false,
-      "maxPromptLength": 1000
+      "maxPromptLength": 1000,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/stable-audio-2.0",
@@ -878,7 +936,8 @@
       "providerId": "fal",
       "providerLabel": "Fal.ai",
       "supportsVocals": false,
-      "maxPromptLength": 1000
+      "maxPromptLength": 1000,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "suno-v5-5",
@@ -899,7 +958,8 @@
       "providerId": "suno",
       "providerLabel": "Suno API (sunoapi.org)",
       "supportsVocals": true,
-      "maxPromptLength": 3000
+      "maxPromptLength": 3000,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "aimusicapi-suno",
@@ -920,7 +980,8 @@
       "providerLabel": "AI Music API (aimusicapi.ai)",
       "supportsVocals": true,
       "maxAudioDurationSeconds": 240,
-      "maxPromptLength": 3000
+      "maxPromptLength": 3000,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "elevenlabs-music",
@@ -941,7 +1002,8 @@
       "providerId": "elevenlabs",
       "providerLabel": "ElevenLabs",
       "supportsVocals": true,
-      "maxPromptLength": 4100
+      "maxPromptLength": 4100,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "eleven_multilingual_v2",
@@ -960,7 +1022,8 @@
       "notes": "Spoken dialogue from a personal clone sample on Cast.",
       "providerId": "elevenlabs",
       "providerLabel": "ElevenLabs",
-      "maxPromptLength": 5000
+      "maxPromptLength": 5000,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "eleven_voice_clone",
@@ -980,7 +1043,8 @@
       "notes": "Creates a voice profile from a short mic/upload sample (Cast \u2192 Voice clone sample). Optional paid add-on path. Requires an ElevenLabs API key with Instant Voice Cloning permission (create_instant_voice_clone). Keys without that scope return 401 missing_permissions \u2014 switch to fal-ai/minimax/voice-clone or upgrade the key.",
       "providerId": "elevenlabs",
       "providerLabel": "ElevenLabs",
-      "maxPromptLength": 5000
+      "maxPromptLength": 5000,
+      "lastVerifiedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/minimax/voice-clone",
@@ -1002,7 +1066,9 @@
       "notes": "Clones a voice from a reference sample (>=10s, reuses this project's existing assets/characters/{key}/voice_clone_sample.* upload) via Fal.ai's queue API (fal.ai/models/fal-ai/minimax/voice-clone). Input: audio_url (URL or data URI). Output: custom_voice_id, reused across many fal-ai/minimax/speech-02-hd calls so the clone cost is paid once. $1.50 per clone call \u2014 confirmed via fal.ai's own model/pricing page and openapi schema (2026-08). A preview-text option exists ($0.30/1000 chars) but this app's client never requests it. MiniMax retains the cloned voice only if used by a speech call at least once within 7 days of creation (provider-side retention, not enforced by this app).",
       "providerId": "fal",
       "providerLabel": "Fal.ai",
-      "maxPromptLength": 5000
+      "maxPromptLength": 5000,
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/minimax/speech-02-hd",
@@ -1023,7 +1089,9 @@
       "maxPromptLength": 5000,
       "notes": "Text-to-speech via Fal.ai's queue API (fal.ai/models/fal-ai/minimax/speech-02-hd) using a voice cloned by fal-ai/minimax/voice-clone (custom_voice_id passed as voice_setting.voice_id \u2014 confirmed against MiniMax's own platform.minimax.io voice-cloning docs, same convention). Input: text (max 5000 chars per call, this app does not auto-chunk longer narration), voice_setting {voice_id, speed 0.5-2.0, vol, pitch, emotion}. Output: audio.url + duration_ms. $0.10 per 1000 characters \u2014 confirmed via fal.ai's own model/pricing page (2026-08).",
       "providerId": "fal",
-      "providerLabel": "Fal.ai"
+      "providerLabel": "Fal.ai",
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/sync-lipsync/v2/pro",
@@ -1044,7 +1112,9 @@
       "notes": "Sync Labs Lipsync 2 Pro via Fal.ai's queue API (fal.ai/models/fal-ai/sync-lipsync/v2/pro). Input: video_url, audio_url (both URL or data URI), optional sync_mode (cut_off default | loop | bounce | silence | remap) for when the two durations differ. Output: video.url. Zero-shot \u2014 no fine-tuning needed; preserves natural teeth/facial detail per Fal's own listing. ~$5/min of output video (~$0.083/s) \u2014 sourced via targeted search during research (fal.ai's own pricing page returned HTTP 429 rate-limiting when fetched directly; cross-checked against Sync Labs' own sync.so/pricing page, which lists the same figure for their Pro tier). Confirm against fal.ai's live pricing page before relying on this for a large narration/dub run.",
       "providerId": "fal",
       "providerLabel": "Fal.ai",
-      "maxPromptLength": 1000
+      "maxPromptLength": 1000,
+      "lastVerifiedAt": "2026-08-05",
+      "pricingUpdatedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/sync-lipsync/v3",
@@ -1064,7 +1134,8 @@
       "notes": "Newest Sync Labs model on Fal.ai (fal.ai/models/fal-ai/sync-lipsync/v3), same core video_url/audio_url/sync_mode input as v2 Pro plus an optional `options` object (model_mode: lips/face/head/lipsync/emotion/talking_head, prompt: emotion tag, temperature, active_speaker_detection, occlusion_detection_enabled) that this app's client does not yet expose. Pricing not confirmed \u2014 fal.ai's pricing page returned HTTP 429 during research and no third-party source for v3 specifically was found; left null rather than guessed. Not the capability default until pricing is confirmed.",
       "providerId": "fal",
       "providerLabel": "Fal.ai",
-      "maxPromptLength": 1000
+      "maxPromptLength": 1000,
+      "lastVerifiedAt": "2026-08-05"
     }
   ],
   "task_rankings": {
