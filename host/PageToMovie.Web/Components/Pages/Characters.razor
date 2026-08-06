@@ -271,6 +271,10 @@ else
                             </span>
                         }
                         <span class="char-list-name text-truncate">@c.DisplayName</span>
+                        @if (c.Locked)
+                        {
+                            <span class="char-list-lock ms-auto text-muted" title="Locked" aria-label="Locked">🔒</span>
+                        }
                         @if (c.IsGroup)
                         {
                             <span class="badge text-bg-info ms-1" title="Group / chorus cast">group</span>
