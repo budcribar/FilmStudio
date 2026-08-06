@@ -3915,6 +3915,96 @@ public sealed class ProjectStore
         File.WriteAllText(path, json + "\n");
     }
 
+    /// <summary>Stable stage keys for the optional Book sub-steps whose "done" state the sub-strip shows.</summary>
+    public static class BookSubstepKeys
+    {
+        public const string Look = "look";
+        public const string Enrich = "enrich";
+        public const string FitLength = "trim";
+    }
+
+    /// <summary>
+    /// Record that an optional Book sub-step (Look / Enrich / Fit length) was applied to the current
+    /// screenplay, so the Book sub-strip can show a "done" check. Fit length also records the target
+    /// minutes it fit toward. Merged into pipeline_state.json under <c>book_substeps</c>. Idempotent.
+    /// </summary>
+    public void MarkBookSubstepDone(string projectId, string stage, double? targetMinutes = null)
+    {
+        stage = (stage ?? "").Trim().ToLowerInvariant();
+        if (stage is not (BookSubstepKeys.Look or BookSubstepKeys.Enrich or BookSubstepKeys.FitLength))
+            return;
+
+        var path = ResolvePipelineStatePath(projectId);
+        var merged = LoadPipelineStateDict(path);
+
+        var subs = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        if (merged.TryGetValue("book_substeps", out var existing) && existing is not null)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(JsonSerializer.Serialize(existing));
+                if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                    foreach (var p in doc.RootElement.EnumerateObject())
+                        subs[p.Name] = p.Value.Deserialize<object>();
+            }
+            catch { /* start fresh */ }
+        }
+
+        var entry = new Dictionary<string, object?>
+        {
+            ["done"] = true,
+            ["ts"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
+        };
+        if (stage == BookSubstepKeys.FitLength && targetMinutes is > 0)
+            entry["target_minutes"] = targetMinutes;
+        subs[stage] = entry;
+
+        merged["book_substeps"] = subs;
+        File.WriteAllText(path, JsonSerializer.Serialize(merged, JsonDefaults.Indented) + "\n");
+    }
+
+    /// <summary>
+    /// Clear all Book sub-step "done" markers. Called when a fresh full-length screenplay base is
+    /// generated, so Look/Enrich/Fit length checks never carry over to newly generated text.
+    /// </summary>
+    public void ClearBookSubsteps(string projectId)
+    {
+        var path = ResolvePipelineStatePath(projectId);
+        if (!File.Exists(path)) return;
+        var merged = LoadPipelineStateDict(path);
+        if (!merged.Remove("book_substeps")) return;
+        File.WriteAllText(path, JsonSerializer.Serialize(merged, JsonDefaults.Indented) + "\n");
+    }
+
+    /// <summary>Read which optional Book sub-steps have been applied (for the sub-strip "done" checks).</summary>
+    public BookSubstepStatus ReadBookSubsteps(string projectId)
+    {
+        var status = new BookSubstepStatus();
+        try
+        {
+            var path = ResolvePipelineStatePath(projectId);
+            if (!File.Exists(path)) return status;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            if (!doc.RootElement.TryGetProperty("book_substeps", out var subs) ||
+                subs.ValueKind != JsonValueKind.Object)
+                return status;
+
+            status.LookDone = SubstepDone(subs, BookSubstepKeys.Look);
+            status.EnrichDone = SubstepDone(subs, BookSubstepKeys.Enrich);
+            status.FitLengthDone = SubstepDone(subs, BookSubstepKeys.FitLength);
+            if (subs.TryGetProperty(BookSubstepKeys.FitLength, out var t) && t.ValueKind == JsonValueKind.Object &&
+                t.TryGetProperty("target_minutes", out var tm) && tm.TryGetDouble(out var mins) && mins > 0)
+                status.FitLengthTargetMinutes = mins;
+        }
+        catch { /* defaults */ }
+        return status;
+
+        static bool SubstepDone(JsonElement subs, string stage) =>
+            subs.TryGetProperty(stage, out var el) &&
+            el.ValueKind == JsonValueKind.Object &&
+            ReadJsonBool(el, "done");
+    }
+
     private static Dictionary<string, object?> LoadPipelineStateDict(string path)
     {
         if (!File.Exists(path))
@@ -4787,6 +4877,7 @@ public sealed class ProjectStore
             XaiConfigured = xai,
             PlanningModel = planningModel,
             NextStep = next,
+            BookSubsteps = ReadBookSubsteps(projectId),
         };
     }
 

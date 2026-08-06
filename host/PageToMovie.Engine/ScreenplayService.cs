@@ -467,7 +467,7 @@ public static string NormalizeText(string text)
 
         return ApplyDraftEdit(store, projectId, result,
             appliedMessage: $"Re-applied the look to the screenplay ({result.SceneCountAfter} scenes).",
-            updateBase: true);
+            updateBase: true, substep: ProjectStore.BookSubstepKeys.Look);
     }
 
     /// <summary>
@@ -506,7 +506,7 @@ public static string NormalizeText(string text)
 
         return ApplyDraftEdit(store, projectId, result,
             appliedMessage: $"Enriched the screenplay ({result.SceneCountAfter} scenes).",
-            updateBase: true);
+            updateBase: true, substep: ProjectStore.BookSubstepKeys.Enrich);
     }
 
     /// <summary>Path to the immutable full-length base (may not exist until the first trim / a max generation).</summary>
@@ -584,7 +584,8 @@ public static string NormalizeText(string text)
             .ConfigureAwait(false);
 
         return ApplyDraftEdit(store, projectId, result,
-            appliedMessage: $"Trimmed the screenplay toward ~{target} min ({result.SceneCountAfter} scenes).");
+            appliedMessage: $"Trimmed the screenplay toward ~{target} min ({result.SceneCountAfter} scenes).",
+            substep: ProjectStore.BookSubstepKeys.FitLength, substepTargetMinutes: target);
     }
 
     /// <summary>
@@ -624,9 +625,14 @@ public static string NormalizeText(string text)
     /// True for full-length edits (enrich / re-skin): also overwrite the full-length base so Fit length
     /// derives from the edited version. False for Trim, which shortens and must not touch the base.
     /// </param>
+    /// <param name="substep">
+    /// Book sub-step key (<see cref="ProjectStore.BookSubstepKeys"/>) to mark "done" once the pass is
+    /// actually applied and saved, so the Book sub-strip can show a completion check. Null = don't mark.
+    /// Only recorded on a real apply — a pass that keeps the original (structure not preserved) is not marked.
+    /// </param>
     private static DraftEditResult ApplyDraftEdit(
         ProjectStore store, string projectId, AdaptationService.FountainEditResult result, string appliedMessage,
-        bool updateBase = false)
+        bool updateBase = false, string? substep = null, double? substepTargetMinutes = null)
     {
         if (!result.Ok)
             return new DraftEditResult
@@ -644,6 +650,12 @@ public static string NormalizeText(string text)
 
         if (updateBase)
             WriteMaxBase(store, projectId, result.Fountain); // full-length base = enriched / re-skinned
+
+        if (substep is { Length: > 0 })
+        {
+            try { store.MarkBookSubstepDone(projectId, substep, substepTargetMinutes); }
+            catch { /* completion marker is best-effort — never fail the edit over it */ }
+        }
 
         return new DraftEditResult
         {
@@ -793,6 +805,7 @@ public static string NormalizeText(string text)
                     var cachedSave = SaveDraft(store, projectId, cachedFountain);
                     if (!cachedSave.Ok) return cachedSave;
                     WriteMaxBase(store, projectId, cachedFountain); // D0: full-length base for Trim
+                    store.ClearBookSubsteps(projectId); // fresh screenplay → prior Look/Enrich/Fit length no longer apply
                     ProjectVisionMeta.Write(projectDir, cachedConversion.VisionMeta);
                     cachedSave.Message = "Screenplay draft ready — reused shared book adaptation";
                     return cachedSave;
@@ -907,6 +920,7 @@ public static string NormalizeText(string text)
             var save = SaveDraft(store, projectId, fountain);
             if (!save.Ok) return save;
             WriteMaxBase(store, projectId, fountain); // D0: full-length base for Trim (Fit length)
+            store.ClearBookSubsteps(projectId); // fresh screenplay → prior Look/Enrich/Fit length no longer apply
 
             // Medium sidecar from the same adaptation response (preferred).
             // Fallback: one structured LLM call if the model omitted the trailer.

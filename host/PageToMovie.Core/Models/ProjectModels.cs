@@ -831,6 +831,24 @@ public sealed class AdaptationStatus
     /// <summary>Configured planning model (Configuration page) — Stage 1 / book→Fountain / cast scrub.</summary>
     public string PlanningModel { get; set; } = "";
     public string NextStep { get; set; } = "";
+    /// <summary>Which optional Book sub-steps (Look / Enrich / Fit length) have been run — for the sub-strip "done" checks.</summary>
+    public BookSubstepStatus BookSubsteps { get; set; } = new();
+}
+
+/// <summary>
+/// Which optional Book sub-steps have been run on the current screenplay, so the Book sub-strip can
+/// show a "done" check. Look / Enrich / Fit length are optional passes — a check means "you ran this,"
+/// not "required and complete." Cleared when a fresh full-length screenplay base is generated, so the
+/// checks never carry over to freshly generated text. Import/Screenplay completion come from their own
+/// state (source exists / signed), not from here.
+/// </summary>
+public sealed class BookSubstepStatus
+{
+    public bool LookDone { get; set; }
+    public bool EnrichDone { get; set; }
+    public bool FitLengthDone { get; set; }
+    /// <summary>Target minutes recorded the last time Fit length ran (for the sub-strip label).</summary>
+    public double? FitLengthTargetMinutes { get; set; }
 }
 
 /// <summary>

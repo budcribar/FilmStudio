@@ -1101,6 +1101,13 @@ hr {
     cursor: not-allowed;
     pointer-events: none;
 }
+/* "Done" check on a Book sub-step — tells you at a glance which optional passes you've run. */
+.ptm-substep__done {
+    margin-left: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--fs-accent-green, #22c55e);
+}
 .ptm-hub-wait {
     color: var(--fs-text-muted);
 }
