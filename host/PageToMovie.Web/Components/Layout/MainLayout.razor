@@ -1,6 +1,11 @@
+<style>
+.active-project-loading, .active-project-loading * { cursor: wait !important; }
+</style>
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject IJSRuntime Js
+@inject ActiveProjectState ActiveProject
+@implements IDisposable
 @inject NavigationManager Nav
 @inject EngineApiClient Engine
 @inject AdminSessionService Session
@@ -79,6 +84,7 @@
 
     protected override void OnInitialized()
     {
+        ActiveProject.Changed += OnActiveProjectChanged;
         if (_locationHooked) return;
         _locationHooked = true;
         // Re-check on every navigation so /demo stays open to guests and studio routes re-gate.
