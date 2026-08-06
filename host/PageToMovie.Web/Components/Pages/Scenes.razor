@@ -3060,6 +3060,13 @@ else
                     if (_selectedClip == cn)
                         SelectClip(cn);
                 }
+                else if (snap.Status == "done" &&
+                         string.Equals(snap.Kind, "batch", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Batch generation finished — clear the scene selection so the toolbar no longer
+                    // reads "Generate N scenes" (which looked like it would regenerate everything).
+                    _selected.Clear();
+                }
             }
             else if (ShouldRefreshSceneListWhileRunning(snap))
             {
