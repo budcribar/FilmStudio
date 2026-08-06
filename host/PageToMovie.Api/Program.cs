@@ -2006,6 +2006,38 @@ app.MapPost("/api/admin/models-catalog/reload", (IUserContext user) =>
     });
 });
 
+app.MapPost("/api/admin/models-catalog/validate", async (HttpContext http, IUserContext user) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+
+    using var reader = new StreamReader(http.Request.Body);
+    var rawJson = await reader.ReadToEndAsync();
+    try
+    {
+        if (!SupportedModelCatalog.TryLoadFromJson(rawJson))
+            return Results.BadRequest(new { ok = false, error = "Invalid catalog JSON" });
+        var errors = SupportedModelCatalog.ValidateEnabledModels();
+        // Reload real on-disk catalog so in-memory state is not left on the draft payload
+        SupportedModelCatalog.ReloadCatalog();
+        return Results.Ok(new
+        {
+            ok = errors.Count == 0,
+            errorCount = errors.Count,
+            errors,
+            message = errors.Count == 0
+                ? "All enabled models have required fields."
+                : $"{errors.Count} validation issue(s) — fix before save.",
+        });
+    }
+    catch (Exception ex)
+    {
+        try { SupportedModelCatalog.ReloadCatalog(); } catch { /* best effort */ }
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+
 app.MapPost("/api/admin/chat-cache/clear", (IUserContext user, IServiceProvider sp) =>
 {
     if (!user.IsAdmin)

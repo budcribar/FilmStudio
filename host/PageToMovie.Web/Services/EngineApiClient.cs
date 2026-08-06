@@ -64,6 +64,20 @@ public sealed class EngineApiClient
         return body?.Message ?? "Models catalog saved successfully.";
     }
 
+    public async Task<ModelsCatalogValidateResponse> ValidateModelsCatalogRawAsync(string rawJson, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/models-catalog/validate")
+        {
+            Content = new StringContent(rawJson, System.Text.Encoding.UTF8, "application/json"),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<ModelsCatalogValidateResponse>(JsonOpts, ct)
+            ?? new ModelsCatalogValidateResponse();
+        if (!resp.IsSuccessStatusCode && string.IsNullOrWhiteSpace(body.Error))
+            body.Error = "Catalog validation request failed";
+        return body;
+    }
+
     public EngineApiClient(
         HttpClient http,
         AdminSessionService? session = null,
@@ -4678,6 +4692,15 @@ public sealed class ModelsCatalogSaveResponse
     public string Message { get; set; } = "";
     public string Error { get; set; } = "";
     public int ModelsCount { get; set; }
+}
+
+public sealed class ModelsCatalogValidateResponse
+{
+    public bool Ok { get; set; }
+    public int ErrorCount { get; set; }
+    public List<string>? Errors { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
 }
 
 

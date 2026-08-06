@@ -8,19 +8,25 @@
 
 <PageTitle>Models catalog manager — PageToMovie</PageTitle>
 
-<div class="container py-3" style="max-width: 64rem;">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="container py-3" style="max-width: 72rem;">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
             <h1 class="h3 mb-0">Models catalog manager</h1>
-            <div class="text-muted small">Manage model entries, enablement flags, and dynamic capabilities · Hot-applies to <code>models_catalog.json</code></div>
+            <div class="text-muted small">
+                Add, edit, delete, and <strong>review</strong> models ·
+                Save runs full self-test · Hot-applies to <code>models_catalog.json</code>
+            </div>
         </div>
-        <div>
-            <a href="/admin" class="btn btn-outline-secondary btn-sm me-2">← Back to Admin</a>
-            <button class="btn btn-outline-primary btn-sm me-2" @onclick="ToggleRawJsonEditor">
-                @(_showRawJson ? "📋 Table View" : "📝 Raw JSON Editor")
+        <div class="d-flex flex-wrap gap-1">
+            <a href="/admin" class="btn btn-outline-secondary btn-sm">← Admin</a>
+            <button class="btn btn-outline-primary btn-sm" @onclick="ToggleRawJsonEditor">
+                @(_showRawJson ? "📋 Table" : "📝 Raw JSON")
+            </button>
+            <button class="btn btn-outline-success btn-sm" disabled="@_busy" @onclick="ValidateCatalogAsync">
+                ✓ Validate all
             </button>
             <button class="btn btn-primary btn-sm" disabled="@_busy" @onclick="SaveCatalogAsync">
-                @(_busy ? "Saving…" : "💾 Save & Hot-Apply Catalog")
+                @(_busy ? "Saving…" : "💾 Save & hot-apply")
             </button>
         </div>
     </div>
@@ -38,7 +44,7 @@
         @if (!string.IsNullOrEmpty(_error))
         {
             <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
-                @_error
+                <pre class="mb-0 small" style="white-space: pre-wrap;">@_error</pre>
                 <button type="button" class="btn-close" @onclick="() => _error = null"></button>
             </div>
         }
@@ -47,6 +53,18 @@
             <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
                 @_message
                 <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+            </div>
+        }
+        @if (_validationErrors is { Count: > 0 })
+        {
+            <div class="alert alert-warning mb-3">
+                <strong>Self-test issues (@_validationErrors.Count)</strong>
+                <ul class="mb-0 small">
+                    @foreach (var e in _validationErrors.Take(40))
+                    {
+                        <li>@e</li>
+                    }
+                </ul>
             </div>
         }
 
@@ -61,115 +79,220 @@
         }
         else
         {
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span class="fw-bold">Registered Model Catalog (@_modelList.Count models)</span>
-                    <button class="btn btn-success btn-sm" @onclick="() => _showAddForm = !_showAddForm">
-                        + Add Model to Catalog
-                    </button>
-                </div>
+            <div class="mb-2 d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-success" @onclick="() => BeginAdd()">＋ Add model</button>
+                <span class="text-muted small align-self-center">@_modelList.Count models · enabled: @_modelList.Count(m => IsEnabled(m))</span>
+            </div>
 
-                @if (_showAddForm)
-                {
-                    <div class="card-body bg-light border-bottom">
-                        <h6 class="fw-bold mb-3">➕ Add New Model Entry</h6>
-                        <div class="row g-2 mb-3">
-                            <div class="col-md-3">
-                                <label class="form-label small">Model ID</label>
-                                <input class="form-control form-control-sm" placeholder="e.g. grok-5" @bind="_newId" />
+            @if (_editModel is not null)
+            {
+                <div class="card border-primary mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>@(_editIsNew ? "Add model" : $"Edit · {_editModel["id"]}")</span>
+                        <button type="button" class="btn-close" @onclick="CloseEditor"></button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label small mb-0">Model ID</label>
+                                <input class="form-control form-control-sm font-monospace" @bind="_editId" disabled="@(!_editIsNew)" />
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label small">Display Name</label>
-                                <input class="form-control form-control-sm" placeholder="e.g. xAI Grok 5" @bind="_newDisplayName" />
+                            <div class="col-md-4">
+                                <label class="form-label small mb-0">Display name</label>
+                                <input class="form-control form-control-sm" @bind="_editDisplayName" />
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label small">Capability</label>
-                                <select class="form-select form-select-sm" @bind="_newCapability">
-                                    <option value="Chat">Chat / Screenplay</option>
-                                    <option value="Video">Video Generation</option>
-                                    <option value="Image">Portrait / Image</option>
-                                    <option value="Vision">Vision &amp; OCR</option>
-                                    <option value="VideoReview">Video Review</option>
-                                    <option value="Audio">Audio &amp; Music</option>
+                            <div class="col-md-2">
+                                <label class="form-label small mb-0">Capability</label>
+                                <select class="form-select form-select-sm" @bind="_editCapability">
+                                    @foreach (var c in Capabilities)
+                                    {
+                                        <option value="@c">@c</option>
+                                    }
                                 </select>
                             </div>
+                            <div class="col-md-2">
+                                <label class="form-label small mb-0">Provider</label>
+                                <input class="form-control form-control-sm" @bind="_editProvider" />
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-check form-switch mt-4">
+                                    <input class="form-check-input" type="checkbox" @bind="_editEnabled" id="editEnabled" />
+                                    <label class="form-check-label" for="editEnabled">Enabled</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small mb-0">Endpoint path</label>
+                                <input class="form-control form-control-sm font-monospace" @bind="_editEndpointPath" />
+                            </div>
                             <div class="col-md-3">
-                                <label class="form-label small">Provider</label>
-                                <select class="form-select form-select-sm" @bind="_newProvider">
-                                    <option value="Xai">xAI</option>
-                                    <option value="Anthropic">Anthropic</option>
-                                    <option value="Gemini">Google Gemini</option>
-                                    <option value="OpenAi">OpenAI</option>
-                                    <option value="Fal">Fal.ai</option>
-                                    <option value="Suno">Suno</option>
-                                    <option value="AIMusicApi">AIMusicAPI</option>
-                                </select>
+                                <label class="form-label small mb-0">Max prompt length</label>
+                                <input type="number" class="form-control form-control-sm" @bind="_editMaxPromptLength" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-0">lastVerifiedAt</label>
+                                <input class="form-control form-control-sm" @bind="_editLastVerifiedAt" placeholder="yyyy-MM-dd" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-0">pricingLastReviewedAt</label>
+                                <input class="form-control form-control-sm" @bind="_editPricingLastReviewedAt" placeholder="yyyy-MM-dd" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small mb-0">pricingNotes (source of cost figures)</label>
+                                <textarea class="form-control form-control-sm" rows="2" @bind="_editPricingNotes"></textarea>
                             </div>
                         </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label small">Endpoint Path (optional)</label>
-                                <input class="form-control form-control-sm" placeholder="e.g. chat/completions" @bind="_newEndpointPath" />
+
+                        @if (_editCapability is "Chat" or "Vision")
+                        {
+                            <hr class="my-2" />
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-0">maxInputTokens</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editMaxInputTokens" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-0">maxOutputTokens</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editMaxOutputTokens" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-0">input $/MTok</label>
+                                    <input type="number" step="0.01" class="form-control form-control-sm" @bind="_editInputCost" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-0">output $/MTok</label>
+                                    <input type="number" step="0.01" class="form-control form-control-sm" @bind="_editOutputCost" />
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label small">Max Audio Duration (s)</label>
-                                <input type="number" class="form-control form-control-sm" placeholder="e.g. 60" @bind="_newMaxAudioDuration" />
+                        }
+                        @if (_editCapability == "Video")
+                        {
+                            <hr class="my-2" />
+                            <div class="row g-2">
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-0">minClip sec</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editMinClip" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-0">maxClip sec</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editMaxClip" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-0">absMax sec</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editAbsMaxClip" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-0">maxRefs</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editMaxRefs" />
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" @bind="_editSupportsContinue" id="editCont" />
+                                        <label class="form-check-label" for="editCont">Continue</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-0">extend $/sec</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" @bind="_editExtendCost" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-0">videoReferenceImageCost</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" @bind="_editRefImageCost" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small mb-0">videoCostPerSecond JSON</label>
+                                    <input class="form-control form-control-sm font-monospace" @bind="_editVideoPerSecJson" placeholder='{"720p":0.07}' />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small mb-0">videoBaseCost JSON</label>
+                                    <input class="form-control form-control-sm font-monospace" @bind="_editVideoBaseJson" placeholder='{"720p":0.4}' />
+                                </div>
                             </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button class="btn btn-primary btn-sm w-100" @onclick="AddModelToList">Add to Catalog</button>
+                        }
+                        @if (_editCapability == "Image")
+                        {
+                            <hr class="my-2" />
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-0">maxReferenceImages</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editMaxRefs" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-0">imageCostPerImage</label>
+                                    <input type="number" step="0.001" class="form-control form-control-sm" @bind="_editImageCost" />
+                                </div>
                             </div>
+                        }
+                        @if (_editCapability == "Audio")
+                        {
+                            <hr class="my-2" />
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-0">maxAudioDurationSeconds</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editMaxAudio" />
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" @bind="_editSupportsVocals" id="editVocals" />
+                                        <label class="form-check-label" for="editVocals">supportsVocals</label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mt-3 d-flex flex-wrap gap-2">
+                            <button class="btn btn-primary btn-sm" @onclick="ApplyEditorToList">Apply to table</button>
+                            <button class="btn btn-outline-success btn-sm" @onclick="ReviewAndApplyAsync" title="Stamp review dates to today and apply">
+                                ✓ Mark reviewed (today)
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CloseEditor">Cancel</button>
                         </div>
                     </div>
-                }
+                </div>
+            }
 
+            <div class="card shadow-sm">
                 <div class="table-responsive">
                     <table class="table table-hover table-striped mb-0 align-middle small">
                         <thead class="table-dark">
                             <tr>
-                                <th style="width: 50px;">Status</th>
+                                <th style="width: 50px;">On</th>
                                 <th>Model ID</th>
-                                <th>Display Name</th>
-                                <th>Capability</th>
+                                <th>Name</th>
+                                <th>Cap</th>
                                 <th>Provider</th>
-                                <th>Limits</th>
-                                <th style="width: 80px;">Action</th>
+                                <th>Reviewed</th>
+                                <th style="width: 140px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var m in _modelList)
                             {
-                                var isEnabled = m.TryGetPropertyValue("enabled", out var en) && en?.GetValue<bool>() == true;
                                 var modelId = m["id"]?.ToString() ?? "";
                                 var displayName = m["displayName"]?.ToString() ?? "";
                                 var cap = m["capability"]?.ToString() ?? "";
                                 var prov = m["provider"]?.ToString() ?? "";
-
-                                <tr>
+                                var verified = m["lastVerifiedAt"]?.ToString() ?? "—";
+                                var priced = m["pricingLastReviewedAt"]?.ToString() ?? "—";
+                                <tr class="@(IsEnabled(m) ? "" : "table-secondary")">
                                     <td>
                                         <div class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" checked="@isEnabled" @onchange="() => ToggleModelEnabled(m)" />
+                                            <input class="form-check-input" type="checkbox" checked="@IsEnabled(m)" @onchange="() => ToggleModelEnabled(m)" />
                                         </div>
                                     </td>
                                     <td class="fw-bold font-monospace">@modelId</td>
                                     <td>@displayName</td>
-                                    <td>
-                                        <span class="badge @GetCapBadgeClass(cap)">@cap</span>
-                                    </td>
-                                    <td><span class="text-muted">@prov</span></td>
-                                    <td class="text-muted small">
-                                        @if (m.TryGetPropertyValue("maxAudioDurationSeconds", out var audioDur) && audioDur != null)
-                                        {
-                                            <span>🎵 @(audioDur.ToString())s</span>
-                                        }
-                                        else if (m.TryGetPropertyValue("maxInputTokens", out var tokens) && tokens != null)
-                                        {
-                                            <span>🔤 @(tokens.ToString()) tokens</span>
-                                        }
+                                    <td><span class="badge @GetCapBadgeClass(cap)">@cap</span></td>
+                                    <td class="text-muted">@prov</td>
+                                    <td class="small text-muted">
+                                        <div>row: @verified</div>
+                                        <div>$: @priced</div>
                                     </td>
                                     <td>
-                                        <button class="btn btn-outline-danger btn-sm p-1 px-2" title="Remove model" @onclick="() => RemoveModel(m)">
-                                            🗑️
-                                        </button>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" title="Edit" @onclick="() => BeginEdit(m)">✎</button>
+                                            <button class="btn btn-outline-success" title="Mark reviewed today" @onclick="() => ReviewModel(m)">✓</button>
+                                            <button class="btn btn-outline-danger" title="Delete" @onclick="() => RemoveModelAsync(m)">🗑</button>
+                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -182,28 +305,51 @@
 </div>
 
 @code {
+    private static readonly string[] Capabilities = { "Chat", "Vision", "Video", "Image", "Audio", "Voice", "LipSync" };
+
     private bool _loading = true;
     private bool _busy;
     private bool _showRawJson;
-    private bool _showAddForm;
     private string? _error;
     private string? _message;
     private string _rawJsonText = "";
     private JsonObject? _rootObj;
     private List<JsonObject> _modelList = new();
+    private List<string>? _validationErrors;
 
-    // New Model Form State
-    private string _newId = "";
-    private string _newDisplayName = "";
-    private string _newCapability = "Chat";
-    private string _newProvider = "Xai";
-    private string _newEndpointPath = "";
-    private int? _newMaxAudioDuration;
+    private JsonObject? _editModel;
+    private bool _editIsNew;
+    private string _editId = "";
+    private string _editDisplayName = "";
+    private string _editCapability = "Chat";
+    private string _editProvider = "Xai";
+    private bool _editEnabled = true;
+    private string _editEndpointPath = "";
+    private int? _editMaxPromptLength;
+    private string _editLastVerifiedAt = "";
+    private string _editPricingLastReviewedAt = "";
+    private string _editPricingNotes = "";
+    private int? _editMaxInputTokens;
+    private int? _editMaxOutputTokens;
+    private double? _editInputCost;
+    private double? _editOutputCost;
+    private int? _editMinClip;
+    private int? _editMaxClip;
+    private int? _editAbsMaxClip;
+    private int? _editMaxRefs;
+    private bool _editSupportsContinue;
+    private double? _editExtendCost;
+    private double? _editRefImageCost;
+    private string _editVideoPerSecJson = "";
+    private string _editVideoBaseJson = "";
+    private double? _editImageCost;
+    private int? _editMaxAudio;
+    private bool _editSupportsVocals;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadCatalogAsync();
-    }
+    protected override async Task OnInitializedAsync() => await LoadCatalogAsync();
+
+    private static bool IsEnabled(JsonObject m) =>
+        m.TryGetPropertyValue("enabled", out var en) && en?.GetValue<bool>() == true;
 
     private async Task LoadCatalogAsync()
     {
@@ -213,7 +359,6 @@
         {
             var res = await Api.GetModelsCatalogAsync();
             _rawJsonText = res.RawJson;
-
             ParseRawJson();
         }
         catch (Exception ex)
@@ -245,74 +390,272 @@
 
     private void SyncModelListToRawJson()
     {
-        if (_rootObj is not null)
-        {
-            var arr = new JsonArray();
-            foreach (var m in _modelList)
-            {
-                arr.Add(JsonNode.Parse(m.ToJsonString()));
-            }
-            _rootObj["models"] = arr;
-            _rawJsonText = _rootObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-        }
+        if (_rootObj is null) return;
+        var arr = new JsonArray();
+        foreach (var m in _modelList)
+            arr.Add(JsonNode.Parse(m.ToJsonString()));
+        _rootObj["models"] = arr;
+        _rawJsonText = _rootObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
     }
 
     private void ToggleModelEnabled(JsonObject m)
     {
-        var isEnabled = m.TryGetPropertyValue("enabled", out var en) && en?.GetValue<bool>() == true;
-        m["enabled"] = !isEnabled;
+        m["enabled"] = !IsEnabled(m);
         SyncModelListToRawJson();
     }
 
-    private void RemoveModel(JsonObject m)
+    private async Task RemoveModelAsync(JsonObject m)
     {
+        var id = m["id"]?.ToString() ?? "?";
+        var ok = await JS.InvokeAsync<bool>("confirm", $"Delete model '{id}' from the catalog table? Save is still required to persist.");
+        if (!ok) return;
         _modelList.Remove(m);
+        if (ReferenceEquals(_editModel, m)) CloseEditor();
         SyncModelListToRawJson();
+        _message = $"Removed '{id}' from table. Save to persist.";
     }
 
-    private void AddModelToList()
+    private void BeginAdd()
     {
-        if (string.IsNullOrWhiteSpace(_newId))
+        _editIsNew = true;
+        _editModel = new JsonObject();
+        _editId = "";
+        _editDisplayName = "";
+        _editCapability = "Chat";
+        _editProvider = "Xai";
+        _editEnabled = true;
+        _editEndpointPath = "";
+        _editMaxPromptLength = null;
+        _editLastVerifiedAt = Today();
+        _editPricingLastReviewedAt = Today();
+        _editPricingNotes = "";
+        ClearCapabilityFields();
+    }
+
+    private void BeginEdit(JsonObject m)
+    {
+        _editIsNew = false;
+        _editModel = m;
+        _editId = m["id"]?.ToString() ?? "";
+        _editDisplayName = m["displayName"]?.ToString() ?? "";
+        _editCapability = m["capability"]?.ToString() ?? "Chat";
+        _editProvider = m["provider"]?.ToString() ?? "";
+        _editEnabled = IsEnabled(m);
+        _editEndpointPath = m["endpointPath"]?.ToString() ?? "";
+        _editMaxPromptLength = GetInt(m, "maxPromptLength");
+        _editLastVerifiedAt = m["lastVerifiedAt"]?.ToString() ?? "";
+        _editPricingLastReviewedAt = m["pricingLastReviewedAt"]?.ToString() ?? "";
+        _editPricingNotes = m["pricingNotes"]?.ToString() ?? "";
+        _editMaxInputTokens = GetInt(m, "maxInputTokens");
+        _editMaxOutputTokens = GetInt(m, "maxOutputTokens");
+        _editInputCost = GetDouble(m, "inputCostPerMillionTokens");
+        _editOutputCost = GetDouble(m, "outputCostPerMillionTokens");
+        _editMinClip = GetInt(m, "minClipDurationSeconds");
+        _editMaxClip = GetInt(m, "maxClipDurationSeconds");
+        _editAbsMaxClip = GetInt(m, "absMaxClipDurationSeconds");
+        _editMaxRefs = GetInt(m, "maxReferenceImages");
+        _editSupportsContinue = m.TryGetPropertyValue("supportsVideoContinue", out var sc) && sc?.GetValue<bool>() == true;
+        _editExtendCost = GetDouble(m, "videoExtendCostPerSecond");
+        _editRefImageCost = GetDouble(m, "videoReferenceImageCost");
+        _editVideoPerSecJson = m["videoCostPerSecondByResolution"]?.ToJsonString() ?? "";
+        _editVideoBaseJson = m["videoBaseCostByResolution"]?.ToJsonString() ?? "";
+        _editImageCost = GetDouble(m, "imageCostPerImage");
+        _editMaxAudio = GetInt(m, "maxAudioDurationSeconds");
+        _editSupportsVocals = m.TryGetPropertyValue("supportsVocals", out var sv) && sv?.GetValue<bool>() == true;
+    }
+
+    private void ClearCapabilityFields()
+    {
+        _editMaxInputTokens = _editMaxOutputTokens = null;
+        _editInputCost = _editOutputCost = null;
+        _editMinClip = _editMaxClip = _editAbsMaxClip = _editMaxRefs = null;
+        _editSupportsContinue = false;
+        _editExtendCost = _editRefImageCost = _editImageCost = null;
+        _editVideoPerSecJson = _editVideoBaseJson = "";
+        _editMaxAudio = null;
+        _editSupportsVocals = false;
+    }
+
+    private void CloseEditor()
+    {
+        _editModel = null;
+        _editIsNew = false;
+    }
+
+    private static string Today() => DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+    private static int? GetInt(JsonObject m, string key)
+    {
+        if (!m.TryGetPropertyValue(key, out var n) || n is null) return null;
+        try { return n.GetValue<int>(); } catch { return null; }
+    }
+
+    private static double? GetDouble(JsonObject m, string key)
+    {
+        if (!m.TryGetPropertyValue(key, out var n) || n is null) return null;
+        try { return n.GetValue<double>(); } catch { return null; }
+    }
+
+    private void ApplyEditorToList()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_editId))
         {
             _error = "Model ID is required.";
             return;
         }
 
-        var obj = new JsonObject
+        JsonObject obj;
+        if (_editIsNew)
         {
-            ["id"] = _newId.Trim(),
-            ["displayName"] = string.IsNullOrWhiteSpace(_newDisplayName) ? _newId.Trim() : _newDisplayName.Trim(),
-            ["capability"] = _newCapability,
-            ["provider"] = _newProvider,
-            ["enabled"] = true,
-            ["supportsVideoContinue"] = false,
-            ["supportsReferenceImages"] = false,
-            ["supportsVideoReview"] = false,
-        };
+            if (_modelList.Any(m => string.Equals(m["id"]?.ToString(), _editId.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                _error = $"Model '{_editId}' already exists.";
+                return;
+            }
+            obj = new JsonObject();
+            _modelList.Add(obj);
+            _editModel = obj;
+            _editIsNew = false;
+        }
+        else
+        {
+            obj = _editModel ?? throw new InvalidOperationException("No model selected");
+        }
 
-        if (!string.IsNullOrWhiteSpace(_newEndpointPath))
-            obj["endpointPath"] = _newEndpointPath.Trim();
+        obj["id"] = _editId.Trim();
+        obj["displayName"] = string.IsNullOrWhiteSpace(_editDisplayName) ? _editId.Trim() : _editDisplayName.Trim();
+        obj["capability"] = _editCapability;
+        obj["provider"] = _editProvider.Trim();
+        obj["enabled"] = _editEnabled;
+        SetOrRemove(obj, "endpointPath", string.IsNullOrWhiteSpace(_editEndpointPath) ? null : _editEndpointPath.Trim());
+        SetOrRemoveNum(obj, "maxPromptLength", _editMaxPromptLength);
+        SetOrRemove(obj, "lastVerifiedAt", string.IsNullOrWhiteSpace(_editLastVerifiedAt) ? null : _editLastVerifiedAt.Trim());
+        SetOrRemove(obj, "pricingLastReviewedAt", string.IsNullOrWhiteSpace(_editPricingLastReviewedAt) ? null : _editPricingLastReviewedAt.Trim());
+        SetOrRemove(obj, "pricingNotes", string.IsNullOrWhiteSpace(_editPricingNotes) ? null : _editPricingNotes.Trim());
 
-        if (_newMaxAudioDuration > 0)
-            obj["maxAudioDurationSeconds"] = _newMaxAudioDuration.Value;
+        if (_editCapability is "Chat" or "Vision")
+        {
+            SetOrRemoveNum(obj, "maxInputTokens", _editMaxInputTokens);
+            SetOrRemoveNum(obj, "maxOutputTokens", _editMaxOutputTokens);
+            SetOrRemoveNum(obj, "inputCostPerMillionTokens", _editInputCost);
+            SetOrRemoveNum(obj, "outputCostPerMillionTokens", _editOutputCost);
+        }
+        if (_editCapability == "Video")
+        {
+            SetOrRemoveNum(obj, "minClipDurationSeconds", _editMinClip);
+            SetOrRemoveNum(obj, "maxClipDurationSeconds", _editMaxClip);
+            SetOrRemoveNum(obj, "absMaxClipDurationSeconds", _editAbsMaxClip);
+            SetOrRemoveNum(obj, "maxReferenceImages", _editMaxRefs);
+            obj["supportsVideoContinue"] = _editSupportsContinue;
+            SetOrRemoveNum(obj, "videoExtendCostPerSecond", _editSupportsContinue ? _editExtendCost : null);
+            SetOrRemoveNum(obj, "videoReferenceImageCost", _editRefImageCost);
+            SetJsonObject(obj, "videoCostPerSecondByResolution", _editVideoPerSecJson);
+            SetJsonObject(obj, "videoBaseCostByResolution", _editVideoBaseJson);
+        }
+        if (_editCapability == "Image")
+        {
+            SetOrRemoveNum(obj, "maxReferenceImages", _editMaxRefs);
+            SetOrRemoveNum(obj, "imageCostPerImage", _editImageCost);
+        }
+        if (_editCapability == "Audio")
+        {
+            SetOrRemoveNum(obj, "maxAudioDurationSeconds", _editMaxAudio);
+            obj["supportsVocals"] = _editSupportsVocals;
+        }
 
-        _modelList.Add(obj);
         SyncModelListToRawJson();
+        _message = $"Applied '{_editId}' to table. Run Validate, then Save to persist.";
+    }
 
-        _newId = "";
-        _newDisplayName = "";
-        _newEndpointPath = "";
-        _newMaxAudioDuration = null;
-        _showAddForm = false;
-        _message = "New model added to table. Click 'Save & Hot-Apply Catalog' to persist changes.";
+    private void ReviewAndApplyAsync()
+    {
+        _editLastVerifiedAt = Today();
+        _editPricingLastReviewedAt = Today();
+        if (string.IsNullOrWhiteSpace(_editPricingNotes))
+            _editPricingNotes = $"Reviewed {Today()} — confirm vendor list prices still match.";
+        ApplyEditorToList();
+        _message = $"Marked '{_editId}' reviewed ({Today()}). Save to persist.";
+    }
+
+    private void ReviewModel(JsonObject m)
+    {
+        BeginEdit(m);
+        ReviewAndApplyAsync();
+    }
+
+    private static void SetOrRemove(JsonObject obj, string key, string? value)
+    {
+        if (value is null) obj.Remove(key);
+        else obj[key] = value;
+    }
+
+    private static void SetOrRemoveNum(JsonObject obj, string key, int? value)
+    {
+        if (value is null) obj.Remove(key);
+        else obj[key] = value.Value;
+    }
+
+    private static void SetOrRemoveNum(JsonObject obj, string key, double? value)
+    {
+        if (value is null) obj.Remove(key);
+        else obj[key] = value.Value;
+    }
+
+    private static void SetJsonObject(JsonObject obj, string key, string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            obj.Remove(key);
+            return;
+        }
+        try
+        {
+            var node = JsonNode.Parse(json);
+            if (node is JsonObject)
+                obj[key] = node;
+            else
+                throw new InvalidOperationException("Expected a JSON object");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"{key}: {ex.Message}");
+        }
     }
 
     private void ToggleRawJsonEditor()
     {
         _showRawJson = !_showRawJson;
-        if (!_showRawJson)
+        if (!_showRawJson) ParseRawJson();
+    }
+
+    private async Task ValidateCatalogAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        _validationErrors = null;
+        try
         {
-            ParseRawJson();
+            if (!_showRawJson) SyncModelListToRawJson();
+            var res = await Api.ValidateModelsCatalogRawAsync(_rawJsonText);
+            if (!string.IsNullOrWhiteSpace(res.Error) && res.Errors is not { Count: > 0 })
+            {
+                _error = res.Error;
+                return;
+            }
+            _validationErrors = res.Errors ?? new List<string>();
+            _message = res.Message ?? (res.Ok ? "Validation OK" : "Validation found issues");
+            if (!res.Ok && _validationErrors.Count == 0 && !string.IsNullOrWhiteSpace(res.Error))
+                _error = res.Error;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
         }
     }
 
@@ -321,15 +664,21 @@
         _busy = true;
         _error = null;
         _message = null;
+        _validationErrors = null;
         try
         {
-            if (!_showRawJson)
+            if (!_showRawJson) SyncModelListToRawJson();
+            // Pre-validate so the UI shows the same self-test the server will run
+            var pre = await Api.ValidateModelsCatalogRawAsync(_rawJsonText);
+            if (!pre.Ok)
             {
-                SyncModelListToRawJson();
+                _validationErrors = pre.Errors ?? new List<string>();
+                _error = pre.Message ?? pre.Error ?? "Catalog self-test failed — fix before save.";
+                return;
             }
-
             var msg = await Api.SaveModelsCatalogRawAsync(_rawJsonText);
             _message = msg;
+            CloseEditor();
             await LoadCatalogAsync();
         }
         catch (Exception ex)
@@ -349,6 +698,8 @@
         "Image" => "bg-info text-dark",
         "Vision" => "bg-warning text-dark",
         "Audio" => "bg-success",
+        "Voice" => "bg-secondary",
+        "LipSync" => "bg-dark",
         _ => "bg-secondary"
     };
 }
