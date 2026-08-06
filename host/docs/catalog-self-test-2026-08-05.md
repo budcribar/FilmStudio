@@ -4,7 +4,7 @@
 | Field | Meaning |
 |-------|---------|
 | `lastVerifiedAt` | ISO date when the row was last checked for complete required fields |
-| `pricingUpdatedAt` | ISO date when cost fields were last verified against the vendor |
+| `pricingLastReviewedAt` | ISO date when cost fields were **last reviewed** against the vendor (audit review cadence, not git-edit time) |
 | `pricingNotes` | Source / policy for cost numbers |
 
 ## Self-test API

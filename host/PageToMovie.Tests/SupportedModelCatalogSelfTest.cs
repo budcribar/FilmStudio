@@ -43,7 +43,7 @@ public class SupportedModelCatalogSelfTest
                 || e.VideoReferenceImageCost is not null;
             if (hasCost)
             {
-                Assert.False(string.IsNullOrWhiteSpace(e.PricingUpdatedAt), e.Id + " pricingUpdatedAt");
+                Assert.False(string.IsNullOrWhiteSpace(e.PricingLastReviewedAt), e.Id + " pricingLastReviewedAt");
                 Assert.False(string.IsNullOrWhiteSpace(e.PricingNotes), e.Id + " pricingNotes");
             }
         }

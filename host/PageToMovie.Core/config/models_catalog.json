@@ -159,7 +159,7 @@
       "maxOutputTokens": 16384,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gpt-5.6-sol",
@@ -181,7 +181,7 @@
       "maxOutputTokens": 128000,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gpt-5.6-terra",
@@ -203,7 +203,7 @@
       "maxOutputTokens": 128000,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gpt-5.6-luna",
@@ -225,7 +225,7 @@
       "maxOutputTokens": 128000,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gpt-4o-mini",
@@ -247,7 +247,7 @@
       "maxOutputTokens": 16384,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "o3-mini",
@@ -269,7 +269,7 @@
       "maxOutputTokens": 100000,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "grok-imagine-video",
@@ -313,7 +313,7 @@
       "videoExtendCostPerSecond": 0.07,
       "pricingNotes": "Video $/sec by resolution from product catalog (verify docs.x.ai/developers pricing). As of 2026-08 xAI publishes generation pricing, not a separate ref-image or extend line item (docs.x.ai video + pricing). videoReferenceImageCost=0 means no separate ref fee. videoExtendCostPerSecond uses same billing unit as generation new seconds; set to 0.07 (720p catalog rate) for planning when resolution-specific extend rates are not published.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "hunyuan-video",
@@ -358,7 +358,7 @@
       "videoReferenceImageCost": 0.0,
       "pricingNotes": "Update from vendor pricing page when rates change; Engine has no USD fallbacks.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/wan-2.1",
@@ -405,7 +405,7 @@
       "videoReferenceImageCost": 0.0,
       "pricingNotes": "Flat base $/video from fal.ai wan pricing pages (per generation). per-sec=0. Refs are the single init image included in generation price \u2192 videoReferenceImageCost=0. No continue \u2192 no extend rate.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "veo-3.1",
@@ -446,7 +446,7 @@
       "videoReferenceImageCost": 0.0,
       "pricingNotes": "Vertex/Gemini Veo published $/sec class rates in catalog; confirm cloud.google.com Veo pricing. Ref images: no separate published add-on in our matrix \u2192 0. No continue \u2192 no extend rate.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "grok-imagine-image-quality",
@@ -470,7 +470,7 @@
       "maxPromptLength": 4000,
       "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "grok-imagine-image",
@@ -494,7 +494,7 @@
       "maxPromptLength": 4000,
       "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gemini-2.5-pro-image",
@@ -518,7 +518,7 @@
       "maxPromptLength": 4000,
       "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/flux/dev",
@@ -544,7 +544,7 @@
       "maxReferenceImageDimension": 1536,
       "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/flux/schnell",
@@ -570,7 +570,7 @@
       "maxReferenceImageDimension": 1536,
       "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "grok-4.5",
@@ -595,7 +595,7 @@
       "providerLabel": "xAI",
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "grok-4",
@@ -620,7 +620,7 @@
       "providerLabel": "xAI",
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "grok-4.20-reasoning",
@@ -645,7 +645,7 @@
       "providerLabel": "xAI",
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "claude-sonnet-5",
@@ -670,7 +670,7 @@
       "providerLabel": "Anthropic",
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "claude-opus-5",
@@ -695,7 +695,7 @@
       "providerLabel": "Anthropic",
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gemini-2.5-flash",
@@ -720,7 +720,7 @@
       "maxOutputTokens": 65536,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gemini-3.6-flash",
@@ -745,7 +745,7 @@
       "maxOutputTokens": 65536,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gemini-3.1-pro-preview",
@@ -770,7 +770,7 @@
       "maxOutputTokens": 65536,
       "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing.",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "grok-4.5",
@@ -794,8 +794,8 @@
       "providerLabel": "xAI",
       "maxOutputTokens": 128000,
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05",
-      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page."
+      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page.",
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "claude-sonnet-5",
@@ -819,8 +819,8 @@
       "providerId": "anthropic",
       "providerLabel": "Anthropic",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05",
-      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page."
+      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page.",
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "gemini-2.5-flash",
@@ -844,8 +844,8 @@
       "providerLabel": "Google",
       "maxOutputTokens": 65536,
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05",
-      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page."
+      "pricingNotes": "Same token rates as chat sibling; verify provider pricing page.",
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/musicgen",
@@ -1068,7 +1068,7 @@
       "providerLabel": "Fal.ai",
       "maxPromptLength": 5000,
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/minimax/speech-02-hd",
@@ -1091,7 +1091,7 @@
       "providerId": "fal",
       "providerLabel": "Fal.ai",
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/sync-lipsync/v2/pro",
@@ -1114,7 +1114,7 @@
       "providerLabel": "Fal.ai",
       "maxPromptLength": 1000,
       "lastVerifiedAt": "2026-08-05",
-      "pricingUpdatedAt": "2026-08-05"
+      "pricingLastReviewedAt": "2026-08-05"
     },
     {
       "id": "fal-ai/sync-lipsync/v3",

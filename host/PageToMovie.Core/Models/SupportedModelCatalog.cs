@@ -158,13 +158,15 @@ public sealed class SupportedModelEntry
     public string? PricingNotes { get; init; }
 
     /// <summary>
-    /// ISO date (yyyy-MM-dd) when cost fields on this row were last verified against the vendor.
-    /// Used to audit stale rates — not used in math.
+    /// ISO date (yyyy-MM-dd) when cost fields on this row were <b>last reviewed</b> against
+    /// the vendor price list (not merely last edited in git). Use this to audit how often
+    /// cost data is re-checked. Not used in math.
     /// </summary>
-    public string? PricingUpdatedAt { get; init; }
+    public string? PricingLastReviewedAt { get; init; }
 
     /// <summary>
-    /// ISO date (yyyy-MM-dd) when this model row was last checked for complete required fields.
+    /// ISO date (yyyy-MM-dd) when this model row was last <b>reviewed</b> for complete required
+    /// capability fields (self-test). Distinct from <see cref="PricingLastReviewedAt"/> (cost review).
     /// </summary>
     public string? LastVerifiedAt { get; init; }
 
@@ -1054,7 +1056,7 @@ public static class SupportedModelCatalog
                 Need(e.InputCostPerMillionTokens is not null, "inputCostPerMillionTokens");
                 Need(e.OutputCostPerMillionTokens is not null, "outputCostPerMillionTokens");
                 Need(!string.IsNullOrWhiteSpace(e.PricingNotes), "pricingNotes");
-                Need(!string.IsNullOrWhiteSpace(e.PricingUpdatedAt), "pricingUpdatedAt");
+                Need(!string.IsNullOrWhiteSpace(e.PricingLastReviewedAt), "pricingLastReviewedAt");
                 break;
 
             case ModelCapability.Video:
@@ -1071,7 +1073,7 @@ public static class SupportedModelCatalog
                 if (e.SupportsVideoContinue)
                     Need(e.VideoExtendCostPerSecond is not null, "videoExtendCostPerSecond");
                 Need(!string.IsNullOrWhiteSpace(e.PricingNotes), "pricingNotes");
-                Need(!string.IsNullOrWhiteSpace(e.PricingUpdatedAt), "pricingUpdatedAt");
+                Need(!string.IsNullOrWhiteSpace(e.PricingLastReviewedAt), "pricingLastReviewedAt");
                 break;
 
             case ModelCapability.Image:
@@ -1079,7 +1081,7 @@ public static class SupportedModelCatalog
                 Need(e.MaxPromptLength is > 0, "maxPromptLength");
                 Need(e.ImageCostPerImage is not null, "imageCostPerImage");
                 Need(!string.IsNullOrWhiteSpace(e.PricingNotes), "pricingNotes");
-                Need(!string.IsNullOrWhiteSpace(e.PricingUpdatedAt), "pricingUpdatedAt");
+                Need(!string.IsNullOrWhiteSpace(e.PricingLastReviewedAt), "pricingLastReviewedAt");
                 break;
 
             case ModelCapability.Audio:
@@ -1128,7 +1130,7 @@ public static class SupportedModelCatalog
         VideoReferenceImageCost = e.VideoReferenceImageCost,
         VideoExtendCostPerSecond = e.VideoExtendCostPerSecond,
         PricingNotes = e.PricingNotes,
-        PricingUpdatedAt = e.PricingUpdatedAt,
+        PricingLastReviewedAt = e.PricingLastReviewedAt,
         LastVerifiedAt = e.LastVerifiedAt,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
@@ -1186,7 +1188,7 @@ public static class SupportedModelCatalog
         VideoReferenceImageCost = d.VideoReferenceImageCost,
         VideoExtendCostPerSecond = d.VideoExtendCostPerSecond,
         PricingNotes = d.PricingNotes,
-        PricingUpdatedAt = d.PricingUpdatedAt,
+        PricingLastReviewedAt = d.PricingLastReviewedAt,
         LastVerifiedAt = d.LastVerifiedAt,
         Notes = d.Notes,
         FeatureRequestUrl = d.FeatureRequestUrl,
@@ -1311,7 +1313,7 @@ public sealed class SupportedModelDto
     public double? VideoReferenceImageCost { get; set; }
     public double? VideoExtendCostPerSecond { get; set; }
         public string? PricingNotes { get; set; }
-        public string? PricingUpdatedAt { get; set; }
+        public string? PricingLastReviewedAt { get; set; }
         public string? LastVerifiedAt { get; set; }
 public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
