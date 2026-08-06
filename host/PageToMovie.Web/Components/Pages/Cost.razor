@@ -115,20 +115,27 @@
             </div>
         </div>
 
-        @* Primary action: confirm the estimate and advance to the Film stage. *@
-        @if (!string.IsNullOrWhiteSpace(_projectId) && ActiveProject.HasProject)
+        @* Primary action: confirm estimate and advance to the next incomplete stage (not always Film). *@
+        @if (!string.IsNullOrWhiteSpace(_projectId) && ActiveProject.HasProject && ActiveProject.CanEstimate)
         {
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 p-3 rounded border border-primary border-opacity-25 bg-primary bg-opacity-10">
                 <div class="small">
-                    <strong>Ready to generate?</strong>
-                    Confirm this estimate, then continue to the Film stage to build the shot plan and produce clips.
+                    <strong>@(ActiveProject.CanScenes ? "Ready to generate?" : "Estimate confirmed — next step")</strong>
+                    @if (ActiveProject.CanScenes)
+                    {
+                        <span> Continue to Film to produce clips.</span>
+                    }
+                    else
+                    {
+                        <span> @AgreeNextStageHint</span>
+                    }
                 </div>
                 <button type="button"
                         class="btn btn-primary fw-semibold px-4"
                         data-testid="cost-agree-continue"
                         disabled="@_busy"
                         @onclick="AgreeAndContinueAsync">
-                    Agree &amp; Continue →
+                    @AgreeButtonLabel
                 </button>
             </div>
         }
@@ -243,11 +250,60 @@
         finally { _busy = false; }
     }
 
-    /// <summary>Confirm the current estimate and advance to the Film stage.</summary>
+    /// <summary>
+    /// Confirm the estimate and go to the next incomplete stage.
+    /// Only navigates to Scenes/Film when <see cref="ActiveProjectState.CanScenes"/> is true
+    /// (shot plan present); otherwise Cast or shot plan — never a gated empty Scenes page.
+    /// </summary>
     private void AgreeAndContinueAsync()
     {
         if (string.IsNullOrWhiteSpace(_projectId)) return;
-        Nav.NavigateTo("scenes");
+        Nav.NavigateTo(ResolveAgreeNextHref());
+    }
+
+    private string AgreeButtonLabel => ActiveProject.CanScenes
+        ? "Agree & Continue to Film →"
+        : ActiveProject.CanCharacters
+            ? "Agree & Continue to shot plan →"
+            : "Agree & Continue to cast →";
+
+    private string AgreeNextStageHint
+    {
+        get
+        {
+            if (ActiveProject.CanScenes)
+                return "Shot plan is ready — open Film to generate clips.";
+            if (ActiveProject.CanCharacters)
+                return string.IsNullOrWhiteSpace(ActiveProject.ScenesBlockedReason)
+                    ? "Next: build the shot plan, then generate clips."
+                    : ActiveProject.ScenesBlockedReason;
+            return string.IsNullOrWhiteSpace(ActiveProject.CharactersBlockedReason)
+                ? "Next: finish cast (voices + locked looks), then the shot plan."
+                : ActiveProject.CharactersBlockedReason;
+        }
+    }
+
+    private string ResolveAgreeNextHref()
+    {
+        // Film only when shot plan exists (CanScenes).
+        if (ActiveProject.CanScenes)
+            return ActiveProject.IsSimpleVoice ? "scenes?simple=1" : "scenes";
+        // Screenplay ready → characters/cast is the usual next setup step; shot plan after cast tooling.
+        // Prefer shot plan when cast is already considered ready enough for browsing plans.
+        if (ActiveProject.CanCharacters)
+        {
+            // If scenes are blocked specifically on shot plan, go there; if on cast details, characters.
+            var reason = ActiveProject.ScenesBlockedReason ?? "";
+            if (reason.Contains("shot plan", StringComparison.OrdinalIgnoreCase)
+                || reason.Contains("Update the shot", StringComparison.OrdinalIgnoreCase))
+                return "adaptation/shots";
+            if (reason.Contains("character", StringComparison.OrdinalIgnoreCase)
+                || reason.Contains("voice", StringComparison.OrdinalIgnoreCase)
+                || reason.Contains("cast", StringComparison.OrdinalIgnoreCase))
+                return "characters";
+            return "adaptation/shots";
+        }
+        return "adaptation/screenplay";
     }
 
     // ——— Minutes-based estimate projection (pre-shot-plan) ———
