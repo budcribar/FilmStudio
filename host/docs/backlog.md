@@ -18,6 +18,10 @@ Single prioritized backlog. Older checklist docs were merged here and removed (2
 - Lab mode direction + admin-only visibility (partial — see P0 #3)
 - UI audit sequences S1–S2 exercised; many S3–S5 notes captured historically
 - Mary4 UI batch (Agree&Continue, MinMinutes, character `@key`, etc.)
+- P1 pipeline stages shipped (2026-08-06):
+  - **Stage-1 full-book Fountain + length-later split** (`/adaptation/import` + `/adaptation/screenplay` produce the base; `/adaptation/trim` retargets length) — was #5
+  - **Embellishment stage** as first-class UI (`/adaptation/embellish`, `EmbellishScreenplayAsync`) — was #8
+  - **Look & medium stage** (`/adaptation/look`, `VisualMediumCard` + visual-medium API) — was #9
 
 ---
 
@@ -98,24 +102,6 @@ Single prioritized backlog. Older checklist docs were merged here and removed (2
 
 ## P1 — Product / pipeline
 
-### 5. [Pipeline] Stage-1 = full-book Fountain; length later
-
-**Context:** Product direction: Stage-1 convert produces a **complete-book Fountain** (full fidelity, reusable library). A **later stage** compresses/retargets length (mini-series vs short). Do **not** bake target runtime into the first convert.
-
-**Where to look:**
-- Adaptation Stage-1 prompts (`prompts/book_to_fountain*`, Adaptation service)
-- Any UI that still passes target minutes into first convert
-- Film runtime / length card (should retarget from existing Fountain later)
-
-**Done when:**
-- First convert path does not require/apply target length as a fidelity constraint
-- Documented second stage owns length compression/retarget
-- UI copy matches this split
-
-**Notes:** Length floor (`MinMinutes`) UI fixes remain valid for later stages; they are not a reason to push length into Stage-1.
-
----
-
 ### 6. [Adaptation] Post–Mary $ run + report evaluation
 
 **Context:** After a live Mary run, evaluate `ADAPTATION_REPORT` and other prompts. Handoff historically lived in adaptation remaining docs (now this backlog).
@@ -143,34 +129,6 @@ Single prioritized backlog. Older checklist docs were merged here and removed (2
 **Done when:**
 - Documented smoke steps pass on a real Mary project (image + length)
 - Failures filed with API error codes / UI state
-
----
-
-### 8. [Scenes] Embellishment stage
-
-**Context:** Product stage listed as future — not implemented as a first-class stage in the pipeline UI.
-
-**Where to look:**
-- Stage model / navigation between adaptation → characters → scenes → …
-- Any partial “embellish” APIs or prompts
-
-**Done when:**
-- Stage exists in product flow with clear entry criteria and API surface
-- Or explicitly deferred with reason in this item
-
----
-
-### 9. [Look & medium]
-
-**Context:** Visual medium card / API exist (`VisualMediumCard`, `GET/PUT .../visual-medium`). Full “Look & medium” stage still future work.
-
-**Where to look:**
-- Web visual-medium UI + API
-- AdaptationRequest.VisualMedium
-
-**Done when:**
-- Stage-level UX and persistence match product intent
-- Or deferred with note
 
 ---
 
@@ -361,8 +319,8 @@ Single prioritized backlog. Older checklist docs were merged here and removed (2
 | 4 | 2 | EngineApiClient CancellationToken wiring |
 | 5 | 12–14 | Admin catalog UI, scan, self-test |
 | 6 | 15–16 | Parameter completeness + capability fakes |
-| 7 | 5–7 | Pipeline length split, Mary report, live smoke |
-| 8 | 8–11 | Embellishment, Look&medium, cost split, ChatEngine audit |
+| 7 | 6–7 | Mary report, live smoke |
+| 8 | 10–11 | Cost split, ChatEngine audit |
 | 9 | 17–20 | Sequence guards, optional 409, Changed audit, log watch |
 | 10 | 21–23 | Experiments / tokens / agent bootstrap |
 
