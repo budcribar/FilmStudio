@@ -3204,22 +3204,24 @@ else
 
     private async Task SoftReloadAsync()
     {
+        if (_disposed || string.IsNullOrEmpty(ProjectId) || _softReloadBusy) return;
+        _softReloadBusy = true;
         try
         {
-            var dto = await Engine.GetScenesAsync(_projectId);
-            _scenes = dto?.Scenes ?? new List<SceneSummary>();
-            await RefreshMyJobsAsync();
-            await RefreshCastGateAsync();
-            await RefreshResolutionLockAsync();
-            if (_selectedScene is int sn)
-            {
-                var detail = await Engine.GetSceneDetailAsync(_projectId, sn);
-                _detail = detail?.Scene;
-                if (_selectedClip is int cn && _detail is not null)
-                    _clip = _detail.Clips.FirstOrDefault(c => c.ClipNumber == cn);
-            }
+            var list = await Engine.GetJobListAsync(50);
+            if (_disposed) return;
+            _myJobs = list?.Jobs?.Where(j =>
+                    string.Equals(j.ProjectId, ProjectId, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(j.Kind, "scene", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(j => j.CreatedUtc)
+                .ToList() ?? new();
+            if (_disposed) return;
+            // Refresh plan so new/updated clips appear without full page reload.
+            await OpenSceneAsync(_scene);
         }
-        catch { /* ignore soft reload errors */ }
+        catch (OperationCanceledException) { }
+        catch { /* soft reload errors */ }
+        finally { _softReloadBusy = false; }
     }
 
     private async Task RefreshMyJobsAsync()
