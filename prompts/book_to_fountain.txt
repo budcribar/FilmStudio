@@ -494,6 +494,10 @@ in the source's own order. The no-padding rule forbids ADDING material the sourc
 licenses DROPPING material the source has. Omitting the opening or setup beats and keeping only the
 climactic "point" is a defect, exactly as inventing incidents to fill time is. A two-minute rhyme
 filmed faithfully — every verse, start to finish — is short, and that is correct.
+Render each restored beat exactly as the source frames it: descriptive or narrative verses become
+Action (or the book's own words as V.O. / the named speaker) — never a brand-new spoken line, and
+never a newly invented named character to carry it (the children stay "the children"). Covering a
+beat means showing what the source actually says, not writing dialogue or cast it never wrote.
 Complete fidelity beats artificial runtime and beats BOTH band edges: finishing under
 {{SCENE_COUNT_MIN}} scenes because the story is genuinely that small is correct (padding up to the
 floor is a defect), and using as many scenes as the source's own beats require is correct too —
