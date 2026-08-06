@@ -22,18 +22,7 @@ namespace PageToMovie.Engine;
 /// </summary>
 public sealed class CostReportService
 {
-    // Unverified last-resort guesses, used only when a model's catalog entry has no real published
-    // price for that field — consolidated here (was scattered as inline magic numbers at each call
-    // site) so every "we're guessing" number lives in exactly one place. Every event recorded using
-    // one of these also gets a "*_pricing_source": "estimated_fallback" flag (see RatesFromModels /
-    // the event dicts below) so the cost ledger itself — not just this file — visibly distinguishes
-    // verified vendor pricing from a guess. Real $ tracking should never silently look equally
-    // confident either way.
-    private const double FallbackVideoCostPerSec480p = 0.05;
-    private const double FallbackVideoCostPerSec720p = 0.07;
-    private const double FallbackVideoCostPerSec1080p = 0.25;
-    private const double FallbackImageQualityCostPerImage = 0.05;
-    private const double FallbackImageStandardCostPerImage = 0.02;
+    // Cost rates: models_catalog.json only. Missing prices throw — Engine does not invent USD.
 
     private static readonly Regex TimestampDur = new(
         @"^\s*(\d+):(\d{2})\s*-\s*(\d+):(\d{2})\s*$",
@@ -48,28 +37,7 @@ public sealed class CostReportService
     private const int MinApiSamples = 8;
     private const int MinTimingSamples = 5;
 
-    /// <summary>
-    /// USD per reference image attached to a video generation call, used when no enabled video
-    /// model publishes this as a distinct catalog line item (see
-    /// <see cref="SupportedModelEntry.VideoReferenceImageCost"/>). As of 2026-08 no provider
-    /// (including xAI's grok-imagine-video, per docs.x.ai/developers/pricing) itemizes reference
-    /// images separately from its flat per-second output rate, so every catalog entry is null and
-    /// this small Grok-era estimate is applied uniformly. Not vendor-verified — replace with a real
-    /// catalog value the moment a provider publishes one.
-    /// </summary>
-    internal const double FallbackVideoRefImageCost = 0.002;
-
-    /// <summary>
-    /// USD per second billed for a video-extend/continuation call, used when no enabled video
-    /// model publishes an extend-specific rate (see
-    /// <see cref="SupportedModelEntry.VideoExtendCostPerSecond"/>). As of 2026-08 xAI — the only
-    /// enabled provider with <see cref="SupportedModelEntry.SupportsVideoContinue"/> true — has no
-    /// published extend rate distinct from its base per-second price on docs.x.ai/developers/pricing,
-    /// so this small Grok-era estimate is applied uniformly. Not vendor-verified.
-    /// </summary>
-    internal const double FallbackVideoExtendCostPerSec = 0.01;
-
-    public CostReportService(
+            public CostReportService(
         ProjectStore projects,
         CreditService? credits = null,
         UserDatabaseService? userDb = null,
@@ -617,9 +585,11 @@ public sealed class CostReportService
         var n = Math.Max(0, nImages);
         var entry = SupportedModelCatalog.Find(model, ModelCapability.Image)
                     ?? SupportedModelCatalog.Find(model);
-        var isEstimated = entry?.ImageCostPerImage is null;
-        var unit = entry?.ImageCostPerImage
-                   ?? (quality ? FallbackImageQualityCostPerImage : FallbackImageStandardCostPerImage);
+        if (entry?.ImageCostPerImage is not { } unit)
+            throw new InvalidOperationException(
+                $"Image model '{entry?.Id ?? "(null)"}' has no imageCostPerImage in models_catalog.json. "
+                + "Add the vendor list price — do not invent a default in Engine.");
+        var isEstimated = false;
         var listUsd = Math.Round(unit * n, 4);
         var mult = GetChargeMultiplier();
         var chargeUsd = ChargePricing.ToCharge(listUsd, mult); // credit debit only
@@ -770,10 +740,10 @@ public sealed class CostReportService
         var videoOut = (duration * outRate + baseRate) * attempts;
         var refImg = 0.0;
         if (GetBool(rates, "assume_ref_image_per_clip", true))
-            refImg = GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts;
+            refImg = RequireRate(rates, "video_input_image") * attempts;
         var extend = 0.0;
         if (string.Equals(clip.Continuation, "extend_previous", StringComparison.OrdinalIgnoreCase))
-            extend = duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts;
+            extend = duration * RequireRate(rates, "video_input_per_sec") * attempts;
         return (videoOut + refImg + extend, duration);
     }
 
@@ -791,9 +761,9 @@ public sealed class CostReportService
         var outRate = OutputRate(resolution, rates);
         var baseRate = BaseRate(resolution, rates);
         var videoOut = (duration * outRate + baseRate) * attempts;
-        var refImg = hasRef ? GetDouble(rates, "video_input_image", FallbackVideoRefImageCost) * attempts : 0;
+        var refImg = hasRef ? RequireRate(rates, "video_input_image") * attempts : 0;
         var extend = isExtend
-            ? duration * GetDouble(rates, "video_input_per_sec", FallbackVideoExtendCostPerSec) * attempts
+            ? duration * RequireRate(rates, "video_input_per_sec") * attempts
             : 0;
         var usd = Math.Round(videoOut + refImg + extend, 4);
         return (usd, duration, outRate, Math.Round(videoOut, 4), Math.Round(refImg, 4), Math.Round(extend, 4));
@@ -1294,9 +1264,11 @@ public sealed class CostReportService
         var videoPricingIsEstimated =
             video.VideoCostPerSecondByResolution is not { Count: > 0 } &&
             video.VideoBaseCostByResolution is not { Count: > 0 };
-        var qualityUnit = imagePrimary.ImageCostPerImage ?? FallbackImageQualityCostPerImage;
-        var standardUnit = imageStandard.ImageCostPerImage ?? imagePrimary.ImageCostPerImage ?? FallbackImageStandardCostPerImage;
-        var imagePricingIsEstimated = imagePrimary.ImageCostPerImage is null;
+        if (imagePrimary.ImageCostPerImage is not { } qualityUnit)
+            throw new InvalidOperationException(
+                $"Image model '{imagePrimary.Id}' has no imageCostPerImage in models_catalog.json.");
+        var standardUnit = imageStandard.ImageCostPerImage ?? qualityUnit;
+        var imagePricingIsEstimated = false;
 
         // Reference-image and extend-per-second add-ons: prefer a real per-model catalog value
         // (published by the vendor) and only fall back to the small Grok-era estimate when the
@@ -1307,8 +1279,10 @@ public sealed class CostReportService
         // future vendor-verified number takes over automatically.
         var refImageCostReal = video.VideoReferenceImageCost;
         var extendCostReal = video.VideoExtendCostPerSecond;
-        var refImageSource = refImageCostReal is not null ? "model_catalog" : "estimated_fallback";
-        var extendSource = extendCostReal is not null ? "model_catalog" : "estimated_fallback";
+        var refImageSource = refImageCostReal is not null ? "model_catalog" : "missing_catalog";
+        var extendSource = extendCostReal is not null
+            ? "model_catalog"
+            : (video.SupportsVideoContinue ? "missing_catalog" : "not_applicable");
 
         // Overall video pricing is only "fully real" when the output pricing (per-second table OR
         // a flat base fee — a model priced entirely via base fee with no per-second rate, e.g.
@@ -1330,9 +1304,17 @@ public sealed class CostReportService
             ["image_provider"] = imagePrimary.ProviderId,
             ["video_output_per_sec"] = videoTable,
             ["video_base_per_video"] = videoBaseTable,
-            ["video_input_image"] = refImageCostReal ?? FallbackVideoRefImageCost,
+            ["video_input_image"] = refImageCostReal
+                ?? throw new InvalidOperationException(
+                    $"Video model '{video.Id}' has no videoReferenceImageCost in models_catalog.json "
+                    + "(use 0 if no separate ref fee; cite pricingNotes)."),
             ["video_input_image_source"] = refImageSource,
-            ["video_input_per_sec"] = extendCostReal ?? FallbackVideoExtendCostPerSec,
+            ["video_input_per_sec"] = extendCostReal
+                ?? (video.SupportsVideoContinue
+                    ? throw new InvalidOperationException(
+                        $"Video model '{video.Id}' supports continue but has no videoExtendCostPerSecond "
+                        + "in models_catalog.json.")
+                    : 0.0),
             ["video_input_per_sec_source"] = extendSource,
             ["image_output_quality"] = qualityUnit,
             ["image_output_standard"] = standardUnit,
@@ -1393,15 +1375,10 @@ public sealed class CostReportService
         FillMissingRes(table, "480p", "720p", "1080p");
         FillMissingRes(table, "1080p", "720p", "480p");
 
-        // Absolute last resort if catalog has no video pricing at all for this model — see the
-        // Fallback* constants' doc comment; callers should check video_pricing_source before
-        // treating this as verified.
-        if (table.Count == 0)
-        {
-            table["480p"] = FallbackVideoCostPerSec480p;
-            table["720p"] = FallbackVideoCostPerSec720p;
-            table["1080p"] = FallbackVideoCostPerSec1080p;
-        }
+        if (table.Count == 0 && video.VideoBaseCostByResolution is not { Count: > 0 })
+            throw new InvalidOperationException(
+                $"Video model '{video.Id}' has no videoCostPerSecondByResolution or "
+                + "videoBaseCostByResolution in models_catalog.json.");
 
         return table;
     }
@@ -1459,7 +1436,7 @@ public sealed class CostReportService
             if (table.TryGetValue("720p", out var d)) return d;
             if (table.Count > 0) return table.Values.First();
         }
-        return FallbackVideoCostPerSec720p;
+        return 0; // base-fee-only models: no per-second component
     }
 
     /// <summary>Flat $/video for this resolution — 0 when the model has no base-cost data (a
@@ -1518,6 +1495,17 @@ public sealed class CostReportService
 
     private static double GetDouble(Dictionary<string, JsonElement> cfg, string key, double fallback) =>
         cfg.TryGetValue(key, out var el) && el.TryGetDouble(out var v) ? v : fallback;
+
+    private static double RequireRate(Dictionary<string, object?> rates, string key)
+    {
+        if (rates.TryGetValue(key, out var v) && v is double d)
+            return d;
+        if (rates.TryGetValue(key, out var v2) && v2 is int i)
+            return i;
+        throw new InvalidOperationException(
+            $"Cost rate '{key}' missing from catalog-derived rate table. "
+            + "Add the field to models_catalog.json — Engine does not invent USD.");
+    }
 
     private static double GetDouble(Dictionary<string, object?> rates, string key, double fallback)
     {
@@ -1982,8 +1970,11 @@ public sealed class CostReportService
                     ?? SupportedModelCatalog.Find(reviewModelId, ModelCapability.Chat)
                     ?? SupportedModelCatalog.ResolveOrDefault(reviewModelId, ModelCapability.Chat);
 
-        var inRate = (entry.InputCostPerMillionTokens ?? 2.0) / 1_000_000.0;
-        var outRate = (entry.OutputCostPerMillionTokens ?? 10.0) / 1_000_000.0;
+        if (entry.InputCostPerMillionTokens is not { } inPerM || entry.OutputCostPerMillionTokens is not { } outPerM)
+            throw new InvalidOperationException(
+                $"Chat/Vision model '{entry.Id}' missing token costs in models_catalog.json.");
+        var inRate = inPerM / 1_000_000.0;
+        var outRate = outPerM / 1_000_000.0;
 
         // One dialogue/speaker verification pass per clip (video+audio multimodal prior).
         // Token priors are stand-ins until we average from telemetry.
@@ -2043,8 +2034,11 @@ public sealed class CostReportService
                     ?? SupportedModelCatalog.ResolveOrDefault(planningId, ModelCapability.Chat);
 
         // Rough token budgets: import screenplay ~80k in / 20k out; shot plan ~40k / 25k.
-        var inRate = (entry.InputCostPerMillionTokens ?? 2.0) / 1_000_000.0;
-        var outRate = (entry.OutputCostPerMillionTokens ?? 10.0) / 1_000_000.0;
+        if (entry.InputCostPerMillionTokens is not { } inPerM || entry.OutputCostPerMillionTokens is not { } outPerM)
+            throw new InvalidOperationException(
+                $"Chat/Vision model '{entry.Id}' missing token costs in models_catalog.json.");
+        var inRate = inPerM / 1_000_000.0;
+        var outRate = outPerM / 1_000_000.0;
 
         var sceneN = Math.Max(1, scenes.Count);
         var importUsd = (80_000 * inRate) + (20_000 * outRate);

@@ -151,6 +151,12 @@ public sealed class SupportedModelEntry
     /// </summary>
     public double? VideoExtendCostPerSecond { get; init; }
 
+    /// <summary>
+    /// Free-text citation for cost fields (URL + date + what was published). Not used in math —
+    /// keeps vendor price sources out of Engine constants so updates are catalog-only.
+    /// </summary>
+    public string? PricingNotes { get; init; }
+
     public string? Notes { get; init; }
 
     /// <summary>
@@ -1010,6 +1016,7 @@ public static class SupportedModelCatalog
         ImageCostPerImage = e.ImageCostPerImage,
         VideoReferenceImageCost = e.VideoReferenceImageCost,
         VideoExtendCostPerSecond = e.VideoExtendCostPerSecond,
+        PricingNotes = e.PricingNotes,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
         ProviderId = e.ProviderId,
@@ -1065,6 +1072,7 @@ public static class SupportedModelCatalog
         ImageCostPerImage = d.ImageCostPerImage,
         VideoReferenceImageCost = d.VideoReferenceImageCost,
         VideoExtendCostPerSecond = d.VideoExtendCostPerSecond,
+        PricingNotes = d.PricingNotes,
         Notes = d.Notes,
         FeatureRequestUrl = d.FeatureRequestUrl,
         SupportsVideoContinue = d.SupportsVideoContinue,
@@ -1187,6 +1195,7 @@ public sealed class SupportedModelDto
     public double? ImageCostPerImage { get; set; }
     public double? VideoReferenceImageCost { get; set; }
     public double? VideoExtendCostPerSecond { get; set; }
+    public string? PricingNotes { get; set; }
     public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
     public string? ProviderId { get; set; }

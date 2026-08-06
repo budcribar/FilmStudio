@@ -156,7 +156,8 @@
       "notes": "Superseded by gpt-5.6-sol/gpt-5.6-terra. Disabled rather than deleted so past benchmark history referencing this id still resolves. Its 30K TPM cap made it unreliable for large-book adaptation (see issue-27).",
       "providerId": "openai",
       "providerLabel": "OpenAI",
-      "maxOutputTokens": 16384
+      "maxOutputTokens": 16384,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "gpt-5.6-sol",
@@ -175,7 +176,8 @@
       "notes": "Replaces gpt-4o. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=400,000 and max output=128,000 per published spec. Pricing is still an unverified placeholder copied from gpt-4o \u2014 update when a real source is available. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists.",
       "providerId": "openai",
       "providerLabel": "OpenAI",
-      "maxOutputTokens": 128000
+      "maxOutputTokens": 128000,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "gpt-5.6-terra",
@@ -194,7 +196,8 @@
       "notes": "Replaces gpt-4o alongside gpt-5.6-sol. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens is officially unpublished by OpenAI (unlike Sol's 400,000 and Luna's 1,050,000) \u2014 128,000 kept here as a deliberately conservative placeholder floor, not a real spec; raise it if a real source turns up. Pricing is also an unverified placeholder copied from gpt-4o. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists.",
       "providerId": "openai",
       "providerLabel": "OpenAI",
-      "maxOutputTokens": 128000
+      "maxOutputTokens": 128000,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "gpt-5.6-luna",
@@ -213,7 +216,8 @@
       "notes": "Third gpt-5.6 variant alongside sol/terra, added to try to beat sol's benchmark lead. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=1,050,000 per published spec (largest of the three variants). Pricing is an unverified placeholder copied from gpt-4o \u2014 update when a real source is available.",
       "providerId": "openai",
       "providerLabel": "OpenAI",
-      "maxOutputTokens": 128000
+      "maxOutputTokens": 128000,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "gpt-4o-mini",
@@ -232,7 +236,8 @@
       "notes": "Ultra-fast low cost OpenAI classifier model.",
       "providerId": "openai",
       "providerLabel": "OpenAI",
-      "maxOutputTokens": 16384
+      "maxOutputTokens": 16384,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "o3-mini",
@@ -251,7 +256,8 @@
       "notes": "OpenAI high-reasoning benchmark model.",
       "providerId": "openai",
       "providerLabel": "OpenAI",
-      "maxOutputTokens": 100000
+      "maxOutputTokens": 100000,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "grok-imagine-video",
@@ -290,7 +296,10 @@
       "notes": "Also uses videos/extensions for clip continue. Fresh text/image-to-video allows 1-15s; the new portion of a reference/continue call is tighter (often <=10s, not independently confirmed to the second \u2014 maxExtensionSeconds is a conservative estimate, not a documented exact figure). 1080p pricing (0.25/s) may actually belong to a separate 'Grok Imagine 1.5' variant not yet split out as its own catalog entry \u2014 base model 480p/720p rates (0.05/0.07) are confirmed against docs.x.ai. aspect_ratio/resolution are NOT accepted on videos/extensions -- the extension output always matches the source clip's aspect ratio (docs.x.ai).",
       "providerId": "grok",
       "providerLabel": "xAI",
-      "maxPromptLength": 4000
+      "maxPromptLength": 4000,
+      "videoReferenceImageCost": 0.0,
+      "videoExtendCostPerSecond": 0.07,
+      "pricingNotes": "Video $/sec by resolution from product catalog (verify docs.x.ai/developers pricing). As of 2026-08 xAI publishes generation pricing, not a separate ref-image or extend line item (docs.x.ai video + pricing). videoReferenceImageCost=0 means no separate ref fee. videoExtendCostPerSecond uses same billing unit as generation new seconds; set to 0.07 (720p catalog rate) for planning when resolution-specific extend rates are not published."
     },
     {
       "id": "hunyuan-video",
@@ -331,7 +340,9 @@
       "maxClipDurationSeconds": 5,
       "absMaxClipDurationSeconds": 5,
       "maxPromptLength": 1000,
-      "maxReferenceImageDimension": 1280
+      "maxReferenceImageDimension": 1280,
+      "videoReferenceImageCost": 0.0,
+      "pricingNotes": "Update from vendor pricing page when rates change; Engine has no USD fallbacks."
     },
     {
       "id": "fal-ai/wan-2.1",
@@ -374,7 +385,9 @@
       "providerId": "fal",
       "providerLabel": "Fal.ai",
       "maxPromptLength": 800,
-      "maxReferenceImageDimension": 2000
+      "maxReferenceImageDimension": 2000,
+      "videoReferenceImageCost": 0.0,
+      "pricingNotes": "Flat base $/video from fal.ai wan pricing pages (per generation). per-sec=0. Refs are the single init image included in generation price \u2192 videoReferenceImageCost=0. No continue \u2192 no extend rate."
     },
     {
       "id": "veo-3.1",
@@ -411,7 +424,9 @@
       "notes": "Wired via GeminiVideoClient (text/image-to-video only). Documented duration is exactly 4, 6, or 8 seconds (not an arbitrary range) \u2014 1080p/4K surfaces often restrict to 8s only; no 480p support. Some surfaces document up to 3 multi-image 'ingredients' reference images, but GeminiVideoClient does not implement that conditioning path \u2014 it throws NotSupportedException rather than silently ignoring reference images, so maxReferenceImages is 0 here (fail loud) until ingredients support is actually built. Confirmed via Gemini video docs / AI Studio Veo / Cloud Veo 3.1 pages, not yet verified against a live account. ai.google.dev/gemini-api/docs/veo: landscape 16:9 (default) or portrait 9:16.",
       "providerId": "gemini",
       "providerLabel": "Google",
-      "maxPromptLength": 4000
+      "maxPromptLength": 4000,
+      "videoReferenceImageCost": 0.0,
+      "pricingNotes": "Vertex/Gemini Veo published $/sec class rates in catalog; confirm cloud.google.com Veo pricing. Ref images: no separate published add-on in our matrix \u2192 0. No continue \u2192 no extend rate."
     },
     {
       "id": "grok-imagine-image-quality",
@@ -432,7 +447,8 @@
       "notes": "Primary portrait engine for photoreal / studio character plates. Grok Imagine multi-image edit hard cap is 3 references.",
       "providerId": "grok",
       "providerLabel": "xAI",
-      "maxPromptLength": 4000
+      "maxPromptLength": 4000,
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
     },
     {
       "id": "grok-imagine-image",
@@ -453,7 +469,8 @@
       "notes": "Grok Imagine multi-image edit hard cap is 3 references.",
       "providerId": "grok",
       "providerLabel": "xAI",
-      "maxPromptLength": 4000
+      "maxPromptLength": 4000,
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
     },
     {
       "id": "gemini-2.5-pro-image",
@@ -474,7 +491,8 @@
       "notes": "Wired via GeminiImageClient. Supports up to 14 reference images (documented soft max; older Flash image paths may be lower).",
       "providerId": "gemini",
       "providerLabel": "Google",
-      "maxPromptLength": 4000
+      "maxPromptLength": 4000,
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
     },
     {
       "id": "fal-ai/flux/dev",
@@ -497,7 +515,8 @@
       "providerLabel": "Fal.ai",
       "maxReferenceImages": 1,
       "maxPromptLength": 1000,
-      "maxReferenceImageDimension": 1536
+      "maxReferenceImageDimension": 1536,
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
     },
     {
       "id": "fal-ai/flux/schnell",
@@ -520,7 +539,8 @@
       "providerLabel": "Fal.ai",
       "maxReferenceImages": 1,
       "maxPromptLength": 1000,
-      "maxReferenceImageDimension": 1536
+      "maxReferenceImageDimension": 1536,
+      "pricingNotes": "imageCostPerImage from vendor list price in catalog; re-check provider pricing page when rates change."
     },
     {
       "id": "grok-4.5",
@@ -542,7 +562,8 @@
       "supportsVideoReview": false,
       "notes": "Stage planning, cast scrub, screenplay helpers. maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens \u2014 not documented per-model, this is xAI's platform-wide default cap on visible output tokens ('Defaults to 128,000 when unset; set a larger value to allow longer generations') that applies uniformly across chat/completions models, so it's the real ceiling any Grok chat call hits today unless the caller explicitly overrides it.",
       "providerId": "grok",
-      "providerLabel": "xAI"
+      "providerLabel": "xAI",
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "grok-4",
@@ -564,7 +585,8 @@
       "supportsVideoReview": false,
       "notes": "maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset, platform-wide (not a per-model published figure) \u2014 see grok-4.5 note for full citation detail.",
       "providerId": "grok",
-      "providerLabel": "xAI"
+      "providerLabel": "xAI",
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "grok-4.20-reasoning",
@@ -586,7 +608,8 @@
       "supportsVideoReview": false,
       "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) \u2014 discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text \u2014 GrokChatClient's self-heal matches both spellings) \u2014 it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M). maxOutputTokens=128000 confirmed via docs.x.ai/developers/rest-api-reference/inference/chat: max_completion_tokens defaults to 128,000 when unset platform-wide (per max_completion_tokens's own definition this excludes reasoning tokens, so this is the visible-JSON-output ceiling even for the reasoning variant \u2014 not a per-model published figure).",
       "providerId": "grok",
-      "providerLabel": "xAI"
+      "providerLabel": "xAI",
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "claude-sonnet-5",
@@ -608,7 +631,8 @@
       "supportsVideoReview": false,
       "notes": "Wired via AnthropicChatClient. maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Sonnet 5 max output: 128k tokens).",
       "providerId": "anthropic",
-      "providerLabel": "Anthropic"
+      "providerLabel": "Anthropic",
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "claude-opus-5",
@@ -630,7 +654,8 @@
       "supportsVideoReview": false,
       "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 \u2014 update when a real source is available. maxOutputTokens=128000 confirmed via platform.claude.com/docs/en/about-claude/models/overview (Claude Opus 5 max output: 128k tokens).",
       "providerId": "anthropic",
-      "providerLabel": "Anthropic"
+      "providerLabel": "Anthropic",
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "gemini-2.5-flash",
@@ -652,7 +677,8 @@
       "notes": "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review. Was gemini-2.5-pro, which Google retired for new API keys (404 \"no longer available to new users\") \u2014 GeminiChatClient was already silently falling back to gemini-2.5-flash on that 404, so this just makes the catalog match what was actually running.",
       "providerId": "gemini",
       "providerLabel": "Google",
-      "maxOutputTokens": 65536
+      "maxOutputTokens": 65536,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "gemini-3.6-flash",
@@ -674,7 +700,8 @@
       "notes": "Wired via GeminiChatClient. Reasoning/\"thinking\" model per Google's own model metadata (thinking: true) \u2014 same class as OpenAI's o-series; watch for similar quirks (temperature/param rejection, thinking tokens counting toward output budget). Pricing copied from gemini-2.5-flash as a placeholder \u2014 not verified against a real source, update when known.",
       "providerId": "gemini",
       "providerLabel": "Google",
-      "maxOutputTokens": 65536
+      "maxOutputTokens": 65536,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "gemini-3.1-pro-preview",
@@ -696,7 +723,8 @@
       "notes": "First Gemini Pro-tier model in this catalog \u2014 every other Gemini entry so far is Flash-tier. Added to try to beat gpt-5.6-sol's benchmark lead. Wired via GeminiChatClient. Confirmed live via direct Google API call: thinking:true, inputTokenLimit 1,048,576, outputTokenLimit 65,536; thinkingConfig.thinkingLevel confirmed up to \"high\" (Gemini's ceiling \u2014 no \"max\"/\"xhigh\" tier exists). \"-preview\" tag means Google could change or retire this id without notice; pricing copied from gemini-3.6-flash as a placeholder, not verified against a real source.",
       "providerId": "gemini",
       "providerLabel": "Google",
-      "maxOutputTokens": 65536
+      "maxOutputTokens": 65536,
+      "pricingNotes": "Token rates from provider list prices in catalog; re-check when vendors change pricing."
     },
     {
       "id": "grok-4.5",

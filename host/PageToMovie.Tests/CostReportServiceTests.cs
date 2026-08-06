@@ -94,7 +94,9 @@ public sealed class CostReportServiceTests : IDisposable
           "requiredEnvKeys": ["XAI_API_KEY"],
           "enabled": true,
           "supportsVideoContinue": true,
-          "videoCostPerSecondByResolution": {"480p": 0.05, "720p": 0.07, "1080p": 0.25}
+          "videoCostPerSecondByResolution": {"480p": 0.05, "720p": 0.07, "1080p": 0.25},
+          "videoReferenceImageCost": 0,
+          "videoExtendCostPerSecond": 0.07
         },
         {
           "id": "test-image",
@@ -126,19 +128,36 @@ public sealed class CostReportServiceTests : IDisposable
     }
 
     [Fact]
-    public void RatesFromModels_falls_back_to_constants_when_catalog_has_no_addon_pricing()
+    public void RatesFromModels_throws_when_continue_model_missing_extend_cost()
     {
-        Assert.True(SupportedModelCatalog.TryLoadFromJson(SyntheticCatalogJson));
-
-        var rates = CostReportService.RatesFromModels("test-video-no-addons", "test-image");
-
-        Assert.Equal(CostReportService.FallbackVideoRefImageCost, Assert.IsType<double>(rates["video_input_image"]));
-        Assert.Equal("estimated_fallback", rates["video_input_image_source"]);
-        Assert.Equal(CostReportService.FallbackVideoExtendCostPerSec, Assert.IsType<double>(rates["video_input_per_sec"]));
-        Assert.Equal("estimated_fallback", rates["video_input_per_sec_source"]);
-        // Output-by-resolution is real catalog data, but the two add-ons are estimated, so overall
-        // video pricing for this model is only partially real.
-        Assert.Equal("estimated_fallback", rates["video_pricing_source"]);
+        const string incomplete = """
+        {
+          "models": [
+            {
+              "id": "bad-video",
+              "displayName": "Bad",
+              "capability": "Video",
+              "provider": "Xai",
+              "enabled": true,
+              "supportsVideoContinue": true,
+              "videoCostPerSecondByResolution": {"720p": 0.07},
+              "videoReferenceImageCost": 0
+            },
+            {
+              "id": "test-image",
+              "displayName": "Img",
+              "capability": "Image",
+              "provider": "Xai",
+              "enabled": true,
+              "imageCostPerImage": 0.02
+            }
+          ]
+        }
+        """;
+        Assert.True(SupportedModelCatalog.TryLoadFromJson(incomplete));
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            CostReportService.RatesFromModels("bad-video", "test-image"));
+        Assert.Contains("videoExtendCostPerSecond", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -160,20 +179,19 @@ public sealed class CostReportServiceTests : IDisposable
     }
 
     [Fact]
-    public void Live_grok_imagine_video_has_no_published_ref_image_or_extend_pricing_yet()
+    public void Live_grok_imagine_video_addon_costs_come_from_catalog_not_engine_constants()
     {
-        // Documents the real-world finding: as of 2026-08, xAI (the only enabled model with
-        // SupportsVideoContinue=true) publishes only a flat per-second rate on
-        // docs.x.ai/developers/pricing — no separate line item for reference images or video-extend.
-        // If this ever flips to non-null, the tests above show the pricing math already prefers a
-        // real catalog value automatically.
+        // xAI does not publish separate ref/extend line items; catalog stores explicit values
+        // (0 ref fee; extend planning rate) with pricingNotes — never Engine Fallback* dollars.
         var video = SupportedModelCatalog.Find("grok-imagine-video", ModelCapability.Video);
         Assert.NotNull(video);
-        Assert.Null(video!.VideoReferenceImageCost);
-        Assert.Null(video.VideoExtendCostPerSecond);
+        Assert.NotNull(video!.VideoReferenceImageCost);
+        Assert.NotNull(video.VideoExtendCostPerSecond);
+        Assert.False(string.IsNullOrWhiteSpace(video.PricingNotes));
 
         var rates = CostReportService.RatesFromModels("grok-imagine-video", "grok-imagine-image-quality");
-        Assert.Equal("estimated_fallback", rates["video_input_image_source"]);
-        Assert.Equal("estimated_fallback", rates["video_input_per_sec_source"]);
+        Assert.Equal("model_catalog", rates["video_input_image_source"]);
+        Assert.Equal("model_catalog", rates["video_input_per_sec_source"]);
+        Assert.Equal("model_catalog", rates["video_pricing_source"]);
     }
 }
