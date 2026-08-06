@@ -4048,6 +4048,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         }
     }
 
+
     public async Task<byte[]?> GetCharacterImageAsync(string projectId, string characterKey, string? imageKind = null, CancellationToken ct = default)
     {
         var kind = string.IsNullOrWhiteSpace(imageKind) ? "portrait" : imageKind.Trim();

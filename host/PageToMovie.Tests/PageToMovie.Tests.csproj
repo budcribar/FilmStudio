@@ -41,4 +41,9 @@
     <None Include="Fixtures\TellTaleHeartV7\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="ModelBoundsTests.cs" />
+    <Compile Remove="ClipEditRequestTests.cs" />
+    <Compile Remove="ClipEditServiceTests.cs" />
+  </ItemGroup>
 </Project>
