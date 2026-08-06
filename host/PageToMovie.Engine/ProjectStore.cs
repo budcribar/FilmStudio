@@ -4302,6 +4302,39 @@ public sealed class ProjectStore
     /// When <paramref name="probeDurations"/> is false (LoadSim), skip ffprobe — much faster under concurrency.
     /// Results are cached briefly (single-flight) when <see cref="SceneListCache"/> is registered.
     /// </summary>
+    /// <summary>
+    /// True when a blueprint scene is the end-credits card, however it happens to be stored across
+    /// blueprint generations. Single source of truth for credits detection so the Scenes list
+    /// (<see cref="SceneSummary.IsCredits"/> — which hides the "Add credits" button) and the
+    /// cast-readiness / video-gen gate (<see cref="FilmJobService.IsCreditsScene"/>) always agree.
+    /// Generic — no story-specific strings or scene numbers.
+    /// Detects, in order: the scene-level <c>is_credits</c> flag; a <c>CREDITS</c> setting or
+    /// scene_heading; or — for older/auto-inserted scenes whose scene-level marker is absent — the
+    /// <c>is_credits</c> flag on any of the scene's clips. Both the Stage 2 auto-insert and the
+    /// manual "Add credits" write clip-level <c>is_credits</c>, so the clip flag is the durable
+    /// structural signal even when the scene-level flag/heading was dropped by a later edit.
+    /// </summary>
+    internal static bool IsCreditsScene(JsonElement? sceneEl)
+    {
+        if (sceneEl is not { ValueKind: JsonValueKind.Object } s)
+            return false;
+        if (ReadJsonBool(s, "is_credits"))
+            return true;
+        if (s.TryGetProperty("setting", out var set) &&
+            (set.GetString() ?? "").Contains("CREDITS", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (s.TryGetProperty("scene_heading", out var sh) &&
+            (sh.GetString() ?? "").Contains("CREDITS", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (s.TryGetProperty("veo_clips", out var clips) && clips.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var c in clips.EnumerateArray())
+                if (c.ValueKind == JsonValueKind.Object && ReadJsonBool(c, "is_credits"))
+                    return true;
+        }
+        return false;
+    }
+
     public Task<IReadOnlyList<SceneSummary>> ListScenesAsync(
         string projectId,
         bool probeDurations = true,
@@ -4479,9 +4512,7 @@ public sealed class ProjectStore
 
             var settingText = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "";
             var headingText = s.TryGetProperty("scene_heading", out var shd) ? shd.GetString() ?? "" : "";
-            var isCredits = ReadJsonBool(s, "is_credits")
-                || settingText.Contains("CREDITS", StringComparison.OrdinalIgnoreCase)
-                || headingText.Contains("CREDITS", StringComparison.OrdinalIgnoreCase);
+            var isCredits = IsCreditsScene(s);
 
             rows.Add(new SceneSummary
             {

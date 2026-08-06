@@ -4256,12 +4256,20 @@ public sealed class FilmJobService
         }
     }
 
-    private static List<string> OnScreenVisualKeys(
+    /// <summary>
+    /// On-screen character keys that require a locked reference image for identity consistency.
+    /// Excludes voice-only roles (never on screen) and group/ensemble cast (Children, Crowd, …):
+    /// a group has no single portrait identity to lock or drift, so the video model renders its
+    /// members freely — requiring a ref for a group is impossible and blocks generation. Group
+    /// detection uses the same <see cref="CastKindClassifier.IsGroup"/> signal as the cast gates.
+    /// </summary>
+    internal static List<string> OnScreenVisualKeys(
         ClipVideoPromptBuilder.PromptBuildResult built,
         IReadOnlyDictionary<string, ClipVideoPromptBuilder.CharacterProfile> profiles)
     {
         return (built.OnScreenKeys.Count > 0 ? built.OnScreenKeys : built.CharacterKeys)
             .Where(k => !(profiles.TryGetValue(k, out var p) && p.VoiceOnly))
+            .Where(k => !CastKindClassifier.IsGroup(k))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
@@ -4378,34 +4386,11 @@ public sealed class FilmJobService
 
     /// <summary>
     /// The auto-inserted end-credits scene is a title card with no real cast, so it is exempt from the
-    /// locked-character video-gen gate. Detected by the same signal ProjectStore uses to derive
-    /// <c>SceneSummary.IsCredits</c> — the blueprint's <c>is_credits</c> flag or a CREDITS
-    /// scene heading/setting — never a hardcoded scene number or story-specific title string.
+    /// locked-character video-gen gate. Delegates to <see cref="ProjectStore.IsCreditsScene"/> — the
+    /// single source of truth that also derives <c>SceneSummary.IsCredits</c> — so the gate and the
+    /// Scenes list can never disagree. Never keys off a hardcoded scene number or story-specific title.
     /// </summary>
-    internal static bool IsCreditsScene(JsonElement? sceneEl)
-    {
-        if (sceneEl is not { } s || s.ValueKind != JsonValueKind.Object)
-            return false;
-        if (ReadJsonBool(s, "is_credits"))
-            return true;
-        var heading = s.TryGetProperty("scene_heading", out var sh) ? sh.GetString() ?? "" : "";
-        var setting = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "";
-        return heading.Contains("CREDITS", StringComparison.OrdinalIgnoreCase)
-            || setting.Contains("CREDITS", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool ReadJsonBool(JsonElement parent, string name)
-    {
-        if (!parent.TryGetProperty(name, out var el)) return false;
-        return el.ValueKind switch
-        {
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.String => bool.TryParse(el.GetString(), out var b) && b,
-            JsonValueKind.Number => el.TryGetInt32(out var n) && n != 0,
-            _ => false,
-        };
-    }
+    internal static bool IsCreditsScene(JsonElement? sceneEl) => ProjectStore.IsCreditsScene(sceneEl);
 
     /// <summary>
     /// Prefer explicit request resolution, else project Configuration, else app default —
