@@ -1037,18 +1037,16 @@ public sealed class CharacterBookPlateService
         }
     }
 
-    private static bool IsVoiceOnly(string key, JsonObject seed)
+    internal static bool IsVoiceOnly(string key, JsonObject seed)
     {
-        // Shared policy mechanism (CastKindClassifier.IsVoiceOnlyPolicy) OR a narrator-key heuristic.
-        // NOTE: the narrator-key clause DIVERGES from ProjectStore / CharacterDesignService, which
-        // deliberately do NOT force voice-only for "Narrator" keys (on-camera confessor / POV roles
-        // are common). This is a genuine product-policy question flagged for human resolution — do
-        // not silently unify these two behaviors.
+        // Voice-only = never appears on screen — a per-story fact read from the cast seed's
+        // display_name_policy, NOT the name "Narrator". An on-camera / POV narrator (e.g. Tell-Tale
+        // Heart's confessor) has policy "ok_anytime" and must get a portrait; a pure off-screen
+        // narrator (e.g. Mary's) has "never_on_screen". The cast-extraction step already sets that
+        // policy from the screenplay (upgrading a V.O.-only role to on-camera when it later appears).
+        // Single source of truth: CastKindClassifier.IsVoiceOnlyPolicy.
         var pol = seed["display_name_policy"]?.GetValue<string>();
-        return CastKindClassifier.IsVoiceOnlyPolicy(pol)
-               || key.EndsWith("_Narrator", StringComparison.OrdinalIgnoreCase)
-               || key.Equals("Character_Narrator", StringComparison.OrdinalIgnoreCase)
-               || key.Contains("narrator", StringComparison.OrdinalIgnoreCase);
+        return CastKindClassifier.IsVoiceOnlyPolicy(pol);
     }
 
     private static List<int> PagesForSeed(JsonObject seed)
