@@ -11,6 +11,37 @@ namespace PageToMovie.Tests;
 
 public class ClipDialogueVerificationTests
 {
+    [Fact]
+    public void BuildExpectedDialogue_covers_both_speakers_in_a_two_hander()
+    {
+        // A cross-speaker two-hander clip: both lines must be part of the expected content so the
+        // second speaker's line is actually verified (regression: it was previously dropped).
+        var twoHander = new ClipSummary
+        {
+            ClipNumber = 1,
+            Speaker = "Character_Children",
+            Dialogue = "Why does the lamb love Mary so?",
+            Delivery = "spoken_on_camera",
+            SecondarySpeaker = "Character_Teacher",
+            SecondaryDialogue = "Oh, Mary loves the lamb, you know.",
+        };
+
+        var expected = ClipDialogueVerificationService.BuildExpectedDialogue(twoHander);
+        Assert.Contains("Why does the lamb love Mary so?", expected);
+        Assert.Contains("Oh, Mary loves the lamb, you know.", expected);
+
+        // Single-speaker clip → just its own line.
+        var single = new ClipSummary
+        {
+            ClipNumber = 2,
+            Speaker = "Character_Children",
+            Dialogue = "Why does the lamb love Mary so?",
+            Delivery = "spoken_on_camera",
+        };
+        Assert.Equal("Why does the lamb love Mary so?",
+            ClipDialogueVerificationService.BuildExpectedDialogue(single));
+    }
+
     /// <summary>
     /// Regression: ClipDialogueVerificationService used to take a concrete GeminiChatClient?
     /// dependency, which fakes mode couldn't provide (only registered in Program.cs's non-fakes

@@ -37,6 +37,13 @@ public static class ClipDurationEstimator
     public const double SpeechTailSeconds = 0.50;
 
     /// <summary>
+    /// Gap between two speakers' lines in a single two-hander clip — the beat where the camera
+    /// pans / the second speaker turns in before answering. Added once per additional spoken line
+    /// so a cross-speaker clip is budgeted for the hand-off, not just the raw words.
+    /// </summary>
+    public const double InterSpeakerGapSeconds = 0.40;
+
+    /// <summary>
     /// Extra headroom under <see cref="MaxSeconds"/> when packing monologue splits so lip-sync
     /// / model end-trim does not cut the last words (speech + visual head still fit).
     /// </summary>
@@ -202,15 +209,6 @@ public static class ClipDurationEstimator
     {
         if (clipEl.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
             return MinSeconds;
-        var dialogue = "";
-        var delivery = "none";
-        if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object)
-        {
-            if (ap.TryGetProperty("dialogue", out var d))
-                dialogue = d.GetString() ?? "";
-            if (ap.TryGetProperty("delivery", out var del))
-                delivery = (del.GetString() ?? "none").ToLowerInvariant();
-        }
 
         var visual = clipEl.TryGetProperty("visual_prompt", out var vp)
             ? vp.GetString() ?? ""
@@ -226,20 +224,55 @@ public static class ClipDurationEstimator
             acEl.ValueKind == JsonValueKind.String)
             actionClass = (acEl.GetString() ?? "").Trim().ToLowerInvariant();
 
-        var est = Estimate(dialogue, visual, actionClass: actionClass, delivery, minSeconds, maxSeconds, absMaxSeconds);
+        // Single source of truth for what this clip says — primary line PLUS any second speaker's
+        // line (two-hander). Sizing off only the primary is what cut the teacher's answer.
+        var lines = ClipSpokenLines.FromClipElement(clipEl);
+        if (lines.Count > 0)
+        {
+            // Never under-run speech need — under-planned clips rush and clip the first word.
+            // Budget for EVERY spoken line (+ inter-speaker gap), capped only at the model max.
+            return EstimateSpokenLinesSeconds(lines, visual, actionClass, minSeconds, maxSeconds);
+        }
+
         // Silent: honor Stage 2 planned duration within the class-aware cap (not a flat 5s).
-        if (planned > 0 && string.IsNullOrWhiteSpace(dialogue))
+        if (planned > 0)
         {
             var silentMax = SilentMaxForActionClass(actionClass, absMaxSeconds);
             return Math.Clamp(planned, ActionOnlyMinSeconds, silentMax);
         }
-        if (!string.IsNullOrWhiteSpace(dialogue))
+        return Estimate("", visual, actionClass: actionClass, "none", minSeconds, maxSeconds, absMaxSeconds);
+    }
+
+    /// <summary>
+    /// Total clip length for one or more spoken lines (a two-hander sums both), capped at the model
+    /// max. Each line contributes its own <see cref="EstimateUncapped"/> speech time (with head/tail
+    /// pauses); the first line also carries the clip's visual/action overhead, and each additional
+    /// line adds an <see cref="InterSpeakerGapSeconds"/> hand-off gap. Single source of truth for the
+    /// multi-line sizing math, shared by <see cref="EstimateForClip"/> and Stage 2's cross-speaker
+    /// coalesce so a clip is planned for exactly the lines <see cref="ClipSpokenLines"/> reports.
+    /// </summary>
+    internal static int EstimateSpokenLinesSeconds(
+        IReadOnlyList<ClipSpokenLines.SpokenLine> lines,
+        string visual = "",
+        string actionClass = "",
+        int minSeconds = MinSeconds,
+        int maxSeconds = MaxSeconds)
+    {
+        if (lines is null || lines.Count == 0)
+            return minSeconds;
+
+        double total = 0;
+        for (var i = 0; i < lines.Count; i++)
         {
-            // Never under-run speech need — under-planned clips rush and clip the first word.
-            // Cap only at model max (do not force plan seconds when shorter than est).
-            return Math.Clamp(Math.Max(est, minSeconds), minSeconds, maxSeconds);
+            // Only the first line pays the visual/action overhead; the rest are pure speech + gap.
+            var lineVisual = i == 0 ? visual : "";
+            var lineClass = i == 0 ? actionClass : "dialogue";
+            total += EstimateUncapped(lines[i].Dialogue, lineVisual, lineClass, lines[i].Delivery);
+            if (i > 0) total += InterSpeakerGapSeconds;
         }
-        return est;
+
+        var rounded = (int)Math.Round(total, MidpointRounding.AwayFromZero);
+        return Math.Clamp(Math.Max(rounded, minSeconds), minSeconds, maxSeconds);
     }
 
     /// <summary>Upper bound for dialogue-free clips at gen time (matches <see cref="Estimate"/> caps).</summary>

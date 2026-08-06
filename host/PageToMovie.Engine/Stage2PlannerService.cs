@@ -1144,6 +1144,13 @@ public sealed class Stage2PlannerService
                         cur["secondary_speaker"] = sp2;
                         cur["secondary_dialogue"] = d2;
 
+                        // Size the merged clip for BOTH lines (was left at the primary's estimate,
+                        // so the second speaker's line got cut). Read the spoken lines back through
+                        // the shared accessor and size with the shared estimator, capped at the same
+                        // effective max used to decide the merge fit.
+                        cur["duration_seconds"] = ClipDurationEstimator.EstimateSpokenLinesSeconds(
+                            ClipSpokenLines.FromBeat(cur), maxSeconds: effectiveMax);
+
                         var ve1 = CoerceString(cur.TryGetValue("visual_event", out var vev1) ? vev1 : null) ?? "";
                         var ve2 = CoerceString(next.TryGetValue("visual_event", out var vev2) ? vev2 : null) ?? "";
                         if (!string.IsNullOrWhiteSpace(ve2) && !ve1.Contains(ve2, StringComparison.OrdinalIgnoreCase))

@@ -493,4 +493,75 @@ public class ClipSilenceTrimmerTests
         var cut = ClipSilenceTrimmer.ComputeCutPoint(log, totalDuration: 6.0, keepTailSeconds: 0.35);
         Assert.Null(cut);
     }
+
+    private const string ChildrenLine = "Why does the lamb love Mary so?";
+    private const string TeacherLine = "Oh, Mary loves the lamb, you know.";
+
+    private static JsonElement TwoSpeakerClip => JsonDocument.Parse($$"""
+        {
+          "visual_prompt": "Two children face the teacher.",
+          "audio_payload": {
+            "speaker": "Character_Children",
+            "dialogue": "{{ChildrenLine}}",
+            "secondary_speaker": "Character_Teacher",
+            "secondary_dialogue": "{{TeacherLine}}",
+            "delivery": "spoken_on_camera"
+          }
+        }
+        """).RootElement;
+
+    private static JsonElement SingleSpeakerClip(string speaker, string line) =>
+        JsonDocument.Parse($$"""
+        {
+          "visual_prompt": "Two children face the teacher.",
+          "audio_payload": {
+            "speaker": "{{speaker}}",
+            "dialogue": "{{line}}",
+            "delivery": "spoken_on_camera"
+          }
+        }
+        """).RootElement;
+
+    [Fact]
+    public void EstimateForClip_two_hander_is_sized_for_both_lines()
+    {
+        // Regression: a two-hander clip (Mary's Teacher answering the children) used to be sized
+        // for the primary line only, so the teacher's line was cut. It must now cover BOTH.
+        var primaryOnly = ClipDurationEstimator.EstimateForClip(
+            SingleSpeakerClip("Character_Children", ChildrenLine));
+        var secondaryOnly = ClipDurationEstimator.EstimateForClip(
+            SingleSpeakerClip("Character_Teacher", TeacherLine));
+        var both = ClipDurationEstimator.EstimateForClip(TwoSpeakerClip);
+
+        Assert.True(both > primaryOnly,
+            $"two-hander ({both}s) must be strictly longer than the primary-only estimate ({primaryOnly}s)");
+        Assert.True(both >= primaryOnly && both >= secondaryOnly,
+            $"two-hander ({both}s) must be at least as long as each line ({primaryOnly}s / {secondaryOnly}s)");
+        Assert.InRange(both, ClipDurationEstimator.MinSeconds, ClipDurationEstimator.MaxSeconds);
+    }
+
+    [Fact]
+    public void ClipSpokenLines_returns_every_line_in_order_and_skips_silent()
+    {
+        // Primary only → exactly one line.
+        var single = ClipSpokenLines.FromClipElement(
+            SingleSpeakerClip("Character_Children", ChildrenLine));
+        Assert.Single(single);
+        Assert.Equal("Character_Children", single[0].Speaker);
+        Assert.Equal(ChildrenLine, single[0].Dialogue);
+
+        // Two-hander → two lines, primary first then secondary.
+        var pair = ClipSpokenLines.FromClipElement(TwoSpeakerClip);
+        Assert.Equal(2, pair.Count);
+        Assert.Equal("Character_Children", pair[0].Speaker);
+        Assert.Equal(ChildrenLine, pair[0].Dialogue);
+        Assert.Equal("Character_Teacher", pair[1].Speaker);
+        Assert.Equal(TeacherLine, pair[1].Dialogue);
+
+        // delivery:"none" is the authoritative silent marker → zero spoken lines, even with text.
+        var silent = JsonDocument.Parse("""
+            { "audio_payload": { "speaker": "Character_X", "dialogue": "unsaid", "delivery": "none" } }
+            """).RootElement;
+        Assert.Empty(ClipSpokenLines.FromClipElement(silent));
+    }
 }

@@ -231,6 +231,42 @@ public sealed class Stage2PlannerAutomationTests
     }
 
     [Fact]
+    public void CoalesceCrossSpeakerDialogueBeats_SizesMergedClipForBothLines()
+    {
+        // Regression: the merge set secondary_dialogue but left duration_seconds at the primary's
+        // size, so the second speaker's line got cut. It must now cover BOTH lines.
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1",
+            ["speaker"] = "Character_Children",
+            ["dialogue"] = "Why does the lamb love Mary so?",
+            ["location_id"] = "Loc_Class",
+            ["duration_seconds"] = 3,
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2",
+            ["speaker"] = "Character_Teacher",
+            ["dialogue"] = "Oh, Mary loves the lamb, you know.",
+            ["location_id"] = "Loc_Class",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var coalesced = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 10);
+
+        Assert.Single(coalesced);
+        Assert.Equal("Character_Teacher", coalesced[0]["secondary_speaker"]);
+        Assert.Equal("Oh, Mary loves the lamb, you know.", coalesced[0]["secondary_dialogue"]);
+
+        var mergedDuration = Convert.ToInt32(coalesced[0]["duration_seconds"]);
+        var primaryOnly = ClipDurationEstimator.Estimate(
+            "Why does the lamb love Mary so?", "", "dialogue", "spoken_on_camera");
+        Assert.True(mergedDuration > primaryOnly,
+            $"merged duration {mergedDuration}s must cover both lines, not just the primary {primaryOnly}s");
+        Assert.InRange(mergedDuration, ClipDurationEstimator.MinSeconds, 10);
+    }
+
+    [Fact]
     public void CoalesceCrossSpeakerDialogueBeats_LeavesSameSpeakerBeatsUnmerged()
     {
         var b1 = new Dictionary<string, object?>

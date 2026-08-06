@@ -1150,14 +1150,17 @@ public static class ClipVideoPromptBuilder
             audio.ValueKind != JsonValueKind.Object)
             return "";
 
-        var speaker = audio.TryGetProperty("speaker", out var sp) ? sp.GetString() ?? "" : "";
-        var dialogue = audio.TryGetProperty("dialogue", out var dlg) ? dlg.GetString() ?? "" : "";
-        // Cross-speaker two-hander clips (Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats)
-        // carry a second speaker's line here — camera pans from speaker to speaker mid-clip.
-        var secondarySpeaker = audio.TryGetProperty("secondary_speaker", out var ssp) ? ssp.GetString() ?? "" : "";
-        var secondaryDialogue = audio.TryGetProperty("secondary_dialogue", out var sdlg) ? sdlg.GetString() ?? "" : "";
+        // Every spoken line of this clip via the shared accessor so this reader can't diverge from
+        // duration sizing / verification: the primary line PLUS any second speaker's line
+        // (Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats two-hander — camera pans from
+        // speaker to speaker mid-clip).
+        var spokenLines = ClipSpokenLines.FromAudioPayload(audio);
+        var speaker = spokenLines.Count > 0 ? spokenLines[0].Speaker : "";
+        var dialogue = spokenLines.Count > 0 ? spokenLines[0].Dialogue : "";
+        var secondarySpeaker = spokenLines.Count > 1 ? spokenLines[1].Speaker : "";
+        var secondaryDialogue = spokenLines.Count > 1 ? spokenLines[1].Dialogue : "";
         var delivery = Stage2PlannerService.NormalizeDelivery(
-            audio.TryGetProperty("delivery", out var del) ? del.GetString() ?? "none" : "none");
+            spokenLines.Count > 0 ? spokenLines[0].Delivery : "none");
         // Stage2/AI-classifier free text — sanitize at the source (see PromptTags class doc).
         var sfx = PromptTags.SanitizeValue(audio.TryGetProperty("sfx", out var sx) ? sx.GetString() : null).Trim();
         var ambient = PromptTags.SanitizeValue(audio.TryGetProperty("ambient", out var am) ? am.GetString() : null).Trim();

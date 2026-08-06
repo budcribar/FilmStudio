@@ -4640,6 +4640,8 @@ public sealed class ProjectStore
                 string? speaker = null;
                 string? delivery = null;
                 string? pronunciationHint = null;
+                string? secondarySpeaker = null;
+                string? secondaryDialogue = null;
                 var hasAp = c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object;
                 if (hasAp)
                 {
@@ -4651,6 +4653,11 @@ public sealed class ProjectStore
                         delivery = del.GetString();
                     if (ap.TryGetProperty("pronunciation_hint", out var ph))
                         pronunciationHint = ph.GetString();
+                    // Second speaker's line in a cross-speaker two-hander clip (else absent).
+                    if (ap.TryGetProperty("secondary_speaker", out var ssp))
+                        secondarySpeaker = ssp.GetString();
+                    if (ap.TryGetProperty("secondary_dialogue", out var sdlg))
+                        secondaryDialogue = sdlg.GetString();
                 }
                 if (string.IsNullOrWhiteSpace(dialogue) && c.TryGetProperty("dialogue", out var rootD))
                 {
@@ -4708,6 +4715,10 @@ public sealed class ProjectStore
                     Dialogue = dialogue,
                     Speaker = speaker,
                     Delivery = delivery,
+                    SecondarySpeaker = secondarySpeaker,
+                    SecondaryDialogue = string.IsNullOrWhiteSpace(secondaryDialogue)
+                        ? secondaryDialogue
+                        : ClipVideoPromptBuilder.SanitizeSpokenDialogue(secondaryDialogue),
                     PronunciationHint = pronunciationHint,
                     CharactersOnScreen = c.TryGetProperty("characters_on_screen", out var clipCos) &&
                                          clipCos.ValueKind == JsonValueKind.Array

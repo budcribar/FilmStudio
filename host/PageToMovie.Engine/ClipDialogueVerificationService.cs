@@ -117,8 +117,12 @@ public sealed class ClipDialogueVerificationService
         var detail = await _projects.GetSceneDetailAsync(projectId, sceneNumber, ct: ct).ConfigureAwait(false);
         var clip = detail?.Clips?.FirstOrDefault(c => c.ClipNumber == clipNumber);
 
+        // Every spoken line of this clip via the shared accessor — a two-hander's second speaker's
+        // line used to be dropped here, so the teacher's answer was never verified and could not
+        // feed the timing/accuracy feedback loop.
+        var spokenLines = ClipSpokenLines.FromClip(clip);
         var expectedSpeaker = clip?.Speaker ?? "Unknown";
-        var expectedDialogue = clip?.Dialogue ?? "";
+        var expectedDialogue = BuildExpectedDialogue(clip);
 
         // If no spoken dialogue planned for this clip, return verified no-speech status immediately
         if (string.IsNullOrWhiteSpace(expectedDialogue))
@@ -189,9 +193,16 @@ public sealed class ClipDialogueVerificationService
         // Collect character reference portraits for characters in this scene
         var charSummaryList = _projects.ListCharacters(projectId);
         var sceneChars = clip?.CharactersOnScreen is { Count: > 0 } ? clip.CharactersOnScreen : new List<string> { expectedSpeaker };
-        if (!sceneChars.Any(c => string.Equals(c, expectedSpeaker, StringComparison.OrdinalIgnoreCase)))
+        // Every speaking character (primary + any second speaker) must have its reference portrait
+        // attached so the vision pass can match each line's face.
+        foreach (var lineSpeaker in spokenLines.Select(l => l.Speaker)
+                     .Append(expectedSpeaker)
+                     .Where(s => !string.IsNullOrWhiteSpace(s)))
         {
-            sceneChars = sceneChars.Concat(new[] { expectedSpeaker }).ToList();
+            if (!sceneChars.Any(c => string.Equals(c, lineSpeaker, StringComparison.OrdinalIgnoreCase)))
+            {
+                sceneChars = sceneChars.Concat(new[] { lineSpeaker }).ToList();
+            }
         }
 
         var charGuides = new List<string>();
@@ -414,6 +425,15 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             return failedResult;
         }
     }
+
+    /// <summary>
+    /// Expected spoken content for a clip — every line via <see cref="ClipSpokenLines"/>, joined in
+    /// speaking order. For a single-speaker clip this is just its line; for a cross-speaker
+    /// two-hander it covers BOTH speakers, so the second speaker's line is actually verified (and a
+    /// missing/cut secondary line is caught and can feed the existing feedback path).
+    /// </summary>
+    public static string BuildExpectedDialogue(ClipSummary? clip) =>
+        string.Join(" ", ClipSpokenLines.FromClip(clip).Select(l => l.Dialogue));
 
     /// <summary>
     /// Best-effort signal that a clip's dialogue was likely cut off because the clip ran out of time

@@ -764,6 +764,11 @@ public sealed class ClipSummary
     public string Dialogue { get; set; } = "";
     public string? Speaker { get; set; }
     public string? Delivery { get; set; }
+    /// <summary>Second speaker in a cross-speaker two-hander clip (else null). Additive: single-line
+    /// readers keep using <see cref="Speaker"/>/<see cref="Dialogue"/> unchanged.</summary>
+    public string? SecondarySpeaker { get; set; }
+    /// <summary>Second speaker's line in a two-hander clip (else null).</summary>
+    public string? SecondaryDialogue { get; set; }
     public string? PronunciationHint { get; set; }
     public List<string> CharactersOnScreen { get; set; } = new();
     public string? ColorPalette { get; set; }
