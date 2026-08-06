@@ -21,7 +21,8 @@ Admin → Models catalog → **Scan for updates**
 - Maps `unit_price` → `imageCostPerImage` or video base / per-sec fields
 - Requires key; without it → yellow
 
-### P1 — xAI pricing from docs
+### P1 (pricing) — xAI docs
+
 - Fetches model docs HTML on `docs.x.ai` (Imagine video/image, grok-4.x)
 - Parses Input/Output `$/1M`, `$/image`, resolution `$/sec` tiers
 - Still runs duration/ref probes for video capability pages
@@ -33,3 +34,11 @@ Admin → Models catalog → **Scan for updates**
 ## Notes
 - List prices only — not usage/invoice APIs
 - Nested JSON fields (e.g. `videoCostPerSecondByResolution.720p`) may need Raw JSON edit after Accept if the simple patch is insufficient
+
+### P1 — model lists & discovery
+| Probe | Endpoint | Needs | What |
+|-------|----------|-------|------|
+| **A Anthropic** | `GET /v1/models` | `ANTHROPIC_API_KEY` | Existence; `max_input_tokens` / `max_tokens` when present; new Claude ids |
+| **B Gemini** | `GET /v1beta/models` (+ get) | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | Existence; `inputTokenLimit` / `outputTokenLimit`; new gemini/imagen ids |
+| **C fal** | `GET /v1/models` | `FAL_KEY` | New `endpoint_id`s (category → suggested capability); pricing still P0 |
+

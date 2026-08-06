@@ -137,6 +137,22 @@ public sealed class CatalogUpdateProbeService
             return;
         }
 
+        if (entry.Capability is ModelCapability.Chat or ModelCapability.Vision &&
+            (string.Equals(provider, "anthropic", StringComparison.OrdinalIgnoreCase)
+             || string.Equals(provider, "claude", StringComparison.OrdinalIgnoreCase)))
+        {
+            await ProbeAnthropicModelAsync(entry, row, ct).ConfigureAwait(false);
+            return;
+        }
+
+        if (entry.Capability is ModelCapability.Chat or ModelCapability.Vision &&
+            (string.Equals(provider, "google", StringComparison.OrdinalIgnoreCase)
+             || string.Equals(provider, "gemini", StringComparison.OrdinalIgnoreCase)))
+        {
+            await ProbeGeminiModelAsync(entry, row, ct).ConfigureAwait(false);
+            return;
+        }
+
         // Generic: mark key required fields as not_found when no probe
         row.Fields.Add(new CatalogFieldProbeResult
         {
@@ -589,6 +605,9 @@ public sealed class CatalogUpdateProbeService
 
         await DiscoverFromOpenAiAsync(result, known, ct).ConfigureAwait(false);
         await DiscoverFromXaiAsync(result, known, ct).ConfigureAwait(false);
+        await DiscoverFromAnthropicAsync(result, known, ct).ConfigureAwait(false);
+        await DiscoverFromGeminiAsync(result, known, ct).ConfigureAwait(false);
+        await DiscoverFromFalAsync(result, known, ct).ConfigureAwait(false);
     }
 
     private async Task DiscoverFromOpenAiAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
@@ -682,6 +701,304 @@ public sealed class CatalogUpdateProbeService
             if (++added >= 25) break;
         }
         result.DiscoveryNotes.Add($"xAI: {added} candidate model(s) not in catalog.");
+    }
+
+
+    /// <summary>P1-A: Anthropic GET /v1/models — existence + optional max token fields.</summary>
+    private async Task ProbeAnthropicModelAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    {
+        var key = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+        const string url = "https://api.anthropic.com/v1/models";
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            row.Fields.Add(Field("model_id", entry.Id, null, "not_found",
+                "ANTHROPIC_API_KEY not set — cannot list Anthropic models.", url));
+            return;
+        }
+
+        var client = _httpFactory.CreateClient("catalog-probe");
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.TryAddWithoutValidation("x-api-key", key.Trim());
+        req.Headers.TryAddWithoutValidation("anthropic-version", "2023-06-01");
+        using var resp = await client.SendAsync(req, ct).ConfigureAwait(false);
+        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        if (!resp.IsSuccessStatusCode)
+        {
+            row.Fields.Add(Field("model_id", entry.Id, null, "error",
+                $"Anthropic models HTTP {(int)resp.StatusCode}", url));
+            return;
+        }
+
+        using var doc = JsonDocument.Parse(body);
+        JsonElement? match = null;
+        if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var m in data.EnumerateArray())
+            {
+                var id = m.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+                if (string.Equals(id, entry.Id, StringComparison.OrdinalIgnoreCase)
+                    || (id is not null && id.StartsWith(entry.Id, StringComparison.OrdinalIgnoreCase)))
+                {
+                    match = m;
+                    break;
+                }
+            }
+        }
+
+        if (match is null)
+        {
+            row.Fields.Add(Field("model_id", entry.Id, null, "not_found",
+                "Not present in Anthropic /v1/models for this API key.", url));
+            return;
+        }
+
+        var liveId = match.Value.TryGetProperty("id", out var lid) ? lid.GetString() : entry.Id;
+        row.Fields.Add(Field("model_id", entry.Id, liveId, "unchanged",
+            "Present in Anthropic /v1/models.", url));
+
+        if (match.Value.TryGetProperty("max_input_tokens", out var mit) && mit.TryGetInt32(out var inTok) && inTok > 0)
+            row.Fields.Add(CompareInt("maxInputTokens", entry.MaxInputTokens, inTok, url));
+        if (match.Value.TryGetProperty("max_tokens", out var mot) && mot.TryGetInt32(out var outTok) && outTok > 0)
+            row.Fields.Add(CompareInt("maxOutputTokens", entry.MaxOutputTokens, outTok, url));
+    }
+
+    /// <summary>P1-B: Gemini GET /v1beta/models — existence + input/output token limits.</summary>
+    private async Task ProbeGeminiModelAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    {
+        var key = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+                  ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+        const string baseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            row.Fields.Add(Field("model_id", entry.Id, null, "not_found",
+                "GEMINI_API_KEY / GOOGLE_API_KEY not set — cannot list Gemini models.", baseUrl));
+            return;
+        }
+
+        var client = _httpFactory.CreateClient("catalog-probe");
+        var modelLeaf = entry.Id.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
+            ? entry.Id["models/".Length..]
+            : entry.Id;
+        var getUrl = $"{baseUrl}/{modelLeaf}?key={Uri.EscapeDataString(key.Trim())}";
+
+        using var resp = await client.GetAsync(getUrl, ct).ConfigureAwait(false);
+        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        if (resp.IsSuccessStatusCode)
+        {
+            using var doc = JsonDocument.Parse(body);
+            var name = doc.RootElement.TryGetProperty("name", out var n) ? n.GetString() : entry.Id;
+            row.Fields.Add(Field("model_id", entry.Id, name, "unchanged", "Present in Gemini models.get.", baseUrl));
+            if (doc.RootElement.TryGetProperty("inputTokenLimit", out var it) && it.TryGetInt32(out var inLim) && inLim > 0)
+                row.Fields.Add(CompareInt("maxInputTokens", entry.MaxInputTokens, inLim, baseUrl));
+            if (doc.RootElement.TryGetProperty("outputTokenLimit", out var ot) && ot.TryGetInt32(out var outLim) && outLim > 0)
+                row.Fields.Add(CompareInt("maxOutputTokens", entry.MaxOutputTokens, outLim, baseUrl));
+            return;
+        }
+
+        var listUrl = $"{baseUrl}?key={Uri.EscapeDataString(key.Trim())}&pageSize=100";
+        using var listResp = await client.GetAsync(listUrl, ct).ConfigureAwait(false);
+        var listBody = await listResp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        if (!listResp.IsSuccessStatusCode)
+        {
+            row.Fields.Add(Field("model_id", entry.Id, null, "error",
+                $"Gemini models HTTP {(int)resp.StatusCode}/{(int)listResp.StatusCode}", baseUrl));
+            return;
+        }
+
+        using var listDoc = JsonDocument.Parse(listBody);
+        if (listDoc.RootElement.TryGetProperty("models", out var models) && models.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var m in models.EnumerateArray())
+            {
+                var name = m.TryGetProperty("name", out var nm) ? nm.GetString() : null;
+                if (name is null) continue;
+                var leaf = name.StartsWith("models/", StringComparison.OrdinalIgnoreCase) ? name["models/".Length..] : name;
+                if (!string.Equals(leaf, entry.Id, StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(name, entry.Id, StringComparison.OrdinalIgnoreCase)
+                    && !leaf.StartsWith(entry.Id, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                row.Fields.Add(Field("model_id", entry.Id, name, "unchanged", "Present in Gemini models.list.", baseUrl));
+                if (m.TryGetProperty("inputTokenLimit", out var it2) && it2.TryGetInt32(out var inLim2) && inLim2 > 0)
+                    row.Fields.Add(CompareInt("maxInputTokens", entry.MaxInputTokens, inLim2, baseUrl));
+                if (m.TryGetProperty("outputTokenLimit", out var ot2) && ot2.TryGetInt32(out var outLim2) && outLim2 > 0)
+                    row.Fields.Add(CompareInt("maxOutputTokens", entry.MaxOutputTokens, outLim2, baseUrl));
+                return;
+            }
+        }
+
+        row.Fields.Add(Field("model_id", entry.Id, null, "not_found",
+            "Not present in Gemini models list for this API key.", baseUrl));
+    }
+
+    private async Task DiscoverFromAnthropicAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
+    {
+        var key = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            result.DiscoveryNotes.Add("Anthropic: skipped (no ANTHROPIC_API_KEY).");
+            return;
+        }
+
+        var client = _httpFactory.CreateClient("catalog-probe");
+        using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.anthropic.com/v1/models?limit=100");
+        req.Headers.TryAddWithoutValidation("x-api-key", key.Trim());
+        req.Headers.TryAddWithoutValidation("anthropic-version", "2023-06-01");
+        using var resp = await client.SendAsync(req, ct).ConfigureAwait(false);
+        if (!resp.IsSuccessStatusCode)
+        {
+            result.DiscoveryNotes.Add($"Anthropic: list failed HTTP {(int)resp.StatusCode}");
+            return;
+        }
+
+        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        using var doc = JsonDocument.Parse(body);
+        if (!doc.RootElement.TryGetProperty("data", out var data)) return;
+        var added = 0;
+        foreach (var m in data.EnumerateArray())
+        {
+            var id = m.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+            if (string.IsNullOrWhiteSpace(id) || known.Contains(id)) continue;
+            if (!id.Contains("claude", StringComparison.OrdinalIgnoreCase)) continue;
+            var display = m.TryGetProperty("display_name", out var dn) ? dn.GetString() : id;
+            result.NewModels.Add(new CatalogNewModelHint
+            {
+                Id = id,
+                Provider = "Anthropic",
+                ProviderId = "anthropic",
+                SuggestedCapability = "Chat",
+                Source = "Anthropic GET /v1/models",
+                LabMode = true,
+                LabNotes = $"Discovered via Anthropic models list ({display}) — add as lab and fill limits/costs before production.",
+            });
+            known.Add(id);
+            if (++added >= 25) break;
+        }
+        result.DiscoveryNotes.Add($"Anthropic: {added} candidate model(s) not in catalog.");
+    }
+
+    private async Task DiscoverFromGeminiAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
+    {
+        var key = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+                  ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            result.DiscoveryNotes.Add("Gemini: skipped (no GEMINI_API_KEY / GOOGLE_API_KEY).");
+            return;
+        }
+
+        var client = _httpFactory.CreateClient("catalog-probe");
+        var url = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=100&key="
+                  + Uri.EscapeDataString(key.Trim());
+        using var resp = await client.GetAsync(url, ct).ConfigureAwait(false);
+        if (!resp.IsSuccessStatusCode)
+        {
+            result.DiscoveryNotes.Add($"Gemini: list failed HTTP {(int)resp.StatusCode}");
+            return;
+        }
+
+        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        using var doc = JsonDocument.Parse(body);
+        if (!doc.RootElement.TryGetProperty("models", out var models)) return;
+        var added = 0;
+        foreach (var m in models.EnumerateArray())
+        {
+            var name = m.TryGetProperty("name", out var nm) ? nm.GetString() : null;
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            var id = name.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
+                ? name["models/".Length..]
+                : name;
+            if (known.Contains(id) || known.Contains(name)) continue;
+            var methods = m.TryGetProperty("supportedGenerationMethods", out var sgm) ? sgm.ToString() : "";
+            if (methods.Contains("embedContent", StringComparison.OrdinalIgnoreCase)
+                && !methods.Contains("generateContent", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!id.Contains("gemini", StringComparison.OrdinalIgnoreCase)
+                && !id.Contains("imagen", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var cap = id.Contains("imagen", StringComparison.OrdinalIgnoreCase)
+                      || id.Contains("image", StringComparison.OrdinalIgnoreCase)
+                ? "Image"
+                : "Chat";
+            result.NewModels.Add(new CatalogNewModelHint
+            {
+                Id = id,
+                Provider = "Google",
+                ProviderId = "google",
+                SuggestedCapability = cap,
+                Source = "Gemini GET /v1beta/models",
+                LabMode = true,
+                LabNotes = "Discovered via Gemini models list — add as lab and fill limits/costs before production.",
+            });
+            known.Add(id);
+            if (++added >= 25) break;
+        }
+        result.DiscoveryNotes.Add($"Gemini: {added} candidate model(s) not in catalog.");
+    }
+
+    /// <summary>P1-C: fal GET /v1/models — discover endpoint_ids not in catalog.</summary>
+    private async Task DiscoverFromFalAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
+    {
+        var key = Environment.GetEnvironmentVariable("FAL_KEY")
+                  ?? Environment.GetEnvironmentVariable("FAL_API_KEY");
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            result.DiscoveryNotes.Add("fal: skipped (no FAL_KEY / FAL_API_KEY).");
+            return;
+        }
+
+        var client = _httpFactory.CreateClient("catalog-probe");
+        using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.fal.ai/v1/models?limit=50");
+        req.Headers.TryAddWithoutValidation("Authorization", "Key " + key.Trim());
+        using var resp = await client.SendAsync(req, ct).ConfigureAwait(false);
+        if (!resp.IsSuccessStatusCode)
+        {
+            result.DiscoveryNotes.Add($"fal: list failed HTTP {(int)resp.StatusCode}");
+            return;
+        }
+
+        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        using var doc = JsonDocument.Parse(body);
+        if (!doc.RootElement.TryGetProperty("models", out var models)) return;
+        var added = 0;
+        foreach (var m in models.EnumerateArray())
+        {
+            var id = m.TryGetProperty("endpoint_id", out var eid) ? eid.GetString() : null;
+            if (string.IsNullOrWhiteSpace(id) || known.Contains(id)) continue;
+
+            var category = "";
+            var display = id;
+            if (m.TryGetProperty("metadata", out var meta) && meta.ValueKind == JsonValueKind.Object)
+            {
+                if (meta.TryGetProperty("category", out var cat))
+                    category = cat.GetString() ?? "";
+                if (meta.TryGetProperty("display_name", out var dn) && dn.GetString() is { } d)
+                    display = d;
+            }
+
+            var cap = category.Contains("video", StringComparison.OrdinalIgnoreCase) ? "Video"
+                : category.Contains("image", StringComparison.OrdinalIgnoreCase) ? "Image"
+                : category.Contains("audio", StringComparison.OrdinalIgnoreCase)
+                  || category.Contains("music", StringComparison.OrdinalIgnoreCase) ? "Audio"
+                : category.Contains("speech", StringComparison.OrdinalIgnoreCase)
+                  || category.Contains("tts", StringComparison.OrdinalIgnoreCase) ? "Voice"
+                : "Image";
+
+            result.NewModels.Add(new CatalogNewModelHint
+            {
+                Id = id,
+                Provider = "Fal",
+                ProviderId = "fal",
+                SuggestedCapability = cap,
+                Source = "fal GET /v1/models",
+                LabMode = true,
+                LabNotes = $"Discovered via fal model search ({display}, category={category}) — add as lab; use pricing scan for unit_price.",
+            });
+            known.Add(id);
+            if (++added >= 30) break;
+        }
+        result.DiscoveryNotes.Add($"fal: {added} candidate endpoint(s) not in catalog.");
     }
 
     private static CatalogFieldProbeResult CompareInt(string field, int? catalog, int live, string? url)
