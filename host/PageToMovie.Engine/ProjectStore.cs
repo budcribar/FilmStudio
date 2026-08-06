@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace PageToMovie.Engine;
 
-public sealed class ProjectStore
+public sealed partial class ProjectStore
 {
     private static readonly JsonSerializerOptions JsonOpts = JsonDefaults.IndentedCaseInsensitive;
 
@@ -1761,6 +1761,8 @@ public sealed class ProjectStore
     /// Layout: legacy <c>projects/{id}/</c> or namespaced <c>projects/{user}/{slug}/</c>
     /// when <paramref name="projectId"/> is <c>user/slug</c>.
     /// </summary>
+        internal string SceneVersionsRootPath => Path.Combine(_root, "scene-versions");
+
     public string GetProjectDir(string projectId)
     {
         if (string.IsNullOrWhiteSpace(projectId))
@@ -6490,7 +6492,3 @@ public sealed class ProjectStore
     }
 
 }
-
-/// <summary>Per-scene version history entry (content-hash based).</summary>
-public sealed record SceneHistoryEntry(string CommitHash, string Message, DateTime Utc);
-

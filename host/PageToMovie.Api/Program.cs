@@ -3794,6 +3794,20 @@ app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/history", async (
     }
 });
 
+app.MapPost("/api/projects/{id}/scenes/{sceneNumber:int}/snapshot", async (
+    string id, int sceneNumber, ProjectStore store, IUserContext user,
+    Microsoft.Extensions.Options.IOptions<PageToMovie.Api.GatewayOptions> opts, CancellationToken ct) =>
+{
+    if (PageToMovie.Api.AuthGate.RequireLogin(user, opts) is { } denied) return denied;
+    try
+    {
+        var hash = await store.SnapshotSceneVersionAsync(id, sceneNumber, "manual snapshot", ct).ConfigureAwait(false);
+        if (hash is null) return Results.BadRequest(new { error = "No scene plan found to snapshot." });
+        return Results.Ok(new { projectId = id, sceneNumber, commitHash = hash });
+    }
+    catch (Exception ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
 app.MapPost("/api/projects/{id}/scenes/{sceneNumber:int}/revert/{commitHash}", async (
     string id,
     int sceneNumber,
