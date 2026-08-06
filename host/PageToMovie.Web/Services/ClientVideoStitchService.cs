@@ -33,6 +33,10 @@ public sealed class ClientVideoStitchService
         IReadOnlySet<int>? staleScenes,
         CancellationToken ct = default)
     {
+        // A server clip/composite fallback URL (ClipVideoUrl/CompositeVideoUrl) is only authorized when
+        // BrowserMediaPath can append a fresh ?mt= media token. Ensure one exists BEFORE building URLs —
+        // otherwise the raw ffmpeg fetch hits the authenticated endpoint with no token and gets a 401.
+        await _engine.EnsureMediaAccessAsync(ct).ConfigureAwait(false);
         var urls = new List<string>();
         foreach (var sn in sceneNumbers.Distinct().OrderBy(x => x))
         {
@@ -122,6 +126,8 @@ public sealed class ClientVideoStitchService
         SceneDetail? detail = null,
         CancellationToken ct = default)
     {
+        // Ensure a fresh ?mt= media token before any ClipVideoUrl fallback (see CollectSceneMediaUrlsAsync).
+        await _engine.EnsureMediaAccessAsync(ct).ConfigureAwait(false);
         if (detail is null)
             detail = (await _engine.GetSceneDetailAsync(projectId, sceneNumber, ct))?.Scene;
         if (detail?.Clips is null || detail.Clips.Count == 0)
@@ -472,7 +478,6 @@ public sealed class ClientVideoStitchService
     public async Task<string?> ResolveClipUrlAsync(
         string projectId, int scene, int clip, CancellationToken ct)
     {
-        _ = ct;
         var rel = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
         if (_media is not null)
         {
@@ -480,6 +485,8 @@ public sealed class ClientVideoStitchService
             if (!string.IsNullOrWhiteSpace(local))
                 return local;
         }
+        // No local copy → fall back to the authenticated clip proxy; ensure a fresh ?mt= token first.
+        await _engine.EnsureMediaAccessAsync(ct).ConfigureAwait(false);
         return _engine.ClipVideoUrl(projectId, scene, clip);
     }
 
