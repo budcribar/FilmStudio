@@ -18,8 +18,11 @@ public class ClipDeleteAndDialogueTests
         var proj = Path.Combine(root, "projects", "Demo");
         Directory.CreateDirectory(Path.Combine(proj, "assets", "video"));
         File.WriteAllText(Path.Combine(proj, "project.json"), """{"id":"Demo"}""");
+        // A real project has selected a video model before clips are editable (Stage 2 requires one).
+        // Clip duration bounds are validated against that model, so the fixture must carry it —
+        // grok-imagine-video (1–15s) covers the duration cases these tests exercise.
         File.WriteAllText(Path.Combine(proj, "pipeline_config.json"),
-            """{"blueprint_file":"blueprint.clips.grok.json"}""");
+            """{"blueprint_file":"blueprint.clips.grok.json","model_name":"grok-imagine-video"}""");
         File.WriteAllText(Path.Combine(proj, "blueprint.clips.grok.json"), blueprintJson);
 
         var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });

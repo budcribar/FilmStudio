@@ -3394,13 +3394,7 @@ public sealed class ProjectStore
         {
             /* use default */
         }
-        // Use model-specific bounds only when the project has actually selected a video model. A
-        // project that hasn't chosen one yet must still be able to add/edit clips, so fall back to
-        // the estimator's own defaults instead of hard-failing — matching ResolveBoundsForModel's
-        // contract ("callers that don't know the target model yet ... simply not call this").
-        var (durMinSeconds, _, durAbsMaxSeconds) = string.IsNullOrWhiteSpace(modelId)
-            ? (ClipDurationEstimator.MinSeconds, ClipDurationEstimator.MaxSeconds, ClipDurationEstimator.AbsMaxSeconds)
-            : ClipDurationEstimator.ResolveBoundsForModel(modelId);
+        var (durMinSeconds, _, durAbsMaxSeconds) = ClipDurationEstimator.ResolveBoundsForModel(modelId);
 
         // Stage2 classifiers sometimes emit article/placeholder key variants (e.g.
         // Character_The_Narrator) that differ from the real cast_seeds.json key
