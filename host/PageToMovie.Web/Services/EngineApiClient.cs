@@ -91,6 +91,17 @@ public sealed class EngineApiClient
             _session.Changed += OnSessionChanged;
     }
 
+    public async Task<CatalogUpdateScanClientResult> CheckModelsCatalogUpdatesAsync(CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsync("/api/admin/models-catalog/check-updates", content: null, ct);
+        var body = await resp.Content.ReadFromJsonAsync<CatalogUpdateScanClientEnvelope>(JsonOpts, ct)
+            ?? new CatalogUpdateScanClientEnvelope();
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(body.Error ?? "Catalog update scan failed");
+        return body.Result ?? new CatalogUpdateScanClientResult();
+    }
+
+
     public async Task<bool> HasAcceptedTermsAsync(string userId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(userId)) return false;
@@ -4701,6 +4712,62 @@ public sealed class ModelsCatalogValidateResponse
     public List<string>? Errors { get; set; }
     public string? Message { get; set; }
     public string? Error { get; set; }
+}
+
+public sealed class CatalogUpdateScanClientEnvelope
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public CatalogUpdateScanClientResult? Result { get; set; }
+}
+
+public sealed class CatalogUpdateScanClientResult
+{
+    public string CheckedAtUtc { get; set; } = "";
+    public CatalogUpdateSummaryDto Summary { get; set; } = new();
+    public List<CatalogModelProbeDto> Models { get; set; } = new();
+    public List<CatalogNewModelHintDto> NewModels { get; set; } = new();
+    public List<string> DiscoveryNotes { get; set; } = new();
+}
+
+public sealed class CatalogUpdateSummaryDto
+{
+    public int ModelsScanned { get; set; }
+    public int UnchangedFields { get; set; }
+    public int ChangedFields { get; set; }
+    public int NotFoundFields { get; set; }
+    public int NewModels { get; set; }
+}
+
+public sealed class CatalogModelProbeDto
+{
+    public string Id { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string Capability { get; set; } = "";
+    public string ProviderId { get; set; } = "";
+    public bool LabMode { get; set; }
+    public List<CatalogFieldProbeDto> Fields { get; set; } = new();
+}
+
+public sealed class CatalogFieldProbeDto
+{
+    public string Status { get; set; } = "";
+    public string Field { get; set; } = "";
+    public string? CatalogValue { get; set; }
+    public string? LiveValue { get; set; }
+    public string? Message { get; set; }
+    public string? SourceUrl { get; set; }
+}
+
+public sealed class CatalogNewModelHintDto
+{
+    public string Id { get; set; } = "";
+    public string Provider { get; set; } = "";
+    public string ProviderId { get; set; } = "";
+    public string SuggestedCapability { get; set; } = "Chat";
+    public string Source { get; set; } = "";
+    public bool LabMode { get; set; } = true;
+    public string? LabNotes { get; set; }
 }
 
 

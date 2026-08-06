@@ -94,6 +94,12 @@ builder.Services.AddSingleton<LoginRateLimiter>();
 builder.Services.AddSingleton<CreditService>();
 builder.Services.AddSingleton<ProjectArchiveService>();
 builder.Services.AddSingleton<CostReportService>();
+builder.Services.AddSingleton<CatalogUpdateProbeService>();
+builder.Services.AddHttpClient("catalog-probe", c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(45);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("PageToMovie-CatalogProbe/1.0");
+});
 builder.Services.AddSingleton<CharacterDesignService>();
 builder.Services.AddSingleton<CharacterBookPlateService>();
 builder.Services.AddSingleton<CastVisualLiteralizeService>();
@@ -2034,6 +2040,23 @@ app.MapPost("/api/admin/models-catalog/validate", async (HttpContext http, IUser
     {
         try { SupportedModelCatalog.ReloadCatalog(); } catch { /* best effort */ }
         return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+
+
+app.MapPost("/api/admin/models-catalog/check-updates", async (IUserContext user, CatalogUpdateProbeService probe, CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var result = await probe.ScanAsync(ct).ConfigureAwait(false);
+        return Results.Ok(new { ok = true, result });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { ok = false, error = ex.Message }, statusCode: 500);
     }
 });
 

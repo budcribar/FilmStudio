@@ -25,6 +25,9 @@
             <button class="btn btn-outline-success btn-sm" disabled="@_busy" @onclick="ValidateCatalogAsync">
                 ✓ Validate all
             </button>
+            <button class="btn btn-outline-info btn-sm" disabled="@_busy" @onclick="ScanUpdatesAsync">
+                @(_scanning ? "Scanning…" : "🔍 Scan for updates")
+            </button>
             <button class="btn btn-primary btn-sm" disabled="@_busy" @onclick="SaveCatalogAsync">
                 @(_busy ? "Saving…" : "💾 Save & hot-apply")
             </button>
@@ -65,6 +68,102 @@
                         <li>@e</li>
                     }
                 </ul>
+            </div>
+        }
+
+        @if (_scan is not null)
+        {
+            <div class="card mb-3 border-info">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>
+                        Update scan · @_scan.CheckedAtUtc
+                        <span class="badge bg-success ms-1">@_scan.Summary.UnchangedFields same</span>
+                        <span class="badge bg-danger ms-1">@_scan.Summary.ChangedFields changed</span>
+                        <span class="badge bg-warning text-dark ms-1">@_scan.Summary.NotFoundFields not found</span>
+                        <span class="badge bg-primary ms-1">@_scan.Summary.NewModels new</span>
+                    </span>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => _scan = null">Dismiss</button>
+                </div>
+                <div class="card-body small">
+                    <p class="text-muted mb-2">
+                        <span class="badge bg-success">green</span> found &amp; same ·
+                        <span class="badge bg-warning text-dark">yellow</span> not found / no probe ·
+                        <span class="badge bg-danger">red</span> found &amp; different — accept to patch the table, then Save
+                    </p>
+                    @if (_scan.DiscoveryNotes is { Count: > 0 })
+                    {
+                        <ul class="text-muted mb-2">
+                            @foreach (var n in _scan.DiscoveryNotes)
+                            {
+                                <li>@n</li>
+                            }
+                        </ul>
+                    }
+                    @if (_scan.NewModels is { Count: > 0 })
+                    {
+                        <h6 class="mt-2">New models (not in catalog)</h6>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered align-middle">
+                                <thead><tr><th>Id</th><th>Provider</th><th>Cap</th><th>Source</th><th></th></tr></thead>
+                                <tbody>
+                                @foreach (var nm in _scan.NewModels)
+                                {
+                                    <tr class="table-info">
+                                        <td class="font-monospace">@nm.Id</td>
+                                        <td>@nm.Provider</td>
+                                        <td>@nm.SuggestedCapability</td>
+                                        <td class="text-muted">@nm.Source</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" @onclick="() => AcceptNewModel(nm)">Accept as LAB</button>
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    @foreach (var m in _scan.Models.Where(x => x.Fields.Any(f => f.Status != "unchanged")).Take(40))
+                    {
+                        <div class="mb-2">
+                            <strong class="font-monospace">@m.Id</strong>
+                            <span class="text-muted">(@m.Capability / @m.ProviderId)</span>
+                            <table class="table table-sm table-bordered mb-1">
+                                <thead><tr><th>Field</th><th>Catalog</th><th>Live</th><th>Status</th><th></th></tr></thead>
+                                <tbody>
+                                @foreach (var f in m.Fields)
+                                {
+                                    <tr class="@StatusRowClass(f.Status)">
+                                        <td class="font-monospace">@f.Field</td>
+                                        <td>@(f.CatalogValue ?? "—")</td>
+                                        <td>@(f.LiveValue ?? "—")</td>
+                                        <td>
+                                            <span class="badge @StatusBadgeClass(f.Status)">@f.Status</span>
+                                            @if (!string.IsNullOrWhiteSpace(f.Message))
+                                            {
+                                                <span class="text-muted ms-1">@f.Message</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(f.SourceUrl))
+                                            {
+                                                <a href="@f.SourceUrl" target="_blank" rel="noopener" class="ms-1">source</a>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (f.Status == "changed" && f.LiveValue is not null)
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AcceptFieldChange(m.Id, f)">Accept live</button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    @if (!_scan.Models.Any(x => x.Fields.Any(f => f.Status != "unchanged")) && _scan.NewModels.Count == 0)
+                    {
+                        <p class="text-success mb-0">No differences or new models reported.</p>
+                    }
+                </div>
             </div>
         }
 
@@ -718,6 +817,92 @@
             _busy = false;
         }
     }
+
+    private CatalogUpdateScanClientResult? _scan;
+    private bool _scanning;
+
+    private async Task ScanUpdatesAsync()
+    {
+        _scanning = true;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            _scan = await Api.CheckModelsCatalogUpdatesAsync();
+            _message = $"Scan complete: {_scan.Summary.ChangedFields} changed, {_scan.Summary.NotFoundFields} not found, {_scan.Summary.NewModels} new.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _scanning = false;
+            _busy = false;
+        }
+    }
+
+    private void AcceptFieldChange(string modelId, CatalogFieldProbeDto f)
+    {
+        var m = _modelList.FirstOrDefault(x => string.Equals(x["id"]?.ToString(), modelId, StringComparison.OrdinalIgnoreCase));
+        if (m is null || f.LiveValue is null) return;
+        // numeric fields
+        if (int.TryParse(f.LiveValue, out var iv))
+            m[f.Field] = iv;
+        else if (double.TryParse(f.LiveValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dv))
+            m[f.Field] = dv;
+        else
+            m[f.Field] = f.LiveValue;
+        SyncModelListToRawJson();
+        _message = $"Accepted {modelId}.{f.Field} = {f.LiveValue}. Save to persist.";
+        // update scan row display
+        f.CatalogValue = f.LiveValue;
+        f.Status = "unchanged";
+        f.Message = "Accepted into draft table.";
+    }
+
+    private void AcceptNewModel(CatalogNewModelHintDto nm)
+    {
+        if (_modelList.Any(x => string.Equals(x["id"]?.ToString(), nm.Id, StringComparison.OrdinalIgnoreCase)))
+        {
+            _error = $"Model '{nm.Id}' already in table.";
+            return;
+        }
+        var obj = new JsonObject
+        {
+            ["id"] = nm.Id,
+            ["displayName"] = nm.Id,
+            ["capability"] = nm.SuggestedCapability,
+            ["provider"] = nm.Provider,
+            ["providerId"] = nm.ProviderId,
+            ["enabled"] = true,
+            ["labMode"] = true,
+            ["labNotes"] = nm.LabNotes ?? "Discovered via update scan",
+            ["lastVerifiedAt"] = Today(),
+        };
+        _modelList.Add(obj);
+        SyncModelListToRawJson();
+        _message = $"Added '{nm.Id}' as LAB. Fill limits/costs, then Save.";
+    }
+
+    private static string StatusRowClass(string status) => status switch
+    {
+        "unchanged" => "table-success",
+        "changed" => "table-danger",
+        "not_found" => "table-warning",
+        "error" => "table-warning",
+        _ => "",
+    };
+
+    private static string StatusBadgeClass(string status) => status switch
+    {
+        "unchanged" => "bg-success",
+        "changed" => "bg-danger",
+        "not_found" => "bg-warning text-dark",
+        "error" => "bg-warning text-dark",
+        _ => "bg-secondary",
+    };
 
     private string GetCapBadgeClass(string cap) => cap switch
     {
