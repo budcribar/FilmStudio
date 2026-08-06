@@ -1,4 +1,5 @@
 @page "/scenes"
+@implements IDisposable
 @implements IAsyncDisposable
 @inject EngineApiClient Engine
 @inject JobHubClient Hub
@@ -2156,6 +2157,8 @@ else
         || (Nav.ToAbsoluteUri(Nav.Uri).Query?.Contains("simple=1", StringComparison.OrdinalIgnoreCase) ?? false);
 
     private bool _busy;
+    private bool _disposed;
+    private CancellationTokenSource _pageCts = new();
     private bool _gateChecked;
     private string? _error;
     private string? _message;
@@ -2778,7 +2781,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await ActiveProject.EnsureLoadedAsync(Engine);
+        await ActiveProject.EnsureLoadedAsync(Engine, ct: _pageCts.Token);
         Hub.JobUpdated += OnJobUpdated;
         Hub.JobLog += OnJobLog;
         MediaFolder.Changed += OnMediaFolderChanged;
@@ -3200,6 +3203,14 @@ else
             // Keep last known; mark checked so UI does not hang open forever
             _castChecked = true;
         }
+    }
+
+    private async Task SafeSoftReloadAsync()
+    {
+        if (_disposed) return;
+        try { await SoftReloadAsync(); }
+        catch (OperationCanceledException) { }
+        catch { /* ignore */ }
     }
 
     private async Task SoftReloadAsync()
@@ -5032,5 +5043,12 @@ if (string.IsNullOrWhiteSpace(_projectId)) return;
         _clientPreviewUrl = null;
         _clientSceneUrl = null;
         await Stitch.RevokePreviewUrlAsync();
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        try { _pageCts.Cancel(); } catch { /* */ }
+        _pageCts.Dispose();
     }
 }

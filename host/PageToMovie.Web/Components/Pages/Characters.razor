@@ -1,4 +1,5 @@
 @page "/characters"
+@implements IDisposable
 @implements IAsyncDisposable
 @inject EngineApiClient Engine
 @inject StudioCapabilityState Caps
@@ -847,6 +848,8 @@ else
             : "No preferred image";
 
     private bool _busy;
+    private bool _disposed;
+    private CancellationTokenSource _pageCts = new();
     private bool _gateChecked;
     private string? _error;
     private string? _message;
@@ -1336,7 +1339,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await ActiveProject.EnsureLoadedAsync(Engine);
+        await ActiveProject.EnsureLoadedAsync(Engine, ct: _pageCts.Token);
         Hub.JobUpdated += OnJobUpdated;
         Hub.JobLog += OnJobLog;
         try
@@ -1574,6 +1577,14 @@ else
             _imageSeedLimits = null;
         }
         finally { _busy = false; }
+    }
+
+    private async Task SafeSoftReloadAsync()
+    {
+        if (_disposed) return;
+        try { await SoftReloadAsync(); }
+        catch (OperationCanceledException) { }
+        catch { /* ignore */ }
     }
 
     private async Task SoftReloadAsync()
@@ -2969,5 +2980,12 @@ else
         Hub.JobUpdated -= OnJobUpdated;
         Hub.JobLog -= OnJobLog;
         await Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        try { _pageCts.Cancel(); } catch { /* */ }
+        _pageCts.Dispose();
     }
 }
