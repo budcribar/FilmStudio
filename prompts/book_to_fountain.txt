@@ -147,8 +147,35 @@ This is not style. A screenplay without blank lines between elements does not pa
 scenes will not be found. A blank line wrongly placed between a cue and its dialogue silently
 demotes that dialogue to unrecognized action text.
 
-Do not use markdown-style line breaks (trailing double-space) in place of a real blank line —
-Fountain has no equivalent convention.
+Do not use a trailing double-space in place of a real blank line BETWEEN two different
+elements — a real blank line separates every distinct element.
+
+SECOND EXCEPTION — continuous verse, song, or multi-stanza narration under ONE cue.
+When a single NARRATOR or speaker delivers a poem, song, or continuous verse across several
+stanzas, keep the whole thing as ONE dialogue block under ONE cue. Separate the stanzas with
+a Fountain line break — a line holding exactly two spaces — NEVER a real blank line. A real
+blank line ends the dialogue block, so every stanza after the first silently becomes action
+and is never spoken. This is the one place the two-space line break is required.
+
+  Good (one continuous NARRATOR (V.O.) block; the "··" line below is two spaces):
+    NARRATOR (V.O.)
+    Mary had a little lamb,
+    its fleece was white as snow.
+    ··
+    And everywhere that Mary went,
+    the lamb was sure to go.
+
+  Bad (real blank line ends the block — stanza two drops to silent action):
+    NARRATOR (V.O.)
+    Mary had a little lamb,
+    its fleece was white as snow.
+
+    And everywhere that Mary went,
+    the lamb was sure to go.
+
+Bare standalone narration or verse with no cue — a closing moral, an epigraph, a stanza
+floating between scenes — must be attributed to NARRATOR (V.O.) as spoken dialogue, not left
+as action. Anything meant to be heard needs a cue.
 
 CHARACTER CUES
 ALL CAPS, alone on their own line, dialogue immediately below.

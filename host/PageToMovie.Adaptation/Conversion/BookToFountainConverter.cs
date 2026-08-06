@@ -283,6 +283,12 @@ public static class BookToFountainConverter
         text = NormalizeSceneHeadingWording(text);
         text = await RepairGenericNumberedSpeakersAsync(
             system, text, chat, model, onProgress, ct, reasoningEffort).ConfigureAwait(false);
+        // Continuous verse / V.O. narration split across a real blank line parses stanzas 2+
+        // as silent Action (Fountain: a truly-empty line ends a dialogue block). Re-merge under
+        // one cue with two-space stanza breaks so the narration is actually spoken.
+        text = await RepairSplitNarrationAsync(
+            system, text, chat, model, onProgress, ct, reasoningEffort,
+            onStructuralGateFailure).ConfigureAwait(false);
 
         text = EnsureDraftDate(text);
         // Models invent wrong years (e.g. 3/25/2025) — stamp local today before save
@@ -312,6 +318,14 @@ public static class BookToFountainConverter
         {
             onProgress?.Invoke(
                 $"Warning: generic numbered speaker(s) remain: {string.Join(", ", stillGeneric.Take(5))}");
+        }
+
+        var stillSplit = FindSplitNarrationBlocks(text);
+        if (stillSplit.Count > 0)
+        {
+            onProgress?.Invoke(
+                $"Warning: {stillSplit.Count} split narration block(s) remain after repair " +
+                $"(verse under {string.Join(", ", stillSplit.Take(3).Select(s => s.CueDisplay))}).");
         }
 
         // Soft scene-count budget — warn only (Stage 2 clip cost), never block
@@ -877,6 +891,401 @@ public static class BookToFountainConverter
             issues.Add(new(issueCode, $"Unresolved value: {remaining}", "$.fountain"));
         return issues;
     }
+
+    // ── split narration (continuous V.O./verse broken by a real blank line) ───────────────
+
+    /// <summary>Longest line (trimmed) still treated as verse. Prose action sentences run much longer.</summary>
+    private const int VerseMaxLineChars = 72;
+
+    private static readonly Regex VoExtensionRegex = new(
+        @"\(?\s*V\s*\.?\s*O\s*\.?\s*\)?",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    // Camera / transition / structural words that must NOT appear in a verse-shaped Action block —
+    // these mark real staging, not orphaned narration, so their presence blocks a false merge.
+    private static readonly Regex CameraOrTransitionLineRegex = new(
+        @"\b(ANGLE|CLOSE|WIDE|WIDER|PAN|TILT|ZOOM|DOLLY|CRANE|TRACK(?:ING)?|POV|INSERT|"
+        + @"MATCH\s+CUT|SMASH\s+CUT|CUT\s+TO|DISSOLVE|FADE|CAMERA|MONTAGE|INTERCUT|"
+        + @"SUPER|TITLE\s+CARD|EST\.)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// A verse/V.O. narration block that a real blank line has split so its later stanzas parse as
+    /// silent Action (the FountainParser correctly ends a dialogue block on a truly-empty line).
+    /// </summary>
+    public sealed record SplitNarrationSpan
+    {
+        /// <summary>Narration cue name, e.g. <c>NARRATOR</c>.</summary>
+        public required string CueName { get; init; }
+        /// <summary>Cue extension, e.g. <c>(V.O.)</c>.</summary>
+        public required string CueExtension { get; init; }
+        /// <summary>Verse lines that are (correctly) still dialogue under the cue.</summary>
+        public required IReadOnlyList<string> DialogueLines { get; init; }
+        /// <summary>Verse lines that were demoted to Action by the real blank line.</summary>
+        public required IReadOnlyList<string> OrphanActionLines { get; init; }
+
+        public string CueDisplay =>
+            string.IsNullOrWhiteSpace(CueExtension) ? CueName : $"{CueName} {CueExtension}";
+    }
+
+    private readonly record struct FountainBlock(int Start, int End);
+
+    /// <summary>
+    /// Detect verse/V.O. narration split into silent Action by a real blank line. Flags a voice-over
+    /// Dialogue block that is verse-shaped (≥2 short lines) immediately followed by a verse-shaped
+    /// Action block (≥2 short lines; no scene-heading / transition / camera-directive lines).
+    /// Requiring BOTH sides to be verse keeps ordinary prose Action after a V.O. cue from flagging.
+    /// A correctly-written poem (all stanzas under one cue, two-space stanza breaks) is a single
+    /// block, so its following block is not verse Action and it is never flagged.
+    /// </summary>
+    public static IReadOnlyList<SplitNarrationSpan> FindSplitNarrationBlocks(string? fountain)
+    {
+        var spans = new List<SplitNarrationSpan>();
+        if (string.IsNullOrWhiteSpace(fountain))
+            return spans;
+
+        var lines = SplitPhysicalLines(fountain);
+        var blocks = ScanFountainBlocks(lines);
+
+        for (var b = 0; b < blocks.Count - 1; b++)
+        {
+            if (!TryReadVoVerseDialogue(lines, blocks[b], out var name, out var ext, out var dialogueLines))
+                continue;
+
+            var action = ContentLines(lines, blocks[b + 1]);
+            if (!IsVerseShaped(action) || action.Any(IsStructuralOrCameraLine))
+                continue;
+
+            spans.Add(new SplitNarrationSpan
+            {
+                CueName = name,
+                CueExtension = ext,
+                DialogueLines = dialogueLines,
+                OrphanActionLines = action,
+            });
+        }
+
+        return spans;
+    }
+
+    /// <summary>
+    /// Deterministic fallback used only when the model's correction still trips the detector:
+    /// pull the orphaned verse Action stanzas back into the preceding V.O. Dialogue block, joined
+    /// by the Fountain two-space line-break convention as the stanza break, so the whole passage is
+    /// one continuous narration again. Conservative — absorbs only the consecutive verse Action
+    /// blocks that immediately follow a flagged V.O. verse block; stops at the first non-verse block.
+    /// Every other line is preserved byte-for-byte; only the offending blank separators change.
+    /// </summary>
+    public static string RemergeSplitNarration(string? fountain)
+    {
+        if (string.IsNullOrWhiteSpace(fountain))
+            return fountain ?? "";
+
+        var lines = SplitPhysicalLines(fountain);
+        var blocks = ScanFountainBlocks(lines);
+        if (blocks.Count < 2)
+            return fountain;
+
+        // Gap after block index b becomes a two-space continuation (absorb b+1 into b's dialogue).
+        var mergeGaps = new HashSet<int>();
+        for (var b = 0; b < blocks.Count - 1; b++)
+        {
+            if (!TryReadVoVerseDialogue(lines, blocks[b], out _, out _, out _))
+                continue;
+
+            var k = b;
+            while (k + 1 < blocks.Count)
+            {
+                var action = ContentLines(lines, blocks[k + 1]);
+                if (!IsVerseShaped(action) || action.Any(IsStructuralOrCameraLine))
+                    break;
+                mergeGaps.Add(k);
+                k++;
+            }
+        }
+
+        if (mergeGaps.Count == 0)
+            return fountain;
+
+        var outLines = new List<string>();
+        for (var k = 0; k < blocks[0].Start; k++)
+            outLines.Add(lines[k]);
+
+        for (var b = 0; b < blocks.Count; b++)
+        {
+            for (var k = blocks[b].Start; k <= blocks[b].End; k++)
+                outLines.Add(lines[k]);
+
+            if (b >= blocks.Count - 1)
+                continue;
+
+            if (mergeGaps.Contains(b))
+            {
+                outLines.Add("  "); // single Fountain two-space line = stanza break inside dialogue
+            }
+            else
+            {
+                for (var k = blocks[b].End + 1; k < blocks[b + 1].Start; k++)
+                    outLines.Add(lines[k]);
+            }
+        }
+
+        for (var k = blocks[^1].End + 1; k < lines.Length; k++)
+            outLines.Add(lines[k]);
+
+        return string.Join("\n", outLines);
+    }
+
+    private static string[] SplitPhysicalLines(string fountain) =>
+        fountain.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+
+    /// <summary>
+    /// Group physical lines into content blocks separated by real blank lines. A whitespace-only
+    /// line with two+ spaces is a Fountain line break (dialogue continuation), NOT a separator, so
+    /// it stays inside its block — the same distinction the parser makes in ConsumeDialogueBlock.
+    /// </summary>
+    private static List<FountainBlock> ScanFountainBlocks(string[] lines)
+    {
+        var blocks = new List<FountainBlock>();
+        var i = 0;
+        while (i < lines.Length)
+        {
+            if (IsBlockSeparator(lines[i])) { i++; continue; }
+            var start = i;
+            while (i < lines.Length && !IsBlockSeparator(lines[i])) i++;
+            blocks.Add(new FountainBlock(start, i - 1));
+        }
+        return blocks;
+    }
+
+    /// <summary>True for a real blank line (ends a dialogue block). A two-space line breaks nothing.</summary>
+    private static bool IsBlockSeparator(string raw)
+    {
+        if (raw.Trim().Length != 0) return false;
+        return !(raw.Length >= 2 && raw.Contains("  ", StringComparison.Ordinal));
+    }
+
+    private static List<string> ContentLines(string[] lines, FountainBlock block)
+    {
+        var result = new List<string>();
+        for (var k = block.Start; k <= block.End; k++)
+        {
+            var t = lines[k].Trim();
+            if (t.Length > 0) result.Add(t);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// True when a block is a voice-over Dialogue block whose spoken lines are verse-shaped.
+    /// Outputs the cue name, its extension, and the dialogue (verse) lines.
+    /// </summary>
+    private static bool TryReadVoVerseDialogue(
+        string[] lines, FountainBlock block, out string name, out string ext,
+        out IReadOnlyList<string> dialogueLines)
+    {
+        name = "";
+        ext = "";
+        dialogueLines = Array.Empty<string>();
+
+        var content = ContentLines(lines, block);
+        if (content.Count < 3) // cue + at least two verse lines
+            return false;
+
+        if (!TryParseCharacterCue(content[0], out name, out ext))
+            return false;
+        if (!IsVoiceoverExtension(ext))
+            return false;
+
+        var spoken = content.Skip(1).ToList();
+        if (!IsVerseShaped(spoken))
+            return false;
+
+        dialogueLines = spoken;
+        return true;
+    }
+
+    /// <summary>≥2 short lines — the shape of verse stanzas, not flowing prose action.</summary>
+    private static bool IsVerseShaped(IReadOnlyList<string> content)
+    {
+        if (content.Count < 2) return false;
+        return content.All(l => l.Length is > 0 and <= VerseMaxLineChars);
+    }
+
+    /// <summary>Parse an ALL-CAPS character cue line into name + parenthetical extension.</summary>
+    private static bool TryParseCharacterCue(string line, out string name, out string ext)
+    {
+        name = "";
+        ext = "";
+        var t = line.Trim();
+        if (t.Length == 0 || t.Length > 60) return false;
+        // Forced/structural leaders are never plain cues.
+        if ("(!>~#=".IndexOf(t[0]) >= 0) return false;
+        if (SceneHeadingLineRegex.IsMatch(t)) return false;
+
+        var core = t;
+        if (core.StartsWith('@')) core = core[1..].Trim();
+        core = core.TrimEnd('^', ' ', '\t');
+
+        var paren = core.IndexOf('(');
+        var namePart = (paren > 0 ? core[..paren] : core).Trim();
+        ext = paren > 0 ? core[paren..].Trim() : "";
+        if (namePart.Length < 2) return false;
+
+        var letters = namePart.Where(char.IsLetter).ToArray();
+        if (letters.Length < 2 || letters.Any(char.IsLower)) return false; // must be ALL CAPS
+
+        name = namePart;
+        return true;
+    }
+
+    private static bool IsVoiceoverExtension(string? ext)
+    {
+        if (string.IsNullOrWhiteSpace(ext)) return false;
+        if (ext.Contains("V.O", StringComparison.OrdinalIgnoreCase)) return true;
+        return VoExtensionRegex.IsMatch(ext);
+    }
+
+    /// <summary>True when a line is a scene heading, transition, or camera directive (not verse).</summary>
+    private static bool IsStructuralOrCameraLine(string line)
+    {
+        var t = line.Trim();
+        if (t.Length == 0) return false;
+        if (t.StartsWith('.') && t.Length > 1 && char.IsLetterOrDigit(t[1])) return true; // forced heading
+        if (SceneHeadingLineRegex.IsMatch(t)) return true;
+        if (t.EndsWith("TO:", StringComparison.OrdinalIgnoreCase)) return true;
+        if (CameraOrTransitionLineRegex.IsMatch(t)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// One automatic rewrite pass when continuous verse / V.O. narration was split by a real blank
+    /// line into silent Action. Mirrors the vague-heading / generic-speaker repair lifecycle:
+    /// detector → repair prompt → <see cref="ExecuteStage1OperationAsync"/> with a re-run validator
+    /// and a deterministic re-merge fallback. No-op when nothing is flagged.
+    /// </summary>
+    private static async Task<string> RepairSplitNarrationAsync(
+        string system,
+        string fountain,
+        IChatClient chat,
+        string model,
+        Action<string>? onProgress,
+        CancellationToken ct,
+        string? reasoningEffort = null,
+        Func<StructuralGateFailure, CancellationToken, Task>? onStructuralGateFailure = null)
+    {
+        const string operationName = "stage1_narration_split_repair";
+        const string promptVersion = "stage1-narration-split-repair-v1";
+
+        var split = FindSplitNarrationBlocks(fountain);
+        if (split.Count == 0 || !chat.IsConfigured)
+            return fountain;
+
+        onProgress?.Invoke(
+            $"Repairing {split.Count} split narration block(s) (continuous verse must stay one V.O. cue)…");
+
+        // Learning-loop sink — same route the multi-chunk structural gate uses (GenerationErrorLogger).
+        if (onStructuralGateFailure is not null)
+        {
+            var summary = string.Join(
+                " | ",
+                split.Take(3).Select(s => $"{s.CueDisplay}: {FirstNonEmpty(s.OrphanActionLines)}"));
+            try
+            {
+                await onStructuralGateFailure(new StructuralGateFailure
+                {
+                    Stage = operationName,
+                    Model = model,
+                    ErrorType = "structural_gate_failure",
+                    ErrorMessage =
+                        $"Split narration ({promptVersion}): {split.Count} voice-over verse block(s) " +
+                        $"broken by a real blank line into silent action. {summary}",
+                    ResponseSummary = fountain.Length > 500 ? fountain[..500] : fountain,
+                }, ct).ConfigureAwait(false);
+            }
+            catch { /* logging must never break the repair it observes */ }
+        }
+
+        var listed = string.Join(
+            "\n",
+            split.Select(s => $"  - {s.CueDisplay} — orphaned verse begins: \"{FirstNonEmpty(s.OrphanActionLines)}\""));
+        var user = $"""
+            NARRATION CONTINUITY REPAIR (HARD)
+            In the Fountain draft below, continuous verse / voice-over narration was broken by a
+            real blank line, so every stanza after the first parses as silent Action instead of
+            spoken narration. Affected cue(s):
+
+            {listed}
+
+            Rules:
+            - Return the COMPLETE Fountain screenplay again (not a patch list).
+            - Keep each continuous verse / V.O. passage as ONE dialogue block under ONE cue.
+            - Separate stanzas with a Fountain two-space line break (a line holding exactly two
+              spaces), NEVER a real blank line — a real blank line ends the narration and drops
+              the rest to silent action.
+            - Attribute any bare standalone narration or verse with no cue (a closing moral, an
+              epigraph, a floating stanza) to NARRATOR (V.O.) so it is actually spoken.
+            - Do not change plot, cast tokens, locations, or book-faithful wording — only re-join
+              the split narration and attribute bare narration.
+            - No markdown fences. Fountain only.
+
+            --- BEGIN FOUNTAIN ---
+            {fountain}
+            --- END FOUNTAIN ---
+            """;
+
+        try
+        {
+            var raw = await ExecuteStage1OperationAsync(
+                    chat, system, user, model, temperature: 0.15,
+                    mode: ChatCallModes.BookToFountainNarrationRetry,
+                    retryLabel: "Narration split repair", onProgress, ct, reasoningEffort,
+                    promptVersion: promptVersion,
+                    correctionInstruction:
+                        "Keep each continuous verse / V.O. passage as one dialogue block; separate "
+                        + "stanzas with a two-space line, never a real blank line.",
+                    validate: value => ValidateFountainRepair(
+                        value,
+                        f => FindSplitNarrationBlocks(f).Select(s => s.CueDisplay).ToList(),
+                        "split_narration"),
+                    deterministicFallback: RemergeSplitNarration(fountain),
+                    operationName: operationName)
+                .ConfigureAwait(false);
+            if (raw is null)
+            {
+                onProgress?.Invoke("Narration split repair failed twice — keeping prior draft.");
+                return fountain;
+            }
+
+            var repaired = StripBookPageTags(StripFences(raw));
+            if (!LooksLikeGoodFountain(repaired))
+            {
+                onProgress?.Invoke("Narration split repair unusable — keeping prior draft.");
+                return fountain;
+            }
+
+            var remaining = FindSplitNarrationBlocks(repaired);
+            if (remaining.Count < split.Count)
+            {
+                onProgress?.Invoke(
+                    remaining.Count == 0
+                        ? "Split narration merged into continuous voice-over."
+                        : $"Narration split repair partial — {remaining.Count} block(s) left.");
+                return repaired;
+            }
+
+            onProgress?.Invoke("Narration split repair did not clear splits — keeping prior draft.");
+            return fountain;
+        }
+        catch (Exception)
+        {
+            onProgress?.Invoke("Narration split repair failed — keeping prior draft.");
+            return fountain;
+        }
+    }
+
+    private static string FirstNonEmpty(IReadOnlyList<string> lines) =>
+        lines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l))?.Trim() ?? "";
 
     /// <summary>
     /// Deterministic: when two scene headings name the same place with drifted wording

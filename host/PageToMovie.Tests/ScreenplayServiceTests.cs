@@ -485,6 +485,144 @@ public class ScreenplayServiceTests : IDisposable
         Assert.Contains("INT. OLD MAN'S CHAMBER - NIGHT", norm, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ── split narration (continuous V.O./verse broken by a real blank line) ───────────────
+
+    // Two spaces = the Fountain line-break convention for a stanza break inside dialogue.
+    private const string TwoSpaceBreak = "  ";
+
+    private static string JoinFountain(params string[] lines) => string.Join("\n", lines) + "\n";
+
+    [Fact]
+    public void FindSplitNarrationBlocks_flags_verse_split_by_real_blank()
+    {
+        // Multi-stanza V.O. poem where stanzas are separated by a REAL blank line — per the
+        // Fountain spec the blank ends the dialogue block, demoting stanzas 2+ to silent action.
+        var fountain = JoinFountain(
+            "Title: T",
+            "",
+            "INT. FIELD - DAY",
+            "",
+            "NARRATOR (V.O.)",
+            "Mary had a little lamb,",
+            "its fleece was white as snow.",
+            "",
+            "And everywhere that Mary went,",
+            "the lamb was sure to go.",
+            "",
+            "FADE OUT.");
+
+        var split = AdaptationFountain.FindSplitNarrationBlocks(fountain);
+        Assert.Single(split);
+        Assert.Equal("NARRATOR", split[0].CueName);
+        Assert.Contains("V.O", split[0].CueExtension, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(split[0].OrphanActionLines, l => l.StartsWith("And everywhere", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void FindSplitNarrationBlocks_ignores_correctly_written_verse()
+    {
+        // Same poem written correctly: one block, stanzas joined by a two-space line break.
+        var fountain = JoinFountain(
+            "Title: T",
+            "",
+            "INT. FIELD - DAY",
+            "",
+            "NARRATOR (V.O.)",
+            "Mary had a little lamb,",
+            "its fleece was white as snow.",
+            TwoSpaceBreak,
+            "And everywhere that Mary went,",
+            "the lamb was sure to go.",
+            "",
+            "FADE OUT.");
+
+        Assert.Empty(AdaptationFountain.FindSplitNarrationBlocks(fountain));
+        // And the re-merge is a no-op on already-correct verse.
+        Assert.Equal(fountain, AdaptationFountain.RemergeSplitNarration(fountain));
+    }
+
+    [Fact]
+    public void FindSplitNarrationBlocks_ignores_prose_action_after_vo()
+    {
+        // Ordinary prose action after a V.O. line must NOT flag: the action side is not verse-shaped
+        // (long flowing sentences), and requiring BOTH sides to be verse is what keeps this quiet.
+        var fountain = JoinFountain(
+            "Title: T",
+            "",
+            "INT. FIELD - DAY",
+            "",
+            "NARRATOR (V.O.)",
+            "It was the coldest winter that anyone in the valley could remember.",
+            "",
+            "Snow drifts pile against the barn door as the wind howls across the empty pasture.",
+            "The old farmhouse stands dark, a single lamp burning behind a frosted window.",
+            "",
+            "FADE OUT.");
+
+        Assert.Empty(AdaptationFountain.FindSplitNarrationBlocks(fountain));
+    }
+
+    [Fact]
+    public void RemergeSplitNarration_merges_all_stanzas_into_one_dialogue_block()
+    {
+        // Three-stanza poem split by real blank lines: the deterministic fallback must pull every
+        // orphaned verse stanza back under the single NARRATOR (V.O.) cue as spoken dialogue.
+        var stanzaLines = new[]
+        {
+            "Mary had a little lamb,",
+            "its fleece was white as snow.",
+            "And everywhere that Mary went,",
+            "the lamb was sure to go.",
+            "It followed her to school one day,",
+            "which was against the rule.",
+        };
+        var fountain = JoinFountain(
+            "Title: T",
+            "",
+            "INT. FIELD - DAY",
+            "",
+            "NARRATOR (V.O.)",
+            stanzaLines[0],
+            stanzaLines[1],
+            "",
+            stanzaLines[2],
+            stanzaLines[3],
+            "",
+            stanzaLines[4],
+            stanzaLines[5],
+            "",
+            "FADE OUT.");
+
+        var merged = AdaptationFountain.RemergeSplitNarration(fountain);
+
+        // The detector no longer fires on the corrected text.
+        Assert.Empty(AdaptationFountain.FindSplitNarrationBlocks(merged));
+
+        // Parse with the real Fountain parser: every stanza line is Dialogue, none is Action,
+        // and the poem stays under exactly one voice-over cue.
+        var parsed = FountainParser.Parse(merged);
+        var dialogue = parsed.Elements
+            .Where(e => e.Type == FountainParser.ElementType.Dialogue)
+            .Select(e => e.Text)
+            .ToList();
+        var action = parsed.Elements
+            .Where(e => e.Type == FountainParser.ElementType.Action)
+            .Select(e => e.Text)
+            .ToList();
+
+        foreach (var line in stanzaLines)
+        {
+            Assert.Contains(line, dialogue);
+            Assert.DoesNotContain(line, action);
+        }
+
+        var (voCues, _) = FountainParser.CountVoiceoverCues(merged);
+        Assert.Equal(1, voCues);
+    }
+
+    // NOTE: the "bare closing moral with no cue" case is prompt-driven only (there is no cue to
+    // re-merge into), so it is exercised by the prompt rule in book_to_fountain.txt, not here.
+
     [Fact]
     public void IsLocationNameAlias_detects_prefix_drift()
     {
