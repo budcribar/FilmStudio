@@ -847,19 +847,92 @@
     {
         var m = _modelList.FirstOrDefault(x => string.Equals(x["id"]?.ToString(), modelId, StringComparison.OrdinalIgnoreCase));
         if (m is null || f.LiveValue is null) return;
-        // numeric fields
-        if (int.TryParse(f.LiveValue, out var iv))
-            m[f.Field] = iv;
-        else if (double.TryParse(f.LiveValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dv))
-            m[f.Field] = dv;
-        else
-            m[f.Field] = f.LiveValue;
+        try
+        {
+            ApplyLiveValueToModel(m, f.Field, f.LiveValue);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Accept failed for {modelId}.{f.Field}: {ex.Message}";
+            return;
+        }
         SyncModelListToRawJson();
         _message = $"Accepted {modelId}.{f.Field} = {f.LiveValue}. Save to persist.";
-        // update scan row display
         f.CatalogValue = f.LiveValue;
         f.Status = "unchanged";
         f.Message = "Accepted into draft table.";
+    }
+
+    /// <summary>
+    /// Writes a scan live value into the draft model. Supports dotted paths into nested objects,
+    /// e.g. <c>videoCostPerSecondByResolution.720p</c>, and <c>parent.*</c> (all existing child keys).
+    /// </summary>
+    private static void ApplyLiveValueToModel(JsonObject model, string fieldPath, string liveValue)
+    {
+        if (string.IsNullOrWhiteSpace(fieldPath))
+            throw new ArgumentException("Field path is empty.");
+
+        var path = fieldPath.Trim();
+        // Ignore non-data probe rows
+        if (path.StartsWith('(') || path is "live_probe" or "pricing_docs" or "docs.extension" or "docs.generation")
+            throw new InvalidOperationException("This probe row is informational and cannot be accepted as a catalog field.");
+
+        JsonNode valueNode = ParseLiveJsonNode(liveValue);
+
+        var dot = path.IndexOf('.');
+        if (dot < 0)
+        {
+            model[path] = valueNode;
+            return;
+        }
+
+        var parentKey = path[..dot];
+        var childKey = path[(dot + 1)..];
+        if (string.IsNullOrWhiteSpace(parentKey) || string.IsNullOrWhiteSpace(childKey))
+            throw new InvalidOperationException($"Invalid nested field path '{path}'.");
+
+        if (model[parentKey] is not JsonObject nested)
+        {
+            nested = new JsonObject();
+            model[parentKey] = nested;
+        }
+
+        if (childKey == "*")
+        {
+            // Apply live value to every existing child key; if empty, seed common resolution tiers for video maps.
+            if (nested.Count == 0
+                && parentKey.Contains("Resolution", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var tier in new[] { "480p", "720p", "1080p" })
+                    nested[tier] = valueNode?.DeepClone() ?? valueNode;
+            }
+            else
+            {
+                foreach (var key in nested.Select(kv => kv.Key).ToList())
+                    nested[key] = valueNode?.DeepClone() ?? valueNode;
+            }
+            return;
+        }
+
+        nested[childKey] = valueNode;
+    }
+
+    private static JsonNode ParseLiveJsonNode(string liveValue)
+    {
+        var s = liveValue.Trim();
+        if (int.TryParse(s, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var iv))
+            return JsonValue.Create(iv);
+        if (double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dv))
+            return JsonValue.Create(dv);
+        if (bool.TryParse(s, out var bv))
+            return JsonValue.Create(bv);
+        // Try JSON fragment (object/array) before plain string
+        if ((s.StartsWith('{') && s.EndsWith('}')) || (s.StartsWith('[') && s.EndsWith(']')))
+        {
+            try { return JsonNode.Parse(s) ?? JsonValue.Create(s); }
+            catch { /* fall through to string */ }
+        }
+        return JsonValue.Create(s);
     }
 
     private void AcceptNewModel(CatalogNewModelHintDto nm)

@@ -42,3 +42,11 @@ Admin → Models catalog → **Scan for updates**
 | **B Gemini** | `GET /v1beta/models` (+ get) | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | Existence; `inputTokenLimit` / `outputTokenLimit`; new gemini/imagen ids |
 | **C fal** | `GET /v1/models` | `FAL_KEY` | New `endpoint_id`s (category → suggested capability); pricing still P0 |
 
+## Accept nested fields
+**Accept live** writes dotted paths into nested JSON objects:
+
+- `videoCostPerSecondByResolution.720p` → `videoCostPerSecondByResolution["720p"]`
+- `videoBaseCostByResolution.*` → all existing child keys (or seeds 480p/720p/1080p if empty)
+- Top-level fields (`maxExtensionSeconds`, `imageCostPerImage`, …) unchanged
+
+No Raw JSON required for resolution-tier price accepts.
