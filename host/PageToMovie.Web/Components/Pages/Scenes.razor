@@ -464,6 +464,14 @@ else if (_showPreviewPlayer && _clientStitching)
                 <div class="mt-2 pt-2 border-top border-secondary d-flex align-items-center gap-2 small flex-wrap">
                     <span class="text-muted">Screenplay:</span>
                     <button type="button"
+                            class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            data-testid="scenes-view-screenplay"
+                            disabled="@_busy"
+                            title="Read the current screenplay (view only — does not re-open it)"
+                            @onclick="ViewScreenplay">
+                        📄 View
+                    </button>
+                    <button type="button"
                             class="btn btn-sm btn-outline-info py-0 px-2"
                             data-testid="scenes-goto-fit-length"
                             disabled="@(_busy || JobRunning)"
@@ -2785,6 +2793,10 @@ else
     private Task AdjustFitLengthAsync() => ConfirmScreenplayAdjustAndNavigateAsync("adaptation/trim");
 
     private Task AdjustEmbellishAsync() => ConfirmScreenplayAdjustAndNavigateAsync("adaptation/embellish");
+
+    // Read-only: just open the screenplay view. Unlike Fit length / Embellish it does not re-open
+    // (un-approve) the screenplay, so no confirm — the user asked to "go back and see" it from Film.
+    private void ViewScreenplay() => Nav.NavigateTo("adaptation/screenplay");
 
     /// <summary>
     /// Navigate to a screenplay-shaping step (Fit length / Enrich). Those edit the screenplay, which
