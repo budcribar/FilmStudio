@@ -3771,6 +3771,53 @@ app.MapPost("/api/projects/{id}/git/revert/{commitHash}", async (
     }
 });
 
+
+// Per-scene shot-plan version history (not project git).
+app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/history", async (
+    string id,
+    int sceneNumber,
+    ProjectStore store,
+    IUserContext user,
+    Microsoft.Extensions.Options.IOptions<PageToMovie.Api.GatewayOptions> opts,
+    CancellationToken ct) =>
+{
+    if (PageToMovie.Api.AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        var entries = await store.GetSceneHistoryAsync(id, sceneNumber, ct).ConfigureAwait(false);
+        return Results.Ok(entries);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{sceneNumber:int}/revert/{commitHash}", async (
+    string id,
+    int sceneNumber,
+    string commitHash,
+    ProjectStore store,
+    IUserContext user,
+    Microsoft.Extensions.Options.IOptions<PageToMovie.Api.GatewayOptions> opts,
+    CancellationToken ct) =>
+{
+    if (PageToMovie.Api.AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        var restored = await store.RevertSceneAsync(id, sceneNumber, commitHash, ct).ConfigureAwait(false);
+        if (restored is null)
+            return Results.BadRequest(new { error = "Could not restore that version (blob missing or invalid)." });
+        return Results.Ok(new { projectId = id, sceneNumber, commitHash, restored = true });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
 app.MapGet("/api/projects/{id}/scenes/{scene:int}/history", async (
     string id,
     int scene,

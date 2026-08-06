@@ -1975,7 +1975,20 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public string? Error { get; set; }
     }
 
-    public async Task<SceneRevertEnvelope> RevertSceneToCommitAsync(
+    
+    public async Task<IReadOnlyList<SceneHistoryEntryDto>> GetSceneHistoryAsync(string projectId, int sceneNumber, CancellationToken ct = default)
+    {
+        using var resp = await _http.GetAsync($"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/history", ct).ConfigureAwait(false);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(err) ? resp.ReasonPhrase : err);
+        }
+        var list = await resp.Content.ReadFromJsonAsync<List<SceneHistoryEntryDto>>(cancellationToken: ct).ConfigureAwait(false);
+        return list ?? (IReadOnlyList<SceneHistoryEntryDto>)Array.Empty<SceneHistoryEntryDto>();
+    }
+
+public async Task<SceneRevertEnvelope> RevertSceneToCommitAsync(
         string projectId, int sceneNumber, string commitHash, CancellationToken ct = default)
     {
         SyncIdentityHeaders();
