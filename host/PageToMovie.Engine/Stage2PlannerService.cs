@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
+using PageToMovie.Fountain;
 using PageToMovie.Core.Utils;
 using PageToMovie.Engine.ModelExecution;
 using PageToMovie.Engine.Deterministic;

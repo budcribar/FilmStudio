@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PageToMovie.Core\PageToMovie.Core.csproj" />
+    <ProjectReference Include="..\PageToMovie.Fountain\PageToMovie.Fountain.csproj" />
   </ItemGroup>
 
   <!-- Stage-1 prompt embeds so Adaptation is self-contained (Railway-safe). -->

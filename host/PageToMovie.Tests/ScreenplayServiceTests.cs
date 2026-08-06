@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 using PageToMovie.Adaptation.Conversion;
 using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using Microsoft.Extensions.Options;

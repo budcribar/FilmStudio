@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 using Xunit;
 using Xunit.Abstractions;
 

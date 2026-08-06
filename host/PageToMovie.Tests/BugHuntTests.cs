@@ -7,6 +7,7 @@ using PageToMovie.Adaptation;
 using PageToMovie.Adaptation.Conversion;
 using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

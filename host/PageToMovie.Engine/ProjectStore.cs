@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
+using PageToMovie.Fountain;
 using Microsoft.Extensions.Options;
 
 namespace PageToMovie.Engine;

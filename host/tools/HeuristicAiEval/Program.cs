@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 
 // Holdout / multi-task scorer for the five heuristic→AI classifiers.
 // Usage:

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 using PageToMovie.Adaptation.Conversion;
 using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 

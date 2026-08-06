@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PageToMovie.Core\PageToMovie.Core.csproj" />
     <ProjectReference Include="..\PageToMovie.Adaptation\PageToMovie.Adaptation.csproj" />
+    <ProjectReference Include="..\PageToMovie.Fountain\PageToMovie.Fountain.csproj" />
   </ItemGroup>
 
   <!-- Embed core prompts so Railway /data (projects only) never needs prompts/ on disk. -->

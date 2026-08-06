@@ -1,4 +1,5 @@
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 using PageToMovie.Adaptation.Conversion;
 using AdaptationFountain = PageToMovie.Adaptation.Conversion.BookToFountainConverter;
 using Xunit;

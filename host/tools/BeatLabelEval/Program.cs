@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 
 // Beat-label eval: score HEURISTIC and AI against GROUND TRUTH (not each other).
 // Keep this tool + ground_truth/ + gt_score/ to compare models over time.

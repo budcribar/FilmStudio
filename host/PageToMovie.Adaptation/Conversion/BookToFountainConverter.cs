@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using PageToMovie.Adaptation.Contracts;
 using PageToMovie.Core.Abstractions;
 using PageToMovie.Core.Models;
+using PageToMovie.Fountain;
 
 namespace PageToMovie.Adaptation.Conversion;
 
@@ -897,10 +898,6 @@ public static class BookToFountainConverter
     /// <summary>Longest line (trimmed) still treated as verse. Prose action sentences run much longer.</summary>
     private const int VerseMaxLineChars = 72;
 
-    private static readonly Regex VoExtensionRegex = new(
-        @"\(?\s*V\s*\.?\s*O\s*\.?\s*\)?",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
     // Camera / transition / structural words that must NOT appear in a verse-shaped Action block —
     // these mark real staging, not orphaned narration, so their presence blocks a false merge.
     private static readonly Regex CameraOrTransitionLineRegex = new(
@@ -1062,7 +1059,7 @@ public static class BookToFountainConverter
     private static bool IsBlockSeparator(string raw)
     {
         if (raw.Trim().Length != 0) return false;
-        return !(raw.Length >= 2 && raw.Contains("  ", StringComparison.Ordinal));
+        return !FountainLexer.IsTwoSpaceContinue(raw);
     }
 
     private static List<string> ContentLines(string[] lines, FountainBlock block)
@@ -1094,7 +1091,7 @@ public static class BookToFountainConverter
 
         if (!TryParseCharacterCue(content[0], out name, out ext))
             return false;
-        if (!IsVoiceoverExtension(ext))
+        if (!FountainLexer.IsVoiceOverExtension(ext))
             return false;
 
         var spoken = content.Skip(1).ToList();
@@ -1137,13 +1134,6 @@ public static class BookToFountainConverter
 
         name = namePart;
         return true;
-    }
-
-    private static bool IsVoiceoverExtension(string? ext)
-    {
-        if (string.IsNullOrWhiteSpace(ext)) return false;
-        if (ext.Contains("V.O", StringComparison.OrdinalIgnoreCase)) return true;
-        return VoExtensionRegex.IsMatch(ext);
     }
 
     /// <summary>True when a line is a scene heading, transition, or camera directive (not verse).</summary>
@@ -1633,19 +1623,8 @@ public static class BookToFountainConverter
     /// roughly a third of runs. Valid Fountain syntax, but an unrequested artifact here —
     /// stripped rather than banned-only-by-prompt, same reasoning as StripBookPageTags.
     /// </summary>
-    public static string StripFountainPageBreaks(string? fountain)
-    {
-        if (string.IsNullOrEmpty(fountain)) return fountain ?? "";
-
-        fountain = Regex.Replace(
-            fountain,
-            @"(?m)^[ \t]*={3,}[ \t]*(?:\d+[ \t]*=+[ \t]*)?$\r?\n?",
-            "");
-
-        fountain = Regex.Replace(fountain, @"\n{3,}", "\n\n");
-        var trimmed = fountain.TrimEnd();
-        return trimmed.Length == 0 ? "" : trimmed + "\n";
-    }
+    public static string StripFountainPageBreaks(string? fountain) =>
+        FountainLexer.StripFountainPageBreaks(fountain);
 
     /// <summary>Load <c>prompts/book_to_fountain.txt</c>.</summary>
     /// <param name="totalRuntimeMinutes">

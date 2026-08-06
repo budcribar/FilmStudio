@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;

@@ -1,4 +1,5 @@
 using PageToMovie.Engine;
+using PageToMovie.Fountain;
 using Xunit;
 
 namespace PageToMovie.Tests;
