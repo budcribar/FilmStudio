@@ -232,6 +232,28 @@ public class ActiveProjectStateReadinessTests
     }
 
     [Fact]
+    public async Task SelectAsync_activates_sets_and_loads_readiness()
+    {
+        // The single "switch to this project" entry point: it must persist the choice on the server
+        // (activate), update local state, and load readiness — the trio that call sites used to
+        // hand-roll and drift on.
+        var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch
+        {
+            "/api/projects/Mary9/activate" => (HttpStatusCode.OK, "{}"),
+            "/api/projects/Mary9/adaptation" => (HttpStatusCode.OK, ReadyCamel),
+            _ => (HttpStatusCode.NotFound, "{}"),
+        });
+        var (state, engine) = NewState(handler);
+
+        await state.SelectAsync(engine, "Mary9", "Mary Nine");
+
+        Assert.Equal("Mary9", state.ProjectId);
+        Assert.Equal("Mary Nine", state.Label);
+        Assert.NotNull(state.Status);
+        Assert.Contains(handler.Requests, u => u.AbsolutePath == "/api/projects/Mary9/activate");
+    }
+
+    [Fact]
     public async Task RefreshFromServer_does_not_clobber_an_already_selected_project()
     {
         // When a project is already active, hydration must be skipped (no /api/projects call that

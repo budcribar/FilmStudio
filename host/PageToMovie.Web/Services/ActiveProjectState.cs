@@ -107,6 +107,28 @@ public sealed class ActiveProjectState
         }
     }
 
+    /// <summary>
+    /// The one way to switch the active project: persist the choice on the server, update local
+    /// state, and load its readiness. Callers that pick a project (project dropdown, "open story"
+    /// fork, post-create) should use this instead of hand-rolling ActivateProjectAsync + Set +
+    /// RefreshReadinessAsync — that drift is how the active project ended up set inconsistently.
+    /// Pass the metadata you already have (label/parent/studioPath); nulls fall back to the id.
+    /// </summary>
+    public async Task SelectAsync(
+        EngineApiClient engine,
+        string projectId,
+        string? label = null,
+        string? parentProjectId = null,
+        string? studioPath = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return;
+        var id = projectId.Trim();
+        await engine.ActivateProjectAsync(id, ct).ConfigureAwait(false);
+        Set(id, label, parentProjectId, studioPath);
+        await RefreshReadinessAsync(engine, ct).ConfigureAwait(false);
+    }
+
     public async Task RefreshReadinessAsync(EngineApiClient engine, CancellationToken ct = default)
     {
         if (!HasProject || ProjectId is null)

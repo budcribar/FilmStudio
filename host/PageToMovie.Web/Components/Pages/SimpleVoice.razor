@@ -442,9 +442,7 @@ else
 
             try { await Engine.SetStudioPathAsync(forkId, ProjectStudioPaths.SimpleVoice); }
             catch { /* older API */ }
-            await Engine.ActivateProjectAsync(forkId);
-            ActiveProject.Set(forkId, fork?.Title ?? story.Title, studioPath: ProjectStudioPaths.SimpleVoice);
-            await ActiveProject.RefreshReadinessAsync(Engine);
+            await ActiveProject.SelectAsync(Engine, forkId, fork?.Title ?? story.Title, studioPath: ProjectStudioPaths.SimpleVoice);
 
             _projectId = forkId;
             _projectLabel = fork?.Title ?? story.Title;
