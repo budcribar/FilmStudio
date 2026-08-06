@@ -108,10 +108,25 @@ public sealed class CatalogUpdateProbeService
             });
         }
 
-        if (entry.Capability == ModelCapability.Video &&
-            string.Equals(provider, "xai", StringComparison.OrdinalIgnoreCase))
+        var isFal = string.Equals(provider, "fal", StringComparison.OrdinalIgnoreCase)
+                    || entry.Id.StartsWith("fal-", StringComparison.OrdinalIgnoreCase)
+                    || entry.Id.StartsWith("fal-ai/", StringComparison.OrdinalIgnoreCase)
+                    || (entry.EndpointPath?.Contains("fal", StringComparison.OrdinalIgnoreCase) == true);
+
+        if (isFal)
         {
-            await ProbeXaiVideoAsync(entry, row, ct).ConfigureAwait(false);
+            await ProbeFalPricingAsync(entry, row, ct).ConfigureAwait(false);
+            return;
+        }
+
+        if (string.Equals(provider, "xai", StringComparison.OrdinalIgnoreCase))
+        {
+            // P1: pricing from docs pages + existing duration probes for video
+            await ProbeXaiPricingAsync(entry, row, ct).ConfigureAwait(false);
+            if (entry.Capability == ModelCapability.Video)
+                await ProbeXaiVideoAsync(entry, row, ct).ConfigureAwait(false);
+            else if (entry.Capability is ModelCapability.Chat or ModelCapability.Vision)
+                await ProbeXaiChatExistsAsync(entry, row, ct).ConfigureAwait(false);
             return;
         }
 
@@ -119,13 +134,6 @@ public sealed class CatalogUpdateProbeService
             string.Equals(provider, "openai", StringComparison.OrdinalIgnoreCase))
         {
             await ProbeOpenAiModelExistsAsync(entry, row, ct).ConfigureAwait(false);
-            return;
-        }
-
-        if (entry.Capability is ModelCapability.Chat or ModelCapability.Vision &&
-            string.Equals(provider, "xai", StringComparison.OrdinalIgnoreCase))
-        {
-            await ProbeXaiChatExistsAsync(entry, row, ct).ConfigureAwait(false);
             return;
         }
 
@@ -139,6 +147,248 @@ public sealed class CatalogUpdateProbeService
             SourceUrl = entry.PricingNotes,
         });
     }
+
+    /// <summary>
+    /// P0: fal Platform API list prices — GET /v1/models/pricing?endpoint_id=…
+    /// Maps unit_price into imageCostPerImage or videoBaseCostByResolution / per-sec hints.
+    /// </summary>
+    private async Task ProbeFalPricingAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    {
+        var key = Environment.GetEnvironmentVariable("FAL_KEY")
+                  ?? Environment.GetEnvironmentVariable("FAL_API_KEY");
+        var endpointId = ResolveFalEndpointId(entry);
+        const string sourceBase = "https://api.fal.ai/v1/models/pricing";
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            row.Fields.Add(Field("pricing", null, null, "not_found",
+                "FAL_KEY / FAL_API_KEY not set — cannot fetch live fal pricing.",
+                sourceBase + "?endpoint_id=" + Uri.EscapeDataString(endpointId)));
+            return;
+        }
+
+        var client = _httpFactory.CreateClient("catalog-probe");
+        var url = sourceBase + "?endpoint_id=" + Uri.EscapeDataString(endpointId);
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.TryAddWithoutValidation("Authorization", "Key " + key.Trim());
+        using var resp = await client.SendAsync(req, ct).ConfigureAwait(false);
+        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        if (!resp.IsSuccessStatusCode)
+        {
+            row.Fields.Add(Field("pricing", null, null, "error",
+                $"fal pricing HTTP {(int)resp.StatusCode}: {Truncate(body, 180)}", url));
+            return;
+        }
+
+        using var doc = JsonDocument.Parse(body);
+        if (!doc.RootElement.TryGetProperty("prices", out var prices) || prices.ValueKind != JsonValueKind.Array
+            || prices.GetArrayLength() == 0)
+        {
+            row.Fields.Add(Field("pricing", null, null, "not_found",
+                "fal pricing returned no prices[] for this endpoint_id.", url));
+            return;
+        }
+
+        var price = prices[0];
+        var unitPrice = price.TryGetProperty("unit_price", out var up) && up.TryGetDouble(out var upv) ? upv : (double?)null;
+        var unit = price.TryGetProperty("unit", out var u) ? u.GetString() : null;
+        var currency = price.TryGetProperty("currency", out var c) ? c.GetString() : "USD";
+
+        if (unitPrice is null)
+        {
+            row.Fields.Add(Field("unit_price", null, null, "not_found", "unit_price missing in fal response.", url));
+            return;
+        }
+
+        var liveStr = unitPrice.Value.ToString("0.####", CultureInfo.InvariantCulture);
+        var unitNote = $"unit={unit ?? "?"} currency={currency}";
+
+        if (entry.Capability == ModelCapability.Image
+            || string.Equals(unit, "image", StringComparison.OrdinalIgnoreCase))
+        {
+            row.Fields.Add(CompareDouble("imageCostPerImage", entry.ImageCostPerImage, unitPrice.Value, url, unitNote));
+            return;
+        }
+
+        if (entry.Capability == ModelCapability.Video
+            || string.Equals(unit, "video", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(unit, "second", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(unit, "sec", StringComparison.OrdinalIgnoreCase))
+        {
+            // Prefer flat base fee when catalog has videoBaseCostByResolution; else per-sec table.
+            if (entry.VideoBaseCostByResolution is { Count: > 0 } baseTable)
+            {
+                var catalogBase = baseTable.Values.FirstOrDefault();
+                row.Fields.Add(CompareDouble("videoBaseCostByResolution.*", catalogBase, unitPrice.Value, url,
+                    unitNote + " (fal unit applied as base/video fee)"));
+            }
+            else if (entry.VideoCostPerSecondByResolution is { Count: > 0 } perSec)
+            {
+                var catalogRate = perSec.Values.FirstOrDefault();
+                row.Fields.Add(CompareDouble("videoCostPerSecondByResolution.*", catalogRate, unitPrice.Value, url,
+                    unitNote + " (fal unit applied as $/sec or per-output)"));
+            }
+            else
+            {
+                row.Fields.Add(Field("video_price", null, liveStr, "changed",
+                    $"Catalog has no video cost fields; fal reports {liveStr} per {unit}.", url));
+            }
+            return;
+        }
+
+        // Audio / lip-sync / other — report raw unit price for manual mapping
+        var catalogHint = entry.ImageCostPerImage
+                          ?? entry.CostPerMinuteUsd
+                          ?? entry.VideoReferenceImageCost;
+        row.Fields.Add(CompareDouble("unit_price", catalogHint, unitPrice.Value, url, unitNote));
+    }
+
+    private static string ResolveFalEndpointId(SupportedModelEntry entry)
+    {
+        if (!string.IsNullOrWhiteSpace(entry.EndpointPath)
+            && entry.EndpointPath.Contains('/', StringComparison.Ordinal))
+            return entry.EndpointPath.Trim().TrimStart('/');
+        return entry.Id.Trim();
+    }
+
+    /// <summary>
+    /// P1: Parse public xAI docs HTML for list prices (chat $/MTok, image $/image, video $/sec).
+    /// </summary>
+    private async Task ProbeXaiPricingAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    {
+        var client = _httpFactory.CreateClient("catalog-probe");
+        var docUrl = ResolveXaiDocsUrl(entry);
+        string html;
+        try
+        {
+            html = await client.GetStringAsync(docUrl, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            row.Fields.Add(Field("pricing_docs", null, null, "error", ex.Message, docUrl));
+            return;
+        }
+
+        if (entry.Capability is ModelCapability.Chat or ModelCapability.Vision)
+        {
+            // Prefer "Input … $X" / "Output … $Y" style; fallback to first two $ amounts near "1M"
+            var inMatch = Regex.Match(html,
+                @"Input[^$]{0,80}\$([0-9]+(?:\.[0-9]+)?)\s*(?:/\s*1M|/1M|per\s*1M|/\s*million)?",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            var outMatch = Regex.Match(html,
+                @"Output[^$]{0,80}\$([0-9]+(?:\.[0-9]+)?)\s*(?:/\s*1M|/1M|per\s*1M|/\s*million)?",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            if (inMatch.Success && double.TryParse(inMatch.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var inLive))
+                row.Fields.Add(CompareDouble("inputCostPerMillionTokens", entry.InputCostPerMillionTokens, inLive, docUrl, "parsed Input $/1M"));
+            else
+                row.Fields.Add(Field("inputCostPerMillionTokens", entry.InputCostPerMillionTokens?.ToString(CultureInfo.InvariantCulture), null, "not_found",
+                    "Could not parse Input $/1M from docs.", docUrl));
+
+            if (outMatch.Success && double.TryParse(outMatch.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var outLive))
+                row.Fields.Add(CompareDouble("outputCostPerMillionTokens", entry.OutputCostPerMillionTokens, outLive, docUrl, "parsed Output $/1M"));
+            else
+                row.Fields.Add(Field("outputCostPerMillionTokens", entry.OutputCostPerMillionTokens?.ToString(CultureInfo.InvariantCulture), null, "not_found",
+                    "Could not parse Output $/1M from docs.", docUrl));
+            return;
+        }
+
+        if (entry.Capability == ModelCapability.Image)
+        {
+            var m = Regex.Match(html,
+                @"\$([0-9]+(?:\.[0-9]+)?)\s*(?:/\s*image|per\s*image)",
+                RegexOptions.IgnoreCase);
+            if (!m.Success)
+                m = Regex.Match(html, @"Pricing[^$]{0,40}\$([0-9]+(?:\.[0-9]+)?)", RegexOptions.IgnoreCase);
+            if (m.Success && double.TryParse(m.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var imgLive))
+                row.Fields.Add(CompareDouble("imageCostPerImage", entry.ImageCostPerImage, imgLive, docUrl, "parsed $/image"));
+            else
+                row.Fields.Add(Field("imageCostPerImage", entry.ImageCostPerImage?.ToString(CultureInfo.InvariantCulture), null, "not_found",
+                    "Could not parse $/image from docs.", docUrl));
+            return;
+        }
+
+        if (entry.Capability == ModelCapability.Video)
+        {
+            // Resolution-tiered: 480p $0.05, 720p $0.07, or flat $0.05 per second
+            var tierMatches = Regex.Matches(html,
+                @"(480p|720p|1080p)[^$]{0,40}\$([0-9]+(?:\.[0-9]+)?)",
+                RegexOptions.IgnoreCase);
+            var foundTier = false;
+            foreach (Match tm in tierMatches)
+            {
+                var res = tm.Groups[1].Value.ToLowerInvariant();
+                if (!double.TryParse(tm.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var liveRate))
+                    continue;
+                foundTier = true;
+                double? catalog = null;
+                if (entry.VideoCostPerSecondByResolution is { } table)
+                {
+                    foreach (var kv in table)
+                    {
+                        if (kv.Key.Contains(res.TrimEnd('p'), StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(kv.Key, res, StringComparison.OrdinalIgnoreCase))
+                        {
+                            catalog = kv.Value;
+                            break;
+                        }
+                    }
+                    catalog ??= table.Values.FirstOrDefault();
+                }
+                row.Fields.Add(CompareDouble($"videoCostPerSecondByResolution.{res}", catalog, liveRate, docUrl,
+                    "parsed resolution tier $/sec"));
+            }
+
+            if (!foundTier)
+            {
+                var m = Regex.Match(html,
+                    @"\$([0-9]+(?:\.[0-9]+)?)\s*(?:per\s*second|/\s*sec|/\s*second)",
+                    RegexOptions.IgnoreCase);
+                if (m.Success && double.TryParse(m.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var secLive))
+                {
+                    double? catalog = entry.VideoCostPerSecondByResolution?.Values.FirstOrDefault();
+                    row.Fields.Add(CompareDouble("videoCostPerSecondByResolution.*", catalog, secLive, docUrl, "parsed $/sec"));
+                }
+                else
+                {
+                    row.Fields.Add(Field("videoCostPerSecondByResolution", null, null, "not_found",
+                        "Could not parse video $/sec from docs.", docUrl));
+                }
+            }
+
+            // Extend often billed at generation rate — note only
+            if (entry.SupportsVideoContinue && entry.VideoExtendCostPerSecond is { } ext)
+            {
+                var gen = entry.VideoCostPerSecondByResolution?.Values.FirstOrDefault();
+                if (gen is not null)
+                {
+                    row.Fields.Add(CompareDouble("videoExtendCostPerSecond", ext, gen.Value, docUrl,
+                        "extend vs generation rate (docs often say extend uses generation $/sec)"));
+                }
+            }
+        }
+    }
+
+    private static string ResolveXaiDocsUrl(SupportedModelEntry entry)
+    {
+        var id = entry.Id.ToLowerInvariant();
+        // Prefer model-specific docs pages when id matches known products
+        if (id.Contains("imagine-video", StringComparison.Ordinal))
+            return "https://docs.x.ai/developers/models/grok-imagine-video";
+        if (id.Contains("imagine-image-quality", StringComparison.Ordinal) || id.Contains("image-quality", StringComparison.Ordinal))
+            return "https://docs.x.ai/developers/models/grok-imagine-image-quality";
+        if (id.Contains("imagine-image", StringComparison.Ordinal) || entry.Capability == ModelCapability.Image)
+            return "https://docs.x.ai/developers/models/grok-imagine-image";
+        if (id.Contains("grok-4.5", StringComparison.Ordinal) || id.Contains("grok-4-5", StringComparison.Ordinal))
+            return "https://docs.x.ai/developers/models/grok-4.5";
+        if (id.Contains("grok-4", StringComparison.Ordinal))
+            return "https://docs.x.ai/developers/models/grok-4";
+        // Generic models index — still has pricing tables in HTML
+        return "https://docs.x.ai/developers/models/" + Uri.EscapeDataString(entry.Id);
+    }
+
+    private static string Truncate(string s, int max) =>
+        string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s[..max] + "…");
 
     private async Task ProbeXaiVideoAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
     {
@@ -448,6 +698,25 @@ public sealed class CatalogUpdateProbeService
         }
         return Field(field, catalog.Value.ToString(CultureInfo.InvariantCulture),
             live.ToString(CultureInfo.InvariantCulture), "changed", "Catalog differs from live probe.", url);
+    }
+
+    private static CatalogFieldProbeResult CompareDouble(
+        string field, double? catalog, double live, string? url, string? note = null)
+    {
+        var liveStr = live.ToString("0.####", CultureInfo.InvariantCulture);
+        var msgSuffix = string.IsNullOrWhiteSpace(note) ? "" : " " + note;
+        if (catalog is null)
+        {
+            return Field(field, null, liveStr, "changed",
+                "Catalog missing; live value available." + msgSuffix, url);
+        }
+        if (Math.Abs(catalog.Value - live) < 0.00005)
+        {
+            return Field(field, catalog.Value.ToString("0.####", CultureInfo.InvariantCulture),
+                liveStr, "unchanged", "Matches live docs/API." + msgSuffix, url);
+        }
+        return Field(field, catalog.Value.ToString("0.####", CultureInfo.InvariantCulture),
+            liveStr, "changed", "Catalog differs from live probe." + msgSuffix, url);
     }
 
     private static CatalogFieldProbeResult Field(

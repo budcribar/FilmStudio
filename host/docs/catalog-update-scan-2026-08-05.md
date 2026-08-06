@@ -13,10 +13,23 @@ Admin → Models catalog → **Scan for updates**
 - **Accept live** — patches the draft table field with the live value (then **Save**)
 - **Accept as LAB** — adds a discovered model with `labMode: true`
 
-## What is probed today
-- **xAI video**: docs for max extension, max clip duration, max reference images
-- **OpenAI / xAI chat**: model id present on `GET /v1/models` when API key is set
-- **New models**: candidates from OpenAI/xAI model lists not already in the catalog
-- Other providers: yellow “no probe” (manual review)
+## Probes (P0 / P1)
 
-Extend `CatalogUpdateProbeService` when adding new vendor parsers.
+### P0 — fal list prices
+- `GET https://api.fal.ai/v1/models/pricing?endpoint_id=…`
+- Auth: `Authorization: Key $FAL_KEY` (or `FAL_API_KEY`)
+- Maps `unit_price` → `imageCostPerImage` or video base / per-sec fields
+- Requires key; without it → yellow
+
+### P1 — xAI pricing from docs
+- Fetches model docs HTML on `docs.x.ai` (Imagine video/image, grok-4.x)
+- Parses Input/Output `$/1M`, `$/image`, resolution `$/sec` tiers
+- Still runs duration/ref probes for video capability pages
+
+### Also
+- OpenAI / xAI `GET /v1/models` when API keys present (id existence + new models)
+- Other providers: yellow “no probe”
+
+## Notes
+- List prices only — not usage/invoice APIs
+- Nested JSON fields (e.g. `videoCostPerSecondByResolution.720p`) may need Raw JSON edit after Accept if the simple patch is insufficient
