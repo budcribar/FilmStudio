@@ -2283,40 +2283,17 @@ public sealed class ProjectStore
 
     public string? ResolveCharacterRefPath(string projectId, string charKey, bool allowNormalizedFallback = true)
     {
+        // Voice-only roles never have (or need) a portrait. The enumerate-and-match itself — exact
+        // candidate filenames then the normalized-key fallback — is the single implementation in
+        // ClipVideoPromptBuilder.ResolveCharacterRefPathPublic, which FilmJobService also calls, so
+        // the two gates cannot drift apart. allowNormalizedFallback:false (cast listing) skips the
+        // normalized scan so Character_Narrator / Character_The_Narrator don't share one *_ref.png.
         var seeds = LoadCharacterSeeds(projectId);
         if (seeds.TryGetValue(charKey, out var info) && IsVoiceOnly(charKey, info))
             return null;
 
-        var charDir = Path.Combine(GetProjectDir(projectId), "assets", "characters");
-        foreach (var name in CharacterRefFileCandidates(charKey))
-        {
-            var full = Path.Combine(charDir, name);
-            if (File.Exists(full) && new FileInfo(full).Length >= 64)
-                return full;
-        }
-
-        // Normalized fallback is for video/gen when a clip key differs slightly from the seed key.
-        // Never use it for cast listing (allowNormalizedFallback: false) — Character_Narrator and
-        // Character_The_Narrator would share one *_ref.png and looks "steal" each other in the UI.
-        if (!allowNormalizedFallback || !Directory.Exists(charDir))
-            return null;
-
-        var targetNorm = Stage2PlannerService.NormalizeCharacterKey(charKey);
-        if (targetNorm.Length == 0)
-            return null;
-
-        foreach (var file in Directory.EnumerateFiles(charDir, "*_ref.png"))
-        {
-            var stem = Path.GetFileNameWithoutExtension(file);
-            if (stem.StartsWith("wardrobe_", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (stem.EndsWith("_ref", StringComparison.OrdinalIgnoreCase))
-                stem = stem[..^"_ref".Length];
-            if (Stage2PlannerService.NormalizeCharacterKey(stem) == targetNorm &&
-                new FileInfo(file).Length >= 64)
-                return file;
-        }
-        return null;
+        return ClipVideoPromptBuilder.ResolveCharacterRefPathPublic(
+            GetProjectDir(projectId), charKey, allowNormalizedFallback);
     }
 
     /// <summary>

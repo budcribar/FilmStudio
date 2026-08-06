@@ -910,8 +910,19 @@ public static class ClipVideoPromptBuilder
     private static string? ResolveCharacterRefPath(string projectDir, string key) =>
         ResolveCharacterRefPathPublic(projectDir, key);
 
-    /// <summary>Resolve locked <c>*_ref.png</c> for a character (canonical + aliases).</summary>
-    public static string? ResolveCharacterRefPathPublic(string projectDir, string key)
+    /// <summary>
+    /// Single source of truth for resolving a character's locked <c>*_ref.png</c> (canonical +
+    /// aliases, then a normalized-key fallback). <see cref="ProjectStore.ResolveCharacterRefPath"/>
+    /// delegates here for its enumerate-and-match, adding only its voice-only guard — the two must
+    /// agree because <c>FilmJobService.MissingOnScreenLockKeys</c> calls both.
+    /// </summary>
+    /// <param name="allowNormalizedFallback">
+    /// When false, only exact candidate filenames match (no normalized-key scan). Cast listing uses
+    /// false so Character_Narrator and Character_The_Narrator do not share one <c>*_ref.png</c>;
+    /// video/gen uses true so a slightly different clip key still finds the locked portrait.
+    /// </param>
+    public static string? ResolveCharacterRefPathPublic(
+        string projectDir, string key, bool allowNormalizedFallback = true)
     {
         var charDir = Path.Combine(projectDir, "assets", "characters");
         foreach (var name in ProjectStore.CharacterRefFileCandidates(key))
@@ -920,7 +931,7 @@ public static class ClipVideoPromptBuilder
             if (File.Exists(full) && new FileInfo(full).Length >= 64)
                 return full;
         }
-        return ResolveCharacterRefPathByNormalizedKey(charDir, key);
+        return allowNormalizedFallback ? ResolveCharacterRefPathByNormalizedKey(charDir, key) : null;
     }
 
     /// <summary>

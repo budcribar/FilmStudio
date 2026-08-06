@@ -107,4 +107,50 @@ public sealed class CharacterKeyNormalizationTests : IDisposable
         Assert.NotNull(viaPlaceholder);
         Assert.EndsWith("character_narrator_ref.png", viaPlaceholder, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void Both_resolvers_agree_now_that_ProjectStore_delegates_to_the_shared_one()
+    {
+        // FilmJobService.MissingOnScreenLockKeys calls BOTH resolvers and they must agree; since
+        // ProjectStore now delegates its enumerate-and-match to the ClipVideoPromptBuilder one,
+        // they resolve a placeholder key to the identical file by construction.
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_OldMan": { "description": "frail elderly man" }
+              }
+            }
+            """);
+        File.WriteAllBytes(Path.Combine(CharDir(), "character_old_man_ref.png"), new byte[128]);
+
+        var viaStore = _store.ResolveCharacterRefPath(ProjectId, "Character_The_Old_Man");
+        var viaBuilder = ClipVideoPromptBuilder.ResolveCharacterRefPathPublic(
+            _store.GetProjectDir(ProjectId), "Character_The_Old_Man");
+        Assert.Equal(viaBuilder, viaStore);
+        Assert.NotNull(viaStore);
+    }
+
+    [Fact]
+    public void AllowNormalizedFallback_false_suppresses_the_normalized_scan()
+    {
+        // Cast listing passes allowNormalizedFallback:false so two article-variant keys don't
+        // steal each other's single *_ref.png. The exact candidate filename still matches; a
+        // spelling/article variant that only matches via the normalized scan does not.
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_OldMan": { "description": "frail elderly man" }
+              }
+            }
+            """);
+        // Exact candidate for Character_OldMan (CharacterRefFileName drops the internal underscore).
+        File.WriteAllBytes(Path.Combine(CharDir(), "character_oldman_ref.png"), new byte[128]);
+
+        Assert.NotNull(_store.ResolveCharacterRefPath(ProjectId, "Character_OldMan", allowNormalizedFallback: false));
+        Assert.Null(_store.ResolveCharacterRefPath(ProjectId, "Character_The_Old_Man", allowNormalizedFallback: false));
+        Assert.Null(ClipVideoPromptBuilder.ResolveCharacterRefPathPublic(
+            _store.GetProjectDir(ProjectId), "Character_The_Old_Man", allowNormalizedFallback: false));
+    }
 }
