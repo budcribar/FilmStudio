@@ -87,7 +87,18 @@ public sealed class ActiveProjectState
     {
         try
         {
-            await EnsureLoadedAsync(engine, force: true, ct: ct);
+            // Hydrate the active-project pointer from the workspace when it isn't set yet. Direct
+            // navigation to a studio step (e.g. /adaptation/shots) or a page refresh lands with no
+            // project selected; EnsureLoadedAsync only refreshes readiness for an already-selected
+            // project, so without this the page shows "No project selected" though one is active.
+            if (!HasProject)
+            {
+                var projs = await engine.GetProjectsAsync(ct).ConfigureAwait(false);
+                var active = projs?.Active;
+                if (active?.Id is { Length: > 0 } id)
+                    Set(id, active.Label ?? active.Title ?? id);
+            }
+            await EnsureLoadedAsync(engine, force: true, ct: ct).ConfigureAwait(false);
         }
         catch
         {
@@ -108,8 +119,10 @@ public sealed class ActiveProjectState
 
         try
         {
-            var status = await engine.GetAdaptationAsync(ProjectId, ct);
-            ApplyFromStatusPayload(status);
+            var dto = await engine.GetAdaptationAsync(ProjectId, ct);
+            // The endpoint returns the AdaptationDto wrapper ({ ok, projectId, adaptation }); the
+            // readiness flags + Status live on the nested .Adaptation, not the wrapper root.
+            ApplyFromStatusPayload(dto?.Adaptation);
             IsReady = true;
             LoadError = null;
         }
@@ -158,12 +171,13 @@ public sealed class ActiveProjectState
     }
 
     /// <summary>
-    /// Maps the web client's adaptation status DTO into nav gate flags.
-    /// Uses JSON so we do not fight Core.Models.AdaptationStatus vs Web DTO twin types.
+    /// Stores the adaptation status and maps it into nav gate flags. Gating is read via JSON probe
+    /// (tolerant of camel/Pascal casing); <see cref="Status"/> itself is set so consumers
+    /// (StudioProcessStrip model badge, Home BYOK prompts, Characters book substep) see real data.
     /// </summary>
-    private void ApplyFromStatusPayload(object? statusObj)
+    private void ApplyFromStatusPayload(AdaptationStatus? statusObj)
     {
-        Status = null;
+        Status = statusObj;
         if (statusObj is null)
         {
             ClearReadiness();
