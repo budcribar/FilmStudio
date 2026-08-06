@@ -165,6 +165,26 @@ public sealed class FilmJobService
         _voiceAlignment = voiceAlignment;
     }
 
+
+    /// <summary>Lab-mode catalog rows are admin-only; block regular users from running them.</summary>
+    private void EnsureLabModelsAllowed(IReadOnlyDictionary<string, JsonElement>? cfg)
+    {
+        if (_user.IsAdmin || cfg is null) return;
+        foreach (var key in new[]
+                 {
+                     "video_model_name", "image_model_name", "planning_model_name", "vision_model_name",
+                     "video_review_model_name", "audio_model_name", "voice_model_name"
+                 })
+        {
+            if (!cfg.TryGetValue(key, out var el) || el.ValueKind != JsonValueKind.String)
+                continue;
+            var id = el.GetString();
+            if (SupportedModelCatalog.IsLabModel(id))
+                throw new InvalidOperationException(
+                    $"Model '{id}' is lab-mode (admin-only). Pick a production model in Configuration.");
+        }
+    }
+
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
 
     /// <summary>
@@ -1297,6 +1317,7 @@ public sealed class FilmJobService
 
             var pDir = _projects.GetProjectDir(projectId);
             var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            EnsureLabModelsAllowed(cfg);
 
             var enableMusic = SceneMusicScoringService.GetConfigBool(cfg, "enable_background_music", true);
             var configuredModel = SceneMusicScoringService.GetConfigStr(cfg, "audio_model_name", "");
@@ -2673,6 +2694,7 @@ public sealed class FilmJobService
         if (string.IsNullOrWhiteSpace(model))
         {
             var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            EnsureLabModelsAllowed(cfg);
             if (cfg.TryGetValue("voice_model_name", out var vm) && vm.ValueKind == JsonValueKind.String)
                 model = vm.GetString();
         }
@@ -4434,6 +4456,7 @@ public sealed class FilmJobService
             try
             {
                 var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            EnsureLabModelsAllowed(cfg);
                 if (cfg.TryGetValue("resolution", out var el))
                 {
                     var fromCfg = el.ValueKind switch
@@ -4543,6 +4566,7 @@ public sealed class FilmJobService
     private async Task<string> ResolveVideoModelAsync(string projectId, CancellationToken ct)
     {
         var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            EnsureLabModelsAllowed(cfg);
         return ProjectModelSelection.RequireVideo(cfg, "Video generation");
     }
 

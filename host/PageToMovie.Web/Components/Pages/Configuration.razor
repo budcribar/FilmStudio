@@ -853,11 +853,18 @@
             }
 
             var list = await Engine.GetSupportedModelsAsync();
-            _allModels = list?.ToList() ?? new List<SupportedModelDto>();
+            _allModels = (list ?? Array.Empty<SupportedModelDto>())
+                .Where(m => Session.IsAdmin || !m.LabMode)
+                .ToList();
             // Hydrate from static catalog when the API list is empty/stale (WASM must still show music/voice).
             if (_allModels.Count == 0)
             {
-                try { _allModels = SupportedModelCatalog.ToDtoList(enabledOnly: true).ToList(); }
+                try
+                {
+                    _allModels = SupportedModelCatalog.ToDtoList(enabledOnly: true, includeLabModels: Session.IsAdmin)
+                        .Where(m => Session.IsAdmin || !m.LabMode)
+                        .ToList();
+                }
                 catch { /* catalog not loaded */ }
             }
             bool Cap(SupportedModelDto m, string c)

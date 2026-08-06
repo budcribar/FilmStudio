@@ -696,8 +696,12 @@ public static class SupportedModelCatalog
 
     public static IReadOnlyList<SupportedModelEntry> ForCapability(
         ModelCapability capability,
-        bool enabledOnly = true) =>
-        Entries.Where(e => e.Capability == capability && (!enabledOnly || e.Enabled)).ToList();
+        bool enabledOnly = true,
+        bool includeLabModels = false) =>
+        Entries.Where(e =>
+            e.Capability == capability
+            && (!enabledOnly || e.Enabled)
+            && (includeLabModels || !e.LabMode)).ToList();
 
     public static SupportedModelEntry? Find(string? modelId, ModelCapability? capability = null)
     {
@@ -1119,10 +1123,23 @@ public static class SupportedModelCatalog
     }
 
 
-    public static IReadOnlyList<SupportedModelDto> ToDtoList(bool enabledOnly = true) =>
-        Entries.Where(e => !enabledOnly || e.Enabled)
+    /// <param name="includeLabModels">
+    /// When false (default), lab-mode rows are omitted — regular users never see incomplete models.
+    /// Admins pass true for catalog management / experimental picks.
+    /// </param>
+    public static IReadOnlyList<SupportedModelDto> ToDtoList(bool enabledOnly = true, bool includeLabModels = false) =>
+        Entries.Where(e => (!enabledOnly || e.Enabled) && (includeLabModels || !e.LabMode))
             .Select(ToDto)
             .ToList();
+
+    /// <summary>True when <paramref name="modelId"/> is an enabled lab-mode catalog row.</summary>
+    public static bool IsLabModel(string? modelId, ModelCapability? capability = null)
+    {
+        if (string.IsNullOrWhiteSpace(modelId)) return false;
+        try { EnsureLoaded(); } catch { return false; }
+        var e = Find(modelId, capability);
+        return e is { LabMode: true, Enabled: true };
+    }
 
     public static SupportedModelDto ToDto(SupportedModelEntry e) => new()
     {

@@ -2763,35 +2763,78 @@ app.MapGet("/api/stage2-status", async (ProjectStore store, CancellationToken ct
 
 // ---- Supported models (master catalog: model id → endpoint + required keys) ----
 /// <summary>Raw models_catalog.json for Blazor WASM bootstrap (public read).</summary>
-app.MapGet("/api/models/catalog-json", () =>
+app.MapGet("/api/models/catalog-json", (IUserContext user) =>
 {
     try
     {
+        string raw;
         var path = SupportedModelCatalog.GetCatalogFilePath();
         if (System.IO.File.Exists(path))
-            return Results.Text(System.IO.File.ReadAllText(path), "application/json");
-
-        var asm = typeof(SupportedModelCatalog).Assembly;
-        foreach (var name in asm.GetManifestResourceNames()
-                     .Where(n => n.EndsWith("models_catalog.json", StringComparison.OrdinalIgnoreCase)))
+            raw = System.IO.File.ReadAllText(path);
+        else
         {
-            using var stream = asm.GetManifestResourceStream(name);
-            if (stream is null) continue;
-            using var reader = new StreamReader(stream);
-            return Results.Text(reader.ReadToEnd(), "application/json");
-        }
-
-        if (SupportedModelCatalog.IsLoaded)
-        {
-            return Results.Json(new
+            raw = null!;
+            var asm = typeof(SupportedModelCatalog).Assembly;
+            foreach (var name in asm.GetManifestResourceNames()
+                         .Where(n => n.EndsWith("models_catalog.json", StringComparison.OrdinalIgnoreCase)))
             {
-                models = SupportedModelCatalog.ToDtoList(enabledOnly: false),
-                capabilities = SupportedModelCatalog.RegisteredCapabilities,
-                taskRankings = SupportedModelCatalog.TaskRankings,
-            });
+                using var stream = asm.GetManifestResourceStream(name);
+                if (stream is null) continue;
+                using var reader = new StreamReader(stream);
+                raw = reader.ReadToEnd();
+                break;
+            }
+            if (raw is null && SupportedModelCatalog.IsLoaded)
+            {
+                return Results.Json(new
+                {
+                    models = SupportedModelCatalog.ToDtoList(enabledOnly: false, includeLabModels: user.IsAdmin),
+                    capabilities = SupportedModelCatalog.RegisteredCapabilities,
+                    taskRankings = SupportedModelCatalog.TaskRankings,
+                });
+            }
+            if (raw is null)
+                return Results.NotFound(new { ok = false, error = "models_catalog.json not found on server" });
         }
 
-        return Results.NotFound(new { ok = false, error = "models_catalog.json not found on server" });
+        if (user.IsAdmin)
+            return Results.Text(raw, "application/json");
+
+        // Non-admin: strip labMode models so WASM bootstrap cannot offer them.
+        using var doc = System.Text.Json.JsonDocument.Parse(raw);
+        if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object
+            || !doc.RootElement.TryGetProperty("models", out var modelsEl)
+            || modelsEl.ValueKind != System.Text.Json.JsonValueKind.Array)
+            return Results.Text(raw, "application/json");
+
+        using var streamOut = new MemoryStream();
+        using (var writer = new System.Text.Json.Utf8JsonWriter(streamOut, new System.Text.Json.JsonWriterOptions { Indented = true }))
+        {
+            writer.WriteStartObject();
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                if (prop.NameEquals("models"))
+                {
+                    writer.WritePropertyName("models");
+                    writer.WriteStartArray();
+                    foreach (var m in modelsEl.EnumerateArray())
+                    {
+                        if (m.ValueKind == System.Text.Json.JsonValueKind.Object
+                            && m.TryGetProperty("labMode", out var lab)
+                            && lab.ValueKind == System.Text.Json.JsonValueKind.True)
+                            continue;
+                        m.WriteTo(writer);
+                    }
+                    writer.WriteEndArray();
+                }
+                else
+                {
+                    prop.WriteTo(writer);
+                }
+            }
+            writer.WriteEndObject();
+        }
+        return Results.Text(System.Text.Encoding.UTF8.GetString(streamOut.ToArray()), "application/json");
     }
     catch (Exception ex)
     {
@@ -2799,28 +2842,31 @@ app.MapGet("/api/models/catalog-json", () =>
     }
 });
 
-app.MapGet("/api/models", (string? capability) =>
+app.MapGet("/api/models", (string? capability, IUserContext user) =>
 {
+    // Lab models are admin-only — never offer incomplete/experimental rows to regular users.
+    var includeLab = user.IsAdmin;
     IReadOnlyList<SupportedModelDto> list;
     if (!string.IsNullOrWhiteSpace(capability) &&
         Enum.TryParse<ModelCapability>(capability, ignoreCase: true, out var cap))
     {
-        list = SupportedModelCatalog.ForCapability(cap)
+        list = SupportedModelCatalog.ForCapability(cap, includeLabModels: includeLab)
             .Select(SupportedModelCatalog.ToDto)
             .ToList();
     }
     else
     {
-        list = SupportedModelCatalog.ToDtoList(enabledOnly: true);
+        list = SupportedModelCatalog.ToDtoList(enabledOnly: true, includeLabModels: includeLab);
     }
 
     return Results.Ok(new
     {
         ok = true,
         models = list,
+        includeLabModels = includeLab,
         note =
             "User picks model ids only. Provider, API base, endpoint, and required env keys come from this catalog. " +
-            "Request new models via GitHub feature request, then add them here when wired.",
+            "Lab-mode models are visible to admins only.",
     });
 });
 
@@ -2852,6 +2898,28 @@ app.MapPut("/api/projects/{id}/config", async (
     try
     {
         using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct);
+        if (!user.IsAdmin)
+        {
+            string[] modelKeys =
+            [
+                "video_model_name", "image_model_name", "planning_model_name", "vision_model_name",
+                "video_review_model_name", "audio_model_name", "voice_model_name", "tts_model_name"
+            ];
+            foreach (var key in modelKeys)
+            {
+                if (!doc.RootElement.TryGetProperty(key, out var el) || el.ValueKind != JsonValueKind.String)
+                    continue;
+                var mid = el.GetString();
+                if (SupportedModelCatalog.IsLabModel(mid))
+                {
+                    return Results.BadRequest(new
+                    {
+                        ok = false,
+                        error = $"Model '{mid}' is lab-mode (admin-only). Choose a production catalog model.",
+                    });
+                }
+            }
+        }
         var saved = await store.SaveConfigAsync(id, doc.RootElement, ct);
         return Results.Ok(new { ok = true, projectId = id, config = saved });
     }
