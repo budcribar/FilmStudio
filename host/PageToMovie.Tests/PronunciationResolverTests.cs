@@ -23,6 +23,19 @@ public sealed class PronunciationResolverTests
         Assert.Empty(result.Unresolved);
     }
 
+    [Theory]
+    [InlineData("Pronounce 'wind' as /waɪnd/ (turn or coil)", "Wind the clock!", true)]   // word present
+    [InlineData("Pronounce 'wind' as /waɪnd/ (turn or coil)", "Hello there, friend!", false)] // word absent
+    [InlineData("Pronounce 'wind' as /waɪnd/ (turn or coil)", "", false)]                  // no dialogue
+    [InlineData("Pronounce 'wind' as /waɪnd/ (turn or coil)", null, false)]                // no dialogue
+    [InlineData("free-form hint with no quoted word", "Any spoken line.", true)]           // no target → only needs dialogue
+    [InlineData("free-form hint with no quoted word", "", false)]
+    [InlineData("", "Wind the clock!", false)]                                             // no hint
+    public void HintAppliesToDialogue_gates_on_word_presence(string hint, string? dialogue, bool expected)
+    {
+        Assert.Equal(expected, PronunciationResolver.HintAppliesToDialogue(hint, dialogue));
+    }
+
     [Fact]
     public void Ambiguous_context_is_reported_instead_of_guessed()
     {

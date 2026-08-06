@@ -1545,7 +1545,11 @@ public sealed class Stage2PlannerService
             ["ambient"] = ambient,
         };
 
-        if (!string.IsNullOrWhiteSpace(pronHint))
+        // A pronunciation hint only earns its place when the word it targets is actually spoken in this
+        // beat's dialogue — carrying one onto a silent/no-dialogue beat (or for a word not in the line)
+        // just adds noise to the prompt.
+        if (!string.IsNullOrWhiteSpace(pronHint) &&
+            Deterministic.Pronunciation.PronunciationResolver.HintAppliesToDialogue(pronHint, dialogue))
         {
             payload["pronunciation_hint"] = pronHint;
         }

@@ -28,6 +28,28 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
+    public void Build_DropsPronunciationHintWhenTargetWordNotInDialogue()
+    {
+        // The hint targets 'wind', but the line never says it — the hint is noise and must be dropped.
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 1,
+              "visual_prompt": "The narrator speaks.",
+              "characters_on_screen": ["Character_The_Narrator"],
+              "audio_payload": {
+                "speaker": "Character_The_Narrator",
+                "dialogue": "Hello there, friend!",
+                "delivery": "spoken_on_camera",
+                "pronunciation_hint": "Pronounce 'wind' as /waɪnd/ (turn or coil)"
+              }
+            }
+            """).RootElement;
+
+        var built = ClipVideoPromptBuilder.Build(clip, "proj", new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
+        Assert.DoesNotContain("Pronounce 'wind'", built.Prompt);
+    }
+
+    [Fact]
     public void Build_TwoSpeakerBeat_EmitsBothLipSyncLinesAndAllowsSecondMouth()
     {
         var clip = JsonDocument.Parse("""
