@@ -442,9 +442,15 @@ public sealed class Stage2PlannerService
               + "centered high-contrast typography, tasteful theatrical end-title look, soft fade to black."
             : creditsVisualPrompt.Trim();
 
+        // Use the same clip shape as a normal (editable) clip — clip_number + audio_payload — so the Scenes
+        // editor can open and edit the credits card. (It previously used clip_index with no audio_payload,
+        // which the editor keys off clip_number couldn't load: the scene showed "no details / can't edit".)
         var creditsClip = new Dictionary<string, object?>
         {
+            ["clip_number"] = 1,
             ["clip_index"] = 1,
+            ["timestamp"] = "",
+            ["veo_continuation_source"] = "none",
             ["primary_subject"] = "End Credits Title Card",
             ["characters_on_screen"] = new List<object?>(),
             ["focus_keys"] = new List<object?>(),
@@ -452,6 +458,12 @@ public sealed class Stage2PlannerService
             ["duration_seconds"] = 6,
             ["is_credits"] = true,
             ["visual_prompt"] = visualPrompt,
+            ["audio_payload"] = new Dictionary<string, object?>
+            {
+                ["delivery"] = "none",
+                ["speaker"] = "",
+                ["dialogue"] = "",
+            },
         };
 
         var creditsScene = new Dictionary<string, object?>

@@ -4471,7 +4471,10 @@ public sealed class ProjectStore
             rows.Add(new SceneSummary
             {
                 SceneNumber = sn,
-                Setting = settingText,
+                // Credits scenes carry a scene_heading, not a setting — show a clear label instead of a blank cell.
+                Setting = !string.IsNullOrWhiteSpace(settingText) ? settingText
+                    : isCredits ? "END CREDITS"
+                    : headingText,
                 IsCredits = isCredits,
                 ClipCount = nClips,
                 ClipsOnDisk = onDisk,
