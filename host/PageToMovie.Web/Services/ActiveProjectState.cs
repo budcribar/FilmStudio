@@ -121,39 +121,62 @@ public sealed class ActiveProjectState
         Changed?.Invoke();
     }
 
+    private Task? _ensureLoadTask;
+    private readonly object _ensureLoadGate = new();
+
     public async Task EnsureLoadedAsync(EngineApiClient engine, bool force = false, CancellationToken ct = default)
     {
-        if (!HasProject || ProjectId is null)
+        if (string.IsNullOrEmpty(ProjectId))
         {
             IsLoading = false;
             IsReady = false;
             LoadError = null;
-            Changed?.Invoke();
             return;
         }
 
-        if (IsReady && !force && !IsLoading)
+        if (IsReady && !force && LoadError is null)
             return;
 
-        if (IsLoading && !force)
+        Task loadTask;
+        lock (_ensureLoadGate)
         {
-            for (var i = 0; i < 50 && IsLoading; i++)
-                await Task.Delay(50, ct).ConfigureAwait(false);
-            if (IsReady)
-                return;
+            if (!force && _ensureLoadTask is { IsCompleted: false })
+                loadTask = _ensureLoadTask;
+            else
+                loadTask = _ensureLoadTask = EnsureLoadedCoreAsync(engine);
         }
 
+        // Waiters can cancel waiting without canceling the shared load.
+        if (ct.CanBeCanceled)
+            await loadTask.WaitAsync(ct).ConfigureAwait(false);
+        else
+            await loadTask.ConfigureAwait(false);
+    }
+
+    private async Task EnsureLoadedCoreAsync(EngineApiClient engine)
+    {
         IsLoading = true;
         LoadError = null;
         Changed?.Invoke();
         try
         {
-            await RefreshReadinessAsync(engine, ct).ConfigureAwait(false);
+            await RefreshReadinessAsync(engine).ConfigureAwait(false);
+            IsReady = true;
+        }
+        catch (Exception ex)
+        {
+            LoadError = ex.Message;
+            IsReady = false;
         }
         finally
         {
             IsLoading = false;
             Changed?.Invoke();
+            lock (_ensureLoadGate)
+            {
+                if (_ensureLoadTask?.IsCompleted == true)
+                    _ensureLoadTask = null;
+            }
         }
     }
 

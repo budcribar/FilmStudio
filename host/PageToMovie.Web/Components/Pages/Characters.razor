@@ -847,6 +847,9 @@ else
             : "No preferred image";
 
     private bool _busy;
+    private bool _disposed;
+    private bool _softReloadBusy;
+    private CancellationTokenSource _pageCts = new();
     private bool _gateChecked;
     private string? _error;
     private string? _message;
@@ -1336,7 +1339,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await ActiveProject.EnsureLoadedAsync(Engine);
+        await ActiveProject.EnsureLoadedAsync(Engine, ct: _pageCts.Token);
         Hub.JobUpdated += OnJobUpdated;
         Hub.JobLog += OnJobLog;
         try
@@ -1578,17 +1581,23 @@ else
 
     private async Task SoftReloadAsync()
     {
+        if (_disposed || string.IsNullOrEmpty(ProjectId) || _busy || _softReloadBusy) return;
+        _softReloadBusy = true;
         try
         {
-            var dto = await Engine.GetCharactersAsync(_projectId);
-            _chars = dto?.Characters ?? new List<CharacterSummary>();
-            _plates = dto?.CharacterPlates;
-            _imageSeedLimits = dto?.ImageSeedLimits;
-            _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            if (_selectedKey is not null)
-                await SelectCoreAsync(_selectedKey, resetMode: false, flushPending: false);
+            var prevKey = _selected?.Key;
+            await SoftReloadCoreAsync();
+            if (_disposed) return;
+            if (!string.IsNullOrEmpty(prevKey))
+                _selected = _characters.FirstOrDefault(c => string.Equals(c.Key, prevKey, StringComparison.OrdinalIgnoreCase));
+            if (_selected is null && _characters.Count > 0)
+                _selected = _characters[0];
+            if (_disposed) return;
+            await InvokeAsync(StateHasChanged);
         }
-        catch { /* ignore */ }
+        catch (OperationCanceledException) { }
+        catch { /* soft reload best-effort */ }
+        finally { _softReloadBusy = false; }
     }
 
     /// <summary>
@@ -2957,6 +2966,9 @@ else
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
+        try { _pageCts.Cancel(); } catch { /* */ }
+        try { _pageCts.Dispose(); } catch { /* */ }
         _voiceSaveCts?.Cancel();
         _voiceSaveCts?.Dispose();
         // original continues

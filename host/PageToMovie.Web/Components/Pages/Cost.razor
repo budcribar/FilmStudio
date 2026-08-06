@@ -1,4 +1,5 @@
 @page "/cost"
+@implements IAsyncDisposable
 @inject EngineApiClient Engine
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
@@ -152,6 +153,8 @@
     }
 
 @code {
+    private bool _disposed;
+    private CancellationTokenSource _pageCts = new();
     private bool _busy;
     private string? _error;
     private string _projectId = "";
@@ -160,6 +163,14 @@
     private string _draftRes = "480p";
     private string _heroRes = "720p";
     private double _retries = 0.5;
+
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_disposed) return;
+        try { await ActiveProject.EnsureLoadedAsync(Engine, ct: _pageCts.Token); }
+        catch (OperationCanceledException) { return; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -324,4 +335,12 @@
     }
 
     private static string Usd(double v) => $"${v:0.00}";
+    public ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        try { _pageCts.Cancel(); } catch { /* */ }
+        try { _pageCts.Dispose(); } catch { /* */ }
+        return ValueTask.CompletedTask;
+    }
+
 }
