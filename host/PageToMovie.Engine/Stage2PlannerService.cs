@@ -62,6 +62,7 @@ public sealed class Stage2PlannerService
     private readonly SoundDesignComposerClassifier? _soundComposerClassifier;
     private readonly DepthOfFieldClassifier? _dofClassifier;
     private readonly ColorPaletteGradingClassifier? _colorGradingClassifier;
+    private readonly GenerationErrorLogger? _errorLog;
 
     public Stage2PlannerService(
         ProjectStore projects,
@@ -80,7 +81,8 @@ public sealed class Stage2PlannerService
         CharacterEmotionArcClassifier? emotionClassifier = null,
         SoundDesignComposerClassifier? soundComposerClassifier = null,
         DepthOfFieldClassifier? dofClassifier = null,
-        ColorPaletteGradingClassifier? colorGradingClassifier = null)
+        ColorPaletteGradingClassifier? colorGradingClassifier = null,
+        GenerationErrorLogger? errorLog = null)
     {
         _projects = projects;
         _log = log;
@@ -99,6 +101,7 @@ public sealed class Stage2PlannerService
         _soundComposerClassifier = soundComposerClassifier;
         _dofClassifier = dofClassifier;
         _colorGradingClassifier = colorGradingClassifier;
+        _errorLog = errorLog;
     }
 
     /// <summary>
@@ -318,8 +321,22 @@ public sealed class Stage2PlannerService
         // the lead) does not hard-fail the clip⊆scene validation below.
         HealSceneCastFromClips(plan);
 
+        // Middle-layer guard: every spoken line in the approved screenplay must survive planning into
+        // some clip's audio_payload. Record coverage in stage2_meta (always), surface any drop as a
+        // plan issue, and log it to generation_errors so we can trace which transform silenced it.
+        var coverage = Stage2DialogueCoverage.Verify(stage1, plan);
+        GetDict(plan, "stage2_meta")["dialogue_coverage"] = coverage.Meta;
+        if (coverage.HasGaps)
+        {
+            onProgress?.Invoke(
+                $"Dialogue coverage: {coverage.CoveredLines}/{coverage.ExpectedLines} screenplay lines reach a clip " +
+                $"({coverage.Gaps.Count} not spoken in the shot plan).");
+            await LogDialogueCoverageGapsAsync(coverage, videoModelId, planningModel, ct).ConfigureAwait(false);
+        }
+
         var planIssues = StructuredOperationArtifacts.RequireJsonProperties(plan, "stage2_meta", "scenes")
             .Concat(Stage2AggregateValidator.Validate(plan))
+            .Concat(coverage.Issues)
             .ToArray();
         var classifierProvenance = Stage2AggregateValidator.BuildClassifierProvenance(enrichMeta);
         await StructuredOperationArtifacts.WriteAsync(
@@ -359,6 +376,38 @@ public sealed class Stage2PlannerService
             ClipCount = totalClips,
             DurationSeconds = totalDur,
         };
+    }
+
+    /// <summary>
+    /// Learning-loop signal for the dialogue-coverage gate: one <c>structural_gate_failure</c> row per
+    /// plan carrying every screenplay line that never reached a clip (as <c>s{scene}:{beat}</c> ids),
+    /// so the offending Stage-2 transform can be traced. Never throws — same swallow contract as the
+    /// classifiers' coverage logging.
+    /// </summary>
+    private async Task LogDialogueCoverageGapsAsync(
+        Stage2DialogueCoverage.Report coverage, string videoModelId, string planningModel, CancellationToken ct)
+    {
+        if (_errorLog is null || !coverage.HasGaps) return;
+        var missingIds = coverage.Gaps
+            .Select(g => $"s{g.Scene}:{(string.IsNullOrWhiteSpace(g.BeatId) ? "?" : g.BeatId)}")
+            .Take(50)
+            .ToList();
+        var preview = string.Join(" | ", coverage.Gaps.Take(5)
+            .Select(g => $"scene {g.Scene} [{g.Diagnosis}] \"{g.Dialogue}\""));
+        await _errorLog.LogAsync(new GenerationErrorRecord
+        {
+            Stage = "stage2_dialogue_coverage",
+            // Coverage is shaped by the planning-model classifiers (silent-beat, coalesce, etc.).
+            Model = planningModel,
+            ErrorType = "structural_gate_failure",
+            ErrorMessage =
+                $"{coverage.Gaps.Count} screenplay line(s) not spoken in the shot plan " +
+                $"({coverage.CoveredLines}/{coverage.ExpectedLines} covered); video_model={videoModelId}; {preview}",
+            RequestedCount = coverage.ExpectedLines,
+            ReturnedCount = coverage.CoveredLines,
+            MissingIds = missingIds,
+            Resolved = false,
+        }, ct).ConfigureAwait(false);
     }
 
     private static Dictionary<string, object?> BuildFullPlan(
