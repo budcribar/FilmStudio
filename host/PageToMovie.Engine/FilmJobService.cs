@@ -3038,9 +3038,20 @@ public sealed class FilmJobService
 
             if (req.RequireLockedCharacters)
             {
+                // The auto-inserted end-credits scene is a title card with no real cast, so it is
+                // exempt from the locked-character gate. Detect it by the same blueprint signal
+                // ProjectStore uses to derive SceneSummary.IsCredits — not a hardcoded scene number
+                // or story-specific title string (AGENTS.md: generalize, no story-specific strings).
+                var castScenes = scenes
+                    .Where(sn => !IsCreditsScene(FindScene(bp.RootElement, sn)))
+                    .ToList();
+
                 // Project-wide first (all cast voice + locked images), then per-scene mentions.
-                EnsureCastReadyForVideo(projectId);
-                foreach (var sn in scenes)
+                // Skip the cast-readiness gate entirely when the credits card is the ONLY scene being
+                // generated (nothing on-screen to lock — no wasted spend to guard against).
+                if (castScenes.Count > 0)
+                    EnsureCastReadyForVideo(projectId);
+                foreach (var sn in castScenes)
                     EnsureSceneCharactersLocked(projectId, sn);
             }
 
@@ -4363,6 +4374,37 @@ public sealed class FilmJobService
                 return s;
         }
         return null;
+    }
+
+    /// <summary>
+    /// The auto-inserted end-credits scene is a title card with no real cast, so it is exempt from the
+    /// locked-character video-gen gate. Detected by the same signal ProjectStore uses to derive
+    /// <c>SceneSummary.IsCredits</c> — the blueprint's <c>is_credits</c> flag or a CREDITS
+    /// scene heading/setting — never a hardcoded scene number or story-specific title string.
+    /// </summary>
+    internal static bool IsCreditsScene(JsonElement? sceneEl)
+    {
+        if (sceneEl is not { } s || s.ValueKind != JsonValueKind.Object)
+            return false;
+        if (ReadJsonBool(s, "is_credits"))
+            return true;
+        var heading = s.TryGetProperty("scene_heading", out var sh) ? sh.GetString() ?? "" : "";
+        var setting = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "";
+        return heading.Contains("CREDITS", StringComparison.OrdinalIgnoreCase)
+            || setting.Contains("CREDITS", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ReadJsonBool(JsonElement parent, string name)
+    {
+        if (!parent.TryGetProperty(name, out var el)) return false;
+        return el.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.String => bool.TryParse(el.GetString(), out var b) && b,
+            JsonValueKind.Number => el.TryGetInt32(out var n) && n != 0,
+            _ => false,
+        };
     }
 
     /// <summary>
