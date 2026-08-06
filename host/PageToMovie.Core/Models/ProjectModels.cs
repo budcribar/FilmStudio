@@ -716,6 +716,19 @@ public sealed class DeleteCharacterImageRequest
     public int Index { get; set; }
 }
 
+/// <summary>
+/// Structured content for the end-credits card, single-sourced from
+/// <c>ProjectStore.BuildCreditsContent</c> (same inputs as the card prompt). The client renders these
+/// exact strings deterministically (canvas) instead of asking a generative model to draw text.
+/// </summary>
+public sealed class CreditsContentDto
+{
+    public string Title { get; set; } = "The End";
+    public string Author { get; set; } = "";
+    public string SoftwareName { get; set; } = "PageToMovie";
+    public string SiteUrl { get; set; } = "pagetomovie.com";
+}
+
 public sealed class SceneSummary
 {
     public int SceneNumber { get; set; }

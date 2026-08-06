@@ -508,6 +508,56 @@ public sealed class ClientVideoStitchService
         }
     }
 
+    /// <summary>
+    /// Render the deterministic end-credits card client-side and store it as the scene's clip: draw the
+    /// exact strings on a canvas, roll them into a format-matched mp4 via ffmpeg.wasm, then save to the
+    /// media folder (if connected) and upload to the server clip slot. The credits scene thereby becomes
+    /// a normal on-disk clip the stitch concatenates — no video-gen call, no hallucinated text.
+    /// </summary>
+    public async Task<(bool Ok, string? Error)> RenderAndStoreCreditsClipAsync(
+        string projectId, int scene, int clip, double durationSeconds,
+        int width, int height, int fps, CancellationToken ct = default)
+    {
+        try
+        {
+            var content = await _engine.GetCreditsContentAsync(projectId, ct).ConfigureAwait(false);
+            var res = await _js.InvokeAsync<JsCreditsResult>(
+                "PageToMovieFfmpeg.renderCreditsClipAsync", ct, new
+                {
+                    title = content?.Title ?? "The End",
+                    author = content?.Author ?? "",
+                    softwareName = content?.SoftwareName ?? "PageToMovie",
+                    siteUrl = content?.SiteUrl ?? "pagetomovie.com",
+                    width,
+                    height,
+                    fps,
+                    durationSec = durationSeconds <= 0 ? 5 : durationSeconds,
+                }).ConfigureAwait(false);
+            if (res is not { Success: true } || string.IsNullOrEmpty(res.Mp4Base64))
+                return (false, res?.Error ?? "Credits card render failed");
+
+            var bytes = Convert.FromBase64String(res.Mp4Base64);
+            // Persist exactly like a generated clip: local media folder (if connected) + server slot.
+            if (_media is not null)
+                await _media.SaveBytesAsync(projectId, $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4", bytes)
+                    .ConfigureAwait(false);
+            await _engine.UploadClipAsync(projectId, scene, clip, bytes, ct).ConfigureAwait(false);
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    private sealed class JsCreditsResult
+    {
+        public bool Success { get; set; }
+        public string? Mp4Base64 { get; set; }
+        public long ByteLength { get; set; }
+        public string? Error { get; set; }
+    }
+
     private sealed class JsConcatResult
     {
         public bool Success { get; set; }

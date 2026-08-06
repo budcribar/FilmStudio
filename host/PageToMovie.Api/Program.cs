@@ -6721,6 +6721,17 @@ app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/clips/{clipNumber:int}/v
     }
 });
 
+/// <summary>Structured end-credits card content (title/author/software/site) — the client renders these
+/// exact strings deterministically instead of asking a generative model to draw text.</summary>
+app.MapGet("/api/projects/{id}/credits-content",
+    (string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try { return Results.Ok(store.BuildCreditsContent(id)); }
+    catch (Exception ex) { return Results.BadRequest(new { ok = false, error = ex.Message }); }
+});
+
 /// <summary>Archived prompt (+ paired video, if the client's media folder still has it) versions for one clip.</summary>
 app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/clips/{clipNumber:int}/prompt-history",
     (string id, int sceneNumber, int clipNumber, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>

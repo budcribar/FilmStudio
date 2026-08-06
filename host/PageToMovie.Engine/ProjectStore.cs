@@ -3706,10 +3706,27 @@ public sealed class ProjectStore
     /// </summary>
     public string BuildCreditsVisualPrompt(string projectId)
     {
+        var c = BuildCreditsContent(projectId);
+        return CreditsCardPrompt(c.Title, c.Author, c.SoftwareName, c.SiteUrl);
+    }
+
+    /// <summary>
+    /// Structured credits-card content (title / author / software / site) — the single source the
+    /// client uses to render the card deterministically, and the same inputs
+    /// <see cref="BuildCreditsVisualPrompt"/> feeds to <see cref="CreditsCardPrompt"/>. Keeping one
+    /// builder means the rendered card and any prompt-based path can never drift apart.
+    /// </summary>
+    public CreditsContentDto BuildCreditsContent(string projectId)
+    {
         var credits = _opts.Credits ?? new CreditsOptions();
-        var softName = string.IsNullOrWhiteSpace(credits.SoftwareName) ? "PageToMovie" : credits.SoftwareName.Trim();
-        var siteUrl = string.IsNullOrWhiteSpace(credits.SiteUrl) ? "pagetomovie.com" : credits.SiteUrl.Trim();
-        return CreditsCardPrompt(ReadScreenplayTitle(projectId), ReadScreenplayAuthor(projectId), softName, siteUrl);
+        var title = ReadScreenplayTitle(projectId);
+        return new CreditsContentDto
+        {
+            Title = string.IsNullOrWhiteSpace(title) ? "The End" : title.Trim(),
+            Author = ReadScreenplayAuthor(projectId),
+            SoftwareName = string.IsNullOrWhiteSpace(credits.SoftwareName) ? "PageToMovie" : credits.SoftwareName.Trim(),
+            SiteUrl = string.IsNullOrWhiteSpace(credits.SiteUrl) ? "pagetomovie.com" : credits.SiteUrl.Trim(),
+        };
     }
 
     /// <summary>

@@ -312,6 +312,144 @@ window.PageToMovieFfmpeg = {
         });
     },
 
+    /**
+     * Draw the deterministic end-credits card on a canvas. We render the EXACT strings ourselves
+     * (never a generative model), so text + our branding are always crisp and correct. Returns a
+     * <canvas>. Only our own text/shapes are drawn, so the canvas is NOT tainted and exports cleanly.
+     */
+    _drawCreditsCard: function (opts) {
+        const w = Math.max(16, Math.round(opts.width || 1280));
+        const h = Math.max(16, Math.round(opts.height || 720));
+        const cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        const g = cv.getContext("2d");
+
+        // Matte black base.
+        g.fillStyle = "#000";
+        g.fillRect(0, 0, w, h);
+
+        // Fine film grain: a small noise tile stamped at low opacity (cheap, textured, deterministic-enough).
+        try {
+            const tile = document.createElement("canvas");
+            tile.width = tile.height = 128;
+            const tg = tile.getContext("2d");
+            const img = tg.createImageData(128, 128);
+            for (let i = 0; i < img.data.length; i += 4) {
+                const v = (Math.random() * 255) | 0;
+                img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+            }
+            tg.putImageData(img, 0, 0);
+            g.save();
+            g.globalAlpha = 0.045;
+            const pat = g.createPattern(tile, "repeat");
+            g.fillStyle = pat; g.fillRect(0, 0, w, h);
+            g.restore();
+        } catch (_) { /* grain is optional */ }
+
+        // Soft vignette.
+        const vg = g.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, h * 0.75);
+        vg.addColorStop(0, "rgba(0,0,0,0)");
+        vg.addColorStop(1, "rgba(0,0,0,0.75)");
+        g.fillStyle = vg; g.fillRect(0, 0, w, h);
+
+        const cx = w / 2;
+        // Fit a line to a max width by shrinking the font.
+        function fit(text, font, px, maxW) {
+            let size = px;
+            do { g.font = font.replace("%d", size); size -= 2; }
+            while (g.measureText(text).width > maxW && size > 10);
+            return g.font;
+        }
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        const maxW = w * 0.84;
+
+        // Vertical rhythm around the middle.
+        let y = h * 0.40;
+        const title = (opts.title || "The End").trim();
+        try { g.letterSpacing = Math.round(w * 0.004) + "px"; } catch (_) { /* older browsers */ }
+        g.fillStyle = "#f4f1ea";
+        fit(title, 'italic %dpx Georgia, "Times New Roman", serif', Math.round(h * 0.12), maxW);
+        g.fillText(title, cx, y);
+        try { g.letterSpacing = "0px"; } catch (_) { /* */ }
+
+        if (opts.author && String(opts.author).trim().length > 0) {
+            y += h * 0.12;
+            g.fillStyle = "rgba(230,226,216,0.72)";
+            fit("Based on the story by " + String(opts.author).trim(),
+                '%dpx Georgia, "Times New Roman", serif', Math.round(h * 0.045), maxW);
+            g.fillText("Based on the story by " + String(opts.author).trim(), cx, y);
+        }
+
+        // Thin divider.
+        y += h * 0.11;
+        g.strokeStyle = "rgba(230,226,216,0.35)";
+        g.lineWidth = Math.max(1, Math.round(h * 0.0025));
+        g.beginPath(); g.moveTo(cx - w * 0.09, y); g.lineTo(cx + w * 0.09, y); g.stroke();
+
+        // Software + site footer.
+        y += h * 0.085;
+        const soft = (opts.softwareName || "PageToMovie").trim();
+        const site = (opts.siteUrl || "pagetomovie.com").trim();
+        g.fillStyle = "rgba(230,226,216,0.82)";
+        try { g.letterSpacing = Math.round(w * 0.002) + "px"; } catch (_) { /* */ }
+        fit("Made with " + soft + " · " + site,
+            '%dpx Helvetica, Arial, sans-serif', Math.round(h * 0.038), maxW);
+        g.fillText("Made with " + soft + " · " + site, cx, y);
+        try { g.letterSpacing = "0px"; } catch (_) { /* */ }
+
+        return cv;
+    },
+
+    /**
+     * Render the deterministic credits card and roll it into a format-matched H.264 mp4 (a still held
+     * for durationSec) so it drops into the normal clip slot and the browser stitch concatenates it
+     * like any other clip. Returns { success, mp4Base64, byteLength } or { success:false, error }.
+     */
+    renderCreditsClipAsync: async function (opts) {
+        opts = opts || {};
+        const self = this;
+        const w = Math.max(16, Math.round(opts.width || 1280));
+        const h = Math.max(16, Math.round(opts.height || 720));
+        const fps = Math.max(1, Math.round(opts.fps || 24));
+        const dur = Math.max(1, Number(opts.durationSec || 5));
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(opts.onProgress);
+            if (!load.success) return load;
+            const ffmpeg = self._ffmpeg;
+            try {
+                const cv = self._drawCreditsCard({ ...opts, width: w, height: h });
+                const blob = await new Promise((res) => cv.toBlob(res, "image/png"));
+                if (!blob) return { success: false, error: "canvas toBlob failed" };
+                const png = new Uint8Array(await blob.arrayBuffer());
+                await ffmpeg.writeFile("card.png", png);
+                try { await ffmpeg.deleteFile("credits.mp4"); } catch (_) { /* */ }
+                await ffmpeg.exec([
+                    "-loop", "1", "-i", "card.png",
+                    "-t", String(dur), "-r", String(fps),
+                    "-vf", "scale=" + w + ":" + h + ",format=yuv420p",
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+                    "-movflags", "+faststart",
+                    "credits.mp4",
+                ]);
+                const out = await ffmpeg.readFile("credits.mp4");
+                const bytes = out.buffer ? new Uint8Array(out.buffer) : out;
+                // Base64 in chunks (avoid apply() stack limits on large arrays).
+                let bin = "";
+                const CH = 0x8000;
+                for (let i = 0; i < bytes.length; i += CH)
+                    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+                const b64 = btoa(bin);
+                try { await ffmpeg.deleteFile("card.png"); } catch (_) { /* */ }
+                try { await ffmpeg.deleteFile("credits.mp4"); } catch (_) { /* */ }
+                return { success: true, mp4Base64: b64, byteLength: bytes.length };
+            } catch (err) {
+                console.error("renderCreditsClipAsync failed:", err);
+                return { success: false, error: err.message || String(err) };
+            }
+        });
+    },
+
     probeDurationAsync: async function (url) {
         if (!url) return { success: false, error: "No URL" };
         const self = this;

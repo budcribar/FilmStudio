@@ -1943,6 +1943,12 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         BrowserMediaPath(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/video");
 
+    /// <summary>Structured end-credits card content (title/author/software/site) for deterministic
+    /// client-side rendering of the credits clip.</summary>
+    public async Task<CreditsContentDto?> GetCreditsContentAsync(string projectId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<CreditsContentDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/credits-content", JsonOpts, ct);
+
     /// <summary>Archived prompt versions for one clip (for ClipPromptCompareViewer).</summary>
     public async Task<ClipPromptHistoryEnvelope?> GetClipPromptHistoryAsync(
         string projectId, int sceneNumber, int clipNumber, CancellationToken ct = default) =>

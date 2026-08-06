@@ -86,6 +86,36 @@ public class CreditsSceneTests : IDisposable
     }
 
     [Fact]
+    public void BuildCreditsContent_carries_title_author_and_site()
+    {
+        WriteBlueprint("Mary Had a Little Lamb");
+
+        var c = _store.BuildCreditsContent(ProjectId);
+
+        Assert.Equal("Mary Had a Little Lamb", c.Title);
+        Assert.Equal("", c.Author); // no fountain author line
+        Assert.Equal("PageToMovie", c.SoftwareName);
+        Assert.Equal("pagetomovie.com", c.SiteUrl);
+    }
+
+    [Fact]
+    public void BuildCreditsContent_is_the_single_source_for_the_prompt()
+    {
+        // The client renders these exact strings; the prompt-based path must use the same content so a
+        // deterministic card and any prompt can never drift.
+        WriteBlueprint("Mary Had a Little Lamb");
+        WriteFountainAuthor("Sarah Josepha Hale");
+
+        var c = _store.BuildCreditsContent(ProjectId);
+        var prompt = _store.BuildCreditsVisualPrompt(ProjectId);
+
+        Assert.Contains(c.Title, prompt);
+        Assert.Contains(c.Author, prompt);
+        Assert.Contains(c.SoftwareName, prompt);
+        Assert.Contains(c.SiteUrl, prompt);
+    }
+
+    [Fact]
     public void Site_url_is_config_wide()
     {
         var opts = Options.Create(new PageToMovieOptions

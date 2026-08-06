@@ -4123,20 +4123,84 @@ else
         {
             var list = _selected.OrderBy(x => x).ToList();
             await EnsureHubAsync();
-            foreach (var sn in list)
+
+            // The end-credits card is rendered deterministically in the browser (canvas → ffmpeg.wasm),
+            // not by the hallucination-prone video model — split it out of the server video batch.
+            var creditsScenes = list
+                .Where(sn => _scenes?.FirstOrDefault(s => s.SceneNumber == sn)?.IsCredits == true)
+                .ToList();
+            var videoScenes = list.Where(sn => !creditsScenes.Contains(sn)).ToList();
+
+            foreach (var sn in videoScenes)
             {
                 await EnsurePredecessorsUploadedAsync(await MissingClipTargetsAsync(sn));
             }
-            var videoModelOverride = Session.IsAdmin && !string.IsNullOrWhiteSpace(_selectedVideoModel)
-                ? _selectedVideoModel
-                : null;
-            await Engine.StartBatchGenAsync(_projectId, list, onlyMissing: true, resolution: _genResolution, videoModel: videoModelOverride);
-            // Live progress card only — no duplicate "started" banner.
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
+            if (videoScenes.Count > 0)
+            {
+                var videoModelOverride = Session.IsAdmin && !string.IsNullOrWhiteSpace(_selectedVideoModel)
+                    ? _selectedVideoModel
+                    : null;
+                await Engine.StartBatchGenAsync(_projectId, videoScenes, onlyMissing: true, resolution: _genResolution, videoModel: videoModelOverride);
+                // Live progress card only — no duplicate "started" banner.
+                var jobs = await Engine.GetJobAsync();
+                _job = jobs?.Job;
+            }
+
+            foreach (var sn in creditsScenes)
+            {
+                await RenderCreditsSceneClientSideAsync(sn);
+            }
+            if (creditsScenes.Count > 0)
+                await SoftReloadAsync();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private static (int W, int H) ResolutionDims(string? res) => (res ?? "").Trim().ToLowerInvariant() switch
+    {
+        "1080p" => (1920, 1080),
+        "480p" => (854, 480),
+        _ => (1280, 720),
+    };
+
+    /// <summary>
+    /// Render the end-credits card client-side (deterministic canvas → ffmpeg.wasm roll) for every clip
+    /// of a credits scene and store each as a normal on-disk clip, so the stitch concatenates it like any
+    /// other clip. Replaces the hallucination-prone video-gen path for the credits scene.
+    /// </summary>
+    private async Task RenderCreditsSceneClientSideAsync(int sn)
+    {
+        var (w, h) = ResolutionDims(_genResolution);
+        SceneDetail? detail = null;
+        try { detail = (await Engine.GetSceneDetailAsync(_projectId, sn))?.Scene; }
+        catch { /* fall back to a single clip below */ }
+
+        var clips = detail?.Clips;
+        if (clips is { Count: > 0 })
+        {
+            foreach (var c in clips)
+            {
+                var dur = c.DurationSeconds > 0 ? c.DurationSeconds : (detail?.PlannedDurationSeconds ?? 5);
+                await RenderOneCreditsClipAsync(sn, c.ClipNumber, dur, w, h);
+            }
+        }
+        else
+        {
+            await RenderOneCreditsClipAsync(sn, 1, detail?.PlannedDurationSeconds ?? 5, w, h);
+        }
+    }
+
+    private async Task RenderOneCreditsClipAsync(int sn, int clip, double durationSeconds, int width, int height)
+    {
+        _message = "Rendering end-credits card…";
+        await InvokeAsync(StateHasChanged);
+        var (ok, err) = await Stitch.RenderAndStoreCreditsClipAsync(
+            _projectId, sn, clip, durationSeconds, width, height, fps: 24);
+        if (!ok)
+            _error = err ?? "Credits card render failed";
+        else
+            _message = "End-credits card ready";
     }
 
     private async Task CancelAsync()
