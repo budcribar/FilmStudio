@@ -434,11 +434,12 @@
   overflow: auto;
   background: var(--fe-chrome-bg); /* flat viewer chrome, not page paper */
   padding: 0.75rem;
-  cursor: default;
-  /* No text caret / I-beam — this is a view, not a field */
+  /* Read-only, but the text must be selectable/copyable — it's a view, not an input.
+     Text cursor signals "you can select this"; there's no caret because it isn't editable. */
+  cursor: text;
   caret-color: transparent;
-  -webkit-user-select: none;
-  user-select: none;
+  -webkit-user-select: text;
+  user-select: text;
   outline: none;
 }
 
@@ -450,7 +451,7 @@
 
 /* Lines are not inputs — no hover “focus ring” that looks editable */
 .fe-preview-body .fp-page [data-line] {
-  cursor: default;
+  cursor: text; /* selectable read-only text */
   border-radius: 0;
   transition: none;
 }
@@ -472,7 +473,11 @@
   font-size: 0.82rem;
   line-height: 1.35;
   color: var(--fe-page-fg); /* slightly muted vs pure edit-pane text */
-  pointer-events: none; /* clicks don’t look like field focus; scroll still works on parent */
+  /* Was pointer-events:none (to avoid a "field" look) — but that also blocked selecting/copying
+     the screenplay. Keep it interactive for selection; hover/focus chrome stays neutralized below. */
+  pointer-events: auto;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .fp-empty {
