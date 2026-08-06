@@ -919,10 +919,10 @@ public sealed class ProjectStore
 
             var curClipDict = (curClips ?? new System.Text.Json.Nodes.JsonArray())
                 .OfType<System.Text.Json.Nodes.JsonObject>()
-                .ToDictionary(c => ReadJsonNodeInt(c["clip_number"]));
+                .ToDictionary(c => ClipKeying.ClipNumber(c));
             var parClipDict = (parClips ?? new System.Text.Json.Nodes.JsonArray())
                 .OfType<System.Text.Json.Nodes.JsonObject>()
-                .ToDictionary(c => ReadJsonNodeInt(c["clip_number"]));
+                .ToDictionary(c => ClipKeying.ClipNumber(c));
 
             foreach (var (cNum, curC) in curClipDict)
             {
@@ -3163,7 +3163,7 @@ public sealed class ProjectStore
             foreach (var cNode in clips)
             {
                 if (cNode is not System.Text.Json.Nodes.JsonObject c) continue;
-                var cn = ReadJsonNodeInt(c["clip_number"]);
+                var cn = ClipKeying.ClipNumber(c);
                 if (cn != clip) continue;
                 clipObj = c;
                 break;
@@ -3200,10 +3200,7 @@ public sealed class ProjectStore
         foreach (var cNode in clips)
         {
             if (cNode is System.Text.Json.Nodes.JsonObject c &&
-                (ReadJsonNodeInt(c["clip_number"]) == clip ||
-                 // Legacy clips (e.g. old credits scenes) were keyed on `clip_index` only — match it
-                 // when `clip_number` is absent so an edit can still locate and update the node.
-                 (c["clip_number"] is null && ReadJsonNodeInt(c["clip_index"]) == clip)))
+                ClipKeying.ClipNumber(c) == clip)
                 return c;
         }
         return null;
@@ -3540,7 +3537,7 @@ public sealed class ProjectStore
         var insertAt = 0;
         while (insertAt < clips.Count &&
                clips[insertAt] is System.Text.Json.Nodes.JsonObject existing &&
-               ReadJsonNodeInt(existing["clip_number"]) < fields.Clip)
+               ClipKeying.ClipNumber(existing) < fields.Clip)
         {
             insertAt++;
         }
@@ -3583,7 +3580,7 @@ public sealed class ProjectStore
                 for (var i = 0; i < clips.Count; i++)
                 {
                     if (clips[i] is not System.Text.Json.Nodes.JsonObject c) continue;
-                    if (ReadJsonNodeInt(c["clip_number"]) != clip) continue;
+                    if (ClipKeying.ClipNumber(c) != clip) continue;
                     clips.RemoveAt(i);
                     removedFromBlueprint = true;
                     break;
@@ -4431,7 +4428,7 @@ public sealed class ProjectStore
             var onDisk = 0;
             foreach (var c in clips)
             {
-                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var n) ? n : 0;
+                var cn = ClipKeying.ClipNumber(c);
                 if (cn <= 0) continue;
                 if (ClipOnDisk(videoIndex, sn, cn))
                     onDisk++;
@@ -4454,7 +4451,7 @@ public sealed class ProjectStore
                 var clipPaths = new List<string>();
                 foreach (var c in clips)
                 {
-                    var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var n) ? n : 0;
+                    var cn = ClipKeying.ClipNumber(c);
                     if (cn <= 0) continue;
                     var cp = ResolveClipVideoPath(projectId, sn, cn);
                     if (cp is not null) clipPaths.Add(cp);
@@ -4600,13 +4597,7 @@ public sealed class ProjectStore
         {
             foreach (var c in vc.EnumerateArray())
             {
-                // Older shot plans (and some auto-inserted credits scenes) key the clip on the legacy
-                // `clip_index` instead of the canonical `clip_number`. Fall back to it so those clips
-                // still load and stay editable in the Scenes view — otherwise the scene (e.g. END CREDITS)
-                // opens with an empty, uneditable clip list.
-                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var n) ? n
-                    : c.TryGetProperty("clip_index", out var ciEl) && ciEl.TryGetInt32(out var ci) ? ci
-                    : 0;
+                var cn = ClipKeying.ClipNumber(c);
                 if (cn <= 0) continue;
 
                 // Malformed shot plan: the same clip_number twice would double the scene when stitched
@@ -5857,7 +5848,8 @@ public sealed class ProjectStore
                 var set = new HashSet<int>();
                 foreach (var c in clips.EnumerateArray())
                 {
-                    if (c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var cn) && cn > 0)
+                    var cn = ClipKeying.ClipNumber(c);
+                    if (cn > 0)
                         set.Add(cn);
                 }
                 return set.Count > 0 ? set : null;

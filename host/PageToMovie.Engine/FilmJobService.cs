@@ -2524,7 +2524,7 @@ public sealed class FilmJobService
                 continue;
             foreach (var c in clipsEl.EnumerateArray())
             {
-                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var cv) ? cv : 0;
+                var cn = ClipKeying.ClipNumber(c);
                 if (cn <= 0) continue;
 
                 string? speaker = null;
@@ -2580,7 +2580,7 @@ public sealed class FilmJobService
                 return "";
             foreach (var c in clips.EnumerateArray())
             {
-                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var cv) ? cv : 0;
+                var cn = ClipKeying.ClipNumber(c);
                 if (cn != clip) continue;
                 if (c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
                     ap.TryGetProperty("dialogue", out var d))
@@ -3100,7 +3100,7 @@ public sealed class FilmJobService
 
                     foreach (var c in clipsEl.EnumerateArray())
                     {
-                        var cn = c.TryGetProperty("clip_number", out var n) && n.TryGetInt32(out var v) ? v : 0;
+                        var cn = ClipKeying.ClipNumber(c);
                         if (cn <= 0) continue;
                         var path = Path.Combine(projectDir, "assets", "video", $"scene_{sn:D2}_clip_{cn:D2}.mp4");
                         var missing = !ClipPresentOnServerOrClient(path);
@@ -3267,7 +3267,7 @@ public sealed class FilmJobService
             var todo = new List<(int ClipNum, JsonElement Clip)>();
             foreach (var c in clips)
             {
-                var cn = c.TryGetProperty("clip_number", out var n) && n.TryGetInt32(out var v) ? v : 0;
+                var cn = ClipKeying.ClipNumber(c);
                 if (cn <= 0) continue;
                 if (req.Clip is int onlyClip && onlyClip > 0 && cn != onlyClip)
                     continue;
@@ -4358,14 +4358,14 @@ public sealed class FilmJobService
                    "voiceover" or "voice_over" or "off_camera" or "offcamera";
     }
 
-    private static JsonElement? FindClipInScene(JsonElement sceneEl, int clipNum)
+    internal static JsonElement? FindClipInScene(JsonElement sceneEl, int clipNum)
     {
         if (!sceneEl.TryGetProperty("veo_clips", out var clips) ||
             clips.ValueKind != JsonValueKind.Array)
             return null;
         foreach (var c in clips.EnumerateArray())
         {
-            if (c.TryGetProperty("clip_number", out var cn) && cn.TryGetInt32(out var n) && n == clipNum)
+            if (ClipKeying.ClipNumber(c) == clipNum)
                 return c;
         }
         return null;

@@ -1041,7 +1041,7 @@ public sealed class CostReportService
             {
                 foreach (var c in vc.EnumerateArray())
                 {
-                    var cn = c.TryGetProperty("clip_number", out var cne) && cne.TryGetInt32(out var cv) ? cv : 0;
+                    var cn = ClipKeying.ClipNumber(c);
                     if (cn <= 0) continue;
                     var dur = defaultDur;
                     if (c.TryGetProperty("duration_seconds", out var d) && d.TryGetDouble(out var dd) && dd > 0)
