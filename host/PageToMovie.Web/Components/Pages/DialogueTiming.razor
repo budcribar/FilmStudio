@@ -254,7 +254,7 @@ else
         _projectId = ActiveProject.ProjectId;
         if (string.IsNullOrEmpty(_projectId))
         {
-            try { await ActiveProject.RefreshFromApiAsync(Engine); } catch { /* ignore */ }
+            try { await ActiveProject.RefreshFromServerAsync(Engine); } catch { /* ignore */ }
             _projectId = ActiveProject.ProjectId;
         }
         if (string.IsNullOrEmpty(_projectId) && _projects.Count > 0)

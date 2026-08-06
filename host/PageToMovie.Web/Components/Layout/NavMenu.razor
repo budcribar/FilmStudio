@@ -288,7 +288,7 @@ private bool _started;
         await Session.EnsureHydratedAsync();
         Session.Changed += OnSessionChanged;
         ActiveProject.Changed += OnProjectChanged;
-        await ActiveProject.RefreshFromApiAsync(Engine);
+        await ActiveProject.RefreshFromServerAsync(Engine);
         await RefreshThemeAsync();
         await MediaFolder.TryReconnectAsync();
         StateHasChanged();

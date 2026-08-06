@@ -813,7 +813,7 @@ private async Task StartMicAsync()
             try
             {
                 await Engine.SetStudioPathAsync(_projectId, ProjectStudioPaths.Full);
-                ActiveProject.SetStudioPathLocal(ProjectStudioPaths.Full);
+                ActiveProject.Set(ActiveProject.ProjectId, ActiveProject.Label, ActiveProject.ParentProjectId, ProjectStudioPaths.Full);
             }
             catch { /* ignore */ }
         }

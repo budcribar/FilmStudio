@@ -1123,7 +1123,7 @@ else
             }
 
             _projects = await Engine.GetProjectsAsync();
-            await ActiveProject.RefreshFromApiAsync(Engine);
+            await ActiveProject.RefreshFromServerAsync(Engine);
             await RefreshProjectCostAsync();
             await ResolveHomeModeAsync();
 
@@ -1390,7 +1390,7 @@ else
                 await LoadCheckpointsAsync();
                 await LoadAsync();
                 if (ActiveProject.HasProject)
-                    await ActiveProject.RefreshFromApiAsync(Engine);
+                    await ActiveProject.RefreshFromServerAsync(Engine);
             }
             else
             {
@@ -1468,7 +1468,7 @@ else
             _message = res?.Message ?? $"Imported “{res?.ProjectId}”.";
             await LoadAsync();
             if (ActiveProject.HasProject)
-                await ActiveProject.RefreshFromApiAsync(Engine);
+                await ActiveProject.RefreshFromServerAsync(Engine);
         }
         catch (Exception ex)
         {
@@ -1515,7 +1515,7 @@ else
             _message = $"Renamed to “{updated?.Label ?? _renameName.Trim()}”.";
             await LoadAsync();
             if (ActiveProject.HasProject)
-                await ActiveProject.RefreshFromApiAsync(Engine);
+                await ActiveProject.RefreshFromServerAsync(Engine);
         }
         catch (Exception ex)
         {
@@ -1556,7 +1556,7 @@ else
                 await RefreshProjectCostAsync();
             }
             else
-                await ActiveProject.RefreshFromApiAsync(Engine);
+                await ActiveProject.RefreshFromServerAsync(Engine);
 
             // Stay in full studio so going Home still shows the new project in the picker.
             _fullStudioHome = true;
@@ -1633,7 +1633,7 @@ else
         {
             var result = await Engine.DeleteProjectAsync(id);
             _projects = result ?? await Engine.GetProjectsAsync();
-            await ActiveProject.RefreshFromApiAsync(Engine);
+            await ActiveProject.RefreshFromServerAsync(Engine);
             _message = $"Deleted “{_deleteLabel}”";
             CancelDelete();
         }

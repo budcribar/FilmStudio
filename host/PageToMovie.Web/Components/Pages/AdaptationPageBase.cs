@@ -61,7 +61,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         Hub.JobLog += OnJobLog;
         try
         {
-            await ActiveProject.RefreshFromApiAsync(Engine);
+            await ActiveProject.RefreshFromServerAsync(Engine);
             if (!ActiveProject.HasProject)
             {
                 Error = "No project selected. Create or choose one on Studio.";

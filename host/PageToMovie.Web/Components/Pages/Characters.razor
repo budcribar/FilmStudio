@@ -2513,7 +2513,7 @@ else
         try
         {
             await Engine.SetStudioPathAsync(_projectId, ProjectStudioPaths.Full);
-            ActiveProject.SetStudioPathLocal(ProjectStudioPaths.Full);
+            ActiveProject.Set(ActiveProject.ProjectId, ActiveProject.Label, ActiveProject.ParentProjectId, ProjectStudioPaths.Full);
             _simpleMode = false;
             _useKidsScript = VoiceCloneScripts.LooksLikeChildrensStory(
                 ActiveProject.Label, null, _projectId);

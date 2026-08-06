@@ -5,7 +5,6 @@
 @implements IDisposable
 @inject IJSRuntime Js
 @inject ActiveProjectState ActiveProject
-@implements IDisposable
 @inject NavigationManager Nav
 @inject EngineApiClient Engine
 @inject AdminSessionService Session
@@ -93,6 +92,11 @@
     }
 
     private void OnMediaFolderChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnActiveProjectChanged()
     {
         _ = InvokeAsync(StateHasChanged);
     }
@@ -371,6 +375,7 @@
     public void Dispose()
     {
         MediaFolder.Changed -= OnMediaFolderChanged;
+        ActiveProject.Changed -= OnActiveProjectChanged;
         if (_locationHooked)
         {
             Nav.LocationChanged -= OnLocationChanged;
