@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Models;
 
 namespace PageToMovie.Engine;
 
@@ -102,9 +103,12 @@ public static class Stage1Normalizer
             seed["voice_label"] =
                 CoerceString(seed.TryGetValue("voice_label", out var vl) ? vl : null) ?? key;
 
-            var pol = (CoerceString(seed.TryGetValue("display_name_policy", out var polV) ? polV : null) ?? "")
-                .ToLowerInvariant();
-            var isVoiceOnly = pol.Contains("never") ||
+            // Shared policy mechanism (CastKindClassifier.IsVoiceOnlyPolicy) OR a narrator-key heuristic.
+            // NOTE: the narrator-key clause DIVERGES from ProjectStore / CharacterDesignService, which
+            // deliberately do NOT force voice-only for "Narrator" keys (on-camera confessor / POV roles
+            // are common). Genuine product-policy question flagged for human resolution — not unified here.
+            var pol = CoerceString(seed.TryGetValue("display_name_policy", out var polV) ? polV : null);
+            var isVoiceOnly = CastKindClassifier.IsVoiceOnlyPolicy(pol) ||
                               key.EndsWith("_Narrator", StringComparison.OrdinalIgnoreCase) ||
                               key.Equals("Character_Narrator", StringComparison.OrdinalIgnoreCase) ||
                               key.Contains("narrator", StringComparison.OrdinalIgnoreCase);

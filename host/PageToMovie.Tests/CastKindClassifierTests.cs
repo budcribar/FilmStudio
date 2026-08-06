@@ -20,12 +20,22 @@ public sealed class CastKindClassifierTests
         Assert.Equal(expected, CastKindClassifier.IsGroup(key, display, castKind, description: null));
     }
 
-    [Fact]
-    public void IsVoiceOnlyPolicy_never_on_screen()
+    // Single source of truth for the policy-string voice-only mechanism. Every policy-only site
+    // (ProjectStore.IsVoiceOnly / LoadCharacterPromptProfiles, CharacterDesignService.IsVoiceOnly)
+    // and the policy portion of the two divergent narrator sites (CharacterBookPlateService,
+    // Stage1Normalizer) route through this predicate. Pin its exact semantics here.
+    [Theory]
+    [InlineData("never_on_screen", true)]
+    [InlineData("NEVER_ON_SCREEN", true)]   // case-insensitive
+    [InlineData("Never appears", true)]     // substring, mixed case
+    [InlineData("ok_anytime", false)]
+    [InlineData("on_screen", false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData(null, false)]
+    public void IsVoiceOnlyPolicy_pins_never_semantics(string? policy, bool expected)
     {
-        Assert.True(CastKindClassifier.IsVoiceOnlyPolicy("never_on_screen"));
-        Assert.False(CastKindClassifier.IsVoiceOnlyPolicy("ok_anytime"));
-        Assert.False(CastKindClassifier.IsVoiceOnlyPolicy(null));
+        Assert.Equal(expected, CastKindClassifier.IsVoiceOnlyPolicy(policy));
     }
 
     [Fact]

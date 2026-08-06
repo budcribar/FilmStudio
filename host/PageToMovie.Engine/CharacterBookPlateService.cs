@@ -1039,8 +1039,13 @@ public sealed class CharacterBookPlateService
 
     private static bool IsVoiceOnly(string key, JsonObject seed)
     {
-        var pol = (seed["display_name_policy"]?.GetValue<string>() ?? "").ToLowerInvariant();
-        return pol.Contains("never")
+        // Shared policy mechanism (CastKindClassifier.IsVoiceOnlyPolicy) OR a narrator-key heuristic.
+        // NOTE: the narrator-key clause DIVERGES from ProjectStore / CharacterDesignService, which
+        // deliberately do NOT force voice-only for "Narrator" keys (on-camera confessor / POV roles
+        // are common). This is a genuine product-policy question flagged for human resolution — do
+        // not silently unify these two behaviors.
+        var pol = seed["display_name_policy"]?.GetValue<string>();
+        return CastKindClassifier.IsVoiceOnlyPolicy(pol)
                || key.EndsWith("_Narrator", StringComparison.OrdinalIgnoreCase)
                || key.Equals("Character_Narrator", StringComparison.OrdinalIgnoreCase)
                || key.Contains("narrator", StringComparison.OrdinalIgnoreCase);

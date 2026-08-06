@@ -2966,9 +2966,10 @@ public sealed class ProjectStore
                     display = key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' ');
                 // Prefer cast seed policy only — never force VOICE ONLY because key is "Narrator"
                 // (on-camera confessor / POV roles are common and need locked face refs).
+                // Shared mechanism: CastKindClassifier.IsVoiceOnlyPolicy.
                 var voiceOnly =
                     info.TryGetProperty("display_name_policy", out var pol) &&
-                    (pol.GetString() ?? "").Contains("never", StringComparison.OrdinalIgnoreCase);
+                    CastKindClassifier.IsVoiceOnlyPolicy(pol.GetString());
                 if (desc.Length == 0 && vlock.Length == 0 && profile.Length == 0 && label.Length == 0)
                     continue;
                 map[key] = new ClipVideoPromptBuilder.CharacterProfile

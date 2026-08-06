@@ -1485,14 +1485,11 @@ public sealed class CharacterDesignService
     private static bool IsVoiceOnly(string key, JsonElement info)
     {
         // Prefer cast seed policy. Do not force voice-only just because key is "Narrator"
-        // (on-camera confessor / POV roles are common).
+        // (on-camera confessor / POV roles are common). Shared mechanism:
+        // CastKindClassifier.IsVoiceOnlyPolicy.
         if (info.ValueKind == JsonValueKind.Object &&
             info.TryGetProperty("display_name_policy", out var pol))
-        {
-            var p = pol.GetString() ?? "";
-            if (p.Contains("never", StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
+            return CastKindClassifier.IsVoiceOnlyPolicy(pol.GetString());
         return false;
     }
 
