@@ -10,6 +10,14 @@ using PageToMovie.Core.Options;
 namespace PageToMovie.Web.Services;
 
 /// <summary>HTTP client for PageToMovie.Api (C# backend).</summary>
+    public async Task<byte[]?> GetCharacterImageAsync(string projectId, string characterKey, string? imageKind = null, CancellationToken ct = default)
+    {
+        var kind = string.IsNullOrWhiteSpace(imageKind) ? "portrait" : imageKind.Trim();
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(characterKey)}/image?kind={Uri.EscapeDataString(kind)}";
+        try { return await _http.GetByteArrayAsync(url, ct).ConfigureAwait(false); }
+        catch { return null; }
+    }
+
 public sealed class EngineApiClient
 {
     public static readonly JsonSerializerOptions JsonOpts = new()
