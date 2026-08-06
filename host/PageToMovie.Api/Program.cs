@@ -124,7 +124,6 @@ builder.Services.AddSingleton<SceneMusicCompositionService>();
 builder.Services.AddSingleton<DepthOfFieldClassifier>();
 builder.Services.AddSingleton<ColorPaletteGradingClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
-builder.Services.AddSingleton<CreditsGeneratorService>();
 builder.Services.AddSingleton<VoicePreviewService>();
 builder.Services.AddHttpClient("elevenlabs", c =>
 {
@@ -5936,33 +5935,6 @@ app.MapPost("/api/jobs/stage2", async (
     }
 });
 
-app.MapPost("/api/jobs/credits", async (
-    StartCreditsGenRequest? body,
-    FilmJobService jobService,
-    IUserContext user,
-    IOptions<PageToMovieOptions> opts) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        var projectId = body?.ProjectId;
-        if (string.IsNullOrWhiteSpace(projectId))
-            return Results.BadRequest(new { ok = false, error = "projectId required" });
-        var job = await jobService.StartCreditsGenAsync(projectId.Trim(), body?.Resolution);
-        return Results.Accepted($"/api/jobs/{job.JobId}", new
-        {
-            ok = true,
-            message = "Queued credits plate",
-            job,
-        });
-    }
-    catch (Exception ex)
-    {
-        return JobStartError(ex, jobService);
-    }
-});
-
 app.MapPost("/api/jobs/youtube-upload", async (
     HttpRequest request,
     FilmJobService jobService,
@@ -7747,6 +7719,89 @@ app.MapPost("/api/projects/{id}/voice-capture/phrases", async (
     return Results.Ok(new { ok = true, count = body.Phrases?.Count ?? 0 });
 });
 
+// All dialogue lines (every speaker) per scene, straight from the blueprint — the "script" side of
+// the dialogue-timing review. No STT here; the client runs that pass and posts the result below.
+app.MapGet("/api/projects/{id}/dialogue/lines", async (
+    string id, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    using var blueprint = await store.LoadBlueprintAsync(id, ct);
+    if (blueprint is null)
+        return Results.Ok(new { ok = true, scenes = Array.Empty<object>() });
+
+    var clips = VoiceAlignmentStore.BuildDialogueLinesFromBlueprint(blueprint.RootElement, null);
+    var scenes = clips
+        .GroupBy(c => c.Scene)
+        .OrderBy(g => g.Key)
+        .Select(g => new
+        {
+            scene = g.Key,
+            lines = g.OrderBy(c => c.Clip)
+                     .SelectMany(c => c.Lines.Select(l => new { clip = c.Clip, speaker = l.CharacterKey, text = l.Text }))
+                     .ToList(),
+        })
+        .Where(s => s.lines.Count > 0)
+        .ToList();
+
+    return Results.Ok(new { ok = true, scenes });
+});
+
+// Cached dialogue-timing review (STT vs script per scene). Computed once per scene by the client.
+app.MapGet("/api/projects/{id}/dialogue/timing", async (
+    string id, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var path = Path.Combine(store.GetProjectDir(id), "assets", "alignment", "dialogue_timing.json");
+    if (!File.Exists(path))
+        return Results.Ok(new { ok = true, timing = (DialogueTimingDoc?)null });
+    try
+    {
+        var json = await File.ReadAllTextAsync(path, ct);
+        var data = System.Text.Json.JsonSerializer.Deserialize<DialogueTimingDoc>(
+            json, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        return Results.Ok(new { ok = true, timing = data });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { ok = false, error = ex.Message }, statusCode: StatusCodes.Status500InternalServerError);
+    }
+});
+
+// Merge one analyzed/edited scene into the cache (scenes are reviewed independently).
+app.MapPost("/api/projects/{id}/dialogue/timing/scene", async (
+    string id, DialogueTimingScene body, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (body is null || body.Scene <= 0)
+        return Results.BadRequest(new { ok = false, error = "scene body with a scene number required" });
+
+    var dir = Path.Combine(store.GetProjectDir(id), "assets", "alignment");
+    Directory.CreateDirectory(dir);
+    var path = Path.Combine(dir, "dialogue_timing.json");
+    var webOpts = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+
+    DialogueTimingDoc doc;
+    if (File.Exists(path))
+    {
+        try { doc = System.Text.Json.JsonSerializer.Deserialize<DialogueTimingDoc>(await File.ReadAllTextAsync(path, ct), webOpts) ?? new(); }
+        catch { doc = new(); }
+    }
+    else doc = new();
+
+    doc.ProjectId = id;
+    doc.GeneratedAtUtc = DateTime.UtcNow;
+    doc.Scenes.RemoveAll(s => s.Scene == body.Scene);
+    doc.Scenes.Add(body);
+    doc.Scenes.Sort((a, b) => a.Scene.CompareTo(b.Scene));
+
+    var writeOpts = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web) { WriteIndented = true };
+    await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(doc, writeOpts) + "\n", ct);
+    return Results.Ok(new { ok = true, scene = body.Scene, rows = body.Rows?.Count ?? 0 });
+});
+
 app.MapGet("/api/media/proxy/{token}", async (
     string token,
     MediaProxyTicketStore tickets,
@@ -8640,6 +8695,29 @@ try
     demosService.CleanupStagedDemoMovies();
 }
 catch { /* non-fatal */ }
+
+// One-time self-heal: legacy demo records may store an email in CreatedBy (before ownership ids
+// were normalized to a non-email UserId). Rewrite each to the account's canonical id so the public
+// byline shows a handle and ownership checks line up. Idempotent — no-ops once records are clean.
+try
+{
+    var demosService = app.Services.GetRequiredService<DemoCatalogService>();
+    var userDb = app.Services.GetRequiredService<UserDatabaseService>();
+    var migrated = demosService.MigrateEmailCreatedBy(email =>
+    {
+        var u = userDb.GetUserByEmailAsync(email).GetAwaiter().GetResult();
+        if (u is null) return null;
+        return string.IsNullOrWhiteSpace(u.UserId)
+            ? (string.IsNullOrWhiteSpace(u.Username) ? null : u.Username.Trim())
+            : u.UserId.Trim();
+    });
+    if (migrated > 0)
+        Console.WriteLine($"Startup demo migration: healed CreatedBy on {migrated} demo record(s).");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Demo CreatedBy migration error: {ex.Message}");
+}
 
 app.Run();
 

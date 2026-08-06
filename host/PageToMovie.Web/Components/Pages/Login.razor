@@ -379,16 +379,18 @@
         caret-color: #f8fafc;
     }
 
-    .auth-card .form-control::placeholder,
-    .auth-card .form-control::-webkit-input-placeholder,
-    .auth-card .form-control::-moz-placeholder,
-    .auth-card .form-control:-ms-input-placeholder {
-        /* Near-white — same brightness band as labels / typed text (user: still unreadable before) */
-        color: #f8fafc !important;
-        opacity: 0.92 !important;
+    /* One pseudo-element per rule: a grouped list with any unknown vendor pseudo
+       (::-moz-placeholder / :-ms-input-placeholder) gets dropped whole by the browser,
+       which is what left the placeholder dark-on-dark. Standard ::placeholder alone
+       covers every current browser. */
+    .auth-card .form-control::placeholder {
+        /* Readable on the dark card but a clear step dimmer than typed text (#f8fafc),
+           so "Enter username" still reads as a hint, not a filled-in value. */
+        color: #c8d0e0 !important;
+        opacity: 1 !important;
         font-style: normal;
         font-weight: 500;
-        -webkit-text-fill-color: #f8fafc !important;
+        -webkit-text-fill-color: #c8d0e0 !important;
     }
 
     /* Chrome/Edge autofill can paint dark-on-dark; force light text inside the group */

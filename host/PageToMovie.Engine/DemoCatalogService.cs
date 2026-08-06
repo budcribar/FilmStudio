@@ -906,6 +906,57 @@ public sealed class DemoCatalogService
         PageToMovie.Core.Util.YouTubeVideoId.Extract(input);
 
 
+    /// <summary>
+    /// One-time self-heal for legacy demo records that stored an <b>email</b> in
+    /// <see cref="DemoEntry.CreatedBy"/>. CreatedBy is a stable ownership id (never an email under
+    /// current rules) and doubles as the public byline handle, so an email there both mislabels the
+    /// creator and can break ownership checks once ids were normalized away from the email.
+    /// For each demo whose CreatedBy looks like an email, <paramref name="resolveCanonicalIdByEmail"/>
+    /// maps it to that account's canonical id; a non-empty, non-email, changed result is written back.
+    /// Idempotent: a CreatedBy without '@' is left untouched, and unresolved/unchanged values are
+    /// skipped. Returns the number of records rewritten. Generic on purpose — any user's stale email
+    /// record is healed, nothing story- or account-specific is hardcoded.
+    /// </summary>
+    public int MigrateEmailCreatedBy(Func<string, string?> resolveCanonicalIdByEmail)
+    {
+        ArgumentNullException.ThrowIfNull(resolveCanonicalIdByEmail);
+        lock (_lock)
+        {
+            if (!Directory.Exists(DemosDir)) return 0;
+            var fixedCount = 0;
+            foreach (var dir in Directory.EnumerateDirectories(DemosDir))
+            {
+                var metaPath = Path.Combine(dir, "meta.json");
+                if (!File.Exists(metaPath)) continue;
+                try
+                {
+                    var entry = JsonSerializer.Deserialize<DemoEntry>(File.ReadAllText(metaPath), JsonOpts);
+                    var oldBy = entry?.CreatedBy?.Trim();
+                    if (entry is null || string.IsNullOrEmpty(oldBy) || !oldBy.Contains('@'))
+                        continue;
+
+                    var canonical = resolveCanonicalIdByEmail(oldBy)?.Trim();
+                    if (string.IsNullOrEmpty(canonical) ||
+                        canonical.Contains('@') ||
+                        string.Equals(canonical, oldBy, StringComparison.OrdinalIgnoreCase))
+                        continue; // unresolved, still an email, or unchanged — leave as-is
+
+                    entry.CreatedBy = canonical;
+                    File.WriteAllText(metaPath, JsonSerializer.Serialize(entry, JsonOpts) + "\n");
+                    fixedCount++;
+                    _log.LogInformation(
+                        "Demo {Id}: migrated CreatedBy from an email to canonical id {New}",
+                        Path.GetFileName(dir), canonical);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogDebug(ex, "Skip demo dir during CreatedBy migration {Dir}", dir);
+                }
+            }
+            return fixedCount;
+        }
+    }
+
     private List<DemoEntry> LoadAllUnlocked()
     {
         if (!Directory.Exists(DemosDir))

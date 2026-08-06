@@ -110,6 +110,30 @@ public sealed class PronunciationResolver
             $"Pronounce '{annotation.Token}' as /{annotation.Ipa}/ ({annotation.Meaning})"));
     }
 
+    private static readonly Regex HintTargetRegex = new(@"'([\p{L}][\p{L}']*)'", RegexOptions.Compiled);
+
+    /// <summary>
+    /// True when a pre-baked pronunciation hint is relevant to a spoken line — i.e. a word the hint
+    /// targets (quoted like 'word') actually appears in the dialogue. A hint on a silent / no-dialogue
+    /// beat, or for a word not in the line, only adds noise and should be dropped. When the hint names
+    /// no quoted target word, relevance falls back to "there is dialogue".
+    /// </summary>
+    public static bool HintAppliesToDialogue(string? hint, string? dialogue)
+    {
+        if (string.IsNullOrWhiteSpace(hint) || string.IsNullOrWhiteSpace(dialogue))
+            return false;
+
+        var targets = HintTargetRegex.Matches(hint)
+            .Select(m => m.Groups[1].Value)
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .ToList();
+        if (targets.Count == 0)
+            return true; // no identifiable target word, but there is dialogue
+
+        return targets.Any(w =>
+            Regex.IsMatch(dialogue, $@"\b{Regex.Escape(w)}\b", RegexOptions.IgnoreCase));
+    }
+
     private static int Score(PronunciationSense sense, string context, string? inferredPart)
     {
         var score = 0;

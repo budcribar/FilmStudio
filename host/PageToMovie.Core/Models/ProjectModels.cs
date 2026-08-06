@@ -708,6 +708,8 @@ public sealed class SceneSummary
 {
     public int SceneNumber { get; set; }
     public string Setting { get; set; } = "";
+    /// <summary>The auto-inserted (editable) end-credits scene — the one credits path. Used to hide the "Add credits" button once one exists.</summary>
+    public bool IsCredits { get; set; }
     public int ClipCount { get; set; }
     public int ClipsOnDisk { get; set; }
     public bool ClipsComplete { get; set; }
@@ -801,6 +803,11 @@ public sealed class SceneDetail
     public List<string> LocationIds { get; set; } = new();
     public string? PrimaryLocationId { get; set; }
     public List<ClipSummary> Clips { get; set; } = new();
+
+    /// <summary>Clip numbers that appeared more than once in this scene's shot plan (malformed data).
+    /// The read path keeps the first and drops the rest so the scene still works, but flags it here so
+    /// an admin surface can show the problem instead of silently hiding it. Empty = clean.</summary>
+    public List<int> DuplicateClipNumbers { get; set; } = new();
 }
 
 public sealed class MusicScoreInfo
@@ -826,6 +833,24 @@ public sealed class AdaptationStatus
     /// <summary>Configured planning model (Configuration page) — Stage 1 / book→Fountain / cast scrub.</summary>
     public string PlanningModel { get; set; } = "";
     public string NextStep { get; set; } = "";
+    /// <summary>Which optional Book sub-steps (Look / Enrich / Fit length) have been run — for the sub-strip "done" checks.</summary>
+    public BookSubstepStatus BookSubsteps { get; set; } = new();
+}
+
+/// <summary>
+/// Which optional Book sub-steps have been run on the current screenplay, so the Book sub-strip can
+/// show a "done" check. Look / Enrich / Fit length are optional passes — a check means "you ran this,"
+/// not "required and complete." Cleared when a fresh full-length screenplay base is generated, so the
+/// checks never carry over to freshly generated text. Import/Screenplay completion come from their own
+/// state (source exists / signed), not from here.
+/// </summary>
+public sealed class BookSubstepStatus
+{
+    public bool LookDone { get; set; }
+    public bool EnrichDone { get; set; }
+    public bool FitLengthDone { get; set; }
+    /// <summary>Target minutes recorded the last time Fit length ran (for the sub-strip label).</summary>
+    public double? FitLengthTargetMinutes { get; set; }
 }
 
 /// <summary>
@@ -955,13 +980,6 @@ public sealed class StartYouTubeUploadRequest
     public string? Description { get; set; }
     /// <summary>private | unlisted | public. Default unlisted (link-shareable, not publicly listed).</summary>
     public string PrivacyStatus { get; set; } = "unlisted";
-}
-
-/// <summary>Generate end-credits plate via video API (client saves credits.mp4).</summary>
-public sealed class StartCreditsGenRequest
-{
-    public string ProjectId { get; set; } = "";
-    public string? Resolution { get; set; }
 }
 
 /// <summary>Generate background music for a scene via audio API (client saves the audio segment(s)).</summary>

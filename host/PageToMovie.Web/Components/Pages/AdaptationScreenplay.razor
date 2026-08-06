@@ -93,6 +93,14 @@
                         New scene
                     </button>
 
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            data-testid="screenplay-copy"
+                            @onclick="CopyScreenplayAsync"
+                            title="Copy the whole screenplay to the clipboard">
+                        @(_copied ? "Copied ✓" : "📋 Copy")
+                    </button>
+
                     <details class="fe-advanced-pop">
                         <summary class="btn btn-outline-secondary btn-sm"
                                  title="Fountain formatting helpers for advanced edits">
@@ -322,6 +330,28 @@
     private ElementReference _scenesEl;
 
     private bool CanEdit => _editorReady && !Busy && !JobRunning;
+
+    private bool _copied;
+
+    /// <summary>Copy the full screenplay to the clipboard — read action, works even while read-only.</summary>
+    private async Task CopyScreenplayAsync()
+    {
+        string text;
+        try { text = await Js.InvokeAsync<string>("fountainEditor.getValue", EditorId); }
+        catch { text = _text; }
+        if (string.IsNullOrEmpty(text)) text = _text;
+
+        try
+        {
+            await Js.InvokeVoidAsync("PageToMovieExport.copyTextAsync", text ?? "");
+            _copied = true;
+            StateHasChanged();
+            await Task.Delay(1500);
+            _copied = false;
+            StateHasChanged();
+        }
+        catch { /* clipboard may be blocked (permissions / non-secure context) — non-fatal */ }
+    }
 
     /// <summary>User has approved at least once (signed hash recorded).</summary>
     private bool WasEverSigned =>

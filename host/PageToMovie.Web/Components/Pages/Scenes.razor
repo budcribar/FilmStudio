@@ -193,10 +193,17 @@ else
                        onloadeddata="this.play().catch(function(){})">
                     Your browser does not support HTML5 video.
                 </video>
-                @if (string.IsNullOrEmpty(_clientSceneUrl))
-                {
-                    <div class="mt-2">
+                <div class="mt-2 d-flex flex-wrap gap-3 align-items-center">
+                    <a href="/dialogue-timing?scene=@playSn" class="small" data-testid="scene-dialogue-timing">Review dialogue timing →</a>
+                    @if (string.IsNullOrEmpty(_clientSceneUrl))
+                    {
                         <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
+                    }
+                </div>
+                @if (Session.IsAdmin && _detail is { } _dd && _dd.SceneNumber == playSn && _dd.DuplicateClipNumbers.Count > 0)
+                {
+                    <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small" data-testid="scene-dup-clips">
+                        ⚠ Malformed shot plan: clip @(string.Join(", ", _dd.DuplicateClipNumbers)) appears more than once in this scene, which doubles it. Deduped for playback — regenerate the shot plan to fix the data.
                     </div>
                 }
             }
@@ -417,20 +424,50 @@ else if (_showPreviewPlayer && _clientStitching)
                             @onclick="() => AddSceneAsync(false)">
                         ➕ Add scene
                     </button>
-                    <button type="button"
-                            class="btn btn-outline-secondary btn-sm"
-                            data-testid="scenes-add-credits"
-                            disabled="@(_busy || JobRunning)"
-                            title="Add a prefilled, editable end-credits scene"
-                            @onclick="() => AddSceneAsync(true)">
-                        🎬 Add credits
-                    </button>
+                    @* Credits are auto-inserted into the shot plan; this only re-adds one if it was deleted. *@
+                    @if (!HasCreditsScene)
+                    {
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                data-testid="scenes-add-credits"
+                                disabled="@(_busy || JobRunning)"
+                                title="Re-add the end-credits scene (normally added automatically)"
+                                @onclick="() => AddSceneAsync(true)">
+                            🎬 Add credits
+                        </button>
+                    }
                     <button class="btn btn-sm btn-outline-secondary" data-testid="scenes-select-toggle"
                             disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
                         🔍 Filters @(HasActiveFilters ? " (Active)" : "")
                     </button>
                 </div>
             </div>
+
+            @* Jump back to the screenplay-shaping phases that otherwise only live under Book. Both edit the
+               screenplay, which re-opens it (un-approve + re-gate cast), so each confirms before navigating. *@
+            @if (!IsSimpleFilm)
+            {
+                <div class="mt-2 pt-2 border-top border-secondary d-flex align-items-center gap-2 small flex-wrap">
+                    <span class="text-muted">Screenplay:</span>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-info py-0 px-2"
+                            data-testid="scenes-goto-fit-length"
+                            disabled="@(_busy || JobRunning)"
+                            title="Change the movie's target length (extend or shorten)"
+                            @onclick="AdjustFitLengthAsync">
+                        ⏱ Fit length
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-info py-0 px-2"
+                            data-testid="scenes-goto-embellish"
+                            disabled="@(_busy || JobRunning)"
+                            title="Embellish the scene descriptions"
+                            @onclick="AdjustEmbellishAsync">
+                        ✨ Embellish
+                    </button>
+                    <span class="text-muted">· editing re-opens the screenplay (you'll re-approve it &amp; re-check cast)</span>
+                </div>
+            }
 
             @if (IncompleteCount > 0)
             {
@@ -2114,6 +2151,9 @@ else
     private int? _castTotal;
     private List<string> _castMissing = new();
     private List<SceneSummary>? _scenes;
+
+    /// <summary>True once the shot plan already has an end-credits scene (auto-inserted or re-added).</summary>
+    private bool HasCreditsScene => _scenes?.Any(s => s.IsCredits) == true;
     private HashSet<int> _selected = new();
     private string _selectionMode = ""; // "" | incomplete | all
     private int? _selectedScene;
@@ -2582,6 +2622,25 @@ else
         {
             _busy = false;
         }
+    }
+
+    private Task AdjustFitLengthAsync() => ConfirmScreenplayAdjustAndNavigateAsync("adaptation/trim");
+
+    private Task AdjustEmbellishAsync() => ConfirmScreenplayAdjustAndNavigateAsync("adaptation/embellish");
+
+    /// <summary>
+    /// Navigate to a screenplay-shaping step (Fit length / Enrich). Those edit the screenplay, which
+    /// un-approves it and re-gates cast, so confirm first rather than surprising the user mid-Film.
+    /// </summary>
+    private async Task ConfirmScreenplayAdjustAndNavigateAsync(string route)
+    {
+        if (JobRunning) return;
+        var ok = await JS.InvokeAsync<bool>(
+            "confirm",
+            "This opens the screenplay to change it. You'll re-approve the screenplay afterward, " +
+            "and the cast will re-check against the updated script. Continue?");
+        if (ok)
+            Nav.NavigateTo(route);
     }
 
     private async Task RebuildShotPlanAsync()

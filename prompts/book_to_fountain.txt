@@ -488,12 +488,21 @@ BUDGET (compute before drafting)
 - From these two numbers, fix a rough per-scene word allocation before drafting so the
   budget is spent across the whole arc, not exhausted in act one.
 
-If the source is short (nursery rhyme, micro picture book, brief poem), finish the whole story
-at its natural length. Do not invent extra incidents, reprises, or business to fill time.
-Complete fidelity at natural length beats artificial runtime — and beats the band floor:
-finishing under {{SCENE_COUNT_MIN}} scenes because the story is genuinely that small is
-correct; padding up to the floor is a defect. Log it as runtime_pressure only if it felt
-like a real tension. The band ceiling, by contrast, is firm — compress to stay under it.
+If the source is short (nursery rhyme, micro picture book, brief poem), adapt the WHOLE source
+at its natural length: every stanza, verse, and event the source actually contains must appear,
+in the source's own order. The no-padding rule forbids ADDING material the source lacks — it never
+licenses DROPPING material the source has. Omitting the opening or setup beats and keeping only the
+climactic "point" is a defect, exactly as inventing incidents to fill time is. A two-minute rhyme
+filmed faithfully — every verse, start to finish — is short, and that is correct.
+Render each restored beat exactly as the source frames it: descriptive or narrative verses become
+Action (or the book's own words as V.O. / the named speaker) — never a brand-new spoken line, and
+never a newly invented named character to carry it (the children stay "the children"). Covering a
+beat means showing what the source actually says, not writing dialogue or cast it never wrote.
+Complete fidelity beats artificial runtime and beats BOTH band edges: finishing under
+{{SCENE_COUNT_MIN}} scenes because the story is genuinely that small is correct (padding up to the
+floor is a defect), and using as many scenes as the source's own beats require is correct too —
+never cut a stanza or event to fit a smaller scene count. Log it as runtime_pressure only if it
+felt like a real tension.
 
 Merge consecutive beats sharing location and time into ONE scene with multiple Action and
 dialogue units. Split only when place, time, or dramatic purpose clearly changes. Mark elapsed

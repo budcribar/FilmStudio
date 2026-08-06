@@ -1203,7 +1203,10 @@ public static class ClipVideoPromptBuilder
                 " After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring.";
             var pronHintInPayload = PromptTags.SanitizeValue(
                 audio.TryGetProperty("pronunciation_hint", out var ph) ? ph.GetString() : null);
+            // Only honor a pre-baked hint when its target word is actually in this line; otherwise derive
+            // hints from the dialogue itself (which is inherently limited to words that are spoken).
             var pronHint = !string.IsNullOrWhiteSpace(pronHintInPayload)
+                           && PronunciationResolver.HintAppliesToDialogue(pronHintInPayload, quote)
                 ? (pronHintInPayload.StartsWith(" ") ? pronHintInPayload : $" {PromptTags.Wrap("Pronunciation", pronHintInPayload)}")
                 : BuildPronunciationHints(quote);
 

@@ -39,6 +39,16 @@
     var trimActive = Step == "trim";
     var screenplayActive = Step == "screenplay";
     var subOff = !OutlineEnabled || stepsLocked;
+
+    // "Done" checks so you can tell at a glance which optional passes you've already run on the
+    // current screenplay. Look/Enrich/Fit length come from recorded markers; Screenplay = approved.
+    var subs = Host.Status?.BookSubsteps;
+    var importDone = OutlineEnabled;
+    var lookDone = subs?.LookDone == true;
+    var enrichDone = subs?.EnrichDone == true;
+    var trimDone = subs?.FitLengthDone == true;
+    var trimMins = subs?.FitLengthTargetMinutes;
+    var screenplayDone = Host.Status?.Screenplay is { Signed: true };
 }
 @* Shot plan belongs to the top-level "Film" step, not the Book drill-down — no Book sub-nav there. *@
 @if (Step is not "shots")
@@ -49,27 +59,27 @@
        href="@(stepsLocked ? "javascript:void(0)" : "adaptation/import")"
        @onclick:preventDefault="stepsLocked"
        title="Import a book, PDF, or screenplay"
-       data-testid="adapt-step-import">Import</a>
+       data-testid="adapt-step-import">Import @if (importDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
     <a class="ptm-substep @(lookActive ? "is-active" : "") @(subOff ? "is-disabled" : "")"
        href="@(subOff ? "javascript:void(0)" : "adaptation/look")"
        @onclick:preventDefault="subOff"
-       title="@(subOff ? "Import a source first" : "Choose the visual style")"
-       data-testid="adapt-step-look">Look</a>
+       title="@(subOff ? "Import a source first" : lookDone ? "Choose the visual style (done — run again to change)" : "Choose the visual style")"
+       data-testid="adapt-step-look">Look @if (lookDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
     <a class="ptm-substep @(embellishActive ? "is-active" : "") @(subOff ? "is-disabled" : "")"
        href="@(subOff ? "javascript:void(0)" : "adaptation/embellish")"
        @onclick:preventDefault="subOff"
-       title="@(subOff ? "Import a source first" : "Enrich the scene description")"
-       data-testid="adapt-step-embellish">Enrich</a>
+       title="@(subOff ? "Import a source first" : enrichDone ? "Enrich the scene description (done — run again to add more)" : "Enrich the scene description")"
+       data-testid="adapt-step-embellish">Enrich @if (enrichDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
     <a class="ptm-substep @(trimActive ? "is-active" : "") @(subOff ? "is-disabled" : "")"
        href="@(subOff ? "javascript:void(0)" : "adaptation/trim")"
        @onclick:preventDefault="subOff"
-       title="@(subOff ? "Import a source first" : "Fit the film to your length and budget")"
-       data-testid="adapt-step-trim">Fit length</a>
+       title="@(subOff ? "Import a source first" : trimDone && trimMins is > 0 ? $"Fit the film to your length and budget (done — fit toward ~{Math.Round(trimMins.Value)} min)" : "Fit the film to your length and budget")"
+       data-testid="adapt-step-trim">Fit length @if (trimDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓@(trimMins is > 0 ? $" ~{Math.Round(trimMins.Value)}m" : "")</span> }</a>
     <a class="ptm-substep @(screenplayActive ? "is-active" : "") @(subOff ? "is-disabled" : "")"
        href="@(subOff ? "javascript:void(0)" : "adaptation/screenplay")"
        @onclick:preventDefault="subOff"
-       title="@(subOff ? "Import a source first" : "Edit and approve the final screenplay")"
-       data-testid="adapt-step-screenplay">Screenplay</a>
+       title="@(subOff ? "Import a source first" : screenplayDone ? "Edit and approve the final screenplay (approved)" : "Edit and approve the final screenplay")"
+       data-testid="adapt-step-screenplay">Screenplay @if (screenplayDone) { <span class="ptm-substep__done" title="Approved" aria-label="approved">✓</span> }</a>
 </nav>
 }
 else

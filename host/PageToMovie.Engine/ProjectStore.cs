@@ -3632,32 +3632,28 @@ public sealed class ProjectStore
         return next;
     }
 
-    /// <summary>Append a prefilled (editable) end-credits scene; returns its scene number.</summary>
+    /// <summary>
+    /// Append a prefilled (editable) end-credits scene; returns its scene number. Content comes from the
+    /// single credits-card builder, so a manual re-add matches the scene Stage 2 auto-inserts.
+    /// </summary>
     public int AddCreditsScene(string projectId)
     {
         var (root, scenes, bpPath) = LoadBlueprintForEdit(projectId);
-        var title = "The End";
-        try
-        {
-            if (root["movie_title"] is System.Text.Json.Nodes.JsonValue tv && tv.TryGetValue<string>(out var t) && !string.IsNullOrWhiteSpace(t))
-                title = t.Trim();
-        }
-        catch { /* default title */ }
-
         var next = NextSceneNumber(scenes);
         var clip = new System.Text.Json.Nodes.JsonObject
         {
             ["clip_number"] = 1,
             ["timestamp"] = "",
             ["veo_continuation_source"] = "none",
-            ["visual_prompt"] = $"End-credits card on a plain dark background: the title “{title}” centered in elegant serif, "
-                                + "then “Made with Page to Movie” beneath, held still with a gentle fade to black.",
+            ["is_credits"] = true,
+            ["visual_prompt"] = BuildCreditsVisualPrompt(projectId),
             ["audio_payload"] = new System.Text.Json.Nodes.JsonObject { ["speaker"] = "", ["dialogue"] = "" },
         };
         var sceneObj = new System.Text.Json.Nodes.JsonObject
         {
             ["scene_number"] = next,
             ["setting"] = "END CREDITS",
+            ["is_credits"] = true,
             ["veo_clips"] = new System.Text.Json.Nodes.JsonArray { clip },
         };
         scenes.Add(sceneObj);
@@ -3665,6 +3661,104 @@ public sealed class ProjectStore
         InvalidateSceneListCache(projectId);
         InvalidateReadCaches(projectId);
         return next;
+    }
+
+    /// <summary>
+    /// Single source of truth for the end-credits card content. Gathers the title + author from the
+    /// screenplay title page and the config-wide software name / creator site, so the auto-inserted
+    /// credits scene (Stage 2) and a manual re-add produce an identical card.
+    /// </summary>
+    public string BuildCreditsVisualPrompt(string projectId)
+    {
+        var credits = _opts.Credits ?? new CreditsOptions();
+        var softName = string.IsNullOrWhiteSpace(credits.SoftwareName) ? "PageToMovie" : credits.SoftwareName.Trim();
+        var siteUrl = string.IsNullOrWhiteSpace(credits.SiteUrl) ? "pagetomovie.com" : credits.SiteUrl.Trim();
+        return CreditsCardPrompt(ReadScreenplayTitle(projectId), ReadScreenplayAuthor(projectId), softName, siteUrl);
+    }
+
+    /// <summary>
+    /// The one credits-card prompt. Kept short — a video model renders exact strings (a URL especially)
+    /// imperfectly, so a concise, legible card reads better than a dense one. Author line only when named.
+    /// </summary>
+    internal static string CreditsCardPrompt(string? title, string? author, string softwareName, string siteUrl)
+    {
+        var t = string.IsNullOrWhiteSpace(title) ? "The End" : title.Trim();
+        var authorLine = string.IsNullOrWhiteSpace(author)
+            ? ""
+            : $"then “Based on the story by {author.Trim()}” in a lighter weight, ";
+        return "Elegant cinematic end-credits title card, 16:9, locked-off camera, no people, no other logos. "
+               + "Deep matte-black background with fine film grain and a soft vignette. "
+               + "Centered, high-contrast typography with a slow gentle fade-in and a steady hold: "
+               + $"the title “{t}” in a refined serif, {authorLine}"
+               + $"then a thin divider, then “Made with {softwareName} · {siteUrl}” in a smaller clean sans-serif. "
+               + "Crisp, perfectly legible text, tasteful theatrical end-title look, soft fade to black.";
+    }
+
+    /// <summary>Story title for the credits card: Fountain <c>Title:</c>, else blueprint movie_title, else the id.</summary>
+    private string ReadScreenplayTitle(string projectId)
+    {
+        try
+        {
+            var fountainPath = Path.Combine(GetProjectDir(projectId), "source", "screenplay.fountain");
+            if (File.Exists(fountainPath))
+            {
+                foreach (var line in File.ReadLines(fountainPath).Take(30))
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith("Title:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var val = trimmed[6..].Trim();
+                        if (!string.IsNullOrWhiteSpace(val)) return val;
+                    }
+                }
+            }
+        }
+        catch { /* fall through */ }
+
+        try
+        {
+            var bpPath = FindBlueprintPathSync(projectId);
+            if (bpPath is not null)
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(bpPath));
+                if (doc.RootElement.TryGetProperty("movie_title", out var mt) &&
+                    mt.ValueKind == JsonValueKind.String && mt.GetString() is { Length: > 0 } m)
+                    return m.Trim();
+            }
+        }
+        catch { /* fall through */ }
+
+        return projectId;
+    }
+
+    /// <summary>
+    /// Read the screenplay Author from the Fountain title page for the credits card. Returns empty when
+    /// there is no author line or it is a generic public-domain placeholder (so the card doesn't credit
+    /// "the story by Public Domain"). General: reads whatever the screenplay declares, nothing per-title.
+    /// </summary>
+    private string ReadScreenplayAuthor(string projectId)
+    {
+        try
+        {
+            var fountainPath = Path.Combine(GetProjectDir(projectId), "source", "screenplay.fountain");
+            if (!File.Exists(fountainPath)) return "";
+            foreach (var line in File.ReadLines(fountainPath).Take(30))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("Author:", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith("Authors:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var idx = trimmed.IndexOf(':');
+                    var val = idx >= 0 ? trimmed[(idx + 1)..].Trim() : "";
+                    if (string.IsNullOrWhiteSpace(val) ||
+                        val.Contains("public domain", StringComparison.OrdinalIgnoreCase))
+                        return "";
+                    return val;
+                }
+            }
+        }
+        catch { /* no author line — card omits it */ }
+        return "";
     }
 
     private (System.Text.Json.Nodes.JsonObject Root, System.Text.Json.Nodes.JsonArray Scenes, string Path) LoadBlueprintForEdit(string projectId)
@@ -3913,6 +4007,96 @@ public sealed class ProjectStore
         merged.Remove("character_plates_method");
         var json = JsonSerializer.Serialize(merged, JsonDefaults.Indented);
         File.WriteAllText(path, json + "\n");
+    }
+
+    /// <summary>Stable stage keys for the optional Book sub-steps whose "done" state the sub-strip shows.</summary>
+    public static class BookSubstepKeys
+    {
+        public const string Look = "look";
+        public const string Enrich = "enrich";
+        public const string FitLength = "trim";
+    }
+
+    /// <summary>
+    /// Record that an optional Book sub-step (Look / Enrich / Fit length) was applied to the current
+    /// screenplay, so the Book sub-strip can show a "done" check. Fit length also records the target
+    /// minutes it fit toward. Merged into pipeline_state.json under <c>book_substeps</c>. Idempotent.
+    /// </summary>
+    public void MarkBookSubstepDone(string projectId, string stage, double? targetMinutes = null)
+    {
+        stage = (stage ?? "").Trim().ToLowerInvariant();
+        if (stage is not (BookSubstepKeys.Look or BookSubstepKeys.Enrich or BookSubstepKeys.FitLength))
+            return;
+
+        var path = ResolvePipelineStatePath(projectId);
+        var merged = LoadPipelineStateDict(path);
+
+        var subs = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        if (merged.TryGetValue("book_substeps", out var existing) && existing is not null)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(JsonSerializer.Serialize(existing));
+                if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                    foreach (var p in doc.RootElement.EnumerateObject())
+                        subs[p.Name] = p.Value.Deserialize<object>();
+            }
+            catch { /* start fresh */ }
+        }
+
+        var entry = new Dictionary<string, object?>
+        {
+            ["done"] = true,
+            ["ts"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
+        };
+        if (stage == BookSubstepKeys.FitLength && targetMinutes is > 0)
+            entry["target_minutes"] = targetMinutes;
+        subs[stage] = entry;
+
+        merged["book_substeps"] = subs;
+        File.WriteAllText(path, JsonSerializer.Serialize(merged, JsonDefaults.Indented) + "\n");
+    }
+
+    /// <summary>
+    /// Clear all Book sub-step "done" markers. Called when a fresh full-length screenplay base is
+    /// generated, so Look/Enrich/Fit length checks never carry over to newly generated text.
+    /// </summary>
+    public void ClearBookSubsteps(string projectId)
+    {
+        var path = ResolvePipelineStatePath(projectId);
+        if (!File.Exists(path)) return;
+        var merged = LoadPipelineStateDict(path);
+        if (!merged.Remove("book_substeps")) return;
+        File.WriteAllText(path, JsonSerializer.Serialize(merged, JsonDefaults.Indented) + "\n");
+    }
+
+    /// <summary>Read which optional Book sub-steps have been applied (for the sub-strip "done" checks).</summary>
+    public BookSubstepStatus ReadBookSubsteps(string projectId)
+    {
+        var status = new BookSubstepStatus();
+        try
+        {
+            var path = ResolvePipelineStatePath(projectId);
+            if (!File.Exists(path)) return status;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            if (!doc.RootElement.TryGetProperty("book_substeps", out var subs) ||
+                subs.ValueKind != JsonValueKind.Object)
+                return status;
+
+            status.LookDone = SubstepDone(subs, BookSubstepKeys.Look);
+            status.EnrichDone = SubstepDone(subs, BookSubstepKeys.Enrich);
+            status.FitLengthDone = SubstepDone(subs, BookSubstepKeys.FitLength);
+            if (subs.TryGetProperty(BookSubstepKeys.FitLength, out var t) && t.ValueKind == JsonValueKind.Object &&
+                t.TryGetProperty("target_minutes", out var tm) && tm.TryGetDouble(out var mins) && mins > 0)
+                status.FitLengthTargetMinutes = mins;
+        }
+        catch { /* defaults */ }
+        return status;
+
+        static bool SubstepDone(JsonElement subs, string stage) =>
+            subs.TryGetProperty(stage, out var el) &&
+            el.ValueKind == JsonValueKind.Object &&
+            ReadJsonBool(el, "done");
     }
 
     private static Dictionary<string, object?> LoadPipelineStateDict(string path)
@@ -4235,10 +4419,17 @@ public sealed class ProjectStore
                 : complete ? "complete" : "partial";
             var isApproved = approvedScenes?.Contains($"S{sn:D2}") == true;
 
+            var settingText = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "";
+            var headingText = s.TryGetProperty("scene_heading", out var shd) ? shd.GetString() ?? "" : "";
+            var isCredits = ReadJsonBool(s, "is_credits")
+                || settingText.Contains("CREDITS", StringComparison.OrdinalIgnoreCase)
+                || headingText.Contains("CREDITS", StringComparison.OrdinalIgnoreCase);
+
             rows.Add(new SceneSummary
             {
                 SceneNumber = sn,
-                Setting = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "",
+                Setting = settingText,
+                IsCredits = isCredits,
                 ClipCount = nClips,
                 ClipsOnDisk = onDisk,
                 ClipsComplete = complete,
@@ -4311,12 +4502,25 @@ public sealed class ProjectStore
         var scenesIndex = await GetDirIndexAsync(scenesDir, ct).ConfigureAwait(false);
 
         var clips = new List<ClipSummary>();
+        var duplicateClipNumbers = new List<int>();
+        var seenClipNumbers = new HashSet<int>();
         if (sEl.TryGetProperty("veo_clips", out var vc) && vc.ValueKind == JsonValueKind.Array)
         {
             foreach (var c in vc.EnumerateArray())
             {
                 var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var n) ? n : 0;
                 if (cn <= 0) continue;
+
+                // Malformed shot plan: the same clip_number twice would double the scene when stitched
+                // (one file per veo_clips entry). Keep the first, drop the rest so existing movies still
+                // work, and flag it (SceneDetail.DuplicateClipNumbers) so an admin surface can show it
+                // rather than hiding it. The shot-plan write path throws on this at the source.
+                if (!seenClipNumbers.Add(cn))
+                {
+                    if (!duplicateClipNumbers.Contains(cn)) duplicateClipNumbers.Add(cn);
+                    Console.WriteLine($"[blueprint] {projectId} scene {sceneNumber}: duplicate clip_number {cn} in veo_clips — deduped (kept first).");
+                    continue;
+                }
 
                 var fileName = $"scene_{sceneNumber:D2}_clip_{cn:D2}.mp4";
                 var onDisk = ClipOnDisk(videoIndex, sceneNumber, cn);
@@ -4518,6 +4722,7 @@ public sealed class ProjectStore
                 ? pl.GetString()
                 : null,
             Clips = clips,
+            DuplicateClipNumbers = duplicateClipNumbers,
         };
         }
         finally
@@ -4773,6 +4978,7 @@ public sealed class ProjectStore
             XaiConfigured = xai,
             PlanningModel = planningModel,
             NextStep = next,
+            BookSubsteps = ReadBookSubsteps(projectId),
         };
     }
 
@@ -4808,6 +5014,22 @@ public sealed class ProjectStore
                 if (c.VoiceOnly)
                 {
                     if (hasVoice)
+                        ready++;
+                    else
+                        missing.Add(c.Key);
+                    continue;
+                }
+
+                // Animals / non-human seeds are non-speaking by default and do NOT require a voice —
+                // only a locked image if they appear on screen. Mirrors GetCastNotReadyForVideo so this
+                // readiness gate (Scenes "Cast incomplete" banner + Generate button) agrees with the
+                // video-spend gate; otherwise the Lamb passes the spend gate but the UI still shows it
+                // incomplete — with no voice field to "fix" (animals hide it). Keyed on species_kind.
+                var isNonHuman = c.SpeciesKind is { Length: > 0 } sk
+                    && !sk.Trim().Equals("human", StringComparison.OrdinalIgnoreCase);
+                if (isNonHuman && !hasVoice)
+                {
+                    if (c.Locked)
                         ready++;
                     else
                         missing.Add(c.Key);

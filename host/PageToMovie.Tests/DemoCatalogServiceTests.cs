@@ -105,6 +105,47 @@ public class DemoCatalogServiceTests
     }
 
     [Fact]
+    public async Task MigrateEmailCreatedBy_rewrites_email_to_resolved_id_leaves_handles_and_is_idempotent()
+    {
+        var (demos, root) = MakeHarness();
+        try
+        {
+            var bytes = Encoding.ASCII.GetBytes("....ftypmp42" + new string('x', 2000));
+            DemoCatalogService.DemoEntry legacy, modern;
+            await using (var s = new MemoryStream(bytes))
+                legacy = await demos.PublishFromStreamAsync(s, "Legacy", "d", "Demo", "budcribar@msn.com", acceptedGuidelines: true);
+            await using (var s2 = new MemoryStream(bytes))
+                modern = await demos.PublishFromStreamAsync(s2, "Modern", "d", "Demo", "somehandle", acceptedGuidelines: true);
+
+            Func<string, string?> resolver = email =>
+                string.Equals(email, "budcribar@msn.com", StringComparison.OrdinalIgnoreCase) ? "budcribar" : null;
+
+            // First pass rewrites exactly the email record.
+            Assert.Equal(1, demos.MigrateEmailCreatedBy(resolver));
+            Assert.Equal("budcribar", demos.TryGet(legacy.Id)!.CreatedBy);
+            Assert.Equal("somehandle", demos.TryGet(modern.Id)!.CreatedBy); // non-email handle untouched
+
+            // Idempotent: nothing left to change on a second pass.
+            Assert.Equal(0, demos.MigrateEmailCreatedBy(resolver));
+
+            // Unresolvable email is left as-is rather than blanked.
+            var (demos2, root2) = MakeHarness();
+            try
+            {
+                await using var s3 = new MemoryStream(bytes);
+                var orphan = await demos2.PublishFromStreamAsync(s3, "Orphan", "d", "Demo", "nobody@example.com", acceptedGuidelines: true);
+                Assert.Equal(0, demos2.MigrateEmailCreatedBy(_ => null));
+                Assert.Equal("nobody@example.com", demos2.TryGet(orphan.Id)!.CreatedBy);
+            }
+            finally { Directory.Delete(root2, true); }
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
     public async Task Entry_with_no_local_file_and_no_YoutubeId_is_treated_as_missing()
     {
         var (demos, root) = MakeHarness();

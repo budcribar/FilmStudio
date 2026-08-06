@@ -1816,6 +1816,76 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         public List<NarratorSceneLinesDto>? Scenes { get; set; }
     }
 
+    // ── Dialogue-timing review (all speakers): script lines, cached STT comparison ──────────────
+
+    /// <summary>All dialogue lines (every speaker) per scene from the blueprint — the "script" side.</summary>
+    public async Task<List<DialogueSceneLinesDto>> GetDialogueLinesAsync(string projectId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        try
+        {
+            using var resp = await _http.GetAsync(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/dialogue/lines", ct);
+            if (!resp.IsSuccessStatusCode) return new();
+            var dto = await resp.Content.ReadFromJsonAsync<DialogueLinesResponseDto>(JsonOpts, ct);
+            return dto?.Scenes ?? new();
+        }
+        catch { return new(); }
+    }
+
+    /// <summary>Load the cached dialogue-timing review (null if not built yet).</summary>
+    public async Task<DialogueTimingDoc?> GetDialogueTimingAsync(string projectId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        try
+        {
+            using var resp = await _http.GetAsync(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/dialogue/timing", ct);
+            if (!resp.IsSuccessStatusCode) return null;
+            var dto = await resp.Content.ReadFromJsonAsync<DialogueTimingResponseDto>(JsonOpts, ct);
+            return dto?.Timing;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>Persist one analyzed/edited scene into the dialogue-timing cache.</summary>
+    public async Task<bool> SaveDialogueTimingSceneAsync(string projectId, DialogueTimingScene scene, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        try
+        {
+            using var resp = await _http.PostAsJsonAsync(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/dialogue/timing/scene", scene, JsonOpts, ct);
+            return resp.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
+    public sealed class DialogueSceneLinesDto
+    {
+        public int Scene { get; set; }
+        public List<DialogueLineDto> Lines { get; set; } = new();
+    }
+
+    public sealed class DialogueLineDto
+    {
+        public int Clip { get; set; }
+        public string Speaker { get; set; } = "";
+        public string Text { get; set; } = "";
+    }
+
+    private class DialogueLinesResponseDto
+    {
+        public bool Ok { get; set; }
+        public List<DialogueSceneLinesDto>? Scenes { get; set; }
+    }
+
+    private class DialogueTimingResponseDto
+    {
+        public bool Ok { get; set; }
+        public DialogueTimingDoc? Timing { get; set; }
+    }
+
     private class VoiceAlignmentResponseDto
     {
         public bool Ok { get; set; }
@@ -2336,19 +2406,6 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/media/register")
         {
             Content = JsonContent.Create(body, options: JsonOpts),
-        };
-        await SendJsonAsync<object>(req, ct);
-    }
-
-    public async Task StartCreditsGenAsync(string projectId, string? resolution = null, CancellationToken ct = default)
-    {
-        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/jobs/credits")
-        {
-            Content = JsonContent.Create(new StartCreditsGenRequest
-            {
-                ProjectId = projectId,
-                Resolution = resolution,
-            }, options: JsonOpts),
         };
         await SendJsonAsync<object>(req, ct);
     }

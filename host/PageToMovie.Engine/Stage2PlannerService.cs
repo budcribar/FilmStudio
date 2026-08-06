@@ -289,6 +289,9 @@ public sealed class Stage2PlannerService
             onProgress?.Invoke($"Backed up blueprint → {Path.GetFileName(bak)}");
         }
 
+        // Single source of truth for the auto-inserted credits scene's content (title + author + creator site).
+        var creditsVisualPrompt = _projects.BuildCreditsVisualPrompt(projectId);
+
         Dictionary<string, object?> plan;
         if (want is not null && File.Exists(outPath))
         {
@@ -296,17 +299,17 @@ public sealed class Stage2PlannerService
             {
                 var existingText = await File.ReadAllTextAsync(outPath, ct).ConfigureAwait(false);
                 var existing = GrokChatClient.ParseJsonObject(existingText);
-                plan = MergePlannedScenes(existing, planned, stage1, gpv, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
+                plan = MergePlannedScenes(existing, planned, stage1, gpv, sourceLabel, resolution, scenes, classifyMeta, enrichMeta, creditsVisualPrompt);
                 onProgress?.Invoke("Merged planned scenes into existing blueprint");
             }
             catch
             {
-                plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
+                plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta, creditsVisualPrompt);
             }
         }
         else
         {
-            plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
+            plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta, creditsVisualPrompt);
         }
 
         // Heal: a character on-screen in a clip is by definition on-screen in the scene. Union each
@@ -326,10 +329,18 @@ public sealed class Stage2PlannerService
         if (planIssues.Any(i => i.Severity == ModelValidationSeverity.Error))
             throw new InvalidOperationException(string.Join(" ", planIssues.Select(i => i.Message)));
 
-        await File.WriteAllTextAsync(
-            outPath,
-            JsonSerializer.Serialize(plan, JsonWrite) + "\n",
-            ct).ConfigureAwait(false);
+        // Fail loud at the source if the plan has duplicate clip numbers in a scene — that doubles the
+        // scene downstream (the stitch concatenates one file per veo_clips entry). Throwing here catches
+        // the bug during generation, before any video spend, and never touches an already-saved movie.
+        var planJson = JsonSerializer.Serialize(plan, JsonWrite);
+        using (var planDoc = System.Text.Json.JsonDocument.Parse(planJson))
+        {
+            if (BlueprintClipValidation.DescribeDuplicates(planDoc.RootElement) is { } dupDesc)
+                throw new InvalidOperationException(
+                    "Shot plan has duplicate clip numbers (each duplicate would double its scene): " + dupDesc);
+        }
+
+        await File.WriteAllTextAsync(outPath, planJson + "\n", ct).ConfigureAwait(false);
         var meta = GetDict(plan, "stage2_meta");
         var totalClips = ToInt(meta.TryGetValue("total_clips", out var tc) ? tc : 0);
         var sceneCount = GetList(plan, "scenes").Count;
@@ -357,9 +368,10 @@ public sealed class Stage2PlannerService
         string resolution,
         string scenesFilter,
         SilentBeatClassifyResult? classifyMeta,
-        Dictionary<string, object?>? enrichMeta)
+        Dictionary<string, object?>? enrichMeta,
+        string? creditsVisualPrompt = null)
     {
-        EnsureEndCreditsScene(planned);
+        EnsureEndCreditsScene(planned, creditsVisualPrompt);
         return new()
         {
             ["schema_version"] = "stage2.v1",
@@ -381,7 +393,8 @@ public sealed class Stage2PlannerService
         string resolution,
         string scenesFilter,
         SilentBeatClassifyResult? classifyMeta,
-        Dictionary<string, object?>? enrichMeta)
+        Dictionary<string, object?>? enrichMeta,
+        string? creditsVisualPrompt = null)
     {
         var byN = new Dictionary<int, Dictionary<string, object?>>();
         foreach (var s in GetList(existing, "scenes").OfType<Dictionary<string, object?>>())
@@ -395,7 +408,7 @@ public sealed class Stage2PlannerService
             if (n > 0) byN[n] = s;
         }
         var all = byN.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
-        EnsureEndCreditsScene(all);
+        EnsureEndCreditsScene(all, creditsVisualPrompt);
         existing["schema_version"] = "stage2.v1";
         existing["movie_title"] = stage1.TryGetValue("movie_title", out var mt) ? mt
             : existing.TryGetValue("movie_title", out var emt) ? emt : null;
@@ -408,7 +421,7 @@ public sealed class Stage2PlannerService
         return existing;
     }
 
-    public static void EnsureEndCreditsScene(List<Dictionary<string, object?>> scenes)
+    public static void EnsureEndCreditsScene(List<Dictionary<string, object?>> scenes, string? creditsVisualPrompt = null)
     {
         if (scenes == null || scenes.Count == 0) return;
 
@@ -422,6 +435,13 @@ public sealed class Stage2PlannerService
         var maxSn = scenes.Select(s => ToInt(s.TryGetValue("scene_number", out var sn) ? sn : 0)).DefaultIfEmpty(0).Max();
         var creditsSceneNumber = maxSn + 1;
 
+        // Content comes from the single credits-card builder (ProjectStore.BuildCreditsVisualPrompt) so this
+        // auto-inserted scene matches a manual re-add; a plain fallback keeps pure-planning callers/tests working.
+        var visualPrompt = string.IsNullOrWhiteSpace(creditsVisualPrompt)
+            ? "Elegant cinematic end-credits title card, deep matte-black background with fine film grain, "
+              + "centered high-contrast typography, tasteful theatrical end-title look, soft fade to black."
+            : creditsVisualPrompt.Trim();
+
         var creditsClip = new Dictionary<string, object?>
         {
             ["clip_index"] = 1,
@@ -431,7 +451,7 @@ public sealed class Stage2PlannerService
             ["action_summary"] = "Scrolling film end credits and attribution title card.",
             ["duration_seconds"] = 6,
             ["is_credits"] = true,
-            ["visual_prompt"] = "Cinematic elegant movie end credits title card, glowing silver typography on dark atmospheric background, scrolling film credits listing cast, crew, and PageToMovie attribution, 8k resolution, cinematic lighting",
+            ["visual_prompt"] = visualPrompt,
         };
 
         var creditsScene = new Dictionary<string, object?>
@@ -1525,7 +1545,11 @@ public sealed class Stage2PlannerService
             ["ambient"] = ambient,
         };
 
-        if (!string.IsNullOrWhiteSpace(pronHint))
+        // A pronunciation hint only earns its place when the word it targets is actually spoken in this
+        // beat's dialogue — carrying one onto a silent/no-dialogue beat (or for a word not in the line)
+        // just adds noise to the prompt.
+        if (!string.IsNullOrWhiteSpace(pronHint) &&
+            Deterministic.Pronunciation.PronunciationResolver.HintAppliesToDialogue(pronHint, dialogue))
         {
             payload["pronunciation_hint"] = pronHint;
         }
