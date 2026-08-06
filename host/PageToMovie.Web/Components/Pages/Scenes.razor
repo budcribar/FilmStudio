@@ -123,6 +123,15 @@ else
 @if (_showFilters)
 {
     <div class="card mb-3 p-3 border-secondary bg-dark" data-testid="scenes-select-panel">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="small text-muted">🔍 Filters</span>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" type="button"
+                    data-testid="scenes-filters-collapse"
+                    title="Hide filters"
+                    @onclick="() => _showFilters = false">
+                ✕ Hide
+            </button>
+        </div>
         <div class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label small text-muted">Character</label>
@@ -307,7 +316,7 @@ else if (_showPreviewPlayer && _clientStitching)
                             class="btn batch-go @(_selected.Count > 0 && !JobRunning && CastReady ? "batch-go--ready" : "")"
                             disabled="@(_busy || _selected.Count == 0 || JobRunning || !CastReady || SelectedLockedByOther)"
                             title="@(!CastReady ? CastBlockedTitle : SelectedLockedByOther ? "Selection includes scenes locked by another user" : null)"
-                            @onclick="StartBatchAsync">
+                            @onclick="OpenGenerateConfirmAsync">
                         @if (JobRunning)
                         {
                             <span class="batch-go__spin" aria-hidden="true"></span>
@@ -337,56 +346,7 @@ else if (_showPreviewPlayer && _clientStitching)
                         </button>
                     }
 
-                    <div class="d-flex align-items-center gap-1 ms-2">
-                        <label class="small text-muted mb-0" for="genResBatch">Resolution</label>
-                        <select id="genResBatch"
-                                data-testid="scenes-resolution"
-                                class="form-select form-select-sm bg-dark text-white border-secondary"
-                                style="width:auto"
-                                @bind="_genResolution"
-                                @bind:after="RefreshCostEstimateAsync"
-                                disabled="@(_busy || ResolutionLocked)"
-                                title="@(ResolutionLocked ? $"Resolution locked to {(_resolutionLock ?? _genResolution)} because clips already exist for this project." : null)">
-                            <option value="480p">480p</option>
-                            <option value="720p">720p</option>
-                            <option value="1080p">1080p</option>
-                        </select>
-                        @if (ResolutionLocked)
-                        {
-                            <span class="badge bg-secondary" style="font-size: 0.75rem;" title="Resolution locked because clips already exist for this project.">🔒 Locked</span>
-                        }
-                    </div>
 
-                    @* Shared music-scoring settings — the model + Sing choice used by each scene's
-                       "Score" button in the Music column below. *@
-                    <CapabilityLockedControl Enabled="@Caps.MusicReady"
-                                             BlockedReason="@Caps.MusicBlockedReason"
-                                             SettingsHref="@Caps.MusicSettingsHref"
-                                             TitleWhenEnabled="Music model used when you score a scene"
-                                             TestId="scenes-music-settings">
-                    <div class="d-flex align-items-center gap-1 ms-2 border rounded px-2 py-1"
-                         title="Music model & vocal setting used when you score a scene in the Music column">
-                        <span class="small">🎵</span>
-                        <select class="form-select form-select-sm bg-dark text-white border-secondary" style="width:auto"
-                                data-testid="scenes-music-model"
-                                disabled="@(_busy || JobRunning || _scoringMusic || !Caps.MusicReady)"
-                                value="@_selectedAudioModel"
-                                @onchange="@(e => _selectedAudioModel = e.Value?.ToString() ?? _selectedAudioModel)"
-                                title="Audio model for music generation">
-                            @foreach (var m in _audioModels)
-                            {
-                                <option value="@m.Id">@m.DisplayName</option>
-                            }
-                        </select>
-                        <div class="form-check form-switch m-0" title="@(SelectedAudioModelCanSing ? "Generate sung vocals instead of instrumental" : "The selected model has no vocal capability")">
-                            <input class="form-check-input" type="checkbox" id="wantVocalSwitch"
-                                   disabled="@(_busy || JobRunning || _scoringMusic || !SelectedAudioModelCanSing || !Caps.MusicReady)"
-                                   checked="@(_wantVocal && SelectedAudioModelCanSing)"
-                                   @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
-                            <label class="form-check-label small" for="wantVocalSwitch">Sing</label>
-                        </div>
-                    </div>
-                    </CapabilityLockedControl>
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
@@ -469,18 +429,6 @@ else if (_showPreviewPlayer && _clientStitching)
                 </div>
             }
 
-            @if (IncompleteCount > 0)
-            {
-                <div class="mt-2 pt-2 border-top border-secondary d-flex align-items-center gap-2 small">
-                    <span class="text-muted">Shortcut:</span>
-                    <button type="button"
-                            class="btn btn-sm btn-outline-warning py-0 px-2"
-                            disabled="@(_busy || IncompleteCount == 0)"
-                            @onclick="SelectIncomplete">
-                        Select @IncompleteCount Incomplete Scene@((IncompleteCount == 1) ? "" : "s")
-                    </button>
-                </div>
-            }
         </div>
 
         <div class="table-responsive">
@@ -573,7 +521,9 @@ else if (_showPreviewPlayer && _clientStitching)
                                     </div>
                                 }
                             </td>
-                            <td @onclick="() => OpenSceneAsync(sn)">
+                            <td @onclick="() => OpenSceneAsync(sn)" class="text-nowrap">
+                                @{ var (pg, pgCls, pgTitle) = SceneProgressGlyph(s); }
+                                <span class="@pgCls me-1" title="@pgTitle" aria-label="@pgTitle">@pg</span>
                                 <span class="@(s.ClipsComplete ? "text-success" : s.ClipsOnDisk > 0 ? "text-warning" : "text-muted")">
                                     @s.ClipsOnDisk/@s.ClipCount
                                 </span>
@@ -601,9 +551,9 @@ else if (_showPreviewPlayer && _clientStitching)
                                         class="btn btn-sm btn-warning text-black fw-bold py-0 px-2"
                                         data-testid="scene-row-score-music"
                                         disabled="@(_busy || JobRunning || _scoringMusic || !Caps.MusicReady || s.LockedByOther)"
-                                        title="@(Caps.MusicReady ? (_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene" : "Score background music for this scene") : Caps.MusicBlockedReason)"
-                                        @onclick="() => ScoreSceneBackgroundMusicAsync(sn)">
-                                    @(_wantVocal && SelectedAudioModelCanSing ? "🎤" : "🎵") Score
+                                        title="@(Caps.MusicReady ? "Score background music for this scene" : Caps.MusicBlockedReason)"
+                                        @onclick="() => OpenScoreMenu(sn)">
+                                    🎵 Score
                                 </button>
                                 @if (s.HasBackgroundMusic)
                                 {
@@ -1793,6 +1743,148 @@ else
     </div>
 }
 
+@* Generate confirm — opens from the batch "Generate" button so resolution + cost are decided at
+   the moment of spend instead of parked in the toolbar. *@
+@if (_showGenerateConfirm)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title m-0">▶ Generate video</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseGenerateConfirm"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Making <strong>~@EstimateSelectedClips()</strong> clip@(EstimateSelectedClips() == 1 ? "" : "s")
+                        across <strong>@_selected.Count</strong> scene@(_selected.Count == 1 ? "" : "s").
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted" for="genResConfirm">Resolution</label>
+                        @if (ResolutionLocked)
+                        {
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary">@(_resolutionLock ?? _genResolution)</span>
+                                <span class="small text-muted">🔒 Locked — clips already exist for this movie</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <select id="genResConfirm"
+                                    data-testid="generate-confirm-resolution"
+                                    class="form-select form-select-sm bg-dark text-white border-secondary"
+                                    style="width:auto"
+                                    @bind="_genResolution"
+                                    @bind:after="RefreshCostEstimateAsync"
+                                    disabled="@_busy">
+                                <option value="480p">480p</option>
+                                <option value="720p">720p</option>
+                                <option value="1080p">1080p</option>
+                            </select>
+                        }
+                    </div>
+
+                    @if (Session.IsAdmin && _videoModels.Count > 0)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label small text-muted" for="genModelConfirm">
+                                Video model <span class="badge bg-secondary align-middle">admin</span>
+                            </label>
+                            <select id="genModelConfirm"
+                                    data-testid="generate-confirm-model"
+                                    class="form-select form-select-sm bg-dark text-white border-secondary"
+                                    style="width:auto"
+                                    disabled="@_busy"
+                                    value="@_selectedVideoModel"
+                                    @onchange="@(e => _selectedVideoModel = e.Value?.ToString() ?? "")">
+                                <option value="">Project default</option>
+                                @foreach (var m in _videoModels)
+                                {
+                                    <option value="@m.Id">@m.DisplayName</option>
+                                }
+                            </select>
+                            <div class="form-text text-muted">One-off for this batch — compare generators without changing project settings.</div>
+                        </div>
+                    }
+
+                    <div class="d-flex align-items-baseline gap-2">
+                        <span class="small text-muted">Estimated cost</span>
+                        @if (_costReport is null)
+                        {
+                            <span class="small text-muted">calculating…</span>
+                        }
+                        else
+                        {
+                            <span class="fs-5 fw-bold" data-testid="generate-confirm-cost">~$@(EstimateSelectedCostUsd().ToString("0.00"))</span>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            disabled="@_busy" @onclick="CloseGenerateConfirm">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-success fw-bold"
+                            data-testid="generate-confirm-go"
+                            disabled="@(_busy || _selected.Count == 0 || JobRunning || !CastReady || SelectedLockedByOther)"
+                            @onclick="ConfirmGenerateAsync">
+                        ▶ Generate @_selected.Count scene@(_selected.Count == 1 ? "" : "s")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Score-music chooser — opens from a scene's "Score" button so the music style + Sing choice
+   live at the point of use instead of parked in the toolbar. *@
+@if (_scoreMenuScene is int scoreSn)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title m-0">🎵 Score music — Scene S@(scoreSn.ToString("D2"))</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseScoreMenu"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small text-muted">Music style</label>
+                    <select class="form-select form-select-sm bg-dark text-white border-secondary mb-3"
+                            data-testid="score-menu-model"
+                            disabled="@(_busy || _scoringMusic)"
+                            value="@_selectedAudioModel"
+                            @onchange="@(e => _selectedAudioModel = e.Value?.ToString() ?? _selectedAudioModel)">
+                        @foreach (var m in _audioModels)
+                        {
+                            <option value="@m.Id">@m.DisplayName</option>
+                        }
+                    </select>
+                    @if (SelectedAudioModelCanSing)
+                    {
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="scoreMenuSing"
+                                   data-testid="score-menu-sing"
+                                   disabled="@(_busy || _scoringMusic)"
+                                   checked="@_wantVocal"
+                                   @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
+                            <label class="form-check-label small" for="scoreMenuSing">Sing lyrics for this scene</label>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            disabled="@_scoringMusic" @onclick="CloseScoreMenu">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-warning text-black fw-bold"
+                            data-testid="score-menu-generate"
+                            disabled="@(_busy || JobRunning || _scoringMusic)"
+                            @onclick="() => ScoreFromMenuAsync(scoreSn)">
+                        @(_wantVocal && SelectedAudioModelCanSing ? "🎤" : "🎵") Generate music
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @* Audio Takes Modal — compares scene background-audio generation runs (model, vocal/instrumental,
    prompt/lyrics), listen-based rather than the clip modal's dual video player since comparing audio
    just means playing one take, then another. *@
@@ -2407,8 +2499,20 @@ else
 
     private string SelectionMode => _selectionMode;
 
-    private int IncompleteCount =>
-        VisibleScenes.Count(s => s.ClipsOnDisk < s.ClipCount);
+    // Tri-state progress glyph for a scene's clip generation:
+    //   ○ (muted)   nothing generated yet, or no clips planned
+    //   ◐ (warning) some clips on disk, not all
+    //   ● (success) every planned clip generated
+    private (string Glyph, string Css, string Title) SceneProgressGlyph(SceneSummary s)
+    {
+        if (s.ClipCount <= 0)
+            return ("○", "text-muted", "No clips planned");
+        if (s.ClipsComplete)
+            return ("●", "text-success", $"All {s.ClipCount} clips generated");
+        if (s.ClipsOnDisk > 0)
+            return ("◐", "text-warning", $"{s.ClipsOnDisk} of {s.ClipCount} clips generated");
+        return ("○", "text-muted", $"0 of {s.ClipCount} clips generated");
+    }
 
     private List<string> CharacterOptions
     {
@@ -2706,6 +2810,8 @@ else
 
             await LoadGenResolutionFromConfigAsync();
             await LoadAudioModelsAsync();
+            if (Session.IsAdmin)
+                await LoadVideoModelsAsync();
 
             try
             {
@@ -3860,15 +3966,6 @@ else
         _selectionMode = "";
     }
 
-    private void SelectIncomplete()
-    {
-        _selected = VisibleScenes
-            .Where(s => s.ClipsOnDisk < s.ClipCount)
-            .Select(s => s.SceneNumber)
-            .ToHashSet();
-        _selectionMode = "incomplete";
-    }
-
     private void SelectAll()
     {
         _selected = VisibleScenes.Select(s => s.SceneNumber).ToHashSet();
@@ -3956,7 +4053,10 @@ else
             {
                 await EnsurePredecessorsUploadedAsync(await MissingClipTargetsAsync(sn));
             }
-            await Engine.StartBatchGenAsync(_projectId, list, onlyMissing: true, resolution: _genResolution);
+            var videoModelOverride = Session.IsAdmin && !string.IsNullOrWhiteSpace(_selectedVideoModel)
+                ? _selectedVideoModel
+                : null;
+            await Engine.StartBatchGenAsync(_projectId, list, onlyMissing: true, resolution: _genResolution, videoModel: videoModelOverride);
             // Live progress card only — no duplicate "started" banner.
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -4227,6 +4327,39 @@ else
     private string _selectedAudioModel = "fal-ai/stable-audio";
     private bool _wantVocal;
 
+    // Which scene's Score chooser is open (null = closed). The model/Sing picks it edits are the
+    // shared _selectedAudioModel/_wantVocal, so they persist as the defaults for the next scene.
+    private int? _scoreMenuScene;
+
+    private void OpenScoreMenu(int sceneNum) => _scoreMenuScene = sceneNum;
+
+    private void CloseScoreMenu() => _scoreMenuScene = null;
+
+    private async Task ScoreFromMenuAsync(int sceneNum)
+    {
+        _scoreMenuScene = null;
+        await ScoreSceneBackgroundMusicAsync(sceneNum);
+    }
+
+    // Batch-generate confirm modal: resolution + cost decided at the moment of spend.
+    private bool _showGenerateConfirm;
+
+    private async Task OpenGenerateConfirmAsync()
+    {
+        if (_selected.Count == 0) return;
+        if (!CastReady) { _error = CastBlockedTitle; return; }
+        _showGenerateConfirm = true;
+        await RefreshCostEstimateAsync();
+    }
+
+    private void CloseGenerateConfirm() => _showGenerateConfirm = false;
+
+    private async Task ConfirmGenerateAsync()
+    {
+        _showGenerateConfirm = false;
+        await StartBatchAsync();
+    }
+
     /// <summary>Catalog <c>supportsVocals</c> on the selected audio model — not provider id.</summary>
     private bool SelectedAudioModelCanSing =>
         _audioModels.FirstOrDefault(m => string.Equals(m.Id, _selectedAudioModel, StringComparison.OrdinalIgnoreCase))
@@ -4243,6 +4376,22 @@ else
                 _audioModels.Add(new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "fal", Capability = "audio" });
         }
         catch { /* keep default single-entry list */ }
+    }
+
+    // Admin-only: video models offered as a one-off per-batch override in the Generate modal, so an
+    // admin can A/B different generators without editing project Configuration. "" = project default.
+    private List<SupportedModelDto> _videoModels = new();
+    private string _selectedVideoModel = "";
+
+    private async Task LoadVideoModelsAsync()
+    {
+        try
+        {
+            var models = await Engine.GetSupportedModelsAsync();
+            _videoModels = models.Where(m => m.Capability == "video" &&
+                !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        catch { /* leave empty — modal then offers project default only */ }
     }
 
     private async Task ScoreSceneBackgroundMusicAsync(int sceneNum)

@@ -216,6 +216,12 @@ public sealed class StartBatchGenRequest
     /// <summary>Video resolution for this gen (e.g. 480p / 720p). Empty → project Configuration.</summary>
     public string? Resolution { get; set; }
     /// <summary>
+    /// One-off video model override for this batch only (admin model comparison) — does NOT change
+    /// project Configuration. Empty/null → project Configuration's video model. Must resolve to a
+    /// video-capable catalog model or the batch fails at start.
+    /// </summary>
+    public string? VideoModel { get; set; }
+    /// <summary>
     /// Block video gen until every cast member has an approved voice profile and
     /// (for on-screen roles) a locked ref image. Default true — prevents wasted API spend.
     /// </summary>

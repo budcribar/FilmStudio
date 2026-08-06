@@ -3111,7 +3111,8 @@ public sealed class FilmJobService
                     projectId,
                     needContinue: work.Any(w => w.Clip > 1),
                     needReferenceImages: req.RequireLockedCharacters,
-                    ct)
+                    ct,
+                    modelOverride: req.VideoModel)
                 .ConfigureAwait(false);
 
             var resolution = await ResolveVideoResolutionAsync(projectId, req.Resolution, ct);
@@ -3159,7 +3160,8 @@ public sealed class FilmJobService
                         projectId, projectDir, sn, cn, clip, resolution, ct,
                         previousClipEl: prevClipEl,
                         blueprintRoot: bp.RootElement,
-                        incomingDurationPaddingSec: incomingPadding);
+                        incomingDurationPaddingSec: incomingPadding,
+                        modelOverride: req.VideoModel);
                     sceneCarryover[sn] = (cn, overrun);
                     done++;
                     // Fresh clips x/y + status pills while batch is still running.
@@ -3564,7 +3566,8 @@ public sealed class FilmJobService
         CancellationToken ct,
         JsonElement? previousClipEl = null,
         JsonElement? blueprintRoot = null,
-        double incomingDurationPaddingSec = 0.0)
+        double incomingDurationPaddingSec = 0.0,
+        string? modelOverride = null)
     {
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
         var videoDir = Path.Combine(projectDir, "assets", "video");
@@ -3582,7 +3585,7 @@ public sealed class FilmJobService
             string.Equals(cont, "extend_previous", StringComparison.OrdinalIgnoreCase) ||
             clip > 1;
 
-        var model = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
+        var model = await ResolveVideoModelAsync(projectId, ct, modelOverride).ConfigureAwait(false);
         var modelEntry = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
 
         // Real video-extend: the browser client prepares and uploads this file — its own copy of
@@ -4469,12 +4472,13 @@ public sealed class FilmJobService
         string projectId,
         bool needContinue,
         bool needReferenceImages,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? modelOverride = null)
     {
         if (!needReferenceImages)
             return;
 
-        var modelId = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
+        var modelId = await ResolveVideoModelAsync(projectId, ct, modelOverride).ConfigureAwait(false);
         var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
 
         if (needReferenceImages && !entry.SupportsReferenceImages)
@@ -4489,12 +4493,31 @@ public sealed class FilmJobService
 
     /// <summary>
     /// Project <c>model_name</c> only — Settings selection required (no host DefaultModel invent).
+    /// <paramref name="requestedModel"/> is a one-off override (admin model comparison); when set it
+    /// must resolve to a video-capable catalog model, and the project config is left unchanged.
     /// </summary>
-    private async Task<string> ResolveVideoModelAsync(string projectId, CancellationToken ct)
+    private async Task<string> ResolveVideoModelAsync(string projectId, CancellationToken ct, string? requestedModel = null)
     {
         var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
             EnsureLabModelsAllowed(cfg);
+        if (!string.IsNullOrWhiteSpace(requestedModel))
+            return ResolveExplicitVideoModel(requestedModel);
         return ProjectModelSelection.RequireVideo(cfg, "Video generation");
+    }
+
+    /// <summary>
+    /// Resolve an admin one-off video model override (from <see cref="StartBatchGenRequest.VideoModel"/>)
+    /// to a catalog id, strictly enforcing video capability. <see cref="ProjectModelSelection.RequireExplicit"/>
+    /// alone falls back to an any-capability catalog match, so an override id that names a chat/image/audio
+    /// model would slip through and route batch spend to a non-video model — re-check Video here.
+    /// </summary>
+    internal static string ResolveExplicitVideoModel(string requestedModel)
+    {
+        var id = ProjectModelSelection.RequireExplicit(requestedModel, ModelCapability.Video, "Video generation");
+        if (SupportedModelCatalog.Find(id, ModelCapability.Video) is null)
+            throw new InvalidOperationException(
+                $"Video generation: model '{requestedModel}' is not a video model. Pick a video model.");
+        return id;
     }
 
     private async Task<string> ResolvePlanningModelAsync(string projectId, string? requestedModel, CancellationToken ct)

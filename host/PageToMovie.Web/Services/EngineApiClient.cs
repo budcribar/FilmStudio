@@ -1604,6 +1604,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         IReadOnlyList<int> scenes,
         bool onlyMissing = true,
         string? resolution = null,
+        string? videoModel = null,
         CancellationToken ct = default)
     {
         SyncIdentityHeaders();
@@ -1613,6 +1614,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             {
                 ProjectId = projectId,
                 Resolution = resolution,
+                VideoModel = videoModel,
                 Scenes = scenes.ToList(),
                 OnlyMissing = onlyMissing,
             },
