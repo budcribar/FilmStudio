@@ -38,6 +38,8 @@ public static class ClipVideoPromptBuilder
         public string VoiceProfile { get; init; } = "";
         public string VoiceLabel { get; init; } = "";
         public bool VoiceOnly { get; init; }
+        /// <summary>Explicit cast_kind from the cast seed (group/chorus/ensemble/individual/…), if any.</summary>
+        public string CastKind { get; init; } = "";
     }
 
     public sealed class PromptBuildResult

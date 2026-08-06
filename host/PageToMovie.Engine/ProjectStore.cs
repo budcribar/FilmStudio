@@ -2955,6 +2955,7 @@ public sealed class ProjectStore
             {
                 if (!overwrite && map.ContainsKey(key)) continue;
                 var desc = info.TryGetProperty("description", out var d) ? (d.GetString() ?? "").Trim() : "";
+                var castKind = info.TryGetProperty("cast_kind", out var ck) ? (ck.GetString() ?? "").Trim() : "";
                 var vlock = info.TryGetProperty("visual_lock", out var vl) ? (vl.GetString() ?? "").Trim() : "";
                 var profile = info.TryGetProperty("voice_profile", out var vp) ? (vp.GetString() ?? "").Trim() : "";
                 var label = info.TryGetProperty("voice_label", out var vlab) ? (vlab.GetString() ?? "").Trim() : "";
@@ -2979,6 +2980,7 @@ public sealed class ProjectStore
                     VoiceProfile = profile,
                     VoiceLabel = label,
                     VoiceOnly = voiceOnly,
+                    CastKind = castKind,
                 };
             }
         }

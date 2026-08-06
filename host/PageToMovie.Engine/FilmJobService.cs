@@ -4269,7 +4269,15 @@ public sealed class FilmJobService
     {
         return (built.OnScreenKeys.Count > 0 ? built.OnScreenKeys : built.CharacterKeys)
             .Where(k => !(profiles.TryGetValue(k, out var p) && p.VoiceOnly))
-            .Where(k => !CastKindClassifier.IsGroup(k))
+            .Where(k =>
+            {
+                // Full-signal group detection (cast_kind + display + description), matching the
+                // cast gates in ProjectStore — a chorus/ensemble seed with a non-token key (e.g.
+                // Character_The_Choir + cast_kind:"chorus") must be exempt here too, or generation
+                // hard-fails demanding a locked portrait a group can never have.
+                profiles.TryGetValue(k, out var p);
+                return !CastKindClassifier.IsGroup(k, p?.DisplayName, p?.CastKind, p?.Description);
+            })
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
