@@ -345,19 +345,12 @@ public static class ClipVideoPromptBuilder
     /// as <see cref="ClipDurationEstimator.EstimateForClip"/>.</summary>
     private static bool TryGetClipDurationSeconds(JsonElement clipEl, out int seconds)
     {
-        seconds = 0;
-        if (!clipEl.TryGetProperty("duration_seconds", out var el)) return false;
-        if (el.ValueKind == JsonValueKind.Number)
+        if (ClipDuration.TryReadNumericSeconds(clipEl, out var d))
         {
-            if (el.TryGetInt32(out var i) && i > 0) { seconds = i; return true; }
-            if (el.TryGetDouble(out var d) && d > 0) { seconds = (int)Math.Round(d, MidpointRounding.AwayFromZero); return seconds > 0; }
-        }
-        else if (el.ValueKind == JsonValueKind.String &&
-                 double.TryParse(el.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var s) && s > 0)
-        {
-            seconds = (int)Math.Round(s, MidpointRounding.AwayFromZero);
+            seconds = (int)Math.Round(d, MidpointRounding.AwayFromZero);
             return seconds > 0;
         }
+        seconds = 0;
         return false;
     }
 

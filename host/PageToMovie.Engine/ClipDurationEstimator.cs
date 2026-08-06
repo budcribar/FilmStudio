@@ -215,18 +215,10 @@ public static class ClipDurationEstimator
         var visual = clipEl.TryGetProperty("visual_prompt", out var vp)
             ? vp.GetString() ?? ""
             : "";
+        // Stage 2's planned duration_seconds (number or numeric string), via the shared reader.
         var planned = 0;
-        if (clipEl.TryGetProperty("duration_seconds", out var ds))
-        {
-            if (ds.TryGetInt32(out var p))
-                planned = p;
-            else if (ds.TryGetDouble(out var d) && d > 0)
-                planned = (int)Math.Round(d, MidpointRounding.AwayFromZero);
-            else if (ds.ValueKind == JsonValueKind.String &&
-                     double.TryParse(ds.GetString(), System.Globalization.NumberStyles.Float,
-                         System.Globalization.CultureInfo.InvariantCulture, out var s) && s > 0)
-                planned = (int)Math.Round(s, MidpointRounding.AwayFromZero);
-        }
+        if (ClipDuration.TryReadNumericSeconds(clipEl, out var plannedSeconds))
+            planned = (int)Math.Round(plannedSeconds, MidpointRounding.AwayFromZero);
 
         // Prefer action_class from Stage 2 clip (older blueprints may omit it).
         var actionClass = "";

@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using PageToMovie.Core.Billing;
 using PageToMovie.Core.Models;
@@ -23,10 +22,8 @@ namespace PageToMovie.Engine;
 public sealed class CostReportService
 {
     // Cost rates: models_catalog.json only. Missing prices throw — Engine does not invent USD.
-
-    private static readonly Regex TimestampDur = new(
-        @"^\s*(\d+):(\d{2})\s*-\s*(\d+):(\d{2})\s*$",
-        RegexOptions.Compiled);
+    // Per-clip effective duration (duration_seconds numeric → timestamp span → default) is resolved
+    // by the shared ClipDuration.Resolve helper.
 
     private readonly ProjectStore _projects;
     private readonly CreditService? _credits;
@@ -1043,22 +1040,7 @@ public sealed class CostReportService
                 {
                     var cn = ClipKeying.ClipNumber(c);
                     if (cn <= 0) continue;
-                    var dur = defaultDur;
-                    if (c.TryGetProperty("duration_seconds", out var d) && d.TryGetDouble(out var dd) && dd > 0)
-                        dur = dd;
-                    else if (c.TryGetProperty("duration_seconds", out var di) && di.TryGetInt32(out var idi) && idi > 0)
-                        dur = idi;
-                    else if (c.TryGetProperty("timestamp", out var ts) && ts.GetString() is { } tss)
-                    {
-                        var m = TimestampDur.Match(tss);
-                        if (m.Success)
-                        {
-                            var inv = System.Globalization.CultureInfo.InvariantCulture;
-                            var a = int.Parse(m.Groups[1].Value, inv) * 60 + int.Parse(m.Groups[2].Value, inv);
-                            var b = int.Parse(m.Groups[3].Value, inv) * 60 + int.Parse(m.Groups[4].Value, inv);
-                            if (b > a) dur = b - a;
-                        }
-                    }
+                    var dur = ClipDuration.Resolve(c, defaultDur);
 
                     clips.Add(new BlueprintClip
                     {
