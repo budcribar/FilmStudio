@@ -235,6 +235,47 @@ public class CastReadinessTests : IDisposable
         Assert.DoesNotContain(missing, m => m.Contains("voice", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void Gen_gate_exempts_group_but_still_requires_individual_lock()
+    {
+        // The per-scene video-gen gate (GetUnlockedOnScreenCharacters → EnsureSceneCharactersLocked)
+        // must exempt a group/ensemble on-screen (Children — no single portrait) while still
+        // requiring a locked image for an individual (Mary). Regression for the divergence where the
+        // client readiness gate skipped groups but the gen gate blocked on them, erroring every batch
+        // ("locked character refs required … Missing lock(s): Character_Children").
+        WriteSeeds("""
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Children": { "cast_kind": "group", "description": "Several schoolchildren", "voice_profile": "" },
+                "Character_Mary": { "canonical_given_name": "Mary", "description": "Young girl", "voice_profile": "gentle young girl" }
+              }
+            }
+            """);
+        WriteBlueprint("""
+            { "scenes": [ { "scene_number": 1, "characters_on_screen": ["Character_Children", "Character_Mary"], "veo_clips": [] } ] }
+            """);
+
+        // Neither locked: the group is exempt, the individual is not.
+        var unlocked = _store.GetUnlockedOnScreenCharacters(ProjectId, 1);
+        Assert.Contains("Character_Mary", unlocked);
+        Assert.DoesNotContain("Character_Children", unlocked);
+
+        // Lock Mary → the scene gate clears entirely (the group is never counted).
+        var charDir = Path.Combine(_store.GetProjectDir(ProjectId), "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllBytes(Path.Combine(charDir, "character_mary_ref.png"), new byte[128]);
+        Assert.Empty(_store.GetUnlockedOnScreenCharacters(ProjectId, 1));
+    }
+
+    private void WriteBlueprint(string json)
+    {
+        var dir = _store.GetProjectDir(ProjectId);
+        File.WriteAllText(Path.Combine(dir, "pipeline_config.json"),
+            """{"blueprint_file":"blueprint.clips.grok.json"}""");
+        File.WriteAllText(Path.Combine(dir, "blueprint.clips.grok.json"), json);
+    }
+
     private void WriteSeeds(string json)
     {
         var source = Path.Combine(_store.GetProjectDir(ProjectId), "source");

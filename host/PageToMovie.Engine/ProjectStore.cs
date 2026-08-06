@@ -2381,6 +2381,13 @@ public sealed class ProjectStore
             var seed = GetCharacterSeed(projectId, key);
             if (seed is not null && IsVoiceOnly(key, seed.Value))
                 continue;
+            // Group / ensemble cast (e.g. "Children", "Crowd") have no single portrait identity —
+            // the operator can't pick one image for them and shouldn't be forced to. The video model
+            // renders group members freely, so a group never requires a locked reference. This mirrors
+            // the client readiness gates, which already skip IsGroup, and uses the same
+            // CastKindClassifier signal so it generalizes across books/casts (not a name hardcode).
+            if (IsGroupSeed(key, seed))
+                continue;
             // Unknown seed still counts as needing a lock if mentioned on-screen
             if (ResolveCharacterRefPath(projectId, key) is null)
                 unlocked.Add(key);
@@ -6258,6 +6265,24 @@ public sealed class ProjectStore
             return CastKindClassifier.IsVoiceOnlyPolicy(pol.GetString());
         }
         return false;
+    }
+
+    /// <summary>
+    /// True when the on-screen key is a plural/ensemble cast member (Children, Crowd, …) with no
+    /// single portrait identity — exempt from the locked-reference video-gen gate. Same signal as
+    /// <see cref="CharacterSummary.IsGroup"/> (<see cref="CastKindClassifier.IsGroup"/>), read from
+    /// the cast seed when present and otherwise from the key/display token, so it needs no seed.
+    /// </summary>
+    private static bool IsGroupSeed(string key, JsonElement? seed)
+    {
+        string? castKind = null, display = null, desc = null;
+        if (seed is { ValueKind: JsonValueKind.Object } s)
+        {
+            if (s.TryGetProperty("cast_kind", out var ck)) castKind = ck.GetString();
+            if (s.TryGetProperty("display_name", out var dn)) display = dn.GetString();
+            if (s.TryGetProperty("description", out var d)) desc = d.GetString();
+        }
+        return CastKindClassifier.IsGroup(key, display, castKind, desc);
     }
 
 
