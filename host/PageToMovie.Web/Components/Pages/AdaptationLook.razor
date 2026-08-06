@@ -8,31 +8,18 @@
     {
         <div class="card mb-3">
             <div class="card-body">
-                <p class="text-body-secondary mb-3">
-                    Choose how this film should look. This is applied when the screenplay is written, so you can
-                    change the style here without re-importing the book.
-                </p>
+                @{ var hasDraft = Status?.Screenplay.DraftExists == true; }
                 <VisualMediumCard ProjectId="@ProjectId"
                                   Disabled="@(Busy || JobRunning)"
+                                  SaveLabel="@(hasDraft ? "Save & apply to screenplay" : "Save")"
                                   OnChanged="OnLookChangedAsync" />
 
-                @* Re-skin: only meaningful once a screenplay draft exists. *@
-                @if (Status?.Screenplay.DraftExists == true)
+                @* Saving re-applies to an existing draft (see OnLookChangedAsync) — a note, not a second button. *@
+                @if (hasDraft)
                 {
-                    <div class="alert alert-light border d-flex flex-wrap align-items-center justify-content-between gap-2"
-                         data-testid="look-reskin">
-                        <div class="small">
-                            <strong>Re-apply the look to your screenplay.</strong>
-                            Rewrites the visual description to match the medium above — dialogue, scenes, and story
-                            stay the same. Review and re-approve afterward.
-                        </div>
-                        <button type="button"
-                                class="btn btn-outline-primary btn-sm"
-                                data-testid="look-reskin-apply"
-                                disabled="@(Busy || JobRunning)"
-                                @onclick="ReskinAsync">
-                            Re-apply look to screenplay
-                        </button>
+                    <div class="small text-body-secondary mb-3" data-testid="look-reskin-note">
+                        Saving re-applies the look to your screenplay — dialogue, scenes, and story stay the same.
+                        You'll re-approve afterward.
                     </div>
                 }
 
@@ -53,6 +40,14 @@
 
     private async Task OnLookChangedAsync()
     {
+        // Saving the medium also re-applies the look to an existing screenplay draft — one action, no
+        // second button. Nothing to re-apply if the screenplay hasn't been drafted yet (medium is just
+        // stored and applied when it is written).
+        if (Status?.Screenplay.DraftExists == true)
+        {
+            await ReskinAsync();
+            return;
+        }
         try { await SoftLoadAsync(); } catch { /* ignore */ }
     }
 
