@@ -92,8 +92,9 @@ else
 {
     <div class="alert alert-danger">@Host.Error</div>
 }
-@* Hide completion/status noise while Import or a job is still running *@
-@if (!string.IsNullOrEmpty(Host.Message) && !Host.SuppressGuidanceBanners)
+@* Hide completion/status noise while Import or a job is still running, and don't restate the
+   outcome when the job panel below is already showing this exact message (one fact, one place). *@
+@if (!string.IsNullOrEmpty(Host.Message) && !Host.SuppressGuidanceBanners && !MessageDuplicatesJobPanel)
 {
     <div class="alert alert-info">@Host.Message</div>
 }
@@ -215,6 +216,16 @@ else
         && !string.IsNullOrWhiteSpace(s.SignedHash);
 
     private bool ShowJobPanel => AdaptationPageBase.ShowJobPanel(Session.IsAdmin, Host.Job, Step);
+
+    /// <summary>
+    /// True when the generic message banner would just restate what the finished job panel already
+    /// shows (on job completion the host sets Message = OperatorJobDoneMessage). Suppress the banner
+    /// in that case so the same outcome isn't printed twice. Non-admins get no job panel, so their
+    /// banner still shows.
+    /// </summary>
+    private bool MessageDuplicatesJobPanel =>
+        ShowJobPanel && !Host.JobRunning && Host.Job is not null
+        && string.Equals(Host.Message, AdaptationPageBase.OperatorJobDoneMessage(Host.Job), StringComparison.Ordinal);
 
     protected override async Task OnInitializedAsync()
     {
