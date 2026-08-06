@@ -15,7 +15,7 @@
 <PageTitle>Cast & voice</PageTitle>
 
 <div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">@(_simpleMode ? "Simple · your voice" : "Studio · Step 3")</span>
+    <span class="ptm-adapt-kicker">@(_simpleMode ? "Simple · your voice" : "Studio · Step 2")</span>
     <h1 class="ptm-adapt-title mb-1">@(_simpleMode ? "Narrator voice" : "Cast & voice")</h1>
     <p class="ptm-adapt-lede">
         @if (_simpleMode)
@@ -824,13 +824,15 @@ else
 
     private bool ShowVoiceFields(CharacterSummary c)
     {
-        if (_forceShowVoice) return true;
-        if (c.HasVoiceCloneSample) return true;
-        if (HasVoiceProfile(c)) return true;
-        // Animals / non-human seeds are non-speaking by default — no voice prompt (opt in via "Add voice…").
+        if (_forceShowVoice) return true;               // explicit "Add voice…" opt-in
+        if (c.HasVoiceCloneSample) return true;         // user recorded a clone sample
+        // Animals / non-human seeds are non-speaking by default — no voice prompt. Check this BEFORE the
+        // voice_profile below: cast extraction can auto-fill a descriptive profile (e.g. "soft lamb bleat")
+        // that must not force the voice field to show. Opt in explicitly via "Add voice…".
         var isNonHuman = !string.IsNullOrWhiteSpace(c.SpeciesKind)
             && !c.SpeciesKind!.Trim().Equals("human", StringComparison.OrdinalIgnoreCase);
         if (isNonHuman) return false;
+        if (HasVoiceProfile(c)) return true;
         if (!string.IsNullOrWhiteSpace(c.VoiceLabel)) return true;
         if (!string.IsNullOrWhiteSpace(_editVoiceProfile) || !string.IsNullOrWhiteSpace(_editVoiceLabel))
             return true;

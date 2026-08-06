@@ -580,7 +580,10 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         {
             "import_book" or "fix_book_text" => "/adaptation/import",
             "sign_screenplay" or "draft_screenplay" or "run_stage1" => "/adaptation/screenplay",
-            "pin_characters" => "/characters",
+            // The Book strip step routes through /adaptation. When cast is the next step the book itself is
+            // done, so land on the screenplay editor — never bounce out to /characters (that has its own
+            // strip step), or clicking Book from Cast just returns to Cast.
+            "pin_characters" => "/adaptation/screenplay",
             // Shot plan is still an Adaptation step (rebuild lives here). Scenes has its own nav item —
             // do not bounce /adaptation → /scenes or operators cannot find Rebuild shot plan.
             "run_stage2" or "replan_stage2" or "generate_clips" or "done" => "/adaptation/shots",
