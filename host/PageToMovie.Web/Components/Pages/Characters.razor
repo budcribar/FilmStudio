@@ -1336,6 +1336,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await ActiveProject.EnsureLoadedAsync(Engine, force: false);
         Hub.JobUpdated += OnJobUpdated;
         Hub.JobLog += OnJobLog;
         try

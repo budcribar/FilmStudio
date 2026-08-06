@@ -163,6 +163,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await ActiveProject.EnsureLoadedAsync(Engine, force: false);
         try
         {
             var projs = await Engine.GetProjectsAsync();
