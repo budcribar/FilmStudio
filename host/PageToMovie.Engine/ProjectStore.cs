@@ -3632,32 +3632,28 @@ public sealed class ProjectStore
         return next;
     }
 
-    /// <summary>Append a prefilled (editable) end-credits scene; returns its scene number.</summary>
+    /// <summary>
+    /// Append a prefilled (editable) end-credits scene; returns its scene number. Content comes from the
+    /// single credits-card builder, so a manual re-add matches the scene Stage 2 auto-inserts.
+    /// </summary>
     public int AddCreditsScene(string projectId)
     {
         var (root, scenes, bpPath) = LoadBlueprintForEdit(projectId);
-        var title = "The End";
-        try
-        {
-            if (root["movie_title"] is System.Text.Json.Nodes.JsonValue tv && tv.TryGetValue<string>(out var t) && !string.IsNullOrWhiteSpace(t))
-                title = t.Trim();
-        }
-        catch { /* default title */ }
-
         var next = NextSceneNumber(scenes);
         var clip = new System.Text.Json.Nodes.JsonObject
         {
             ["clip_number"] = 1,
             ["timestamp"] = "",
             ["veo_continuation_source"] = "none",
-            ["visual_prompt"] = $"End-credits card on a plain dark background: the title “{title}” centered in elegant serif, "
-                                + "then “Made with Page to Movie” beneath, held still with a gentle fade to black.",
+            ["is_credits"] = true,
+            ["visual_prompt"] = BuildCreditsVisualPrompt(projectId),
             ["audio_payload"] = new System.Text.Json.Nodes.JsonObject { ["speaker"] = "", ["dialogue"] = "" },
         };
         var sceneObj = new System.Text.Json.Nodes.JsonObject
         {
             ["scene_number"] = next,
             ["setting"] = "END CREDITS",
+            ["is_credits"] = true,
             ["veo_clips"] = new System.Text.Json.Nodes.JsonArray { clip },
         };
         scenes.Add(sceneObj);
@@ -3665,6 +3661,104 @@ public sealed class ProjectStore
         InvalidateSceneListCache(projectId);
         InvalidateReadCaches(projectId);
         return next;
+    }
+
+    /// <summary>
+    /// Single source of truth for the end-credits card content. Gathers the title + author from the
+    /// screenplay title page and the config-wide software name / creator site, so the auto-inserted
+    /// credits scene (Stage 2) and a manual re-add produce an identical card.
+    /// </summary>
+    public string BuildCreditsVisualPrompt(string projectId)
+    {
+        var credits = _opts.Credits ?? new CreditsOptions();
+        var softName = string.IsNullOrWhiteSpace(credits.SoftwareName) ? "PageToMovie" : credits.SoftwareName.Trim();
+        var siteUrl = string.IsNullOrWhiteSpace(credits.SiteUrl) ? "pagetomovie.com" : credits.SiteUrl.Trim();
+        return CreditsCardPrompt(ReadScreenplayTitle(projectId), ReadScreenplayAuthor(projectId), softName, siteUrl);
+    }
+
+    /// <summary>
+    /// The one credits-card prompt. Kept short — a video model renders exact strings (a URL especially)
+    /// imperfectly, so a concise, legible card reads better than a dense one. Author line only when named.
+    /// </summary>
+    internal static string CreditsCardPrompt(string? title, string? author, string softwareName, string siteUrl)
+    {
+        var t = string.IsNullOrWhiteSpace(title) ? "The End" : title.Trim();
+        var authorLine = string.IsNullOrWhiteSpace(author)
+            ? ""
+            : $"then “Based on the story by {author.Trim()}” in a lighter weight, ";
+        return "Elegant cinematic end-credits title card, 16:9, locked-off camera, no people, no other logos. "
+               + "Deep matte-black background with fine film grain and a soft vignette. "
+               + "Centered, high-contrast typography with a slow gentle fade-in and a steady hold: "
+               + $"the title “{t}” in a refined serif, {authorLine}"
+               + $"then a thin divider, then “Made with {softwareName} · {siteUrl}” in a smaller clean sans-serif. "
+               + "Crisp, perfectly legible text, tasteful theatrical end-title look, soft fade to black.";
+    }
+
+    /// <summary>Story title for the credits card: Fountain <c>Title:</c>, else blueprint movie_title, else the id.</summary>
+    private string ReadScreenplayTitle(string projectId)
+    {
+        try
+        {
+            var fountainPath = Path.Combine(GetProjectDir(projectId), "source", "screenplay.fountain");
+            if (File.Exists(fountainPath))
+            {
+                foreach (var line in File.ReadLines(fountainPath).Take(30))
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith("Title:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var val = trimmed[6..].Trim();
+                        if (!string.IsNullOrWhiteSpace(val)) return val;
+                    }
+                }
+            }
+        }
+        catch { /* fall through */ }
+
+        try
+        {
+            var bpPath = FindBlueprintPathSync(projectId);
+            if (bpPath is not null)
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(bpPath));
+                if (doc.RootElement.TryGetProperty("movie_title", out var mt) &&
+                    mt.ValueKind == JsonValueKind.String && mt.GetString() is { Length: > 0 } m)
+                    return m.Trim();
+            }
+        }
+        catch { /* fall through */ }
+
+        return projectId;
+    }
+
+    /// <summary>
+    /// Read the screenplay Author from the Fountain title page for the credits card. Returns empty when
+    /// there is no author line or it is a generic public-domain placeholder (so the card doesn't credit
+    /// "the story by Public Domain"). General: reads whatever the screenplay declares, nothing per-title.
+    /// </summary>
+    private string ReadScreenplayAuthor(string projectId)
+    {
+        try
+        {
+            var fountainPath = Path.Combine(GetProjectDir(projectId), "source", "screenplay.fountain");
+            if (!File.Exists(fountainPath)) return "";
+            foreach (var line in File.ReadLines(fountainPath).Take(30))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("Author:", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith("Authors:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var idx = trimmed.IndexOf(':');
+                    var val = idx >= 0 ? trimmed[(idx + 1)..].Trim() : "";
+                    if (string.IsNullOrWhiteSpace(val) ||
+                        val.Contains("public domain", StringComparison.OrdinalIgnoreCase))
+                        return "";
+                    return val;
+                }
+            }
+        }
+        catch { /* no author line — card omits it */ }
+        return "";
     }
 
     private (System.Text.Json.Nodes.JsonObject Root, System.Text.Json.Nodes.JsonArray Scenes, string Path) LoadBlueprintForEdit(string projectId)
@@ -4325,10 +4419,17 @@ public sealed class ProjectStore
                 : complete ? "complete" : "partial";
             var isApproved = approvedScenes?.Contains($"S{sn:D2}") == true;
 
+            var settingText = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "";
+            var headingText = s.TryGetProperty("scene_heading", out var shd) ? shd.GetString() ?? "" : "";
+            var isCredits = ReadJsonBool(s, "is_credits")
+                || settingText.Contains("CREDITS", StringComparison.OrdinalIgnoreCase)
+                || headingText.Contains("CREDITS", StringComparison.OrdinalIgnoreCase);
+
             rows.Add(new SceneSummary
             {
                 SceneNumber = sn,
-                Setting = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "",
+                Setting = settingText,
+                IsCredits = isCredits,
                 ClipCount = nClips,
                 ClipsOnDisk = onDisk,
                 ClipsComplete = complete,

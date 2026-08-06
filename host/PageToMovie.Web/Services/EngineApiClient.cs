@@ -2385,19 +2385,6 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         await SendJsonAsync<object>(req, ct);
     }
 
-    public async Task StartCreditsGenAsync(string projectId, string? resolution = null, CancellationToken ct = default)
-    {
-        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/jobs/credits")
-        {
-            Content = JsonContent.Create(new StartCreditsGenRequest
-            {
-                ProjectId = projectId,
-                Resolution = resolution,
-            }, options: JsonOpts),
-        };
-        await SendJsonAsync<object>(req, ct);
-    }
-
     /// <returns>Queued job snapshot (includes JobId for polling).</returns>
     public async Task<JobSnapshot?> StartClipAutoReviewAsync(
         string projectId,

@@ -44,7 +44,6 @@ public sealed class FilmJobService
     private readonly EditLogService _editLogs;
     private readonly ProjectRulesService _projectRules;
     private readonly CostReportService _costs;
-    private readonly CreditsGeneratorService _credits;
     private readonly IJobStore _jobs;
     private readonly ILockService _locks;
     private readonly ApiWorkerPool _apiPool;
@@ -93,7 +92,6 @@ public sealed class FilmJobService
         EditLogService editLogs,
         ProjectRulesService projectRules,
         CostReportService costs,
-        CreditsGeneratorService credits,
         IJobStore jobs,
         ILockService locks,
         ApiWorkerPool apiPool,
@@ -138,7 +136,6 @@ public sealed class FilmJobService
         _editLogs = editLogs;
         _projectRules = projectRules;
         _costs = costs;
-        _credits = credits;
         _jobs = jobs;
         _locks = locks;
         _apiPool = apiPool;
@@ -1175,76 +1172,6 @@ public sealed class FilmJobService
             },
             lockResources: new[] { LockKeys.Character(projectId, req.CharKey) },
             lockReason: $"char variants {req.CharKey}");
-    }
-
-    /// <summary>End-credits title card via video gen (client saves credits.mp4).</summary>
-    public Task<JobSnapshot> StartCreditsGenAsync(string projectId, string? resolution = null)
-    {
-        if (string.IsNullOrWhiteSpace(projectId))
-            projectId = _projects.ActiveProjectId;
-        if (string.IsNullOrWhiteSpace(projectId))
-            throw new InvalidOperationException("projectId required");
-        return StartBackgroundJobAsync(
-            ct => RunCreditsGenAsync(projectId, resolution, ct),
-            new JobEnqueueMeta
-            {
-                Kind = "credits",
-                ProjectId = projectId,
-                Message = "Queued end-credits plate…",
-            },
-            lockResources: new[] { LockKeys.Wip(projectId) },
-            lockReason: "credits gen");
-    }
-
-    private async Task RunCreditsGenAsync(string projectId, string? resolution, CancellationToken ct)
-    {
-        await _projects.RequireProjectAsync(projectId, ct);
-        Snapshot = new JobSnapshot
-        {
-            Status = "running",
-            Kind = "credits",
-            ProjectId = projectId,
-            Message = "Generating end-credits plate…",
-            Index = 0,
-            Total = 100,
-            StartedAt = DateTimeOffset.UtcNow,
-            Log = new List<string>(),
-        };
-        RegisterActiveJob();
-        await PublishAsync();
-        try
-        {
-            await AppendLogAsync("Building cinematic credits title card (video API)…");
-            var handoff = await _credits.GenerateCreditsForClientAsync(
-                projectId,
-                resolution,
-                msg => { _ = AppendLogAsync("  " + msg); },
-                ct).ConfigureAwait(false);
-
-            if (handoff is null)
-            {
-                await FinishAsync("done", "Credits already present or disabled");
-                return;
-            }
-
-            await UpdateAsync(s =>
-            {
-                s.ClientMediaUrl = handoff.ClientMediaUrl;
-                s.ClientRelativePath = handoff.ClientRelativePath;
-                s.Index = 100;
-            });
-            await AppendLogAsync($"Credits ready → {handoff.ClientRelativePath}");
-            await FinishAsync("done", "Credits plate ready — save to media folder");
-        }
-        catch (OperationCanceledException)
-        {
-            await FinishAsync("cancelled", "Cancelled by user");
-        }
-        catch (Exception ex)
-        {
-            _log.LogError(ex, "Credits gen failed");
-            await FinishAsync("error", ex.Message, ex.Message);
-        }
     }
 
     /// <summary>Background music (or singing) for one scene via audio API (client saves the

@@ -424,14 +424,18 @@ else if (_showPreviewPlayer && _clientStitching)
                             @onclick="() => AddSceneAsync(false)">
                         ➕ Add scene
                     </button>
-                    <button type="button"
-                            class="btn btn-outline-secondary btn-sm"
-                            data-testid="scenes-add-credits"
-                            disabled="@(_busy || JobRunning)"
-                            title="Add a prefilled, editable end-credits scene"
-                            @onclick="() => AddSceneAsync(true)">
-                        🎬 Add credits
-                    </button>
+                    @* Credits are auto-inserted into the shot plan; this only re-adds one if it was deleted. *@
+                    @if (!HasCreditsScene)
+                    {
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                data-testid="scenes-add-credits"
+                                disabled="@(_busy || JobRunning)"
+                                title="Re-add the end-credits scene (normally added automatically)"
+                                @onclick="() => AddSceneAsync(true)">
+                            🎬 Add credits
+                        </button>
+                    }
                     <button class="btn btn-sm btn-outline-secondary" data-testid="scenes-select-toggle"
                             disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
                         🔍 Filters @(HasActiveFilters ? " (Active)" : "")
@@ -2121,6 +2125,9 @@ else
     private int? _castTotal;
     private List<string> _castMissing = new();
     private List<SceneSummary>? _scenes;
+
+    /// <summary>True once the shot plan already has an end-credits scene (auto-inserted or re-added).</summary>
+    private bool HasCreditsScene => _scenes?.Any(s => s.IsCredits) == true;
     private HashSet<int> _selected = new();
     private string _selectionMode = ""; // "" | incomplete | all
     private int? _selectedScene;

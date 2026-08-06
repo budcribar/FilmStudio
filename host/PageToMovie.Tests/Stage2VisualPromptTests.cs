@@ -619,4 +619,19 @@ public class Stage2VisualPromptTests : IDisposable
         Assert.Equal("FADE OUT. END CREDITS", credits["scene_heading"]);
         Assert.True((bool)credits["is_credits"]!);
     }
+
+    [Fact]
+    public void EnsureEndCreditsScene_uses_supplied_credits_prompt()
+    {
+        var scenes = new List<Dictionary<string, object?>>
+        {
+            new() { ["scene_number"] = 1, ["scene_heading"] = "INT. ROOM - DAY" },
+        };
+
+        Stage2PlannerService.EnsureEndCreditsScene(scenes, "SHARED CREDITS CARD · pagetomovie.com");
+
+        var credits = scenes.Last();
+        var clip = ((List<object?>)credits["veo_clips"]!).Cast<Dictionary<string, object?>>().First();
+        Assert.Equal("SHARED CREDITS CARD · pagetomovie.com", clip["visual_prompt"]);
+    }
 }

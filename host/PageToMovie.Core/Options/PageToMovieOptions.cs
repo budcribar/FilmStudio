@@ -243,13 +243,15 @@ public sealed class YouTubeOptions
 }
 
 /// <summary>Options for automatic end credits clip generation and movie WIP appending.</summary>
+/// <summary>
+/// End-credits card content. Credits are a normal (auto-inserted, editable) scene in the shot plan —
+/// there is no separate credits-plate path — so these just seed that scene's card text.
+/// </summary>
 public sealed class CreditsOptions
 {
-    public bool AutoAppendCredits { get; set; } = true;
     public string SoftwareName { get; set; } = "PageToMovie";
-    public string SoftwareAuthor { get; set; } = "Bud Cribar";
-    public string RepositoryUrl { get; set; } = "https://github.com/budcribar/PageToMovie";
-    public string FairUseNotice { get; set; } = "Produced under Fair Use and Public Domain for Non-Commercial Creative Purposes.";
+    /// <summary>Config-wide creator/site shown on the end-credits card (kept short so on-screen text stays legible).</summary>
+    public string SiteUrl { get; set; } = "pagetomovie.com";
 }
 
 /// <summary>ThreadPool pre-warm for sudden multi-user load (optional).</summary>

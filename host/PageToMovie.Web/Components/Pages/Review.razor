@@ -2391,32 +2391,6 @@ else
         finally { _busy = false; }
     }
 
-    private async Task StartCreditsGenAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_projectId)) return;
-        _busy = true;
-        _error = null;
-        _message = null;
-        try
-        {
-            await MediaFolder.EnsureHubHookAsync();
-            if (!MediaFolder.IsConnected)
-                await MediaFolder.ConnectFolderAsync();
-            await Engine.StartCreditsGenAsync(_projectId);
-            _message = "Creating end credits video — it will be saved to your connected media folder.";
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
     private async Task CancelAsync()
     {
         try

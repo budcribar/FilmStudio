@@ -118,7 +118,6 @@ builder.Services.AddSingleton<SceneMusicCompositionService>();
 builder.Services.AddSingleton<DepthOfFieldClassifier>();
 builder.Services.AddSingleton<ColorPaletteGradingClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
-builder.Services.AddSingleton<CreditsGeneratorService>();
 builder.Services.AddSingleton<VoicePreviewService>();
 builder.Services.AddHttpClient("elevenlabs", c =>
 {
@@ -5804,33 +5803,6 @@ app.MapPost("/api/jobs/stage2", async (
         {
             ok = true,
             message = "Queued Stage 2 (C# planner)",
-            job,
-        });
-    }
-    catch (Exception ex)
-    {
-        return JobStartError(ex, jobService);
-    }
-});
-
-app.MapPost("/api/jobs/credits", async (
-    StartCreditsGenRequest? body,
-    FilmJobService jobService,
-    IUserContext user,
-    IOptions<PageToMovieOptions> opts) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        var projectId = body?.ProjectId;
-        if (string.IsNullOrWhiteSpace(projectId))
-            return Results.BadRequest(new { ok = false, error = "projectId required" });
-        var job = await jobService.StartCreditsGenAsync(projectId.Trim(), body?.Resolution);
-        return Results.Accepted($"/api/jobs/{job.JobId}", new
-        {
-            ok = true,
-            message = "Queued credits plate",
             job,
         });
     }

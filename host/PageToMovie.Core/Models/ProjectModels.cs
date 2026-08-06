@@ -708,6 +708,8 @@ public sealed class SceneSummary
 {
     public int SceneNumber { get; set; }
     public string Setting { get; set; } = "";
+    /// <summary>The auto-inserted (editable) end-credits scene — the one credits path. Used to hide the "Add credits" button once one exists.</summary>
+    public bool IsCredits { get; set; }
     public int ClipCount { get; set; }
     public int ClipsOnDisk { get; set; }
     public bool ClipsComplete { get; set; }
@@ -978,13 +980,6 @@ public sealed class StartYouTubeUploadRequest
     public string? Description { get; set; }
     /// <summary>private | unlisted | public. Default unlisted (link-shareable, not publicly listed).</summary>
     public string PrivacyStatus { get; set; } = "unlisted";
-}
-
-/// <summary>Generate end-credits plate via video API (client saves credits.mp4).</summary>
-public sealed class StartCreditsGenRequest
-{
-    public string ProjectId { get; set; } = "";
-    public string? Resolution { get; set; }
 }
 
 /// <summary>Generate background music for a scene via audio API (client saves the audio segment(s)).</summary>
