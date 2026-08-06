@@ -308,6 +308,56 @@ else if (_showPreviewPlayer && _clientStitching)
     }
     else
     {
+        @* Batch generation is started from THIS all-scenes view, so its progress/message/result must
+           show here too — the detail view below has its own copy for single-scene work. Without this,
+           confirming Generate from the list started the job but showed nothing (dead-click symptom). *@
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger mb-3">@_error</div>
+        }
+        @if (!string.IsNullOrEmpty(_message) && !JobRunning)
+        {
+            <div class="alert alert-info mb-3">@_message</div>
+        }
+        @if (ShowLiveGenProgress && _job is not null)
+        {
+            <div class="card mb-3 border-primary" data-testid="scenes-gen-progress">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span class="small">@LiveGenStatusLabel(_job)</span>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                data-testid="scenes-gen-cancel"
+                                disabled="@_busy"
+                                @onclick="CancelAsync">Cancel</button>
+                    </div>
+                    @{
+                        var listPct = LiveGenProgressPercent(_job);
+                    }
+                    <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
+                         aria-valuenow="@listPct" aria-valuemin="0" aria-valuemax="100"
+                         aria-label="@LiveGenStatusLabel(_job)">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                             style="width: @listPct%"></div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (ShowOperatorGenPartial && _job is not null)
+        {
+            <div class="alert alert-warning py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <span class="small">Some clips finished; others failed. Refresh and retry the missing ones.</span>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
+            </div>
+        }
+        else if (ShowOperatorGenError && _job is not null)
+        {
+            <div class="alert alert-danger py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <span class="small">@(!string.IsNullOrWhiteSpace(_job.Message) ? $"Generation failed: {_job.Message}" : "Generation failed. Try again.")</span>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
+            </div>
+        }
+
         <div class="card mb-3 p-3">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -364,8 +414,12 @@ else if (_showPreviewPlayer && _clientStitching)
                     </button>
                     <button type="button"
                             class="btn btn-outline-primary btn-sm"
-                            disabled="@(_busy || JobRunning || _verifyingClip)"
-                            title="Run dialogue &amp; speaker verification on all clips in selected scenes"
+                            disabled="@(_busy || JobRunning || _verifyingClip || !SelectedScenesHaveClipsToVerify)"
+                            title="@(SelectedScenesHaveClipsToVerify
+                                ? "Check the spoken words in each finished clip against the screenplay"
+                                : _selected.Count == 0
+                                    ? "Select one or more scenes with finished clips first"
+                                    : "Selected scenes have no finished clips to check yet")"
                             @onclick="VerifySelectedScenesDialogueAsync">
                         🔍 Verify Scene Dialogue@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
@@ -4234,33 +4288,61 @@ else
         }
     }
 
+    /// <summary>
+    /// From the all-scenes view: at least one selected scene has a finished clip on disk to check.
+    /// Dialogue verification reads the clip's video, so scenes with nothing on disk have nothing to check.
+    /// Gates the list-view "Verify Scene Dialogue" button so it never reads as a dead click.
+    /// </summary>
+    private bool SelectedScenesHaveClipsToVerify =>
+        _scenes is not null &&
+        _selected.Count > 0 &&
+        _scenes.Any(s => _selected.Contains(s.SceneNumber) && s.ClipsOnDisk > 0);
+
     private async Task VerifySelectedScenesDialogueAsync()
     {
         if (string.IsNullOrWhiteSpace(_projectId)) return;
 
-        // Strictly verify clips checked in the first column selection box (_selectedClips).
-        // If no individual clips are checked, check clips in current scene that are unverified or mismatched.
-        List<int> clipNumbersToVerify;
-        int sceneNum;
+        // Build the clip work list from context. Detail view: the open scene's checked clips (or its
+        // unverified on-disk clips). All-scenes view: every on-disk clip across the selected scenes.
+        // Only clips with video on disk can be checked — there's nothing to analyse otherwise.
+        var targets = new List<(int Scene, int Clip)>();
 
-        if (_selectedClips.Count > 0)
+        if (_detail is not null)
         {
-            clipNumbersToVerify = _selectedClips.OrderBy(c => c).ToList();
-            sceneNum = _detail?.SceneNumber ?? 1;
+            if (_selectedClips.Count > 0)
+            {
+                foreach (var cn in _selectedClips.OrderBy(c => c))
+                    targets.Add((_detail.SceneNumber, cn));
+            }
+            else
+            {
+                foreach (var c in _detail.Clips
+                    .Where(c => c.OnDisk && (c.DialogueVerification is null || !string.Equals(c.DialogueVerification.Status, "verified", StringComparison.OrdinalIgnoreCase)))
+                    .OrderBy(c => c.ClipNumber))
+                    targets.Add((_detail.SceneNumber, c.ClipNumber));
+            }
         }
-        else if (_detail is not null)
+        else if (_selected.Count > 0)
         {
-            sceneNum = _detail.SceneNumber;
-            clipNumbersToVerify = _detail.Clips
-                .Where(c => c.OnDisk && (c.DialogueVerification is null || !string.Equals(c.DialogueVerification.Status, "verified", StringComparison.OrdinalIgnoreCase)))
-                .Select(c => c.ClipNumber)
-                .ToList();
+            // All-scenes view: gather each selected scene's on-disk clips (the button is gated so this
+            // path only runs when at least one selected scene actually has finished clips).
+            foreach (var sn in _selected.OrderBy(x => x))
+            {
+                var det = (await Engine.GetSceneDetailAsync(_projectId, sn))?.Scene;
+                if (det?.Clips is null) continue;
+                foreach (var c in det.Clips.Where(c => c.OnDisk).OrderBy(c => c.ClipNumber))
+                    targets.Add((sn, c.ClipNumber));
+            }
         }
-        else return;
 
-        if (clipNumbersToVerify.Count == 0)
+        if (targets.Count == 0)
         {
-            _message = "All clips verified. Check specific clip boxes in the first column to force re-verification.";
+            // Never a silent dead click — say why there's nothing to do.
+            _message = _detail is not null
+                ? "All clips verified. Tick specific clip boxes in the first column to force a re-check."
+                : _selected.Count == 0
+                    ? "Select one or more scenes with finished clips to verify."
+                    : "Selected scenes have no finished clips to verify yet.";
             return;
         }
 
@@ -4268,27 +4350,32 @@ else
         {
             _verifyingClip = true;
             _verifyCurrent = 0;
-            _verifyTotal = clipNumbersToVerify.Count;
-            _verifyStatusLabel = $"Verifying dialogue for {clipNumbersToVerify.Count} clip(s)...";
+            _verifyTotal = targets.Count;
+            _verifyStatusLabel = $"Verifying dialogue for {targets.Count} clip(s)...";
             StateHasChanged();
 
-            foreach (var cn in clipNumbersToVerify)
+            foreach (var (sceneNum, cn) in targets)
             {
                 _verifyCurrent++;
                 _verifyingClipNumber = cn;
-                var clip = _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == cn);
+                var clip = _detail?.SceneNumber == sceneNum
+                    ? _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == cn)
+                    : null;
                 _verifyStatusLabel = $"Verifying dialogue for S{sceneNum:D2} C{cn:D2} (Speaker: {clip?.Speaker ?? "Unknown"})...";
                 StateHasChanged();
 
                 var expectedSize = await ResolveExpectedClipSizeAsync(sceneNum, cn);
                 var videoBytes = await MediaFolder.GetClipBytesAsync(_projectId, sceneNum, cn, expectedSize);
                 var ver = await Engine.VerifyClipDialogueAsync(_projectId, sceneNum, cn, videoBytes: videoBytes, force: true);
-                if (ver is not null && clip is not null)
+                if (ver is not null)
                 {
-                    clip.DialogueVerification = ver;
-                    if (_showVerificationModal && _verifModalClipNumber == cn && _verifModalSceneNumber == sceneNum)
+                    if (clip is not null)
                     {
-                        _verifModalResult = ver;
+                        clip.DialogueVerification = ver;
+                        if (_showVerificationModal && _verifModalClipNumber == cn && _verifModalSceneNumber == sceneNum)
+                        {
+                            _verifModalResult = ver;
+                        }
                     }
                     if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
                     {

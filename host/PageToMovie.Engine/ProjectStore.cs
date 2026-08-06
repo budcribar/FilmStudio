@@ -3192,7 +3192,11 @@ public sealed class ProjectStore
     {
         foreach (var cNode in clips)
         {
-            if (cNode is System.Text.Json.Nodes.JsonObject c && ReadJsonNodeInt(c["clip_number"]) == clip)
+            if (cNode is System.Text.Json.Nodes.JsonObject c &&
+                (ReadJsonNodeInt(c["clip_number"]) == clip ||
+                 // Legacy clips (e.g. old credits scenes) were keyed on `clip_index` only — match it
+                 // when `clip_number` is absent so an edit can still locate and update the node.
+                 (c["clip_number"] is null && ReadJsonNodeInt(c["clip_index"]) == clip)))
                 return c;
         }
         return null;
@@ -3480,6 +3484,10 @@ public sealed class ProjectStore
                     ?? throw new InvalidOperationException($"Scene {scene} not found in shot plan.");
         var clipObj = FindClipNode(clips, clip)
                       ?? throw new InvalidOperationException($"Clip S{scene:D2}C{clip:D2} not found in shot plan.");
+
+        // Self-heal legacy clips keyed on `clip_index` only: stamp the canonical `clip_number` so
+        // future reads/finds no longer depend on the fallback above.
+        clipObj["clip_number"] = clip;
 
         ApplyClipFields(clipObj, fields, projectId);
 
@@ -4554,7 +4562,13 @@ public sealed class ProjectStore
         {
             foreach (var c in vc.EnumerateArray())
             {
-                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var n) ? n : 0;
+                // Older shot plans (and some auto-inserted credits scenes) key the clip on the legacy
+                // `clip_index` instead of the canonical `clip_number`. Fall back to it so those clips
+                // still load and stay editable in the Scenes view — otherwise the scene (e.g. END CREDITS)
+                // opens with an empty, uneditable clip list.
+                var cn = c.TryGetProperty("clip_number", out var cnEl) && cnEl.TryGetInt32(out var n) ? n
+                    : c.TryGetProperty("clip_index", out var ciEl) && ciEl.TryGetInt32(out var ci) ? ci
+                    : 0;
                 if (cn <= 0) continue;
 
                 // Malformed shot plan: the same clip_number twice would double the scene when stitched
