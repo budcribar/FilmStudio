@@ -170,6 +170,16 @@ public sealed class SupportedModelEntry
     /// </summary>
     public string? LastVerifiedAt { get; init; }
 
+    /// <summary>
+    /// When true, this row is experimental: self-test only requires id/capability/provider and
+    /// non-empty <see cref="LabNotes"/>. Missing limits/costs do not fail catalog load; runtime
+    /// still fails on the specific field needed for a call. Cost UI must not invent USD.
+    /// </summary>
+    public bool LabMode { get; init; }
+
+    /// <summary>Required when <see cref="LabMode"/> is true — why this model is incomplete.</summary>
+    public string? LabNotes { get; init; }
+
     public string? Notes { get; init; }
 
     /// <summary>
@@ -1045,6 +1055,14 @@ public static class SupportedModelCatalog
 
         Need(!string.IsNullOrWhiteSpace(e.Id), "id");
         Need(!string.IsNullOrWhiteSpace(e.DisplayName), "displayName");
+
+        // Lab models: structural only — incomplete limits/costs are intentional.
+        if (e.LabMode)
+        {
+            Need(!string.IsNullOrWhiteSpace(e.LabNotes), "labNotes (required when labMode=true)");
+            return;
+        }
+
         Need(!string.IsNullOrWhiteSpace(e.LastVerifiedAt), "lastVerifiedAt");
 
         switch (e.Capability)
@@ -1132,6 +1150,8 @@ public static class SupportedModelCatalog
         PricingNotes = e.PricingNotes,
         PricingLastReviewedAt = e.PricingLastReviewedAt,
         LastVerifiedAt = e.LastVerifiedAt,
+        LabMode = e.LabMode,
+        LabNotes = e.LabNotes,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
         ProviderId = e.ProviderId,
@@ -1190,6 +1210,8 @@ public static class SupportedModelCatalog
         PricingNotes = d.PricingNotes,
         PricingLastReviewedAt = d.PricingLastReviewedAt,
         LastVerifiedAt = d.LastVerifiedAt,
+        LabMode = d.LabMode,
+        LabNotes = d.LabNotes,
         Notes = d.Notes,
         FeatureRequestUrl = d.FeatureRequestUrl,
         SupportsVideoContinue = d.SupportsVideoContinue,
@@ -1315,6 +1337,8 @@ public sealed class SupportedModelDto
         public string? PricingNotes { get; set; }
         public string? PricingLastReviewedAt { get; set; }
         public string? LastVerifiedAt { get; set; }
+        public bool LabMode { get; set; }
+        public string? LabNotes { get; set; }
 public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
     public string? ProviderId { get; set; }

@@ -1562,8 +1562,12 @@
         SupportedModelCatalog.ProviderLabelFor(providerId);
 
     /// <summary>Model product name from catalog displayName only.</summary>
-    private static string ModelOptionLabel(SupportedModelDto m) =>
-        string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName.Trim();
+    private static string ModelOptionLabel(SupportedModelDto m)
+    {
+        var name = string.IsNullOrWhiteSpace(m.DisplayName) ? m.Id : m.DisplayName.Trim();
+        return m.LabMode ? $"{name} [LAB]" : name;
+    }
+
 
     private string VendorLabel(string modelId, string capability)
     {

@@ -120,6 +120,12 @@
                                     <label class="form-check-label" for="editEnabled">Enabled</label>
                                 </div>
                             </div>
+                            <div class="col-md-2">
+                                <div class="form-check form-switch mt-4">
+                                    <input class="form-check-input" type="checkbox" @bind="_editLabMode" id="editLab" />
+                                    <label class="form-check-label" for="editLab" title="Incomplete OK for experiments">Lab mode</label>
+                                </div>
+                            </div>
                             <div class="col-md-4">
                                 <label class="form-label small mb-0">Endpoint path</label>
                                 <input class="form-control form-control-sm font-monospace" @bind="_editEndpointPath" />
@@ -139,6 +145,10 @@
                             <div class="col-12">
                                 <label class="form-label small mb-0">pricingNotes (source of cost figures)</label>
                                 <textarea class="form-control form-control-sm" rows="2" @bind="_editPricingNotes"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small mb-0">labNotes (required when Lab mode)</label>
+                                <input class="form-control form-control-sm" @bind="_editLabNotes" placeholder="Why incomplete / what is being tested" />
                             </div>
                         </div>
 
@@ -280,7 +290,13 @@
                                         </div>
                                     </td>
                                     <td class="fw-bold font-monospace">@modelId</td>
-                                    <td>@displayName</td>
+                                    <td>
+                                        @displayName
+                                        @if (m.TryGetPropertyValue("labMode", out var labNode) && labNode?.GetValue<bool>() == true)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1" title="@(m["labNotes"]?.ToString() ?? "lab")">LAB</span>
+                                        }
+                                    </td>
                                     <td><span class="badge @GetCapBadgeClass(cap)">@cap</span></td>
                                     <td class="text-muted">@prov</td>
                                     <td class="small text-muted">
@@ -324,6 +340,8 @@
     private string _editCapability = "Chat";
     private string _editProvider = "Xai";
     private bool _editEnabled = true;
+    private bool _editLabMode;
+    private string _editLabNotes = "";
     private string _editEndpointPath = "";
     private int? _editMaxPromptLength;
     private string _editLastVerifiedAt = "";
@@ -424,6 +442,8 @@
         _editCapability = "Chat";
         _editProvider = "Xai";
         _editEnabled = true;
+        _editLabMode = true; // new models start as lab until reviewed
+        _editLabNotes = "New model — fill required fields then clear Lab mode";
         _editEndpointPath = "";
         _editMaxPromptLength = null;
         _editLastVerifiedAt = Today();
@@ -441,6 +461,8 @@
         _editCapability = m["capability"]?.ToString() ?? "Chat";
         _editProvider = m["provider"]?.ToString() ?? "";
         _editEnabled = IsEnabled(m);
+        _editLabMode = m.TryGetPropertyValue("labMode", out var lm) && lm?.GetValue<bool>() == true;
+        _editLabNotes = m["labNotes"]?.ToString() ?? "";
         _editEndpointPath = m["endpointPath"]?.ToString() ?? "";
         _editMaxPromptLength = GetInt(m, "maxPromptLength");
         _editLastVerifiedAt = m["lastVerifiedAt"]?.ToString() ?? "";
@@ -528,6 +550,11 @@
         obj["capability"] = _editCapability;
         obj["provider"] = _editProvider.Trim();
         obj["enabled"] = _editEnabled;
+        obj["labMode"] = _editLabMode;
+        if (_editLabMode)
+            obj["labNotes"] = string.IsNullOrWhiteSpace(_editLabNotes) ? "Lab model — incomplete by design" : _editLabNotes.Trim();
+        else
+            obj.Remove("labNotes");
         SetOrRemove(obj, "endpointPath", string.IsNullOrWhiteSpace(_editEndpointPath) ? null : _editEndpointPath.Trim());
         SetOrRemoveNum(obj, "maxPromptLength", _editMaxPromptLength);
         SetOrRemove(obj, "lastVerifiedAt", string.IsNullOrWhiteSpace(_editLastVerifiedAt) ? null : _editLastVerifiedAt.Trim());
@@ -574,8 +601,9 @@
         _editPricingLastReviewedAt = Today();
         if (string.IsNullOrWhiteSpace(_editPricingNotes))
             _editPricingNotes = $"Reviewed {Today()} — confirm vendor list prices still match.";
+        // Review means production-ready intent: leave lab only if user keeps the switch on.
         ApplyEditorToList();
-        _message = $"Marked '{_editId}' reviewed ({Today()}). Save to persist.";
+        _message = $"Marked '{_editId}' reviewed ({Today()}). Clear Lab mode when fields are complete, then Save.";
     }
 
     private void ReviewModel(JsonObject m)

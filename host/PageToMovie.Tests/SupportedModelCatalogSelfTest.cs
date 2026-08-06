@@ -79,4 +79,55 @@ public class SupportedModelCatalogSelfTest
         // Restore real catalog for other tests in this class collection
         SupportedModelCatalog.ReloadCatalog();
     }
+
+    [Fact]
+    public void Lab_mode_model_skips_strict_field_requirements()
+    {
+        const string lab = """
+        {
+          "models": [
+            {
+              "id": "lab-video-wip",
+              "displayName": "Lab Video WIP",
+              "capability": "Video",
+              "provider": "Xai",
+              "enabled": true,
+              "labMode": true,
+              "labNotes": "Experiment only — durations not filled yet"
+            }
+          ]
+        }
+        """;
+        Assert.True(SupportedModelCatalog.TryLoadFromJson(lab));
+        var errors = SupportedModelCatalog.ValidateEnabledModels();
+        Assert.Empty(errors);
+        var e = SupportedModelCatalog.Find("lab-video-wip", ModelCapability.Video);
+        Assert.NotNull(e);
+        Assert.True(e!.LabMode);
+        SupportedModelCatalog.ReloadCatalog();
+    }
+
+    [Fact]
+    public void Lab_mode_without_labNotes_fails_self_test()
+    {
+        const string lab = """
+        {
+          "models": [
+            {
+              "id": "lab-bad",
+              "displayName": "Lab Bad",
+              "capability": "Video",
+              "provider": "Xai",
+              "enabled": true,
+              "labMode": true
+            }
+          ]
+        }
+        """;
+        Assert.True(SupportedModelCatalog.TryLoadFromJson(lab));
+        var errors = SupportedModelCatalog.ValidateEnabledModels();
+        Assert.Contains(errors, x => x.Contains("labNotes", StringComparison.OrdinalIgnoreCase));
+        SupportedModelCatalog.ReloadCatalog();
+    }
+
 }

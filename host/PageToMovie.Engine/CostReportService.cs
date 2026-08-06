@@ -585,11 +585,22 @@ public sealed class CostReportService
         var n = Math.Max(0, nImages);
         var entry = SupportedModelCatalog.Find(model, ModelCapability.Image)
                     ?? SupportedModelCatalog.Find(model);
-        if (entry?.ImageCostPerImage is not { } unit)
+        double unit;
+        bool isEstimated;
+        if (entry?.ImageCostPerImage is { } catalogUnit)
+        {
+            unit = catalogUnit;
+            isEstimated = false;
+        }
+        else if (entry?.LabMode == true)
+        {
+            unit = 0;
+            isEstimated = true;
+        }
+        else
             throw new InvalidOperationException(
                 $"Image model '{entry?.Id ?? "(null)"}' has no imageCostPerImage in models_catalog.json. "
                 + "Add the vendor list price — do not invent a default in Engine.");
-        var isEstimated = false;
         var listUsd = Math.Round(unit * n, 4);
         var mult = GetChargeMultiplier();
         var chargeUsd = ChargePricing.ToCharge(listUsd, mult); // credit debit only
@@ -1264,11 +1275,22 @@ public sealed class CostReportService
         var videoPricingIsEstimated =
             video.VideoCostPerSecondByResolution is not { Count: > 0 } &&
             video.VideoBaseCostByResolution is not { Count: > 0 };
-        if (imagePrimary.ImageCostPerImage is not { } qualityUnit)
+        double qualityUnit;
+        bool imagePricingIsEstimated;
+        if (imagePrimary.ImageCostPerImage is { } imgCost)
+        {
+            qualityUnit = imgCost;
+            imagePricingIsEstimated = false;
+        }
+        else if (imagePrimary.LabMode)
+        {
+            qualityUnit = 0;
+            imagePricingIsEstimated = true; // lab: unknown, not invented vendor rate
+        }
+        else
             throw new InvalidOperationException(
                 $"Image model '{imagePrimary.Id}' has no imageCostPerImage in models_catalog.json.");
         var standardUnit = imageStandard.ImageCostPerImage ?? qualityUnit;
-        var imagePricingIsEstimated = false;
 
         // Reference-image and extend-per-second add-ons: prefer a real per-model catalog value
         // (published by the vendor) and only fall back to the small Grok-era estimate when the
@@ -1305,15 +1327,19 @@ public sealed class CostReportService
             ["video_output_per_sec"] = videoTable,
             ["video_base_per_video"] = videoBaseTable,
             ["video_input_image"] = refImageCostReal
-                ?? throw new InvalidOperationException(
-                    $"Video model '{video.Id}' has no videoReferenceImageCost in models_catalog.json "
-                    + "(use 0 if no separate ref fee; cite pricingNotes)."),
+                ?? (video.LabMode
+                    ? 0.0
+                    : throw new InvalidOperationException(
+                        $"Video model '{video.Id}' has no videoReferenceImageCost in models_catalog.json "
+                        + "(use 0 if no separate ref fee; cite pricingNotes).")),
             ["video_input_image_source"] = refImageSource,
             ["video_input_per_sec"] = extendCostReal
                 ?? (video.SupportsVideoContinue
-                    ? throw new InvalidOperationException(
-                        $"Video model '{video.Id}' supports continue but has no videoExtendCostPerSecond "
-                        + "in models_catalog.json.")
+                    ? (video.LabMode
+                        ? 0.0
+                        : throw new InvalidOperationException(
+                            $"Video model '{video.Id}' supports continue but has no videoExtendCostPerSecond "
+                            + "in models_catalog.json."))
                     : 0.0),
             ["video_input_per_sec_source"] = extendSource,
             ["image_output_quality"] = qualityUnit,
@@ -1321,8 +1347,14 @@ public sealed class CostReportService
             ["assume_ref_image_per_clip"] = true,
             ["assume_extend_fraction"] = 0.0,
             ["assume_avg_retries"] = 0.0,
-            ["video_pricing_source"] = videoPricingFullyReal ? "model_catalog" : "estimated_fallback",
-            ["image_pricing_source"] = imagePricingIsEstimated ? "estimated_fallback" : "model_catalog",
+            ["video_pricing_source"] = video.LabMode
+                ? "lab_mode"
+                : (videoPricingFullyReal ? "model_catalog" : "missing_catalog"),
+            ["image_pricing_source"] = imagePrimary.LabMode
+                ? "lab_mode"
+                : (imagePricingIsEstimated ? "missing_catalog" : "model_catalog"),
+            ["video_lab_mode"] = video.LabMode,
+            ["image_lab_mode"] = imagePrimary.LabMode,
         };
 
         // Planning knobs only — do not let old manual $/sec tables override vendor rates.
@@ -1376,9 +1408,13 @@ public sealed class CostReportService
         FillMissingRes(table, "1080p", "720p", "480p");
 
         if (table.Count == 0 && video.VideoBaseCostByResolution is not { Count: > 0 })
+        {
+            if (video.LabMode)
+                return table; // empty → $0/sec for lab estimates; source=lab_mode
             throw new InvalidOperationException(
                 $"Video model '{video.Id}' has no videoCostPerSecondByResolution or "
                 + "videoBaseCostByResolution in models_catalog.json.");
+        }
 
         return table;
     }
