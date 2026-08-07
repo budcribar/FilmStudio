@@ -115,7 +115,7 @@ else
 
 
 @* ---- Scene version history (P3) ---- *@
-@if (_selectedScene is not null)
+@if (_selectedScene is int snHist)
 {
     <div class="mb-2">
         <button type="button" class="btn btn-sm btn-outline-secondary"
@@ -126,8 +126,8 @@ else
     @if (_showSceneHistory)
     {
         <SceneVersionHistory ProjectId="@_projectId"
-                             SceneKey="@(_selectedScene.Key ?? "")"
-                             OnClose="() => _showSceneHistory = false"
+                             SceneKey="@($"scene:{snHist}")"
+                             OnClose="HideSceneHistory"
                              OnRestored="OnSceneHistoryRestored" />
     }
 }
