@@ -1,0 +1,70 @@
+using System.Text.RegularExpressions;
+using Microsoft.Playwright;
+
+namespace PageToMovie.UiTests;
+
+/// <summary>
+/// Click-through interaction flows on the normal fakes host: selection state, modal open/cancel,
+/// and the account menu. These exercise the @code wiring the component-extraction refactor will
+/// move, so they guard behavior beyond "the page rendered".
+/// </summary>
+[Collection("ui")]
+public class InteractionTests
+{
+    private readonly AppFixture _fx;
+    public InteractionTests(AppFixture fx) => _fx = fx;
+
+    [Fact]
+    public async Task Selecting_all_scenes_updates_the_generate_button_label()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await Ui.GotoAppAsync(page, _fx.BaseUrl, "/scenes");
+            var generate = page.GetByTestId("scenes-generate-batch");
+            await Assertions.Expect(generate).ToContainTextAsync("Batch");
+
+            await page.GetByTestId("scenes-select-all").CheckAsync();
+            await Assertions.Expect(generate).ToContainTextAsync(new Regex(@"Generate \d+ scene"));
+
+            await page.GetByTestId("scenes-select-all").UncheckAsync();
+            await Assertions.Expect(generate).ToContainTextAsync("Batch");
+        }
+        finally { await ctx.CloseAsync(); }
+    }
+
+    [Fact]
+    public async Task Delete_scene_modal_opens_and_cancels_without_deleting()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await Ui.GotoAppAsync(page, _fx.BaseUrl, "/scenes");
+            await page.Locator("button[title^='Delete scene']").First.ClickAsync();
+
+            // Confirm button carries the exact label "Delete Scene" (the 🗑️ triggers are "Delete scene S..").
+            var confirm = page.GetByRole(AriaRole.Button, new() { Name = "Delete Scene", Exact = true });
+            await Assertions.Expect(confirm).ToBeVisibleAsync();
+
+            await page.GetByRole(AriaRole.Button, new() { Name = "Cancel", Exact = true }).ClickAsync();
+            await Assertions.Expect(confirm).ToBeHiddenAsync();
+        }
+        finally { await ctx.CloseAsync(); }
+    }
+
+    [Fact]
+    public async Task Account_menu_opens_and_closes()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await Ui.GotoAppAsync(page, _fx.BaseUrl, "/");
+            await page.GetByTestId("nav-user-menu").ClickAsync();
+            await Assertions.Expect(page.GetByTestId("nav-user-configuration")).ToBeVisibleAsync();
+
+            await page.GetByRole(AriaRole.Button, new() { Name = "Close account menu" }).ClickAsync();
+            await Assertions.Expect(page.GetByTestId("nav-user-configuration")).ToBeHiddenAsync();
+        }
+        finally { await ctx.CloseAsync(); }
+    }
+}
