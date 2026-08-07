@@ -16,6 +16,8 @@ using PageToMovie.Fakes;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using PageToMovie.Api.Collaboration;
+using PageToMovie.Engine.Collaboration;
 
 var builder = WebApplication.CreateBuilder(args);
 var processStartedUtc = DateTimeOffset.UtcNow;
@@ -92,6 +94,11 @@ builder.Services.AddSingleton<MediaDurationProbe>();
 builder.Services.AddSingleton<SceneListCache>();
 builder.Services.AddSingleton<ProjectReadCache>();
 builder.Services.AddSingleton<ProjectStore>();
+
+builder.Services.AddSingleton<IProjectAclService, ProjectAclService>();
+builder.Services.AddSingleton<IProjectLeaseService, ProjectLeaseService>();
+builder.Services.AddSingleton<IProjectPresenceService, ProjectPresenceService>();
+builder.Services.AddSignalR();
 builder.Services.AddSingleton<IJobStore, JobStore>();
 builder.Services.AddSingleton<ILockService, InMemoryLockService>();
 builder.Services.AddSingleton<IServerMetricsService, ServerMetricsService>();
@@ -8665,6 +8672,8 @@ catch (Exception ex)
     Console.WriteLine($"Demo CreatedBy migration error: {ex.Message}");
 }
 
+app.MapCollaborationEndpoints();
+app.MapHub<ProjectHub>("/hubs/project");
 app.Run();
 
 namespace PageToMovie.Api

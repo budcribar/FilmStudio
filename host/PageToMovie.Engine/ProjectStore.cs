@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace PageToMovie.Engine;
 
-public sealed class ProjectStore
+public sealed partial class ProjectStore
 {
     private static readonly JsonSerializerOptions JsonOpts = JsonDefaults.IndentedCaseInsensitive;
 
