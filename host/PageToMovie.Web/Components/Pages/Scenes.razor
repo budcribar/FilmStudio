@@ -115,15 +115,17 @@ else
 
 
 @* ---- Scene version history (P3) ---- *@
+@* Own flag — distinct from _showSceneHistory (the unrelated git-commit history modal further
+   below), so toggling one panel never shows/hides the other. *@
 @if (_selectedScene is int snHist)
 {
     <div class="mb-2">
         <button type="button" class="btn btn-sm btn-outline-secondary"
-                @onclick="() => _showSceneHistory = !_showSceneHistory">
-            @(_showSceneHistory ? "Hide history" : "Scene history")
+                @onclick="() => _showInlineSceneHistory = !_showInlineSceneHistory">
+            @(_showInlineSceneHistory ? "Hide history" : "Scene history")
         </button>
     </div>
-    @if (_showSceneHistory)
+    @if (_showInlineSceneHistory)
     {
         <SceneVersionHistory ProjectId="@_projectId"
                              SceneKey="@($"scene:{snHist}")"
@@ -327,6 +329,14 @@ else if (_showPreviewPlayer && _clientStitching)
     }
     else
     {
+        @* Authoritative scene/clip counts for tests — the visible rows are virtualized, so a DOM
+           count of scene-row is not reliable for the full total. *@
+        <div data-testid="scenes-status"
+             data-scene-count="@_scenes.Count"
+             data-clip-count="@_scenes.Sum(s => s.ClipCount)"
+             data-clips-on-disk="@_scenes.Sum(s => s.ClipsOnDisk)"
+             data-scenes-complete="@_scenes.Count(s => s.ClipsComplete)"
+             class="visually-hidden" aria-hidden="true"></div>
         @* Batch generation is started from THIS all-scenes view, so its progress/message/result must
            show here too — the detail view below has its own copy for single-scene work. Without this,
            confirming Generate from the list started the job but showed nothing (dead-click symptom). *@
@@ -546,7 +556,8 @@ else if (_showPreviewPlayer && _clientStitching)
                             var sn = s.SceneNumber;
                             var isSel = _selected.Contains(sn);
                         }
-                        <tr class="@(isSel ? "table-active" : "")" style="cursor:pointer;" @key="sn">
+                        <tr class="@(isSel ? "table-active" : "")" style="cursor:pointer;" @key="sn"
+                            data-testid="scene-row" data-scene-number="@sn">
                             <td @onclick:stopPropagation="true">
                                 <input class="form-check-input" type="checkbox"
                                        checked="@isSel"
@@ -4931,6 +4942,19 @@ if (string.IsNullOrWhiteSpace(_projectId)) return;
         _showSceneHistory = false;
         _sceneHistory = null;
         _sceneRevertMessage = null;
+    }
+
+    // ---- Inline scene VERSION history panel (SceneVersionHistory component, P3) — separate from
+    // the git-commit history modal above; distinct state so the two panels never collide. ----
+    private bool _showInlineSceneHistory;
+
+    private void HideSceneHistory() => _showInlineSceneHistory = false;
+
+    private async Task OnSceneHistoryRestored()
+    {
+        // A snapshot was restored server-side — refresh the scene list/detail to reflect it.
+        _showInlineSceneHistory = false;
+        await SoftReloadAsync();
     }
 
     private async Task RevertSceneToVersionAsync(int sceneNumber, string commitHash)
