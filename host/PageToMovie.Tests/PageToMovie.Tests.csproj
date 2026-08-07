@@ -1,53 +1,38 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <!-- Paid provider tests (Category=LiveApi) are off by default — see LiveApi/README.md -->
-    <VSTestTestCaseFilter>Category!=LiveApi</VSTestTestCaseFilter>
+    <IsTestProject>true</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="TestData\MaryHadALittleLamb.txt" CopyToOutputDirectory="PreserveNewest" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
-      <PrivateAssets>all</PrivateAssets>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PageToMovie.Api\PageToMovie.Api.csproj" />
-    <ProjectReference Include="..\PageToMovie.Adaptation\PageToMovie.Adaptation.csproj" />
-    <ProjectReference Include="..\PageToMovie.Core\PageToMovie.Core.csproj" />
     <ProjectReference Include="..\PageToMovie.Engine\PageToMovie.Engine.csproj" />
-    <ProjectReference Include="..\PageToMovie.Fountain\PageToMovie.Fountain.csproj" />
-    <ProjectReference Include="..\PageToMovie.Fakes\PageToMovie.Fakes.csproj" />
-    <ProjectReference Include="..\PageToMovie.LoadSim\PageToMovie.LoadSim.csproj" />
-    <ProjectReference Include="..\PageToMovie.Web\PageToMovie.Web.csproj" />
-    <ProjectReference Include="..\tools\ClassifierBenchmarks\ClassifierBenchmarks.csproj" />
+    <ProjectReference Include="..\PageToMovie.Core\PageToMovie.Core.csproj" />
+    <ProjectReference Include="..\PageToMovie.Api\PageToMovie.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Fixtures\Fountain\**\*.fountain" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fixtures\FountainOpenSource\**\*.fountain" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fixtures\FountainOpenSource\**\*.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fixtures\BookToFountainPackage\**\*.*" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fixtures\AdaptationGolden\**\*.*" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fixtures\CastExtractGold\**\*.*" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fixtures\TellTaleHeartV7\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="**\*.cs" />
+    <Compile Remove="bin\**" />
+    <Compile Remove="obj\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="ModelBoundsTests.cs" />
-    <Compile Remove="ClipEditRequestTests.cs" />
-    <Compile Remove="ClipEditServiceTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ProjectLeaseServiceTests.cs" />
+    <Using Include="Xunit" />
   </ItemGroup>
 </Project>
