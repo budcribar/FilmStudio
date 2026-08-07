@@ -47,4 +47,7 @@
     <Compile Remove="ClipEditRequestTests.cs" />
     <Compile Remove="ClipEditServiceTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ProjectLeaseServiceTests.cs" />
+  </ItemGroup>
 </Project>
