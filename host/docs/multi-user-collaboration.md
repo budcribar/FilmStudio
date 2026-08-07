@@ -31,11 +31,3 @@
 ## Legacy projects
 
 If no `project-acl.json` exists, access falls back to the `owner` segment of `projectId` (`owner/name`).
-
-## Automated merge conflict resolution
-
-- **Library**: `AutoTextMerger` / `IAutoProjectMerger` (`host/PageToMovie.Engine/AutoMerge.cs`)
-  Strategies: `Auto`, `PreferOurs`, `PreferTheirs`, `Union`
-- **HTTP**: `POST /api/merge/text`, `POST /api/merge/json`
-- **Git**: `POST /api/projects/{id}/sync-origin` with optional `autoResolveStrategy`
-  → calls `SyncForkFromOriginWithAutoResolveAsync` when strategy is set

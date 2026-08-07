@@ -8740,6 +8740,64 @@ app.MapPost("/api/projects/{id}/costs/record", async (
 });
 
 
+
+// ---- Scene version history ----
+app.MapGet("/api/projects/{projectId}/scenes/{sceneKey}/versions", async (
+    string projectId,
+    string sceneKey,
+    PageToMovie.Engine.Collaboration.SceneVersionStore versions,
+    CancellationToken ct) =>
+{
+    var list = await versions.ListHistoryAsync(projectId, sceneKey, ct);
+    return Results.Ok(new { ok = true, versions = list });
+});
+
+app.MapPost("/api/projects/{projectId}/scenes/{sceneKey}/versions", async (
+    string projectId,
+    string sceneKey,
+    PageToMovie.Engine.Collaboration.SceneVersionStore versions,
+    HttpRequest req,
+    CancellationToken ct) =>
+{
+    string? note = null;
+    string? createdBy = null;
+    string? sceneStateJson = null;
+    try
+    {
+        using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct);
+        var root = doc.RootElement;
+        if (root.TryGetProperty("note", out var n)) note = n.GetString();
+        if (root.TryGetProperty("createdBy", out var c)) createdBy = c.GetString();
+        if (root.TryGetProperty("sceneStateJson", out var s)) sceneStateJson = s.GetString();
+        else if (root.TryGetProperty("sceneState", out var s2)) sceneStateJson = s2.GetRawText();
+    }
+    catch { }
+
+    var info = await versions.SnapshotAsync(projectId, sceneKey, sceneStateJson, null, note, createdBy, ct);
+    return Results.Ok(new { ok = true, version = info });
+});
+
+app.MapPost("/api/projects/{projectId}/scenes/{sceneKey}/versions/{versionId}/restore", async (
+    string projectId,
+    string sceneKey,
+    string versionId,
+    PageToMovie.Engine.Collaboration.SceneVersionStore versions,
+    CancellationToken ct) =>
+{
+    var result = await versions.RestoreAsync(projectId, sceneKey, versionId, null, ct);
+    if (!result.Ok)
+        return Results.BadRequest(new { ok = false, error = result.Error });
+
+    return Results.Ok(new
+    {
+        ok = true,
+        version = result.Version,
+        sceneStateJson = result.SceneStateJson,
+        restoredFiles = result.RestoredFiles
+    });
+});
+
+
 app.Run();
 
 namespace PageToMovie.Api

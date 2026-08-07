@@ -113,6 +113,25 @@ else
     </div>
 }
 
+
+@* ---- Scene version history (P3) ---- *@
+@if (_selectedScene is not null)
+{
+    <div class="mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                @onclick="() => _showSceneHistory = !_showSceneHistory">
+            @(_showSceneHistory ? "Hide history" : "Scene history")
+        </button>
+    </div>
+    @if (_showSceneHistory)
+    {
+        <SceneVersionHistory ProjectId="@_projectId"
+                             SceneKey="@(_selectedScene.Key ?? "")"
+                             OnClose="() => _showSceneHistory = false"
+                             OnRestored="OnSceneHistoryRestored" />
+    }
+}
+
 @if (_selectedScene is int)
 {
     <div class="mb-3">
