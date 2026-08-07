@@ -355,6 +355,23 @@ public sealed class FilmJobService
         }
     }
 
+    /// <summary>
+    /// Assign a fresh running snapshot (0/100 progress, started now, empty log), register it as the
+    /// active job, and publish. Callers pass a snapshot carrying only the job-specific fields
+    /// (Kind, ProjectId, Scene/Clip/CharKey, Message).
+    /// </summary>
+    private async Task InitAndPublishJobAsync(JobSnapshot snapshot)
+    {
+        snapshot.Status = "running";
+        snapshot.Index = 0;
+        snapshot.Total = 100;
+        snapshot.StartedAt = DateTimeOffset.UtcNow;
+        snapshot.Log = new List<string>();
+        Snapshot = snapshot;
+        RegisterActiveJob();
+        await PublishAsync();
+    }
+
     private string? ActiveJobId
     {
         get => CurrentRun.Value?.ActiveJobId;
@@ -1231,20 +1248,13 @@ public sealed class FilmJobService
     private async Task RunSceneMusicGenAsync(string projectId, int scene, string? modelOverride, bool isVocal, CancellationToken ct)
     {
         await _projects.RequireProjectAsync(projectId, ct);
-        Snapshot = new JobSnapshot
+        await InitAndPublishJobAsync(new JobSnapshot
         {
-            Status = "running",
             Kind = "music",
             ProjectId = projectId,
             Scene = scene,
             Message = $"Generating background music for Scene {scene:D2}…",
-            Index = 0,
-            Total = 100,
-            StartedAt = DateTimeOffset.UtcNow,
-            Log = new List<string>(),
-        };
-        RegisterActiveJob();
-        await PublishAsync();
+        });
         try
         {
             if (!_audio.IsConfigured)
@@ -1462,21 +1472,14 @@ public sealed class FilmJobService
     {
         await _projects.RequireProjectAsync(projectId, ct);
 
-        Snapshot = new JobSnapshot
+        await InitAndPublishJobAsync(new JobSnapshot
         {
-            Status = "running",
             Kind = "clip-auto-review",
             ProjectId = projectId,
             Scene = req.Scene,
             Clip = req.Clip,
             Message = $"Reviewing S{req.Scene:D2}C{req.Clip:D2}…",
-            Index = 0,
-            Total = 100,
-            StartedAt = DateTimeOffset.UtcNow,
-            Log = new List<string>(),
-        };
-        RegisterActiveJob();
-        await PublishAsync();
+        });
 
         try
         {
@@ -1628,22 +1631,15 @@ public sealed class FilmJobService
     {
         await _projects.RequireProjectAsync(projectId, ct);
 
-        Snapshot = new JobSnapshot
+        await InitAndPublishJobAsync(new JobSnapshot
         {
-            Status = "running",
             Kind = "voice-preview",
             ProjectId = projectId,
             CharKey = req.CharKey,
             Message = req.Force
                 ? $"Regenerating voice for {req.CharKey}…"
                 : $"Generating voice sample for {req.CharKey}…",
-            Index = 0,
-            Total = 100,
-            StartedAt = DateTimeOffset.UtcNow,
-            Log = new List<string>(),
-        };
-        RegisterActiveJob();
-        await PublishAsync();
+        });
 
         try
         {
@@ -2117,19 +2113,12 @@ public sealed class FilmJobService
     {
         await _projects.RequireProjectAsync(projectId, ct);
 
-        Snapshot = new JobSnapshot
+        await InitAndPublishJobAsync(new JobSnapshot
         {
-            Status = "running",
             Kind = "youtube_upload",
             ProjectId = projectId,
             Message = "Connecting to YouTube…",
-            Index = 0,
-            Total = 100,
-            StartedAt = DateTimeOffset.UtcNow,
-            Log = new List<string>(),
-        };
-        RegisterActiveJob();
-        await PublishAsync();
+        });
 
         try
         {

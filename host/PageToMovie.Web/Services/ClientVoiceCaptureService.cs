@@ -189,18 +189,4 @@ public sealed class ClientVoiceCaptureService
 
     /// <summary>One detected window's STT result: its time span, best-matched line, transcript, and word timings.</summary>
     private sealed record WindowMatch(double StartSec, double EndSec, string Line, string Heard, List<VoiceCaptureWord> Words);
-
-    private sealed class JsSpeechDetectResult
-    {
-        public bool Success { get; set; }
-        public double TotalSec { get; set; }
-        public List<JsSpeechWindow>? Segments { get; set; }
-        public string? Error { get; set; }
-    }
-
-    private sealed class JsSpeechWindow
-    {
-        public double StartSec { get; set; }
-        public double EndSec { get; set; }
-    }
 }
