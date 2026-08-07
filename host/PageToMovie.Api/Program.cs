@@ -97,25 +97,8 @@ builder.Services.AddSingleton<ProjectStore>();
 
 builder.Services.AddSingleton<IProjectAclService, ProjectAclService>();
 builder.Services.AddSingleton<IProjectLeaseService, ProjectLeaseService>();
-builder.Services.AddSingleton<PageToMovie.Engine.Collaboration.SceneVersionStore>(sp =>
-{
-    var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
-    var root = Path.Combine(env.ContentRootPath, "projects");
-    // Prefer same root ProjectStore uses when available
-    try
-    {
-        var store = sp.GetService<ProjectStore>();
-        if (store != null)
-        {
-            var dir = store.GetType().GetProperty("ProjectsRoot")?.GetValue(store) as string
-                ?? store.GetType().GetField("_projectsRoot", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(store) as string;
-            if (!string.IsNullOrWhiteSpace(dir)) root = dir;
-        }
-    }
-    catch { }
-    return new PageToMovie.Engine.Collaboration.SceneVersionStore(root);
-});
 builder.Services.AddSingleton<IProjectPresenceService, ProjectPresenceService>();
+builder.Services.AddSingleton<IAutoProjectMerger, AutoProjectMerger>();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IJobStore, JobStore>();
 builder.Services.AddSingleton<ILockService, InMemoryLockService>();
@@ -4247,8 +4230,28 @@ app.MapPost("/api/projects/{id}/sync-origin", async (
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
-        var res = await git.SyncForkFromOriginAsync(store.GetProjectDir(id), store.GetProjectDir(body.ParentProjectId));
-        return Results.Ok(new { ok = res.Success, hasConflicts = res.HasConflicts, commitHash = res.CommitHash, message = res.Message });
+        PageToMovie.Engine.GitMergeResult res;
+        if (!string.IsNullOrWhiteSpace(body.AutoResolveStrategy)
+            && Enum.TryParse<PageToMovie.Engine.Collaboration.AutoTextMerger.Strategy>(
+                body.AutoResolveStrategy, ignoreCase: true, out var strategy))
+        {
+            res = await git.SyncForkFromOriginWithAutoResolveAsync(
+                store.GetProjectDir(id), store.GetProjectDir(body.ParentProjectId), strategy);
+        }
+        else
+        {
+            res = await git.SyncForkFromOriginAsync(
+                store.GetProjectDir(id), store.GetProjectDir(body.ParentProjectId));
+        }
+        return Results.Ok(new
+        {
+            ok = res.Success,
+            hasConflicts = res.HasConflicts,
+            commitHash = res.CommitHash,
+            message = res.Message,
+            autoResolvedCount = res.AutoResolvedCount,
+            remainingConflictPaths = res.RemainingConflictPaths,
+        });
     }
     catch (Exception ex)
     {
@@ -8692,7 +8695,50 @@ catch (Exception ex)
 }
 
 app.MapCollaborationEndpoints();
+app.MapMergeEndpoints();
 app.MapHub<ProjectHub>("/hubs/project");
+
+// ---- Project cost summary (adaptation vs video split) ----
+app.MapGet("/api/projects/{id}/costs/summary", (
+    string id,
+    CostLedgerService ledger,
+    IHostEnvironment env) =>
+{
+    try
+    {
+        var root = Path.Combine(env.ContentRootPath, "projects");
+        var summary = ProjectCostAggregator.BuildSummary(id, root, ledger);
+        return Results.Ok(summary);
+    }
+    catch (Exception ex)
+    {
+        return Results.Ok(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/costs/record", async (
+    string id,
+    CostLedgerService ledger,
+    HttpRequest req,
+    CancellationToken ct) =>
+{
+    try
+    {
+        using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct);
+        var root = doc.RootElement;
+        var category = root.TryGetProperty("category", out var c) ? c.GetString() ?? "video" : "video";
+        var usd = root.TryGetProperty("usd", out var u) && u.ValueKind == JsonValueKind.Number ? u.GetDouble() : 0;
+        var note = root.TryGetProperty("note", out var n) ? n.GetString() : null;
+        var modelId = root.TryGetProperty("modelId", out var m) ? m.GetString() : null;
+        ledger.Record(id, category, usd, note, modelId);
+        return Results.Ok(new { ok = true });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 
 
 // ---- Scene version history ----
@@ -8751,6 +8797,7 @@ app.MapPost("/api/projects/{projectId}/scenes/{sceneKey}/versions/{versionId}/re
     });
 });
 
+
 app.Run();
 
 namespace PageToMovie.Api
@@ -8760,7 +8807,7 @@ namespace PageToMovie.Api
     public record AcceptInviteApiRequest(string? Token);
     public record CommitProjectApiRequest(string? Message);
     public record PushProjectApiRequest(bool CommitFirst = false, string? Message = null);
-    public record SyncOriginApiRequest(string? ParentProjectId);
+    public record SyncOriginApiRequest(string? ParentProjectId, string? AutoResolveStrategy = null);
     public record ProjectVisibilityRequest(string VisibilityMode);
     public record SetBookRefsRequest(List<string>? ImagePaths);
     public record MovieReviewRequest(List<MovieAutoReviewKeyframe>? Keyframes);
