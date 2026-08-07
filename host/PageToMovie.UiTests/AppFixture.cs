@@ -4,27 +4,30 @@ using Microsoft.Playwright;
 namespace PageToMovie.UiTests;
 
 /// <summary>
-/// Shared fixture for the UI regression suite. Ensures the single-process fakes host
-/// (Api serves the Blazor WASM UI at :5088) is running — reusing an already-running
-/// instance or launching one — and owns the Playwright browser. Tests reference
-/// PageToMovie.Core/Engine directly so they can compute expected values with the real
-/// domain code rather than re-deriving them here.
+/// Shared fixture for the UI regression suite. Ensures a single-process fakes host (Api serves the
+/// Blazor WASM UI) is running — reusing an already-running instance on its port or launching one —
+/// and owns the Playwright browser. Tests reference PageToMovie.Core/Engine directly so they can
+/// compute expected values with the real domain code. Subclasses tweak the port + extra env to
+/// spin up a second host (e.g. with capabilities forced off) for gated-UI tests.
 /// </summary>
-public sealed class AppFixture : IAsyncLifetime
+public class AppFixture : IAsyncLifetime
 {
-    public string BaseUrl { get; } = "http://localhost:5088";
+    protected virtual int Port => 5088;
+    protected virtual IReadOnlyDictionary<string, string> ExtraEnv => EmptyEnv;
+    private static readonly IReadOnlyDictionary<string, string> EmptyEnv = new Dictionary<string, string>();
+
+    public string BaseUrl => $"http://localhost:{Port}";
     public IBrowser Browser { get; private set; } = null!;
 
     private IPlaywright _pw = null!;
     private Process? _api;              // non-null only when WE launched it
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(5) };
+    private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(5) };
 
     public async Task InitializeAsync()
     {
         if (!await IsHealthyAsync())
             await LaunchApiAsync();
 
-        // Install the browser if missing (idempotent; fast when cached).
         var exit = Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
         if (exit != 0) throw new InvalidOperationException($"playwright install exited {exit}");
 
@@ -32,7 +35,7 @@ public sealed class AppFixture : IAsyncLifetime
         Browser = await _pw.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
     }
 
-    /// <summary>A fresh, isolated context+page already navigated through the login bypass + terms gate.</summary>
+    /// <summary>A fresh, isolated context+page.</summary>
     public async Task<(IBrowserContext ctx, IPage page)> NewPageAsync()
     {
         var ctx = await Browser.NewContextAsync(new BrowserNewContextOptions { ViewportSize = new() { Width = 1280, Height = 900 } });
@@ -40,13 +43,12 @@ public sealed class AppFixture : IAsyncLifetime
         return (ctx, page);
     }
 
+    /// <summary>Raw HTTP GET against this fixture's host (for endpoint-level assertions).</summary>
+    public Task<HttpResponseMessage> GetAsync(string path) => _http.GetAsync($"{BaseUrl}{path}");
+
     private async Task<bool> IsHealthyAsync()
     {
-        try
-        {
-            var r = await Http.GetAsync($"{BaseUrl}/health");
-            return r.IsSuccessStatusCode;
-        }
+        try { return (await _http.GetAsync($"{BaseUrl}/health")).IsSuccessStatusCode; }
         catch { return false; }
     }
 
@@ -54,8 +56,10 @@ public sealed class AppFixture : IAsyncLifetime
     {
         var repo = FindRepoRoot();
         var apiProj = Path.Combine(repo, "host", "PageToMovie.Api");
+        // --no-launch-profile so ASPNETCORE_URLS (our port) is honored; the "http (fakes)" profile
+        // pins port 5088, which would collide with the second (caps-off) host.
         var psi = new ProcessStartInfo("dotnet",
-            $"run --project \"{apiProj}\" --launch-profile \"http (fakes)\"")
+            $"run --project \"{apiProj}\" --no-launch-profile")
         {
             WorkingDirectory = Path.Combine(repo, "host"),
             UseShellExecute = false,
@@ -66,9 +70,10 @@ public sealed class AppFixture : IAsyncLifetime
         psi.Environment["PageToMovie_USE_FAKES"] = "true";
         psi.Environment["PageToMovie__WorkspaceRoot"] = repo;
         psi.Environment["ASPNETCORE_URLS"] = BaseUrl;
+        psi.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
+        foreach (var kv in ExtraEnv) psi.Environment[kv.Key] = kv.Value;
 
         _api = Process.Start(psi) ?? throw new InvalidOperationException("failed to start Api");
-        // Drain output so the child doesn't block on a full pipe.
         _ = Task.Run(async () => { while (!_api.StandardOutput.EndOfStream) await _api.StandardOutput.ReadLineAsync(); });
         _ = Task.Run(async () => { while (!_api.StandardError.EndOfStream) await _api.StandardError.ReadLineAsync(); });
 
@@ -78,7 +83,7 @@ public sealed class AppFixture : IAsyncLifetime
             if (await IsHealthyAsync()) return;
             await Task.Delay(1000);
         }
-        throw new TimeoutException("fakes Api did not become healthy within 3 minutes");
+        throw new TimeoutException($"fakes Api did not become healthy at {BaseUrl} within 3 minutes");
     }
 
     private static string FindRepoRoot()
@@ -101,8 +106,26 @@ public sealed class AppFixture : IAsyncLifetime
             try { _api.Kill(entireProcessTree: true); } catch { /* best effort */ }
             _api.Dispose();
         }
+        _http.Dispose();
     }
+}
+
+/// <summary>
+/// A second fakes host (separate port) with the gated capabilities forced OFF, so the disabled
+/// "Set up →" UI is reachable (fakes otherwise reports everything configured).
+/// </summary>
+public sealed class CapabilitiesOffFixture : AppFixture
+{
+    protected override int Port => 5099;
+    protected override IReadOnlyDictionary<string, string> ExtraEnv => new Dictionary<string, string>
+    {
+        ["PAGETOMOVIE_BIND_PORTS"] = "5099", // bind only 5099 so it doesn't collide with the :5088 host
+        ["PAGETOMOVIE_FAKE_DISABLED_CAPABILITIES"] = "video,image,review,music,voice",
+    };
 }
 
 [CollectionDefinition("ui")]
 public sealed class UiCollection : ICollectionFixture<AppFixture> { }
+
+[CollectionDefinition("ui-caps-off")]
+public sealed class CapsOffCollection : ICollectionFixture<CapabilitiesOffFixture> { }

@@ -25,6 +25,13 @@ var OAuthStateParamRegex = new System.Text.RegularExpressions.Regex(@"state=([^&
 var OAuthErrorParamRegex = new System.Text.RegularExpressions.Regex(@"error=([^&]+)", System.Text.RegularExpressions.RegexOptions.Compiled);
 
 var listenPorts = new HashSet<string> { "5088", "8080", "80" };
+// Testability/deploy override: replace the default bind ports entirely (comma-separated). Lets a
+// second local instance (e.g. UI tests with capabilities forced off) bind a distinct port without
+// colliding on 5088. Unset in normal runs → the defaults above apply.
+var bindPortsOverride = Environment.GetEnvironmentVariable("PAGETOMOVIE_BIND_PORTS");
+if (!string.IsNullOrWhiteSpace(bindPortsOverride))
+    listenPorts = new HashSet<string>(
+        bindPortsOverride.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 var railwayEnvPort = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrWhiteSpace(railwayEnvPort))
 {
