@@ -122,6 +122,27 @@ public sealed class GrokVideoClient : IVideoClient
             ?? throw new InvalidOperationException(
                 $"Video model has no maxPromptLength in models_catalog.json.");
 
+        // Shared failure-telemetry for both catch paths (prompt-too-long retry and hard failure):
+        // identical fields, only the exception differs.
+        async Task LogAttemptFailureAsync(Stopwatch sw, string current, int attempt, Exception ex) =>
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = kind,
+                Endpoint = hasContinue ? "videos/extensions" : "videos/generations",
+                Model = model,
+                DurationMs = sw.ElapsedMilliseconds,
+                Mode = mode,
+                Prompt = current,
+                PromptChars = current.Length,
+                ReferenceImagePaths = refNames.Count > 0 ? refNames : null,
+                RefsAttached = refs.Count > 0 && !hasContinue,
+                Resolution = resolution,
+                DurationSec = durationSeconds,
+                Attempt = attempt,
+                Error = ex.Message,
+                Ok = false,
+            });
+
         for (var attempt = 0; attempt <= MaxPromptLengthRetries; attempt++)
         {
             var current = attempt == 0
@@ -179,44 +200,12 @@ public sealed class GrokVideoClient : IVideoClient
                 ClipVideoPromptBuilder.IsPromptTooLongError(ex.Message))
             {
                 lastLengthError = ex;
-                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
-                {
-                    Kind = kind,
-                    Endpoint = hasContinue ? "videos/extensions" : "videos/generations",
-                    Model = model,
-                    DurationMs = sw.ElapsedMilliseconds,
-                    Mode = mode,
-                    Prompt = current,
-                    PromptChars = current.Length,
-                    ReferenceImagePaths = refNames.Count > 0 ? refNames : null,
-                    RefsAttached = refs.Count > 0 && !hasContinue,
-                    Resolution = resolution,
-                    DurationSec = durationSeconds,
-                    Attempt = attempt,
-                    Error = ex.Message,
-                    Ok = false,
-                });
+                await LogAttemptFailureAsync(sw, current, attempt, ex);
                 _log.LogWarning(ex, "Grok video: prompt too long (attempt {Attempt})", attempt);
             }
             catch (Exception ex)
             {
-                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
-                {
-                    Kind = kind,
-                    Endpoint = hasContinue ? "videos/extensions" : "videos/generations",
-                    Model = model,
-                    DurationMs = sw.ElapsedMilliseconds,
-                    Mode = mode,
-                    Prompt = current,
-                    PromptChars = current.Length,
-                    ReferenceImagePaths = refNames.Count > 0 ? refNames : null,
-                    RefsAttached = refs.Count > 0 && !hasContinue,
-                    Resolution = resolution,
-                    DurationSec = durationSeconds,
-                    Attempt = attempt,
-                    Error = ex.Message,
-                    Ok = false,
-                });
+                await LogAttemptFailureAsync(sw, current, attempt, ex);
                 throw;
             }
         }

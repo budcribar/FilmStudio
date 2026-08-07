@@ -235,6 +235,20 @@ public sealed class EngineApiClient
         return await resp.Content.ReadFromJsonAsync<T>(JsonOpts, ct);
     }
 
+    /// <summary>Shared send/parse for the auth endpoints returning a <see cref="LoginResponse"/>
+    /// (signup / login / operator-override): posts the prepared request, treats an empty body as a
+    /// failure, and forces Ok=false on any non-success status.</summary>
+    private async Task<LoginResponse?> SendLoginRequestAsync(HttpRequestMessage req, CancellationToken ct)
+    {
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts, ct);
+        if (body is null)
+            return new LoginResponse { Ok = false, Error = "Empty response" };
+        if (!resp.IsSuccessStatusCode && body.Ok)
+            body.Ok = false;
+        return body;
+    }
+
     public async Task<LoginResponse?> SignupAsync(
         string username,
         string password,
@@ -247,13 +261,7 @@ public sealed class EngineApiClient
                 new LoginRequest { Username = username, Password = password, Email = email },
                 options: JsonOpts),
         };
-        using var resp = await _http.SendAsync(req, ct);
-        var body = await resp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts, ct);
-        if (body is null)
-            return new LoginResponse { Ok = false, Error = "Empty response" };
-        if (!resp.IsSuccessStatusCode && body.Ok)
-            body.Ok = false;
-        return body;
+        return await SendLoginRequestAsync(req, ct);
     }
 
     /// <summary>
@@ -342,13 +350,7 @@ public sealed class EngineApiClient
         {
             Content = JsonContent.Create(new LoginRequest { Username = username, Password = password }, options: JsonOpts),
         };
-        using var resp = await _http.SendAsync(req, ct);
-        var body = await resp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts, ct);
-        if (body is null)
-            return new LoginResponse { Ok = false, Error = "Empty response" };
-        if (!resp.IsSuccessStatusCode && body.Ok)
-            body.Ok = false;
-        return body;
+        return await SendLoginRequestAsync(req, ct);
     }
 
     /// <summary>Operator override via PageToMovie_LOGIN_OVERRIDE (Railway-friendly).</summary>
@@ -358,13 +360,7 @@ public sealed class EngineApiClient
         {
             Content = JsonContent.Create(new OperatorOverrideRequest { Secret = secret }, options: JsonOpts),
         };
-        using var resp = await _http.SendAsync(req, ct);
-        var body = await resp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts, ct);
-        if (body is null)
-            return new LoginResponse { Ok = false, Error = "Empty response" };
-        if (!resp.IsSuccessStatusCode && body.Ok)
-            body.Ok = false;
-        return body;
+        return await SendLoginRequestAsync(req, ct);
     }
 
     /// <summary>
@@ -1025,11 +1021,7 @@ public sealed class EngineApiClient
             Content = JsonContent.Create(new { note }, options: JsonOpts),
         };
         using var resp = await _http.SendAsync(req, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task ReviewDemoAsync(
@@ -1045,11 +1037,7 @@ public sealed class EngineApiClient
             Content = JsonContent.Create(new { status, note }, options: JsonOpts),
         };
         using var resp = await _http.SendAsync(req, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     /// <summary>Publish demo → YouTube upload; gallery lists once YoutubeId is set.</summary>
@@ -1145,11 +1133,7 @@ public sealed class EngineApiClient
             HttpMethod.Delete,
             $"/api/demos/{Uri.EscapeDataString(demoId)}");
         using var resp = await _http.SendAsync(req, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     /// <summary>Public demo stream URL (only works for approved demos unless admin/owner Bearer).</summary>
@@ -1866,11 +1850,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/jobs/{Uri.EscapeDataString(jobId)}/cancel",
             new { },
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task<ScenesListDto?> GetScenesAsync(string projectId, CancellationToken ct = default)
@@ -2254,21 +2234,13 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     public async Task DisconnectYouTubeAsync(CancellationToken ct = default)
     {
         using var resp = await _http.PostAsync("/api/youtube/disconnect", null, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task StartYouTubeUploadAsync(StartYouTubeUploadRequest req, CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync("/api/jobs/youtube-upload", req, JsonOpts, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task<YouTubeUploadInfo?> GetYouTubeUploadInfoAsync(string projectId, CancellationToken ct = default)
@@ -2289,21 +2261,13 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     public async Task StartStage1Async(StartStage1Request req, CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync("/api/jobs/stage1", req, JsonOpts, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task StartStage2Async(StartStage2Request req, CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync("/api/jobs/stage2", req, JsonOpts, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task RegisterMediaAsync(string projectId, MediaRegisterRequest body, CancellationToken ct = default)
@@ -2441,11 +2405,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         using var resp = await _http.GetAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/review/index{q}",
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
         var dto = await resp.Content.ReadFromJsonAsync<ReviewIndexEnvelope>(JsonOpts, ct);
         return dto?.Index;
     }
@@ -2467,11 +2427,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             ct);
         if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
             return null;
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
         var dto = await resp.Content.ReadFromJsonAsync<ClipAutoReviewDraftEnvelope>(JsonOpts, ct);
         return dto?.Draft;
     }
@@ -2690,11 +2646,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             },
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task AddClipAsync(
@@ -2708,11 +2660,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             fields,
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task UpdateClipAsync(
@@ -2727,11 +2675,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             fields,
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task DeleteClipAsync(
@@ -2743,11 +2687,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         using var resp = await _http.DeleteAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}",
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task ApproveSceneAsync(
@@ -2766,11 +2706,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             },
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task<EditLogDto?> GetEditLogAsync(string projectId, CancellationToken ct = default) =>
@@ -2800,11 +2736,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/adaptation/upload",
             form,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     /// <summary>
@@ -3140,11 +3072,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/backfill",
             new { },
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
         return await resp.Content.ReadFromJsonAsync<CostBackfillDto>(JsonOpts, ct);
     }
 
@@ -3233,11 +3161,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             updates,
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
         return await resp.Content.ReadFromJsonAsync<ConfigDto>(JsonOpts, ct);
     }
 
@@ -3452,11 +3376,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             },
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     /// <summary>
@@ -3544,11 +3464,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         form.Add(streamContent, "file", fileName);
 
         using var resp = await _http.PostAsync(endpoint, form, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public string CharacterVoiceCloneSampleUrl(string projectId, string charKey, long cacheBust = 0)
@@ -3568,11 +3484,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         using var resp = await _http.DeleteAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     /// <summary>
@@ -3652,11 +3564,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             new DeleteCharacterImageRequest { Kind = kind, Index = index },
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task<UpdateCharacterLookResult> UpdateCharacterLookAsync(
@@ -3714,11 +3622,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             req,
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task<bool> AugmentProjectMusicAsync(string projectId, string? model = null, CancellationToken ct = default)
@@ -3786,11 +3690,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             },
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task StartBookPrepareAsync(
@@ -3811,11 +3711,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             },
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     /// <summary>Background prepare + book→Fountain (or adapt-only when <paramref name="skipPrepare"/>).</summary>
@@ -3841,11 +3737,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             },
             JsonOpts,
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task LockCharacterVariantAsync(
@@ -3858,11 +3750,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/lock-variant",
             new { index },
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task LockCharacterBookRefAsync(
@@ -3875,11 +3763,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/lock-bookref",
             new { index },
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     public async Task UnlockCharacterAsync(
@@ -3891,11 +3775,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/unlock",
             new { },
             ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
+        await EnsureOkAsync(resp, ct);
     }
 
     /// <summary>Upload and lock an operator-provided character reference image.</summary>
@@ -3941,6 +3821,16 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         }
         var err = await resp.Content.ReadAsStringAsync(ct);
         return new T { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+    }
+
+    /// <summary>Standard mutation failure handling: if the response is not success, read the error
+    /// body and throw an <see cref="InvalidOperationException"/> with a best-effort message (falling
+    /// back to the reason phrase). Shared by the void-returning mutation endpoints.</summary>
+    private async Task EnsureOkAsync(HttpResponseMessage resp, CancellationToken ct)
+    {
+        if (resp.IsSuccessStatusCode) return;
+        var err = await resp.Content.ReadAsStringAsync(ct);
+        throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
     }
 
     private static string? TryError(string json)
