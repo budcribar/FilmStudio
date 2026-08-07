@@ -26,6 +26,27 @@ public sealed class CostReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetReportAsync_NoModelConfigured_FailsFastWithClearConfigurationMessage()
+    {
+        // A project with no model set (no pipeline_config.json 'model_name') must fail fast with an
+        // actionable message pointing to the Configuration page — not a cryptic downstream rate-table
+        // error. There is no default model; cost rates come only from the catalog for a chosen model.
+        var store = TestProjects.CreateStore("cost_nomodel_", out var root);
+        try
+        {
+            var costs = new CostReportService(store);
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => costs.GetReportAsync("Demo"));
+            Assert.Contains("Configuration page", ex.Message);
+            Assert.DoesNotContain("video_input_image", ex.Message);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    [Fact]
     public void BuildVideoBaseRateTable_ReturnsEmptyForPerSecondOnlyModel()
     {
         // Grok/Veo are genuinely priced per second — no flat fee, no guessed base cost.

@@ -61,6 +61,13 @@ public sealed class CostReportService
         CancellationToken ct = default)
     {
         var cfg = await LoadConfigMapAsync(projectId, ct).ConfigureAwait(false);
+        // Cost rates come from the models catalog (SSoT) for the models this project has chosen.
+        // There is no default model — if none is set (models are chosen on the Configuration page),
+        // fail fast with a clear, actionable message instead of a cryptic downstream rate-table error.
+        if (string.IsNullOrWhiteSpace(GetStr(cfg, "model_name", "")))
+            throw new InvalidOperationException(
+                "No models are set for this project yet. Choose a video and image model on the "
+                + "Configuration page to see a cost estimate.");
         var rates = RatesFromConfig(cfg);
         var draftRes = draftResolution
             ?? GetStr(cfg, "resolution", "480p");
