@@ -1,5 +1,6 @@
 @* Scene version history panel — list snapshots and restore. *@
 @inject HttpClient Http
+@inject IJSRuntime JS
 @using System.Net.Http.Json
 @using System.Text.Json
 
@@ -50,7 +51,7 @@
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-primary flex-shrink-0"
                             disabled="@_busy"
-                            @onclick="() => RestoreAsync(v.VersionId)">
+                            @onclick="() => RestoreAsync(v)">
                         Restore
                     </button>
                 </li>
@@ -124,21 +125,36 @@
         }
     }
 
-    private async Task RestoreAsync(string versionId)
+    private async Task RestoreAsync(VersionDto v)
     {
+        var when = v.CreatedUtc.ToLocalTime().ToString("g");
+        var note = string.IsNullOrWhiteSpace(v.Note) ? "(no note)" : v.Note!;
+        var msg =
+            $"Restore scene version?\n\n" +
+            $"Version: {v.VersionId}\n" +
+            $"Saved: {when}\n" +
+            $"Note: {note}\n\n" +
+            "Current scene state/media for this scene may be overwritten. " +
+            "This cannot be undone except by restoring another snapshot.";
+        if (!await JS.InvokeAsync<bool>("confirm", msg))
+            return;
+
         _busy = true;
         _message = null;
         try
         {
             var resp = await Http.PostAsync(
-                $"/api/projects/{ProjectId}/scenes/{Uri.EscapeDataString(SceneKey)}/versions/{Uri.EscapeDataString(versionId)}/restore",
+                $"/api/projects/{ProjectId}/scenes/{Uri.EscapeDataString(SceneKey)}/versions/{Uri.EscapeDataString(v.VersionId)}/restore",
                 null);
             var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
             _ok = json.TryGetProperty("ok", out var o) && o.GetBoolean();
             if (_ok)
             {
-                _message = "Restored. Reloading scene…";
+                _message = $"Restored {v.VersionId}. Reloading scene…";
+                // Parent reloads project/clips first; then refresh this list.
                 await OnRestored.InvokeAsync();
+                await LoadAsync();
+                _message = $"Restored {v.VersionId}.";
             }
             else
             {
