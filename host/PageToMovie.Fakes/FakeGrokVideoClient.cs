@@ -17,14 +17,16 @@ public sealed class FakeGrokVideoClient : IVideoClient
 {
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<FakeGrokVideoClient> _log;
+    private readonly ProjectTelemetryService _telemetry;
     private readonly ConcurrentDictionary<string, string> _pending = new();
     private int _submitCount;
     private int _clipRoundRobin;
 
-    public FakeGrokVideoClient(IOptions<PageToMovieOptions> opts, ILogger<FakeGrokVideoClient> log)
+    public FakeGrokVideoClient(IOptions<PageToMovieOptions> opts, ILogger<FakeGrokVideoClient> log, ProjectTelemetryService telemetry)
     {
         _opts = opts.Value;
         _log = log;
+        _telemetry = telemetry;
     }
 
     public bool IsConfigured => true;
@@ -67,6 +69,21 @@ public sealed class FakeGrokVideoClient : IVideoClient
             startFrameImagePath is null ? "-" : Path.GetFileName(startFrameImagePath),
             continueFromVideoPath is null ? "-" : Path.GetFileName(continueFromVideoPath),
             prompt?.Length ?? 0);
+        try
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = string.IsNullOrWhiteSpace(continueFromVideoPath) ? "video" : "video-extend",
+                Model = model,
+                PromptChars = prompt?.Length ?? 0,
+                DurationSec = durationSeconds,
+                Resolution = resolution,
+                RefsAttached = referenceImagePaths is { Count: > 0 },
+                Fakes = true,
+                Ok = true,
+            }, ct).ConfigureAwait(false);
+        }
+        catch { /* telemetry is best-effort */ }
         return id;
     }
 

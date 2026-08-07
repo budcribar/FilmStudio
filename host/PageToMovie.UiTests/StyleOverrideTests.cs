@@ -46,20 +46,29 @@ public class StyleOverrideTests
             await Assertions.Expect(overridePanel).ToHaveCountAsync(0, new() { Timeout = 30_000 });
 
             // The override (with its reason) is recorded in the AI-call telemetry — the feedback loop.
-            var logged = await page.EvaluateAsync<string>(@"async () => {
-                const raw = sessionStorage.getItem('PageToMovie.admin.session');
-                const s = JSON.parse(raw);
-                const h = {'Authorization':'Bearer '+(s.Token||s.token), 'X-User-Id':(s.UserId||s.userId||'')};
-                const resp = await fetch('/api/admin/ai-calls', {headers:h});
-                const status = resp.status;
-                let an = null; try { an = await resp.json(); } catch {}
-                const d = (an||{}).data || {};
-                const op = (d.ops||[]).find(o => o.op === 'style_gate_override');
-                return JSON.stringify({found: !!op, calls: op ? op.calls : 0, status,
-                    err: (an||{}).error, total: d.totalCalls, projects: d.projectsScanned,
-                    ops: (d.ops||[]).map(o=>o.op).slice(0,15)});
-            }");
-            Assert.True(logged.Contains("\"found\":true"), "style_gate_override not in analytics. payload: " + logged);
+            // The lock-variant response returns only once the override write has been awaited
+            // server-side, so this is not a write-ordering race — but a *separate* subsequent HTTP
+            // request re-reading the just-written file can still observe it a beat late (measured
+            // ~800ms under test load), so poll briefly rather than asserting on the very first read.
+            var found = false;
+            string lastPayload = "";
+            for (var i = 0; i < 8 && !found; i++)
+            {
+                await page.WaitForTimeoutAsync(500);
+                lastPayload = await page.EvaluateAsync<string>(@"async () => {
+                    const raw = sessionStorage.getItem('PageToMovie.admin.session');
+                    const s = JSON.parse(raw);
+                    const h = {'Authorization':'Bearer '+(s.Token||s.token), 'X-User-Id':(s.UserId||s.userId||'')};
+                    const resp = await fetch('/api/admin/ai-calls', {headers:h});
+                    let an = null; try { an = await resp.json(); } catch {}
+                    const d = (an||{}).data || {};
+                    const op = (d.ops||[]).find(o => o.op === 'style_gate_override');
+                    return JSON.stringify({found: !!op, calls: op ? op.calls : 0,
+                        total: d.totalCalls, ops: (d.ops||[]).map(o=>o.op).slice(0,15)});
+                }");
+                found = lastPayload.Contains("\"found\":true");
+            }
+            Assert.True(found, "style_gate_override not in analytics after polling. last payload: " + lastPayload);
         }
         finally { await ctx.CloseAsync(); }
     }

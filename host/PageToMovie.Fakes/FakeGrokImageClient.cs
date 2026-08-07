@@ -1,3 +1,4 @@
+using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -16,8 +17,13 @@ public sealed class FakeGrokImageClient : IImageClient
     };
 
     private readonly ILogger<FakeGrokImageClient> _log;
+    private readonly ProjectTelemetryService _telemetry;
 
-    public FakeGrokImageClient(ILogger<FakeGrokImageClient> log) => _log = log;
+    public FakeGrokImageClient(ILogger<FakeGrokImageClient> log, ProjectTelemetryService telemetry)
+    {
+        _log = log;
+        _telemetry = telemetry;
+    }
 
     public bool IsConfigured => true;
 
@@ -26,13 +32,8 @@ public sealed class FakeGrokImageClient : IImageClient
         int n = 3,
         string aspectRatio = "1:1",
         string? model = null,
-        CancellationToken ct = default)
-    {
-        n = Math.Clamp(n, 1, 3);
-        _log.LogInformation("Fake image gen n={N} promptLen={Len}", n, prompt.Length);
-        IReadOnlyList<byte[]> list = Enumerable.Range(0, n).Select(_ => TinyPng.ToArray()).ToList();
-        return Task.FromResult(list);
-    }
+        CancellationToken ct = default) =>
+        GenerateCoreAsync(prompt, n, model, kind: "image", ct);
 
     public Task<IReadOnlyList<byte[]>> EditVariantsAsync(
         string prompt,
@@ -48,6 +49,27 @@ public sealed class FakeGrokImageClient : IImageClient
     {
         onProgress?.Invoke(
             costumeRefPath is null ? "fake edit" : $"fake edit (costume ref: {Path.GetFileName(costumeRefPath)})");
-        return GenerateVariantsAsync(prompt, n, aspectRatio, model, ct);
+        return GenerateCoreAsync(prompt, n, model, kind: "image_edit", ct);
+    }
+
+    private async Task<IReadOnlyList<byte[]>> GenerateCoreAsync(string prompt, int n, string? model, string kind, CancellationToken ct)
+    {
+        n = Math.Clamp(n, 1, 3);
+        _log.LogInformation("Fake image gen n={N} promptLen={Len}", n, prompt.Length);
+        IReadOnlyList<byte[]> list = Enumerable.Range(0, n).Select(_ => TinyPng.ToArray()).ToList();
+        try
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = kind,
+                Model = model,
+                PromptChars = prompt?.Length ?? 0,
+                ImageCount = n,
+                Fakes = true,
+                Ok = true,
+            }, ct).ConfigureAwait(false);
+        }
+        catch { /* telemetry is best-effort */ }
+        return list;
     }
 }

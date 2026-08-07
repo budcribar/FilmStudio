@@ -1,8 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using PageToMovie.Core.Options;
 using PageToMovie.Engine;
 using PageToMovie.Fakes;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace PageToMovie.Tests;
@@ -55,7 +57,11 @@ public class SceneMusicCompositionTests
 
             await File.WriteAllTextAsync(bpPath, initialJson);
 
-            var fakeVision = new FakeGrokVisionClient(NullLogger<FakeGrokVisionClient>.Instance);
+            var telemetryRoot = Path.Combine(Path.GetTempPath(), "AugmentMusicTest_tel_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.Combine(telemetryRoot, "prompts"));
+            var telemetryStore = new ProjectStore(Options.Create(new PageToMovieOptions { WorkspaceRoot = telemetryRoot }));
+            var telemetry = new ProjectTelemetryService(telemetryStore, NullLogger<ProjectTelemetryService>.Instance);
+            var fakeVision = new FakeGrokVisionClient(NullLogger<FakeGrokVisionClient>.Instance, telemetry);
             var composer = new SceneMusicCompositionService(fakeVision, NullLogger<SceneMusicCompositionService>.Instance);
 
             var ok = await composer.AugmentProjectMusicAsync(

@@ -10,7 +10,7 @@ namespace PageToMovie.UiTests;
 /// P5 dual-user Playwright tests: two browser contexts (alice / bob) with
 /// distinct X-User-Id headers, exercising project leases end-to-end.
 /// </summary>
-[Collection("Ui")]
+[Collection("ui")]
 public sealed class MultiUserLeaseUiTests
 {
     private readonly AppFixture _fx;

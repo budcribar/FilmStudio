@@ -1472,14 +1472,14 @@ app.MapGet("/api/admin/generation-errors", async (
     return Results.Ok(new { ok = true, rows });
 });
 
-/// <summary>Aggregated AI/model-call telemetry (api_calls.jsonl) for the admin AI-Calls analytics page.</summary>
-app.MapGet("/api/admin/ai-calls", async (IUserContext user, AiCallAnalyticsService analytics, int? maxPerProject, CancellationToken ct) =>
+/// <summary>Aggregated AI/model-call telemetry (user_api_calls table) for the admin AI-Calls analytics page.</summary>
+app.MapGet("/api/admin/ai-calls", async (IUserContext user, AiCallAnalyticsService analytics, int? maxRows, CancellationToken ct) =>
 {
     if (!user.IsAdmin)
         return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
     try
     {
-        var data = await analytics.BuildAsync(Math.Clamp(maxPerProject ?? 4000, 100, 20000), ct);
+        var data = await analytics.BuildAsync(Math.Clamp(maxRows ?? 4000, 100, 20000), ct);
         return Results.Ok(new { ok = true, data });
     }
     catch (Exception ex)

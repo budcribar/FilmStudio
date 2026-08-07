@@ -1,0 +1,78 @@
+@page "/admin/generation-errors"
+
+<PageTitle>Generation errors — admin</PageTitle>
+
+<div class="container py-3" style="max-width: 76rem;">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-0">Generation errors</h1>
+            <div class="text-muted small">
+                Transient-retry and partial-coverage events across every classifier/provider call
+                (<code>generation_errors</code>).
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin" class="btn btn-sm btn-outline-secondary">← Admin</a>
+            <button class="btn btn-sm btn-primary" data-testid="gen-errors-refresh"
+                    disabled="@_loading" @onclick="LoadAsync">
+                @(_loading ? "Loading…" : "Refresh")
+            </button>
+        </div>
+    </div>
+
+    @if (!Session.IsAdmin)
+    {
+        <div class="alert alert-warning">Admin session required. <a href="/admin/login">Sign in</a></div>
+    }
+    else if (_error is not null)
+    {
+        <div class="alert alert-danger" data-testid="gen-errors-error">@_error</div>
+    }
+    else if (_loading && _rows.Count == 0)
+    {
+        <div class="text-muted">Loading…</div>
+    }
+    else if (_rows.Count == 0)
+    {
+        <div class="alert alert-info" data-testid="gen-errors-empty">
+            No generation-error events logged yet — this fills in as transient retries or partial-coverage
+            gaps happen during real (or fakes-mode) generation.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" data-testid="gen-errors-table">
+                <thead><tr>
+                    <th>When</th><th>Stage</th><th>Model</th><th>Type</th>
+                    <th class="text-end">HTTP</th><th class="text-end">Attempt</th>
+                    <th>Resolved</th><th>Detail</th>
+                </tr></thead>
+                <tbody>
+                    @foreach (var r in _rows)
+                    {
+                        <tr>
+                            <td class="text-nowrap small text-muted">@r.Ts</td>
+                            <td><code>@r.Stage</code></td>
+                            <td class="small">@r.Model</td>
+                            <td><span class="badge text-bg-secondary">@r.ErrorType</span></td>
+                            <td class="text-end">@(r.HttpStatus?.ToString() ?? "—")</td>
+                            <td class="text-end">@r.Attempt</td>
+                            <td>
+                                @if (r.Resolved)
+                                {
+                                    <span class="badge text-bg-success">resolved</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-warning">open</span>
+                                }
+                            </td>
+                            <td class="small text-muted">@r.ErrorMessage</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

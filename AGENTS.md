@@ -217,6 +217,32 @@ Slightly more technical language is OK on **About** or a collapsible “For deve
 
 ---
 
+## Regression testing workflow — batch then bisect
+
+For multi-feature work sessions (several independent features/fixes landing before a full regression pass), don't
+run the full UI+non-UI suite after every single change — batch first, bisect only on failure:
+
+1. **Batch before testing.** Land at least ~8 independent features/fixes, then run the full regression suite
+   (non-UI unit tests + UI/Playwright tests) once for the whole batch.
+2. **On failure, don't re-run everything — bisect the batch, not the suite.** Split the batch in half (e.g. 4
+   features), re-run **only the tests that failed** (not the full suite) against that half. A pass isolates the
+   fault to the other half; keep halving (4→2→1) until the single feature/commit responsible is identified. This
+   turns an O(features × suite) re-run cost into O(log(features) × failed-tests) — far cheaper than re-running the
+   whole suite at every split.
+3. **Look at likely files/history first.** Before bisecting blindly, check which of the batched changes touched
+   the files/paths implicated by the failing test's stack trace or assertion — often narrows it immediately
+   without needing a full bisect.
+4. **Read the error message before bisecting.** A clear exception/assertion often points straight at the change
+   without needing to split anything — bisect is the fallback when the error alone doesn't localize it.
+5. **Rerun a failing test at least once before trusting it as a real regression.** Flaky UI tests (timing/race
+   conditions) can look like a bisect signal but aren't — confirm reproducibility before spending bisect cycles on
+   it.
+6. **Bisection isolates a fault; it doesn't replace the final full run.** Once the culprit is fixed, still run the
+   complete suite once more before calling the batch done — bisection narrows *where* to look, it doesn't
+   guarantee nothing else in the batch also regressed something the bisect path didn't re-check.
+
+---
+
 ## Ephemeral migration & cleanup lifecycle rule
 
 When performing data/folder/schema migrations via temporary code blocks (such as startup migration hooks in `Program.cs` or one-time DB patches):

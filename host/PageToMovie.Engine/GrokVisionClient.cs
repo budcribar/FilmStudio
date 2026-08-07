@@ -33,18 +33,21 @@ public sealed class GrokVisionClient : IVisionClient
     private readonly ProjectTelemetryService _telemetry;
     private readonly IUserApiKeyProvider? _keyProvider;
     private readonly ILogger<GrokVisionClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public GrokVisionClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
         ILogger<GrokVisionClient> log,
-        IUserApiKeyProvider? keyProvider = null)
+        IUserApiKeyProvider? keyProvider = null,
+        GenerationErrorLogger? errorLogger = null)
     {
         _http = http;
         _telemetry = telemetry;
         _keyProvider = keyProvider;
         _log = log;
+        _errorLogger = errorLogger;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
@@ -75,22 +78,77 @@ public sealed class GrokVisionClient : IVisionClient
             detail: "high",
             text: $"Page {page} of the book.\n\n{TranscribePrompt}");
 
-        using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
-        var body = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(
-                $"Grok vision HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
-
-        using var doc = JsonDocument.Parse(body);
-        var text = ExtractResponseText(doc.RootElement);
-        text = Regex.Replace(text.Trim(), @"^```(?:\w+)?\s*", "");
-        text = Regex.Replace(text, @"\s*```$", "").Trim();
+        var sw = Stopwatch.StartNew();
+        string text;
+        try
+        {
+            text = await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                _ => DoRequestAsync(),
+                isTransient: AiRetryPolicy.IsTransientChatFailure,
+                maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                onRetry: (attemptNum, ex) => LogRetryAttemptAsync("grok_vision_transcribe_page", model, $"page={page}", attemptNum, ex, ct),
+                ct: ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not ChatHttpStatusException)
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = "vision",
+                Mode = "transcribe_page",
+                Endpoint = "responses",
+                Model = model,
+                DurationMs = sw.ElapsedMilliseconds,
+                Error = ex.Message,
+                Ok = false,
+            });
+            throw;
+        }
 
         if (fi is not null && fi.Exists)
         {
             TranscribeCache[cacheKey] = (fi.LastWriteTimeUtc.Ticks, fi.Length, text);
         }
         return text;
+
+        async Task<string> DoRequestAsync()
+        {
+            using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
+            var body = await resp.Content.ReadAsStringAsync(ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+                {
+                    Kind = "vision",
+                    Mode = "transcribe_page",
+                    Endpoint = "responses",
+                    Model = model,
+                    HttpStatus = (int)resp.StatusCode,
+                    DurationMs = sw.ElapsedMilliseconds,
+                    Error = Trim(body, 500),
+                    Ok = false,
+                });
+                throw new ChatHttpStatusException((int)resp.StatusCode,
+                    $"Grok vision HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
+            }
+
+            using var doc = JsonDocument.Parse(body);
+            var t = ExtractResponseText(doc.RootElement);
+            t = Regex.Replace(t.Trim(), @"^```(?:\w+)?\s*", "");
+            t = Regex.Replace(t, @"\s*```$", "").Trim();
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = "vision",
+                Mode = "transcribe_page",
+                Endpoint = "responses",
+                Model = model,
+                HttpStatus = (int)resp.StatusCode,
+                DurationMs = sw.ElapsedMilliseconds,
+                ResponseChars = t.Length,
+                Ok = true,
+            });
+            return t;
+        }
     }
 
     /// <summary>
@@ -159,16 +217,32 @@ public sealed class GrokVisionClient : IVisionClient
         // low detail is enough for "who is on this page" and cheaper/faster for many pages
         var payload = BuildVisionPayload(model, dataUri, detail: "low", text: prompt);
 
-        using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
-        var body = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(
-                $"Grok vision classify HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
-
-        using var doc = JsonDocument.Parse(body);
-        var text = ExtractResponseText(doc.RootElement);
-        text = Regex.Replace(text.Trim(), @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
-        text = Regex.Replace(text, @"\s*```$", "").Trim();
+        var sw = Stopwatch.StartNew();
+        string text;
+        try
+        {
+            text = await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                _ => DoRequestAsync(),
+                isTransient: AiRetryPolicy.IsTransientChatFailure,
+                maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                onRetry: (attemptNum, ex) => LogRetryAttemptAsync("grok_vision_classify_characters", model, $"page={page}; cast={cast.Count}", attemptNum, ex, ct),
+                ct: ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not ChatHttpStatusException)
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = "vision",
+                Mode = "classify_characters",
+                Endpoint = "responses",
+                Model = model,
+                DurationMs = sw.ElapsedMilliseconds,
+                Error = ex.Message,
+                Ok = false,
+            });
+            throw;
+        }
 
         var res = ParseClassification(text, page, cast);
         if (fi is not null && fi.Exists)
@@ -176,6 +250,45 @@ public sealed class GrokVisionClient : IVisionClient
             ClassifyCache[cacheKey] = (fi.LastWriteTimeUtc.Ticks, fi.Length, res);
         }
         return res;
+
+        async Task<string> DoRequestAsync()
+        {
+            using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
+            var body = await resp.Content.ReadAsStringAsync(ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+                {
+                    Kind = "vision",
+                    Mode = "classify_characters",
+                    Endpoint = "responses",
+                    Model = model,
+                    HttpStatus = (int)resp.StatusCode,
+                    DurationMs = sw.ElapsedMilliseconds,
+                    Error = Trim(body, 500),
+                    Ok = false,
+                });
+                throw new ChatHttpStatusException((int)resp.StatusCode,
+                    $"Grok vision classify HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
+            }
+
+            using var doc = JsonDocument.Parse(body);
+            var t = ExtractResponseText(doc.RootElement);
+            t = Regex.Replace(t.Trim(), @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
+            t = Regex.Replace(t, @"\s*```$", "").Trim();
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = "vision",
+                Mode = "classify_characters",
+                Endpoint = "responses",
+                Model = model,
+                HttpStatus = (int)resp.StatusCode,
+                DurationMs = sw.ElapsedMilliseconds,
+                ResponseChars = t.Length,
+                Ok = true,
+            });
+            return t;
+        }
     }
 
     private static Dictionary<string, object?> BuildVisionPayload(
@@ -409,6 +522,35 @@ public sealed class GrokVisionClient : IVisionClient
         var imageNames = paths.Select(Path.GetFileName).Where(n => n is not null).Cast<string>().ToList();
         try
         {
+            // Retries the whole request on 429/5xx or a network/timeout failure — previously a
+            // transient blip failed the style gate / dialogue-verify / cast-on-image call outright,
+            // unlike GrokChatClient/AnthropicChatClient/GeminiChatClient which all retry here.
+            return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                _ => DoRequestAsync(),
+                isTransient: AiRetryPolicy.IsTransientChatFailure,
+                maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                onRetry: LogTransientRetryAsync,
+                ct: ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not ChatHttpStatusException && ex is not ArgumentException)
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = "vision",
+                Endpoint = "responses",
+                Model = model,
+                DurationMs = sw.ElapsedMilliseconds,
+                Prompt = prompt,
+                ReferenceImagePaths = imageNames,
+                Error = ex.Message,
+                Ok = false,
+            });
+            throw;
+        }
+
+        async Task<string> DoRequestAsync()
+        {
             using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
@@ -427,7 +569,7 @@ public sealed class GrokVisionClient : IVisionClient
                     Error = Trim(body, 500),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
+                throw new ChatHttpStatusException((int)resp.StatusCode,
                     $"Grok vision multi-image HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
             }
 
@@ -452,21 +594,29 @@ public sealed class GrokVisionClient : IVisionClient
             });
             return text;
         }
-        catch (Exception ex) when (ex is not InvalidOperationException && ex is not ArgumentException)
+
+        Task LogTransientRetryAsync(int attemptNum, Exception ex) =>
+            LogRetryAttemptAsync("grok_vision_completion", model,
+                $"promptChars={prompt.Length}; images={paths.Count}", attemptNum, ex, ct);
+    }
+
+    /// <summary>Shared onRetry callback for every retry-wrapped call in this client — logs one row per
+    /// failed-but-retried attempt via <see cref="GenerationErrorLogger"/> (best-effort, no-op if unset).</summary>
+    private async Task LogRetryAttemptAsync(string stage, string model, string requestSummary, int attemptNum, Exception ex, CancellationToken ct)
+    {
+        if (_errorLogger is null) return;
+        var httpStatus = ex is ChatHttpStatusException hse ? hse.StatusCode : (int?)null;
+        await _errorLogger.LogAsync(new GenerationErrorRecord
         {
-            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
-            {
-                Kind = "vision",
-                Endpoint = "responses",
-                Model = model,
-                DurationMs = sw.ElapsedMilliseconds,
-                Prompt = prompt,
-                ReferenceImagePaths = imageNames,
-                Error = ex.Message,
-                Ok = false,
-            });
-            throw;
-        }
+            Stage = stage,
+            Model = model,
+            ErrorType = httpStatus is not null ? "http_error" : "exception",
+            ErrorMessage = ex.Message,
+            HttpStatus = httpStatus,
+            Attempt = attemptNum,
+            Resolved = false,
+            RequestSummary = requestSummary,
+        }, ct).ConfigureAwait(false);
     }
 
     private static async Task<string> FileToDataUriAsync(string path, CancellationToken ct)

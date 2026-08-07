@@ -27,8 +27,21 @@ public sealed class AiCallAnalyticsDto
     public List<string> Learnings { get; set; } = new();
     /// <summary>A few recent failures for quick diagnosis.</summary>
     public List<AiFailureSample> RecentFailures { get; set; } = new();
+    /// <summary>
+    /// Why creators overrode a model verdict (<c>style_gate_override</c> calls), reason → count —
+    /// every override capture asks why (ai_wrong/user_preference/other); this is where that data
+    /// finally surfaces for the team to read.
+    /// </summary>
+    public List<AiOverrideReasonStat> OverrideReasons { get; set; } = new();
 
     public double SuccessRatePct => TotalCalls == 0 ? 0 : System.Math.Round(100.0 * (OkCalls + RetriedCalls) / TotalCalls, 1);
+}
+
+public sealed class AiOverrideReasonStat
+{
+    /// <summary>ai_wrong | user_preference | other | unspecified</summary>
+    public string Reason { get; set; } = "";
+    public int Count { get; set; }
 }
 
 public sealed class AiOpStat

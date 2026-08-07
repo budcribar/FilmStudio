@@ -370,6 +370,9 @@ public class UserDatabaseService
                 // Customer charge (list × admin multiplier) — per-user actual charges.
                 EnsureColumn(conn, "user_api_calls", "charge_usd", "REAL");
                 EnsureColumn(conn, "user_api_calls", "charge_multiplier", "REAL");
+                // Retry attempt number (ApiCallTelemetry.Attempt) — needed to derive "succeeded after retry"
+                // in the AI-call analytics rollup (see GetAiCallRawDataAsync).
+                EnsureColumn(conn, "user_api_calls", "attempt", "INTEGER");
                 try
                 {
                     using var idxCmd = conn.CreateCommand();
@@ -1706,13 +1709,13 @@ public class UserDatabaseService
                     http_status, ok, duration_ms, estimated_usd, charge_usd, charge_multiplier, currency,
                     scene, clip, char_key, resolution, duration_sec,
                     input_tokens, output_tokens, prompt_chars, response_chars,
-                    request_id, error, purpose, fakes)
+                    request_id, error, purpose, fakes, attempt)
                 VALUES (
                     @userId, @ts, @projectId, @jobId, @kind, @mode, @category, @provider, @model, @endpoint,
                     @httpStatus, @ok, @durationMs, @estimatedUsd, @chargeUsd, @chargeMultiplier, @currency,
                     @scene, @clip, @charKey, @resolution, @durationSec,
                     @inputTokens, @outputTokens, @promptChars, @responseChars,
-                    @requestId, @error, @purpose, @fakes)";
+                    @requestId, @error, @purpose, @fakes, @attempt)";
             var ts = (rec.Ts ?? DateTimeOffset.UtcNow).ToString("o");
             var purpose = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
             if (!string.IsNullOrWhiteSpace(rec.Mode))
@@ -1749,12 +1752,178 @@ public class UserDatabaseService
             cmd.Parameters.AddWithValue("@error", string.IsNullOrWhiteSpace(rec.Error) ? DBNull.Value : (rec.Error!.Length > 500 ? rec.Error[..500] : rec.Error));
             cmd.Parameters.AddWithValue("@purpose", purpose ?? "");
             cmd.Parameters.AddWithValue("@fakes", rec.Fakes ? 1 : 0);
+            cmd.Parameters.AddWithValue("@attempt", (object?)rec.Attempt ?? DBNull.Value);
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "InsertUserApiCallAsync failed for {UserId}", rec.UserId);
         }
+    }
+
+    /// <summary>
+    /// Read side of the AI-call feedback loop: aggregates the most recent <paramref name="maxRows"/> rows of
+    /// <c>user_api_calls</c> (across all users/projects) into per-op/per-model rollups + raw failure rows, for
+    /// <see cref="AiCallAnalyticsService"/> to shape into <see cref="AiCallAnalyticsDto"/>. Replaces the old
+    /// per-project JSONL scan now that every telemetry write already lands in this table.
+    /// </summary>
+    public async Task<AiCallAnalyticsRawData> GetAiCallRawDataAsync(int maxRows = 4000, CancellationToken ct = default)
+    {
+        var raw = new AiCallAnalyticsRawData();
+        EnsureDatabaseInitialized();
+        try
+        {
+            using var conn = new SqliteConnection(ConnectionString);
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+
+            using (var tmp = conn.CreateCommand())
+            {
+                tmp.CommandText = "CREATE TEMP TABLE recent_calls AS SELECT * FROM user_api_calls ORDER BY id DESC LIMIT @maxRows;";
+                tmp.Parameters.AddWithValue("@maxRows", maxRows);
+                await tmp.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT
+                        COUNT(*),
+                        SUM(CASE WHEN ok = 1 AND COALESCE(attempt, 1) <= 1 THEN 1 ELSE 0 END),
+                        SUM(CASE WHEN ok = 1 AND attempt > 1 THEN 1 ELSE 0 END),
+                        SUM(CASE WHEN ok = 0 THEN 1 ELSE 0 END),
+                        SUM(CASE WHEN fakes = 1 THEN 1 ELSE 0 END),
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd, 0)), 0),
+                        COALESCE(AVG(duration_ms), 0),
+                        COUNT(DISTINCT project_id)
+                    FROM recent_calls
+                    """;
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                if (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    raw.TotalCalls = r.GetInt32(0);
+                    raw.OkCalls = r.GetInt32(1);
+                    raw.RetriedCalls = r.GetInt32(2);
+                    raw.FailedCalls = r.GetInt32(3);
+                    raw.FakeCalls = r.GetInt32(4);
+                    raw.TotalCostUsd = r.GetDouble(5);
+                    raw.AvgDurationMs = r.GetDouble(6);
+                    raw.ProjectsScanned = r.GetInt32(7);
+                }
+            }
+
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT
+                        LOWER(TRIM(COALESCE(NULLIF(TRIM(kind), ''), '(unknown)'))) AS op,
+                        COUNT(*),
+                        SUM(CASE WHEN ok = 1 AND attempt > 1 THEN 1 ELSE 0 END),
+                        SUM(CASE WHEN ok = 0 THEN 1 ELSE 0 END),
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd, 0)), 0),
+                        COALESCE(AVG(duration_ms), 0)
+                    FROM recent_calls
+                    GROUP BY op
+                    ORDER BY 2 DESC
+                    """;
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    raw.Ops.Add(new AiOpStat
+                    {
+                        Op = r.GetString(0),
+                        Calls = r.GetInt32(1),
+                        Retried = r.GetInt32(2),
+                        Failed = r.GetInt32(3),
+                        CostUsd = Math.Round(r.GetDouble(4), 4),
+                        AvgDurationMs = Math.Round(r.GetDouble(5), 0),
+                    });
+                }
+            }
+
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT
+                        COALESCE(NULLIF(TRIM(model), ''), '(none)') AS mdl,
+                        MAX(COALESCE(provider, '')),
+                        COUNT(*),
+                        SUM(CASE WHEN ok = 0 THEN 1 ELSE 0 END),
+                        COALESCE(SUM(COALESCE(charge_usd, estimated_usd, 0)), 0)
+                    FROM recent_calls
+                    GROUP BY mdl
+                    ORDER BY 3 DESC
+                    """;
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    raw.Models.Add(new AiModelStat
+                    {
+                        Model = r.GetString(0),
+                        Provider = r.GetString(1),
+                        Calls = r.GetInt32(2),
+                        Failed = r.GetInt32(3),
+                        CostUsd = Math.Round(r.GetDouble(4), 4),
+                    });
+                }
+            }
+
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT ts, kind, model, http_status, error, COALESCE(project_id, '')
+                    FROM recent_calls
+                    WHERE ok = 0
+                    ORDER BY ts DESC
+                    LIMIT 400
+                    """;
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    DateTimeOffset? ts = r.IsDBNull(0) ? null : DateTimeOffset.Parse(r.GetString(0));
+                    raw.Failures.Add(new AiCallFailureRow
+                    {
+                        Ts = ts,
+                        Kind = r.IsDBNull(1) ? "" : r.GetString(1),
+                        Model = r.IsDBNull(2) ? "(none)" : r.GetString(2),
+                        HttpStatus = r.IsDBNull(3) ? null : r.GetInt32(3),
+                        Error = r.IsDBNull(4) ? null : r.GetString(4),
+                        ProjectId = r.GetString(5),
+                    });
+                }
+            }
+
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT COALESCE(NULLIF(TRIM(mode), ''), 'unspecified') AS reason, COUNT(*)
+                    FROM recent_calls
+                    WHERE kind = 'style_gate_override'
+                    GROUP BY reason
+                    ORDER BY 2 DESC
+                    """;
+                using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await r.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    raw.OverrideReasons.Add(new AiOverrideReasonStat
+                    {
+                        Reason = r.GetString(0),
+                        Count = r.GetInt32(1),
+                    });
+                }
+            }
+
+            using (var drop = conn.CreateCommand())
+            {
+                drop.CommandText = "DROP TABLE IF EXISTS recent_calls;";
+                await drop.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "GetAiCallRawDataAsync failed");
+        }
+
+        return raw;
     }
 
     /// <summary>
@@ -2921,4 +3090,35 @@ public sealed class ProjectSpendRow
     public int Calls { get; set; }
     public double ListUsd { get; set; }
     public double ChargeUsd { get; set; }
+}
+
+/// <summary>
+/// Unshaped aggregates from <see cref="UserDatabaseService.GetAiCallRawDataAsync"/> — <see cref="AiCallAnalyticsService"/>
+/// turns this into <see cref="AiCallAnalyticsDto"/> (failure classification, learnings, window note).
+/// </summary>
+public sealed class AiCallAnalyticsRawData
+{
+    public int ProjectsScanned { get; set; }
+    public int TotalCalls { get; set; }
+    public int OkCalls { get; set; }
+    public int RetriedCalls { get; set; }
+    public int FailedCalls { get; set; }
+    public int FakeCalls { get; set; }
+    public double TotalCostUsd { get; set; }
+    public double AvgDurationMs { get; set; }
+    public List<AiOpStat> Ops { get; set; } = new();
+    public List<AiModelStat> Models { get; set; } = new();
+    public List<AiCallFailureRow> Failures { get; set; } = new();
+    public List<AiOverrideReasonStat> OverrideReasons { get; set; } = new();
+}
+
+/// <summary>One failed call, pre-classification — <see cref="AiCallAnalyticsService"/> applies <c>ClassifyFailure</c>.</summary>
+public sealed class AiCallFailureRow
+{
+    public DateTimeOffset? Ts { get; set; }
+    public string Kind { get; set; } = "";
+    public string Model { get; set; } = "";
+    public int? HttpStatus { get; set; }
+    public string? Error { get; set; }
+    public string ProjectId { get; set; } = "";
 }
