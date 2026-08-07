@@ -1105,12 +1105,7 @@ public sealed class Stage2PlannerService
                     d1 = combinedDlg;
                     cur["dialogue"] = d1;
 
-                    var ve1 = CoerceString(cur.TryGetValue("visual_event", out var vev1) ? vev1 : null) ?? "";
-                    var ve2 = CoerceString(next.TryGetValue("visual_event", out var vev2) ? vev2 : null) ?? "";
-                    if (!string.IsNullOrWhiteSpace(ve2) && !ve1.Contains(ve2, StringComparison.OrdinalIgnoreCase))
-                    {
-                        cur["visual_event"] = string.IsNullOrWhiteSpace(ve1) ? ve2 : $"{ve1} {ve2}";
-                    }
+                    MergeVisualEvent(cur, next);
 
                     i++;
                 }
@@ -1201,12 +1196,7 @@ public sealed class Stage2PlannerService
                         cur["duration_seconds"] = ClipDurationEstimator.EstimateSpokenLinesSeconds(
                             ClipSpokenLines.FromBeat(cur), maxSeconds: effectiveMax);
 
-                        var ve1 = CoerceString(cur.TryGetValue("visual_event", out var vev1) ? vev1 : null) ?? "";
-                        var ve2 = CoerceString(next.TryGetValue("visual_event", out var vev2) ? vev2 : null) ?? "";
-                        if (!string.IsNullOrWhiteSpace(ve2) && !ve1.Contains(ve2, StringComparison.OrdinalIgnoreCase))
-                        {
-                            cur["visual_event"] = string.IsNullOrWhiteSpace(ve1) ? ve2 : $"{ve1} {ve2}";
-                        }
+                        MergeVisualEvent(cur, next);
 
                         i++;
                     }
@@ -1218,6 +1208,21 @@ public sealed class Stage2PlannerService
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// When merging <paramref name="next"/> into <paramref name="cur"/>, fold next's
+    /// <c>visual_event</c> into cur's: append it (space-joined) unless it is blank or already
+    /// contained (case-insensitive) in cur's existing visual_event.
+    /// </summary>
+    private static void MergeVisualEvent(Dictionary<string, object?> cur, Dictionary<string, object?> next)
+    {
+        var ve1 = CoerceString(cur.TryGetValue("visual_event", out var vev1) ? vev1 : null) ?? "";
+        var ve2 = CoerceString(next.TryGetValue("visual_event", out var vev2) ? vev2 : null) ?? "";
+        if (!string.IsNullOrWhiteSpace(ve2) && !ve1.Contains(ve2, StringComparison.OrdinalIgnoreCase))
+        {
+            cur["visual_event"] = string.IsNullOrWhiteSpace(ve1) ? ve2 : $"{ve1} {ve2}";
+        }
     }
 
     /// <summary>

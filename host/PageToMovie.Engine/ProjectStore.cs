@@ -15,6 +15,73 @@ public sealed class ProjectStore
     /// <summary>CA1861: avoid allocating split separator arrays on every book-text sample.</summary>
     private static readonly char[] WordSplitChars = { ' ', '\n', '\r', '\t' };
 
+    /// <summary>
+    /// Read a project meta json file (project.json) into a case-insensitive dictionary,
+    /// returning an empty case-insensitive dictionary if the file is missing or unparseable.
+    /// </summary>
+    private static async Task<Dictionary<string, object?>> ReadMetaOrEmptyAsync(string metaPath, CancellationToken ct)
+    {
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
+                return JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
+                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Locate the character-seed JSON object for <paramref name="charKey"/> (case-insensitive)
+    /// within a character_seed_tokens object, returning the matched seed and its actual key,
+    /// or (null, null) if no matching object-valued seed is present.
+    /// </summary>
+    private static (System.Text.Json.Nodes.JsonObject? seed, string? foundKey) FindSeedByCharKey(
+        System.Text.Json.Nodes.JsonObject seeds, string charKey)
+    {
+        foreach (var (k, v) in seeds)
+        {
+            if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase) &&
+                v is System.Text.Json.Nodes.JsonObject jo)
+            {
+                return (jo, k);
+            }
+        }
+        return (null, null);
+    }
+
+    /// <summary>
+    /// Load a cast_seeds / blueprint file, locate its character_seed_tokens object (direct or
+    /// nested under global_production_variables), apply <paramref name="patchSeeds"/>, and write
+    /// the result back. No-op (non-fatal) when the file is missing/unparseable or has no seeds.
+    /// </summary>
+    private static void PatchCharacterSeedsFile(string path, Action<System.Text.Json.Nodes.JsonObject> patchSeeds)
+    {
+        try
+        {
+            if (!File.Exists(path)) return;
+            var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))
+                       as System.Text.Json.Nodes.JsonObject;
+            if (root is null) return;
+            System.Text.Json.Nodes.JsonObject? seeds = null;
+            if (root["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject direct)
+                seeds = direct;
+            else if (root["global_production_variables"] is System.Text.Json.Nodes.JsonObject gpv &&
+                     gpv["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject nested)
+                seeds = nested;
+            if (seeds is null) return;
+            patchSeeds(seeds);
+            File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
+        }
+        catch { /* non-fatal */ }
+    }
+
     private readonly PageToMovieOptions _opts;
     private readonly MediaDurationProbe? _duration;
     private readonly SceneListCache? _sceneListCache;
@@ -1522,24 +1589,7 @@ public sealed class ProjectStore
 
         var proj = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
         var metaPath = Path.Combine(proj.Path, "project.json");
-        Dictionary<string, object?> meta;
-        if (File.Exists(metaPath))
-        {
-            try
-            {
-                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
-                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
-                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            }
-        }
-        else
-        {
-            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-        }
+        var meta = await ReadMetaOrEmptyAsync(metaPath, ct).ConfigureAwait(false);
 
         meta["id"] = proj.Id;
         meta["title"] = title;
@@ -1568,24 +1618,7 @@ public sealed class ProjectStore
         var mode = validModes.FirstOrDefault(m => string.Equals(m, visibilityMode, StringComparison.OrdinalIgnoreCase)) ?? "Private";
 
         var metaPath = Path.Combine(proj.Path, "project.json");
-        Dictionary<string, object?> meta;
-        if (File.Exists(metaPath))
-        {
-            try
-            {
-                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
-                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
-                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            }
-        }
-        else
-        {
-            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-        }
+        var meta = await ReadMetaOrEmptyAsync(metaPath, ct).ConfigureAwait(false);
 
         meta["visibilityMode"] = mode;
         meta["id"] = proj.Id;
@@ -1613,24 +1646,7 @@ public sealed class ProjectStore
         var path = ProjectStudioPaths.Normalize(studioPath);
         var proj = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
         var metaPath = Path.Combine(proj.Path, "project.json");
-        Dictionary<string, object?> meta;
-        if (File.Exists(metaPath))
-        {
-            try
-            {
-                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
-                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
-                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            }
-        }
-        else
-        {
-            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-        }
+        var meta = await ReadMetaOrEmptyAsync(metaPath, ct).ConfigureAwait(false);
 
         meta["studioPath"] = path;
         meta["id"] = proj.Id;
@@ -1990,6 +2006,20 @@ public sealed class ProjectStore
             return null;
         var path = await FindBlueprintPathAsync(projectId, ct).ConfigureAwait(false);
         return await _readCache.GetOrLoadBlueprintDocumentAsync(path, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Load the blueprint for a read pass: the shared cached document when read caches are
+    /// enabled (never disposed), otherwise a freshly-parsed owned document. The returned
+    /// <c>owned</c> is non-null only when the caller must dispose it (in a finally).
+    /// </summary>
+    private async Task<(JsonDocument? bp, JsonDocument? owned)> LoadBlueprintForReadAsync(
+        string projectId, CancellationToken ct)
+    {
+        if (_opts.EnableReadCaches)
+            return (await LoadBlueprintSharedAsync(projectId, ct).ConfigureAwait(false), null);
+        var owned = await LoadBlueprintUncachedAsync(projectId, ct).ConfigureAwait(false);
+        return (owned, owned);
     }
 
     /// <summary>Always disk+parse; caller owns and must dispose.</summary>
@@ -2691,18 +2721,7 @@ public sealed class ProjectStore
     {
         void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
         {
-            System.Text.Json.Nodes.JsonObject? seed = null;
-            string? foundKey = null;
-            foreach (var (k, v) in seeds)
-            {
-                if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase) &&
-                    v is System.Text.Json.Nodes.JsonObject jo)
-                {
-                    seed = jo;
-                    foundKey = k;
-                    break;
-                }
-            }
+            var (seed, foundKey) = FindSeedByCharKey(seeds, charKey);
             if (seed is null || foundKey is null)
             {
                 seed = new System.Text.Json.Nodes.JsonObject();
@@ -2994,18 +3013,7 @@ public sealed class ProjectStore
     {
         void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
         {
-            System.Text.Json.Nodes.JsonObject? seed = null;
-            string? foundKey = null;
-            foreach (var (k, v) in seeds)
-            {
-                if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase) &&
-                    v is System.Text.Json.Nodes.JsonObject jo)
-                {
-                    seed = jo;
-                    foundKey = k;
-                    break;
-                }
-            }
+            var (seed, foundKey) = FindSeedByCharKey(seeds, charKey);
             if (seed is null || foundKey is null) return;
 
             foreach (var prop in new[] { "design_reference_images", "book_reference_images" })
@@ -3017,30 +3025,9 @@ public sealed class ProjectStore
             seeds[foundKey] = seed;
         }
 
-        void PatchFile(string path)
-        {
-            try
-            {
-                if (!File.Exists(path)) return;
-                var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))
-                           as System.Text.Json.Nodes.JsonObject;
-                if (root is null) return;
-                System.Text.Json.Nodes.JsonObject? seeds = null;
-                if (root["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject direct)
-                    seeds = direct;
-                else if (root["global_production_variables"] is System.Text.Json.Nodes.JsonObject gpv &&
-                         gpv["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject nested)
-                    seeds = nested;
-                if (seeds is null) return;
-                PatchSeedsObject(seeds);
-                File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
-            }
-            catch { /* non-fatal */ }
-        }
-
-        PatchFile(ScreenplayService.GetCastSeedsPath(this, projectId));
+        PatchCharacterSeedsFile(ScreenplayService.GetCastSeedsPath(this, projectId), PatchSeedsObject);
         var bp = FindBlueprintPathSync(projectId);
-        if (bp is not null) PatchFile(bp);
+        if (bp is not null) PatchCharacterSeedsFile(bp, PatchSeedsObject);
         InvalidateSceneListCache(projectId);
         InvalidateReadCaches(projectId);
     }
@@ -3059,18 +3046,7 @@ public sealed class ProjectStore
 
         void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
         {
-            System.Text.Json.Nodes.JsonObject? seed = null;
-            string? foundKey = null;
-            foreach (var (k, v) in seeds)
-            {
-                if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase) &&
-                    v is System.Text.Json.Nodes.JsonObject jo)
-                {
-                    seed = jo;
-                    foundKey = k;
-                    break;
-                }
-            }
+            var (seed, foundKey) = FindSeedByCharKey(seeds, charKey);
             if (seed is null || foundKey is null) return;
 
             var arr = new System.Text.Json.Nodes.JsonArray();
@@ -3083,32 +3059,11 @@ public sealed class ProjectStore
             seeds[foundKey] = seed;
         }
 
-        void PatchFile(string path)
-        {
-            try
-            {
-                if (!File.Exists(path)) return;
-                var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))
-                           as System.Text.Json.Nodes.JsonObject;
-                if (root is null) return;
-                System.Text.Json.Nodes.JsonObject? seeds = null;
-                if (root["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject direct)
-                    seeds = direct;
-                else if (root["global_production_variables"] is System.Text.Json.Nodes.JsonObject gpv &&
-                         gpv["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject nested)
-                    seeds = nested;
-                if (seeds is null) return;
-                PatchSeedsObject(seeds);
-                File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
-            }
-            catch { /* ignore */ }
-        }
-
         var dir = GetProjectDir(projectId);
-        PatchFile(Path.Combine(dir, "source", ScreenplayService.CastSeedsFileName));
-        PatchFile(Path.Combine(dir, "scenes.json"));
+        PatchCharacterSeedsFile(Path.Combine(dir, "source", ScreenplayService.CastSeedsFileName), PatchSeedsObject);
+        PatchCharacterSeedsFile(Path.Combine(dir, "scenes.json"), PatchSeedsObject);
         if (FindBlueprintPathSync(projectId) is { } bpPath)
-            PatchFile(bpPath);
+            PatchCharacterSeedsFile(bpPath, PatchSeedsObject);
         InvalidateSceneListCache(projectId);
         InvalidateReadCaches(projectId);
     }
@@ -3136,11 +3091,7 @@ public sealed class ProjectStore
         if (bpPath is null || !File.Exists(bpPath))
             throw new InvalidOperationException("Shot plan (blueprint) not found — cannot update clip prompt.");
 
-        var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
-                   as System.Text.Json.Nodes.JsonObject
-                   ?? throw new InvalidOperationException("Invalid blueprint JSON.");
-        var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
-                     ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+        var (root, scenes) = ParseBlueprintScenes(bpPath);
 
         System.Text.Json.Nodes.JsonObject? clipObj = null;
         foreach (var sNode in scenes)
@@ -3196,6 +3147,20 @@ public sealed class ProjectStore
                 return c;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Parse a blueprint file (already known to exist) into its root object and required
+    /// <c>scenes</c> array, throwing the canonical shape-error messages when either is absent.
+    /// </summary>
+    private static (System.Text.Json.Nodes.JsonObject root, System.Text.Json.Nodes.JsonArray scenes) ParseBlueprintScenes(string bpPath)
+    {
+        var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
+                   as System.Text.Json.Nodes.JsonObject
+                   ?? throw new InvalidOperationException("Invalid blueprint JSON.");
+        var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
+                     ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+        return (root, scenes);
     }
 
     public const int ClipEditVisualPromptMaxChars = 8_000;
@@ -3470,11 +3435,7 @@ public sealed class ProjectStore
         if (bpPath is null || !File.Exists(bpPath))
             throw new InvalidOperationException("Shot plan (blueprint) not found — cannot update clip.");
 
-        var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
-                   as System.Text.Json.Nodes.JsonObject
-                   ?? throw new InvalidOperationException("Invalid blueprint JSON.");
-        var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
-                     ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+        var (root, scenes) = ParseBlueprintScenes(bpPath);
 
         var clips = FindSceneClipsArray(scenes, scene)
                     ?? throw new InvalidOperationException($"Scene {scene} not found in shot plan.");
@@ -3507,11 +3468,7 @@ public sealed class ProjectStore
         if (bpPath is null || !File.Exists(bpPath))
             throw new InvalidOperationException("Shot plan (blueprint) not found — cannot add clip.");
 
-        var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
-                   as System.Text.Json.Nodes.JsonObject
-                   ?? throw new InvalidOperationException("Invalid blueprint JSON.");
-        var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
-                     ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+        var (root, scenes) = ParseBlueprintScenes(bpPath);
 
         var clips = FindSceneClipsArray(scenes, scene)
                     ?? throw new InvalidOperationException($"Scene {scene} not found in shot plan.");
@@ -3556,11 +3513,7 @@ public sealed class ProjectStore
 
         if (bpPath is not null && File.Exists(bpPath))
         {
-            var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
-                       as System.Text.Json.Nodes.JsonObject
-                       ?? throw new InvalidOperationException("Invalid blueprint JSON.");
-            var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
-                         ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+            var (root, scenes) = ParseBlueprintScenes(bpPath);
 
             foreach (var sNode in scenes)
             {
@@ -3624,11 +3577,7 @@ public sealed class ProjectStore
 
         if (bpPath is not null && File.Exists(bpPath))
         {
-            var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
-                       as System.Text.Json.Nodes.JsonObject
-                       ?? throw new InvalidOperationException("Invalid blueprint JSON.");
-            var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
-                         ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+            var (root, scenes) = ParseBlueprintScenes(bpPath);
 
             for (var i = 0; i < scenes.Count; i++)
             {
@@ -4391,17 +4340,7 @@ public sealed class ProjectStore
         bool probeDurations,
         CancellationToken ct)
     {
-        JsonDocument? owned = null;
-        JsonDocument? bp;
-        if (_opts.EnableReadCaches)
-        {
-            bp = await LoadBlueprintSharedAsync(projectId, ct).ConfigureAwait(false);
-        }
-        else
-        {
-            owned = await LoadBlueprintUncachedAsync(projectId, ct).ConfigureAwait(false);
-            bp = owned;
-        }
+        var (bp, owned) = await LoadBlueprintForReadAsync(projectId, ct).ConfigureAwait(false);
 
         try
         {
@@ -4588,15 +4527,7 @@ public sealed class ProjectStore
         bool probeDurations = true,
         CancellationToken ct = default)
     {
-        JsonDocument? owned = null;
-        JsonDocument? bp;
-        if (_opts.EnableReadCaches)
-            bp = await LoadBlueprintSharedAsync(projectId, ct).ConfigureAwait(false);
-        else
-        {
-            owned = await LoadBlueprintUncachedAsync(projectId, ct).ConfigureAwait(false);
-            bp = owned;
-        }
+        var (bp, owned) = await LoadBlueprintForReadAsync(projectId, ct).ConfigureAwait(false);
 
         try
         {

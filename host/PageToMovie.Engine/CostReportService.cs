@@ -1055,27 +1055,9 @@ public sealed class CostReportService
                 }
             }
 
-            var chars = new List<string>();
-            if (s.TryGetProperty("characters_on_screen", out var cos) && cos.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var x in cos.EnumerateArray())
-                {
-                    var name = x.GetString();
-                    if (!string.IsNullOrWhiteSpace(name))
-                        chars.Add(name!);
-                }
-            }
+            var chars = ReadStringArray(s, "characters_on_screen");
 
-            var locs = new List<string>();
-            if (s.TryGetProperty("location_ids", out var lids) && lids.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var x in lids.EnumerateArray())
-                {
-                    var name = x.GetString();
-                    if (!string.IsNullOrWhiteSpace(name))
-                        locs.Add(name!);
-                }
-            }
+            var locs = ReadStringArray(s, "location_ids");
 
             string? primaryLoc = null;
             if (s.TryGetProperty("primary_location_id", out var pl) &&
@@ -1377,17 +1359,9 @@ public sealed class CostReportService
     {
         var table = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         if (video.VideoCostPerSecondByResolution is { Count: > 0 } src)
-        {
-            foreach (var kv in src)
-            {
-                if (!string.IsNullOrWhiteSpace(kv.Key) && kv.Value >= 0)
-                    table[kv.Key.Trim()] = kv.Value;
-            }
-        }
+            CopyPositiveRates(table, src);
 
-        FillMissingRes(table, "720p", "1080p", "480p");
-        FillMissingRes(table, "480p", "720p", "1080p");
-        FillMissingRes(table, "1080p", "720p", "480p");
+        FillMissingResolutions(table);
 
         if (table.Count == 0 && video.VideoBaseCostByResolution is not { Count: > 0 })
         {
@@ -1414,16 +1388,46 @@ public sealed class CostReportService
         var table = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         if (video.VideoBaseCostByResolution is { Count: > 0 } src)
         {
-            foreach (var kv in src)
-            {
-                if (!string.IsNullOrWhiteSpace(kv.Key) && kv.Value >= 0)
-                    table[kv.Key.Trim()] = kv.Value;
-            }
-            FillMissingRes(table, "720p", "1080p", "480p");
-            FillMissingRes(table, "480p", "720p", "1080p");
-            FillMissingRes(table, "1080p", "720p", "480p");
+            CopyPositiveRates(table, src);
+            FillMissingResolutions(table);
         }
         return table;
+    }
+
+    /// <summary>Read a scene's string array property, dropping null/blank entries.</summary>
+    private static List<string> ReadStringArray(JsonElement scene, string propertyName)
+    {
+        var list = new List<string>();
+        if (scene.TryGetProperty(propertyName, out var arr) && arr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var x in arr.EnumerateArray())
+            {
+                var name = x.GetString();
+                if (!string.IsNullOrWhiteSpace(name))
+                    list.Add(name!);
+            }
+        }
+        return list;
+    }
+
+    /// <summary>Copy non-blank, non-negative per-resolution rates into <paramref name="table"/> (keys trimmed).</summary>
+    private static void CopyPositiveRates(
+        Dictionary<string, double> table,
+        IEnumerable<KeyValuePair<string, double>> src)
+    {
+        foreach (var kv in src)
+        {
+            if (!string.IsNullOrWhiteSpace(kv.Key) && kv.Value >= 0)
+                table[kv.Key.Trim()] = kv.Value;
+        }
+    }
+
+    /// <summary>Fill any missing 480p/720p/1080p rate from the nearest present tier.</summary>
+    private static void FillMissingResolutions(Dictionary<string, double> table)
+    {
+        FillMissingRes(table, "720p", "1080p", "480p");
+        FillMissingRes(table, "480p", "720p", "1080p");
+        FillMissingRes(table, "1080p", "720p", "480p");
     }
 
     private static void FillMissingRes(

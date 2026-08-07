@@ -22,6 +22,35 @@ public sealed class ClipSidecarService
         await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Build the common <c>clip_sidecar.v1</c> manifest dictionary. The optional
+    /// <paramref name="take"/> key is inserted immediately after <c>clip</c> (only when provided)
+    /// to preserve the on-disk key order. Callers append any extra fields (e.g. source_url) after.
+    /// </summary>
+    private static Dictionary<string, object?> BuildSidecar(
+        string projectId, int scene, int clip, int? take,
+        string prompt, string scriptText, string model, string resolution,
+        double durationSeconds, string sha256, long sizeBytes, DateTime createdUtc)
+    {
+        var sidecar = new Dictionary<string, object?>
+        {
+            ["schema_version"] = "clip_sidecar.v1",
+            ["project_id"] = projectId,
+            ["scene"] = scene,
+            ["clip"] = clip,
+        };
+        if (take is { } t) sidecar["take"] = t;
+        sidecar["script_text"] = scriptText ?? "";
+        sidecar["visual_prompt"] = prompt ?? "";
+        sidecar["model"] = model ?? "";
+        sidecar["resolution"] = resolution ?? "";
+        sidecar["duration_seconds"] = Math.Round(durationSeconds, 2);
+        sidecar["sha256"] = MediaRegistryService.NormalizeSha256(sha256);
+        sidecar["size_bytes"] = sizeBytes;
+        sidecar["created_at_utc"] = createdUtc.ToString("o");
+        return sidecar;
+    }
+
     private readonly ProjectStore _projects;
     private readonly ProjectAutoGitService? _autoGit;
     private readonly ILogger<ClipSidecarService> _log;
@@ -67,21 +96,10 @@ public sealed class ClipSidecarService
 
         var projectId = Path.GetFileName(projectDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
-        var sidecar = new Dictionary<string, object?>
-        {
-            ["schema_version"] = "clip_sidecar.v1",
-            ["project_id"] = projectId,
-            ["scene"] = scene,
-            ["clip"] = clip,
-            ["script_text"] = scriptText ?? "",
-            ["visual_prompt"] = prompt ?? "",
-            ["model"] = model ?? "",
-            ["resolution"] = resolution ?? "",
-            ["duration_seconds"] = Math.Round(durationSeconds, 2),
-            ["sha256"] = MediaRegistryService.NormalizeSha256(sha256),
-            ["size_bytes"] = sizeBytes,
-            ["created_at_utc"] = DateTime.UtcNow.ToString("o"),
-        };
+        var sidecar = BuildSidecar(
+            projectId, scene, clip, take: null,
+            prompt, scriptText, model, resolution,
+            durationSeconds, sha256, sizeBytes, DateTime.UtcNow);
 
         // Provider-hosted source URL (e.g. xAI keeps generated videos for a long time). Persisting it
         // lets a project export carry a re-downloadable pointer so a DIFFERENT user who imports the
@@ -126,22 +144,10 @@ public sealed class ClipSidecarService
 
         var projectId = Path.GetFileName(projectDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
-        var sidecar = new Dictionary<string, object?>
-        {
-            ["schema_version"] = "clip_sidecar.v1",
-            ["project_id"] = projectId,
-            ["scene"] = scene,
-            ["clip"] = clip,
-            ["take"] = take,
-            ["script_text"] = scriptText ?? "",
-            ["visual_prompt"] = prompt ?? "",
-            ["model"] = model ?? "",
-            ["resolution"] = resolution ?? "",
-            ["duration_seconds"] = Math.Round(durationSeconds, 2),
-            ["sha256"] = MediaRegistryService.NormalizeSha256(sha256),
-            ["size_bytes"] = sizeBytes,
-            ["created_at_utc"] = (createdUtc ?? DateTime.UtcNow).ToString("o"),
-        };
+        var sidecar = BuildSidecar(
+            projectId, scene, clip, take,
+            prompt, scriptText, model, resolution,
+            durationSeconds, sha256, sizeBytes, createdUtc ?? DateTime.UtcNow);
 
         await WriteSidecarStreamAsync(sidecarPath, sidecar, ct).ConfigureAwait(false);
         _log.LogInformation("Written clip sidecar manifest → {Path}", sidecarPath);

@@ -115,6 +115,22 @@ public sealed class ReviewEventStore
     {
         take = Math.Clamp(take, 1, 5000);
         var all = ReadAll();
+        return FilterOrderTake(all, projectId, type, category, from, to, take);
+    }
+
+    /// <summary>
+    /// Apply the optional projectId/type/category/from/to filters, order newest-first, and take
+    /// at most <paramref name="take"/>. Shared by <see cref="Query"/> / <see cref="QueryAsync"/>.
+    /// </summary>
+    private static List<ReviewLearningEvent> FilterOrderTake(
+        IEnumerable<ReviewLearningEvent> all,
+        string? projectId,
+        string? type,
+        string? category,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        int take)
+    {
         IEnumerable<ReviewLearningEvent> q = all;
         if (!string.IsNullOrWhiteSpace(projectId))
             q = q.Where(e => string.Equals(e.ProjectId, projectId, StringComparison.OrdinalIgnoreCase));
@@ -197,19 +213,7 @@ public sealed class ReviewEventStore
             {
                 _writeGate.Release();
             }
-            foreach (var line in lines)
-            {
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                try
-                {
-                    var ev = JsonSerializer.Deserialize<ReviewLearningEvent>(line, JsonOpts);
-                    if (ev is not null) list.Add(ev);
-                }
-                catch
-                {
-                    /* skip bad line */
-                }
-            }
+            ParseEventLines(lines, list);
         }
         catch (Exception ex)
         {
@@ -217,6 +221,27 @@ public sealed class ReviewEventStore
         }
 
         return list;
+    }
+
+    /// <summary>
+    /// Deserialize one JSON event per non-blank line into <paramref name="list"/>, silently
+    /// skipping any malformed line. Shared by <see cref="ReadAll"/> / <see cref="ReadAllAsync"/>.
+    /// </summary>
+    private static void ParseEventLines(string[] lines, List<ReviewLearningEvent> list)
+    {
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            try
+            {
+                var ev = JsonSerializer.Deserialize<ReviewLearningEvent>(line, JsonOpts);
+                if (ev is not null) list.Add(ev);
+            }
+            catch
+            {
+                /* skip bad line */
+            }
+        }
     }
 
     public async Task<IReadOnlyList<ReviewLearningEvent>> QueryAsync(
@@ -230,18 +255,7 @@ public sealed class ReviewEventStore
     {
         take = Math.Clamp(take, 1, 5000);
         var all = await ReadAllAsync(ct).ConfigureAwait(false);
-        IEnumerable<ReviewLearningEvent> q = all;
-        if (!string.IsNullOrWhiteSpace(projectId))
-            q = q.Where(e => string.Equals(e.ProjectId, projectId, StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(type))
-            q = q.Where(e => string.Equals(e.Type, type, StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(category))
-            q = q.Where(e => string.Equals(e.Category, category, StringComparison.OrdinalIgnoreCase));
-        if (from is { } f)
-            q = q.Where(e => e.Ts >= f);
-        if (to is { } t)
-            q = q.Where(e => e.Ts <= t);
-        return q.OrderByDescending(e => e.Ts).Take(take).ToList();
+        return FilterOrderTake(all, projectId, type, category, from, to, take);
     }
 
     public IReadOnlyList<ReviewLearningEvent> ReadAll()
@@ -263,19 +277,7 @@ public sealed class ReviewEventStore
             {
                 _writeGate.Release();
             }
-            foreach (var line in lines)
-            {
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                try
-                {
-                    var ev = JsonSerializer.Deserialize<ReviewLearningEvent>(line, JsonOpts);
-                    if (ev is not null) list.Add(ev);
-                }
-                catch
-                {
-                    /* skip bad line */
-                }
-            }
+            ParseEventLines(lines, list);
         }
         catch (Exception ex)
         {

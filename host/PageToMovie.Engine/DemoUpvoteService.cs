@@ -53,6 +53,34 @@ public sealed class DemoUpvoteService
         }
     }
 
+    private const string InsertUpvoteSql = @"
+            INSERT OR IGNORE INTO demo_upvotes (demo_id, user_id, created_at)
+            VALUES ($d, $u, $t);";
+
+    /// <summary>Trim, drop blanks, and de-duplicate a batch of demo ids (case-insensitive).</summary>
+    private static List<string> NormalizeDistinctIds(IEnumerable<string> demoIds) =>
+        demoIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    /// <summary>
+    /// Bind one <c>$idN</c> parameter per slice entry onto <paramref name="cmd"/> and return the
+    /// comma-joined placeholder list for an <c>IN (...)</c> clause.
+    /// </summary>
+    private static string BindIdParameters(SqliteCommand cmd, List<string> slice)
+    {
+        var names = new List<string>();
+        for (var j = 0; j < slice.Count; j++)
+        {
+            var p = "$id" + j;
+            names.Add(p);
+            cmd.Parameters.AddWithValue(p, slice[j]);
+        }
+        return string.Join(",", names);
+    }
+
     /// <summary>Idempotent add. Returns true if a new row was inserted.</summary>
     public async Task<bool> TryAddAsync(string demoId, string userId, CancellationToken ct = default)
     {
@@ -65,9 +93,7 @@ public sealed class DemoUpvoteService
         using var conn = new SqliteConnection(ConnectionString);
         await conn.OpenAsync(ct).ConfigureAwait(false);
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            INSERT OR IGNORE INTO demo_upvotes (demo_id, user_id, created_at)
-            VALUES ($d, $u, $t);";
+        cmd.CommandText = InsertUpvoteSql;
         cmd.Parameters.AddWithValue("$d", demoId);
         cmd.Parameters.AddWithValue("$u", userId);
         cmd.Parameters.AddWithValue("$t", DateTimeOffset.UtcNow.ToString("O"));
@@ -85,9 +111,7 @@ public sealed class DemoUpvoteService
         using var conn = new SqliteConnection(ConnectionString);
         conn.Open();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            INSERT OR IGNORE INTO demo_upvotes (demo_id, user_id, created_at)
-            VALUES ($d, $u, $t);";
+        cmd.CommandText = InsertUpvoteSql;
         cmd.Parameters.AddWithValue("$d", demoId);
         cmd.Parameters.AddWithValue("$u", userId);
         cmd.Parameters.AddWithValue("$t", DateTimeOffset.UtcNow.ToString("O"));
@@ -197,11 +221,7 @@ public sealed class DemoUpvoteService
     public async Task<Dictionary<string, int>> GetCountsAsync(IEnumerable<string> demoIds, CancellationToken ct = default)
     {
         EnsureReady();
-        var ids = demoIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var ids = NormalizeDistinctIds(demoIds);
         var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var id in ids)
             map[id] = 0;
@@ -213,16 +233,10 @@ public sealed class DemoUpvoteService
         for (var i = 0; i < ids.Count; i += chunk)
         {
             var slice = ids.Skip(i).Take(chunk).ToList();
-            var names = new List<string>();
             using var cmd = conn.CreateCommand();
-            for (var j = 0; j < slice.Count; j++)
-            {
-                var p = "$id" + j;
-                names.Add(p);
-                cmd.Parameters.AddWithValue(p, slice[j]);
-            }
+            var inClause = BindIdParameters(cmd, slice);
             cmd.CommandText =
-                $"SELECT demo_id, COUNT(*) FROM demo_upvotes WHERE demo_id IN ({string.Join(",", names)}) GROUP BY demo_id;";
+                $"SELECT demo_id, COUNT(*) FROM demo_upvotes WHERE demo_id IN ({inClause}) GROUP BY demo_id;";
             using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
             while (await r.ReadAsync(ct).ConfigureAwait(false))
             {
@@ -237,11 +251,7 @@ public sealed class DemoUpvoteService
     public Dictionary<string, int> GetCounts(IEnumerable<string> demoIds)
     {
         EnsureReady();
-        var ids = demoIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var ids = NormalizeDistinctIds(demoIds);
         var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var id in ids)
             map[id] = 0;
@@ -253,16 +263,10 @@ public sealed class DemoUpvoteService
         for (var i = 0; i < ids.Count; i += chunk)
         {
             var slice = ids.Skip(i).Take(chunk).ToList();
-            var names = new List<string>();
             using var cmd = conn.CreateCommand();
-            for (var j = 0; j < slice.Count; j++)
-            {
-                var p = "$id" + j;
-                names.Add(p);
-                cmd.Parameters.AddWithValue(p, slice[j]);
-            }
+            var inClause = BindIdParameters(cmd, slice);
             cmd.CommandText =
-                $"SELECT demo_id, COUNT(*) FROM demo_upvotes WHERE demo_id IN ({string.Join(",", names)}) GROUP BY demo_id;";
+                $"SELECT demo_id, COUNT(*) FROM demo_upvotes WHERE demo_id IN ({inClause}) GROUP BY demo_id;";
             using var r = cmd.ExecuteReader();
             while (r.Read())
             {
@@ -280,11 +284,7 @@ public sealed class DemoUpvoteService
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (string.IsNullOrWhiteSpace(userId)) return set;
         EnsureReady();
-        var ids = demoIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var ids = NormalizeDistinctIds(demoIds);
         if (ids.Count == 0) return set;
 
         using var conn = new SqliteConnection(ConnectionString);
@@ -295,15 +295,9 @@ public sealed class DemoUpvoteService
             var slice = ids.Skip(i).Take(chunk).ToList();
             using var cmd = conn.CreateCommand();
             cmd.Parameters.AddWithValue("$u", userId.Trim());
-            var names = new List<string>();
-            for (var j = 0; j < slice.Count; j++)
-            {
-                var p = "$id" + j;
-                names.Add(p);
-                cmd.Parameters.AddWithValue(p, slice[j]);
-            }
+            var inClause = BindIdParameters(cmd, slice);
             cmd.CommandText =
-                $"SELECT demo_id FROM demo_upvotes WHERE user_id = $u AND demo_id IN ({string.Join(",", names)});";
+                $"SELECT demo_id FROM demo_upvotes WHERE user_id = $u AND demo_id IN ({inClause});";
             using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
             while (await r.ReadAsync(ct).ConfigureAwait(false))
                 set.Add(r.GetString(0));
@@ -316,11 +310,7 @@ public sealed class DemoUpvoteService
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (string.IsNullOrWhiteSpace(userId)) return set;
         EnsureReady();
-        var ids = demoIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var ids = NormalizeDistinctIds(demoIds);
         if (ids.Count == 0) return set;
 
         using var conn = new SqliteConnection(ConnectionString);
@@ -331,15 +321,9 @@ public sealed class DemoUpvoteService
             var slice = ids.Skip(i).Take(chunk).ToList();
             using var cmd = conn.CreateCommand();
             cmd.Parameters.AddWithValue("$u", userId.Trim());
-            var names = new List<string>();
-            for (var j = 0; j < slice.Count; j++)
-            {
-                var p = "$id" + j;
-                names.Add(p);
-                cmd.Parameters.AddWithValue(p, slice[j]);
-            }
+            var inClause = BindIdParameters(cmd, slice);
             cmd.CommandText =
-                $"SELECT demo_id FROM demo_upvotes WHERE user_id = $u AND demo_id IN ({string.Join(",", names)});";
+                $"SELECT demo_id FROM demo_upvotes WHERE user_id = $u AND demo_id IN ({inClause});";
             using var r = cmd.ExecuteReader();
             while (r.Read())
                 set.Add(r.GetString(0));
