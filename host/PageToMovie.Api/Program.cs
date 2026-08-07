@@ -2313,8 +2313,12 @@ app.MapGet("/api/projects", async (
         UserEntity? me = null;
         try
         {
+            // Resolve by id, then username, then EMAIL — an email→user-id migration can leave a session
+            // still identifying as its email (requestUserId), and only the email lookup then recovers the
+            // canonical username so ownership matches by username instead of hiding all the user's projects.
             me = await userDb.GetUserByIdAsync(user.UserId, ct).ConfigureAwait(false)
-                 ?? await userDb.GetUserByUsernameAsync(user.UserId, ct).ConfigureAwait(false);
+                 ?? await userDb.GetUserByUsernameAsync(user.UserId, ct).ConfigureAwait(false)
+                 ?? await userDb.GetUserByEmailAsync(user.UserId, ct).ConfigureAwait(false);
         }
         catch { /* offline */ }
 

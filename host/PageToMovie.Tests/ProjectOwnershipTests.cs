@@ -61,14 +61,17 @@ public class ProjectOwnershipTests
     }
 
     [Fact]
-    public void IsOwnedBy_matches_when_session_id_is_email_and_owner_is_handle()
+    public void IsOwnedBy_matches_by_username_once_session_is_resolved()
     {
-        // The exact email→user-id drift: after migration the session still identifies as the email
-        // (as requestUserId) while projects are owned by the bare handle, and the user-record lookup
-        // failed so nothing but requestUserId is available. Without local-part extraction here, every
-        // one of this user's projects gets filtered out of GET /api/projects.
+        // Correct model: the endpoint resolves an email-shaped session to its user RECORD (by email),
+        // and passes the canonical username through — ownership then matches on the username, not on any
+        // coincidental email-local-part string. (Resolution itself is exercised at the endpoint.)
         var p = new ProjectInfo { Id = "budcribar/Mary10", OwnerUserId = "budcribar" };
-        var aliases = ProjectOwnership.CollectAliases(requestUserId: "budcribar@msn.com");
+        var aliases = ProjectOwnership.CollectAliases(
+            requestUserId: "budcribar@msn.com", // stale email-shaped session id
+            canonicalUserId: "budcribar",         // resolved from the user record
+            username: "budcribar",
+            email: "budcribar@msn.com");
         Assert.True(ProjectOwnership.IsOwnedBy(p, aliases));
     }
 

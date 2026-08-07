@@ -44,24 +44,18 @@ public static class ProjectOwnership
             set.Add(t);
             var seg = SanitizeOwnerSegment(t);
             if (seg.Length > 0) set.Add(seg);
-            // Email-shaped id/handle → also register the local-part (before @). After the email→user-id
-            // migration a session can still identify as "name@host" (as requestUserId), while projects are
-            // owned by the bare "name"; applied to EVERY input, not just the email param, so a stale
-            // email-shaped session id still resolves to the owner handle instead of hiding all its projects.
-            var at = t.IndexOf('@');
-            if (at > 0)
-            {
-                var local = t[..at];
-                set.Add(local);
-                var localSeg = SanitizeOwnerSegment(local);
-                if (localSeg.Length > 0) set.Add(localSeg);
-            }
         }
 
         Add(requestUserId);
         Add(canonicalUserId);
         Add(username);
         Add(email);
+        // Email local-part (before @) — some older sessions used it as handle.
+        if (!string.IsNullOrWhiteSpace(email) && email.Contains('@', StringComparison.Ordinal))
+        {
+            var local = email.Split('@')[0];
+            Add(local);
+        }
         return set.ToList();
     }
 
