@@ -1,0 +1,28 @@
+@namespace PageToMovie.Web.Components
+@*
+  Small responsive stat tile used on the admin overview pages (AdminUsers, AdminBookCache): a
+  col-6/col-md-3 card with a muted label, a large value, and an optional muted sub-line. The card
+  and value CSS classes are parameterised (defaults match the AdminUsers styling) so pages with a
+  slightly different card treatment reuse the same scaffold instead of repeating it.
+*@
+
+<div class="col-6 col-md-3">
+    <div class="@CardClass">
+        <div class="card-body">
+            <div class="text-muted small">@Label</div>
+            <div class="@ValueClass">@Value</div>
+            @if (Sub is not null)
+            {
+                <div class="small text-muted">@Sub</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string? Label { get; set; }
+    [Parameter, EditorRequired] public string? Value { get; set; }
+    [Parameter] public RenderFragment? Sub { get; set; }
+    [Parameter] public string CardClass { get; set; } = "card h-100";
+    [Parameter] public string ValueClass { get; set; } = "fs-3 fw-semibold";
+}

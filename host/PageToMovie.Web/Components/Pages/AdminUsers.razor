@@ -49,41 +49,16 @@
         }
 
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Users</div>
-                        <div class="fs-3 fw-semibold">@_overview.UserCount</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Credits available</div>
-                        <div class="fs-3 fw-semibold">@_overview.TotalBalanceCredits.ToString("N0")</div>
-                        <div class="small text-muted">$@_overview.TotalBalanceUsd.ToString("F2") USD</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Credits used (lifetime)</div>
-                        <div class="fs-3 fw-semibold">@_overview.TotalUsedCredits.ToString("N0")</div>
-                        <div class="small text-muted">$@_overview.TotalUsedUsd.ToString("F2") USD</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Credits granted (lifetime)</div>
-                        <div class="fs-3 fw-semibold">@_overview.TotalGrantedCredits.ToString("N0")</div>
-                        <div class="small text-muted">$@_overview.TotalGrantedUsd.ToString("F2") USD</div>
-                    </div>
-                </div>
-            </div>
+            <StatCard Label="Users" Value="@_overview.UserCount.ToString()" />
+            <StatCard Label="Credits available" Value="@_overview.TotalBalanceCredits.ToString("N0")">
+                <Sub>$@_overview.TotalBalanceUsd.ToString("F2") USD</Sub>
+            </StatCard>
+            <StatCard Label="Credits used (lifetime)" Value="@_overview.TotalUsedCredits.ToString("N0")">
+                <Sub>$@_overview.TotalUsedUsd.ToString("F2") USD</Sub>
+            </StatCard>
+            <StatCard Label="Credits granted (lifetime)" Value="@_overview.TotalGrantedCredits.ToString("N0")">
+                <Sub>$@_overview.TotalGrantedUsd.ToString("F2") USD</Sub>
+            </StatCard>
         </div>
 
         <div class="alert alert-secondary small py-2">

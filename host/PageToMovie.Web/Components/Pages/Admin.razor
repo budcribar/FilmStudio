@@ -1228,6 +1228,27 @@
             : $"Selected {_importFile.Name} ({_importFile.Size / (1024.0 * 1024.0):F1} MB)";
     }
 
+    // Shared error/busy wrapper for the archive actions (export / import / logs / augment). The
+    // per-action prologue (_archiveBusy/_archiveAction/_archiveMsg) stays in each method; this only
+    // wraps the body so the identical catch/finally reset lives in one place.
+    private async Task RunArchiveActionAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            _archiveError = ex.Message;
+            _archiveMsg = null;
+        }
+        finally
+        {
+            _archiveBusy = false;
+            _archiveAction = null;
+        }
+    }
+
     private async Task ExportProjectAsync()
     {
         if (string.IsNullOrWhiteSpace(_exportProjectId)) return;
@@ -1237,7 +1258,7 @@
         _archiveMsg = MediaFolder.IsConnected
             ? "Building server zip, then merging local media…"
             : "Building server zip (media folder not connected — MP4/MP3 may be missing)…";
-        try
+        await RunArchiveActionAsync(async () =>
         {
             // Soft prompt: still export server files if media disconnected
             if (!MediaFolder.IsConnected)
@@ -1287,17 +1308,7 @@
                     }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _archiveError = ex.Message;
-            _archiveMsg = null;
-        }
-        finally
-        {
-            _archiveBusy = false;
-            _archiveAction = null;
-        }
+        });
     }
 
     private async Task ExportLogsAsync()
@@ -1306,7 +1317,7 @@
         _archiveAction = "export_logs";
         _archiveError = null;
         _archiveMsg = "Building server log archive zip…";
-        try
+        await RunArchiveActionAsync(async () =>
         {
             var (resp, fileName) = await Api.ExportServerLogsZipAsync();
             using (resp)
@@ -1326,17 +1337,7 @@
                     _archiveMsg = null;
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _archiveError = ex.Message;
-            _archiveMsg = null;
-        }
-        finally
-        {
-            _archiveBusy = false;
-            _archiveAction = null;
-        }
+        });
     }
 
     private async Task ImportProjectAsync()
@@ -1354,7 +1355,7 @@
         _archiveMsg = MediaFolder.IsConnected
             ? "Stage 1/2: uploading project to server…"
             : "Uploading project to server (connect media folder to restore MP4/MP3 locally)…";
-        try
+        await RunArchiveActionAsync(async () =>
         {
             // Buffer once — server import + client media extract both need the bytes.
             await using var upload = _importFile.OpenReadStream(MaxImportBytes);
@@ -1420,17 +1421,7 @@
             _importFile = null;
             await RefreshProjectOptionsAsync();
             await RefreshAsync();
-        }
-        catch (Exception ex)
-        {
-            _archiveError = ex.Message;
-            _archiveMsg = null;
-        }
-        finally
-        {
-            _archiveBusy = false;
-            _archiveAction = null;
-        }
+        });
     }
 
     private async Task AugmentMusicAsync()
@@ -1441,7 +1432,7 @@
         _archiveAction = "augment";
         _archiveError = null;
         _archiveMsg = $"Composing AI background music scores for {_augmentProjectId}...";
-        try
+        await RunArchiveActionAsync(async () =>
         {
             var ok = await Api.AugmentProjectMusicAsync(_augmentProjectId);
             if (ok)
@@ -1454,17 +1445,7 @@
                 _archiveMsg = null;
             }
             await RefreshAsync();
-        }
-        catch (Exception ex)
-        {
-            _archiveError = ex.Message;
-            _archiveMsg = null;
-        }
-        finally
-        {
-            _archiveBusy = false;
-            _archiveAction = null;
-        }
+        });
     }
 
     private int _synthesizeCurrent;
