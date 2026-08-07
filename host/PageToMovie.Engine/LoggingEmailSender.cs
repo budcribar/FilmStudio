@@ -1,27 +1,15 @@
 using Microsoft.Extensions.Logging;
-using PageToMovie.Engine.Abstractions;
+using PageToMovie.Engine.Collaboration;
 
 namespace PageToMovie.Engine;
 
-/// <summary>Dev/default: writes messages to the log (no SMTP).</summary>
-public sealed class LoggingEmailSender : IEmailSender
+public sealed class LoggingEmailSender : IProjectInviteMailer
 {
     private readonly ILogger<LoggingEmailSender> _log;
-
     public LoggingEmailSender(ILogger<LoggingEmailSender> log) => _log = log;
-
-    public Task SendAsync(
-        string toEmail,
-        string subject,
-        string htmlBody,
-        string? textBody = null,
-        CancellationToken ct = default)
+    public Task SendAsync(string to, string subject, string body, CancellationToken ct = default)
     {
-        _log.LogInformation(
-            "EMAIL (log-only) To={To} Subject={Subject}\n{Body}",
-            toEmail,
-            subject,
-            textBody ?? htmlBody);
+        _log.LogInformation("EMAIL to={To} subject={Subject}\n{Body}", to, subject, body);
         return Task.CompletedTask;
     }
 }
