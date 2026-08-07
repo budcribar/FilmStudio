@@ -7,21 +7,39 @@ namespace PageToMovie.UiTests;
 /// Shared fixture for the UI regression suite. Ensures a single-process fakes host (Api serves the
 /// Blazor WASM UI) is running — reusing an already-running instance on its port or launching one —
 /// and owns the Playwright browser. Tests reference PageToMovie.Core/Engine directly so they can
-/// compute expected values with the real domain code. Subclasses tweak the port + extra env to
-/// spin up a second host (e.g. with capabilities forced off) for gated-UI tests.
+/// compute expected values with the real domain code.
+///
+/// Port contract (shared with host/scripts/run-ui-tests.sh): the default host honors
+/// PLAYWRIGHT_BASE_URL when set, else http://localhost:5088. When this fixture launches the host it
+/// binds exactly that port via PAGETOMOVIE_BIND_PORTS. Subclasses fix their own port for a second
+/// instance (e.g. capabilities forced off).
 /// </summary>
 public class AppFixture : IAsyncLifetime
 {
-    protected virtual int Port => 5088;
+    protected virtual int DefaultPort => 5088;
+    protected virtual bool HonorEnvBaseUrl => true;
     protected virtual IReadOnlyDictionary<string, string> ExtraEnv => EmptyEnv;
     private static readonly IReadOnlyDictionary<string, string> EmptyEnv = new Dictionary<string, string>();
 
-    public string BaseUrl => $"http://localhost:{Port}";
+    public string BaseUrl { get; }
+    private readonly int _port;
     public IBrowser Browser { get; private set; } = null!;
 
     private IPlaywright _pw = null!;
     private Process? _api;              // non-null only when WE launched it
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(5) };
+    // Serializes host launches across fixtures so two `dotnet run` don't build PageToMovie.Api at
+    // once (concurrent build → file-lock failure). The second launch finds the Api already built.
+    private static readonly SemaphoreSlim LaunchGate = new(1, 1);
+
+    public AppFixture()
+    {
+        var envUrl = Environment.GetEnvironmentVariable("PLAYWRIGHT_BASE_URL");
+        BaseUrl = (HonorEnvBaseUrl && !string.IsNullOrWhiteSpace(envUrl))
+            ? envUrl!.TrimEnd('/')
+            : $"http://localhost:{DefaultPort}";
+        _port = new Uri(BaseUrl).Port;
+    }
 
     public async Task InitializeAsync()
     {
@@ -54,10 +72,15 @@ public class AppFixture : IAsyncLifetime
 
     private async Task LaunchApiAsync()
     {
+        await LaunchGate.WaitAsync();
+        try { await LaunchApiCoreAsync(); }
+        finally { LaunchGate.Release(); }
+    }
+
+    private async Task LaunchApiCoreAsync()
+    {
         var repo = FindRepoRoot();
         var apiProj = Path.Combine(repo, "host", "PageToMovie.Api");
-        // --no-launch-profile so ASPNETCORE_URLS (our port) is honored; the "http (fakes)" profile
-        // pins port 5088, which would collide with the second (caps-off) host.
         var psi = new ProcessStartInfo("dotnet",
             $"run --project \"{apiProj}\" --no-launch-profile")
         {
@@ -69,8 +92,9 @@ public class AppFixture : IAsyncLifetime
         psi.Environment["PageToMovie__UseFakes"] = "true";
         psi.Environment["PageToMovie_USE_FAKES"] = "true";
         psi.Environment["PageToMovie__WorkspaceRoot"] = repo;
-        psi.Environment["ASPNETCORE_URLS"] = BaseUrl;
         psi.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
+        // Bind exactly our port (UseUrls ignores ASPNETCORE_URLS; PAGETOMOVIE_BIND_PORTS is honored).
+        psi.Environment["PAGETOMOVIE_BIND_PORTS"] = _port.ToString();
         foreach (var kv in ExtraEnv) psi.Environment[kv.Key] = kv.Value;
 
         _api = Process.Start(psi) ?? throw new InvalidOperationException("failed to start Api");
@@ -113,15 +137,16 @@ public class AppFixture : IAsyncLifetime
 }
 
 /// <summary>
-/// A second fakes host (separate port) with the gated capabilities forced OFF, so the disabled
-/// "Set up →" UI is reachable (fakes otherwise reports everything configured).
+/// A second fakes host (separate, fixed port; ignores PLAYWRIGHT_BASE_URL) with the gated
+/// capabilities forced OFF, so the disabled "Set up →" UI is reachable (fakes otherwise reports
+/// everything configured).
 /// </summary>
 public sealed class CapabilitiesOffFixture : AppFixture
 {
-    protected override int Port => 5099;
+    protected override int DefaultPort => 5099;
+    protected override bool HonorEnvBaseUrl => false;
     protected override IReadOnlyDictionary<string, string> ExtraEnv => new Dictionary<string, string>
     {
-        ["PAGETOMOVIE_BIND_PORTS"] = "5099", // bind only 5099 so it doesn't collide with the :5088 host
         ["PAGETOMOVIE_FAKE_DISABLED_CAPABILITIES"] = "video,image,review,music,voice",
     };
 }
