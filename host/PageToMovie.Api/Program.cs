@@ -523,6 +523,7 @@ builder.WebHost.ConfigureKestrel(o =>
 });
 
 var app = builder.Build();
+app.UseMiddleware<ProjectAccessMiddleware>();
 
 if (useFakes)
     app.Logger.LogWarning("DEV: fakes mode — login bypass ENABLED (auto dev-user sign-in via /api/auth/dev-login; provider calls resolve to fakes)");

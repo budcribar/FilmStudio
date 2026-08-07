@@ -1,0 +1,12 @@
+@page "/studio/share"
+@using PageToMovie.Web.Components.Shared
+@using PageToMovie.Web.Services
+@inject ActiveProjectState ActiveProject
+
+<PageTitle>Sharing</PageTitle>
+
+<div class="page-share">
+    <h1>Sharing & locks</h1>
+    <p class="text-muted">Invite collaborators, lock scenes, and see who is present on the active project.</p>
+    <ProjectSharePanel />
+</div>

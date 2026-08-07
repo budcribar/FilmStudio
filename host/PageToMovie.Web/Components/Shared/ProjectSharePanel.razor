@@ -1,0 +1,219 @@
+@using System.Net.Http.Json
+@using PageToMovie.Web.Services
+@inject HttpClient Http
+@inject ActiveProjectState ActiveProject
+@inject ILogger<ProjectSharePanel> Logger
+
+<div class="share-panel">
+    <h3 class="share-panel__title">Project sharing</h3>
+
+    @if (string.IsNullOrWhiteSpace(ActiveProject.ProjectId))
+    {
+        <p class="share-panel__muted">Open a project to manage sharing, locks, and presence.</p>
+    }
+    else
+    {
+        <p class="share-panel__id"><code>@ActiveProject.ProjectId</code></p>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="share-panel__error">@_error</div>
+        }
+        @if (!string.IsNullOrEmpty(_info))
+        {
+            <div class="share-panel__info">@_info</div>
+        }
+
+        <section class="share-panel__section">
+            <h4>Access list</h4>
+            @if (_acl is null)
+            {
+                <button class="btn btn-secondary" disabled="@_busy" @onclick="LoadAclAsync">Load ACL</button>
+            }
+            else
+            {
+                <dl class="share-panel__dl">
+                    <dt>Owner</dt>
+                    <dd>@_acl.OwnerUserId</dd>
+                    <dt>Rev</dt>
+                    <dd>@_acl.Rev</dd>
+                    <dt>Editors</dt>
+                    <dd>@( _acl.Editors.Count == 0 ? "—" : string.Join(", ", _acl.Editors) )</dd>
+                    <dt>Viewers</dt>
+                    <dd>@( _acl.Viewers.Count == 0 ? "—" : string.Join(", ", _acl.Viewers) )</dd>
+                </dl>
+            }
+        </section>
+
+        <section class="share-panel__section">
+            <h4>Invite</h4>
+            <div class="share-panel__row">
+                <input class="form-input" @bind="_inviteUserId" placeholder="User id" />
+                <select class="form-input" @bind="_inviteRole">
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Viewer</option>
+                </select>
+                <button class="btn btn-primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_inviteUserId))" @onclick="InviteAsync">Invite</button>
+            </div>
+        </section>
+
+        <section class="share-panel__section">
+            <h4>Scene lock</h4>
+            <div class="share-panel__row">
+                <input class="form-input" type="number" min="1" @bind="_sceneNumber" />
+                <button class="btn btn-secondary" disabled="@_busy" @onclick="AcquireLeaseAsync">Acquire</button>
+                <button class="btn btn-secondary" disabled="@_busy" @onclick="ReleaseLeaseAsync">Release</button>
+                <button class="btn btn-secondary" disabled="@_busy" @onclick="RefreshLeaseAsync">Status</button>
+            </div>
+            @if (_leaseStatus is not null)
+            {
+                <p class="share-panel__muted">@_leaseStatus</p>
+            }
+        </section>
+
+        <section class="share-panel__section">
+            <h4>Presence</h4>
+            <button class="btn btn-secondary" disabled="@_busy" @onclick="LoadPresenceAsync">Refresh</button>
+            @if (_presence is { Count: > 0 })
+            {
+                <ul>
+                    @foreach (var p in _presence)
+                    {
+                        <li><code>@p.UserId</code> · @p.LastSeenUtc.ToString("u")</li>
+                    }
+                </ul>
+            }
+            else if (_presence is not null)
+            {
+                <p class="share-panel__muted">No active presence.</p>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    AclDto? _acl;
+    List<PresenceDto>? _presence;
+    string _inviteUserId = "";
+    string _inviteRole = "editor";
+    int _sceneNumber = 1;
+    string? _leaseStatus;
+    string? _error;
+    string? _info;
+    bool _busy;
+
+    string EncodedId => Uri.EscapeDataString(ActiveProject.ProjectId ?? "");
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(ActiveProject.ProjectId) && _acl is null)
+            await LoadAclAsync();
+    }
+
+    async Task LoadAclAsync()
+    {
+        await Run(async () =>
+        {
+            _acl = await Http.GetFromJsonAsync<AclDto>($"api/projects/{EncodedId}/acl");
+            _info = "ACL loaded.";
+        });
+    }
+
+    async Task InviteAsync()
+    {
+        await Run(async () =>
+        {
+            var path = _inviteRole == "viewer"
+                ? $"api/projects/{EncodedId}/acl/viewers"
+                : $"api/projects/{EncodedId}/acl/editors";
+            var res = await Http.PostAsJsonAsync(path, new { userId = _inviteUserId.Trim() });
+            if (!res.IsSuccessStatusCode)
+            {
+                _error = await res.Content.ReadAsStringAsync();
+                return;
+            }
+            _acl = await res.Content.ReadFromJsonAsync<AclDto>();
+            _info = $"Invited {_inviteUserId} as {_inviteRole}.";
+            _inviteUserId = "";
+        });
+    }
+
+    async Task AcquireLeaseAsync()
+    {
+        await Run(async () =>
+        {
+            var key = $"scene:{_sceneNumber}";
+            var res = await Http.PostAsync($"api/projects/{EncodedId}/leases/{Uri.EscapeDataString(key)}/acquire", null);
+            var body = await res.Content.ReadAsStringAsync();
+            if (res.StatusCode == System.Net.HttpStatusCode.Locked || (int)res.StatusCode == 423)
+                _leaseStatus = $"Locked by another user: {body}";
+            else if (!res.IsSuccessStatusCode)
+                _error = body;
+            else
+                _leaseStatus = $"Acquired {key}: {body}";
+        });
+    }
+
+    async Task ReleaseLeaseAsync()
+    {
+        await Run(async () =>
+        {
+            var key = $"scene:{_sceneNumber}";
+            var res = await Http.PostAsync($"api/projects/{EncodedId}/leases/{Uri.EscapeDataString(key)}/release", null);
+            _leaseStatus = res.IsSuccessStatusCode ? $"Released {key}" : await res.Content.ReadAsStringAsync();
+        });
+    }
+
+    async Task RefreshLeaseAsync()
+    {
+        await Run(async () =>
+        {
+            var key = $"scene:{_sceneNumber}";
+            var res = await Http.GetAsync($"api/projects/{EncodedId}/leases/{Uri.EscapeDataString(key)}");
+            if (res.StatusCode == System.Net.HttpStatusCode.NoContent)
+                _leaseStatus = $"{key}: free";
+            else
+                _leaseStatus = await res.Content.ReadAsStringAsync();
+        });
+    }
+
+    async Task LoadPresenceAsync()
+    {
+        await Run(async () =>
+        {
+            _presence = await Http.GetFromJsonAsync<List<PresenceDto>>($"api/projects/{EncodedId}/presence")
+                        ?? new();
+        });
+    }
+
+    async Task Run(Func<Task> action)
+    {
+        _busy = true;
+        _error = null;
+        _info = null;
+        try { await action(); }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Share panel action failed");
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    sealed class AclDto
+    {
+        public string OwnerUserId { get; set; } = "";
+        public List<string> Editors { get; set; } = new();
+        public List<string> Viewers { get; set; } = new();
+        public long Rev { get; set; }
+    }
+
+    sealed class PresenceDto
+    {
+        public string UserId { get; set; } = "";
+        public DateTimeOffset LastSeenUtc { get; set; }
+    }
+}

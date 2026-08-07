@@ -1,0 +1,9 @@
+.share-panel { max-width: 40rem; padding: 1rem; }
+.share-panel__title { margin: 0 0 0.75rem; font-size: 1.25rem; }
+.share-panel__muted { color: #888; }
+.share-panel__error { color: #c62828; margin: 0.5rem 0; }
+.share-panel__info { color: #2e7d32; margin: 0.5rem 0; }
+.share-panel__section { margin: 1.25rem 0; padding-top: 0.75rem; border-top: 1px solid #3333; }
+.share-panel__row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.share-panel__dl { display: grid; grid-template-columns: 6rem 1fr; gap: 0.25rem 0.75rem; }
+.share-panel__dl dt { font-weight: 600; }
