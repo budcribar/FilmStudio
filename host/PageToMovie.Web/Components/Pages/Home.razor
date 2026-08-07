@@ -232,6 +232,12 @@ else
                         {
                             <span class="small text-muted">Loading cost…</span>
                         }
+                        else if (_costNeedsModels)
+                        {
+                            <span class="small text-muted" data-testid="home-cost-needs-setup">
+                                Estimate available after <a href="/configuration">setup</a>.
+                            </span>
+                        }
                         else
                         {
                             <span class="small">
@@ -764,6 +770,8 @@ else
     private string? _costResolution;
     private double? _costVideoRate;
     private bool _costLoading;
+    /// <summary>True when no generation model is chosen yet, so an estimate can't be produced.</summary>
+    private bool _costNeedsModels;
 
     private void EnterFullStudio()
     {
@@ -925,15 +933,34 @@ else
         {
             // Match film resolution so Home estimate tracks 480p / 720p / 1080p rates.
             string? draftRes = null;
+            var hasModel = true; // assume yes unless the config clearly says no model is chosen
             try
             {
                 var cfg = await Engine.GetConfigAsync(pid);
-                if (cfg?.Config is not null &&
-                    cfg.Config.TryGetValue("resolution", out var resEl) &&
-                    resEl.ValueKind == System.Text.Json.JsonValueKind.String)
-                    draftRes = resEl.GetString();
+                if (cfg?.Config is not null)
+                {
+                    hasModel = cfg.Config.TryGetValue("model_name", out var mnEl)
+                        && mnEl.ValueKind == System.Text.Json.JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(mnEl.GetString());
+                    if (cfg.Config.TryGetValue("resolution", out var resEl) &&
+                        resEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                        draftRes = resEl.GetString();
+                }
             }
-            catch { /* use server default */ }
+            catch { /* config unavailable → assume a model may exist and let the fetch decide */ }
+
+            if (!hasModel)
+            {
+                // No generation model chosen yet (set on the Configuration page). The estimate fails
+                // fast by design — skip the call entirely so it never errors, and show a setup hint.
+                _costNeedsModels = true;
+                _costEstimateUsd = null;
+                _costActualUsd = null;
+                _costResolution = null;
+                _costVideoRate = null;
+                return;
+            }
+            _costNeedsModels = false;
 
             var dto = await Engine.GetCostAsync(pid, draftResolution: draftRes);
             var s = dto?.Cost?.Summary;
