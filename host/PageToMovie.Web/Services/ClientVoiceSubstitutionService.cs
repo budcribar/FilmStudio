@@ -384,17 +384,4 @@ public sealed class ClientVoiceSubstitutionService
         public string? Error { get; set; }
     }
 
-    private sealed class JsSpeechDetectResult
-    {
-        public bool Success { get; set; }
-        public double TotalSec { get; set; }
-        public List<JsSpeechWindow>? Segments { get; set; }
-        public string? Error { get; set; }
-    }
-
-    private sealed class JsSpeechWindow
-    {
-        public double StartSec { get; set; }
-        public double EndSec { get; set; }
-    }
 }

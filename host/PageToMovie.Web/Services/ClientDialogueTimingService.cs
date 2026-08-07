@@ -166,18 +166,4 @@ public sealed class ClientDialogueTimingService
             .ToList();
 
     private sealed record HeardWindow(double StartSec, double EndSec, string Heard, List<VoiceCaptureWord> Words);
-
-    private sealed class JsSpeechDetectResult
-    {
-        public bool Success { get; set; }
-        public double TotalSec { get; set; }
-        public List<JsSpeechWindow>? Segments { get; set; }
-        public string? Error { get; set; }
-    }
-
-    private sealed class JsSpeechWindow
-    {
-        public double StartSec { get; set; }
-        public double EndSec { get; set; }
-    }
 }
