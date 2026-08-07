@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 
@@ -47,6 +48,19 @@ public static class Ui
     }
 
     public static ConsoleErrors CollectConsoleErrors(IPage page) => new(page);
+
+    /// <summary>The active project id from the workspace pointer (local file, no auth) — lets tests
+    /// drive the same project through the real Engine that the host is showing in the browser.</summary>
+    public static string? ActiveProjectId(string repo)
+    {
+        var wsPath = Path.Combine(repo, "projects", "workspace.json");
+        if (!File.Exists(wsPath)) return null;
+        using var doc = JsonDocument.Parse(File.ReadAllText(wsPath));
+        foreach (var name in new[] { "ActiveProject", "activeProject" })
+            if (doc.RootElement.TryGetProperty(name, out var el) && el.ValueKind == JsonValueKind.String)
+                return el.GetString();
+        return null;
+    }
 }
 
 /// <summary>Collects console errors, filtering the known pre-existing baseline noise.</summary>

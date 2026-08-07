@@ -67,4 +67,36 @@ public class InteractionTests
         }
         finally { await ctx.CloseAsync(); }
     }
+
+    [Fact]
+    public async Task Opening_a_scene_reveals_its_clip_detail()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await Ui.GotoAppAsync(page, _fx.BaseUrl, "/scenes");
+            // Click the first scene row's badge → opens its detail (clip selection bar).
+            await page.Locator("tbody tr").First.Locator("span.badge").First.ClickAsync();
+            await Assertions.Expect(page.GetByTestId("clip-select-bar")).ToBeVisibleAsync();
+        }
+        finally { await ctx.CloseAsync(); }
+    }
+
+    [Fact]
+    public async Task Applying_a_character_filter_reveals_clear_filters()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await Ui.GotoAppAsync(page, _fx.BaseUrl, "/scenes");
+            await page.GetByTestId("scenes-select-toggle").ClickAsync();
+            var panel = page.Locator("[data-testid='scenes-select-panel']");
+            await Assertions.Expect(panel).ToBeVisibleAsync();
+
+            // First select in the panel is Character; index 0 is "All characters…", 1 is a real one.
+            await panel.Locator("select").First.SelectOptionAsync(new SelectOptionValue { Index = 1 });
+            await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "Clear filters" })).ToBeVisibleAsync();
+        }
+        finally { await ctx.CloseAsync(); }
+    }
 }
