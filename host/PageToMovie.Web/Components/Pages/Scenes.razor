@@ -115,6 +115,15 @@ else
 
 @if (_selectedScene is int)
 {
+
+            @if (_showSceneHistory && _selectedScene is not null)
+            {
+                <SceneVersionHistory ProjectId="@_projectId"
+                                     SceneKey="@(_selectedScene.Key ?? "")"
+                                     OnClose="() => _showSceneHistory = false"
+                                     OnRestored="OnSceneHistoryRestored" />
+            }
+
     <div class="mb-3">
         <button class="btn btn-outline-primary" disabled="@_busy" @onclick="BackToListAsync">← All scenes</button>
     </div>

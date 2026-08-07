@@ -97,6 +97,24 @@ builder.Services.AddSingleton<ProjectStore>();
 
 builder.Services.AddSingleton<IProjectAclService, ProjectAclService>();
 builder.Services.AddSingleton<IProjectLeaseService, ProjectLeaseService>();
+builder.Services.AddSingleton<PageToMovie.Engine.Collaboration.SceneVersionStore>(sp =>
+{
+    var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+    var root = Path.Combine(env.ContentRootPath, "projects");
+    // Prefer same root ProjectStore uses when available
+    try
+    {
+        var store = sp.GetService<ProjectStore>();
+        if (store != null)
+        {
+            var dir = store.GetType().GetProperty("ProjectsRoot")?.GetValue(store) as string
+                ?? store.GetType().GetField("_projectsRoot", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(store) as string;
+            if (!string.IsNullOrWhiteSpace(dir)) root = dir;
+        }
+    }
+    catch { }
+    return new PageToMovie.Engine.Collaboration.SceneVersionStore(root);
+});
 builder.Services.AddSingleton<IProjectPresenceService, ProjectPresenceService>();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IJobStore, JobStore>();
@@ -8675,6 +8693,64 @@ catch (Exception ex)
 
 app.MapCollaborationEndpoints();
 app.MapHub<ProjectHub>("/hubs/project");
+
+
+// ---- Scene version history ----
+app.MapGet("/api/projects/{projectId}/scenes/{sceneKey}/versions", async (
+    string projectId,
+    string sceneKey,
+    PageToMovie.Engine.Collaboration.SceneVersionStore versions,
+    CancellationToken ct) =>
+{
+    var list = await versions.ListHistoryAsync(projectId, sceneKey, ct);
+    return Results.Ok(new { ok = true, versions = list });
+});
+
+app.MapPost("/api/projects/{projectId}/scenes/{sceneKey}/versions", async (
+    string projectId,
+    string sceneKey,
+    PageToMovie.Engine.Collaboration.SceneVersionStore versions,
+    HttpRequest req,
+    CancellationToken ct) =>
+{
+    string? note = null;
+    string? createdBy = null;
+    string? sceneStateJson = null;
+    try
+    {
+        using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct);
+        var root = doc.RootElement;
+        if (root.TryGetProperty("note", out var n)) note = n.GetString();
+        if (root.TryGetProperty("createdBy", out var c)) createdBy = c.GetString();
+        if (root.TryGetProperty("sceneStateJson", out var s)) sceneStateJson = s.GetString();
+        else if (root.TryGetProperty("sceneState", out var s2)) sceneStateJson = s2.GetRawText();
+    }
+    catch { }
+
+    var info = await versions.SnapshotAsync(projectId, sceneKey, sceneStateJson, null, note, createdBy, ct);
+    return Results.Ok(new { ok = true, version = info });
+});
+
+app.MapPost("/api/projects/{projectId}/scenes/{sceneKey}/versions/{versionId}/restore", async (
+    string projectId,
+    string sceneKey,
+    string versionId,
+    PageToMovie.Engine.Collaboration.SceneVersionStore versions,
+    CancellationToken ct) =>
+{
+    var result = await versions.RestoreAsync(projectId, sceneKey, versionId, null, ct);
+    if (!result.Ok)
+        return Results.BadRequest(new { ok = false, error = result.Error });
+
+    return Results.Ok(new
+    {
+        ok = true,
+        version = result.Version,
+        sceneStateJson = result.SceneStateJson,
+        restoredFiles = result.RestoredFiles
+    });
+});
+
 app.Run();
 
 namespace PageToMovie.Api
