@@ -95,19 +95,8 @@ public sealed class GeminiImageClient : IImageClient
         CancellationToken ct = default)
     {
         var modelName = NormalizeModelName(model);
-        // Model-aware, not a bare hardcoded 14 — and no silent fallback: an image generation call
-        // costs real money, so an unverified reference-image limit must refuse to start rather
-        // than guess (same "fail loud" principle as Veo's MaxReferenceImages=0).
-        if (SupportedModelCatalog.Find(modelName, ModelCapability.Image)?.MaxReferenceImages is not { } catalogCap)
-        {
-            throw new InvalidOperationException(
-                $"No catalog maxReferenceImages for image model '{modelName}' — refusing to start " +
-                "a paid image generation call with an unverified reference-image limit. Populate " +
-                "models_catalog.json for this model before using it.");
-        }
-        var cap = maxRefs > 0
-            ? Math.Clamp(maxRefs, 1, catalogCap)
-            : catalogCap;
+        // Catalog-backed cap, no silent fallback (same "fail loud" principle as Veo's MaxReferenceImages=0).
+        var cap = ProviderMediaHelpers.ResolveReferenceImageCap(modelName, maxRefs);
 
         var hasCostumeRef = !string.IsNullOrWhiteSpace(costumeRefPath) && File.Exists(costumeRefPath);
         var identityCap = hasCostumeRef ? Math.Max(1, cap - 1) : cap;
@@ -164,7 +153,7 @@ public sealed class GeminiImageClient : IImageClient
         {
             foreach (var path in referenceImagePaths)
             {
-                var (mime, b64) = await FileToBase64Async(path, ct).ConfigureAwait(false);
+                var (mime, b64) = await ProviderMediaHelpers.FileToBase64Async(path, ct).ConfigureAwait(false);
                 parts.Add(new Dictionary<string, object?>
                 {
                     ["inline_data"] = new Dictionary<string, object?> { ["mime_type"] = mime, ["data"] = b64 },
@@ -292,21 +281,6 @@ public sealed class GeminiImageClient : IImageClient
             }
         }
         return null;
-    }
-
-    private static async Task<(string Mime, string Base64)> FileToBase64Async(string path, CancellationToken ct)
-    {
-        var bytes = await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
-        var ext = Path.GetExtension(path).ToLowerInvariant();
-        var mime = ext switch
-        {
-            ".png" => "image/png",
-            ".webp" => "image/webp",
-            ".gif" => "image/gif",
-            ".jpg" or ".jpeg" => "image/jpeg",
-            _ => "image/jpeg",
-        };
-        return (mime, Convert.ToBase64String(bytes));
     }
 
     private static string? ResolveApiKey() =>

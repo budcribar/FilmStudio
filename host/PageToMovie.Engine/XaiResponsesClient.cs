@@ -49,51 +49,42 @@ public sealed class XaiResponsesClient
         int expiresAfterSeconds = 2592000,
         CancellationToken ct = default)
     {
-        var key = RequireApiKey();
-        using var form = new MultipartFormDataContent();
-        // Field order matters: xAI documents that `expires_after` must precede `file` in the
-        // multipart body, or the upload is rejected with a 400.
-        form.Add(new StringContent(expiresAfterSeconds.ToString()), "expires_after");
         var fileBytes = await File.ReadAllBytesAsync(filePath, ct).ConfigureAwait(false);
-        var fileContent = new ByteArrayContent(fileBytes);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
-        form.Add(fileContent, "file", Path.GetFileName(filePath));
-        form.Add(new StringContent("assistants"), "purpose");
-
-        using var req = new HttpRequestMessage(HttpMethod.Post, $"{ApiBase}/files") { Content = form };
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
-
-        using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
-        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"xAI file upload HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
-
-        using var doc = JsonDocument.Parse(body);
-        var root = doc.RootElement;
-        var fileId = root.GetProperty("id").GetString()
-            ?? throw new InvalidOperationException("xAI file upload response had no id.");
-        var filename = root.TryGetProperty("filename", out var fn) ? fn.GetString() ?? "" : "";
-        var bytes = root.TryGetProperty("bytes", out var b) && b.TryGetInt64(out var bl) ? bl : fileBytes.LongLength;
-        long? expiresAt = root.TryGetProperty("expires_at", out var ea) && ea.ValueKind == JsonValueKind.Number
-            ? ea.GetInt64()
-            : null;
-
-        return new UploadResult(fileId, filename, bytes, expiresAt);
+        return await UploadFileBytesAsync(
+            fileBytes, Path.GetFileName(filePath), fallbackFilename: "", expiresAfterSeconds, ct)
+            .ConfigureAwait(false);
     }
 
     /// <summary>Upload in-memory book text (product path; no temp file required).</summary>
-    public async Task<UploadResult> UploadBookBytesAsync(
+    public Task<UploadResult> UploadBookBytesAsync(
         byte[] fileBytes,
         string filename = "book_full.txt",
         int expiresAfterSeconds = 2592000,
         CancellationToken ct = default)
+        => UploadFileBytesAsync(
+            fileBytes,
+            string.IsNullOrWhiteSpace(filename) ? "book_full.txt" : filename,
+            fallbackFilename: filename, expiresAfterSeconds, ct);
+
+    /// <summary>
+    /// Shared multipart upload to <c>/files</c>. Field order matters: xAI documents that
+    /// <c>expires_after</c> must precede <c>file</c> in the multipart body, or the upload is
+    /// rejected with a 400. <paramref name="fallbackFilename"/> is used when the response omits a
+    /// <c>filename</c> field (each caller preserves its own original fallback).
+    /// </summary>
+    private async Task<UploadResult> UploadFileBytesAsync(
+        byte[] fileBytes,
+        string partFileName,
+        string fallbackFilename,
+        int expiresAfterSeconds,
+        CancellationToken ct)
     {
         var key = RequireApiKey();
         using var form = new MultipartFormDataContent();
         form.Add(new StringContent(expiresAfterSeconds.ToString()), "expires_after");
         var fileContent = new ByteArrayContent(fileBytes);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
-        form.Add(fileContent, "file", string.IsNullOrWhiteSpace(filename) ? "book_full.txt" : filename);
+        form.Add(fileContent, "file", partFileName);
         form.Add(new StringContent("assistants"), "purpose");
 
         using var req = new HttpRequestMessage(HttpMethod.Post, $"{ApiBase}/files") { Content = form };
@@ -108,12 +99,12 @@ public sealed class XaiResponsesClient
         var root = doc.RootElement;
         var fileId = root.GetProperty("id").GetString()
             ?? throw new InvalidOperationException("xAI file upload response had no id.");
-        var fn = root.TryGetProperty("filename", out var fnEl) ? fnEl.GetString() ?? filename : filename;
+        var filename = root.TryGetProperty("filename", out var fn) ? fn.GetString() ?? fallbackFilename : fallbackFilename;
         var bytes = root.TryGetProperty("bytes", out var b) && b.TryGetInt64(out var bl) ? bl : fileBytes.LongLength;
         long? expiresAt = root.TryGetProperty("expires_at", out var ea) && ea.ValueKind == JsonValueKind.Number
             ? ea.GetInt64()
             : null;
-        return new UploadResult(fileId, fn, bytes, expiresAt);
+        return new UploadResult(fileId, filename, bytes, expiresAt);
     }
 
     /// <summary>First turn with optional system instructions (Responses instructions field).</summary>
@@ -125,22 +116,10 @@ public sealed class XaiResponsesClient
         CancellationToken ct = default,
         double? temperature = null)
     {
-        var input = new object[]
-        {
-            new Dictionary<string, object?>
-            {
-                ["role"] = "user",
-                ["content"] = new object[]
-                {
-                    new Dictionary<string, object?> { ["type"] = "input_text", ["text"] = instructionText },
-                    new Dictionary<string, object?> { ["type"] = "input_file", ["file_id"] = fileId },
-                },
-            },
-        };
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
-            ["input"] = input,
+            ["input"] = BuildFileInput(instructionText, fileId),
             ["instructions"] = systemPrompt,
         };
         if (temperature is not null) payload["temperature"] = temperature.Value;
@@ -155,22 +134,29 @@ public sealed class XaiResponsesClient
         CancellationToken ct = default,
         double? temperature = null)
     {
-        var input = new object[]
+        var payload = new Dictionary<string, object?>
         {
-            new Dictionary<string, object?>
-            {
-                ["role"] = "user",
-                ["content"] = new object[]
-                {
-                    new Dictionary<string, object?> { ["type"] = "input_text", ["text"] = instructionText },
-                    new Dictionary<string, object?> { ["type"] = "input_file", ["file_id"] = fileId },
-                },
-            },
+            ["model"] = model,
+            ["input"] = BuildFileInput(instructionText, fileId),
         };
-        var payload = new Dictionary<string, object?> { ["model"] = model, ["input"] = input };
         if (temperature is not null) payload["temperature"] = temperature.Value;
         return SendResponsesRequestAsync(payload, ct);
     }
+
+    /// <summary>Builds the single-user-turn <c>input</c> array carrying an instruction text plus one
+    /// attached file (by id) — the shape shared by the first-turn session starters.</summary>
+    private static object[] BuildFileInput(string instructionText, string fileId) => new object[]
+    {
+        new Dictionary<string, object?>
+        {
+            ["role"] = "user",
+            ["content"] = new object[]
+            {
+                new Dictionary<string, object?> { ["type"] = "input_text", ["text"] = instructionText },
+                new Dictionary<string, object?> { ["type"] = "input_file", ["file_id"] = fileId },
+            },
+        },
+    };
 
     /// <summary>
     /// A follow-up turn: no book resend, no re-attached file — the provider retains prior context

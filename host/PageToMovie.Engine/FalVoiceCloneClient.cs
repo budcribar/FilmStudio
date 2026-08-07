@@ -37,14 +37,7 @@ public sealed class FalVoiceCloneClient : IVoiceCloneClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
-    private static string? ResolveApiKey()
-    {
-        var key = ApiKeyScope.CurrentFal
-            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyEnv)
-            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv);
-        if (!string.IsNullOrWhiteSpace(key)) return key.Trim(' ', '"', '\'', '\r', '\n', '\t');
-        return null;
-    }
+    private static string? ResolveApiKey() => ProviderApiKey.ResolveFal();
 
     /// <summary>Resolves the catalog's clone-shaped Voice model — explicit <paramref name="model"/> id if it
     /// resolves to a clone-shaped entry, else the first enabled clone-shaped Fal Voice model.</summary>

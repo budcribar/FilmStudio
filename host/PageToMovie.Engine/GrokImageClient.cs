@@ -160,20 +160,9 @@ public sealed class GrokImageClient : IImageClient
             ? throw new InvalidOperationException(
                 "Image edit: model is required. Open Settings and choose an Image generation model.")
             : model;
-        // Model-aware, not a bare hardcoded 3 — and no silent fallback: an image generation call
-        // costs real money, so an unverified reference-image limit must refuse to start rather
-        // than guess (same "fail loud" principle as Veo's MaxReferenceImages=0).
-        if (SupportedModelCatalog.Find(modelName, ModelCapability.Image)?.MaxReferenceImages is not { } catalogCap)
-        {
-            throw new InvalidOperationException(
-                $"No catalog maxReferenceImages for image model '{modelName}' — refusing to start " +
-                "a paid image generation call with an unverified reference-image limit. Populate " +
-                "models_catalog.json for this model before using it.");
-        }
-        // Catalog maxReferenceImages is SSoT — no second invented client ceiling.
-        var cap = maxRefs > 0
-            ? Math.Clamp(maxRefs, 1, catalogCap)
-            : catalogCap;
+        // Catalog maxReferenceImages is SSoT — no silent fallback, no second invented client ceiling
+        // (same "fail loud" principle as Veo's MaxReferenceImages=0).
+        var cap = ProviderMediaHelpers.ResolveReferenceImageCap(modelName, maxRefs);
 
         var hasCostumeRef = !string.IsNullOrWhiteSpace(costumeRefPath) && File.Exists(costumeRefPath);
         // Reserve one slot for the costume ref so identity refs + costume ref never exceed cap

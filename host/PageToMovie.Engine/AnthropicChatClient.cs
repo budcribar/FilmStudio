@@ -125,7 +125,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         var content = new List<object?>();
         foreach (var path in imagePaths.Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p) && AllowedImageExtensions.Contains(Path.GetExtension(p))))
         {
-            var (mime, b64) = await FileToBase64Async(path, ct).ConfigureAwait(false);
+            var (mime, b64) = await ProviderMediaHelpers.FileToBase64Async(path, ct).ConfigureAwait(false);
             content.Add(new Dictionary<string, object?>
             {
                 ["type"] = "image",
@@ -362,21 +362,6 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         }
         var raw = result.GetRawText();
         return raw.Length <= 2000 ? raw : raw[..2000];
-    }
-
-    private static async Task<(string Mime, string Base64)> FileToBase64Async(string path, CancellationToken ct)
-    {
-        var bytes = await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
-        var ext = Path.GetExtension(path).ToLowerInvariant();
-        var mime = ext switch
-        {
-            ".png" => "image/png",
-            ".webp" => "image/webp",
-            ".gif" => "image/gif",
-            ".jpg" or ".jpeg" => "image/jpeg",
-            _ => "image/jpeg",
-        };
-        return (mime, Convert.ToBase64String(bytes));
     }
 
     private static string Trim(string s, int n) => s.Length <= n ? s : s[..n];

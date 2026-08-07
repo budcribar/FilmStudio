@@ -39,14 +39,7 @@ public sealed class FalVideoClient : IVideoClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
-    private static string? ResolveApiKey()
-    {
-        var key = ApiKeyScope.CurrentFal
-            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyEnv)
-            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv);
-        if (!string.IsNullOrWhiteSpace(key)) return key.Trim(' ', '"', '\'', '\r', '\n', '\t');
-        return null;
-    }
+    private static string? ResolveApiKey() => ProviderApiKey.ResolveFal();
 
     public async Task<string> SubmitGenerationAsync(
         string prompt,
@@ -169,12 +162,8 @@ public sealed class FalVideoClient : IVideoClient
 
             if (!resp.IsSuccessStatusCode)
             {
-                if (resp.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    onProgress?.Invoke("Fal.ai rate limited (HTTP 429) — retrying in 5s…");
-                    await Task.Delay(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
+                if (await FalPollingHelpers.HandleRateLimitAsync(resp, onProgress, ct).ConfigureAwait(false))
                     continue;
-                }
 
                 _log.LogError("Fal.ai status query failed HTTP {Status} for request {RequestId}: {Body}", resp.StatusCode, requestId, statusBody);
                 throw new InvalidOperationException($"Fal.ai status query error HTTP {resp.StatusCode}: {statusBody}");

@@ -41,14 +41,7 @@ public sealed class FalAudioClient : IAudioClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
-    private static string? ResolveApiKey()
-    {
-        var key = ApiKeyScope.CurrentFal
-            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyEnv)
-            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv);
-        if (!string.IsNullOrWhiteSpace(key)) return key.Trim(' ', '"', '\'', '\r', '\n', '\t');
-        return null;
-    }
+    private static string? ResolveApiKey() => ProviderApiKey.ResolveFal();
 
     public async Task<string?> GenerateMusicTrackAsync(
         string prompt,

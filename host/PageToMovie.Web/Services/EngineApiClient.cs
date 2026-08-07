@@ -261,8 +261,17 @@ public sealed class EngineApiClient
     /// also flags the account for admin-assisted reset. Always ok if accepted.
     /// </summary>
     public async Task<string> ForgotPasswordAsync(string usernameOrEmail, CancellationToken ct = default)
+        => await PostUsernameRequestAsync(
+            "/api/auth/forgot-password", usernameOrEmail,
+            "If that account exists and has a confirmed email, a reset link was sent to your inbox.", ct);
+
+    /// <summary>Shared POST for the username-only auth endpoints (forgot-password / resend-confirmation):
+    /// sends a <see cref="ForgotPasswordRequest"/>, throws a best-effort error on failure, otherwise
+    /// returns the server message or the caller-supplied default.</summary>
+    private async Task<string> PostUsernameRequestAsync(
+        string endpoint, string usernameOrEmail, string defaultMessage, CancellationToken ct)
     {
-        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/forgot-password")
+        using var req = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = JsonContent.Create(
                 new ForgotPasswordRequest { Username = usernameOrEmail },
@@ -272,8 +281,7 @@ public sealed class EngineApiClient
         var body = await resp.Content.ReadFromJsonAsync<ForgotPasswordResponse>(JsonOpts, ct);
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException(body?.Error ?? body?.Message ?? "Request failed");
-        return body?.Message
-               ?? "If that account exists and has a confirmed email, a reset link was sent to your inbox.";
+        return body?.Message ?? defaultMessage;
     }
 
     public async Task<(bool Ok, string Message)> ConfirmEmailAsync(string token, CancellationToken ct = default)
@@ -289,20 +297,9 @@ public sealed class EngineApiClient
     }
 
     public async Task<string> ResendConfirmationAsync(string usernameOrEmail, CancellationToken ct = default)
-    {
-        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/resend-confirmation")
-        {
-            Content = JsonContent.Create(
-                new ForgotPasswordRequest { Username = usernameOrEmail },
-                options: JsonOpts),
-        };
-        using var resp = await _http.SendAsync(req, ct);
-        var body = await resp.Content.ReadFromJsonAsync<ForgotPasswordResponse>(JsonOpts, ct);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(body?.Error ?? body?.Message ?? "Request failed");
-        return body?.Message
-               ?? "If that account needs confirmation, a new email was sent.";
-    }
+        => await PostUsernameRequestAsync(
+            "/api/auth/resend-confirmation", usernameOrEmail,
+            "If that account needs confirmation, a new email was sent.", ct);
 
     public async Task<(bool Ok, string Message)> ResetPasswordWithTokenAsync(
         string token,
@@ -455,27 +452,34 @@ public sealed class EngineApiClient
     /// Admin full-project zip. Returns open response stream + suggested filename.
     /// Caller must dispose the response/stream.
     /// </summary>
-    public async Task<(HttpResponseMessage Response, string FileName)> ExportProjectZipAsync(
-        string projectId,
-        CancellationToken ct = default)
+    /// <summary>Shared GET-a-zip helper for the export endpoints: streams headers first, throws a
+    /// best-effort error on failure (disposing the response), then resolves the suggested filename
+    /// from Content-Disposition with a caller-supplied fallback. Caller disposes the returned response.</summary>
+    private async Task<(HttpResponseMessage Response, string FileName)> DownloadZipAsync(
+        string url, string fallbackFileName, string failMessage, CancellationToken ct)
     {
         SyncIdentityHeaders();
-        var req = new HttpRequestMessage(
-            HttpMethod.Get,
-            $"/api/admin/projects/{Uri.EscapeDataString(projectId)}/export");
+        var req = new HttpRequestMessage(HttpMethod.Get, url);
         var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
         if (!resp.IsSuccessStatusCode)
         {
             var err = await resp.Content.ReadAsStringAsync(ct);
             resp.Dispose();
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "export failed");
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? failMessage);
         }
 
         var fileName = resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
                        ?? resp.Content.Headers.ContentDisposition?.FileNameStar?.Trim('"')
-                       ?? $"PageToMovie_{projectId}.zip";
+                       ?? fallbackFileName;
         return (resp, fileName);
     }
+
+    public async Task<(HttpResponseMessage Response, string FileName)> ExportProjectZipAsync(
+        string projectId,
+        CancellationToken ct = default)
+        => await DownloadZipAsync(
+            $"/api/admin/projects/{Uri.EscapeDataString(projectId)}/export",
+            $"PageToMovie_{projectId}.zip", "export failed", ct);
 
     /// <summary>User-mode project export (no admin) — same server zip as the admin export, gated on
     /// login rather than the admin role. Backs a user-facing full backup: caller merges local media
@@ -483,24 +487,9 @@ public sealed class EngineApiClient
     public async Task<(HttpResponseMessage Response, string FileName)> ExportProjectZipAsUserAsync(
         string projectId,
         CancellationToken ct = default)
-    {
-        SyncIdentityHeaders();
-        var req = new HttpRequestMessage(
-            HttpMethod.Get,
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/export");
-        var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            resp.Dispose();
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "export failed");
-        }
-
-        var fileName = resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
-                       ?? resp.Content.Headers.ContentDisposition?.FileNameStar?.Trim('"')
-                       ?? $"PageToMovie_{projectId}.zip";
-        return (resp, fileName);
-    }
+        => await DownloadZipAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/export",
+            $"PageToMovie_{projectId}.zip", "export failed", ct);
 
     /// <summary>
     /// Admin server diagnostic logs zip. Returns open response stream + suggested filename.
@@ -508,22 +497,10 @@ public sealed class EngineApiClient
     /// </summary>
     public async Task<(HttpResponseMessage Response, string FileName)> ExportServerLogsZipAsync(
         CancellationToken ct = default)
-    {
-        SyncIdentityHeaders();
-        var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/logs/export");
-        var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            resp.Dispose();
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Server logs export failed");
-        }
-
-        var fileName = resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
-                       ?? resp.Content.Headers.ContentDisposition?.FileNameStar?.Trim('"')
-                       ?? $"pagetomovie-server-logs-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip";
-        return (resp, fileName);
-    }
+        => await DownloadZipAsync(
+            "/api/admin/logs/export",
+            $"pagetomovie-server-logs-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip",
+            "Server logs export failed", ct);
 
     /// <summary>Admin import project zip (multipart field name: file).</summary>
     public async Task<AdminProjectImportResultDto?> ImportProjectZipAsync(
@@ -1177,21 +1154,8 @@ public sealed class EngineApiClient
 
     /// <summary>Public demo stream URL (only works for approved demos unless admin/owner Bearer).</summary>
     public string DemoVideoUrl(string demoId)
-    {
-        var path = $"/api/demos/{Uri.EscapeDataString(demoId)}/video";
         // Admin reviewing pending demos needs media token or session — attach short media token when available.
-        if (HasFreshMediaToken())
-        {
-            path += (path.Contains('?', StringComparison.Ordinal) ? "&" : "?")
-                    + "mt=" + Uri.EscapeDataString(_mediaToken!);
-        }
-        else
-        {
-            QueueMediaTokenRefreshIfNeeded();
-        }
-        var origin = BrowserMediaOrigin;
-        return string.IsNullOrEmpty(origin) ? path : origin + path;
-    }
+        => WithMediaTokenAndOrigin($"/api/demos/{Uri.EscapeDataString(demoId)}/video");
 
     public async Task<ProposeLearningRulesResult?> ProposeLearningRulesAsync(
         ProposeLearningRulesRequest body,
@@ -1633,9 +1597,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         IReadOnlyList<(int Scene, int Clip)> clips,
         string? resolution = null,
         CancellationToken ct = default)
-    {
-        SyncIdentityHeaders();
-        using var resp = await _http.PostAsJsonAsync(
+        => await StartGenBatchJobAsync(
             "/api/jobs/gen-batch",
             new StartBatchGenRequest
             {
@@ -1643,14 +1605,20 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
                 Resolution = resolution,
                 Clips = clips.Select(c => new ClipTarget { Scene = c.Scene, Clip = c.Clip }).ToList(),
             },
-            JsonOpts,
             ct);
+
+    /// <summary>Shared POST for the job-starting endpoints that return a
+    /// <see cref="GenBatchJobResponseDto"/>: sends the request, throws a best-effort error on
+    /// failure, otherwise returns the started job snapshot.</summary>
+    private async Task<JobSnapshot?> StartGenBatchJobAsync<TRequest>(
+        string endpoint, TRequest request, CancellationToken ct)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(endpoint, request, JsonOpts, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? $"{(int)resp.StatusCode}");
-        }
-        var res = await resp.Content.ReadFromJsonAsync<GenBatchJobResponseDto>(JsonOpts, ct);
+            throw new InvalidOperationException(TryError(raw) ?? $"{(int)resp.StatusCode}");
+        var res = JsonSerializer.Deserialize<GenBatchJobResponseDto>(raw, JsonOpts);
         return res?.Job;
     }
 
@@ -1661,15 +1629,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     public async Task<JobSnapshot?> StartSpeakBatchAsync(
         StartSpeakBatchRequest request,
         CancellationToken ct = default)
-    {
-        SyncIdentityHeaders();
-        using var resp = await _http.PostAsJsonAsync("/api/jobs/speak-batch", request, JsonOpts, ct);
-        var raw = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(TryError(raw) ?? $"{(int)resp.StatusCode}");
-        var res = JsonSerializer.Deserialize<GenBatchJobResponseDto>(raw, JsonOpts);
-        return res?.Job;
-    }
+        => await StartGenBatchJobAsync("/api/jobs/speak-batch", request, ct);
 
     /// <summary>
     /// Movie-wide "substitute my cloned voice" — walks every clip, synthesizes each line in the
@@ -1679,15 +1639,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
     public async Task<JobSnapshot?> StartVoiceSubstitutionAsync(
         StartVoiceSubstitutionRequest request,
         CancellationToken ct = default)
-    {
-        SyncIdentityHeaders();
-        using var resp = await _http.PostAsJsonAsync("/api/jobs/voice-substitution", request, JsonOpts, ct);
-        var raw = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(TryError(raw) ?? $"{(int)resp.StatusCode}");
-        var res = JsonSerializer.Deserialize<GenBatchJobResponseDto>(raw, JsonOpts);
-        return res?.Job;
-    }
+        => await StartGenBatchJobAsync("/api/jobs/voice-substitution", request, ct);
 
     /// <summary>Load the persisted per-clip speech alignment (null when never built).</summary>
     public async Task<ProjectVoiceAlignment?> GetVoiceAlignmentAsync(
@@ -1974,7 +1926,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             ct);
     }
 
-    public sealed class SceneRevertEnvelope
+    public sealed class SceneRevertEnvelope : IStatusEnvelope
     {
         public bool Ok { get; set; }
         public string? Message { get; set; }
@@ -1989,13 +1941,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/revert/{Uri.EscapeDataString(commitHash)}",
             null,
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public sealed class UncommittedStatusEnvelope
@@ -2024,13 +1970,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             new { message },
             JsonOpts,
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public sealed class ClipVersionsEnvelope
@@ -2081,13 +2021,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/versions/{Uri.EscapeDataString(versionId)}/promote",
             null,
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public async Task<SceneRevertEnvelope> SoftDeleteClipVersionAsync(
@@ -2097,13 +2031,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         using var resp = await _http.DeleteAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/versions/{Uri.EscapeDataString(versionId)}",
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public async Task<ClipVersionsEnvelope?> GetTrashClipVersionsAsync(
@@ -2124,13 +2052,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/versions/{Uri.EscapeDataString(versionId)}/restore",
             null,
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public async Task<SceneRevertEnvelope> EmptyClipTrashAsync(
@@ -2141,13 +2063,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/versions/trash/empty",
             null,
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public sealed class MusicVersionsEnvelope
@@ -2176,13 +2092,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/music-versions/{Uri.EscapeDataString(takeId)}/promote",
             null,
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public async Task<SceneRevertEnvelope> SoftDeleteMusicVersionAsync(
@@ -2192,13 +2102,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         using var resp = await _http.DeleteAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/music-versions/{Uri.EscapeDataString(takeId)}",
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public async Task<MusicVersionsEnvelope?> GetTrashMusicVersionsAsync(
@@ -2219,13 +2123,7 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/music-versions/{Uri.EscapeDataString(takeId)}/restore",
             null,
             ct);
-        if (resp.IsSuccessStatusCode)
-        {
-            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
-            return res ?? new SceneRevertEnvelope { Ok = true };
-        }
-        var err = await resp.Content.ReadAsStringAsync(ct);
-        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+        return await ReadEnvelopeAsync<SceneRevertEnvelope>(resp, ct);
     }
 
     public string CompositeVideoUrl(string projectId, int sceneNumber) =>
@@ -3465,6 +3363,14 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         var path = rootRelativePath.StartsWith('/')
             ? rootRelativePath
             : "/" + rootRelativePath.TrimStart('/');
+        return WithMediaTokenAndOrigin(path);
+    }
+
+    /// <summary>Attaches the short-lived media token to a root-relative path (queuing a background
+    /// refresh when stale — never the full session JWT, which would leak via access logs/history)
+    /// and prefixes the browser media origin. Shared by the media-URL builders.</summary>
+    private string WithMediaTokenAndOrigin(string path)
+    {
         // Prefer short-lived media token. Never put the session JWT in the query string
         // (access logs, browser history, Referer).
         if (HasFreshMediaToken())
@@ -3613,24 +3519,31 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         string fileName,
         CancellationToken ct = default)
     {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        var contentType = ext switch
+        {
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".m4a" or ".aac" => "audio/mp4",
+            ".ogg" => "audio/ogg",
+            _ => "audio/webm",
+        };
+        await UploadFileFormAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
+            content, fileName, contentType, ct);
+    }
+
+    /// <summary>Shared multipart file upload (single "file" part): posts the stream with the given
+    /// content type and throws a best-effort error on failure. Callers resolve the content type.</summary>
+    private async Task UploadFileFormAsync(
+        string endpoint, Stream content, string fileName, string contentType, CancellationToken ct)
+    {
         using var form = new MultipartFormDataContent();
         var streamContent = new StreamContent(content);
-        var ext = Path.GetExtension(fileName).ToLowerInvariant();
-        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
-            ext switch
-            {
-                ".mp3" => "audio/mpeg",
-                ".wav" => "audio/wav",
-                ".m4a" or ".aac" => "audio/mp4",
-                ".ogg" => "audio/ogg",
-                _ => "audio/webm",
-            });
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
         form.Add(streamContent, "file", fileName);
 
-        using var resp = await _http.PostAsync(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/clone-sample",
-            form,
-            ct);
+        using var resp = await _http.PostAsync(endpoint, form, ct);
         if (!resp.IsSuccessStatusCode)
         {
             var err = await resp.Content.ReadAsStringAsync(ct);
@@ -3993,29 +3906,41 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         string fileName,
         CancellationToken ct = default)
     {
-        using var form = new MultipartFormDataContent();
-        var streamContent = new StreamContent(content);
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
-        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
-            ext switch
-            {
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".webp" => "image/webp",
-                ".gif" => "image/gif",
-                ".bmp" => "image/bmp",
-                _ => "image/png",
-            });
-        form.Add(streamContent, "file", fileName);
-
-        using var resp = await _http.PostAsync(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/upload-ref",
-            form,
-            ct);
-        if (!resp.IsSuccessStatusCode)
+        var contentType = ext switch
         {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".webp" => "image/webp",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            _ => "image/png",
+        };
+        await UploadFileFormAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/upload-ref",
+            content, fileName, contentType, ct);
+    }
+
+    /// <summary>Common shape of the API's small mutation envelopes: a success flag and an
+    /// optional error message. Lets <see cref="ReadEnvelopeAsync{T}"/> populate both generically.</summary>
+    public interface IStatusEnvelope
+    {
+        bool Ok { get; set; }
+        string? Error { get; set; }
+    }
+
+    /// <summary>Standard mutation-response handling: on success deserialize the envelope (defaulting
+    /// to Ok=true when the body is empty); on failure read the error body and surface it as Ok=false
+    /// with a best-effort message. Shared by the version/commit/revert endpoints.</summary>
+    private async Task<T> ReadEnvelopeAsync<T>(HttpResponseMessage resp, CancellationToken ct)
+        where T : class, IStatusEnvelope, new()
+    {
+        if (resp.IsSuccessStatusCode)
+        {
+            var res = await resp.Content.ReadFromJsonAsync<T>(JsonOpts, ct);
+            return res ?? new T { Ok = true };
         }
+        var err = await resp.Content.ReadAsStringAsync(ct);
+        return new T { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
     }
 
     private static string? TryError(string json)

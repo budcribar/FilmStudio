@@ -39,17 +39,7 @@ public sealed class ElevenLabsScribeClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
-    private static string? ResolveApiKey()
-    {
-        var key = ApiKeyScope.CurrentElevenLabs
-                  ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.ElevenLabsApiKeyEnv)
-                  ?? Environment.GetEnvironmentVariable("ELEVENLABS_API_KEY");
-        if (string.IsNullOrWhiteSpace(key)) return null;
-        key = key.Trim();
-        if (key.Length >= 2 && key[0] == '"' && key[^1] == '"')
-            key = key[1..^1].Trim();
-        return key;
-    }
+    private static string? ResolveApiKey() => ProviderApiKey.ResolveElevenLabs();
 
     public async Task<ScribeResult> TranscribeAsync(
         byte[] audio,
