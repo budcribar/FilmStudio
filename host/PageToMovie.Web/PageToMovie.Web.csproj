@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PageToMovie.Core\PageToMovie.Core.csproj" />
+    <ProjectReference Include="..\PageToMovie.Components\PageToMovie.Components.csproj" />
   </ItemGroup>
 
   <ItemGroup>
