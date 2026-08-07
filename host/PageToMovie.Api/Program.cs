@@ -94,6 +94,19 @@ builder.Services.AddSingleton<MediaDurationProbe>();
 builder.Services.AddSingleton<SceneListCache>();
 builder.Services.AddSingleton<ProjectReadCache>();
 builder.Services.AddSingleton<ProjectStore>();
+// CostLedgerService takes a plain projects-root string, so it needs a factory rather than a bare
+// AddSingleton<T>() — and without ANY registration, Minimal API's parameter-source inference can't
+// recognize it as a service; it falls back to inferring [FromBody], which .NET disallows on GET
+// endpoints and throws at route-table build time, failing every request through the host (see
+// /api/projects/{id}/costs/summary). Root matches ProjectStore's own convention (WorkspaceRoot/projects),
+// not IHostEnvironment.ContentRootPath — those differ under PageToMovie__WorkspaceRoot / fakes tests.
+builder.Services.AddSingleton(sp =>
+    new CostLedgerService(Path.Combine(sp.GetRequiredService<ProjectStore>().WorkspaceRoot, "projects")));
+// Same unregistered-string-ctor issue as CostLedgerService above (SceneVersionHistory.razor's
+// /versions endpoints, used by the Scenes-page scene-history panel).
+builder.Services.AddSingleton(sp =>
+    new PageToMovie.Engine.Collaboration.SceneVersionStore(
+        Path.Combine(sp.GetRequiredService<ProjectStore>().WorkspaceRoot, "projects")));
 
 builder.Services.AddSingleton<IProjectAclService, ProjectAclService>();
 builder.Services.AddSingleton<IProjectLeaseService, ProjectLeaseService>();
@@ -159,6 +172,7 @@ builder.Services.AddSingleton<LearningProposalService>();
 builder.Services.AddSingleton<ProposalChecklistService>();
 builder.Services.AddSingleton<EditLogService>();
 builder.Services.AddSingleton<ProjectTelemetryService>();
+builder.Services.AddSingleton<AiCallAnalyticsService>();
 builder.Services.AddSingleton<ReviewIndexService>();
 builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<ClipDialogueVerificationService>();
@@ -340,6 +354,10 @@ var useFakes = builder.Configuration.GetValue("PageToMovie:UseFakes", false)
 if (useFakes)
 {
     builder.Services.AddPageToMovieFakes();
+    // Propagate the resolved UseFakes to an env var so PageToMovie.Core (which has no config
+    // access) merges the fake test-vendor catalog — regardless of whether UseFakes came from
+    // config/appsettings or an env var. See SupportedModelCatalog.FakeCatalogEnabled.
+    Environment.SetEnvironmentVariable("PAGETOMOVIE_USE_FAKES", "1");
 }
 else
 {
@@ -1454,6 +1472,22 @@ app.MapGet("/api/admin/generation-errors", async (
     return Results.Ok(new { ok = true, rows });
 });
 
+/// <summary>Aggregated AI/model-call telemetry (api_calls.jsonl) for the admin AI-Calls analytics page.</summary>
+app.MapGet("/api/admin/ai-calls", async (IUserContext user, AiCallAnalyticsService analytics, int? maxPerProject, CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var data = await analytics.BuildAsync(Math.Clamp(maxPerProject ?? 4000, 100, 20000), ct);
+        return Results.Ok(new { ok = true, data });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { ok = false, error = ex.Message }, statusCode: 500);
+    }
+});
+
 /// <summary>Open a local folder on disk in Windows File Explorer (or OS file manager).</summary>
 app.MapPost("/api/system/open-folder", (OpenFolderRequest body, ProjectStore store) =>
 {
@@ -2037,41 +2071,31 @@ app.MapGet("/api/admin/models-catalog", (IUserContext user) =>
     if (!user.IsAdmin)
         return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
 
-    var path = SupportedModelCatalog.GetCatalogFilePath();
-    var rawJson = File.Exists(path) ? File.ReadAllText(path) : "{}";
     return Results.Ok(new
     {
         ok = true,
-        catalogPath = path,
-        rawJson,
+        catalogPath = SupportedModelCatalog.GetCatalogSourceLabel(),
+        rawJson = SupportedModelCatalog.GetEmbeddedCatalogJson(),
+        editable = false,
         models = SupportedModelCatalog.Entries,
         capabilities = SupportedModelCatalog.RegisteredCapabilities,
         taskRankings = SupportedModelCatalog.TaskRankings,
     });
 });
 
-app.MapPut("/api/admin/models-catalog", async (HttpContext http, IUserContext user) =>
+app.MapPut("/api/admin/models-catalog", (IUserContext user) =>
 {
     if (!user.IsAdmin)
         return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
 
-    using var reader = new StreamReader(http.Request.Body);
-    var rawJson = await reader.ReadToEndAsync();
-    try
+    // The catalog is the single source of truth, embedded at build time. Runtime edits are gone:
+    // change PageToMovie.Core/config/models_catalog.json in git and redeploy.
+    return Results.Json(new
     {
-        SupportedModelCatalog.SaveCatalogJson(rawJson);
-        return Results.Ok(new
-        {
-            ok = true,
-            message = "Models catalog saved and hot-reloaded successfully.",
-            catalogPath = SupportedModelCatalog.GetCatalogFilePath(),
-            modelsCount = SupportedModelCatalog.Entries.Count,
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
+        ok = false,
+        error = "The models catalog is embedded at build time and cannot be edited at runtime. " +
+                "Edit PageToMovie.Core/config/models_catalog.json in git and redeploy.",
+    }, statusCode: StatusCodes.Status405MethodNotAllowed);
 });
 
 app.MapPost("/api/admin/models-catalog/reload", (IUserContext user) =>
@@ -2569,6 +2593,37 @@ app.MapGet("/api/jobs/{jobId}", (string jobId, FilmJobService jobService) =>
     return Results.Ok(new { ok = true, job });
 });
 
+/// <summary>
+/// Record a user override of the portrait style classifier into the AI-call telemetry stream —
+/// the highest-signal feedback there is (a human explicitly overruling a model verdict). The
+/// reason distinguishes "classifier was wrong" (a defect to tune) from "my creative choice"
+/// (the classifier was right and the user wants mixed media — not a defect).
+/// </summary>
+static async Task LogStyleOverrideAsync(
+    ProjectTelemetryService telemetry,
+    IOptions<PageToMovieOptions> opts,
+    string projectId,
+    string charKey,
+    string? reason,
+    string? note)
+{
+    try
+    {
+        await telemetry.LogApiCallAsync(new ApiCallTelemetry
+        {
+            Kind = "style_gate_override",
+            ProjectId = projectId,
+            CharKey = charKey,
+            // ai_wrong | user_preference | other — the user's stated reason for overriding.
+            Mode = string.IsNullOrWhiteSpace(reason) ? "unspecified" : reason.Trim().ToLowerInvariant(),
+            Error = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
+            Fakes = opts.Value.UseFakes,
+            Ok = true,
+        });
+    }
+    catch { /* telemetry is best-effort */ }
+}
+
 static IResult JobStartError(Exception ex, FilmJobService jobService) => ex switch
 {
     LockConflictException lx => Results.Conflict(new
@@ -2843,35 +2898,9 @@ app.MapGet("/api/models/catalog-json", (IUserContext user) =>
 {
     try
     {
-        string raw;
-        var path = SupportedModelCatalog.GetCatalogFilePath();
-        if (System.IO.File.Exists(path))
-            raw = System.IO.File.ReadAllText(path);
-        else
-        {
-            raw = null!;
-            var asm = typeof(SupportedModelCatalog).Assembly;
-            foreach (var name in asm.GetManifestResourceNames()
-                         .Where(n => n.EndsWith("models_catalog.json", StringComparison.OrdinalIgnoreCase)))
-            {
-                using var stream = asm.GetManifestResourceStream(name);
-                if (stream is null) continue;
-                using var reader = new StreamReader(stream);
-                raw = reader.ReadToEnd();
-                break;
-            }
-            if (raw is null && SupportedModelCatalog.IsLoaded)
-            {
-                return Results.Json(new
-                {
-                    models = SupportedModelCatalog.ToDtoList(enabledOnly: false, includeLabModels: user.IsAdmin),
-                    capabilities = SupportedModelCatalog.RegisteredCapabilities,
-                    taskRankings = SupportedModelCatalog.TaskRankings,
-                });
-            }
-            if (raw is null)
-                return Results.NotFound(new { ok = false, error = "models_catalog.json not found on server" });
-        }
+        // Single source of truth: the catalog embedded in PageToMovie.Core (real, or the fake vendor
+        // catalog in fakes mode). The WASM client hydrates from this so its dropdowns match the server.
+        var raw = SupportedModelCatalog.GetEmbeddedCatalogJson();
 
         if (user.IsAdmin)
             return Results.Text(raw, "application/json");
@@ -4900,11 +4929,14 @@ app.MapPost("/api/jobs/sort-character-plates", async (
 });
 
 app.MapPost("/api/projects/{id}/characters/{charKey}/lock-variant",
-    async (string id, string charKey, HttpRequest req, FilmJobService jobService) =>
+    async (string id, string charKey, HttpRequest req, FilmJobService jobService,
+           ProjectTelemetryService telemetry, IOptions<PageToMovieOptions> opts) =>
 {
     try
     {
         var index = 1;
+        var overrideStyle = false;
+        string? overrideReason = null, overrideNote = null;
         if (req.HasJsonContentType())
         {
             using var doc = await JsonDocument.ParseAsync(req.Body);
@@ -4912,8 +4944,16 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/lock-variant",
                 index = n;
             else if (doc.RootElement.TryGetProperty("variantIndex", out var vx) && vx.TryGetInt32(out var n2))
                 index = n2;
+            if (doc.RootElement.TryGetProperty("overrideStyle", out var os) && os.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                overrideStyle = os.GetBoolean();
+            if (doc.RootElement.TryGetProperty("overrideReason", out var orr) && orr.ValueKind == JsonValueKind.String)
+                overrideReason = orr.GetString();
+            if (doc.RootElement.TryGetProperty("overrideNote", out var onote) && onote.ValueKind == JsonValueKind.String)
+                overrideNote = onote.GetString();
         }
-        var result = await jobService.RunCharacterDesignActionAsync(id, "lock-variant", charKey, index);
+        var result = await jobService.RunCharacterDesignActionAsync(id, "lock-variant", charKey, index, allowStyleOverride: overrideStyle);
+        if (overrideStyle)
+            await LogStyleOverrideAsync(telemetry, opts, id, charKey, overrideReason, overrideNote);
         return Results.Ok(new { ok = true, message = result, projectId = id, charKey, index });
     }
     catch (Exception ex)
@@ -4923,20 +4963,31 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/lock-variant",
 });
 
 app.MapPost("/api/projects/{id}/characters/{charKey}/lock-bookref",
-    async (string id, string charKey, HttpRequest req, FilmJobService jobService) =>
+    async (string id, string charKey, HttpRequest req, FilmJobService jobService,
+           ProjectTelemetryService telemetry, IOptions<PageToMovieOptions> opts) =>
 {
     try
     {
         var index = 0;
+        var overrideStyle = false;
+        string? overrideReason = null, overrideNote = null;
         if (req.HasJsonContentType())
         {
             using var doc = await JsonDocument.ParseAsync(req.Body);
             if (doc.RootElement.TryGetProperty("index", out var ix) && ix.TryGetInt32(out var n))
                 index = n;
+            if (doc.RootElement.TryGetProperty("overrideStyle", out var os) && os.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                overrideStyle = os.GetBoolean();
+            if (doc.RootElement.TryGetProperty("overrideReason", out var orr) && orr.ValueKind == JsonValueKind.String)
+                overrideReason = orr.GetString();
+            if (doc.RootElement.TryGetProperty("overrideNote", out var onote) && onote.ValueKind == JsonValueKind.String)
+                overrideNote = onote.GetString();
         }
         // variantIndex slot reused as book-ref index for lock-bookref
         var result = await jobService.RunCharacterDesignActionAsync(
-            id, "lock-bookref", charKey, variantIndex: index);
+            id, "lock-bookref", charKey, variantIndex: index, allowStyleOverride: overrideStyle);
+        if (overrideStyle)
+            await LogStyleOverrideAsync(telemetry, opts, id, charKey, overrideReason, overrideNote);
         return Results.Ok(new { ok = true, message = result, projectId = id, charKey, index });
     }
     catch (Exception ex)
@@ -4973,8 +5024,9 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/upload-ref", async (
         if (file.Length > 25 * 1024 * 1024)
             return Results.BadRequest(new { ok = false, error = "Image too large (max 25 MB)." });
 
+        var overrideStyle = string.Equals(form["overrideStyle"].ToString(), "true", StringComparison.OrdinalIgnoreCase);
         await using var stream = file.OpenReadStream();
-        var path = await characters.LockFromUploadAsync(id, charKey, stream, file.FileName, ct);
+        var path = await characters.LockFromUploadAsync(id, charKey, stream, file.FileName, overrideStyle, ct);
         return Results.Ok(new
         {
             ok = true,
@@ -8702,11 +8754,14 @@ app.MapHub<ProjectHub>("/hubs/project");
 app.MapGet("/api/projects/{id}/costs/summary", (
     string id,
     CostLedgerService ledger,
-    IHostEnvironment env) =>
+    ProjectStore store) =>
 {
     try
     {
-        var root = Path.Combine(env.ContentRootPath, "projects");
+        // Same root convention as ProjectStore itself (WorkspaceRoot/projects) — ContentRootPath
+        // would point at the wrong directory whenever PageToMovie__WorkspaceRoot differs from the
+        // app's own content root (fakes-mode tests, /data mount in production).
+        var root = Path.Combine(store.WorkspaceRoot, "projects");
         var summary = ProjectCostAggregator.BuildSummary(id, root, ledger);
         return Results.Ok(summary);
     }

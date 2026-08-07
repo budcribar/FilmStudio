@@ -434,6 +434,20 @@ public sealed class EngineApiClient
         return await SendJsonAsync<RuntimeConfigDto>(req, ct);
     }
 
+    /// <summary>Aggregated AI/model-call telemetry for the admin AI-Calls analytics page.</summary>
+    public async Task<AiCallAnalyticsDto?> GetAiCallAnalyticsAsync(CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/ai-calls");
+        var env = await SendJsonAsync<AiCallAnalyticsEnvelope>(req, ct);
+        return env?.Data;
+    }
+
+    private sealed class AiCallAnalyticsEnvelope
+    {
+        public bool Ok { get; set; }
+        public AiCallAnalyticsDto? Data { get; set; }
+    }
+
     public async Task<RuntimeConfigDto?> SaveAdminConfigAsync(
         RuntimeConfigUpdateRequest body,
         CancellationToken ct = default)
@@ -3747,15 +3761,21 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         await EnsureOkAsync(resp, ct);
     }
 
+    /// <param name="overrideStyle">When true, lock the portrait even if the style classifier says its
+    /// medium doesn't match the project (intentional mixed-media — the user's creative choice wins).</param>
+    /// <param name="overrideReason">Why the user overrode the classifier: ai_wrong | user_preference |
+    /// other. Recorded in AI-call telemetry — distinguishes a classifier defect from a creative choice.</param>
     public async Task LockCharacterVariantAsync(
         string projectId,
         string charKey,
         int index,
+        bool overrideStyle = false,
+        string? overrideReason = null,
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/lock-variant",
-            new { index },
+            new { index, overrideStyle, overrideReason },
             ct);
         await EnsureOkAsync(resp, ct);
     }
@@ -3764,11 +3784,13 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         string projectId,
         string charKey,
         int index,
+        bool overrideStyle = false,
+        string? overrideReason = null,
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/lock-bookref",
-            new { index },
+            new { index, overrideStyle, overrideReason },
             ct);
         await EnsureOkAsync(resp, ct);
     }

@@ -1953,6 +1953,19 @@ public class UserDatabaseService
         {
             var pId = NormalizeProvider(row.ProviderId);
             row.ProviderId = pId;
+
+            // Fake test vendor (fakes mode only): key-free but always "configured", so its jobs read
+            // ready — no "Need key", no add-key panel. Never present in real mode.
+            if (string.Equals(pId, "fake", StringComparison.OrdinalIgnoreCase)
+                && SupportedModelCatalog.FakeCatalogEnabled())
+            {
+                row.HasPersonalKey = true;
+                row.MaskedPersonalKey = "fake";
+                row.HasServerKey = true;
+                row.ActiveSource = "fake";
+                continue;
+            }
+
             personalKeys.TryGetValue(pId, out var personal);
             var hasPersonal = !string.IsNullOrWhiteSpace(personal);
             var hasServer = row.RequiredEnvKeys.Any(EnvPresent);

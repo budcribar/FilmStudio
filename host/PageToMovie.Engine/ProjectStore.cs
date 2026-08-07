@@ -4945,6 +4945,12 @@ public sealed partial class ProjectStore
     /// </summary>
     public bool IsAnyStudioKeyConfigured(string? userId = null)
     {
+        // Fakes mode uses key-free fake providers, so a key is effectively always "configured".
+        // Mirrors the /health endpoint (xaiConfigured = ... || useFakes) so the fully-faked
+        // pipeline is self-sufficient for offline dev/testing. Real mode is unaffected — the
+        // BYOK setup gate still requires a real key.
+        if (_opts.UseFakes) return true;
+
         if (_keyProvider is not null && !string.IsNullOrWhiteSpace(userId))
         {
             foreach (var provider in new[] { "grok", "gemini", "anthropic", "openai", "fal" })

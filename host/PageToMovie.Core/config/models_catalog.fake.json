@@ -1,4 +1,5 @@
 {
+  "_comment": "STANDALONE fake test-vendor catalog. This is a one-time COPY of the real models_catalog.json with the Fake Studio vendor + fake-* models appended. In fakes mode the app loads THIS file instead of the real catalog (never merges, never edits the real file), so the fakes are fully independent of the real catalog. Real model rows are copied here only so demo/sample projects that reference real model ids still resolve under fakes. Regenerate deliberately if you ever want to refresh the copied real rows \u2014 it does not auto-sync.",
   "providers": [
     {
       "id": "grok",
@@ -83,6 +84,16 @@
         "eleven"
       ],
       "order": 7
+    },
+    {
+      "id": "fake",
+      "label": "Fake Studio (test)",
+      "aliases": [
+        "Fake",
+        "fake",
+        "FakeStudio"
+      ],
+      "order": 99
     }
   ],
   "capabilities": [
@@ -1137,35 +1148,145 @@
       "providerLabel": "Fal.ai",
       "maxPromptLength": 1000,
       "lastVerifiedAt": "2026-08-05"
+    },
+    {
+      "id": "fake-script",
+      "displayName": "Fake Script & Planning",
+      "capability": "Chat",
+      "provider": "Fake",
+      "providerId": "fake",
+      "providerLabel": "Fake Studio (test)",
+      "apiBase": "https://fake.local/v1",
+      "endpointPath": "chat/completions",
+      "requiredEnvKeys": [],
+      "enabled": true,
+      "maxInputTokens": 1000000,
+      "maxOutputTokens": 100000,
+      "inputCostPerMillionTokens": 1.0,
+      "outputCostPerMillionTokens": 2.0,
+      "maxPromptLength": 100000,
+      "notes": "Fake chat/planning model for offline pipeline runs. Key-free; the fake chat client ignores the id.",
+      "lastVerifiedAt": "2026-08-07",
+      "pricingLastReviewedAt": "2026-08-07",
+      "pricingNotes": "Fake test-vendor pricing \u2014 round numbers for legible test cost math, not real prices."
+    },
+    {
+      "id": "fake-vision",
+      "displayName": "Fake Vision & Review",
+      "capability": "Vision",
+      "provider": "Fake",
+      "providerId": "fake",
+      "providerLabel": "Fake Studio (test)",
+      "apiBase": "https://fake.local/v1",
+      "endpointPath": "vision/analyze",
+      "requiredEnvKeys": [],
+      "enabled": true,
+      "maxInputTokens": 1000000,
+      "maxOutputTokens": 65536,
+      "inputCostPerMillionTokens": 1.0,
+      "outputCostPerMillionTokens": 2.0,
+      "supportsVideoReview": true,
+      "maxPromptLength": 100000,
+      "notes": "Fake vision model; also serves multimodal clip review (supportsVideoReview).",
+      "lastVerifiedAt": "2026-08-07",
+      "pricingLastReviewedAt": "2026-08-07",
+      "pricingNotes": "Fake test-vendor pricing \u2014 round numbers for legible test cost math, not real prices."
+    },
+    {
+      "id": "fake-image",
+      "displayName": "Fake Image / Portrait",
+      "capability": "Image",
+      "provider": "Fake",
+      "providerId": "fake",
+      "providerLabel": "Fake Studio (test)",
+      "apiBase": "https://fake.local/v1",
+      "endpointPath": "images/generations",
+      "requiredEnvKeys": [],
+      "enabled": true,
+      "supportsReferenceImages": true,
+      "maxReferenceImages": 4,
+      "imageCostPerImage": 0.01,
+      "maxPromptLength": 4000,
+      "notes": "Fake portrait/plate image model. Fake image client returns a fixture image.",
+      "lastVerifiedAt": "2026-08-07",
+      "pricingLastReviewedAt": "2026-08-07",
+      "pricingNotes": "Fake test-vendor pricing \u2014 round numbers for legible test cost math, not real prices."
+    },
+    {
+      "id": "fake-video",
+      "displayName": "Fake Video",
+      "capability": "Video",
+      "provider": "Fake",
+      "providerId": "fake",
+      "providerLabel": "Fake Studio (test)",
+      "apiBase": "https://fake.local/v1",
+      "endpointPath": "videos/generations",
+      "requiredEnvKeys": [],
+      "enabled": true,
+      "supportsVideoContinue": true,
+      "supportsReferenceImages": true,
+      "maxReferenceImages": 4,
+      "minClipDurationSeconds": 1,
+      "maxClipDurationSeconds": 15,
+      "absMaxClipDurationSeconds": 15,
+      "maxExtensionSeconds": 10,
+      "videoCostPerSecondByResolution": {
+        "480p": 0.01,
+        "720p": 0.02,
+        "1080p": 0.04
+      },
+      "videoReferenceImageCost": 0.0,
+      "videoExtendCostPerSecond": 0.02,
+      "supportedAspectRatios": [
+        "1:1",
+        "16:9",
+        "9:16"
+      ],
+      "defaultAspectRatio": "16:9",
+      "maxPromptLength": 4000,
+      "notes": "Fake video model. Fake video client copies an MP4 fixture into the project instead of generating.",
+      "lastVerifiedAt": "2026-08-07",
+      "pricingLastReviewedAt": "2026-08-07",
+      "pricingNotes": "Fake test-vendor pricing \u2014 round numbers for legible test cost math, not real prices.",
+      "maxSpeakersPerClip": 1
+    },
+    {
+      "id": "fake-voice",
+      "displayName": "Fake Voice Clone / TTS",
+      "capability": "Voice",
+      "provider": "Fake",
+      "providerId": "fake",
+      "providerLabel": "Fake Studio (test)",
+      "apiBase": "https://fake.local/v1",
+      "endpointPath": "voices/add",
+      "requiredEnvKeys": [],
+      "enabled": true,
+      "isVoiceCloneStep": true,
+      "costPerCloneUsd": 0.0,
+      "costPerThousandCharsUsd": 0.01,
+      "maxPromptLength": 5000,
+      "notes": "Fake voice clone + TTS. Fake voice client returns silent/placeholder audio.",
+      "lastVerifiedAt": "2026-08-07",
+      "pricingLastReviewedAt": "2026-08-07"
+    },
+    {
+      "id": "fake-music",
+      "displayName": "Fake Music / Audio",
+      "capability": "Audio",
+      "provider": "Fake",
+      "providerId": "fake",
+      "providerLabel": "Fake Studio (test)",
+      "apiBase": "https://fake.local/v1",
+      "endpointPath": "music/generate",
+      "requiredEnvKeys": [],
+      "enabled": true,
+      "maxAudioDurationSeconds": 60,
+      "supportsVocals": false,
+      "costPerMinuteUsd": 0.01,
+      "maxPromptLength": 1000,
+      "notes": "Fake background-music model. Fake audio client returns placeholder audio.",
+      "lastVerifiedAt": "2026-08-07",
+      "pricingLastReviewedAt": "2026-08-07"
     }
-  ],
-  "task_rankings": {
-    "script_import": [
-      "claude-sonnet-5",
-      "grok-4.5",
-      "gemini-2.5-flash"
-    ],
-    "beat_pacing": [
-      "grok-4.5",
-      "gemini-2.0-flash",
-      "claude-sonnet-5"
-    ],
-    "camera_director": [
-      "grok-4.5",
-      "claude-sonnet-5"
-    ],
-    "sound_design": [
-      "grok-4.5",
-      "gemini-2.5-flash"
-    ],
-    "cast_analysis": [
-      "grok-4.5",
-      "claude-sonnet-5",
-      "gemini-2.5-flash"
-    ],
-    "video_review": [
-      "gemini-2.5-flash",
-      "grok-4.5"
-    ]
-  }
+  ]
 }

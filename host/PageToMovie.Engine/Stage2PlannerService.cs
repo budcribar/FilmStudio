@@ -139,6 +139,9 @@ public sealed class Stage2PlannerService
         // beat-coalescing plans against the RIGHT ceiling for whichever mode a clip ends up in,
         // instead of always using the looser fresh-generation max.
         var durExtensionMaxSeconds = ClipDurationEstimator.ResolveExtensionMaxForModel(videoModelId, durMaxSeconds);
+        // How many characters this video model can render speaking in one clip (catalog-driven).
+        // 1 → keep one speaker per clip (shot-reverse-shot); >=2 → allow two-hander coalescing.
+        var maxSpeakersPerClip = ResolveMaxSpeakersPerClip(videoModelId);
 
         // Fountain is the only screenplay source of truth.
         ScreenplayService.EnsureCanonicalDraft(_projects, projectId);
@@ -267,7 +270,7 @@ public sealed class Stage2PlannerService
             var aiSound = soundTask.Result;
             var aiDof = dofTask.Result;
             var aiColor = colorTask.Result;
-            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof, aiColor, durMinSeconds, durMaxSeconds, durAbsMaxSeconds, durExtensionMaxSeconds);
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof, aiColor, durMinSeconds, durMaxSeconds, durAbsMaxSeconds, durExtensionMaxSeconds, maxSpeakersPerClip);
             // Skip transition-only phantoms (e.g. FADE IN before first heading)
             if (plannedScene is null)
             {
@@ -645,7 +648,8 @@ public sealed class Stage2PlannerService
         int minSeconds = ClipDurationEstimator.MinSeconds,
         int maxSeconds = ClipDurationEstimator.MaxSeconds,
         int absMaxSeconds = ClipDurationEstimator.AbsMaxSeconds,
-        int? extensionMaxSeconds = null)
+        int? extensionMaxSeconds = null,
+        int maxSpeakersPerClip = 1)
     {
         var effectiveExtensionMax = extensionMaxSeconds ?? maxSeconds;
         var sceneInput = new Dictionary<string, object?>(scene);
@@ -672,8 +676,12 @@ public sealed class Stage2PlannerService
         // is equivalent to the final per-clip ForceNone decision.
         beats = CoalesceShortMonologueBeats(
             beats, maxSeconds, effectiveExtensionMax, PrecomputeExtendsFromPrevious(beats, primary, lids));
-        beats = CoalesceCrossSpeakerDialogueBeats(
-            beats, maxSeconds, effectiveExtensionMax, PrecomputeExtendsFromPrevious(beats, primary, lids));
+        // Two-hander coalescing only when the video model can render >=2 speakers in one clip.
+        // At 1 (e.g. Grok today) each dialogue beat stays its own clip — one speaker per clip,
+        // shot-reverse-shot, which gives the cleanest lip-sync and avoids face morphing.
+        beats = ApplyCrossSpeakerCoalescing(
+            beats, maxSpeakersPerClip, maxSeconds, effectiveExtensionMax,
+            PrecomputeExtendsFromPrevious(beats, primary, lids));
         var cast = UnionCharactersOnScreen(scene);
 
         // Entire scene was only FADE IN / CUT TO — omit (no empty clip)
@@ -1136,6 +1144,30 @@ public sealed class Stage2PlannerService
     /// </param>
     /// <param name="extendsFromPrevious">Per-beat precomputed extend flag — see
     /// <see cref="PrecomputeExtendsFromPrevious"/>.</param>
+    /// <summary>
+    /// Characters this video model can render speaking in one clip, from the catalog
+    /// (<see cref="SupportedModelEntry.MaxSpeakersPerClip"/>). Unknown/unset → 1 (the safe,
+    /// always-renderable default). Raise per model in models_catalog.json as video models improve.
+    /// </summary>
+    public static int ResolveMaxSpeakersPerClip(string? videoModelId) =>
+        SupportedModelCatalog.Find(videoModelId, ModelCapability.Video)?.MaxSpeakersPerClipOrDefault ?? 1;
+
+    /// <summary>
+    /// Coalesce adjacent different-speaker dialogue beats into two-hander clips only when the model
+    /// allows two speakers per clip; otherwise leave each beat as its own single-speaker clip
+    /// (shot-reverse-shot). The seam the planner uses so the policy is one catalog value, not a
+    /// hard-coded assumption. (There is no three-hander — a third speaker is always its own clip.)
+    /// </summary>
+    public static List<Dictionary<string, object?>> ApplyCrossSpeakerCoalescing(
+        List<Dictionary<string, object?>> beats,
+        int maxSpeakersPerClip,
+        int maxSeconds = ClipDurationEstimator.MaxSeconds,
+        int? extensionMaxSeconds = null,
+        IReadOnlyList<bool>? extendsFromPrevious = null) =>
+        maxSpeakersPerClip >= 2
+            ? CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds, extensionMaxSeconds, extendsFromPrevious)
+            : beats ?? new List<Dictionary<string, object?>>();
+
     public static List<Dictionary<string, object?>> CoalesceCrossSpeakerDialogueBeats(
         List<Dictionary<string, object?>> beats,
         int maxSeconds = ClipDurationEstimator.MaxSeconds,

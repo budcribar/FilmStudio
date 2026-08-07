@@ -1,0 +1,45 @@
+using Microsoft.AspNetCore.Components;
+using PageToMovie.Core.Models;
+using PageToMovie.Web.Services;
+
+namespace PageToMovie.Web.Components.Pages;
+
+/// <summary>
+/// Code-behind for the admin "AI Calls" analytics page (<c>/admin/ai-calls</c>). A standalone admin
+/// page — markup in AdminAiCalls.razor, logic here — that reads the aggregated model-call telemetry
+/// (the read side of the AI-call feedback loop). Linked from the top-level Admin page.
+/// </summary>
+public partial class AdminAiCalls : ComponentBase
+{
+    [Inject] private EngineApiClient Api { get; set; } = default!;
+    [Inject] private AdminSessionService Session { get; set; } = default!;
+
+    private AiCallAnalyticsDto? _data;
+    private bool _loading;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { await Session.EnsureHydratedAsync(); } catch { /* session hydration is best-effort */ }
+        if (Session.IsAdmin)
+            await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _data = await Api.GetAiCallAnalyticsAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

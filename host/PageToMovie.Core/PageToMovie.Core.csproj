@@ -7,20 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- SupportedModelCatalog.EnsureLoaded resolves this next to the app's own binaries
-         (AppContext.BaseDirectory/config/models_catalog.json) as the always-present shipped
-         default, below /data/models_catalog.json (persistent-volume runtime override) in
-         priority. Without this, no build/publish/test output ever contains a copy of the file
-         at any of the candidate paths — the "shipped defaults" story silently depended on a
-         hardcoded C# fallback list instead of the JSON file it claims to be sourced from. -->
-    <None Include="config\models_catalog.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <!-- WASM has no filesystem under /data or AppContext.BaseDirectory the same way;
-         ship the catalog inside the Core assembly so SupportedModelCatalog works in browser. -->
+    <!-- The models catalog is the single source of truth and is loaded ONLY from these embedded
+         resources (SupportedModelCatalog.EnsureLoaded) — no on-disk file, no /data override. Real
+         servers embed/use models_catalog.json; fakes mode uses the standalone models_catalog.fake.json
+         (a one-time copy of the real rows + the Fake Studio vendor). The real server never loads the
+         fake resource. Change the catalog in git and rebuild; runtime edits are unsupported. -->
     <EmbeddedResource Include="config\models_catalog.json">
       <LogicalName>PageToMovie.Core.config.models_catalog.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="config\models_catalog.fake.json">
+      <LogicalName>PageToMovie.Core.config.models_fake_catalog.json</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

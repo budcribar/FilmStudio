@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -11,12 +12,17 @@ namespace PageToMovie.Fakes;
 public sealed class FakeGrokChatClient : IChatClient
 {
     private readonly ILogger<FakeGrokChatClient> _log;
+    private readonly ProjectTelemetryService _telemetry;
 
-    public FakeGrokChatClient(ILogger<FakeGrokChatClient> log) => _log = log;
+    public FakeGrokChatClient(ILogger<FakeGrokChatClient> log, ProjectTelemetryService telemetry)
+    {
+        _log = log;
+        _telemetry = telemetry;
+    }
 
     public bool IsConfigured => true;
 
-    public Task<string> CompleteAsync(
+    public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
         string model = "grok-4.5",
@@ -32,6 +38,31 @@ public sealed class FakeGrokChatClient : IChatClient
         var sys = systemPrompt ?? "";
         var user = userPrompt ?? "";
         var blob = sys + "\n" + user;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        // Fakes emit the same api_calls.jsonl telemetry as live clients so the feedback loop /
+        // AI-Calls analytics page has data offline. Kind = the call mode when set, else "chat".
+        var result = Respond(sys, user, blob, model, mode);
+        sw.Stop();
+        try
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = string.IsNullOrWhiteSpace(mode) ? "chat" : mode!,
+                Mode = mode,
+                Model = model,
+                DurationMs = sw.ElapsedMilliseconds,
+                PromptChars = blob.Length,
+                ResponseChars = result.Length,
+                Fakes = true,
+                Ok = true,
+            }, ct).ConfigureAwait(false);
+        }
+        catch { /* telemetry is best-effort */ }
+        return result;
+    }
+
+    private string Respond(string sys, string user, string blob, string model, string? mode)
+    {
 
         // ── Cast from screenplay → cast_seeds-shaped JSON ──────────────────
         if (sys.Contains("casting director", StringComparison.OrdinalIgnoreCase) ||
@@ -43,7 +74,12 @@ public sealed class FakeGrokChatClient : IChatClient
              sys.Contains("seed", StringComparison.OrdinalIgnoreCase) &&
              !sys.Contains("literal", StringComparison.OrdinalIgnoreCase)))
         {
-            return Task.FromResult(IsPoe(blob) ? PoeCastJson : DefaultCastJson);
+            // Poe fixture keeps its hand-authored cast; any other screenplay gets a cast generated
+            // from its own character cues so speaking roles, species and groups line up with the
+            // fountain (lets varied fixtures — animals, crowds, big/solo casts — drive the real UI).
+            if (IsPoe(user)) return PoeCastJson;
+            var generated = BuildCastJsonFromScreenplay(user);
+            return (generated ?? DefaultCastJson);
         }
 
         // ── Auto-review / QC JSON ──────────────────────────────────────────
@@ -53,7 +89,7 @@ public sealed class FakeGrokChatClient : IChatClient
             user.Contains("visual_prompt", StringComparison.OrdinalIgnoreCase) &&
             user.Contains("clip", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult(AutoReviewJson);
+            return (AutoReviewJson);
         }
 
         // ── Learning propose ───────────────────────────────────────────────
@@ -61,7 +97,7 @@ public sealed class FakeGrokChatClient : IChatClient
             sys.Contains("QC fail", StringComparison.OrdinalIgnoreCase) ||
             user.Contains("Recent film QC fails", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult(
+            return (
                 "- Keep candlelight and deep shadows consistent across chamber clips.\n" +
                 "- Match the Narrator's pale face and dark coat on every cut.\n" +
                 "- Heartbeat tension: hold tight on floorboards before the confession scream.\n" +
@@ -74,7 +110,7 @@ public sealed class FakeGrokChatClient : IChatClient
             (sys.Contains("wardrobe", StringComparison.OrdinalIgnoreCase) &&
              sys.Contains("visual", StringComparison.OrdinalIgnoreCase)))
         {
-            return Task.FromResult(IsPoe(blob) ? PoeCastJson : DefaultCastJson);
+            return (IsPoe(user) ? PoeCastJson : DefaultCastJson);
         }
 
         // ── Book → Fountain ────────────────────────────────────────────────
@@ -83,35 +119,35 @@ public sealed class FakeGrokChatClient : IChatClient
             user.Contains("BEGIN BOOK", StringComparison.OrdinalIgnoreCase) ||
             sys.Contains("book_to_fountain", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult(IsPoe(blob) ? PoeFountain : DefaultFountain);
+            return (IsPoe(user) ? PoeFountain : DefaultFountain);
         }
 
         // ── Silent beat duration classes ───────────────────────────────────
         if (sys.Contains("DURATION BUDGETING", StringComparison.OrdinalIgnoreCase) ||
             mode == ChatCallModes.SilentBeatClassify)
         {
-            return Task.FromResult(BuildSilentBeatLabelsJson(user));
+            return (BuildSilentBeatLabelsJson(user));
         }
 
         if (mode == ChatCallModes.AmbientSfxClassify ||
             sys.Contains("ambient bed vs SFX", StringComparison.OrdinalIgnoreCase) ||
             sys.Contains("ambient BED vs transient SFX", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult(BuildIdLabels(user, id =>
+            return (BuildIdLabels(user, id =>
                 $$"""{"id":"{{id}}","ambient":"","sfx":""}"""));
         }
 
         if (mode == ChatCallModes.OnScreenCastClassify ||
             sys.Contains("ON CAMERA", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult(BuildIdLabels(user, id =>
+            return (BuildIdLabels(user, id =>
                 $$"""{"id":"{{id}}","keys":[]}"""));
         }
 
         if (mode == ChatCallModes.ExtendCutClassify ||
             sys.Contains("hard_cut vs extend", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult(BuildIdLabels(user, id =>
+            return (BuildIdLabels(user, id =>
             {
                 var cls = id.EndsWith("_b1") ? "hard_cut" : "extend";
                 return $$"""{"id":"{{id}}","class":"{{cls}}"}""";
@@ -135,7 +171,7 @@ public sealed class FakeGrokChatClient : IChatClient
                     : "other";
                 labels.Add($$"""{"key":"{{key}}","class":"{{cls}}"}""");
             }
-            return Task.FromResult("""{"labels":[""" + string.Join(",", labels) + "]}");
+            return ("""{"labels":[""" + string.Join(",", labels) + "]}");
         }
 
         if (mode == ChatCallModes.PlateRankClassify ||
@@ -147,71 +183,71 @@ public sealed class FakeGrokChatClient : IChatClient
                 .Take(3)
                 .Select(n => "\"" + n.Replace("\\", "\\\\") + "\"")
                 .ToList();
-            return Task.FromResult("""{"ranked":[""" + string.Join(",", names) + "]}");
+            return ("""{"ranked":[""" + string.Join(",", names) + "]}");
         }
 
         if (mode == ChatCallModes.ShotPlanRefineClassify ||
             sys.Contains("cinematographer refining shot plans", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"refinements":[]}""");
+            return ("""{"refinements":[]}""");
         }
 
         if (mode == ChatCallModes.BeatPacingClassify ||
             sys.Contains("duration pacing for screenplay beats", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"pacing":[]}""");
+            return ("""{"pacing":[]}""");
         }
 
         if (mode == ChatCallModes.CinematicLightingClassify ||
             sys.Contains("cinematographer and lighting director", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"lighting_token":"Chiaroscuro flickering candlelight with deep obsidian shadows and desaturated cool-gray volumetric fog"}""");
+            return ("""{"lighting_token":"Chiaroscuro flickering candlelight with deep obsidian shadows and desaturated cool-gray volumetric fog"}""");
         }
 
         if (mode == ChatCallModes.CameraDirectorClassify ||
             sys.Contains("Virtuoso Film Director and Director of Photography", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"directives":[]}""");
+            return ("""{"directives":[]}""");
         }
 
         if (mode == ChatCallModes.NegativePromptClassify ||
             sys.Contains("Period Visual Continuity Guard", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"negative_tokens":"no modern wristwatches, no electric light bulbs, no plastic, no zippers, no printed text"}""");
+            return ("""{"negative_tokens":"no modern wristwatches, no electric light bulbs, no plastic, no zippers, no printed text"}""");
         }
 
         if (mode == ChatCallModes.WardrobeContinuityClassify ||
             sys.Contains("Costume Department Supervisor", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"wardrobe":[]}""");
+            return ("""{"wardrobe":[]}""");
         }
 
         if (mode == ChatCallModes.CharacterEmotionArcClassify ||
             sys.Contains("Acting Coach and Performance Director", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"emotions":[]}""");
+            return ("""{"emotions":[]}""");
         }
 
         if (mode == ChatCallModes.SoundDesignComposerClassify ||
             sys.Contains("Sound Designer and Audio Supervisor", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"sound_design":[]}""");
+            return ("""{"sound_design":[]}""");
         }
 
         if (mode == ChatCallModes.DepthOfFieldClassify ||
             sys.Contains("Focus Puller and Optical Cinematographer", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"dof":[]}""");
+            return ("""{"dof":[]}""");
         }
 
         if (mode == ChatCallModes.ColorPaletteGradingClassify ||
             sys.Contains("Master Colorist and Film Stock Director", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult("""{"film_stock":"Kodak Vision3 500T 5219 film stock, subtle 35mm grain","color_palette":"Desaturated cool-teal shadow tones with warm amber candle highlights","grading_prompt":"Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights"}""");
+            return ("""{"film_stock":"Kodak Vision3 500T 5219 film stock, subtle 35mm grain","color_palette":"Desaturated cool-teal shadow tones with warm amber candle highlights","grading_prompt":"Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights"}""");
         }
 
         // ── Minimal Stage1-shaped stub ─────────────────────────────────────
-        return Task.FromResult("""
+        return ("""
             {
               "schema_version": "stage1.v1",
               "movie_title": "Untitled",
@@ -244,14 +280,14 @@ public sealed class FakeGrokChatClient : IChatClient
         return """{"labels":[""" + string.Join(",", labels) + "]}";
     }
 
-    private static bool IsPoe(string blob) =>
-        blob.Contains("TELL-TALE", StringComparison.OrdinalIgnoreCase) ||
-        blob.Contains("Tell-Tale", StringComparison.OrdinalIgnoreCase) ||
-        blob.Contains("vulture", StringComparison.OrdinalIgnoreCase) ||
-        blob.Contains("Edgar Allan Poe", StringComparison.OrdinalIgnoreCase) ||
-        blob.Contains("hideous heart", StringComparison.OrdinalIgnoreCase) ||
-        blob.Contains("old man", StringComparison.OrdinalIgnoreCase) &&
-        blob.Contains("eye", StringComparison.OrdinalIgnoreCase);
+    // Detect the Tell-Tale Heart fixture from the SCREENPLAY only (pass `user`, never sys+user):
+    // the cast prompt template mentions "Old Man" and "eyes" as examples, so matching the combined
+    // blob made every story look like Poe. Use specific title/plot markers, not generic words.
+    private static bool IsPoe(string screenplay) =>
+        screenplay.Contains("Tell-Tale", StringComparison.OrdinalIgnoreCase) ||
+        screenplay.Contains("Edgar Allan Poe", StringComparison.OrdinalIgnoreCase) ||
+        screenplay.Contains("hideous heart", StringComparison.OrdinalIgnoreCase) ||
+        screenplay.Contains("vulture", StringComparison.OrdinalIgnoreCase);
 
     private const string PoeFountain = """
         Title: The Tell-Tale Heart
@@ -350,6 +386,7 @@ public sealed class FakeGrokChatClient : IChatClient
           "character_seed_tokens": {
             "Character_Narrator": {
               "canonical_given_name": "Narrator",
+              "species_kind": "human",
               "display_name_policy": "ok_anytime",
               "description": "Pale nervous adult man, mid-30s, thin gaunt face, dark shoulder-length hair, dark 1840s wool coat, white linen shirt, haunted open eyes, photoreal period drama",
               "visual_lock": "Always the same pale thin-faced adult man with dark hair and dark wool coat; distinct from the elderly Old Man; no modern clothing",
@@ -361,6 +398,7 @@ public sealed class FakeGrokChatClient : IChatClient
             },
             "Character_Old_Man": {
               "canonical_given_name": "Old Man",
+              "species_kind": "human",
               "display_name_policy": "ok_anytime",
               "description": "Elderly frail man in pale nightshirt, sparse white-gray hair, one distinctive pale blue filmed eye that catches light, deeply lined face",
               "visual_lock": "Always the same frail elderly man with sparse white-gray hair and one pale blue eye; never the Narrator's younger face",
@@ -371,6 +409,7 @@ public sealed class FakeGrokChatClient : IChatClient
             },
             "Character_Officer": {
               "canonical_given_name": "Officer",
+              "species_kind": "human",
               "display_name_policy": "ok_anytime",
               "description": "Adult man, solid build, neat short brown hair, clean-shaven, mid-19th-century dark wool constable coat with brass buttons, calm polite expression",
               "visual_lock": "Same neat brown-haired clean-shaven man in dark wool constable coat; composed official bearing",
@@ -390,6 +429,7 @@ public sealed class FakeGrokChatClient : IChatClient
           "character_seed_tokens": {
             "Character_Narrator": {
               "canonical_given_name": "Narrator",
+              "species_kind": "human",
               "display_name_policy": "ok_anytime",
               "description": "Adult human with clear face and period-appropriate clothing suitable for portrait lock",
               "visual_lock": "Same face, hair, and primary wardrobe in every scene",
@@ -401,6 +441,154 @@ public sealed class FakeGrokChatClient : IChatClient
           }
         }
         """;
+
+    // ── Fake cast generation from a screenplay ──────────────────────────────────────────────
+    // Test scaffolding only: unlike the real classifier (which reads the story), the fake uses small
+    // keyword sets to decide species/group from character names so fixtures can deterministically
+    // exercise the cast-display gates (talking vs silent animals, groups/ensembles, big/solo casts).
+
+    private static readonly string[] AnimalWords =
+    {
+        "WOLF", "WOLVES", "BEAR", "CAT", "KITTEN", "DOG", "HOUND", "PUPPY", "LION", "TIGER", "FOX",
+        "OWL", "CROW", "RAVEN", "LAMB", "SHEEP", "HORSE", "PONY", "MOUSE", "RAT", "SNAKE", "RABBIT",
+        "HARE", "DEER", "MONKEY", "APE", "ELEPHANT", "PARROT", "TOAD", "FROG", "PIG", "GOAT",
+        "DONKEY", "MULE", "CROCODILE", "PANTHER", "LEOPARD", "EAGLE", "HAWK", "SPIDER", "BEE",
+        "SWAN", "GOOSE", "DUCK", "COW", "BULL", "CALF", "BADGER", "OTTER", "MOLE", "STOAT", "TORTOISE",
+    };
+
+    private static readonly string[] CreatureWords =
+    {
+        "GHOST", "SPIRIT", "DEMON", "MONSTER", "GOBLIN", "TROLL", "DRAGON", "WRAITH", "PHANTOM",
+        "SHADE", "GOLEM", "ROBOT", "ANDROID", "ALIEN",
+    };
+
+    private static readonly string[] GroupWords =
+    {
+        "CROWD", "CHILDREN", "KIDS", "VILLAGERS", "MOB", "CLASSMATES", "GUESTS", "SOLDIERS",
+        "SERVANTS", "PEASANTS", "TOWNSFOLK", "WORKERS", "STUDENTS", "MEN", "WOMEN", "NEIGHBORS",
+        "SAILORS", "OFFICERS", "GUARDS", "CHORUS", "ANIMALS", "BIRDS", "WOLVES", "SHEEP",
+        "CROWDS", "PEOPLE", "PASSENGERS", "REPORTERS", "FANS",
+    };
+
+    // Fountain keywords / transition tokens that look like cues but are not characters.
+    private static readonly HashSet<string> CueStopWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "INT", "EXT", "EST", "INT./EXT", "INT/EXT", "I/E", "FADE", "CUT", "DISSOLVE", "SMASH",
+        "MATCH", "TO", "IN", "OUT", "BACK", "THE END", "TITLE", "SUPER", "INSERT", "MONTAGE",
+        "CONTINUOUS", "LATER", "MOMENTS", "NIGHT", "DAY", "DAWN", "DUSK", "MORNING", "EVENING",
+        "FADE IN", "FADE OUT", "CUT TO", "THE",
+    };
+
+    private static bool ContainsWord(string upperName, string[] words)
+    {
+        var tokens = Regex.Split(upperName, "[^A-Z]+");
+        foreach (var w in words)
+            if (Array.IndexOf(tokens, w) >= 0)
+                return true;
+        return false;
+    }
+
+    /// <summary>Parse character cues + inline-introduced animal/creature/group names from a fountain
+    /// and emit cast_seeds JSON. Returns null when no characters are found (caller falls back).</summary>
+    private static string? BuildCastJsonFromScreenplay(string screenplay)
+    {
+        if (string.IsNullOrWhiteSpace(screenplay)) return null;
+
+        // Only look at the fountain body — drop the prompt preamble before the first slug/title if any.
+        var lines = screenplay.Replace("\r\n", "\n").Split('\n');
+
+        // ordered unique names; track whether each has a spoken line (a cue followed by dialogue).
+        var order = new List<string>();
+        var speaks = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+        void Add(string name, bool spoken)
+        {
+            name = name.Trim();
+            if (name.Length == 0) return;
+            if (!speaks.ContainsKey(name)) { order.Add(name); speaks[name] = spoken; }
+            else if (spoken) speaks[name] = true;
+        }
+
+        bool IsSceneOrTransition(string t) =>
+            Regex.IsMatch(t, @"^(INT|EXT|EST|INT\.?/EXT|I/E)[\. ]", RegexOptions.IgnoreCase)
+            || t.EndsWith("TO:", StringComparison.OrdinalIgnoreCase)
+            || t.StartsWith("FADE", StringComparison.OrdinalIgnoreCase)
+            || t.StartsWith("CUT", StringComparison.OrdinalIgnoreCase);
+
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var raw = lines[i];
+            var t = raw.Trim();
+            if (t.Length == 0) continue;
+
+            // Character cue: an UPPERCASE line (optionally with a "(V.O.)"-style extension) that is
+            // preceded by a blank line and followed by dialogue (a non-blank next line).
+            var cueMatch = Regex.Match(t, @"^([A-Z][A-Z0-9 .'’\-]*?)(\s*\([^)]*\))?$");
+            var prevBlank = i == 0 || lines[i - 1].Trim().Length == 0;
+            var nextNonBlank = i + 1 < lines.Length && lines[i + 1].Trim().Length > 0;
+            if (cueMatch.Success && prevBlank && nextNonBlank && !IsSceneOrTransition(t)
+                && Regex.IsMatch(t, "[A-Z]"))
+            {
+                var name = cueMatch.Groups[1].Value.Trim();
+                if (!CueStopWords.Contains(name) && name.Length >= 2)
+                {
+                    Add(name, spoken: true);
+                    continue;
+                }
+            }
+
+            // Action line: pick up inline UPPERCASE animal/creature/group names (e.g. a silent "LAMB")
+            // so non-speaking cast still appear. Keyword-gated to avoid matching FADE/INT/etc.
+            foreach (Match m in Regex.Matches(t, @"\b[A-Z][A-Z'’\-]{1,}\b"))
+            {
+                var w = m.Value;
+                if (CueStopWords.Contains(w)) continue;
+                if (ContainsWord(w, AnimalWords) || ContainsWord(w, CreatureWords) || ContainsWord(w, GroupWords))
+                    Add(w, spoken: false);
+            }
+        }
+
+        if (order.Count == 0) return null;
+
+        static string TitleCase(string upper) =>
+            string.Join(' ', upper.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(w => w.Length == 0 ? w : char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("{");
+        sb.AppendLine("  \"schema_version\": \"cast_seeds.v1\",");
+        sb.AppendLine("  \"movie_title\": \"Fake Test Film\",");
+        sb.AppendLine("  \"render_style_lock\": \"STYLE LOCK: photoreal test render\",");
+        sb.AppendLine("  \"performance_lock\": \"PERFORMANCE LOCK: fake test cast\",");
+        sb.AppendLine("  \"character_seed_tokens\": {");
+        for (var idx = 0; idx < order.Count; idx++)
+        {
+            var name = order[idx];
+            var upper = name.ToUpperInvariant();
+            var species = ContainsWord(upper, AnimalWords) ? "animal"
+                : ContainsWord(upper, CreatureWords) ? "creature" : "human";
+            var isGroup = ContainsWord(upper, GroupWords);
+            var display = TitleCase(name);
+            var key = "Character_" + Regex.Replace(display, @"\s+", "_");
+            var castKind = isGroup ? "group" : "individual";
+            sb.AppendLine("    \"" + key + "\": {");
+            sb.AppendLine("      \"canonical_given_name\": \"" + display + "\",");
+            sb.AppendLine("      \"species_kind\": \"" + species + "\",");
+            sb.AppendLine("      \"cast_kind\": \"" + castKind + "\",");
+            sb.AppendLine("      \"display_name_policy\": \"ok_anytime\",");
+            sb.AppendLine("      \"description\": \"" + display + " — " + species
+                + (isGroup ? " ensemble" : "") + ", photoreal test character\",");
+            sb.AppendLine("      \"visual_lock\": \"Consistent " + display + " across scenes\",");
+            sb.AppendLine("      \"voice_profile\": \"" + (species == "human" ? "Clear test voice" : "Non-human test voice") + "\",");
+            sb.AppendLine("      \"voice_label\": \"" + display + "\",");
+            sb.AppendLine("      \"wardrobe_always\": [],");
+            sb.AppendLine("      \"reference_image_placeholder\": \"" + key.ToLowerInvariant() + "_ref.png\"");
+            sb.AppendLine("    }" + (idx < order.Count - 1 ? "," : ""));
+        }
+        sb.AppendLine("  }");
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
 
     private const string AutoReviewJson = """
         {

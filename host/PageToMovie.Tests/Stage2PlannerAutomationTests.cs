@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
@@ -228,6 +229,143 @@ public sealed class Stage2PlannerAutomationTests
         Assert.Equal("You coming or not?", coalesced[0]["dialogue"]);
         Assert.Equal("Character_Sionna", coalesced[0]["secondary_speaker"]);
         Assert.Equal("Give me a second.", coalesced[0]["secondary_dialogue"]);
+    }
+
+    // ── Talking characters per scene (2 must work; 3 is untested / future) ──────────────────────
+
+    private static Dictionary<string, object?> DialogueBeat(string id, string speaker, string line, string loc = "Loc_Hall") =>
+        new() { ["beat_id"] = id, ["speaker"] = speaker, ["dialogue"] = line, ["location_id"] = loc };
+
+    /// <summary>Every (speaker, line) actually carried by the coalesced clips — primary AND the
+    /// two-hander secondary — so a dropped line is detectable.</summary>
+    private static List<(string speaker, string line)> AllSpokenLines(IEnumerable<Dictionary<string, object?>> clips)
+    {
+        var outp = new List<(string, string)>();
+        foreach (var c in clips)
+        {
+            string? S(string k) => c.TryGetValue(k, out var v) ? v?.ToString() : null;
+            if (!string.IsNullOrWhiteSpace(S("dialogue"))) outp.Add((S("speaker") ?? "", S("dialogue")!));
+            if (!string.IsNullOrWhiteSpace(S("secondary_dialogue"))) outp.Add((S("secondary_speaker") ?? "", S("secondary_dialogue")!));
+        }
+        return outp;
+    }
+
+    private static int SpeakersOnClip(Dictionary<string, object?> c)
+    {
+        var n = 0;
+        if (c.TryGetValue("dialogue", out var d) && !string.IsNullOrWhiteSpace(d?.ToString())) n++;
+        if (c.TryGetValue("secondary_dialogue", out var s) && !string.IsNullOrWhiteSpace(s?.ToString())) n++;
+        return n;
+    }
+
+    [Fact]
+    public void TwoTalkersPerScene_MergeIntoOneTwoHander_NoLineLost()
+    {
+        // Two talking characters in one scene MUST work: A + B coalesce into a single two-hander
+        // clip (camera pans A→B), both lines preserved, exactly two speakers on the clip.
+        var beats = new List<Dictionary<string, object?>>
+        {
+            DialogueBeat("b1", "Character_Alice", "We convene at last."),
+            DialogueBeat("b2", "Character_Boris", "The north stands ready."),
+        };
+
+        var clips = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 12);
+
+        Assert.Single(clips);
+        Assert.Equal(2, SpeakersOnClip(clips[0]));
+        var lines = AllSpokenLines(clips);
+        Assert.Contains(("Character_Alice", "We convene at last."), lines);
+        Assert.Contains(("Character_Boris", "The north stands ready."), lines);
+    }
+
+    [Fact]
+    public void ThreeTalkersPerScene_KeepsEveryLine_AndNoClipExceedsTwoSpeakers()
+    {
+        // FUTURE / untested: three talking characters in one scene. Graceful handling means every
+        // line survives and no clip carries more than two speakers (there is no "three-hander").
+        var beats = new List<Dictionary<string, object?>>
+        {
+            DialogueBeat("b1", "Character_Alice", "We convene at last."),
+            DialogueBeat("b2", "Character_Boris", "The north stands ready."),
+            DialogueBeat("b3", "Character_Cora", "And the ledger balances."),
+        };
+
+        var clips = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 12);
+
+        var lines = AllSpokenLines(clips);
+        Assert.Contains(("Character_Alice", "We convene at last."), lines);
+        Assert.Contains(("Character_Boris", "The north stands ready."), lines);
+        Assert.Contains(("Character_Cora", "And the ledger balances."), lines);   // the 3rd speaker must not vanish
+        Assert.All(clips, c => Assert.True(SpeakersOnClip(c) <= 2,
+            $"a clip carries more than two speakers: {string.Join(" | ", AllSpokenLines(new[] { c }).Select(l => l.speaker))}"));
+    }
+
+    [Fact]
+    public void ThreeTalkersPerScene_RapidExchange_KeepsEveryLine()
+    {
+        // A rapid A→B→C→A→B→C exchange in one scene. Untested territory: verify no line is dropped
+        // however the pairs fall out.
+        var speakers = new[] { "Character_Alice", "Character_Boris", "Character_Cora",
+                               "Character_Alice", "Character_Boris", "Character_Cora" };
+        var beats = speakers.Select((sp, i) => DialogueBeat($"b{i}", sp, $"Line {i} from {sp}.")).ToList();
+
+        var clips = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 12);
+
+        var lines = AllSpokenLines(clips);
+        for (var i = 0; i < speakers.Length; i++)
+            Assert.Contains((speakers[i], $"Line {i} from {speakers[i]}."), lines);
+        Assert.All(clips, c => Assert.True(SpeakersOnClip(c) <= 2, "a clip carries more than two speakers"));
+    }
+
+    // ── Per-model speakers-per-clip policy (catalog-driven, forward-thinking) ────────────────────
+
+    [Fact]
+    public void ResolveMaxSpeakersPerClip_Grok_isOneSpeakerPerClip()
+    {
+        // Catalog is the source of truth. Grok's best results today are one speaker per clip.
+        SupportedModelCatalog.ReloadCatalog();
+        Assert.Equal(1, Stage2PlannerService.ResolveMaxSpeakersPerClip("grok-imagine-video"));
+    }
+
+    [Fact]
+    public void ResolveMaxSpeakersPerClip_unknownModel_defaultsToOne()
+    {
+        // Safe default: one speaker per clip is always renderable, so an unset/unknown model is 1.
+        Assert.Equal(1, Stage2PlannerService.ResolveMaxSpeakersPerClip("no-such-model-xyz"));
+    }
+
+    [Fact]
+    public void ApplyCrossSpeakerCoalescing_oneSpeakerPolicy_keepsSingleSpeakerClips()
+    {
+        // maxSpeakersPerClip == 1 (Grok today): A and B stay separate one-speaker clips
+        // (shot-reverse-shot), never merged into a two-hander.
+        var beats = new List<Dictionary<string, object?>>
+        {
+            DialogueBeat("b1", "Character_Alice", "We convene at last."),
+            DialogueBeat("b2", "Character_Boris", "The north stands ready."),
+        };
+
+        var clips = Stage2PlannerService.ApplyCrossSpeakerCoalescing(beats, maxSpeakersPerClip: 1, maxSeconds: 12);
+
+        Assert.Equal(2, clips.Count);
+        Assert.All(clips, c => Assert.Equal(1, SpeakersOnClip(c)));
+        Assert.DoesNotContain(clips, c => c.ContainsKey("secondary_speaker"));
+    }
+
+    [Fact]
+    public void ApplyCrossSpeakerCoalescing_twoSpeakerPolicy_mergesIntoTwoHander()
+    {
+        // maxSpeakersPerClip >= 2 (a future model): A + B coalesce into one two-hander clip.
+        var beats = new List<Dictionary<string, object?>>
+        {
+            DialogueBeat("b1", "Character_Alice", "We convene at last."),
+            DialogueBeat("b2", "Character_Boris", "The north stands ready."),
+        };
+
+        var clips = Stage2PlannerService.ApplyCrossSpeakerCoalescing(beats, maxSpeakersPerClip: 2, maxSeconds: 12);
+
+        Assert.Single(clips);
+        Assert.Equal("Character_Boris", clips[0]["secondary_speaker"]);
     }
 
     [Fact]

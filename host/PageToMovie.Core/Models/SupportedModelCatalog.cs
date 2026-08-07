@@ -49,6 +49,13 @@ public enum ModelProviderFamily
     ElevenLabs = 6,
     /// <summary>OpenAI (<c>OPENAI_API_KEY</c>) — chat / planning models.</summary>
     OpenAI = 7,
+    /// <summary>
+    /// Fake test vendor — only present when <c>PageToMovie:UseFakes</c> is on (its models are
+    /// merged in from <c>models_catalog.fake.json</c>). Backs every capability with a key-free
+    /// fake client so the whole pipeline is drivable offline with full control over which
+    /// capabilities are "configured". Never appears in real mode.
+    /// </summary>
+    Fake = 8,
 }
 
 /// <summary>
@@ -235,6 +242,19 @@ public sealed class SupportedModelEntry
     /// on a per-model number for a cost/quality-sensitive decision.
     /// </summary>
     public int? AbsMaxClipDurationSeconds { get; init; }
+
+    /// <summary>
+    /// Video only: how many characters may SPEAK in a single generated clip. Current models render a
+    /// two-person exchange at best (often best at one speaker per clip — see Grok), and reliably
+    /// lip-syncing three distinct speakers in one shot is not yet feasible. The shot planner uses this
+    /// to decide whether to coalesce adjacent different-speaker beats into a two-hander (>=2) or keep
+    /// one speaker per clip / shot-reverse-shot (1). Absent → <see cref="MaxSpeakersPerClipOrDefault"/>
+    /// falls back to 1 (the safe, always-renderable choice). Raise it per model as video models improve.
+    /// </summary>
+    public int? MaxSpeakersPerClip { get; init; }
+
+    /// <summary>Effective speakers-per-clip cap: the catalog value when a positive one is set, else 1.</summary>
+    public int MaxSpeakersPerClipOrDefault => MaxSpeakersPerClip is > 0 ? MaxSpeakersPerClip.Value : 1;
 
     /// <summary>
     /// Discrete set of durations this model accepts (Video only) — e.g. Veo 3.1 documents exactly
@@ -430,8 +450,9 @@ public static class SupportedModelCatalog
     [Obsolete("Use TaskRankings from models_catalog.json — no C# hardcoded rankings.")]
     public static readonly Dictionary<string, List<string>> DefaultTaskRankings = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>All catalog rows, loaded from models_catalog.json (shipped copy or /data override —
-    /// see GetCandidateCatalogPaths). Throws via EnsureLoaded if no usable catalog file exists.</summary>
+    /// <summary>All catalog rows, from the embedded catalog (real, or fake in fakes mode — see
+    /// <see cref="EmbeddedCatalogResourceName"/>). Throws via <see cref="EnsureLoaded"/> if the
+    /// embedded catalog is missing or fails its self-test.</summary>
     public static IReadOnlyList<SupportedModelEntry> Entries
     {
         get
@@ -445,28 +466,34 @@ public static class SupportedModelCatalog
         }
     }
 
-    /// <summary>
-    /// Where a catalog JSON file could live, checked in priority order — a persistent-volume
-    /// runtime override (Railway's <c>/data</c> mount) first, then the copy shipped alongside the
-    /// app's own binaries (see PageToMovie.Core.csproj's CopyToOutputDirectory item), then a couple
-    /// of dev-time working-directory fallbacks. Shared by <see cref="GetCatalogFilePath"/> and
-    /// <see cref="EnsureLoaded"/> so there's exactly one list to keep correct, not two.
-    /// </summary>
-    private static IEnumerable<string> GetCandidateCatalogPaths(string? customPath = null)
-    {
-        if (!string.IsNullOrWhiteSpace(customPath))
-            yield return customPath;
-        yield return "/data/models_catalog.json";
-        yield return Path.Combine(AppContext.BaseDirectory, "config", "models_catalog.json");
-        yield return Path.Combine(AppContext.BaseDirectory, "models_catalog.json");
-        yield return Path.Combine(Directory.GetCurrentDirectory(), "config", "models_catalog.json");
-        yield return Path.Combine(Directory.GetCurrentDirectory(), "host", "PageToMovie.Core", "config", "models_catalog.json");
-    }
+    // ── Single source of truth ────────────────────────────────────────────────────────────────
+    // The models catalog is EMBEDDED in PageToMovie.Core (see the csproj EmbeddedResource items):
+    //   • real mode  → config/models_catalog.json
+    //   • fakes mode → config/models_catalog.fake.json (a standalone one-time copy + the fake vendor)
+    // Those are the ONLY two ways to load a catalog. There is no /data override, no on-disk file, and
+    // no fallback chain — a real server can never reach the fake catalog. The catalog is code: edit it
+    // in git and rebuild. This removes the old multi-location resolution whose silent degradation made
+    // "which catalog is actually loaded?" ambiguous.
+    private const string RealCatalogResource = "PageToMovie.Core.config.models_catalog.json";
+    private const string FakeCatalogResource = "PageToMovie.Core.config.models_fake_catalog.json";
 
-    public static string GetCatalogFilePath()
+    /// <summary>Logical name of the embedded catalog this process must use (fake only in fakes mode).</summary>
+    private static string EmbeddedCatalogResourceName =>
+        FakeCatalogEnabled() ? FakeCatalogResource : RealCatalogResource;
+
+    /// <summary>Human-readable source label for admin/diagnostics — the catalog is embedded, not a file.</summary>
+    public static string GetCatalogSourceLabel() => "embedded:" + EmbeddedCatalogResourceName;
+
+    /// <summary>Raw JSON of the embedded catalog this process uses (real, or fake in fakes mode) —
+    /// for admin display and the WASM catalog-json hydration endpoint. Never a filesystem read.</summary>
+    public static string GetEmbeddedCatalogJson()
     {
-        var candidates = GetCandidateCatalogPaths().ToList();
-        return candidates.FirstOrDefault(File.Exists) ?? candidates[^1];
+        var resource = EmbeddedCatalogResourceName;
+        var asm = typeof(SupportedModelCatalog).Assembly;
+        using var stream = asm.GetManifestResourceStream(resource)
+            ?? throw new InvalidOperationException($"Embedded models catalog resource '{resource}' not found.");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 
     /// <summary>
@@ -494,26 +521,18 @@ public static class SupportedModelCatalog
         }
     }
 
-    public static void SaveCatalogJson(string rawJson)
-    {
-        if (string.IsNullOrWhiteSpace(rawJson))
-            throw new ArgumentException("Catalog JSON payload cannot be empty", nameof(rawJson));
+    /// <summary>
+    /// Runtime catalog edits are no longer supported: the catalog is embedded in PageToMovie.Core
+    /// (config/models_catalog.json) and is the single source of truth. Change it in git and rebuild.
+    /// Kept so callers fail loudly instead of silently writing a file the server would never load.
+    /// </summary>
+    public static void SaveCatalogJson(string rawJson) =>
+        throw new NotSupportedException(
+            "The models catalog is embedded at build time (PageToMovie.Core/config/models_catalog.json) " +
+            "and cannot be edited at runtime. Edit the JSON in git and redeploy.");
 
-        // Reject anything EnsureLoaded wouldn't actually accept — without this, a structurally
-        // invalid save (e.g. a top-level object with no "models" array) still overwrote the
-        // previous good catalog file, and the next reload silently fell through every candidate
-        if (!IsUsableCatalogJson(rawJson))
-            throw new ArgumentException("Catalog JSON payload must be non-empty valid JSON with a non-empty 'models' array.", nameof(rawJson));
-
-        var targetPath = GetCatalogFilePath();
-        var dir = Path.GetDirectoryName(targetPath);
-        if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
-
-        File.WriteAllText(targetPath, rawJson);
-        ReloadCatalog(targetPath);
-    }
-
-    public static void ReloadCatalog(string? overrideJsonPath = null)
+    /// <summary>Reset and reload the embedded catalog (e.g. after fakes mode is toggled in a test).</summary>
+    public static void ReloadCatalog()
     {
         lock (CatalogSync)
         {
@@ -521,7 +540,7 @@ public static class SupportedModelCatalog
             _loadedProviders = null;
             _loadedCapabilities = null;
             _loadedTaskRankings = null;
-            EnsureLoaded(overrideJsonPath);
+            EnsureLoaded();
         }
     }
 
@@ -595,6 +614,27 @@ public static class SupportedModelCatalog
     }
 
     /// <summary>
+    /// True when the standalone fake test-vendor catalog should be loaded instead of the real one —
+    /// i.e. the host is running with <c>PageToMovie:UseFakes</c> on. Read from environment (Core has
+    /// no config access); the Api sets <c>PageToMovie__UseFakes</c>/<c>PAGETOMOVIE_USE_FAKES</c> when
+    /// fakes are on. Always false in the WASM browser (no env) — the browser loads the real embedded
+    /// catalog, then hydrates from the Api's /api/models/catalog-json, which serves the fake catalog
+    /// file on a fakes host.
+    /// </summary>
+    public static bool FakeCatalogEnabled()
+    {
+        if (OperatingSystem.IsBrowser()) return false;
+        foreach (var name in new[] { "PageToMovie__UseFakes", "PageToMovie_USE_FAKES", "PAGETOMOVIE_USE_FAKES" })
+        {
+            var v = Environment.GetEnvironmentVariable(name);
+            if (!string.IsNullOrWhiteSpace(v) &&
+                (v.Equals("true", StringComparison.OrdinalIgnoreCase) || v == "1"))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Prefer DTO <c>taskRankings</c>; also accept snake_case <c>task_rankings</c> from models_catalog.json.
     /// Never falls back to C# hard-coded rankings.
     /// </summary>
@@ -629,69 +669,40 @@ public static class SupportedModelCatalog
     /// <summary>True when the browser (or any host) has successfully loaded a catalog into memory.</summary>
     public static bool IsLoaded => _loadedEntries is { Count: > 0 };
 
-    private static void EnsureLoaded(string? customPath = null)
+    private static void EnsureLoaded()
     {
         if (_loadedEntries is not null && _loadedCapabilities is not null) return;
 
-        var candidates = GetCandidateCatalogPaths(customPath).ToList();
-
-        foreach (var path in candidates.Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p)))
-        {
-            try
-            {
-                if (TryLoadFromJson(File.ReadAllText(path)))
-                {
-                    // Production/file load: self-test required fields before any pipeline use.
-                    if (!OperatingSystem.IsBrowser())
-                        EnsureEnabledModelsComplete();
-                    return;
-                }
-            }
-            catch
-            {
-                // Ignore IO/parse failures and try the next candidate.
-            }
-        }
-
-        // Blazor WebAssembly (and any host without the file next to the binary): load the
-        // catalog embedded in PageToMovie.Core so Configuration / rate UI can render.
+        // Load the ONE embedded catalog for this process (real, or fake in fakes mode). No files, no
+        // /data, no fallback chain. Fail fast if it is missing or invalid rather than silently
+        // degrading to a different catalog — the previous multi-candidate loader hid exactly that.
+        var resource = EmbeddedCatalogResourceName;
         try
         {
             var asm = typeof(SupportedModelCatalog).Assembly;
-            foreach (var resourceName in asm.GetManifestResourceNames()
-                         .Where(n => n.EndsWith("models_catalog.json", StringComparison.OrdinalIgnoreCase)))
-            {
-                using var stream = asm.GetManifestResourceStream(resourceName);
-                if (stream is null) continue;
-                using var reader = new StreamReader(stream);
-                if (TryLoadFromJson(reader.ReadToEnd()))
-                {
-                    if (!OperatingSystem.IsBrowser())
-                        EnsureEnabledModelsComplete();
-                    return;
-                }
-            }
-        }
-        catch
-        {
-            // fall through
-        }
+            using var stream = asm.GetManifestResourceStream(resource)
+                ?? throw new InvalidOperationException(
+                    $"Embedded models catalog resource '{resource}' not found in {asm.GetName().Name}. " +
+                    "It is embedded at build time from PageToMovie.Core/config — check the csproj EmbeddedResource item.");
+            using var reader = new StreamReader(stream);
+            if (!TryLoadFromJson(reader.ReadToEnd()))
+                throw new InvalidOperationException(
+                    $"Embedded models catalog '{resource}' is not usable (expected a non-empty \"models\" array).");
 
-        // Browser has no /data or AppContext catalog path. Soft-load an empty shell so
-        // Configuration can render; LoadCatalogAsync then hydrates via /api/models/catalog-json.
-        if (OperatingSystem.IsBrowser())
+            // Self-test required fields before any pipeline use. Server hosts fail fast; the browser
+            // skips this (it re-hydrates the full catalog from the API's /api/models/catalog-json).
+            if (!OperatingSystem.IsBrowser())
+                EnsureEnabledModelsComplete();
+        }
+        catch when (OperatingSystem.IsBrowser())
         {
+            // Browser only: never brick the WASM UI — soft-load an empty shell; LoadCatalogAsync
+            // hydrates the real catalog from the API right after boot.
             _loadedEntries = new List<SupportedModelEntry>();
             _loadedProviders = new List<CatalogProviderDefinition>();
             _loadedCapabilities = new List<ModelCapabilityDefinition>();
             _loadedTaskRankings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-            return;
         }
-
-        throw new InvalidOperationException(
-            "No usable models catalog found. Checked: " + string.Join(", ", candidates) +
-            ", embedded:PageToMovie.Core.config.models_catalog.json" +
-            ". Expected an object with a non-empty \"models\" array, or a non-empty array of model entries.");
     }
 
     public static IReadOnlyList<SupportedModelEntry> ForCapability(
@@ -1180,6 +1191,7 @@ public static class SupportedModelCatalog
         MinClipDurationSeconds = e.MinClipDurationSeconds,
         MaxClipDurationSeconds = e.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = e.AbsMaxClipDurationSeconds,
+        MaxSpeakersPerClip = e.MaxSpeakersPerClip,
         AllowedDurationsSeconds = e.AllowedDurationsSeconds is { } ad ? new List<int>(ad) : null,
         MaxExtensionSeconds = e.MaxExtensionSeconds,
         MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
@@ -1238,6 +1250,7 @@ public static class SupportedModelCatalog
         MinClipDurationSeconds = d.MinClipDurationSeconds,
         MaxClipDurationSeconds = d.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = d.AbsMaxClipDurationSeconds,
+        MaxSpeakersPerClip = d.MaxSpeakersPerClip,
         AllowedDurationsSeconds = d.AllowedDurationsSeconds,
         MaxExtensionSeconds = d.MaxExtensionSeconds,
         MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
@@ -1290,6 +1303,7 @@ public static class SupportedModelCatalog
             "aimusicapi" => ModelProviderFamily.AiMusicApi,
             "elevenlabs" => ModelProviderFamily.ElevenLabs,
             "openai" => ModelProviderFamily.OpenAI,
+            "fake" => ModelProviderFamily.Fake,
             _ => ModelProviderFamily.Xai,
         };
 
@@ -1367,6 +1381,7 @@ public string? Notes { get; set; }
     public int? MinClipDurationSeconds { get; set; }
     public int? MaxClipDurationSeconds { get; set; }
     public int? AbsMaxClipDurationSeconds { get; set; }
+    public int? MaxSpeakersPerClip { get; set; }
     public List<int>? AllowedDurationsSeconds { get; set; }
     public int? MaxExtensionSeconds { get; set; }
     public int? MaxAudioDurationSeconds { get; set; }

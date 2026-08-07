@@ -97,11 +97,11 @@ public class SupportedModelCatalogTests
     }
 
     [Fact]
-    public void SaveCatalogJson_throws_and_does_not_touch_disk_on_invalid_structure()
+    public void SaveCatalogJson_is_unsupported_because_catalog_is_embedded()
     {
+        // The catalog is the single source of truth, embedded at build time — runtime edits are gone.
         var before = SupportedModelCatalog.Entries.Count;
-        Assert.Throws<ArgumentException>(() => SupportedModelCatalog.SaveCatalogJson("""{"models":[]}"""));
-        // Reload from whatever's still on disk — must be exactly what was there before the failed save.
+        Assert.Throws<NotSupportedException>(() => SupportedModelCatalog.SaveCatalogJson("""{"models":[]}"""));
         SupportedModelCatalog.ReloadCatalog();
         Assert.Equal(before, SupportedModelCatalog.Entries.Count);
     }

@@ -1803,6 +1803,7 @@ public sealed class FilmJobService
         string charKey,
         int variantIndex = 1,
         string? imagePath = null,
+        bool allowStyleOverride = false,
         CancellationToken ct = default)
     {
         if (IsRunning)
@@ -1813,16 +1814,17 @@ public sealed class FilmJobService
         {
             "lock-variant" =>
                 await _characters.LockVariantAsync(
-                    projectId, charKey, Math.Clamp(variantIndex, 1, 3), ct).ConfigureAwait(false),
+                    projectId, charKey, Math.Clamp(variantIndex, 1, 3), allowStyleOverride, ct).ConfigureAwait(false),
             "lock-image" when !string.IsNullOrWhiteSpace(imagePath) =>
                 await _characters.LockFromPathAsync(
                     projectId,
                     charKey,
                     ResolveLockImagePath(projectId, imagePath!),
+                    allowStyleOverride,
                     ct).ConfigureAwait(false),
             "lock-bookref" =>
                 await _characters.LockBookRefAsync(
-                    projectId, charKey, Math.Max(0, variantIndex), ct).ConfigureAwait(false),
+                    projectId, charKey, Math.Max(0, variantIndex), allowStyleOverride, ct).ConfigureAwait(false),
             "unlock" =>
                 _characters.Unlock(projectId, charKey)
                     ? $"Unlocked {charKey} — previous lock kept as variant 1 (best so far)"

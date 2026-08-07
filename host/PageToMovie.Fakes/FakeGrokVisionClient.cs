@@ -46,11 +46,27 @@ public sealed class FakeGrokVisionClient : IVisionClient
         CancellationToken ct = default)
     {
         _log.LogInformation("Fake vision multi-image n={N}", imagePaths?.Count ?? 0);
-        // Portrait style gate (CharacterDesignService) — always pass for fakes so UI tests can lock.
+        // Portrait style gate (CharacterDesignService.EnsurePortraitStyleAllowedAsync) — always pass
+        // for fakes so UI tests can lock a portrait. Match markers that are ACTUALLY in the gate
+        // prompt ("Expected medium for this project" / "Classify the image medium"); the old
+        // "PORTRAIT STYLE GATE" string never appeared, so the gate fell through to auto-review JSON,
+        // read medium=other, and every portrait lock failed in fakes mode ("could not read the image").
         if (!string.IsNullOrEmpty(prompt) &&
-            prompt.Contains("PORTRAIT STYLE GATE", StringComparison.OrdinalIgnoreCase))
+            (prompt.Contains("Classify the image medium", StringComparison.OrdinalIgnoreCase) ||
+             prompt.Contains("Expected medium for this project", StringComparison.OrdinalIgnoreCase)))
         {
-            var medium = prompt.Contains("Expected medium for this project: illustration", StringComparison.OrdinalIgnoreCase)
+            var expectedIllustration = prompt.Contains("Expected medium for this project: illustration", StringComparison.OrdinalIgnoreCase);
+            // Test hook: force a style-mismatch verdict so the "Use this look anyway" override path is
+            // reachable in fakes mode (the gate otherwise always passes). Reports the OPPOSITE medium.
+            var forceReject = string.Equals(Environment.GetEnvironmentVariable("PAGETOMOVIE_FAKE_STYLE_REJECT"), "1", StringComparison.Ordinal)
+                || string.Equals(Environment.GetEnvironmentVariable("PAGETOMOVIE_FAKE_STYLE_REJECT"), "true", StringComparison.OrdinalIgnoreCase);
+            if (forceReject)
+            {
+                var wrong = expectedIllustration ? "photoreal" : "illustration";
+                return Task.FromResult(
+                    $"{{\"pass\":false,\"medium\":\"{wrong}\",\"reason\":\"Fake forced style-mismatch for override testing.\"}}");
+            }
+            var medium = expectedIllustration
                 ? "illustration"
                 : "photoreal";
             return Task.FromResult(

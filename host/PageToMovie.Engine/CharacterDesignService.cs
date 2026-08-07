@@ -511,6 +511,7 @@ public sealed class CharacterDesignService
         string projectId,
         string charKey,
         int variantIndex,
+        bool allowStyleOverride = false,
         CancellationToken ct = default)
     {
         if (variantIndex is < 1 or > 3)
@@ -520,24 +521,26 @@ public sealed class CharacterDesignService
         var variantPath = Path.Combine(projectDir, "assets", "characters", fileName);
         if (!File.Exists(variantPath))
             throw new InvalidOperationException($"Variant not found: {fileName}");
-        return LockFromPathAsync(projectId, charKey, variantPath, ct);
+        return LockFromPathAsync(projectId, charKey, variantPath, allowStyleOverride, ct);
     }
 
     public Task<string> LockBookRefAsync(
         string projectId,
         string charKey,
         int bookIndex,
+        bool allowStyleOverride = false,
         CancellationToken ct = default)
     {
         var path = _projects.ResolveCharacterBookRefPath(projectId, charKey, bookIndex)
             ?? throw new InvalidOperationException($"Book ref {bookIndex} not found for {charKey}");
-        return LockFromPathAsync(projectId, charKey, path, ct);
+        return LockFromPathAsync(projectId, charKey, path, allowStyleOverride, ct);
     }
 
     public async Task<string> LockFromPathAsync(
         string projectId,
         string charKey,
         string sourcePath,
+        bool allowStyleOverride = false,
         CancellationToken ct = default)
     {
         var seeds = _projects.GetCharacterSeed(projectId, charKey)
@@ -548,7 +551,7 @@ public sealed class CharacterDesignService
         if (!File.Exists(sourcePath))
             throw new InvalidOperationException($"Image not found: {sourcePath}");
 
-        await EnsurePortraitStyleAllowedAsync(projectId, charKey, sourcePath, ct).ConfigureAwait(false);
+        await EnsurePortraitStyleAllowedAsync(projectId, charKey, sourcePath, allowStyleOverride, ct).ConfigureAwait(false);
 
         var projectDir = _projects.GetProjectDir(projectId);
         var refName = ProjectStore.CharacterRefFileName(charKey);
@@ -571,6 +574,7 @@ public sealed class CharacterDesignService
         string charKey,
         Stream content,
         string? originalFileName = null,
+        bool allowStyleOverride = false,
         CancellationToken ct = default)
     {
         var seeds = _projects.GetCharacterSeed(projectId, charKey)
@@ -596,7 +600,7 @@ public sealed class CharacterDesignService
             if (new FileInfo(staging).Length < 64)
                 throw new InvalidOperationException("Uploaded image is empty or too small.");
 
-            await EnsurePortraitStyleAllowedAsync(projectId, charKey, staging, ct).ConfigureAwait(false);
+            await EnsurePortraitStyleAllowedAsync(projectId, charKey, staging, allowStyleOverride, ct).ConfigureAwait(false);
 
             var refName = ProjectStore.CharacterRefFileName(charKey);
             var dest = Path.Combine(charDir, refName);
@@ -622,11 +626,23 @@ public sealed class CharacterDesignService
         string projectId,
         string charKey,
         string imagePath,
+        bool allowStyleOverride = false,
         CancellationToken ct = default)
     {
         if (!_opts.RequirePortraitStyleGate)
         {
             _log.LogWarning("Portrait style gate disabled (RequirePortraitStyleGate=false)");
+            return;
+        }
+
+        // User override: the creator's intent wins over the style classifier. This is how a photoreal
+        // character can live in an animated film (or vice versa) — the user chose this look on purpose,
+        // so we skip the style verdict and lock it. The classifier is advisory, not a hard wall.
+        if (allowStyleOverride)
+        {
+            _log.LogInformation(
+                "Portrait style gate OVERRIDDEN for {CharKey} — locking regardless of project medium (intentional mixed-media, user choice).",
+                charKey);
             return;
         }
 

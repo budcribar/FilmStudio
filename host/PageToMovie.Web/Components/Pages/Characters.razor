@@ -93,7 +93,45 @@ else if (Session.IsAdmin && HasCast && !JobRunning && !_extractingCast)
     </details>
 }
 
-@if (!string.IsNullOrEmpty(_error) && !JobRunning)
+@if (_styleRejectCandidate is not null && !JobRunning)
+{
+    @* Style classifier flagged a mismatch — but the creator's intent wins. Two-step: pick WHY you're
+       overriding (feeds the AI feedback loop: a wrong verdict is a defect to tune; a creative choice
+       is the classifier working as intended), then the look locks. Dismiss keeps the verdict. *@
+    <div class="alert alert-warning" data-testid="char-style-override">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+            <div>
+                <strong>This look's style doesn't match the project.</strong>
+                <div class="small">@_styleRejectMessage</div>
+                <div class="small mt-1">To use it anyway, tell us why — it helps improve the checks:</div>
+            </div>
+            <button type="button" class="btn-close" aria-label="Keep the suggestion (don't use this look)"
+                    data-testid="char-style-override-dismiss"
+                    @onclick="DismissStyleReject"></button>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            <button type="button" class="btn btn-sm btn-warning fw-semibold"
+                    data-testid="char-override-ai-wrong"
+                    disabled="@_busy"
+                    @onclick='() => LockCandidateAsync(_styleRejectCandidate!, overrideStyle: true, overrideReason: "ai_wrong")'>
+                The check is wrong — this look does match
+            </button>
+            <button type="button" class="btn btn-sm btn-warning fw-semibold"
+                    data-testid="char-override-preference"
+                    disabled="@_busy"
+                    @onclick='() => LockCandidateAsync(_styleRejectCandidate!, overrideStyle: true, overrideReason: "user_preference")'>
+                My creative choice — mix styles on purpose
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    data-testid="char-override-other"
+                    disabled="@_busy"
+                    @onclick='() => LockCandidateAsync(_styleRejectCandidate!, overrideStyle: true, overrideReason: "other")'>
+                Other
+            </button>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrEmpty(_error) && !JobRunning)
 {
     <div class="alert alert-danger">@_error</div>
 }
@@ -219,10 +257,20 @@ else if (_extractingCast)
 {
     @* Hide stale cast while rebuild/build runs — avoids editing the old list mid-flight. *@
 }
+else if (!HasCast)
+{
+    <div class="alert alert-warning" data-testid="characters-empty">
+        No cast yet. Approve the screenplay, then build the cast.
+    </div>
+}
 else if (OperatorCastCount == 0)
 {
-    <div class="alert alert-warning">
-        No cast yet. Approve the screenplay, then build the cast.
+    @* Cast exists but is entirely ensemble/crowd roles — those need no individual portraits, so the
+       operator roster below is empty. Acknowledge the cast instead of the misleading "No cast yet". *@
+    <div class="alert alert-info" data-testid="characters-all-ensembles">
+        The speaking cast here are all ensemble roles
+        (@string.Join(", ", _chars!.Where(c => c.IsGroup).Select(c => c.DisplayName))) —
+        no individual portraits needed. You can continue to the next step.
     </div>
 }
 else
@@ -237,6 +285,10 @@ else
                     var hasVoice = HasVoiceProfile(c);
                     <button type="button"
                             @key="c.Key"
+                            data-testid="char-list-item"
+                            data-char-key="@c.Key"
+                            data-char-group="@(c.IsGroup ? "true" : "false")"
+                            data-char-voice-only="@(c.VoiceOnly ? "true" : "false")"
                             class="list-group-item list-group-item-action char-list-item @(active ? "active" : "")"
                             disabled="@CastListLocked"
                             title="@(CastListLocked ? "Wait until the current action finishes" : null)"
@@ -404,6 +456,7 @@ else
                                                 <div class="d-flex flex-wrap gap-1 justify-content-center">
                                                     <button type="button"
                                                             class="btn btn-sm btn-primary char-pick__use"
+                                                            data-testid="char-use-look"
                                                             disabled="@(_busy || JobRunning)"
                                                             title="Save as preferred look for film"
                                                             @onclick="@(() => LockCandidateAsync(c))">
@@ -2100,7 +2153,7 @@ else
         await LockCandidateAsync(c);
     }
 
-    private async Task LockCandidateAsync(Candidate c)
+    private async Task LockCandidateAsync(Candidate c, bool overrideStyle = false, string? overrideReason = null)
     {
         if (_selected is null) return;
         // Remember choice so a cast-list switch can finish the save if this call is in flight.
@@ -2110,14 +2163,17 @@ else
         var display = _selected.DisplayName;
         _busy = true;
         _error = null;
+        if (overrideStyle) { _styleRejectCandidate = null; _styleRejectMessage = null; }
         try
         {
             if (c.Kind == "variant")
-                await Engine.LockCharacterVariantAsync(_projectId, charKey, c.Index);
+                await Engine.LockCharacterVariantAsync(_projectId, charKey, c.Index, overrideStyle, overrideReason);
             else if (c.Kind == "book")
-                await Engine.LockCharacterBookRefAsync(_projectId, charKey, c.Index);
+                await Engine.LockCharacterBookRefAsync(_projectId, charKey, c.Index, overrideStyle, overrideReason);
             else
                 throw new InvalidOperationException($"Cannot lock look kind '{c.Kind}'.");
+            _styleRejectCandidate = null;
+            _styleRejectMessage = null;
 
             // Saved thumbnail/icon is the confirmation — no redundant "Saved look" banner.
             _pendingLockCandidate = null;
@@ -2144,9 +2200,38 @@ else
         catch (Exception ex)
         {
             _error = ex.Message;
+            // Style-gate rejection is overridable: the creator can lock any look regardless of the
+            // project's default medium (photoreal character in an animated film, or vice versa).
+            if (!overrideStyle && IsStyleGateRejection(ex.Message))
+            {
+                _styleRejectCandidate = c;
+                _styleRejectMessage = ex.Message;
+            }
             // Keep _pendingLockCandidate so switching cast can retry / flush once.
         }
         finally { _busy = false; }
+    }
+
+    private Candidate? _styleRejectCandidate;
+    private string? _styleRejectMessage;
+
+    /// <summary>Keep the classifier's verdict (close the override prompt without locking).</summary>
+    private void DismissStyleReject()
+    {
+        _styleRejectCandidate = null;
+        _styleRejectMessage = null;
+        _error = null;
+        _pendingLockCandidate = null;
+        _chosenCandidateKey = null;
+    }
+
+    private static bool IsStyleGateRejection(string? message)
+    {
+        var m = message ?? "";
+        return m.Contains("does not match the project style", StringComparison.OrdinalIgnoreCase)
+            || m.Contains("live-action", StringComparison.OrdinalIgnoreCase)
+            || m.Contains("could not read the portrait", StringComparison.OrdinalIgnoreCase)
+            || m.Contains("style check", StringComparison.OrdinalIgnoreCase);
     }
 
     private void OnLookDescriptionInput(ChangeEventArgs e)

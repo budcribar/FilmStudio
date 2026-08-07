@@ -1,0 +1,177 @@
+@page "/admin/ai-calls"
+@using PageToMovie.Core.Models
+
+<PageTitle>AI Calls — analytics</PageTitle>
+
+<div class="container py-3" style="max-width: 76rem;">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-0">AI calls</h1>
+            <div class="text-muted small">
+                What every model call did — the read side of the feedback loop
+                (<code>telemetry/api_calls.jsonl</code>).
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin" class="btn btn-sm btn-outline-secondary">← Admin</a>
+            <button class="btn btn-sm btn-primary" data-testid="ai-calls-refresh"
+                    disabled="@_loading" @onclick="LoadAsync">
+                @(_loading ? "Loading…" : "Refresh")
+            </button>
+        </div>
+    </div>
+
+    @if (!Session.IsAdmin)
+    {
+        <div class="alert alert-warning">Admin session required. <a href="/admin/login">Sign in</a></div>
+    }
+    else if (_error is not null)
+    {
+        <div class="alert alert-danger" data-testid="ai-calls-error">@_error</div>
+    }
+    else if (_data is null)
+    {
+        <div class="text-muted">Loading analytics…</div>
+    }
+    else
+    {
+        <div data-testid="ai-calls-status" data-total="@_data.TotalCalls" data-projects="@_data.ProjectsScanned" class="d-none"></div>
+
+        @if (_data.TotalCalls == 0)
+        {
+            <div class="alert alert-info" data-testid="ai-calls-empty">
+                No AI calls have been logged yet. Run the pipeline (or a live generation) to collect data —
+                each model call appends one line to its project's <code>telemetry/api_calls.jsonl</code>.
+            </div>
+        }
+        else
+        {
+            @* ── Summary cards ── *@
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="card h-100"><div class="card-body py-2">
+                        <div class="text-muted small text-uppercase">Calls</div>
+                        <div class="fs-4 fw-semibold">@_data.TotalCalls.ToString("N0")</div>
+                        <div class="small text-muted">@_data.ProjectsScanned project(s)</div>
+                    </div></div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card h-100"><div class="card-body py-2">
+                        <div class="text-muted small text-uppercase">Success</div>
+                        <div class="fs-4 fw-semibold @(_data.SuccessRatePct >= 95 ? "text-success" : _data.SuccessRatePct >= 80 ? "text-warning" : "text-danger")">@_data.SuccessRatePct%</div>
+                        <div class="small text-muted">@_data.RetriedCalls.ToString("N0") after retry</div>
+                    </div></div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card h-100"><div class="card-body py-2">
+                        <div class="text-muted small text-uppercase">Avg latency</div>
+                        <div class="fs-4 fw-semibold">@_data.AvgDurationMs.ToString("N0") <span class="fs-6 text-muted">ms</span></div>
+                        <div class="small text-muted">@_data.FailedCalls.ToString("N0") failed</div>
+                    </div></div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card h-100"><div class="card-body py-2">
+                        <div class="text-muted small text-uppercase">Spend</div>
+                        <div class="fs-4 fw-semibold">$@_data.TotalCostUsd.ToString("N2")</div>
+                        <div class="small text-muted">@_data.FakeCalls.ToString("N0") fakes-mode</div>
+                    </div></div>
+                </div>
+            </div>
+
+            @* ── Key learnings ── *@
+            <div class="card mb-3 border-primary border-opacity-50">
+                <div class="card-body py-2">
+                    <div class="text-uppercase small text-muted mb-1">Key learnings</div>
+                    <ul class="mb-0 ps-3" data-testid="ai-calls-learnings">
+                        @foreach (var l in _data.Learnings)
+                        {
+                            <li>@l</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                @* ── Per-operation ── *@
+                <div class="col-lg-7">
+                    <h2 class="h6 text-uppercase text-muted">By operation</h2>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle" data-testid="ai-calls-ops">
+                            <thead><tr>
+                                <th>Operation</th><th class="text-end">Calls</th>
+                                <th class="text-end">Fail</th><th class="text-end">Retry</th>
+                                <th class="text-end">Avg ms</th><th class="text-end">Cost</th>
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var o in _data.Ops)
+                                {
+                                    <tr>
+                                        <td><code>@o.Op</code></td>
+                                        <td class="text-end">@o.Calls.ToString("N0")</td>
+                                        <td class="text-end @(o.FailPct > 0 ? "text-danger" : "text-muted")">@(o.FailPct > 0 ? $"{o.FailPct}%" : "—")</td>
+                                        <td class="text-end @(o.RetryPct > 0 ? "text-warning" : "text-muted")">@(o.RetryPct > 0 ? $"{o.RetryPct}%" : "—")</td>
+                                        <td class="text-end">@o.AvgDurationMs.ToString("N0")</td>
+                                        <td class="text-end">@(o.CostUsd > 0 ? $"${o.CostUsd:N2}" : "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @* ── Per-model ── *@
+                <div class="col-lg-5">
+                    <h2 class="h6 text-uppercase text-muted">By model</h2>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle" data-testid="ai-calls-models">
+                            <thead><tr>
+                                <th>Model</th><th class="text-end">Calls</th>
+                                <th class="text-end">Fail</th><th class="text-end">Cost</th>
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var m in _data.Models)
+                                {
+                                    <tr>
+                                        <td><code>@m.Model</code><div class="small text-muted">@m.Provider</div></td>
+                                        <td class="text-end">@m.Calls.ToString("N0")</td>
+                                        <td class="text-end @(m.FailPct > 0 ? "text-danger" : "text-muted")">@(m.FailPct > 0 ? $"{m.FailPct}%" : "—")</td>
+                                        <td class="text-end">@(m.CostUsd > 0 ? $"${m.CostUsd:N2}" : "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @* ── Recent failures ── *@
+            @if (_data.RecentFailures.Count > 0)
+            {
+                <h2 class="h6 text-uppercase text-muted mt-2">Recent failures</h2>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle" data-testid="ai-calls-failures">
+                        <thead><tr>
+                            <th>When</th><th>Operation</th><th>Kind</th><th>Model</th><th>Detail</th>
+                        </tr></thead>
+                        <tbody>
+                            @foreach (var f in _data.RecentFailures)
+                            {
+                                <tr>
+                                    <td class="text-nowrap small text-muted">@(f.Ts?.LocalDateTime.ToString("MMM d HH:mm") ?? "—")</td>
+                                    <td><code>@f.Op</code></td>
+                                    <td><span class="badge text-bg-danger">@f.FailureKind</span></td>
+                                    <td class="small">@f.Model</td>
+                                    <td class="small text-muted">@(f.HttpStatus is { } s ? $"[{s}] " : "")@f.Error</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="text-muted small mt-2">
+                @_data.WindowNote · generated @_data.GeneratedAt.LocalDateTime.ToString("MMM d HH:mm")
+            </div>
+        }
+    }
+</div>

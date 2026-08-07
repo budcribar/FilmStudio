@@ -19,6 +19,9 @@ public class AppFixture : IAsyncLifetime
     protected virtual int DefaultPort => 5088;
     protected virtual bool HonorEnvBaseUrl => true;
     protected virtual IReadOnlyDictionary<string, string> ExtraEnv => EmptyEnv;
+    /// <summary>Workspace (projects) root the host uses. Override to isolate — e.g. a fresh temp
+    /// workspace for the end-to-end pipeline test so creating a project doesn't touch the demos.</summary>
+    protected virtual string WorkspaceRoot => FindRepoRoot();
     private static readonly IReadOnlyDictionary<string, string> EmptyEnv = new Dictionary<string, string>();
 
     public string BaseUrl { get; }
@@ -91,7 +94,7 @@ public class AppFixture : IAsyncLifetime
         };
         psi.Environment["PageToMovie__UseFakes"] = "true";
         psi.Environment["PageToMovie_USE_FAKES"] = "true";
-        psi.Environment["PageToMovie__WorkspaceRoot"] = repo;
+        psi.Environment["PageToMovie__WorkspaceRoot"] = WorkspaceRoot;
         psi.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
         // Bind exactly our port (UseUrls ignores ASPNETCORE_URLS; PAGETOMOVIE_BIND_PORTS is honored).
         psi.Environment["PAGETOMOVIE_BIND_PORTS"] = _port.ToString();
@@ -123,7 +126,7 @@ public class AppFixture : IAsyncLifetime
         throw new DirectoryNotFoundException("could not locate repo root (host/PageToMovie.slnx)");
     }
 
-    public async Task DisposeAsync()
+    public virtual async Task DisposeAsync()
     {
         if (Browser is not null) await Browser.DisposeAsync();
         _pw?.Dispose();
@@ -151,8 +154,78 @@ public sealed class CapabilitiesOffFixture : AppFixture
     };
 }
 
+/// <summary>
+/// A host on its own port with a fresh, empty temp workspace — for the end-to-end pipeline test
+/// that creates a project from scratch and runs it through the fully-faked pipeline, without
+/// touching the demo projects or the other hosts' active-project state.
+/// </summary>
+public sealed class PipelineFixture : AppFixture
+{
+    private readonly string _workspace;
+
+    public PipelineFixture()
+    {
+        _workspace = Path.Combine(Path.GetTempPath(), "ptm-e2e-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(Path.Combine(_workspace, "projects"));
+    }
+
+    protected override int DefaultPort => 5081;
+    protected override bool HonorEnvBaseUrl => false;
+    protected override string WorkspaceRoot => _workspace;
+    // Deterministic reads: this test drives generation via the job API (not the browser's SignalR
+    // flow), so the short-TTL server read cache can serve stale scene/clip counts right after a job.
+    // Disable it so the Scenes page always reflects the just-generated state.
+    protected override IReadOnlyDictionary<string, string> ExtraEnv => new Dictionary<string, string>
+    {
+        ["PageToMovie__EnableReadCaches"] = "false",
+    };
+
+    public override async Task DisposeAsync()
+    {
+        await base.DisposeAsync();
+        try { Directory.Delete(_workspace, recursive: true); } catch { /* best effort */ }
+    }
+}
+
 [CollectionDefinition("ui")]
 public sealed class UiCollection : ICollectionFixture<AppFixture> { }
 
 [CollectionDefinition("ui-caps-off")]
 public sealed class CapsOffCollection : ICollectionFixture<CapabilitiesOffFixture> { }
+
+[CollectionDefinition("ui-pipeline")]
+public sealed class PipelineCollection : ICollectionFixture<PipelineFixture> { }
+
+/// <summary>
+/// A pipeline host (own port, own temp workspace) with the fake vision style gate forced to REJECT
+/// (PAGETOMOVIE_FAKE_STYLE_REJECT) — so the "Use this look anyway" override path is reachable, which
+/// the always-passing default fakes host can't exercise.
+/// </summary>
+public sealed class StyleRejectFixture : AppFixture
+{
+    private readonly string _workspace;
+
+    public StyleRejectFixture()
+    {
+        _workspace = Path.Combine(Path.GetTempPath(), "ptm-reject-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(Path.Combine(_workspace, "projects"));
+    }
+
+    protected override int DefaultPort => 5082;
+    protected override bool HonorEnvBaseUrl => false;
+    protected override string WorkspaceRoot => _workspace;
+    protected override IReadOnlyDictionary<string, string> ExtraEnv => new Dictionary<string, string>
+    {
+        ["PAGETOMOVIE_FAKE_STYLE_REJECT"] = "1",
+        ["PageToMovie__EnableReadCaches"] = "false",
+    };
+
+    public override async Task DisposeAsync()
+    {
+        await base.DisposeAsync();
+        try { Directory.Delete(_workspace, recursive: true); } catch { /* best effort */ }
+    }
+}
+
+[CollectionDefinition("ui-style-reject")]
+public sealed class StyleRejectCollection : ICollectionFixture<StyleRejectFixture> { }

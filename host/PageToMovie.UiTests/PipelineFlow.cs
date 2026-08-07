@@ -1,0 +1,243 @@
+using System.Text.RegularExpressions;
+using Microsoft.Playwright;
+
+namespace PageToMovie.UiTests;
+
+/// <summary>
+/// Reusable fresh-project pipeline steps (create → pick fake models → import → sign off) shared by
+/// the end-to-end and cast-display-variation tests. Everything runs against the fully-faked host with
+/// the fake test-vendor catalog, so a fresh project can be driven from nothing to an extracted cast.
+/// </summary>
+public static class PipelineFlow
+{
+    /// <summary>Create a fresh project and return on the import page. Works whether the shared
+    /// workspace is empty (home shows the easy-start landing, New is behind "Open full studio") or
+    /// already has projects (home remembers full-studio mode, New is directly available) — the
+    /// pipeline fixture reuses one workspace across tests, so both states occur.</summary>
+    public static async Task CreateFreshProjectAsync(IPage page, string baseUrl, string name)
+    {
+        await page.GotoAsync($"{baseUrl}/?admin=1");
+        // "Drop a book" is the home heading in every state — a state-independent readiness marker.
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Drop a book" })
+                  .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30_000 });
+        // A fresh context shows the terms gate; its backdrop covers the home buttons. Dismiss first.
+        var agree = page.GetByRole(AriaRole.Button, new() { Name = "Agree & continue" });
+        try { await agree.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10_000 }); }
+        catch (TimeoutException) { /* already accepted in this context */ }
+        await Ui.DismissTermsAsync(page);
+        // Reveal full studio only when on the easy-start landing; a non-empty home is already there.
+        var openStudio = page.GetByTestId("home-open-full-studio");
+        try
+        {
+            await openStudio.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5_000 });
+            await openStudio.ClickAsync();
+        }
+        catch (TimeoutException) { /* already in full studio */ }
+        await page.GetByTestId("home-new-project").First.ClickAsync(new() { Timeout = 30_000 });
+        await page.GetByTestId("home-new-project-name").FillAsync(name);
+        await page.GetByTestId("home-create-project").ClickAsync();
+        await page.WaitForURLAsync(new Regex("adaptation/import", RegexOptions.IgnoreCase), new() { Timeout = 60_000 });
+    }
+
+    /// <summary>Point every studio job at the key-free fake test vendor for the active project, via
+    /// the app's own config API (authed with the browser session) — a stable "arrange" step; the
+    /// Settings model-picker UI is covered separately and is slow/flaky to drive per fixture.</summary>
+    public static async Task SelectFakeModelsAsync(IPage page)
+    {
+        var result = await page.EvaluateAsync<string>(@"async () => {
+            const raw = sessionStorage.getItem('PageToMovie.admin.session');
+            if (!raw) return JSON.stringify({err:'no session'});
+            const s = JSON.parse(raw);
+            const tok = s.Token || s.token; const uid = s.UserId || s.userId || '';
+            const h = {'Authorization':'Bearer '+tok, 'X-User-Id':uid, 'Content-Type':'application/json'};
+            const pr = await fetch('/api/projects', {headers:h}).then(r=>r.json());
+            const a = pr.active || pr.Active || {};
+            const id = a.id || a.Id || '';
+            if (!id) return JSON.stringify({err:'no active project', keys:Object.keys(pr)});
+            const body = { version:2,
+                video_provider:'fake', image_provider:'fake', character_design_provider:'fake',
+                planning_provider:'fake', vision_provider:'fake', quality_provider:'fake',
+                model_name:'fake-video', image_model_name:'fake-image', planning_model_name:'fake-script',
+                vision_model_name:'fake-vision', quality_model_name:'fake-vision',
+                audio_model_name:'fake-music', voice_model_name:'fake-voice',
+                model_selections:{video:'fake-video',image:'fake-image',chat:'fake-script',vision:'fake-vision',audio:'fake-music'} };
+            const res = await fetch('/api/projects/'+encodeURIComponent(id)+'/config',
+                {method:'PUT', headers:h, body:JSON.stringify(body)});
+            return JSON.stringify({id, status:res.status});
+        }");
+        Assert.DoesNotContain("\"err\"", result);
+        Assert.Contains("\"status\":200", result);
+    }
+
+    /// <summary>Import a Fountain fixture; waits for the app's own auto-navigation to the screenplay
+    /// page (which only happens on a successful import).</summary>
+    public static async Task ImportFountainAsync(IPage page, string baseUrl, string fixtureFile)
+    {
+        await page.GotoAsync($"{baseUrl}/adaptation/import?admin=1");
+        var fountain = Path.Combine(AppFixture.FindRepoRoot(), "host", "playwright", "fixtures", fixtureFile);
+        Assert.True(File.Exists(fountain), $"fixture missing: {fountain}");
+        var input = page.GetByTestId("import-file-input");
+        await input.WaitForAsync(new() { Timeout = 30_000 });
+        await input.SetInputFilesAsync(fountain);
+        try
+        {
+            await page.WaitForURLAsync(new Regex("adaptation/screenplay", RegexOptions.IgnoreCase), new() { Timeout = 30_000 });
+        }
+        catch (TimeoutException)
+        {
+            var gate = page.GetByTestId("import-setup-required");
+            var blocked = await gate.CountAsync() > 0 ? await gate.TextContentAsync() : "(not gated)";
+            Assert.Fail($"Fountain import did not navigate to screenplay. setup gate: {blocked?.Trim()}");
+        }
+    }
+
+    /// <summary>Approve the screenplay draft; the server extracts cast then the app navigates to
+    /// Characters. Caller waits for that navigation.</summary>
+    public static async Task SignOffScreenplayAsync(IPage page)
+    {
+        var status = page.GetByTestId("screenplay-status");
+        await status.WaitForAsync(new() { Timeout = 30_000 });
+        await Assertions.Expect(status).ToHaveAttributeAsync("data-draft", "true", new() { Timeout = 60_000 });
+
+        var signoff = page.GetByTestId("screenplay-signoff");
+        await signoff.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30_000 });
+        await Assertions.Expect(signoff).ToBeEnabledAsync(new() { Timeout = 60_000 });
+        await signoff.ClickAsync();
+    }
+
+    /// <summary>Run the whole flow for a fixture and land on the Characters page.</summary>
+    public static async Task RunToCharactersAsync(IPage page, string baseUrl, string projectName, string fixtureFile)
+    {
+        await CreateFreshProjectAsync(page, baseUrl, projectName);
+        await SelectFakeModelsAsync(page);
+        await ImportFountainAsync(page, baseUrl, fixtureFile);
+        await SignOffScreenplayAsync(page);
+        await page.WaitForURLAsync(new Regex("characters", RegexOptions.IgnoreCase), new() { Timeout = 90_000 });
+    }
+
+    /// <summary>Build the shot plan (Stage 2) for the active project and wait for the job to finish.
+    /// Runs via the app's job API (authed browser fetch) — building the plan does not require locked
+    /// portraits (that gate is only for video generation), so this reaches the Scenes display from an
+    /// extracted cast. The ~15 Stage-2 classifiers resolve to the fake chat client.</summary>
+    public static async Task BuildShotPlanAsync(IPage page)
+    {
+        var result = await page.EvaluateAsync<string>(@"async () => {
+            const raw = sessionStorage.getItem('PageToMovie.admin.session');
+            if (!raw) return JSON.stringify({err:'no session'});
+            const s = JSON.parse(raw);
+            const h = {'Authorization':'Bearer '+(s.Token||s.token), 'X-User-Id':(s.UserId||s.userId||''), 'Content-Type':'application/json'};
+            const pr = await fetch('/api/projects', {headers:h}).then(r=>r.json());
+            const id = (pr.active||pr.Active||{}).id || (pr.active||pr.Active||{}).Id;
+            if (!id) return JSON.stringify({err:'no active project'});
+            const start = await fetch('/api/jobs/stage2', {method:'POST', headers:h,
+                body: JSON.stringify({projectId:id, scenes:'all'})}).then(r=>r.json());
+            const j = start.job || {};
+            const jobId = j.jobId || j.JobId || j.id;
+            if (!jobId) return JSON.stringify({err:'no jobId', start});
+            const deadline = Date.now() + 90000;
+            let last = '';
+            while (Date.now() < deadline) {
+                await new Promise(r => setTimeout(r, 1500));
+                const st = await fetch('/api/jobs/'+encodeURIComponent(jobId), {headers:h}).then(r=>r.json());
+                last = (st.job||{}).status || (st.job||{}).Status;
+                if (last === 'done') return JSON.stringify({ok:true});
+                if (last === 'error' || last === 'cancelled') return JSON.stringify({err:'job '+last, job:st.job});
+            }
+            return JSON.stringify({err:'timeout', last});
+        }");
+        Assert.DoesNotContain("\"err\"", result);
+        Assert.Contains("\"ok\":true", result);
+    }
+
+    /// <summary>Full flow through to the Scenes page with a built shot plan.</summary>
+    public static async Task RunToScenesAsync(IPage page, string baseUrl, string projectName, string fixtureFile)
+    {
+        await RunToCharactersAsync(page, baseUrl, projectName, fixtureFile);
+        await BuildShotPlanAsync(page);
+        await Ui.GotoAppAsync(page, baseUrl, "/scenes");
+    }
+
+    /// <summary>Make every character ready for video: generate a portrait variant (fake image), lock
+    /// it (passes the fake style gate), and set a voice. Done via the app's own APIs (authed browser
+    /// fetch) — this is the "ready for shots" arrange that the video-generation spend gate requires.
+    /// Verified live: without a locked+voiced cast, gen-batch throws "Cast not ready for video".</summary>
+    public static async Task MakeCastReadyForShotsAsync(IPage page)
+    {
+        var result = await page.EvaluateAsync<string>(@"async () => {
+            const raw = sessionStorage.getItem('PageToMovie.admin.session');
+            if (!raw) return JSON.stringify({err:'no session'});
+            const s = JSON.parse(raw);
+            const h = {'Authorization':'Bearer '+(s.Token||s.token), 'X-User-Id':(s.UserId||s.userId||''), 'Content-Type':'application/json'};
+            const pr = await fetch('/api/projects', {headers:h}).then(r=>r.json());
+            const id = (pr.active||pr.Active||{}).id || (pr.active||pr.Active||{}).Id;
+            if (!id) return JSON.stringify({err:'no active project'});
+            const E = encodeURIComponent(id);
+            const poll = async (jobId) => {
+                const dl = Date.now()+60000; let last='';
+                while (Date.now()<dl) { await new Promise(r=>setTimeout(r,1000));
+                    const st = await fetch('/api/jobs/'+encodeURIComponent(jobId), {headers:h}).then(r=>r.json());
+                    last = (st.job||{}).status; if (last==='done') return 'done';
+                    if (last==='error'||last==='cancelled') return 'ERR:'+JSON.stringify(st.job).slice(0,150); }
+                return 'timeout'; };
+            const chars = (await fetch('/api/projects/'+E+'/characters', {headers:h}).then(r=>r.json())).characters || [];
+            if (!chars.length) return JSON.stringify({err:'no cast extracted'});
+            for (const c of chars) {
+                const key = c.key||c.Key; const K = encodeURIComponent(key);
+                const v = await fetch('/api/jobs/character-variants', {method:'POST', headers:h,
+                    body: JSON.stringify({projectId:id, charKey:key, count:1, seedMode:'auto'})}).then(r=>r.json());
+                const vp = await poll((v.job||{}).jobId||(v.job||{}).id);
+                if (vp !== 'done') return JSON.stringify({err:'variants '+vp, key});
+                const lk = await fetch('/api/projects/'+E+'/characters/'+K+'/lock-variant', {method:'POST', headers:h,
+                    body: JSON.stringify({index:1})}).then(r=>r.json());
+                if (!lk.ok) return JSON.stringify({err:'lock failed', key, detail:(lk.error||'').slice(0,120)});
+                const vo = await fetch('/api/projects/'+E+'/characters/'+K+'/voice', {method:'POST', headers:h,
+                    body: JSON.stringify({voiceProfile:'Test voice', voiceLabel:key})}).then(r=>r.json());
+                if (!vo.ok) return JSON.stringify({err:'voice failed', key});
+            }
+            return JSON.stringify({ok:true, count:chars.length});
+        }");
+        Assert.DoesNotContain("\"err\"", result);
+        Assert.Contains("\"ok\":true", result);
+    }
+
+    /// <summary>Generate clips for every scene (fake video copies MP4 fixtures) and wait for the job.
+    /// Requires a built shot plan and a ready-for-shots cast.</summary>
+    public static async Task GenerateClipsAsync(IPage page)
+    {
+        var result = await page.EvaluateAsync<string>(@"async () => {
+            const raw = sessionStorage.getItem('PageToMovie.admin.session');
+            if (!raw) return JSON.stringify({err:'no session'});
+            const s = JSON.parse(raw);
+            const h = {'Authorization':'Bearer '+(s.Token||s.token), 'X-User-Id':(s.UserId||s.userId||''), 'Content-Type':'application/json'};
+            const pr = await fetch('/api/projects', {headers:h}).then(r=>r.json());
+            const id = (pr.active||pr.Active||{}).id || (pr.active||pr.Active||{}).Id;
+            if (!id) return JSON.stringify({err:'no active project'});
+            const E = encodeURIComponent(id);
+            const scenes = ((await fetch('/api/projects/'+E+'/scenes', {headers:h}).then(r=>r.json())).scenes || [])
+                .map(x => x.sceneNumber || x.SceneNumber);
+            if (!scenes.length) return JSON.stringify({err:'no scenes'});
+            const gb = await fetch('/api/jobs/gen-batch', {method:'POST', headers:h,
+                body: JSON.stringify({projectId:id, scenes, onlyMissing:false})}).then(r=>r.json());
+            const jobId = (gb.job||{}).jobId || (gb.job||{}).id;
+            if (!jobId) return JSON.stringify({err:'no jobId', gb});
+            const dl = Date.now()+120000; let last='';
+            while (Date.now()<dl) { await new Promise(r=>setTimeout(r,1500));
+                const st = await fetch('/api/jobs/'+encodeURIComponent(jobId), {headers:h}).then(r=>r.json());
+                last = (st.job||{}).status; if (last==='done') return JSON.stringify({ok:true});
+                if (last==='error'||last==='cancelled') return JSON.stringify({err:'gen '+last, job:st.job}); }
+            return JSON.stringify({err:'timeout', last});
+        }");
+        Assert.DoesNotContain("\"err\"", result);
+        Assert.Contains("\"ok\":true", result);
+    }
+
+    /// <summary>Full flow through to generated clips on the Scenes page.</summary>
+    public static async Task RunToGeneratedClipsAsync(IPage page, string baseUrl, string projectName, string fixtureFile)
+    {
+        await RunToCharactersAsync(page, baseUrl, projectName, fixtureFile);
+        await MakeCastReadyForShotsAsync(page);
+        await BuildShotPlanAsync(page);
+        await GenerateClipsAsync(page);
+        await Ui.GotoAppAsync(page, baseUrl, "/scenes");
+    }
+}
