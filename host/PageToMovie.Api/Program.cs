@@ -6400,6 +6400,32 @@ app.MapGet("/api/me/api-calls", async (
 });
 
 // ---- Cost (ledger + estimates) ----
+// Capability availability — JIT, user-level, capability-focused. Which generation capabilities
+// have at least one provider configured right now (a key, or fakes). Any provider that offers the
+// capability counts (MultiProvider*.IsConfigured). NOT project-scoped: a project's required
+// capabilities change as it develops and keys change anytime, so the UI checks this live to
+// disable a model/key-dependent action with a "Set up →" hint rather than show it and fail on click.
+app.MapGet("/api/capabilities", (
+    IVideoClient video,
+    IImageClient image,
+    IVisionClient vision,
+    IAudioClient audio,
+    IVoiceClient voice,
+    IChatClient chat) =>
+{
+    var caps = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["video"] = video.IsConfigured,
+        ["image"] = image.IsConfigured,
+        ["vision"] = vision.IsConfigured,
+        ["review"] = vision.IsConfigured,   // multimodal auto-review runs on the vision client
+        ["music"] = audio.IsConfigured,
+        ["voice"] = voice.IsConfigured,
+        ["planning"] = chat.IsConfigured,
+    };
+    return Results.Ok(new { ok = true, capabilities = caps });
+});
+
 app.MapGet("/api/projects/{id}/cost", async (
     string id,
     ProjectStore store,
