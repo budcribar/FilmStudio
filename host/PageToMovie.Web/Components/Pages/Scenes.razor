@@ -3860,6 +3860,8 @@ else
     /// <summary>Force re-generate a single clip (onlyMissing: false).</summary>
     private async Task RegenClipAsync(int sn, int cn)
     {
+        // Credits are rendered deterministically client-side — never sent to the video model.
+        if (IsCreditsSceneNum(sn)) { await GenerateCreditsEntryAsync(sn); return; }
         if (!CastReady)
         {
             _error = CastBlockedTitle;
@@ -4072,6 +4074,8 @@ else
 
     private async Task GenOneSceneAsync(int sn)
     {
+        // Credits are rendered deterministically client-side — never sent to the video model.
+        if (IsCreditsSceneNum(sn)) { await GenerateCreditsEntryAsync(sn); return; }
         if (!CastReady)
         {
             _error = CastBlockedTitle;
@@ -4126,9 +4130,7 @@ else
 
             // The end-credits card is rendered deterministically in the browser (canvas → ffmpeg.wasm),
             // not by the hallucination-prone video model — split it out of the server video batch.
-            var creditsScenes = list
-                .Where(sn => _scenes?.FirstOrDefault(s => s.SceneNumber == sn)?.IsCredits == true)
-                .ToList();
+            var creditsScenes = list.Where(IsCreditsSceneNum).ToList();
             var videoScenes = list.Where(sn => !creditsScenes.Contains(sn)).ToList();
 
             foreach (var sn in videoScenes)
@@ -4163,6 +4165,29 @@ else
         "480p" => (854, 480),
         _ => (1280, 720),
     };
+
+    private bool IsCreditsSceneNum(int sn) =>
+        _scenes?.FirstOrDefault(s => s.SceneNumber == sn)?.IsCredits == true;
+
+    /// <summary>
+    /// Single entry point every generation path funnels a credits scene through: render the deterministic
+    /// card client-side instead of calling the video model, so no path (batch, per-clip regen, single
+    /// scene) can ever produce a hallucinated credits clip. No cast gate — a credits card has no cast.
+    /// </summary>
+    private async Task GenerateCreditsEntryAsync(int sn)
+    {
+        _busy = true;
+        _error = null;
+        _message = "Rendering end-credits card…";
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await RenderCreditsSceneClientSideAsync(sn);
+            await SoftReloadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
 
     /// <summary>
     /// Render the end-credits card client-side (deterministic canvas → ffmpeg.wasm roll) for every clip
