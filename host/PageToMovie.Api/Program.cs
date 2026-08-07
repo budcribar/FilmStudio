@@ -98,6 +98,7 @@ builder.Services.AddSingleton<ProjectStore>();
 builder.Services.AddSingleton<IProjectAclService, ProjectAclService>();
 builder.Services.AddSingleton<IProjectLeaseService, ProjectLeaseService>();
 builder.Services.AddSingleton<IProjectPresenceService, ProjectPresenceService>();
+builder.Services.AddSingleton<IAutoProjectMerger, AutoProjectMerger>();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IJobStore, JobStore>();
 builder.Services.AddSingleton<ILockService, InMemoryLockService>();
@@ -4229,8 +4230,28 @@ app.MapPost("/api/projects/{id}/sync-origin", async (
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
-        var res = await git.SyncForkFromOriginAsync(store.GetProjectDir(id), store.GetProjectDir(body.ParentProjectId));
-        return Results.Ok(new { ok = res.Success, hasConflicts = res.HasConflicts, commitHash = res.CommitHash, message = res.Message });
+        PageToMovie.Engine.GitMergeResult res;
+        if (!string.IsNullOrWhiteSpace(body.AutoResolveStrategy)
+            && Enum.TryParse<PageToMovie.Engine.Collaboration.AutoTextMerger.Strategy>(
+                body.AutoResolveStrategy, ignoreCase: true, out var strategy))
+        {
+            res = await git.SyncForkFromOriginWithAutoResolveAsync(
+                store.GetProjectDir(id), store.GetProjectDir(body.ParentProjectId), strategy);
+        }
+        else
+        {
+            res = await git.SyncForkFromOriginAsync(
+                store.GetProjectDir(id), store.GetProjectDir(body.ParentProjectId));
+        }
+        return Results.Ok(new
+        {
+            ok = res.Success,
+            hasConflicts = res.HasConflicts,
+            commitHash = res.CommitHash,
+            message = res.Message,
+            autoResolvedCount = res.AutoResolvedCount,
+            remainingConflictPaths = res.RemainingConflictPaths,
+        });
     }
     catch (Exception ex)
     {
@@ -8674,6 +8695,7 @@ catch (Exception ex)
 }
 
 app.MapCollaborationEndpoints();
+app.MapMergeEndpoints();
 app.MapHub<ProjectHub>("/hubs/project");
 app.Run();
 
@@ -8684,7 +8706,7 @@ namespace PageToMovie.Api
     public record AcceptInviteApiRequest(string? Token);
     public record CommitProjectApiRequest(string? Message);
     public record PushProjectApiRequest(bool CommitFirst = false, string? Message = null);
-    public record SyncOriginApiRequest(string? ParentProjectId);
+    public record SyncOriginApiRequest(string? ParentProjectId, string? AutoResolveStrategy = null);
     public record ProjectVisibilityRequest(string VisibilityMode);
     public record SetBookRefsRequest(List<string>? ImagePaths);
     public record MovieReviewRequest(List<MovieAutoReviewKeyframe>? Keyframes);
