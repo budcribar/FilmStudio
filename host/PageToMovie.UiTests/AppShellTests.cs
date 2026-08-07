@@ -17,7 +17,8 @@ public class AppShellTests
         {
             await Ui.GotoAppAsync(page, _fx.BaseUrl, "/");
             await Assertions.Expect(page.GetByRole(AriaRole.Heading, new() { Name = "Drop a book" })).ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByText("Cast & voice").First).ToBeVisibleAsync();
+            // View-independent entry points (present in both the easy-start and full-studio landings).
+            await Assertions.Expect(page.GetByText("Full studio").First).ToBeVisibleAsync();
         }
         finally { await ctx.CloseAsync(); }
     }
