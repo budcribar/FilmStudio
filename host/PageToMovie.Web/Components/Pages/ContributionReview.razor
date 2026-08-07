@@ -1,343 +1,219 @@
 @page "/projects/{id}/review-contribution"
-@inject EngineApiClient Engine
-@inject AdminSessionService Session
-@inject NavigationManager Nav
-@using PageToMovie.Core.Models
-@using PageToMovie.Web.Services
+@inject HttpClient Http
+@using System.Net.Http.Json
+@using System.Text.Json
 
-<PageTitle>Contribution Review - @Id</PageTitle>
+<div class="container py-3">
+    <h3>Contribution review</h3>
+    <p class="text-muted small">Project: <code>@Id</code>
+        @if (!string.IsNullOrEmpty(OriginId))
+        {
+            <span> · Origin: <code>@OriginId</code></span>
+        }
+    </p>
 
-<div class="container py-4" data-testid="contribution-review-page">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="mb-1">Contribution &amp; Diff Review</h1>
-            <p class="text-muted mb-0">Review line-by-line changes and merge origin updates into <strong>@Id</strong></p>
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="alert @(_messageOk ? "alert-success" : "alert-warning")">@_message</div>
+    }
+
+    @if (_hasConflicts)
+    {
+        <div class="card border-warning mb-3">
+            <div class="card-header bg-warning-subtle">
+                <strong>Merge conflicts</strong>
+                @if (_autoResolvedCount > 0)
+                {
+                    <span class="badge text-bg-secondary ms-2">auto-resolved @_autoResolvedCount</span>
+                }
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Choose a strategy, then retry the last sync/merge direction.</p>
+                @if (_remainingConflictPaths.Count > 0)
+                {
+                    <ul class="small">
+                        @foreach (var path in _remainingConflictPaths)
+                        {
+                            <li><code>@path</code></li>
+                        }
+                    </ul>
+                }
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="ResolvePreferOurs">Prefer Ours</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="ResolvePreferTheirs">Prefer Theirs</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ResolveAuto">Auto</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ResolveUnion">Union</button>
+                </div>
+            </div>
         </div>
-        <a href="" class="btn btn-outline-secondary">← Back to Studio</a>
+    }
+
+    <div class="mb-3 d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-primary" disabled="@(_busy || string.IsNullOrEmpty(OriginId))" @onclick="SyncFromOriginAsync">Sync From Origin</button>
+        <button type="button" class="btn btn-primary" disabled="@(_busy || string.IsNullOrEmpty(OriginId))" @onclick="AcceptMergeAsync">Merge Into Origin</button>
+        <button type="button" class="btn btn-outline-secondary" disabled="@(_busy || string.IsNullOrEmpty(OriginId))" @onclick="SyncMediaAsync">Sync Media</button>
     </div>
 
-    @if (_loading)
+    @if (_diff?.Scenes != null && _diff.Scenes.Count > 0)
     {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Computing contribution diff...</span>
-            </div>
-        </div>
-    }
-    else if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger">
-            <h5>Review Error</h5>
-            <p class="mb-0">@_error</p>
-        </div>
-    }
-    else if (_diff is not null)
-    {
-        @if (!string.IsNullOrEmpty(_message))
-        {
-            <div class="alert alert-success d-flex align-items-center justify-content-between py-3 mb-4">
-                <span>✅ @_message</span>
-                <a href="adaptation" class="btn btn-sm btn-success ms-3">Open Project →</a>
-            </div>
-        }
-
-        @if (_hasConflicts)
-        {
-            <div class="card border-warning mt-2 mb-2">
-                <div class="card-header bg-warning-subtle py-2"><strong>Merge conflicts</strong>
-                    @if (_autoResolvedCount > 0) { <span class="badge text-bg-secondary ms-2">auto-resolved @_autoResolvedCount</span> }
-                </div>
-                <div class="card-body py-2">
-                    @if (_remainingConflictPaths.Count > 0)
-                    {
-                        <details class="mb-2"><summary class="small">@_remainingConflictPaths.Count path(s)</summary>
-                            <ul class="small mb-0">@foreach (var path in _remainingConflictPaths) { <li><code>@path</code></li> }</ul>
-                        </details>
-                    }
-                    <div class="d-flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick='() => ResolveConflictsAsync("PreferOurs")'>Prefer Ours</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick='() => ResolveConflictsAsync("PreferTheirs")'>Prefer Theirs</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick='() => ResolveConflictsAsync("Auto")'>Auto</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick='() => ResolveConflictsAsync("Union")'>Union</button>
-                    </div>
-                </div>
-            </div>
-        }
-        <button type="button" class="btn btn-sm btn-outline-primary mt-1" disabled="@_busy" @onclick="SyncFromOriginAsync">Sync From Origin (Git)</button>
-
-
-        <div class="card bg-dark border-secondary text-white mb-4 p-3">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                <div>
-                    <span class="badge bg-primary px-2 py-1 me-2">Fork Project: @Id</span>
-                    <span class="badge bg-info text-dark px-2 py-1">Origin Parent: @_diff.ParentProjectId</span>
-                </div>
-                <div>
-                    @if (_diff.HasConflicts)
-                    {
-                        <span class="badge bg-warning text-dark px-3 py-2 fs-6">⚠️ Conflicts Detected</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-success px-3 py-2 fs-6">✅ Ready to Merge</span>
-                    }
-                </div>
-            </div>
-        </div>
-
-        @if (_diff.FileDiffs is null || _diff.FileDiffs.Count == 0)
-        {
-            <div class="alert alert-info">
-                No differences detected between @Id and @_diff.ParentProjectId — both project states are identical.
-            </div>
-        }
-        else
-        {
-            <ul class="nav nav-tabs mb-3 border-secondary" role="tablist">
-                @for (int i = 0; i < _diff.FileDiffs.Count; i++)
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Scene</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in _diff.Scenes)
                 {
-                    var index = i;
-                    var file = _diff.FileDiffs[i];
-                    var isActive = index == _activeTabIndex;
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link @(isActive ? "active bg-dark text-white border-secondary" : "text-muted")"
-                                @onclick="() => _activeTabIndex = index">
-                            @file.Category (@file.FilePath)
-                            @if (file.Status == "modified")
-                            {
-                                <span class="badge bg-warning text-dark ms-1">mod</span>
-                            }
-                            else if (file.Status == "added")
-                            {
-                                <span class="badge bg-success ms-1">+add</span>
-                            }
-                            else if (file.Status == "deleted")
-                            {
-                                <span class="badge bg-danger ms-1">-del</span>
-                            }
-                        </button>
-                    </li>
+                    <tr>
+                        <td><code>@s.SceneKey</code></td>
+                        <td>@s.Status</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-success" disabled="@_busy"
+                                    @onclick="() => AcceptSceneAsync(s.SceneKey)">Accept</button>
+                        </td>
+                    </tr>
                 }
-                @if (_diff.MediaClips is { Count: > 0 })
-                {
-                    var isMediaActive = _activeTabIndex == _diff.FileDiffs.Count;
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link @(isMediaActive ? "active bg-dark text-white border-secondary" : "text-muted")"
-                                @onclick="() => _activeTabIndex = _diff.FileDiffs.Count">
-                            🎬 Media Clips (@_diff.MediaClips.Count)
-                            <span class="badge bg-info text-dark ms-1">provenance</span>
-                        </button>
-                    </li>
-                }
-            </ul>
-
-            @if (_activeTabIndex >= 0 && _activeTabIndex < _diff.FileDiffs.Count)
-            {
-                var activeFile = _diff.FileDiffs[_activeTabIndex];
-                <div class="card bg-dark border-secondary text-white p-3 mb-4">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h5 class="mb-0">@activeFile.Category — <code>@activeFile.FilePath</code></h5>
-                        <span class="badge bg-secondary">@activeFile.Lines.Count lines</span>
-                    </div>
-
-                    <div class="border border-secondary rounded overflow-auto font-monospace p-2" style="max-height: 500px; background-color: #121212; font-size: 0.875rem;">
-                        @foreach (var line in activeFile.Lines)
-                        {
-                            var bgClass = line.Kind switch
-                            {
-                                "added" => "bg-success bg-opacity-25 text-success-emphasis",
-                                "deleted" => "bg-danger bg-opacity-25 text-danger-emphasis",
-                                "conflict" => "bg-warning bg-opacity-25 text-warning-emphasis",
-                                _ => ""
-                            };
-                            var prefix = line.Kind switch
-                            {
-                                "added" => "+",
-                                "deleted" => "-",
-                                "conflict" => "!",
-                                _ => " "
-                            };
-                            <div class="d-flex align-items-center py-1 px-2 border-bottom border-dark border-opacity-50 @bgClass">
-                                <span class="text-muted text-end me-3 select-none" style="width: 40px;">@(line.LineNumberOurs?.ToString() ?? " ")</span>
-                                <span class="text-muted text-end me-3 select-none" style="width: 40px;">@(line.LineNumberTheirs?.ToString() ?? " ")</span>
-                                <span class="fw-bold me-3 select-none" style="width: 15px;">@prefix</span>
-                                <span class="text-break">@line.Content</span>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-            else if (_diff.MediaClips is { Count: > 0 } && _activeTabIndex == _diff.FileDiffs.Count)
-            {
-                <div class="card bg-dark border-secondary text-white p-3 mb-4">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h5 class="mb-0">🎬 Shot Plan Media Clips &amp; Provenance</h5>
-                        <button class="btn btn-sm btn-outline-info" disabled="@_busy" @onclick="SyncMediaAsync">
-                            📥 Sync &amp; Download Missing Clips
-                        </button>
-                    </div>
-
-                    <div class="row g-3">
-                        @foreach (var clip in _diff.MediaClips)
-                        {
-                            <div class="col-md-6 col-lg-4">
-                                <div class="card bg-black border-secondary h-100 p-3">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <span class="fw-bold text-info">Scene @clip.SceneIndex, Clip @clip.ClipIndex</span>
-                                        @if (clip.Status == "Present")
-                                        {
-                                            <span class="badge bg-success">🔒 Verified Hash</span>
-                                        }
-                                        else if (clip.Status == "CdnAvailable")
-                                        {
-                                            <span class="badge bg-info text-dark">🌐 Provider CDN</span>
-                                        }
-                                        else if (clip.Status == "ProxyNeeded")
-                                        {
-                                            <span class="badge bg-warning text-dark">📁 Local Copy</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">⚠️ Missing</span>
-                                        }
-                                    </div>
-                                    <div class="small text-muted mb-1"><code>@clip.RelativePath</code></div>
-                                    @if (clip.SizeBytes > 0)
-                                    {
-                                        <div class="small text-muted mb-1">Size: @(clip.SizeBytes / 1024 / 1024 > 0 ? $"{clip.SizeBytes / 1024.0 / 1024.0:F1} MB" : $"{clip.SizeBytes / 1024.0:F1} KB")</div>
-                                    }
-                                    @if (!string.IsNullOrWhiteSpace(clip.Sha256))
-                                    {
-                                        <div class="small text-truncate text-secondary" title="SHA-256: @clip.Sha256">
-                                            🔑 <code>sha256:@clip.Sha256[..Math.Min(12, clip.Sha256.Length)]…</code>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-
-            <div class="d-flex align-items-center justify-content-between p-3 bg-dark border border-secondary rounded">
-                <div>
-                    <strong>Ready to accept contribution?</strong>
-                    <div class="text-muted small">Merges parent origin state into project <code>@Id</code>.</div>
-                </div>
-                <div class="d-flex gap-2">
-                    @if (_diff.MediaClips is { Count: > 0 })
-                    {
-                        <button class="btn btn-outline-info px-3" disabled="@_busy" @onclick="SyncMediaAsync">
-                            📥 Sync Media
-                        </button>
-                    }
-                    <button class="btn btn-success px-4"
-                            disabled="@(_busy || string.IsNullOrEmpty(_diff.ParentProjectId))"
-                            @onclick="AcceptMergeAsync">
-                        @if (_busy)
-                        {
-                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        }
-                        Accept &amp; Sync Merge
-                    </button>
-                    <a href="" class="btn btn-outline-secondary">Reject / Cancel</a>
-                </div>
-            </div>
-        }
+            </tbody>
+        </table>
+    }
+    else if (_diff != null)
+    {
+        <p class="text-muted">No scene diffs loaded.</p>
     }
 </div>
 
 @code {
-    [Parameter]
-    public string Id { get; set; } = "";
+    [Parameter] public string Id { get; set; } = "";
 
-    [SupplyParameterFromQuery]
-    public string? OriginProjectId { get; set; }
-
-    private ContributionDiffDto? _diff;
-    private int _activeTabIndex = 0;
-    private bool _loading = true;
-    private bool _busy = false;
-    private string? _error;
+    private DiffDto? _diff;
     private string? _message;
+    private string? _error;
+    private bool _messageOk;
+    private bool _busy;
+    private bool _hasConflicts;
+    private int _autoResolvedCount;
+    private List<string> _remainingConflictPaths = new();
+    private bool _lastSyncWasFromOrigin = true;
+
+    private string? OriginId =>
+        !string.IsNullOrWhiteSpace(_diff?.OriginProjectId) ? _diff!.OriginProjectId
+        : _diff?.ParentProjectId;
 
     protected override async Task OnParametersSetAsync()
     {
-        _loading = true;
+        if (!string.IsNullOrWhiteSpace(Id))
+            await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
         _error = null;
-
-        if (string.IsNullOrWhiteSpace(Id))
-        {
-            _error = "Project ID is required.";
-            _loading = false;
-            return;
-        }
-
         try
         {
-            try { await Session.EnsureHydratedAsync(); } catch { }
-            _diff = await Engine.GetContributionDiffAsync(Id, OriginProjectId);
-            if (_diff is null)
-            {
-                _error = "Failed to load contribution diff.";
-            }
+            _diff = await Http.GetFromJsonAsync<DiffDto>($"/api/projects/{Id}/contribution-diff");
         }
         catch (Exception ex)
         {
             _error = ex.Message;
-        }
-        finally
-        {
-            _loading = false;
+            _diff = null;
         }
     }
 
+    private async Task AcceptSceneAsync(string sceneKey)
+    {
+        if (string.IsNullOrWhiteSpace(OriginId)) { _message = "No origin project."; return; }
+        _busy = true;
+        try
+        {
+            var resp = await Http.PostAsJsonAsync($"/api/projects/{OriginId}/contribution-sync-media",
+                new { parentProjectId = Id, sceneKey });
+            _messageOk = resp.IsSuccessStatusCode;
+            _message = _messageOk ? $"Accepted {sceneKey}." : await resp.Content.ReadAsStringAsync();
+            if (_messageOk) await LoadAsync();
+        }
+        catch (Exception ex) { _messageOk = false; _message = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private Task ResolvePreferOurs() => ResolveConflictsAsync("PreferOurs");
+    private Task ResolvePreferTheirs() => ResolveConflictsAsync("PreferTheirs");
+    private Task ResolveAuto() => ResolveConflictsAsync("Auto");
+    private Task ResolveUnion() => ResolveConflictsAsync("Union");
 
     private Task SyncFromOriginAsync()
     {
         _lastSyncWasFromOrigin = true;
-        return RunGitSyncAsync(Id, _diff?.OriginProjectId, null);
+        return RunGitSyncAsync(Id, OriginId, null);
     }
 
-    private Task ResolveConflictsAsync(string strategy)
+    private Task AcceptMergeAsync()
     {
-        var target = _lastSyncWasFromOrigin ? Id : _diff?.OriginProjectId;
-        var source = _lastSyncWasFromOrigin ? _diff?.OriginProjectId : Id;
-        return RunGitSyncAsync(target, source, strategy);
+        _lastSyncWasFromOrigin = false;
+        return RunGitSyncAsync(OriginId, Id, null);
     }
 
-    private async Task RunGitSyncAsync(string? targetProjectId, string? sourceProjectId, string? strategy)
+    private Task ResolveConflictsAsync(string strategy) =>
+        _lastSyncWasFromOrigin
+            ? RunGitSyncAsync(Id, OriginId, strategy)
+            : RunGitSyncAsync(OriginId, Id, strategy);
+
+    private async Task SyncMediaAsync()
     {
-        if (string.IsNullOrWhiteSpace(targetProjectId) || string.IsNullOrWhiteSpace(sourceProjectId))
+        if (string.IsNullOrWhiteSpace(OriginId)) return;
+        _busy = true;
+        try
+        {
+            var resp = await Http.PostAsJsonAsync($"/api/projects/{Id}/contribution-sync-media",
+                new { parentProjectId = OriginId });
+            var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            _messageOk = json.TryGetProperty("ok", out var o) && o.GetBoolean();
+            _message = json.TryGetProperty("message", out var m) ? m.GetString() : (_messageOk ? "Media synced." : "Failed.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _messageOk = false; _message = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task RunGitSyncAsync(string? target, string? source, string? strategy)
+    {
+        if (string.IsNullOrWhiteSpace(target) || string.IsNullOrWhiteSpace(source))
         {
             _messageOk = false;
             _message = "Origin project id is missing.";
             return;
         }
         _busy = true;
-        _message = null;
         try
         {
-            var body = new Dictionary<string, string?> { ["parentProjectId"] = sourceProjectId };
-            if (!string.IsNullOrWhiteSpace(strategy)) body["autoResolveStrategy"] = strategy;
-            var resp = await Http.PostAsJsonAsync($"/api/projects/{targetProjectId}/sync-origin", body);
+            var body = new Dictionary<string, string?> { ["parentProjectId"] = source };
+            if (!string.IsNullOrWhiteSpace(strategy))
+                body["autoResolveStrategy"] = strategy;
+            var resp = await Http.PostAsJsonAsync($"/api/projects/{target}/sync-origin", body);
             var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
             var ok = json.TryGetProperty("ok", out var o) && o.GetBoolean();
-            var hasConflicts = json.TryGetProperty("hasConflicts", out var c) && c.GetBoolean();
-            _autoResolvedCount = json.TryGetProperty("autoResolvedCount", out var a) && a.ValueKind == JsonValueKind.Number ? a.GetInt32() : 0;
+            _hasConflicts = json.TryGetProperty("hasConflicts", out var c) && c.GetBoolean();
+            _autoResolvedCount = json.TryGetProperty("autoResolvedCount", out var a) && a.ValueKind == JsonValueKind.Number
+                ? a.GetInt32() : 0;
             _remainingConflictPaths = new();
             if (json.TryGetProperty("remainingConflictPaths", out var paths) && paths.ValueKind == JsonValueKind.Array)
             {
                 foreach (var el in paths.EnumerateArray())
                 {
                     var s = el.GetString();
-                    if (!string.IsNullOrWhiteSpace(s)) _remainingConflictPaths.Add(s);
+                    if (!string.IsNullOrWhiteSpace(s))
+                        _remainingConflictPaths.Add(s);
                 }
             }
-            _hasConflicts = hasConflicts;
-            _messageOk = ok && !hasConflicts;
-            _message = json.TryGetProperty("message", out var m) ? m.GetString() : (ok ? "Synced." : "Sync reported problems.");
-            if (hasConflicts && string.IsNullOrWhiteSpace(strategy))
+            _messageOk = ok && !_hasConflicts;
+            _message = json.TryGetProperty("message", out var m) ? m.GetString() : (ok ? "Synced." : "Problems.");
+            if (_hasConflicts && string.IsNullOrWhiteSpace(strategy))
                 _message += " Pick a strategy below to auto-resolve.";
             await LoadAsync();
         }
@@ -350,70 +226,17 @@
         finally { _busy = false; }
     }
 
-    private async Task AcceptMergeAsync()
+    private sealed class DiffDto
     {
-        _lastSyncWasFromOrigin = false;
-        if (_diff is null || string.IsNullOrWhiteSpace(_diff.ParentProjectId)) return;
-
-        _busy = true;
-        _error = null;
-        _message = null;
-
-        try
-        {
-            var res = await Engine.SyncOriginAsync(Id, _diff.ParentProjectId);
-            if (res is { Ok: true } || res is { Success: true })
-            {
-                if (res.HasConflicts)
-                {
-                    _error = $"Sync merge resulted in conflicts: {res.Message}";
-                }
-                else
-                {
-                    _message = $"Successfully merged changes from parent project '{_diff.ParentProjectId}' into '{Id}'!";
-                }
-            }
-            else
-            {
-                _error = res?.Error ?? res?.Message ?? "Merge failed.";
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
+        public string? ProjectId { get; set; }
+        public string? ParentProjectId { get; set; }
+        public string? OriginProjectId { get; set; }
+        public List<SceneDto> Scenes { get; set; } = new();
     }
 
-    private async Task SyncMediaAsync()
+    private sealed class SceneDto
     {
-        if (_diff is null) return;
-        _busy = true;
-        _error = null;
-        _message = null;
-        try
-        {
-            var res = await Engine.SyncContributionMediaAsync(Id, _diff.ParentProjectId);
-            if (res is not null)
-            {
-                _message = $"Media sync complete: {res.SyncedCount} clips synced ({res.CdnDownloadCount} CDN downloads, {res.LocalCopyCount} local copies, {res.VerifiedCount} verified).";
-                _diff = await Engine.GetContributionDiffAsync(Id, OriginProjectId);
-            }
-            else
-            {
-                _error = "Media sync returned no response.";
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
+        public string SceneKey { get; set; } = "";
+        public string Status { get; set; } = "";
     }
 }
