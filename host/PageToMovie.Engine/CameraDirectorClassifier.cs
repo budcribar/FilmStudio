@@ -19,28 +19,28 @@ public sealed record CameraDirective(
 /// Assigns cinematic lens choices, camera movements (push-in, tracking, dolly),
 /// and shot framing per beat ID based on narrative emotion.
 /// </summary>
-public sealed class CameraDirectorClassifier
+public sealed class CameraDirectorClassifier : BeatChatClassifierBase<CameraDirective>
 {
     public const string PromptVersion = "v1_product";
-
-    private readonly IChatClient _chat;
-    private readonly PageToMovieOptions _opts;
-    private readonly ILogger<CameraDirectorClassifier> _log;
-    private readonly GenerationErrorLogger? _errorLogger;
 
     public CameraDirectorClassifier(
         IChatClient chat,
         IOptions<PageToMovieOptions> opts,
         ILogger<CameraDirectorClassifier> log,
         GenerationErrorLogger? errorLogger = null)
+        : base(chat, opts.Value, log, errorLogger)
     {
-        _chat = chat;
-        _opts = opts.Value;
-        _log = log;
-        _errorLogger = errorLogger;
     }
 
-    public bool IsEnabled => _opts.ClassifyCameraDirectorWithChat && _chat.IsConfigured;
+    protected override bool OptionEnabled => _opts.ClassifyCameraDirectorWithChat;
+    protected override string DefaultModel => _opts.CameraDirectorClassifyModel;
+    protected override string? ChatMode => ChatCallModes.CameraDirectorClassify;
+    protected override string OperationName => "stage2_camera_direction";
+    protected override string ErrorLoggerName => "camera_director_classifier";
+    protected override string LogNoun => "camera director";
+    protected override string GetSystemPrompt() => SystemPrompt();
+    protected override string ProgressMessage(int beatCount) =>
+        $"AI Camera Director: Directing camera lenses & movement for {beatCount} beats…";
 
     public static string SystemPrompt() => """
         You are a Virtuoso Film Director and Director of Photography (DP) directing camera composition and movement.
@@ -76,74 +76,14 @@ public sealed class CameraDirectorClassifier
         }
         """;
 
-    public async Task<Dictionary<string, CameraDirective>?> ClassifySceneCameraAsync(
+    public Task<Dictionary<string, CameraDirective>?> ClassifySceneCameraAsync(
         Dictionary<string, object?> scene,
         List<Dictionary<string, object?>> beats,
         Action<string>? onProgress = null,
         CancellationToken ct = default,
-        string? model = null)
-    {
-        if (!IsEnabled || beats.Count == 0) return null;
+        string? model = null) => ClassifyAsync(scene, beats, onProgress, ct, model);
 
-        onProgress?.Invoke($"AI Camera Director: Directing camera lenses & movement for {beats.Count} beats…");
-
-        try
-        {
-            var userPrompt = BuildUserPrompt(scene, beats);
-            var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.CameraDirectorClassifyModel;
-            var requestedIds = beats
-                .Select(b => b.GetValueOrDefault("beat_id")?.ToString() ?? "")
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .ToList();
-
-            var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
-                requestedIds,
-                missingIds => _chat.CompleteAsync(
-                    SystemPrompt(),
-                    AiRetryPolicy.FocusCoveragePrompt(userPrompt, requestedIds, missingIds),
-                    effectiveModel,
-                    // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                    temperature: 0,
-                    ct: ct,
-                    mode: ChatCallModes.CameraDirectorClassify),
-                ParseCameraResponse,
-                maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
-                backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
-                ct: ct,
-                operationName: "stage2_camera_direction",
-                promptVersion: "1",
-                model: effectiveModel).ConfigureAwait(false);
-
-            if (_errorLogger is not null)
-            {
-                var sceneNum = ToIntOrNull(scene.GetValueOrDefault("scene_number"));
-                await _errorLogger.LogCoverageResultAsync(
-                    "camera_director_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
-                    requestedIds, retry, ct).ConfigureAwait(false);
-            }
-
-            return retry.Result;
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "Failed to run AI camera director classification for scene {Scene}", scene.GetValueOrDefault("scene_number"));
-            return null;
-        }
-    }
-
-    private static int? ToIntOrNull(object? val) => val switch
-    {
-        int i => i,
-        long l => (int)l,
-        double d => (int)d,
-        string s when int.TryParse(s, out var p) => p,
-        _ => null,
-    };
-
-    private static string? ResolveProvider(string? model) =>
-        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
-
-    private static string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
+    protected override string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
@@ -172,7 +112,7 @@ public sealed class CameraDirectorClassifier
         return sb.ToString();
     }
 
-    private Dictionary<string, CameraDirective>? ParseCameraResponse(string rawJson)
+    protected override Dictionary<string, CameraDirective>? ParseResponse(string rawJson)
     {
         try
         {

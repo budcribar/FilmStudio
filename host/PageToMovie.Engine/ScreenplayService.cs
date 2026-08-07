@@ -894,15 +894,7 @@ public static string NormalizeText(string text)
             {
                 Fountain = fountain,
                 VisionMeta = visionFromScript,
-                VisionMetaStatus = result.VisionMetaStatus switch
-                {
-                    AdaptationVisionMetaStatus.PrimaryResponse => ProjectVisionMetaStatus.PrimaryResponse,
-                    AdaptationVisionMetaStatus.RepairResponse => ProjectVisionMetaStatus.RepairResponse,
-                    AdaptationVisionMetaStatus.Missing => ProjectVisionMetaStatus.Missing,
-                    AdaptationVisionMetaStatus.Malformed => ProjectVisionMetaStatus.Malformed,
-                    AdaptationVisionMetaStatus.InvalidValue => ProjectVisionMetaStatus.InvalidValue,
-                    _ => ProjectVisionMetaStatus.Missing,
-                },
+                VisionMetaStatus = BookToFountainConverter.MapStatus(result.VisionMetaStatus),
                 VisionMetaError = result.VisionMetaError,
             };
 

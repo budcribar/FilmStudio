@@ -457,15 +457,7 @@ public class BookToFountainPathTests
         {
             Fountain = result.Fountain,
             VisionMeta = PageToMovie.Engine.BookToFountainConverter.MapVision(result.VisionMeta),
-            VisionMetaStatus = result.VisionMetaStatus switch
-            {
-                AdaptationVisionMetaStatus.PrimaryResponse => ProjectVisionMetaStatus.PrimaryResponse,
-                AdaptationVisionMetaStatus.RepairResponse => ProjectVisionMetaStatus.RepairResponse,
-                AdaptationVisionMetaStatus.Missing => ProjectVisionMetaStatus.Missing,
-                AdaptationVisionMetaStatus.Malformed => ProjectVisionMetaStatus.Malformed,
-                AdaptationVisionMetaStatus.InvalidValue => ProjectVisionMetaStatus.InvalidValue,
-                _ => ProjectVisionMetaStatus.Missing,
-            },
+            VisionMetaStatus = PageToMovie.Engine.BookToFountainConverter.MapStatus(result.VisionMetaStatus),
             VisionMetaError = result.VisionMetaError,
         };
         return (result.Fountain, mapped);

@@ -88,7 +88,11 @@ public static class BookToFountainConverter
         };
     }
 
-    private static ProjectVisionMetaStatus MapStatus(AdaptationVisionMetaStatus s) => s switch
+    /// <summary>
+    /// Canonical <see cref="AdaptationVisionMetaStatus"/> → <see cref="ProjectVisionMetaStatus"/> map.
+    /// Public so production (ScreenplayService) and tests share one mapping instead of copies.
+    /// </summary>
+    public static ProjectVisionMetaStatus MapStatus(AdaptationVisionMetaStatus s) => s switch
     {
         AdaptationVisionMetaStatus.PrimaryResponse => ProjectVisionMetaStatus.PrimaryResponse,
         AdaptationVisionMetaStatus.RepairResponse => ProjectVisionMetaStatus.RepairResponse,

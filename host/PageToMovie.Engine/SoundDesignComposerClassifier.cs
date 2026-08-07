@@ -17,28 +17,28 @@ public sealed record SoundDesignDirective(
 /// Composes 3-track cinematic audio blueprints (ambient background, physical foley, score mood)
 /// per beat for audio synthesis (client stitch/export; no server remux).
 /// </summary>
-public sealed class SoundDesignComposerClassifier
+public sealed class SoundDesignComposerClassifier : BeatChatClassifierBase<SoundDesignDirective>
 {
     public const string PromptVersion = "v1_product";
-
-    private readonly IChatClient _chat;
-    private readonly PageToMovieOptions _opts;
-    private readonly ILogger<SoundDesignComposerClassifier> _log;
-    private readonly GenerationErrorLogger? _errorLogger;
 
     public SoundDesignComposerClassifier(
         IChatClient chat,
         IOptions<PageToMovieOptions> opts,
         ILogger<SoundDesignComposerClassifier> log,
         GenerationErrorLogger? errorLogger = null)
+        : base(chat, opts.Value, log, errorLogger)
     {
-        _chat = chat;
-        _opts = opts.Value;
-        _log = log;
-        _errorLogger = errorLogger;
     }
 
-    public bool IsEnabled => _opts.ClassifySoundDesignComposerWithChat && _chat.IsConfigured;
+    protected override bool OptionEnabled => _opts.ClassifySoundDesignComposerWithChat;
+    protected override string DefaultModel => _opts.SoundDesignComposerClassifyModel;
+    protected override string? ChatMode => ChatCallModes.SoundDesignComposerClassify;
+    protected override string OperationName => "stage2_sound_design";
+    protected override string ErrorLoggerName => "sound_design_composer_classifier";
+    protected override string LogNoun => "sound design";
+    protected override string GetSystemPrompt() => SystemPrompt();
+    protected override string ProgressMessage(int beatCount) =>
+        $"AI Sound Director: Composing 3-layer sound design for {beatCount} beats…";
 
     public static string SystemPrompt() => """
         You are an expert film Sound Designer and Audio Supervisor creating multi-track cinematic sound designs.
@@ -69,74 +69,14 @@ public sealed class SoundDesignComposerClassifier
         }
         """;
 
-    public async Task<Dictionary<string, SoundDesignDirective>?> ClassifySceneSoundDesignAsync(
+    public Task<Dictionary<string, SoundDesignDirective>?> ClassifySceneSoundDesignAsync(
         Dictionary<string, object?> scene,
         List<Dictionary<string, object?>> beats,
         Action<string>? onProgress = null,
         CancellationToken ct = default,
-        string? model = null)
-    {
-        if (!IsEnabled || beats.Count == 0) return null;
+        string? model = null) => ClassifyAsync(scene, beats, onProgress, ct, model);
 
-        onProgress?.Invoke($"AI Sound Director: Composing 3-layer sound design for {beats.Count} beats…");
-
-        try
-        {
-            var userPrompt = BuildUserPrompt(scene, beats);
-            var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.SoundDesignComposerClassifyModel;
-            var requestedIds = beats
-                .Select(b => b.GetValueOrDefault("beat_id")?.ToString() ?? "")
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .ToList();
-
-            var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
-                requestedIds,
-                missingIds => _chat.CompleteAsync(
-                    SystemPrompt(),
-                    AiRetryPolicy.FocusCoveragePrompt(userPrompt, requestedIds, missingIds),
-                    effectiveModel,
-                    // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                    temperature: 0,
-                    ct: ct,
-                    mode: ChatCallModes.SoundDesignComposerClassify),
-                ParseSoundResponse,
-                maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
-                backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
-                ct: ct,
-                operationName: "stage2_sound_design",
-                promptVersion: "1",
-                model: effectiveModel).ConfigureAwait(false);
-
-            if (_errorLogger is not null)
-            {
-                var sceneNum = ToIntOrNull(scene.GetValueOrDefault("scene_number"));
-                await _errorLogger.LogCoverageResultAsync(
-                    "sound_design_composer_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
-                    requestedIds, retry, ct).ConfigureAwait(false);
-            }
-
-            return retry.Result;
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "Failed to run AI sound design classification for scene {Scene}", scene.GetValueOrDefault("scene_number"));
-            return null;
-        }
-    }
-
-    private static int? ToIntOrNull(object? val) => val switch
-    {
-        int i => i,
-        long l => (int)l,
-        double d => (int)d,
-        string s when int.TryParse(s, out var p) => p,
-        _ => null,
-    };
-
-    private static string? ResolveProvider(string? model) =>
-        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
-
-    private static string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
+    protected override string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
@@ -166,7 +106,7 @@ public sealed class SoundDesignComposerClassifier
         return sb.ToString();
     }
 
-    private Dictionary<string, SoundDesignDirective>? ParseSoundResponse(string rawJson)
+    protected override Dictionary<string, SoundDesignDirective>? ParseResponse(string rawJson)
     {
         try
         {

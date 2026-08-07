@@ -761,15 +761,30 @@ public sealed class ProjectStore
     /// path via <c>ClientMediaFolderService</c> (which archives whatever's currently active into
     /// history first, same as any other regeneration) before calling this.
     /// </summary>
-    public async Task<bool> PromoteMusicVersionAsync(string projectId, int scene, string takeId)
+    /// <summary>
+    /// Shared prologue for the music-take mutators: guards the ids, resolves the project directory,
+    /// and locates the requested (non-current) historical take. Returns null — matching each caller's
+    /// early-return-false semantics — when any guard fails or the take isn't a promotable/deletable
+    /// historical version.
+    /// </summary>
+    private async Task<(string Dir, MusicVersionItem Target)?> TryResolveMusicTakeAsync(string projectId, int scene, string takeId)
     {
-        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(takeId)) return false;
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(takeId)) return null;
         var dir = GetProjectDir(projectId);
-        if (!Directory.Exists(dir)) return false;
+        if (!Directory.Exists(dir)) return null;
 
         var versions = await GetMusicVersionsAsync(projectId, scene).ConfigureAwait(false);
         var target = versions.FirstOrDefault(v => string.Equals(v.TakeId, takeId, StringComparison.OrdinalIgnoreCase));
-        if (target is null || target.IsCurrent) return false;
+        if (target is null || target.IsCurrent) return null;
+
+        return (dir, target);
+    }
+
+    public async Task<bool> PromoteMusicVersionAsync(string projectId, int scene, string takeId)
+    {
+        var resolved = await TryResolveMusicTakeAsync(projectId, scene, takeId).ConfigureAwait(false);
+        if (resolved is null) return false;
+        var dir = resolved.Value.Dir;
 
         var musicDir = Path.Combine(dir, "assets", "music");
         var historyDir = Path.Combine(musicDir, "history");
@@ -802,13 +817,9 @@ public sealed class ProjectStore
     /// </summary>
     public async Task<bool> SoftDeleteMusicVersionAsync(string projectId, int scene, string takeId)
     {
-        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(takeId)) return false;
-        var dir = GetProjectDir(projectId);
-        if (!Directory.Exists(dir)) return false;
-
-        var versions = await GetMusicVersionsAsync(projectId, scene).ConfigureAwait(false);
-        var target = versions.FirstOrDefault(v => string.Equals(v.TakeId, takeId, StringComparison.OrdinalIgnoreCase));
-        if (target is null || target.IsCurrent) return false;
+        var resolved = await TryResolveMusicTakeAsync(projectId, scene, takeId).ConfigureAwait(false);
+        if (resolved is null) return false;
+        var dir = resolved.Value.Dir;
 
         var musicDir = Path.Combine(dir, "assets", "music");
         var historySidecar = Path.Combine(musicDir, "history", $"scene_{scene:D2}_take_{takeId}.meta.json");

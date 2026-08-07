@@ -17,28 +17,28 @@ public sealed record DepthOfFieldDirective(
 /// Assigns optical aperture settings (f/1.4 to f/8), primary focal planes, and dynamic
 /// rack-focus transitions per shot to guide viewer attention.
 /// </summary>
-public sealed class DepthOfFieldClassifier
+public sealed class DepthOfFieldClassifier : BeatChatClassifierBase<DepthOfFieldDirective>
 {
     public const string PromptVersion = "v1_product";
-
-    private readonly IChatClient _chat;
-    private readonly PageToMovieOptions _opts;
-    private readonly ILogger<DepthOfFieldClassifier> _log;
-    private readonly GenerationErrorLogger? _errorLogger;
 
     public DepthOfFieldClassifier(
         IChatClient chat,
         IOptions<PageToMovieOptions> opts,
         ILogger<DepthOfFieldClassifier> log,
         GenerationErrorLogger? errorLogger = null)
+        : base(chat, opts.Value, log, errorLogger)
     {
-        _chat = chat;
-        _opts = opts.Value;
-        _log = log;
-        _errorLogger = errorLogger;
     }
 
-    public bool IsEnabled => _opts.ClassifyDepthOfFieldWithChat && _chat.IsConfigured;
+    protected override bool OptionEnabled => _opts.ClassifyDepthOfFieldWithChat;
+    protected override string DefaultModel => _opts.DepthOfFieldClassifyModel;
+    protected override string? ChatMode => ChatCallModes.DepthOfFieldClassify;
+    protected override string OperationName => "stage2_depth_of_field";
+    protected override string ErrorLoggerName => "depth_of_field_classifier";
+    protected override string LogNoun => "depth of field";
+    protected override string GetSystemPrompt() => SystemPrompt();
+    protected override string ProgressMessage(int beatCount) =>
+        $"AI Focus Puller: Directing optical aperture & rack focus for {beatCount} beats…";
 
     public static string SystemPrompt() => """
         You are an expert Focus Puller and Optical Cinematographer directing camera focus and depth of field.
@@ -65,74 +65,14 @@ public sealed class DepthOfFieldClassifier
         }
         """;
 
-    public async Task<Dictionary<string, DepthOfFieldDirective>?> ClassifySceneDepthOfFieldAsync(
+    public Task<Dictionary<string, DepthOfFieldDirective>?> ClassifySceneDepthOfFieldAsync(
         Dictionary<string, object?> scene,
         List<Dictionary<string, object?>> beats,
         Action<string>? onProgress = null,
         CancellationToken ct = default,
-        string? model = null)
-    {
-        if (!IsEnabled || beats.Count == 0) return null;
+        string? model = null) => ClassifyAsync(scene, beats, onProgress, ct, model);
 
-        onProgress?.Invoke($"AI Focus Puller: Directing optical aperture & rack focus for {beats.Count} beats…");
-
-        try
-        {
-            var userPrompt = BuildUserPrompt(scene, beats);
-            var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.DepthOfFieldClassifyModel;
-            var requestedIds = beats
-                .Select(b => b.GetValueOrDefault("beat_id")?.ToString() ?? "")
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .ToList();
-
-            var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
-                requestedIds,
-                missingIds => _chat.CompleteAsync(
-                    SystemPrompt(),
-                    AiRetryPolicy.FocusCoveragePrompt(userPrompt, requestedIds, missingIds),
-                    effectiveModel,
-                    // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                    temperature: 0,
-                    ct: ct,
-                    mode: ChatCallModes.DepthOfFieldClassify),
-                ParseDofResponse,
-                maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
-                backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
-                ct: ct,
-                operationName: "stage2_depth_of_field",
-                promptVersion: "1",
-                model: effectiveModel).ConfigureAwait(false);
-
-            if (_errorLogger is not null)
-            {
-                var sceneNum = ToIntOrNull(scene.GetValueOrDefault("scene_number"));
-                await _errorLogger.LogCoverageResultAsync(
-                    "depth_of_field_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
-                    requestedIds, retry, ct).ConfigureAwait(false);
-            }
-
-            return retry.Result;
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "Failed to run AI depth of field classification for scene {Scene}", scene.GetValueOrDefault("scene_number"));
-            return null;
-        }
-    }
-
-    private static int? ToIntOrNull(object? val) => val switch
-    {
-        int i => i,
-        long l => (int)l,
-        double d => (int)d,
-        string s when int.TryParse(s, out var p) => p,
-        _ => null,
-    };
-
-    private static string? ResolveProvider(string? model) =>
-        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
-
-    private static string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
+    protected override string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
@@ -156,7 +96,7 @@ public sealed class DepthOfFieldClassifier
         return sb.ToString();
     }
 
-    private Dictionary<string, DepthOfFieldDirective>? ParseDofResponse(string rawJson)
+    protected override Dictionary<string, DepthOfFieldDirective>? ParseResponse(string rawJson)
     {
         try
         {

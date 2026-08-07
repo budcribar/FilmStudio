@@ -18,28 +18,28 @@ public sealed record EmotionDirective(
 /// Calculates emotional intensity (1–10 scale) and facial micro-expressions
 /// per beat for each character on screen, driving acting performances in video generation.
 /// </summary>
-public sealed class CharacterEmotionArcClassifier
+public sealed class CharacterEmotionArcClassifier : BeatChatClassifierBase<EmotionDirective>
 {
     public const string PromptVersion = "v1_product";
-
-    private readonly IChatClient _chat;
-    private readonly PageToMovieOptions _opts;
-    private readonly ILogger<CharacterEmotionArcClassifier> _log;
-    private readonly GenerationErrorLogger? _errorLogger;
 
     public CharacterEmotionArcClassifier(
         IChatClient chat,
         IOptions<PageToMovieOptions> opts,
         ILogger<CharacterEmotionArcClassifier> log,
         GenerationErrorLogger? errorLogger = null)
+        : base(chat, opts.Value, log, errorLogger)
     {
-        _chat = chat;
-        _opts = opts.Value;
-        _log = log;
-        _errorLogger = errorLogger;
     }
 
-    public bool IsEnabled => _opts.ClassifyCharacterEmotionArcWithChat && _chat.IsConfigured;
+    protected override bool OptionEnabled => _opts.ClassifyCharacterEmotionArcWithChat;
+    protected override string DefaultModel => _opts.CharacterEmotionArcClassifyModel;
+    protected override string? ChatMode => ChatCallModes.CharacterEmotionArcClassify;
+    protected override string OperationName => "stage2_character_emotion_arc";
+    protected override string ErrorLoggerName => "character_emotion_arc_classifier";
+    protected override string LogNoun => "character emotion arc";
+    protected override string GetSystemPrompt() => SystemPrompt();
+    protected override string ProgressMessage(int beatCount) =>
+        $"AI Acting Coach: Directing emotional intensity & micro-acting for {beatCount} beats…";
 
     public static string SystemPrompt() => """
         You are an expert film Acting Coach and Performance Director directing character micro-acting.
@@ -66,74 +66,14 @@ public sealed class CharacterEmotionArcClassifier
         }
         """;
 
-    public async Task<Dictionary<string, EmotionDirective>?> ClassifySceneEmotionAsync(
+    public Task<Dictionary<string, EmotionDirective>?> ClassifySceneEmotionAsync(
         Dictionary<string, object?> scene,
         List<Dictionary<string, object?>> beats,
         Action<string>? onProgress = null,
         CancellationToken ct = default,
-        string? model = null)
-    {
-        if (!IsEnabled || beats.Count == 0) return null;
+        string? model = null) => ClassifyAsync(scene, beats, onProgress, ct, model);
 
-        onProgress?.Invoke($"AI Acting Coach: Directing emotional intensity & micro-acting for {beats.Count} beats…");
-
-        try
-        {
-            var userPrompt = BuildUserPrompt(scene, beats);
-            var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.CharacterEmotionArcClassifyModel;
-            var requestedIds = beats
-                .Select(b => b.GetValueOrDefault("beat_id")?.ToString() ?? "")
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .ToList();
-
-            var retry = await AiRetryPolicy.RunWithCoverageRetryAsync(
-                requestedIds,
-                missingIds => _chat.CompleteAsync(
-                    SystemPrompt(),
-                    AiRetryPolicy.FocusCoveragePrompt(userPrompt, requestedIds, missingIds),
-                    effectiveModel,
-                    // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                    temperature: 0,
-                    ct: ct,
-                    mode: ChatCallModes.CharacterEmotionArcClassify),
-                ParseEmotionResponse,
-                maxAttempts: AiRetryPolicy.DefaultCoverageMaxAttempts,
-                backoffBaseMs: AiRetryPolicy.DefaultCoverageBackoffMs,
-                ct: ct,
-                operationName: "stage2_character_emotion_arc",
-                promptVersion: "1",
-                model: effectiveModel).ConfigureAwait(false);
-
-            if (_errorLogger is not null)
-            {
-                var sceneNum = ToIntOrNull(scene.GetValueOrDefault("scene_number"));
-                await _errorLogger.LogCoverageResultAsync(
-                    "character_emotion_arc_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
-                    requestedIds, retry, ct).ConfigureAwait(false);
-            }
-
-            return retry.Result;
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "Failed to run AI character emotion arc classification for scene {Scene}", scene.GetValueOrDefault("scene_number"));
-            return null;
-        }
-    }
-
-    private static int? ToIntOrNull(object? val) => val switch
-    {
-        int i => i,
-        long l => (int)l,
-        double d => (int)d,
-        string s when int.TryParse(s, out var p) => p,
-        _ => null,
-    };
-
-    private static string? ResolveProvider(string? model) =>
-        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
-
-    private static string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
+    protected override string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
@@ -158,7 +98,7 @@ public sealed class CharacterEmotionArcClassifier
         return sb.ToString();
     }
 
-    private Dictionary<string, EmotionDirective>? ParseEmotionResponse(string rawJson)
+    protected override Dictionary<string, EmotionDirective>? ParseResponse(string rawJson)
     {
         try
         {

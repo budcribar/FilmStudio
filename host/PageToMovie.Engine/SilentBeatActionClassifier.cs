@@ -329,6 +329,11 @@ public sealed class SilentBeatActionClassifier
         };
     }
 
+    // Note: SystemPromptV2/V4/V5/V6 are INTENTIONALLY distinct, frozen prompt-engineering
+    // versions (see per-method summaries + eval history). Their taxonomy blocks differ in wording
+    // ("short gesture" vs "short SINGLE gesture", "without spectacle" vs "OR multi-step body work",
+    // etc.) on purpose, so they are NOT deduped into one canonical string. BeatLabelEval shares
+    // these exact strings by referencing them here rather than keeping its own copies.
     /// <summary>Public for unit tests and BeatLabelEval alignment (shipped through v3).</summary>
     public static string SystemPromptV2() => """
 You label silent film beats for DURATION BUDGETING in a video pipeline (any story).
