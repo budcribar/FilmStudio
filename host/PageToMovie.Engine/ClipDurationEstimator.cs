@@ -313,6 +313,45 @@ public static class ClipDurationEstimator
         return camOverhead + netActionOverhead;
     }
 
+    /// <summary>
+    /// Spoken-line duration: the larger of the words-per-second and syllables-per-second
+    /// estimates, floored to a minimum beat, with a slight VO / internal-narration speed-up.
+    /// Shared by <see cref="Estimate"/> / <see cref="EstimateBreakdown"/>.
+    /// (<see cref="EstimateUncapped"/> intentionally uses a words-only variant.)
+    /// </summary>
+    private static double EstimateSpeechSeconds(string dlg, string delivery)
+    {
+        var words = CountWords(dlg);
+        var syllables = CountSyllables(dlg);
+        var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+        var speechFromSyllables = SpeechHeadSeconds + syllables / 4.2 + SpeechTailSeconds;
+        var speech = Math.Max(speechFromWords, speechFromSyllables);
+        // Very short lines still need a beat
+        speech = Math.Max(1.8, speech);
+        // VO can be slightly snappier
+        if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
+            speech *= 0.95;
+        return speech;
+    }
+
+    /// <summary>
+    /// Silent (no-dialogue) clip length derived from the visual/action word count, clamped
+    /// per action class. Shared by <see cref="Estimate"/> / <see cref="EstimateBreakdown"/> /
+    /// <see cref="EstimateUncapped"/>.
+    /// </summary>
+    private static double EstimateSilentActionSeconds(string visual, string actionClass)
+    {
+        // Cap words so long establish copy / wardrobe restatements do not buy empty seconds
+        var aw = Math.Min(CountWords(visual), SilentVisualWordCap);
+        return actionClass switch
+        {
+            "big_action" => Math.Clamp(4.5 + aw / 8.0, 5, AbsMaxSeconds),
+            "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, EstablishingMaxSeconds),
+            "hold" => ActionOnlyMinSeconds,
+            _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, SilentActionMaxSeconds),
+        };
+    }
+
     public static (double SpeechSec, double ActionSec) EstimateBreakdown(
         string? dialogue,
         string? visualOrAction,
@@ -327,33 +366,13 @@ public static class ClipDurationEstimator
 
         double speech = 0;
         if (dlg.Length > 0)
-        {
-            var words = CountWords(dlg);
-            var syllables = CountSyllables(dlg);
-            var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
-            var speechFromSyllables = SpeechHeadSeconds + syllables / 4.2 + SpeechTailSeconds;
-            speech = Math.Max(speechFromWords, speechFromSyllables);
-            speech = Math.Max(1.8, speech);
-            if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
-                speech *= 0.95;
-        }
+            speech = EstimateSpeechSeconds(dlg, delivery);
 
         double action = 0;
         if (dlg.Length == 0)
-        {
-            var aw = Math.Min(CountWords(visual), SilentVisualWordCap);
-            action = actionClass switch
-            {
-                "big_action" => Math.Clamp(4.5 + aw / 8.0, 5, AbsMaxSeconds),
-                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, EstablishingMaxSeconds),
-                "hold" => ActionOnlyMinSeconds,
-                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, SilentActionMaxSeconds),
-            };
-        }
+            action = EstimateSilentActionSeconds(visual, actionClass);
         else
-        {
             action = DialogueClipActionOverhead(visual, actionClass);
-        }
 
         return (Math.Round(speech, 1), Math.Round(action, 1));
     }
@@ -376,38 +395,15 @@ public static class ClipDurationEstimator
 
         double speech = 0;
         if (dlg.Length > 0)
-        {
-            var words = CountWords(dlg);
-            var syllables = CountSyllables(dlg);
-            var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
-            var speechFromSyllables = SpeechHeadSeconds + syllables / 4.2 + SpeechTailSeconds;
-            speech = Math.Max(speechFromWords, speechFromSyllables);
-            // Very short lines still need a beat
-            speech = Math.Max(1.8, speech);
-            // VO can be slightly snappier
-            if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
-                speech *= 0.95;
-        }
+            speech = EstimateSpeechSeconds(dlg, delivery);
 
         double action = 0;
         if (dlg.Length == 0)
-        {
-            // Cap words so long establish copy / wardrobe restatements do not buy empty seconds
-            var aw = Math.Min(CountWords(visual), SilentVisualWordCap);
-            action = actionClass switch
-            {
-                "big_action" => Math.Clamp(4.5 + aw / 8.0, 5, AbsMaxSeconds),
-                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, EstablishingMaxSeconds),
-                "hold" => ActionOnlyMinSeconds,
-                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, SilentActionMaxSeconds),
-            };
-        }
+            action = EstimateSilentActionSeconds(visual, actionClass);
         else
-        {
             // Dialogue clip: calibrated camera/action overhead when the beat names something
             // specific, else the flat "short visual head" buffer (lip-sync / reaction under the line)
             action = DialogueClipActionOverhead(visual, actionClass);
-        }
 
         var total = speech + action;
         if (total <= 0)
@@ -445,6 +441,9 @@ public static class ClipDurationEstimator
         delivery = (delivery ?? "none").Trim().ToLowerInvariant();
         if (delivery.Length == 0) delivery = "none";
 
+        // NOTE: intentionally a words-only speech estimate (no syllable-based max) — this uncapped
+        // variant only needs to spot lines that would overflow the model max, so it stays simpler
+        // than EstimateSpeechSeconds by design.
         double speech = 0;
         if (dlg.Length > 0)
         {
@@ -457,20 +456,9 @@ public static class ClipDurationEstimator
 
         double action = 0;
         if (dlg.Length == 0)
-        {
-            var aw = Math.Min(CountWords(visual), SilentVisualWordCap);
-            action = actionClass switch
-            {
-                "big_action" => Math.Clamp(4.5 + aw / 8.0, 5, AbsMaxSeconds),
-                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, EstablishingMaxSeconds),
-                "hold" => ActionOnlyMinSeconds,
-                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, SilentActionMaxSeconds),
-            };
-        }
+            action = EstimateSilentActionSeconds(visual, actionClass);
         else
-        {
             action = DialogueClipActionOverhead(visual, actionClass);
-        }
 
         var total = speech + action;
         if (total <= 0)

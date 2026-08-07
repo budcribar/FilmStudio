@@ -218,43 +218,35 @@ public sealed class BookTextRegistryService
             DerivationHash(bookId, artifactKind, modelId, promptVersion, promptSha256,
                 temperature, behaviorVersionsJson), userId, ct);
 
-    public async Task<DerivedBookArtifact?> ResolveArtifactAsync(
-        string artifactId, string userId, CancellationToken ct = default)
-    {
-        await using var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            SELECT d.artifact_id, d.derivation_sha256, d.book_id, d.artifact_kind,
-                   d.content_sha256, d.content
-            FROM book_derived_artifacts d
-            JOIN book_text_access a ON a.book_id=d.book_id
-            WHERE d.artifact_id=@id
-              AND (a.user_id=@user OR a.visibility_mode IN ('Public', 'Forkable')) LIMIT 1;
-            """;
-        cmd.Parameters.AddWithValue("@id", artifactId);
-        cmd.Parameters.AddWithValue("@user", userId);
-        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
-        return await reader.ReadAsync(ct).ConfigureAwait(false)
-            ? new(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetString(4), reader.GetString(5))
-            : null;
-    }
+    public Task<DerivedBookArtifact?> ResolveArtifactAsync(
+        string artifactId, string userId, CancellationToken ct = default) =>
+        QueryDerivedArtifactAsync("artifact_id", "@id", artifactId, userId, ct);
 
-    private async Task<DerivedBookArtifact?> ResolveArtifactByDerivationHashAsync(
-        string derivationHash, string userId, CancellationToken ct)
+    private Task<DerivedBookArtifact?> ResolveArtifactByDerivationHashAsync(
+        string derivationHash, string userId, CancellationToken ct) =>
+        QueryDerivedArtifactAsync("derivation_sha256", "@hash", derivationHash, userId, ct);
+
+    /// <summary>
+    /// Fetch a derived-artifact row keyed on a single access-gated column, mapped to
+    /// <see cref="DerivedBookArtifact"/> (or null). <paramref name="keyColumn"/> and
+    /// <paramref name="keyParam"/> are compile-time-constant internal identifiers (not user
+    /// input), so interpolating them into the SQL carries no injection risk.
+    /// </summary>
+    private async Task<DerivedBookArtifact?> QueryDerivedArtifactAsync(
+        string keyColumn, string keyParam, string keyValue, string userId, CancellationToken ct)
     {
         await using var conn = new SqliteConnection(_connectionString);
         await conn.OpenAsync(ct).ConfigureAwait(false);
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             SELECT d.artifact_id, d.derivation_sha256, d.book_id, d.artifact_kind,
                    d.content_sha256, d.content
             FROM book_derived_artifacts d
             JOIN book_text_access a ON a.book_id=d.book_id
-            WHERE d.derivation_sha256=@hash
+            WHERE d.{keyColumn}={keyParam}
               AND (a.user_id=@user OR a.visibility_mode IN ('Public', 'Forkable')) LIMIT 1;
             """;
-        cmd.Parameters.AddWithValue("@hash", derivationHash);
+        cmd.Parameters.AddWithValue(keyParam, keyValue);
         cmd.Parameters.AddWithValue("@user", userId);
         await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
         return await reader.ReadAsync(ct).ConfigureAwait(false)

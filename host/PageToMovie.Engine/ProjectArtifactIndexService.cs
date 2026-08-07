@@ -359,6 +359,21 @@ public sealed class ProjectArtifactIndexService
         return sb.ToString();
     }
 
+    /// <summary>The zero-initialized per-category {score, note} map used by both the AI and human
+    /// sections of the final-review template.</summary>
+    private static Dictionary<string, object> EmptyCategoryScores() => new()
+    {
+        ["fidelity_plot"] = new { score = 0, note = "" },
+        ["fidelity_character"] = new { score = 0, note = "" },
+        ["adaptation_craft"] = new { score = 0, note = "" },
+        ["visual_identity"] = new { score = 0, note = "" },
+        ["continuity"] = new { score = 0, note = "" },
+        ["audio_dialogue"] = new { score = 0, note = "" },
+        ["completeness"] = new { score = 0, note = "" },
+        ["technical"] = new { score = 0, note = "" },
+        ["watchability"] = new { score = 0, note = "" },
+    };
+
     private static async Task EnsureFinalReviewTemplateAsync(string projectDir, CancellationToken ct)
     {
         var reviewDir = Path.Combine(projectDir, "assets", "review");
@@ -390,18 +405,7 @@ public sealed class ProjectArtifactIndexService
             {
                 model = "",
                 scoredAtUtc = "",
-                categories = new Dictionary<string, object>
-                {
-                    ["fidelity_plot"] = new { score = 0, note = "" },
-                    ["fidelity_character"] = new { score = 0, note = "" },
-                    ["adaptation_craft"] = new { score = 0, note = "" },
-                    ["visual_identity"] = new { score = 0, note = "" },
-                    ["continuity"] = new { score = 0, note = "" },
-                    ["audio_dialogue"] = new { score = 0, note = "" },
-                    ["completeness"] = new { score = 0, note = "" },
-                    ["technical"] = new { score = 0, note = "" },
-                    ["watchability"] = new { score = 0, note = "" },
-                },
+                categories = EmptyCategoryScores(),
                 overall = 0,
                 summary = "",
                 risks = Array.Empty<string>(),
@@ -413,18 +417,7 @@ public sealed class ProjectArtifactIndexService
             {
                 scoredAtUtc = "",
                 raterId = "",
-                categories = new Dictionary<string, object>
-                {
-                    ["fidelity_plot"] = new { score = 0, note = "" },
-                    ["fidelity_character"] = new { score = 0, note = "" },
-                    ["adaptation_craft"] = new { score = 0, note = "" },
-                    ["visual_identity"] = new { score = 0, note = "" },
-                    ["continuity"] = new { score = 0, note = "" },
-                    ["audio_dialogue"] = new { score = 0, note = "" },
-                    ["completeness"] = new { score = 0, note = "" },
-                    ["technical"] = new { score = 0, note = "" },
-                    ["watchability"] = new { score = 0, note = "" },
-                },
+                categories = EmptyCategoryScores(),
                 overall = 0,
                 wouldShip = false,
                 notes = "",

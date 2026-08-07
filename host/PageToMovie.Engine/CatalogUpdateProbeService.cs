@@ -523,20 +523,7 @@ public sealed class CatalogUpdateProbeService
             return;
         }
 
-        using var doc = JsonDocument.Parse(body);
-        var found = false;
-        if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var m in data.EnumerateArray())
-            {
-                if (m.TryGetProperty("id", out var idEl) &&
-                    string.Equals(idEl.GetString(), entry.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    found = true;
-                    break;
-                }
-            }
-        }
+        var found = DataArrayContainsId(body, entry.Id);
 
         row.Fields.Add(new CatalogFieldProbeResult
         {
@@ -571,20 +558,7 @@ public sealed class CatalogUpdateProbeService
             return;
         }
 
-        using var doc = JsonDocument.Parse(body);
-        var found = false;
-        if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var m in data.EnumerateArray())
-            {
-                if (m.TryGetProperty("id", out var idEl) &&
-                    string.Equals(idEl.GetString(), entry.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    found = true;
-                    break;
-                }
-            }
-        }
+        var found = DataArrayContainsId(body, entry.Id);
 
         row.Fields.Add(new CatalogFieldProbeResult
         {
@@ -610,6 +584,53 @@ public sealed class CatalogUpdateProbeService
         await DiscoverFromFalAsync(result, known, ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// True when a provider's <c>data[]</c> list response contains a model whose <c>id</c> exactly
+    /// (case-insensitively) matches <paramref name="id"/>. Shared by the per-provider "exists" probes.
+    /// </summary>
+    private static bool DataArrayContainsId(string body, string id)
+    {
+        using var doc = JsonDocument.Parse(body);
+        if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var m in data.EnumerateArray())
+            {
+                if (m.TryGetProperty("id", out var idEl) &&
+                    string.Equals(idEl.GetString(), id, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Enumerate a provider's <c>data[]</c> models list, skip ids already known, let the caller
+    /// turn each new id into a <see cref="CatalogNewModelHint"/> (returning null to skip it), add
+    /// accepted hints (recording their ids as known), and stop after 25. Returns the count added.
+    /// Shared by the OpenAI/xAI/Anthropic discovery passes.
+    /// </summary>
+    private static int AddDiscoveredModels(
+        string body,
+        HashSet<string> known,
+        List<CatalogNewModelHint> newModels,
+        Func<string, JsonElement, CatalogNewModelHint?> makeHint)
+    {
+        using var doc = JsonDocument.Parse(body);
+        if (!doc.RootElement.TryGetProperty("data", out var data)) return 0;
+        var added = 0;
+        foreach (var m in data.EnumerateArray())
+        {
+            var id = m.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+            if (string.IsNullOrWhiteSpace(id) || known.Contains(id)) continue;
+            var hint = makeHint(id, m);
+            if (hint is null) continue;
+            newModels.Add(hint);
+            known.Add(id);
+            if (++added >= 25) break;
+        }
+        return added;
+    }
+
     private async Task DiscoverFromOpenAiAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
     {
         var key = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
@@ -630,20 +651,15 @@ public sealed class CatalogUpdateProbeService
         }
 
         var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        using var doc = JsonDocument.Parse(body);
-        if (!doc.RootElement.TryGetProperty("data", out var data)) return;
-        var added = 0;
-        foreach (var m in data.EnumerateArray())
+        var added = AddDiscoveredModels(body, known, result.NewModels, (id, _) =>
         {
-            var id = m.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
-            if (string.IsNullOrWhiteSpace(id) || known.Contains(id)) continue;
             // Only surface chat-like gpt / o-series to avoid noise
             if (!(id.StartsWith("gpt-", StringComparison.OrdinalIgnoreCase) ||
                   id.StartsWith("o1", StringComparison.OrdinalIgnoreCase) ||
                   id.StartsWith("o3", StringComparison.OrdinalIgnoreCase) ||
                   id.StartsWith("o4", StringComparison.OrdinalIgnoreCase)))
-                continue;
-            result.NewModels.Add(new CatalogNewModelHint
+                return null;
+            return new CatalogNewModelHint
             {
                 Id = id,
                 Provider = "OpenAI",
@@ -652,10 +668,8 @@ public sealed class CatalogUpdateProbeService
                 Source = "OpenAI GET /v1/models",
                 LabMode = true,
                 LabNotes = "Discovered via OpenAI models list — add as lab and fill limits/costs before production.",
-            });
-            known.Add(id);
-            if (++added >= 25) break;
-        }
+            };
+        });
         result.DiscoveryNotes.Add($"OpenAI: {added} candidate model(s) not in catalog.");
     }
 
@@ -679,27 +693,17 @@ public sealed class CatalogUpdateProbeService
         }
 
         var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        using var doc = JsonDocument.Parse(body);
-        if (!doc.RootElement.TryGetProperty("data", out var data)) return;
-        var added = 0;
-        foreach (var m in data.EnumerateArray())
+        var added = AddDiscoveredModels(body, known, result.NewModels, (id, _) => new CatalogNewModelHint
         {
-            var id = m.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
-            if (string.IsNullOrWhiteSpace(id) || known.Contains(id)) continue;
-            result.NewModels.Add(new CatalogNewModelHint
-            {
-                Id = id,
-                Provider = "Xai",
-                ProviderId = "xai",
-                SuggestedCapability = id.Contains("video", StringComparison.OrdinalIgnoreCase) ? "Video"
-                    : id.Contains("image", StringComparison.OrdinalIgnoreCase) ? "Image" : "Chat",
-                Source = "xAI GET /v1/models",
-                LabMode = true,
-                LabNotes = "Discovered via xAI models list — add as lab and fill limits/costs before production.",
-            });
-            known.Add(id);
-            if (++added >= 25) break;
-        }
+            Id = id,
+            Provider = "Xai",
+            ProviderId = "xai",
+            SuggestedCapability = id.Contains("video", StringComparison.OrdinalIgnoreCase) ? "Video"
+                : id.Contains("image", StringComparison.OrdinalIgnoreCase) ? "Image" : "Chat",
+            Source = "xAI GET /v1/models",
+            LabMode = true,
+            LabNotes = "Discovered via xAI models list — add as lab and fill limits/costs before production.",
+        });
         result.DiscoveryNotes.Add($"xAI: {added} candidate model(s) not in catalog.");
     }
 
@@ -852,16 +856,11 @@ public sealed class CatalogUpdateProbeService
         }
 
         var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        using var doc = JsonDocument.Parse(body);
-        if (!doc.RootElement.TryGetProperty("data", out var data)) return;
-        var added = 0;
-        foreach (var m in data.EnumerateArray())
+        var added = AddDiscoveredModels(body, known, result.NewModels, (id, m) =>
         {
-            var id = m.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
-            if (string.IsNullOrWhiteSpace(id) || known.Contains(id)) continue;
-            if (!id.Contains("claude", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!id.Contains("claude", StringComparison.OrdinalIgnoreCase)) return null;
             var display = m.TryGetProperty("display_name", out var dn) ? dn.GetString() : id;
-            result.NewModels.Add(new CatalogNewModelHint
+            return new CatalogNewModelHint
             {
                 Id = id,
                 Provider = "Anthropic",
@@ -870,10 +869,8 @@ public sealed class CatalogUpdateProbeService
                 Source = "Anthropic GET /v1/models",
                 LabMode = true,
                 LabNotes = $"Discovered via Anthropic models list ({display}) — add as lab and fill limits/costs before production.",
-            });
-            known.Add(id);
-            if (++added >= 25) break;
-        }
+            };
+        });
         result.DiscoveryNotes.Add($"Anthropic: {added} candidate model(s) not in catalog.");
     }
 

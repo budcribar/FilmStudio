@@ -791,18 +791,29 @@ public sealed class FilmJobService
     }
 
     /// <summary>
+    /// Resolve the effective project id (from the request, else the active project) — throwing
+    /// "projectId required" when neither is set — and default a blank character key to the
+    /// narrator pseudo-character. Shared prologue for voice/speak job starts.
+    /// </summary>
+    private (string projectId, string charKey) ResolveProjectAndCharKey(string? reqProjectId, string? reqCharKey)
+    {
+        if (string.IsNullOrWhiteSpace(reqProjectId) && string.IsNullOrWhiteSpace(_projects.ActiveProjectId))
+            throw new InvalidOperationException("projectId required");
+        var projectId = string.IsNullOrWhiteSpace(reqProjectId)
+            ? _projects.ActiveProjectId
+            : reqProjectId.Trim();
+        var charKey = string.IsNullOrWhiteSpace(reqCharKey) ? "Character_Narrator" : reqCharKey.Trim();
+        return (projectId, charKey);
+    }
+
+    /// <summary>
     /// Batch TTS for re-voice: synthesize dialogue with the character's stored clone voice id.
     /// Writes <c>assets/audio/revoice/scene_XX_clip_YY.*</c> and hands each file to the client via
     /// <see cref="JobSnapshot.ClientMediaUrl"/> (SignalR). Provider keys stay on the server.
     /// </summary>
     public Task<JobSnapshot> StartSpeakBatchAsync(StartSpeakBatchRequest req)
     {
-        if (string.IsNullOrWhiteSpace(req.ProjectId) && string.IsNullOrWhiteSpace(_projects.ActiveProjectId))
-            throw new InvalidOperationException("projectId required");
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId.Trim();
-        var charKey = string.IsNullOrWhiteSpace(req.CharKey) ? "Character_Narrator" : req.CharKey.Trim();
+        var (projectId, charKey) = ResolveProjectAndCharKey(req.ProjectId, req.CharKey);
 
         // Locks: character seed (voice) + any scenes we know up front; full scene set may expand
         // after blueprint load inside the runner.
@@ -2770,12 +2781,7 @@ public sealed class FilmJobService
     /// </summary>
     public Task<JobSnapshot> StartVoiceSubstitutionAsync(StartVoiceSubstitutionRequest req)
     {
-        if (string.IsNullOrWhiteSpace(req.ProjectId) && string.IsNullOrWhiteSpace(_projects.ActiveProjectId))
-            throw new InvalidOperationException("projectId required");
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId.Trim();
-        var charKey = string.IsNullOrWhiteSpace(req.CharKey) ? "Character_Narrator" : req.CharKey.Trim();
+        var (projectId, charKey) = ResolveProjectAndCharKey(req.ProjectId, req.CharKey);
 
         return StartBackgroundJobAsync(
             ct => RunVoiceSubstitutionAsync(req, projectId, charKey, ct),
