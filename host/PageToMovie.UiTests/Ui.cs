@@ -19,6 +19,18 @@ public static class Ui
         await DismissTermsAsync(page);
     }
 
+    /// <summary>Like <see cref="GotoAppAsync"/> but establishes the logged-in session first — some
+    /// pages (e.g. Configuration) redirect to /login when hit as a cold deep link. Loads home
+    /// (?admin=1) to sign in, then navigates to the target; the session persists in the context.</summary>
+    public static async Task GotoAppLoggedInAsync(IPage page, string baseUrl, string route)
+    {
+        await GotoAppAsync(page, baseUrl, "/");
+        await page.GotoAsync($"{baseUrl}{route}");
+        await page.Locator("a[href='/scenes']").First
+                  .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30_000 });
+        await DismissTermsAsync(page);
+    }
+
     public static async Task DismissTermsAsync(IPage page)
     {
         var agree = page.GetByRole(AriaRole.Button, new() { Name = "Agree & continue" });
