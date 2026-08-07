@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PageToMovie.Core.Options;
 using PageToMovie.Core.Utils;
+using PageToMovie.Engine.Collaboration;
 
 namespace PageToMovie.Engine
 {
@@ -24,6 +25,8 @@ namespace PageToMovie.Engine
         public bool HasConflicts { get; set; }
         public string CommitHash { get; set; } = "";
         public string Message { get; set; } = "";
+        public IReadOnlyList<string> RemainingConflictPaths { get; set; } = Array.Empty<string>();
+        public int AutoResolvedCount { get; set; }
     }
 
     public class ProjectGitStatus
@@ -353,6 +356,99 @@ namespace PageToMovie.Engine
                 try { repo.Network.Remotes.Remove(SyncRemoteName); } catch { /* best effort cleanup */ }
             }
         }
+
+        /// <summary>
+        /// Sync-from-origin then auto-resolve text/JSON conflicts with <see cref="AutoTextMerger"/>.
+        /// Binary/media paths are left for manual resolution.
+        /// </summary>
+        public async Task<GitMergeResult> SyncForkFromOriginWithAutoResolveAsync(
+            string forkProjectPath,
+            string parentProjectPath,
+            AutoTextMerger.Strategy strategy)
+        {
+            var res = await SyncForkFromOriginAsync(forkProjectPath, parentProjectPath).ConfigureAwait(false);
+            if (!res.HasConflicts || res.Success)
+                return res;
+            if (!Directory.Exists(forkProjectPath))
+                return res;
+
+            using var repo = new Repository(forkProjectPath);
+            if (!repo.Index.Conflicts.Any())
+                return res;
+
+            var (autoResolved, remaining) = TryAutoResolveIndexConflicts(repo, forkProjectPath, strategy);
+            if (remaining.Count == 0 && autoResolved > 0)
+            {
+                Commands.Stage(repo, "*");
+                var signature = new Signature("PageToMovie", "noreply@pagetomovie.local", DateTimeOffset.UtcNow);
+                var mergeCommit = repo.Commit(
+                    $"Auto-resolved merge from origin ({autoResolved} file(s))",
+                    signature, signature);
+                return new GitMergeResult
+                {
+                    Success = true,
+                    HasConflicts = false,
+                    CommitHash = mergeCommit.Sha,
+                    Message = $"Synced from origin; auto-resolved {autoResolved} conflicted file(s).",
+                    AutoResolvedCount = autoResolved,
+                };
+            }
+
+            return new GitMergeResult
+            {
+                Success = false,
+                HasConflicts = remaining.Count > 0,
+                Message = $"{remaining.Count} file(s) still need manual conflict resolution (auto-resolved {autoResolved}).",
+                RemainingConflictPaths = remaining,
+                AutoResolvedCount = autoResolved,
+            };
+        }
+
+        static (int AutoResolved, List<string> Remaining) TryAutoResolveIndexConflicts(
+            Repository repo, string projectPath, AutoTextMerger.Strategy strategy)
+        {
+            var remaining = new List<string>();
+            int resolved = 0;
+            foreach (var conflict in repo.Index.Conflicts.ToList())
+            {
+                var path = conflict.Ancestor?.Path ?? conflict.Ours?.Path ?? conflict.Theirs?.Path;
+                if (string.IsNullOrEmpty(path)) { remaining.Add("?"); continue; }
+                var ext = Path.GetExtension(path).ToLowerInvariant();
+                if (ext is ".mp4" or ".webm" or ".mov" or ".wav" or ".avi" or ".png" or ".jpg"
+                    or ".jpeg" or ".gif" or ".webp" or ".bin" or ".pdf" or ".zip")
+                { remaining.Add(path); continue; }
+                try
+                {
+                    string? ReadStage(IndexEntry? entry)
+                    {
+                        if (entry is null || entry.Id == ObjectId.Zero) return null;
+                        var blob = repo.Lookup<Blob>(entry.Id);
+                        if (blob is null || blob.IsBinary) return null;
+                        return blob.GetContentText();
+                    }
+                    var baseText = ReadStage(conflict.Ancestor);
+                    var oursText = ReadStage(conflict.Ours);
+                    var theirsText = ReadStage(conflict.Theirs);
+                    if ((conflict.Ours is not null && oursText is null && conflict.Ours.Id != ObjectId.Zero)
+                        || (conflict.Theirs is not null && theirsText is null && conflict.Theirs.Id != ObjectId.Zero))
+                    { remaining.Add(path); continue; }
+
+                    var outcome = AutoTextMerger.Merge(baseText, oursText ?? "", theirsText ?? "", strategy);
+                    var resolvedPath = Path.Combine(projectPath, path.Replace('/', Path.DirectorySeparatorChar));
+                    var resolvedDir = Path.GetDirectoryName(resolvedPath);
+                    if (!string.IsNullOrEmpty(resolvedDir)) Directory.CreateDirectory(resolvedDir);
+                    File.WriteAllText(resolvedPath, outcome.MergedText);
+                    if (outcome.HasConflicts && strategy == AutoTextMerger.Strategy.Auto)
+                    { remaining.Add(path); continue; }
+                    repo.Index.Remove(path);
+                    Commands.Stage(repo, path);
+                    resolved++;
+                }
+                catch { remaining.Add(path); }
+            }
+            return (resolved, remaining);
+        }
+
 
         /// <summary>
         /// Push the project's HEAD to the configured Projects remote on branch
