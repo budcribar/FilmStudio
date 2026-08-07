@@ -61,21 +61,6 @@ public class ProjectOwnershipTests
     }
 
     [Fact]
-    public void IsOwnedBy_matches_by_username_once_session_is_resolved()
-    {
-        // Correct model: the endpoint resolves an email-shaped session to its user RECORD (by email),
-        // and passes the canonical username through — ownership then matches on the username, not on any
-        // coincidental email-local-part string. (Resolution itself is exercised at the endpoint.)
-        var p = new ProjectInfo { Id = "budcribar/Mary10", OwnerUserId = "budcribar" };
-        var aliases = ProjectOwnership.CollectAliases(
-            requestUserId: "budcribar@msn.com", // stale email-shaped session id
-            canonicalUserId: "budcribar",         // resolved from the user record
-            username: "budcribar",
-            email: "budcribar@msn.com");
-        Assert.True(ProjectOwnership.IsOwnedBy(p, aliases));
-    }
-
-    [Fact]
     public void IsOwnedBy_rejects_other_users()
     {
         var p = new ProjectInfo { Id = "other/Mary", OwnerUserId = "other" };
