@@ -8697,6 +8697,49 @@ catch (Exception ex)
 app.MapCollaborationEndpoints();
 app.MapMergeEndpoints();
 app.MapHub<ProjectHub>("/hubs/project");
+
+// ---- Project cost summary (adaptation vs video split) ----
+app.MapGet("/api/projects/{id}/costs/summary", (
+    string id,
+    CostLedgerService ledger,
+    IHostEnvironment env) =>
+{
+    try
+    {
+        var root = Path.Combine(env.ContentRootPath, "projects");
+        var summary = ProjectCostAggregator.BuildSummary(id, root, ledger);
+        return Results.Ok(summary);
+    }
+    catch (Exception ex)
+    {
+        return Results.Ok(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/costs/record", async (
+    string id,
+    CostLedgerService ledger,
+    HttpRequest req,
+    CancellationToken ct) =>
+{
+    try
+    {
+        using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct);
+        var root = doc.RootElement;
+        var category = root.TryGetProperty("category", out var c) ? c.GetString() ?? "video" : "video";
+        var usd = root.TryGetProperty("usd", out var u) && u.ValueKind == JsonValueKind.Number ? u.GetDouble() : 0;
+        var note = root.TryGetProperty("note", out var n) ? n.GetString() : null;
+        var modelId = root.TryGetProperty("modelId", out var m) ? m.GetString() : null;
+        ledger.Record(id, category, usd, note, modelId);
+        return Results.Ok(new { ok = true });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+
 app.Run();
 
 namespace PageToMovie.Api
