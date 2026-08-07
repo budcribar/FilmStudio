@@ -1,0 +1,27 @@
+@namespace PageToMovie.Web.Components
+@*
+  Bordered promo/CTA card used on Home. The shell (border, card-body flex layout, eyebrow + title +
+  muted body) is shared; the body copy and the call-to-action (anchor or button) are passed in so
+  each instance supplies only its data.
+*@
+
+<div class="card mb-3 border-primary border-opacity-50" data-testid="@TestId">
+    <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="min-w-0">
+            <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">@Eyebrow</div>
+            <div class="fw-semibold">@Title</div>
+            <div class="small text-muted">
+                @Body
+            </div>
+        </div>
+        @Cta
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? TestId { get; set; }
+    [Parameter] public string? Eyebrow { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? Body { get; set; }
+    [Parameter] public RenderFragment? Cta { get; set; }
+}

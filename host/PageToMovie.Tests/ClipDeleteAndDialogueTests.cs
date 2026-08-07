@@ -331,16 +331,9 @@ public class ClipDeleteAndDialogueTests
     [Fact]
     public async Task ReviewIndexService_RemoveClip_only_drops_the_target_row()
     {
-        var root = Path.Combine(Path.GetTempPath(), "fs_reviewrm_" + Guid.NewGuid().ToString("N"));
-        var proj = Path.Combine(root, "projects", "Demo");
-        Directory.CreateDirectory(proj);
-        File.WriteAllText(Path.Combine(proj, "project.json"), """{"id":"Demo"}""");
+        var (store, _, editLogs) = TestProjects.CreateStoreWithEditLogs("fs_reviewrm_", out var root);
         try
         {
-            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            var store = new ProjectStore(opts);
-            var learning = new ReviewEventStore(store, NullLogger<ReviewEventStore>.Instance);
-            var editLogs = new EditLogService(store, learning, NullLogger<EditLogService>.Instance);
             var reviewIndex = new ReviewIndexService(store, editLogs, NullLogger<ReviewIndexService>.Instance);
 
             var doc = new ReviewIndexDocument { ProjectId = "Demo", SchemaVersion = "1" };
@@ -364,17 +357,10 @@ public class ClipDeleteAndDialogueTests
     [Fact]
     public async Task EditLogService_RemoveClipReviewStateAsync_drops_only_that_clip()
     {
-        var root = Path.Combine(Path.GetTempPath(), "fs_editrm_" + Guid.NewGuid().ToString("N"));
+        var (_, _, editLogs) = TestProjects.CreateStoreWithEditLogs("fs_editrm_", out var root);
         var proj = Path.Combine(root, "projects", "Demo");
-        Directory.CreateDirectory(proj);
-        File.WriteAllText(Path.Combine(proj, "project.json"), """{"id":"Demo"}""");
         try
         {
-            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            var store = new ProjectStore(opts);
-            var learning = new ReviewEventStore(store, NullLogger<ReviewEventStore>.Instance);
-            var editLogs = new EditLogService(store, learning, NullLogger<EditLogService>.Instance);
-
             await editLogs.SetClipReviewAsync("Demo", 1, 1, "pass", "looks good");
             await editLogs.SetClipReviewAsync("Demo", 1, 2, "fail", "reshoot needed");
 

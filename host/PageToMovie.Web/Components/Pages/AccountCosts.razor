@@ -236,39 +236,14 @@ else
 
     private RenderFragment RenderPie(List<Slice> slices, double total, string centerLabel, string testId) => __builder =>
     {
-        if (total <= 0.0001)
-        {
-            <div class="cost-pie-empty text-center text-muted py-4" data-testid="@testId">
-                <div class="cost-pie-placeholder mb-2" aria-hidden="true"></div>
-                <div class="small">Nothing yet</div>
-            </div>
-        }
-        else
-        {
-            <svg class="cost-pie" viewBox="0 0 42 42" width="180" height="180"
-                 role="img" aria-label="@centerLabel by slice" data-testid="@testId">
-                <circle cx="21" cy="21" r="15.915" fill="transparent"
-                        stroke="rgba(148,163,184,0.15)" stroke-width="6" />
-                @{
-                    var offset = 25.0;
-                    foreach (var slice in slices.Where(x => x.Usd > 0))
-                    {
-                        var pct = 100.0 * slice.Usd / total;
-                        <circle class="cost-pie-slice"
-                                cx="21" cy="21" r="15.915"
-                                fill="transparent"
-                                stroke="@slice.Color"
-                                stroke-width="6"
-                                stroke-dasharray="@pct.ToString("0.###", CultureInfo.InvariantCulture) @((100 - pct).ToString("0.###", CultureInfo.InvariantCulture))"
-                                stroke-dashoffset="@offset.ToString("0.###", CultureInfo.InvariantCulture)" />
-                        offset -= pct;
-                    }
-                }
-                <circle cx="21" cy="21" r="11.5" class="cost-pie-hole" />
-                <text x="21" y="20.2" text-anchor="middle" class="cost-pie-center-label">@centerLabel</text>
-                <text x="21" y="24.5" text-anchor="middle" class="cost-pie-center-value">@Usd(total)</text>
-            </svg>
-        }
+        <CostPie Segments="@slices.Select(s => new CostPie.Segment(s.Usd, s.Color)).ToList()"
+                 Total="total"
+                 CenterLabel="@centerLabel"
+                 CenterValue="@Usd(total)"
+                 TestId="@testId"
+                 Size="180"
+                 AriaLabel="@($"{centerLabel} by slice")"
+                 EmptyText="Nothing yet" />
     };
 
     private RenderFragment RenderLegend(List<Slice> slices, double total) => __builder =>

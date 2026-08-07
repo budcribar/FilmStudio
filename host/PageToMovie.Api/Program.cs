@@ -213,6 +213,23 @@ static IHttpClientBuilder ConfigurePooledSocketsHandler(IHttpClientBuilder b) =>
          EnableMultipleHttp2Connections = true,
      });
 
+// Shared admin/operator authorization gate. Returns null when the caller is authorized (admin
+// role, or the operator override secret supplied via ?me / ?admin_key / X-Admin-Key header), or a
+// 403 JSON result to short-circuit the endpoint otherwise. Secret comparison is Ordinal.
+static IResult? RequireAdminOrOperator(HttpContext http, IUserContext user, IOptions<PageToMovieOptions> opts)
+{
+    var secret = AuthOptions.ResolveOperatorOverrideSecret(opts.Value.Auth);
+    var isOperator = !string.IsNullOrWhiteSpace(secret) &&
+        (string.Equals(http.Request.Query["me"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Query["admin_key"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Headers["X-Admin-Key"].ToString(), secret, StringComparison.Ordinal));
+
+    if (!user.IsAdmin && !isOperator)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+    return null;
+}
+
 ConfigurePooledSocketsHandler(builder.Services.AddHttpClient("resend", c =>
 {
     c.Timeout = TimeSpan.FromSeconds(30);
@@ -1244,15 +1261,8 @@ app.MapGet("/api/admin/projects/{id}/export", async (
     ProjectArchiveService archives,
     CancellationToken ct) =>
 {
-    var secret = AuthOptions.ResolveOperatorOverrideSecret(opts.Value.Auth);
-    var isOperator = !string.IsNullOrWhiteSpace(secret) &&
-        (string.Equals(http.Request.Query["me"].ToString(), secret, StringComparison.Ordinal) ||
-         string.Equals(http.Request.Query["admin_key"].ToString(), secret, StringComparison.Ordinal) ||
-         string.Equals(http.Request.Headers["X-Admin-Key"].ToString(), secret, StringComparison.Ordinal));
-
-    if (!user.IsAdmin && !isOperator)
-        return Results.Json(new { ok = false, error = "admin role required" },
-            statusCode: StatusCodes.Status403Forbidden);
+    if (RequireAdminOrOperator(http, user, opts) is { } forbidden)
+        return forbidden;
     try
     {
         var exp = await archives.ExportAsync(id, ct);
@@ -1276,14 +1286,8 @@ app.MapGet("/api/admin/logs/export", async (
     ServerLogExportService logExporter,
     CancellationToken ct) =>
 {
-    var secret = AuthOptions.ResolveOperatorOverrideSecret(opts.Value.Auth);
-    var isOperator = !string.IsNullOrWhiteSpace(secret) &&
-        (string.Equals(http.Request.Query["me"].ToString(), secret, StringComparison.Ordinal) ||
-         string.Equals(http.Request.Query["admin_key"].ToString(), secret, StringComparison.Ordinal) ||
-         string.Equals(http.Request.Headers["X-Admin-Key"].ToString(), secret, StringComparison.Ordinal));
-
-    if (!user.IsAdmin && !isOperator)
-        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+    if (RequireAdminOrOperator(http, user, opts) is { } forbidden)
+        return forbidden;
 
     try
     {
@@ -1306,14 +1310,8 @@ app.MapGet("/api/admin/logs", async (
     ProjectStore projects,
     CancellationToken ct) =>
 {
-    var secret = AuthOptions.ResolveOperatorOverrideSecret(opts.Value.Auth);
-    var isOperator = !string.IsNullOrWhiteSpace(secret) &&
-        (string.Equals(http.Request.Query["me"].ToString(), secret, StringComparison.Ordinal) ||
-         string.Equals(http.Request.Query["admin_key"].ToString(), secret, StringComparison.Ordinal) ||
-         string.Equals(http.Request.Headers["X-Admin-Key"].ToString(), secret, StringComparison.Ordinal));
-
-    if (!user.IsAdmin && !isOperator)
-        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+    if (RequireAdminOrOperator(http, user, opts) is { } forbidden)
+        return forbidden;
 
     var projectList = await projects.ListProjectsAsync(ct);
 

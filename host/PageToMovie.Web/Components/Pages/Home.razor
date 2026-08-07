@@ -91,34 +91,26 @@
 @if (!Session.IsLoggedIn)
 {
     @* Same three cards as signed-in easy home; CTAs send guests to sign-in. *@
-    <div class="card mb-3 border-primary border-opacity-50" data-testid="home-simple-voice-card">
-        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <div class="min-w-0">
-                <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Easiest start</div>
-                <div class="fw-semibold">Read a library book in your voice</div>
-                <div class="small text-muted">
-                    Pick a story, record one sample — we put your voice on the narrator.
-                </div>
-            </div>
+    <PromoCard TestId="home-simple-voice-card" Eyebrow="Easiest start" Title="Read a library book in your voice">
+        <Body>
+            Pick a story, record one sample — we put your voice on the narrator.
+        </Body>
+        <Cta>
             <a href="login?returnUrl=/simple-voice" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-simple-voice">
                 Sign in to try →
             </a>
-        </div>
-    </div>
-    <div class="card mb-3 border-primary border-opacity-50" data-testid="home-full-studio-card">
-        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <div class="min-w-0">
-                <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Advanced</div>
-                <div class="fw-semibold">Full studio</div>
-                <div class="small text-muted">
-                    Cast, estimate, film, and review — full control.
-                </div>
-            </div>
+        </Cta>
+    </PromoCard>
+    <PromoCard TestId="home-full-studio-card" Eyebrow="Advanced" Title="Full studio">
+        <Body>
+            Cast, estimate, film, and review — full control.
+        </Body>
+        <Cta>
             <a href="login?returnUrl=/" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-full-studio-guest">
                 Sign in for studio →
             </a>
-        </div>
-    </div>
+        </Cta>
+    </PromoCard>
 }
 else if (_projects is null)
 {
@@ -135,39 +127,31 @@ else
     @if (ShowEasyHome)
     {
         @* Default home: easiest start only — advanced project picker is behind Full studio. *@
-        <div class="card mb-3 border-primary border-opacity-50" data-testid="home-simple-voice-card">
-            <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
-                <div class="min-w-0">
-                    <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Easiest start</div>
-                    <div class="fw-semibold">Read a library book in your voice</div>
-                    <div class="small text-muted">
-                        Pick a story, record one sample — we put your voice on the narrator.
-                        Stock pictures stay as-is.
-                    </div>
-                </div>
+        <PromoCard TestId="home-simple-voice-card" Eyebrow="Easiest start" Title="Read a library book in your voice">
+            <Body>
+                Pick a story, record one sample — we put your voice on the narrator.
+                Stock pictures stay as-is.
+            </Body>
+            <Cta>
                 <a href="simple-voice" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-simple-voice">
                     Try with your voice →
                 </a>
-            </div>
-        </div>
+            </Cta>
+        </PromoCard>
 
-        <div class="card mb-3 border-primary border-opacity-50" data-testid="home-full-studio-card">
-            <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
-                <div class="min-w-0">
-                    <div class="small text-primary fw-semibold text-uppercase" style="letter-spacing:0.06em;">Advanced</div>
-                    <div class="fw-semibold">Full studio</div>
-                    <div class="small text-muted">
-                        Pick or create a project, cast faces, estimate, film, and review — full control.
-                    </div>
-                </div>
+        <PromoCard TestId="home-full-studio-card" Eyebrow="Advanced" Title="Full studio">
+            <Body>
+                Pick or create a project, cast faces, estimate, film, and review — full control.
+            </Body>
+            <Cta>
                 <button type="button"
                         class="btn btn-primary btn-sm flex-shrink-0"
                         data-testid="home-open-full-studio"
                         @onclick="EnterFullStudio">
                     Open full studio →
                 </button>
-            </div>
-        </div>
+            </Cta>
+        </PromoCard>
     }
     else
     {
