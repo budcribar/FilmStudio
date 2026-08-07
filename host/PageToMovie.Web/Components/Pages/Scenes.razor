@@ -1295,54 +1295,27 @@ else
 
 @if (_deleteSceneTarget is int deleteSn)
 {
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
-         style="background:rgba(0,0,0,.5);" @onclick="() => _deleteSceneTarget = null">
-        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
-            <div class="modal-content">
-                <div class="modal-header py-2">
-                    <h5 class="modal-title">Delete Scene S@(deleteSn.ToString("D2"))?</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => _deleteSceneTarget = null"></button>
-                </div>
-                <div class="modal-body py-3">
-                    Are you sure you want to delete <strong>Scene @deleteSn.ToString("D2")</strong> from the shot plan?
-                    <div class="text-muted small mt-2">
-                        Note: You can easily restore missing scenes anytime by clicking <strong>Rebuild shot plan</strong>.
-                    </div>
-                </div>
-                <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" disabled="@_busy" @onclick="() => _deleteSceneTarget = null">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-danger" disabled="@_busy" @onclick="ConfirmDeleteSceneAsync">Delete Scene</button>
-                </div>
-            </div>
+    <ConfirmModal Visible="true" Title="@($"Delete Scene S{deleteSn:D2}?")"
+                  ConfirmLabel="Delete Scene" Busy="_busy"
+                  OnConfirm="ConfirmDeleteSceneAsync" OnCancel="() => { _deleteSceneTarget = null; }">
+        Are you sure you want to delete <strong>Scene @deleteSn.ToString("D2")</strong> from the shot plan?
+        <div class="text-muted small mt-2">
+            Note: You can easily restore missing scenes anytime by clicking <strong>Rebuild shot plan</strong>.
         </div>
-    </div>
+    </ConfirmModal>
 }
 
 @if (_deleteClipTarget is { } delTarget)
 {
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
-         style="background:rgba(0,0,0,.45);" @onclick="CancelDeleteClip">
-        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
-            <div class="modal-content">
-                <div class="modal-header py-2">
-                    <h5 class="modal-title">Delete clip?</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="CancelDeleteClip"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0">
-                        Delete <code>S@(delTarget.Scene.ToString("D2"))C@(delTarget.Clip.ToString("D2"))</code>?
-                        This removes the video file and its shot-plan entry — cannot be undone.
-                        Play scene / Play WIP afterward to drop it from the assembled cut.
-                    </p>
-                </div>
-                <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" disabled="@_busy" @onclick="CancelDeleteClip">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-danger" data-testid="clip-delete-confirm"
-                            disabled="@_busy" @onclick="ConfirmDeleteClipAsync">Delete clip</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <ConfirmModal Visible="true" Title="Delete clip?" ConfirmLabel="Delete clip"
+                  ConfirmTestId="clip-delete-confirm" Busy="_busy" BodyClass="" BackdropOpacity=".45"
+                  OnConfirm="ConfirmDeleteClipAsync" OnCancel="CancelDeleteClip">
+        <p class="mb-0">
+            Delete <code>S@(delTarget.Scene.ToString("D2"))C@(delTarget.Clip.ToString("D2"))</code>?
+            This removes the video file and its shot-plan entry — cannot be undone.
+            Play scene / Play WIP afterward to drop it from the assembled cut.
+        </p>
+    </ConfirmModal>
 }
 
 @if (_clipEditor is { } ed)
