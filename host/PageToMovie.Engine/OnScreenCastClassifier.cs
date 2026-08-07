@@ -262,33 +262,22 @@ JSON only:
     private static List<Target> CollectSilentAndDialogue(Dictionary<string, object?> stage1)
     {
         var list = new List<Target>();
-        var scenes = stage1.TryGetValue("scenes", out var sObj) && sObj is List<object?> sl ? sl : new();
-        var si = 0;
-        foreach (var sItem in scenes)
+        foreach (var (si, bi, _, beat) in ClassifierBeatEnumerator.EnumerateSceneBeats(stage1))
         {
-            if (sItem is not Dictionary<string, object?> scene) continue;
-            si++;
-            var beats = scene.TryGetValue("story_beats", out var sb) && sb is List<object?> bl ? bl : new();
-            var bi = 0;
-            foreach (var bItem in beats)
+            var ve = beat.TryGetValue("visual_event", out var v) ? v?.ToString() ?? "" : "";
+            var dlg = beat.TryGetValue("dialogue", out var d) ? d?.ToString() ?? "" : "";
+            var sp = beat.TryGetValue("speaker", out var s) ? s?.ToString() ?? "" : "";
+            var del = beat.TryGetValue("delivery", out var delv) ? delv?.ToString() ?? "" : "";
+            if (string.IsNullOrWhiteSpace(ve) && string.IsNullOrWhiteSpace(dlg)) continue;
+            list.Add(new Target
             {
-                if (bItem is not Dictionary<string, object?> beat) continue;
-                bi++;
-                var ve = beat.TryGetValue("visual_event", out var v) ? v?.ToString() ?? "" : "";
-                var dlg = beat.TryGetValue("dialogue", out var d) ? d?.ToString() ?? "" : "";
-                var sp = beat.TryGetValue("speaker", out var s) ? s?.ToString() ?? "" : "";
-                var del = beat.TryGetValue("delivery", out var delv) ? delv?.ToString() ?? "" : "";
-                if (string.IsNullOrWhiteSpace(ve) && string.IsNullOrWhiteSpace(dlg)) continue;
-                list.Add(new Target
-                {
-                    Id = $"s{si}_b{bi}",
-                    VisualEvent = ve,
-                    Dialogue = dlg,
-                    SpeakerKey = sp,
-                    IsVoiceover = VoiceoverPattern.IsMatch(del),
-                    Beat = beat,
-                });
-            }
+                Id = $"s{si}_b{bi}",
+                VisualEvent = ve,
+                Dialogue = dlg,
+                SpeakerKey = sp,
+                IsVoiceover = VoiceoverPattern.IsMatch(del),
+                Beat = beat,
+            });
         }
         return list;
     }

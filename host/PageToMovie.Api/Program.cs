@@ -230,6 +230,20 @@ static IResult? RequireAdminOrOperator(HttpContext http, IUserContext user, IOpt
     return null;
 }
 
+// Shared owner/admin gate for project-mutating endpoints. Loads the project (throwing the usual
+// not-found when absent) and returns null when the caller may mutate it, or a 403 JSON result
+// carrying the endpoint-specific <paramref name="denyMessage"/> otherwise. Mirrors the inline
+// RequireProject + CanUserPublishDemo prologue these endpoints previously repeated verbatim.
+static async Task<IResult?> RequireProjectOwnerOrAdmin(
+    string id, ProjectStore store, IUserContext user, string denyMessage, CancellationToken ct)
+{
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        return Results.Json(new { ok = false, error = denyMessage },
+            statusCode: StatusCodes.Status403Forbidden);
+    return null;
+}
+
 ConfigurePooledSocketsHandler(builder.Services.AddHttpClient("resend", c =>
 {
     c.Timeout = TimeSpan.FromSeconds(30);
@@ -3671,12 +3685,8 @@ app.MapPost("/api/projects/{id}/commit", async (
         return denied;
     try
     {
-        await store.RequireProjectAsync(id, ct);
-        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-        {
-            return Results.Json(new { ok = false, error = "Only the project owner or an admin can commit it." },
-                statusCode: StatusCodes.Status403Forbidden);
-        }
+        if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can commit it.", ct) is { } forbidden)
+            return forbidden;
 
         var info = await git.CommitProjectStateAsync(
             store.GetProjectDir(id), user.UserId ?? "PageToMovie", body?.Message ?? "Project update");
@@ -3717,12 +3727,8 @@ app.MapPost("/api/projects/{id}/git/undo", async (
         return denied;
     try
     {
-        await store.RequireProjectAsync(id, ct);
-        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-        {
-            return Results.Json(new { ok = false, error = "Only the project owner or an admin can undo project changes." },
-                statusCode: StatusCodes.Status403Forbidden);
-        }
+        if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can undo project changes.", ct) is { } forbidden)
+            return forbidden;
 
         var result = await store.UndoLastProjectChangeAsync(id, user.UserId);
         if (result is null)
@@ -3749,12 +3755,8 @@ app.MapPost("/api/projects/{id}/git/revert/{commitHash}", async (
         return denied;
     try
     {
-        await store.RequireProjectAsync(id, ct);
-        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-        {
-            return Results.Json(new { ok = false, error = "Only the project owner or an admin can revert project state." },
-                statusCode: StatusCodes.Status403Forbidden);
-        }
+        if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can revert project state.", ct) is { } forbidden)
+            return forbidden;
 
         var result = await store.RevertProjectToCommitAsync(id, commitHash, user.UserId);
         if (result is null)
@@ -3801,12 +3803,8 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/revert/{commitHash}", async (
         return denied;
     try
     {
-        await store.RequireProjectAsync(id, ct);
-        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-        {
-            return Results.Json(new { ok = false, error = "Only the project owner or an admin can revert scene changes." },
-                statusCode: StatusCodes.Status403Forbidden);
-        }
+        if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can revert scene changes.", ct) is { } forbidden)
+            return forbidden;
 
         var success = await store.RevertSceneToCommitAsync(id, scene, commitHash, user.UserId);
         if (!success)
@@ -4347,12 +4345,8 @@ app.MapPost("/api/projects/{id}/visibility", async (
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
 
-    await store.RequireProjectAsync(id, ct);
-    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-    {
-        return Results.Json(new { ok = false, error = "Only the project owner or an admin can change visibility mode." },
-            statusCode: StatusCodes.Status403Forbidden);
-    }
+    if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can change visibility mode.", ct) is { } forbidden)
+        return forbidden;
 
     var proj = await store.SetProjectVisibilityModeAsync(id, req.VisibilityMode, ct);
     await books.SetProjectVisibilityAsync(proj.OwnerUserId ?? user.UserId, id, proj.VisibilityMode, ct);
@@ -4372,12 +4366,8 @@ app.MapPost("/api/projects/{id}/studio-path", async (
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
 
-    await store.RequireProjectAsync(id, ct);
-    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-    {
-        return Results.Json(new { ok = false, error = "Only the project owner or an admin can change studio path." },
-            statusCode: StatusCodes.Status403Forbidden);
-    }
+    if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can change studio path.", ct) is { } forbidden)
+        return forbidden;
 
     var proj = await store.SetProjectStudioPathAsync(id, body?.StudioPath, ct);
     return Results.Ok(new { ok = true, projectId = proj.Id, studioPath = proj.StudioPath });
@@ -4395,12 +4385,8 @@ app.MapPost("/api/projects/{id}/rename", async (
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
 
-    await store.RequireProjectAsync(id, ct);
-    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-    {
-        return Results.Json(new { ok = false, error = "Only the project owner or an admin can rename this project." },
-            statusCode: StatusCodes.Status403Forbidden);
-    }
+    if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can rename this project.", ct) is { } forbidden)
+        return forbidden;
 
     try
     {
@@ -4474,12 +4460,8 @@ app.MapPost("/api/projects/{id}/invites", async (
         return denied;
     try
     {
-        await store.RequireProjectAsync(id, ct);
-        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-        {
-            return Results.Json(new { ok = false, error = "Only the project owner or an admin can invite collaborators." },
-                statusCode: StatusCodes.Status403Forbidden);
-        }
+        if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can invite collaborators.", ct) is { } forbidden)
+            return forbidden;
 
         var targetHandle = string.IsNullOrWhiteSpace(body?.TargetHandle) ? null : body!.TargetHandle!.TrimStart('@').Trim();
         var targetEmail = string.IsNullOrWhiteSpace(body?.TargetEmail) ? null : body!.TargetEmail!.Trim();
@@ -6104,10 +6086,8 @@ app.MapDelete("/api/projects/{id}/scenes/{scene:int}", async (
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
-    await store.RequireProjectAsync(id, ct);
-    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-        return Results.Json(new { ok = false, error = "Only the project owner or an admin can edit the shot plan." },
-            statusCode: StatusCodes.Status403Forbidden);
+    if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can edit the shot plan.", ct) is { } forbidden)
+        return forbidden;
     try
     {
         var removed = store.DeleteScene(id, scene);
@@ -6126,10 +6106,8 @@ app.MapPost("/api/projects/{id}/scenes", async (
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
-    await store.RequireProjectAsync(id, ct);
-    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-        return Results.Json(new { ok = false, error = "Only the project owner or an admin can edit the shot plan." },
-            statusCode: StatusCodes.Status403Forbidden);
+    if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can edit the shot plan.", ct) is { } forbidden)
+        return forbidden;
     try
     {
         var sceneNo = store.AddScene(id);
@@ -6147,10 +6125,8 @@ app.MapPost("/api/projects/{id}/scenes/credits", async (
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
-    await store.RequireProjectAsync(id, ct);
-    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
-        return Results.Json(new { ok = false, error = "Only the project owner or an admin can edit the shot plan." },
-            statusCode: StatusCodes.Status403Forbidden);
+    if (await RequireProjectOwnerOrAdmin(id, store, user, "Only the project owner or an admin can edit the shot plan.", ct) is { } forbidden)
+        return forbidden;
     try
     {
         var sceneNo = store.AddCreditsScene(id);

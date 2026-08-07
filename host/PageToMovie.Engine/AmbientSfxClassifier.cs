@@ -275,22 +275,11 @@ JSON only:
     private static List<Target> CollectBeats(Dictionary<string, object?> stage1)
     {
         var list = new List<Target>();
-        var scenes = stage1.TryGetValue("scenes", out var sObj) && sObj is List<object?> sl ? sl : new();
-        var si = 0;
-        foreach (var sItem in scenes)
+        foreach (var (si, bi, _, beat) in ClassifierBeatEnumerator.EnumerateSceneBeats(stage1))
         {
-            if (sItem is not Dictionary<string, object?> scene) continue;
-            si++;
-            var beats = scene.TryGetValue("story_beats", out var sb) && sb is List<object?> bl ? bl : new();
-            var bi = 0;
-            foreach (var bItem in beats)
-            {
-                if (bItem is not Dictionary<string, object?> beat) continue;
-                bi++;
-                var ve = beat.TryGetValue("visual_event", out var v) ? v?.ToString()?.Trim() ?? "" : "";
-                if (ve.Length == 0) continue;
-                list.Add(new Target { Id = $"s{si}_b{bi}", VisualEvent = ve, Beat = beat });
-            }
+            var ve = beat.TryGetValue("visual_event", out var v) ? v?.ToString()?.Trim() ?? "" : "";
+            if (ve.Length == 0) continue;
+            list.Add(new Target { Id = $"s{si}_b{bi}", VisualEvent = ve, Beat = beat });
         }
         return list;
     }
@@ -315,19 +304,9 @@ JSON only:
     }
 }
 
-public sealed class AmbientSfxClassifyResult
+public sealed class AmbientSfxClassifyResult : ClassifierRunResultBase
 {
-    public bool Enabled { get; set; }
-    public string PromptVersion { get; set; } = "";
-    public string Model { get; set; } = "";
-    public double Temperature { get; set; }
     public int BeatCount { get; set; }
-    public int AiCount { get; set; }
-    public int FallbackCount { get; set; }
-    public int Attempts { get; set; }
-    public int ChatCalls { get; set; }
-    public string Note { get; set; } = "";
-    public string? LastError { get; set; }
 
     public Dictionary<string, object?> ToMetaDict() => new()
     {

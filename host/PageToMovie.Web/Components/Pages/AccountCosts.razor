@@ -2,6 +2,7 @@
 @inject EngineApiClient Engine
 @inject AdminSessionService Session
 @using System.Globalization
+@using static PageToMovie.Web.Components.CostFormatting
 
 <PageTitle>Account · Costs</PageTitle>
 
@@ -248,45 +249,6 @@ else
 
     private RenderFragment RenderLegend(List<Slice> slices, double total) => __builder =>
     {
-        <ul class="list-unstyled mb-0 cost-legend">
-            @foreach (var slice in slices)
-            {
-                var pct = total > 0 ? 100.0 * slice.Usd / total : 0;
-                <li class="d-flex align-items-center justify-content-between gap-2 py-1">
-                    <span class="d-flex align-items-center gap-2 min-w-0">
-                        <span class="cost-swatch" style="background:@slice.Color"></span>
-                        <span class="text-truncate">@slice.Label</span>
-                    </span>
-                    <span class="text-nowrap small">
-                        <strong>@Usd(slice.Usd)</strong>
-                        @if (total > 0 && slice.Usd > 0)
-                        {
-                            <span class="text-muted ms-1">(@pct.ToString("0")%)</span>
-                        }
-                    </span>
-                </li>
-            }
-        </ul>
+        <CostLegend Items="@slices.Select(s => new CostLegend.Item(s.Label, s.Usd, s.Color)).ToList()" Total="total" />
     };
-
-    private static string Usd(double v) => $"${v:0.00}";
-
-    private static string ProviderLabel(string? id)
-    {
-        if (string.IsNullOrWhiteSpace(id)) return "Unknown";
-        return id.Trim().ToLowerInvariant() switch
-        {
-            "xai" or "grok" => "xAI",
-            "google" or "gemini" => "Google",
-            "openai" => "OpenAI",
-            "anthropic" => "Anthropic",
-            "elevenlabs" => "ElevenLabs",
-            "fal" => "Fal",
-            "suno" => "Suno API",
-            "aimusicapi" => "AI Music API",
-            "perplexity" => "Perplexity",
-            "unknown" => "Unknown",
-            _ => id,
-        };
-    }
 }

@@ -98,9 +98,9 @@ public sealed class WardrobeContinuityClassifier
 
             if (_errorLogger is not null)
             {
-                var sceneNum = ToIntOrNull(scene.GetValueOrDefault("scene_number"));
+                var sceneNum = ClassifierValueHelpers.ToIntOrNull(scene.GetValueOrDefault("scene_number"));
                 await _errorLogger.LogCoverageResultAsync(
-                    "wardrobe_continuity_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
+                    "wardrobe_continuity_classifier", effectiveModel, ClassifierValueHelpers.ResolveProvider(effectiveModel), sceneNum,
                     requestedIds, retry, ct).ConfigureAwait(false);
             }
 
@@ -113,38 +113,13 @@ public sealed class WardrobeContinuityClassifier
         }
     }
 
-    private static int? ToIntOrNull(object? val) => val switch
-    {
-        int i => i,
-        long l => (int)l,
-        double d => (int)d,
-        string s when int.TryParse(s, out var p) => p,
-        _ => null,
-    };
-
-    private static string? ResolveProvider(string? model) =>
-        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
-
     private static string BuildUserPrompt(Dictionary<string, object?> scene, List<string> cast)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
         sb.AppendLine($"CHARACTERS ON SCREEN: {string.Join(", ", cast)}");
 
-        if (scene.TryGetValue("story_beats", out var beatsObj) && beatsObj is List<object?> rawBeats)
-        {
-            sb.AppendLine("SAMPLE BEATS:");
-            var beats = rawBeats.OfType<Dictionary<string, object?>>().Take(3);
-            foreach (var b in beats)
-            {
-                var ve = b.GetValueOrDefault("visual_event");
-                var dlg = b.GetValueOrDefault("dialogue");
-                if (!string.IsNullOrWhiteSpace(ve?.ToString()))
-                    sb.AppendLine($"  - {ve}");
-                else if (!string.IsNullOrWhiteSpace(dlg?.ToString()))
-                    sb.AppendLine($"  - Spoken: \"{dlg}\"");
-            }
-        }
+        ClassifierPromptParts.AppendSampleBeats(sb, scene);
 
         return sb.ToString();
     }

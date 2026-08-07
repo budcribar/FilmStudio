@@ -246,19 +246,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        try { await Session.EnsureHydratedAsync(); } catch { /* ignore */ }
-
-        try { var pr = await Engine.GetProjectsAsync(); _projects = pr?.Projects ?? new(); }
-        catch (Exception ex) { _error = ex.Message; }
-
-        _projectId = ActiveProject.ProjectId;
-        if (string.IsNullOrEmpty(_projectId))
-        {
-            try { await ActiveProject.RefreshFromServerAsync(Engine); } catch { /* ignore */ }
-            _projectId = ActiveProject.ProjectId;
-        }
-        if (string.IsNullOrEmpty(_projectId) && _projects.Count > 0)
-            _projectId = _projects[0].Id;
+        (_projects, _projectId, _error) = await ScenePlaybackSupport.ResolveProjectSelectionAsync(Session, Engine, ActiveProject);
 
         _loading = false;
         if (!string.IsNullOrEmpty(_projectId))
@@ -415,22 +403,8 @@ else
         catch { /* ignore playback errors */ }
     }
 
-    private async Task<string?> GetSceneUrlAsync(int scene)
-    {
-        if (_sceneUrls.TryGetValue(scene, out var cached)) return cached;
-        var clipUrls = await Stitch.CollectClipUrlsAsync(_projectId!, scene);
-        if (clipUrls.Count == 0) return null;
-        string url;
-        if (clipUrls.Count == 1) url = clipUrls[0];
-        else
-        {
-            var stitched = await Stitch.ConcatAsync(clipUrls);
-            if (!stitched.Success || string.IsNullOrWhiteSpace(stitched.Url)) return null;
-            url = stitched.Url!;
-        }
-        _sceneUrls[scene] = url;
-        return url;
-    }
+    private Task<string?> GetSceneUrlAsync(int scene) =>
+        ScenePlaybackSupport.GetSceneUrlAsync(Stitch, _projectId!, scene, _sceneUrls);
 
     private static List<string> SplitWords(string? t) =>
         string.IsNullOrWhiteSpace(t) ? new() : t.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).ToList();

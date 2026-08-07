@@ -72,28 +72,19 @@ public sealed class DepthOfFieldClassifier : BeatChatClassifierBase<DepthOfField
         CancellationToken ct = default,
         string? model = null) => ClassifyAsync(scene, beats, onProgress, ct, model);
 
-    protected override string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
+    protected override string BeatsHeading => "BEATS TO DIRECT OPTICALLY:";
+
+    protected override void AppendBeat(System.Text.StringBuilder sb, Dictionary<string, object?> b)
     {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
-        sb.AppendLine();
-        sb.AppendLine("BEATS TO DIRECT OPTICALLY:");
+        var id = b.GetValueOrDefault("beat_id") ?? "b";
+        var action = b.GetValueOrDefault("visual_event") ?? "";
+        var psub = b.GetValueOrDefault("primary_subject") ?? "";
+        var dlg = b.GetValueOrDefault("dialogue") ?? "";
 
-        foreach (var b in beats)
-        {
-            var id = b.GetValueOrDefault("beat_id") ?? "b";
-            var action = b.GetValueOrDefault("visual_event") ?? "";
-            var psub = b.GetValueOrDefault("primary_subject") ?? "";
-            var dlg = b.GetValueOrDefault("dialogue") ?? "";
-
-            sb.AppendLine($"Beat '{id}' (subject: {psub}):");
-            if (!string.IsNullOrWhiteSpace(dlg?.ToString()))
-                sb.AppendLine($"  Spoken: \"{dlg}\"");
-            if (!string.IsNullOrWhiteSpace(action?.ToString()))
-                sb.AppendLine($"  Action prose: {action}");
-        }
-
-        return sb.ToString();
+        sb.AppendLine($"Beat '{id}' (subject: {psub}):");
+        if (!string.IsNullOrWhiteSpace(dlg?.ToString()))
+            sb.AppendLine($"  Spoken: \"{dlg}\"");
+        AppendActionProse(sb, action);
     }
 
     protected override Dictionary<string, DepthOfFieldDirective>? ParseResponse(string rawJson)

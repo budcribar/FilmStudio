@@ -142,9 +142,9 @@ public sealed class ShotPlanRefiningClassifier
 
             if (_errorLogger is not null)
             {
-                var sceneNum = ToIntOrNull(plannedScene.GetValueOrDefault("scene_number"));
+                var sceneNum = ClassifierValueHelpers.ToIntOrNull(plannedScene.GetValueOrDefault("scene_number"));
                 await _errorLogger.LogCoverageResultAsync(
-                    "shot_plan_refining_classifier", effectiveModel, ResolveProvider(effectiveModel), sceneNum,
+                    "shot_plan_refining_classifier", effectiveModel, ClassifierValueHelpers.ResolveProvider(effectiveModel), sceneNum,
                     requestedIds, retry, ct).ConfigureAwait(false);
             }
 
@@ -170,18 +170,6 @@ public sealed class ShotPlanRefiningClassifier
             return false;
         }
     }
-
-    private static int? ToIntOrNull(object? val) => val switch
-    {
-        int i => i,
-        long l => (int)l,
-        double d => (int)d,
-        string s when int.TryParse(s, out var p) => p,
-        _ => null,
-    };
-
-    private static string? ResolveProvider(string? model) =>
-        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
 
     private static string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> clips)
     {

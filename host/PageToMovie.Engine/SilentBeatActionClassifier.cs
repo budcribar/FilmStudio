@@ -629,19 +629,9 @@ Use only the four class strings above.
         bool IsSilent);
 }
 
-public sealed class SilentBeatClassifyResult
+public sealed class SilentBeatClassifyResult : ClassifierRunResultBase
 {
-    public bool Enabled { get; set; }
-    public string PromptVersion { get; set; } = "";
-    public string Model { get; set; } = "";
-    public double Temperature { get; set; }
     public int SilentBeatCount { get; set; }
-    public int AiCount { get; set; }
-    public int FallbackCount { get; set; }
-    public int Attempts { get; set; }
-    public int ChatCalls { get; set; }
-    public string Note { get; set; } = "";
-    public string? LastError { get; set; }
 
     public Dictionary<string, object?> ToMetaDict() => new()
     {
