@@ -1,0 +1,35 @@
+@namespace PageToMovie.Web.Components
+@*
+  Shared legend list for the cost pages. Renders the same markup previously duplicated in
+  ProjectCosts (RenderLegend) and AccountCosts (RenderLegend): a swatch + label per slice with its
+  USD value and percent of Total. Callers pass a normalized Items list so per-page slice types stay
+  at the call site.
+*@
+
+<ul class="list-unstyled mb-0 cost-legend">
+    @foreach (var slice in Items)
+    {
+        var pct = Total > 0 ? 100.0 * slice.Usd / Total : 0;
+        <li class="d-flex align-items-center justify-content-between gap-2 py-1">
+            <span class="d-flex align-items-center gap-2 min-w-0">
+                <span class="cost-swatch" style="background:@slice.Color"></span>
+                <span class="text-truncate">@slice.Label</span>
+            </span>
+            <span class="text-nowrap small">
+                <strong>@CostFormatting.Usd(slice.Usd)</strong>
+                @if (Total > 0 && slice.Usd > 0)
+                {
+                    <span class="text-muted ms-1">(@pct.ToString("0")%)</span>
+                }
+            </span>
+        </li>
+    }
+</ul>
+
+@code {
+    /// <summary>A single legend row: label, dollar value, and swatch color.</summary>
+    public sealed record Item(string Label, double Usd, string Color);
+
+    [Parameter, EditorRequired] public IReadOnlyList<Item> Items { get; set; } = Array.Empty<Item>();
+    [Parameter, EditorRequired] public double Total { get; set; }
+}

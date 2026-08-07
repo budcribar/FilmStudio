@@ -182,6 +182,16 @@ public static class BookToFountainConverter
         }
 
         string text;
+
+        // Both multi-chunk entry points (single-shot fallback and over-budget) invoke the multi-chunk
+        // adapter with the identical argument set derived from this call's budget.
+        Task<string> ConvertMultiChunkFromBudgetAsync() => ConvertMultiChunkAsync(
+            system, title, author, pageCount, totalRuntimeMinutes, bookText,
+            chat, model, onProgress, ct,
+            softMaxChars: budget.ChunkSoftMaxChars,
+            maxChunks: ResolveMaxChunks(bookText, budget),
+            reasoningEffort: reasoningEffort, temperature: temperature);
+
         try
         {
             // With a file session the full book is attached by id — single-shot is preferred
@@ -204,12 +214,7 @@ public static class BookToFountainConverter
                 else if (ShouldChunkFallback(bookText, budget) || Stage1BookSessionScope.Current is not null)
                 {
                     onProgress?.Invoke("Falling back to multi-chunk adapt…");
-                    text = await ConvertMultiChunkAsync(
-                        system, title, author, pageCount, totalRuntimeMinutes, bookText,
-                        chat, model, onProgress, ct,
-                        softMaxChars: budget.ChunkSoftMaxChars,
-                        maxChunks: ResolveMaxChunks(bookText, budget),
-                        reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
+                    text = await ConvertMultiChunkFromBudgetAsync().ConfigureAwait(false);
                 }
                 else
                 {
@@ -220,12 +225,7 @@ public static class BookToFountainConverter
             else
             {
                 onProgress?.Invoke("Book exceeds model budget — multi-chunk adapt…");
-                text = await ConvertMultiChunkAsync(
-                    system, title, author, pageCount, totalRuntimeMinutes, bookText,
-                    chat, model, onProgress, ct,
-                    softMaxChars: budget.ChunkSoftMaxChars,
-                    maxChunks: ResolveMaxChunks(bookText, budget),
-                    reasoningEffort: reasoningEffort, temperature: temperature).ConfigureAwait(false);
+                text = await ConvertMultiChunkFromBudgetAsync().ConfigureAwait(false);
             }
 
             // Multi path: soft coverage failures still accept a structurally good draft

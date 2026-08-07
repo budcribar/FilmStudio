@@ -144,30 +144,17 @@ JSON: {"labels":[{"key":"Character_Narrator","class":"human"}]}
         return "other";
     }
 
-    public static Dictionary<string, string> ParseLabels(string raw)
-    {
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        raw = Strip(raw);
-        try
+    public static Dictionary<string, string> ParseLabels(string raw) =>
+        ClassifierLabelParser.Parse(raw, el =>
         {
-            using var doc = JsonDocument.Parse(raw);
-            var arr = doc.RootElement.ValueKind == JsonValueKind.Array
-                ? doc.RootElement
-                : doc.RootElement.GetProperty("labels");
-            foreach (var el in arr.EnumerateArray())
-            {
-                var key = el.TryGetProperty("key", out var k) ? k.GetString()
-                    : el.TryGetProperty("id", out var id) ? id.GetString() : null;
-                var cls = el.TryGetProperty("class", out var c) ? c.GetString() : null;
-                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(cls)) continue;
-                cls = cls!.Trim().ToLowerInvariant();
-                if (cls is not ("animal" or "human" or "other")) continue;
-                map[key!] = cls;
-            }
-        }
-        catch { }
-        return map;
-    }
+            var key = el.TryGetProperty("key", out var k) ? k.GetString()
+                : el.TryGetProperty("id", out var id) ? id.GetString() : null;
+            var cls = el.TryGetProperty("class", out var c) ? c.GetString() : null;
+            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(cls)) return (key, null);
+            cls = cls!.Trim().ToLowerInvariant();
+            if (cls is not ("animal" or "human" or "other")) return (key, null);
+            return (key, cls);
+        });
 
     private static List<SeedRow> GetSeeds(Dictionary<string, object?> stage1)
     {
@@ -184,8 +171,6 @@ JSON: {"labels":[{"key":"Character_Narrator","class":"human"}]}
         }
         return list;
     }
-
-    private static string Strip(string raw) => ClassifierJsonParser.StripFences(raw);
 
     // Token-accurate now (was raw character count) — see PromptTokenizer.
     private static string Trunc(string s, int maxTokens) => PromptTokenizer.TruncateToTokens(s, maxTokens);

@@ -83,33 +83,23 @@ public sealed class CameraDirectorClassifier : BeatChatClassifierBase<CameraDire
         CancellationToken ct = default,
         string? model = null) => ClassifyAsync(scene, beats, onProgress, ct, model);
 
-    protected override string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
+    protected override string BeatsHeading => "BEATS TO DIRECT:";
+
+    protected override void AppendBeat(System.Text.StringBuilder sb, Dictionary<string, object?> b)
     {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
-        sb.AppendLine();
-        sb.AppendLine("BEATS TO DIRECT:");
+        var id = b.GetValueOrDefault("beat_id") ?? "b";
+        var action = b.GetValueOrDefault("visual_event") ?? "";
+        var spk = b.GetValueOrDefault("speaker") ?? "";
+        var dlg = b.GetValueOrDefault("dialogue") ?? "";
+        var ac = b.GetValueOrDefault("action_class") ?? "";
+        var spk2 = b.GetValueOrDefault("secondary_speaker") ?? "";
+        var dlg2 = b.GetValueOrDefault("secondary_dialogue") ?? "";
 
-        foreach (var b in beats)
-        {
-            var id = b.GetValueOrDefault("beat_id") ?? "b";
-            var action = b.GetValueOrDefault("visual_event") ?? "";
-            var spk = b.GetValueOrDefault("speaker") ?? "";
-            var dlg = b.GetValueOrDefault("dialogue") ?? "";
-            var ac = b.GetValueOrDefault("action_class") ?? "";
-            var spk2 = b.GetValueOrDefault("secondary_speaker") ?? "";
-            var dlg2 = b.GetValueOrDefault("secondary_dialogue") ?? "";
-
-            sb.AppendLine($"Beat '{id}' (class: {ac}):");
-            if (!string.IsNullOrWhiteSpace(spk?.ToString()) || !string.IsNullOrWhiteSpace(dlg?.ToString()))
-                sb.AppendLine($"  Spoken ({spk}): \"{dlg}\"");
-            if (!string.IsNullOrWhiteSpace(spk2?.ToString()) || !string.IsNullOrWhiteSpace(dlg2?.ToString()))
-                sb.AppendLine($"  Then spoken ({spk2}): \"{dlg2}\"");
-            if (!string.IsNullOrWhiteSpace(action?.ToString()))
-                sb.AppendLine($"  Action prose: {action}");
-        }
-
-        return sb.ToString();
+        sb.AppendLine($"Beat '{id}' (class: {ac}):");
+        AppendSpoken(sb, spk, dlg);
+        if (!string.IsNullOrWhiteSpace(spk2?.ToString()) || !string.IsNullOrWhiteSpace(dlg2?.ToString()))
+            sb.AppendLine($"  Then spoken ({spk2}): \"{dlg2}\"");
+        AppendActionProse(sb, action);
     }
 
     protected override Dictionary<string, CameraDirective>? ParseResponse(string rawJson)

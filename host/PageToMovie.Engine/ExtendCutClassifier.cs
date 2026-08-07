@@ -164,32 +164,19 @@ Classes:
 JSON: {"labels":[{"id":"s1_b3","class":"extend"}]}
 """;
 
-    public static Dictionary<string, string> ParseLabels(string raw)
-    {
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        raw = Strip(raw);
-        try
+    public static Dictionary<string, string> ParseLabels(string raw) =>
+        ClassifierLabelParser.Parse(raw, el =>
         {
-            using var doc = JsonDocument.Parse(raw);
-            var arr = doc.RootElement.ValueKind == JsonValueKind.Array
-                ? doc.RootElement
-                : doc.RootElement.GetProperty("labels");
-            foreach (var el in arr.EnumerateArray())
-            {
-                var id = el.GetProperty("id").GetString();
-                var cls = el.TryGetProperty("class", out var c) ? c.GetString()
-                    : el.TryGetProperty("decision", out var d) ? d.GetString() : null;
-                if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(cls)) continue;
-                cls = cls!.Trim().ToLowerInvariant().Replace(' ', '_');
-                if (cls is "hard_cut" or "hardcut" or "cut" or "none") cls = "hard_cut";
-                if (cls is "extend" or "continue" or "continuous") cls = "extend";
-                if (cls is not ("hard_cut" or "extend")) continue;
-                map[id!] = cls;
-            }
-        }
-        catch { }
-        return map;
-    }
+            var id = el.GetProperty("id").GetString();
+            var cls = el.TryGetProperty("class", out var c) ? c.GetString()
+                : el.TryGetProperty("decision", out var d) ? d.GetString() : null;
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(cls)) return (id, null);
+            cls = cls!.Trim().ToLowerInvariant().Replace(' ', '_');
+            if (cls is "hard_cut" or "hardcut" or "cut" or "none") cls = "hard_cut";
+            if (cls is "extend" or "continue" or "continuous") cls = "extend";
+            if (cls is not ("hard_cut" or "extend")) return (id, null);
+            return (id, cls);
+        });
 
     /// <summary>Public baseline used by eval (mirrors Stage2 ForceNone intent for same-location pairs).</summary>
     public static bool BaselineHardCut(string visual, string actionClass, bool sameLocation, bool isFirst)
@@ -257,8 +244,6 @@ JSON: {"labels":[{"id":"s1_b3","class":"extend"}]}
         }
         return list;
     }
-
-    private static string Strip(string raw) => ClassifierJsonParser.StripFences(raw);
 
     // Token-accurate now (was raw character count) — see PromptTokenizer.
     private static string Trunc(string s, int maxTokens) => PromptTokenizer.TruncateToTokens(s, maxTokens);

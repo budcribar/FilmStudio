@@ -1,4 +1,3 @@
-using System.Text.Json;
 using PageToMovie.Adaptation.Contracts;
 
 namespace PageToMovie.Adaptation.Conversion;
@@ -6,48 +5,27 @@ namespace PageToMovie.Adaptation.Conversion;
 /// <summary>Pure parse of model VISION_META JSON into <see cref="AdaptationVisionMeta"/>.</summary>
 public static class AdaptationVisionMetaParser
 {
-    public const string MediumPhotoreal = "photoreal_live_action";
-    public const string MediumIllustrated = "illustrated_picture_book";
-    public const string MediumStylized3d = "stylized_3d_animated";
-    public const string MediumOther = "other";
+    public const string MediumPhotoreal = VisualMediumStyles.MediumPhotoreal;
+    public const string MediumIllustrated = VisualMediumStyles.MediumIllustrated;
+    public const string MediumStylized3d = VisualMediumStyles.MediumStylized3d;
+    public const string MediumOther = VisualMediumStyles.MediumOther;
 
     public static AdaptationVisionMeta? ParseModelJson(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return null;
-        var t = raw.Trim();
-        if (t.StartsWith("```", StringComparison.Ordinal))
+        if (VisualMediumStyles.ParseVisionFields(raw) is not { } fields) return null;
+        var (medium, style, notes) = fields;
+        var med = NormalizeMedium(medium);
+        return new AdaptationVisionMeta
         {
-            var firstNl = t.IndexOf('\n');
-            if (firstNl > 0) t = t[(firstNl + 1)..];
-            var fence = t.LastIndexOf("```", StringComparison.Ordinal);
-            if (fence >= 0) t = t[..fence];
-            t = t.Trim();
-        }
-
-        try
-        {
-            using var jd = JsonDocument.Parse(t);
-            var root = jd.RootElement;
-            var medium = root.TryGetProperty("visual_medium", out var m) ? m.GetString() : null;
-            var style = root.TryGetProperty("render_style_lock", out var s) ? s.GetString() : null;
-            var notes = root.TryGetProperty("notes", out var n) ? n.GetString() : null;
-            if (string.IsNullOrWhiteSpace(medium) && string.IsNullOrWhiteSpace(style))
-                return null;
-            var med = NormalizeMedium(medium);
-            return new AdaptationVisionMeta
-            {
-                VisualMedium = med,
-                RenderStyleLock = string.IsNullOrWhiteSpace(style) ? DefaultStyleLock(med) : style!.Trim(),
-                Notes = notes,
-                DecidedBy = "adaptation",
-            };
-        }
-        catch
-        {
-            return null;
-        }
+            VisualMedium = med,
+            RenderStyleLock = string.IsNullOrWhiteSpace(style) ? DefaultStyleLock(med) : style!.Trim(),
+            Notes = notes,
+            DecidedBy = "adaptation",
+        };
     }
 
+    // NormalizeMedium is intentionally NOT shared with ProjectVisionMeta: this parser maps "mixed"
+    // to photoreal and has no "auto" handling (the model always returns a concrete medium here).
     public static string NormalizeMedium(string? raw)
     {
         var s = (raw ?? "").Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
@@ -68,16 +46,6 @@ public static class AdaptationVisionMetaParser
         return MediumOther;
     }
 
-    public static string DefaultStyleLock(string visualMedium) => NormalizeMedium(visualMedium) switch
-    {
-        MediumIllustrated =>
-            "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast " +
-            "(animals and humans share the same medium) -- not photoreal, not live-action",
-        MediumStylized3d =>
-            "STYLE LOCK: stylized 3D animated children's feature look — coherent CG medium for all cast; " +
-            "not photoreal live-action, not flat 2D doodle",
-        _ =>
-            "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe, " +
-            "period-appropriate when the story implies it. NOT cartoon, NOT illustration, NOT anime",
-    };
+    public static string DefaultStyleLock(string visualMedium) =>
+        VisualMediumStyles.StyleLockFor(NormalizeMedium(visualMedium));
 }

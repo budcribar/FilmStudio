@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using PageToMovie.Adaptation.Contracts;
 using PageToMovie.Engine.Abstractions;
 
 namespace PageToMovie.Engine;
@@ -16,10 +17,10 @@ public static class ProjectVisionMeta
     public const string SchemaVersion = "vision_meta.v1";
 
     public const string MediumAuto = "auto";
-    public const string MediumPhotoreal = "photoreal_live_action";
-    public const string MediumIllustrated = "illustrated_picture_book";
-    public const string MediumStylized3d = "stylized_3d_animated";
-    public const string MediumOther = "other";
+    public const string MediumPhotoreal = VisualMediumStyles.MediumPhotoreal;
+    public const string MediumIllustrated = VisualMediumStyles.MediumIllustrated;
+    public const string MediumStylized3d = VisualMediumStyles.MediumStylized3d;
+    public const string MediumOther = VisualMediumStyles.MediumOther;
 
     public sealed class Document
     {
@@ -211,6 +212,8 @@ public static class ProjectVisionMeta
             JsonSerializer.Serialize(root, new JsonSerializerOptions { WriteIndented = true }) + Environment.NewLine);
     }
 
+    // NormalizeMedium is intentionally NOT shared with AdaptationVisionMetaParser: this store
+    // recognizes "auto"/empty (a user preference) and has no "mixed" mapping.
     public static string NormalizeMedium(string? raw)
     {
         var s = (raw ?? "").Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
@@ -274,18 +277,8 @@ public static class ProjectVisionMeta
     public static bool PrefersIllustrated(string? visualMedium) =>
         NormalizeMedium(visualMedium) is MediumIllustrated or MediumStylized3d;
 
-    public static string DefaultStyleLock(string visualMedium) => NormalizeMedium(visualMedium) switch
-    {
-        MediumIllustrated =>
-            "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast " +
-            "(animals and humans share the same medium) -- not photoreal, not live-action",
-        MediumStylized3d =>
-            "STYLE LOCK: stylized 3D animated children's feature look — coherent CG medium for all cast; " +
-            "not photoreal live-action, not flat 2D doodle",
-        _ =>
-            "STYLE LOCK: photoreal live-action continuity portrait — naturalistic face and wardrobe, " +
-            "period-appropriate when the story implies it. NOT cartoon, NOT illustration, NOT anime",
-    };
+    public static string DefaultStyleLock(string visualMedium) =>
+        VisualMediumStyles.StyleLockFor(NormalizeMedium(visualMedium));
 
     /// <summary>
     /// Ask the planning model once at adaptation time for structured medium metadata.
@@ -344,37 +337,15 @@ public static class ProjectVisionMeta
 
     public static Document? ParseModelJson(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return null;
-        var t = raw.Trim();
-        if (t.StartsWith("```", StringComparison.Ordinal))
+        if (VisualMediumStyles.ParseVisionFields(raw) is not { } fields) return null;
+        var (medium, style, notes) = fields;
+        var med = NormalizeMedium(medium);
+        return new Document
         {
-            var firstNl = t.IndexOf('\n');
-            if (firstNl > 0) t = t[(firstNl + 1)..];
-            var fence = t.LastIndexOf("```", StringComparison.Ordinal);
-            if (fence >= 0) t = t[..fence];
-            t = t.Trim();
-        }
-        try
-        {
-            using var jd = JsonDocument.Parse(t);
-            var root = jd.RootElement;
-            var medium = root.TryGetProperty("visual_medium", out var m) ? m.GetString() : null;
-            var style = root.TryGetProperty("render_style_lock", out var s) ? s.GetString() : null;
-            var notes = root.TryGetProperty("notes", out var n) ? n.GetString() : null;
-            if (string.IsNullOrWhiteSpace(medium) && string.IsNullOrWhiteSpace(style))
-                return null;
-            var med = NormalizeMedium(medium);
-            return new Document
-            {
-                VisualMedium = med,
-                RenderStyleLock = string.IsNullOrWhiteSpace(style) ? DefaultStyleLock(med) : style!.Trim(),
-                Notes = notes,
-            };
-        }
-        catch
-        {
-            return null;
-        }
+            VisualMedium = med,
+            RenderStyleLock = string.IsNullOrWhiteSpace(style) ? DefaultStyleLock(med) : style!.Trim(),
+            Notes = notes,
+        };
     }
 
     /// <summary>Upsert from cast extract when adaptation metadata is missing.</summary>

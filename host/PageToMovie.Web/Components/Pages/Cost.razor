@@ -6,6 +6,7 @@
 @inject NavigationManager Nav
 @using PageToMovie.Core.Models
 @using System.Globalization
+@using static PageToMovie.Web.Components.CostFormatting
 
 <PageTitle>Estimate & cost</PageTitle>
 
@@ -184,28 +185,10 @@
     {
         try
         {
-            var projs = await Engine.GetProjectsAsync();
-            _projectId = projs?.Active?.Id
-                         ?? projs?.Projects.Select(p => p.Id ?? "").FirstOrDefault(s => s.Length > 0)
-                         ?? "";
+            _projectId = await CostFormatting.ResolveActiveProjectIdAsync(Engine);
             if (string.IsNullOrEmpty(_projectId)) return;
 
-            try
-            {
-                var cfg = await Engine.GetConfigAsync(_projectId);
-                if (cfg?.Config is not null &&
-                    cfg.Config.TryGetValue("resolution", out var res) &&
-                    res.ValueKind == System.Text.Json.JsonValueKind.String &&
-                    res.GetString() is { Length: > 0 } r)
-                    _draftRes = r;
-                if (cfg?.Config is not null &&
-                    cfg.Config.TryGetValue("cost_estimates", out var ce) &&
-                    ce.ValueKind == System.Text.Json.JsonValueKind.Object &&
-                    ce.TryGetProperty("assume_avg_retries", out var ar) &&
-                    ar.TryGetDouble(out var retries))
-                    _retries = retries;
-            }
-            catch { /* ignore */ }
+            (_draftRes, _retries) = await CostFormatting.ReadResolutionAndRetriesAsync(Engine, _projectId, _draftRes, _retries);
 
             await LoadAsync();
         }
@@ -217,20 +200,9 @@
 
     private async Task SetDraftResolutionAsync(string res)
     {
-        res = (res ?? "480p").Trim().ToLowerInvariant();
-        if (res is not ("480p" or "720p" or "1080p"))
-            return;
-        if (string.Equals(_draftRes, res, StringComparison.OrdinalIgnoreCase) && _report is not null)
-            return;
-
-        _draftRes = res;
-        // Persist so film generation and Home estimate use the same resolution.
-        try
-        {
-            if (!string.IsNullOrWhiteSpace(_projectId))
-                await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?> { ["resolution"] = _draftRes });
-        }
-        catch { /* recompute anyway */ }
+        var applied = await CostFormatting.TrySetDraftResolutionAsync(Engine, _projectId, res, _draftRes, _report is not null);
+        if (applied is null) return;
+        _draftRes = applied;
         await LoadAsync();
     }
 
@@ -342,7 +314,6 @@
         return ProjectionBaseUsd + videoUsd;
     }
 
-    private static string Usd(double v) => $"${v:0.00}";
     public ValueTask DisposeAsync()
     {
         _disposed = true;

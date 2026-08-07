@@ -3,6 +3,7 @@
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
 @using System.Globalization
+@using static PageToMovie.Web.Components.CostFormatting
 
 <PageTitle>Project cost breakdown</PageTitle>
 
@@ -374,28 +375,10 @@ else
     {
         try
         {
-            var projs = await Engine.GetProjectsAsync();
-            _projectId = projs?.Active?.Id
-                         ?? projs?.Projects.Select(p => p.Id ?? "").FirstOrDefault(s => s.Length > 0)
-                         ?? "";
+            _projectId = await CostFormatting.ResolveActiveProjectIdAsync(Engine);
             if (string.IsNullOrEmpty(_projectId)) return;
 
-            try
-            {
-                var cfg = await Engine.GetConfigAsync(_projectId);
-                if (cfg?.Config is not null &&
-                    cfg.Config.TryGetValue("resolution", out var res) &&
-                    res.ValueKind == System.Text.Json.JsonValueKind.String &&
-                    res.GetString() is { Length: > 0 } r)
-                    _draftRes = r;
-                if (cfg?.Config is not null &&
-                    cfg.Config.TryGetValue("cost_estimates", out var ce) &&
-                    ce.ValueKind == System.Text.Json.JsonValueKind.Object &&
-                    ce.TryGetProperty("assume_avg_retries", out var ar) &&
-                    ar.TryGetDouble(out var retries))
-                    _retries = retries;
-            }
-            catch { /* ignore */ }
+            (_draftRes, _retries) = await CostFormatting.ReadResolutionAndRetriesAsync(Engine, _projectId, _draftRes, _retries);
 
             await LoadAsync();
         }
@@ -410,19 +393,9 @@ else
 
     private async Task SetDraftResolutionAsync(string res)
     {
-        res = (res ?? "480p").Trim().ToLowerInvariant();
-        if (res is not ("480p" or "720p" or "1080p"))
-            return;
-        if (string.Equals(_draftRes, res, StringComparison.OrdinalIgnoreCase) && _report is not null)
-            return;
-
-        _draftRes = res;
-        try
-        {
-            if (!string.IsNullOrWhiteSpace(_projectId))
-                await Engine.SaveConfigAsync(_projectId, new Dictionary<string, object?> { ["resolution"] = _draftRes });
-        }
-        catch { /* recompute anyway */ }
+        var applied = await CostFormatting.TrySetDraftResolutionAsync(Engine, _projectId, res, _draftRes, _report is not null);
+        if (applied is null) return;
+        _draftRes = applied;
         await LoadAsync();
     }
 
@@ -559,25 +532,7 @@ else
 
     private RenderFragment RenderLegend(List<CostSlice> slices, double total) => __builder =>
     {
-        <ul class="list-unstyled mb-0 cost-legend">
-            @foreach (var slice in slices)
-            {
-                var pct = total > 0 ? 100.0 * slice.Usd / total : 0;
-                <li class="d-flex align-items-center justify-content-between gap-2 py-1">
-                    <span class="d-flex align-items-center gap-2 min-w-0">
-                        <span class="cost-swatch" style="background:@slice.Color"></span>
-                        <span class="text-truncate">@slice.Label</span>
-                    </span>
-                    <span class="text-nowrap small">
-                        <strong>@Usd(slice.Usd)</strong>
-                        @if (total > 0 && slice.Usd > 0)
-                        {
-                            <span class="text-muted ms-1">(@pct.ToString("0")%)</span>
-                        }
-                    </span>
-                </li>
-            }
-        </ul>
+        <CostLegend Items="@slices.Select(s => new CostLegend.Item(s.Label, s.Usd, s.Color)).ToList()" Total="total" />
     };
 
     internal static string MapCategory(string? kind, string? mode = null, string? category = null) =>
@@ -607,27 +562,6 @@ else
         if (DateTimeOffset.TryParse(ts, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dto))
             return dto.ToLocalTime().ToString("MMM d · HH:mm");
         return ts.Length <= 16 ? ts : ts[..16];
-    }
-
-    private static string Usd(double v) => $"${v:0.00}";
-
-    private static string ProviderLabel(string? id)
-    {
-        if (string.IsNullOrWhiteSpace(id)) return "Unknown";
-        return id.Trim().ToLowerInvariant() switch
-        {
-            "xai" or "grok" => "xAI",
-            "google" or "gemini" => "Google",
-            "openai" => "OpenAI",
-            "anthropic" => "Anthropic",
-            "elevenlabs" => "ElevenLabs",
-            "fal" => "Fal",
-            "suno" => "Suno API",
-            "aimusicapi" => "AI Music API",
-            "perplexity" => "Perplexity",
-            "unknown" => "Unknown",
-            _ => id,
-        };
     }
 
     private static int ProgressPct(CostReportSummary s) =>

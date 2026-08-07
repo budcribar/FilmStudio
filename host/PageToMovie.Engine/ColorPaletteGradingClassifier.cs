@@ -92,20 +92,7 @@ public sealed class ColorPaletteGradingClassifier
         if (scene.TryGetValue("render_style_lock", out var rsl))
             sb.AppendLine($"STYLE LOCK: {rsl}");
 
-        if (scene.TryGetValue("story_beats", out var beatsObj) && beatsObj is List<object?> rawBeats)
-        {
-            sb.AppendLine("SAMPLE BEATS:");
-            var beats = rawBeats.OfType<Dictionary<string, object?>>().Take(3);
-            foreach (var b in beats)
-            {
-                var ve = b.GetValueOrDefault("visual_event");
-                var dlg = b.GetValueOrDefault("dialogue");
-                if (!string.IsNullOrWhiteSpace(ve?.ToString()))
-                    sb.AppendLine($"  - {ve}");
-                else if (!string.IsNullOrWhiteSpace(dlg?.ToString()))
-                    sb.AppendLine($"  - Spoken: \"{dlg}\"");
-            }
-        }
+        ClassifierPromptParts.AppendSampleBeats(sb, scene);
 
         return sb.ToString();
     }

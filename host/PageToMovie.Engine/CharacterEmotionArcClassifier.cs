@@ -73,30 +73,7 @@ public sealed class CharacterEmotionArcClassifier : BeatChatClassifierBase<Emoti
         CancellationToken ct = default,
         string? model = null) => ClassifyAsync(scene, beats, onProgress, ct, model);
 
-    protected override string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
-    {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
-        sb.AppendLine();
-        sb.AppendLine("BEATS TO DIRECT:");
-
-        foreach (var b in beats)
-        {
-            var id = b.GetValueOrDefault("beat_id") ?? "b";
-            var action = b.GetValueOrDefault("visual_event") ?? "";
-            var spk = b.GetValueOrDefault("speaker") ?? "";
-            var dlg = b.GetValueOrDefault("dialogue") ?? "";
-            var ac = b.GetValueOrDefault("action_class") ?? "";
-
-            sb.AppendLine($"Beat '{id}' (class: {ac}):");
-            if (!string.IsNullOrWhiteSpace(spk?.ToString()) || !string.IsNullOrWhiteSpace(dlg?.ToString()))
-                sb.AppendLine($"  Spoken ({spk}): \"{dlg}\"");
-            if (!string.IsNullOrWhiteSpace(action?.ToString()))
-                sb.AppendLine($"  Action prose: {action}");
-        }
-
-        return sb.ToString();
-    }
+    protected override string BeatsHeading => "BEATS TO DIRECT:";
 
     protected override Dictionary<string, EmotionDirective>? ParseResponse(string rawJson)
     {

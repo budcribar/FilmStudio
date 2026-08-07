@@ -1,3 +1,4 @@
+using System.Text;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -58,8 +59,59 @@ public abstract class BeatChatClassifierBase<TItem>
     /// <summary>Progress message shown when classification starts.</summary>
     protected abstract string ProgressMessage(int beatCount);
 
-    /// <summary>Serializes the scene + beats into this classifier's user prompt.</summary>
-    protected abstract string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats);
+    /// <summary>The heading line printed above the per-beat list (e.g. "BEATS TO PACE:").</summary>
+    protected abstract string BeatsHeading { get; }
+
+    /// <summary>
+    /// Serializes the scene + beats into this classifier's user prompt. The default emits the shared
+    /// "SCENE n: setting" header, the classifier's <see cref="BeatsHeading"/>, then one
+    /// <see cref="AppendBeat"/> block per beat. Classifiers customize per-beat fields by overriding
+    /// <see cref="AppendBeat"/>; only a classifier with a wholly different layout overrides this.
+    /// </summary>
+    protected virtual string BuildUserPrompt(Dictionary<string, object?> scene, List<Dictionary<string, object?>> beats)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"SCENE {scene.GetValueOrDefault("scene_number")}: {scene.GetValueOrDefault("setting")}");
+        sb.AppendLine();
+        sb.AppendLine(BeatsHeading);
+
+        foreach (var b in beats)
+            AppendBeat(sb, b);
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Appends one beat's serialized block. The default emits the standard
+    /// <c>Beat 'id' (class: …)</c> header plus the shared spoken/action-prose lines; classifiers with
+    /// extra or differently-shaped fields override this.
+    /// </summary>
+    protected virtual void AppendBeat(StringBuilder sb, Dictionary<string, object?> b)
+    {
+        var id = b.GetValueOrDefault("beat_id") ?? "b";
+        var action = b.GetValueOrDefault("visual_event") ?? "";
+        var spk = b.GetValueOrDefault("speaker") ?? "";
+        var dlg = b.GetValueOrDefault("dialogue") ?? "";
+        var ac = b.GetValueOrDefault("action_class") ?? "";
+
+        sb.AppendLine($"Beat '{id}' (class: {ac}):");
+        AppendSpoken(sb, spk, dlg);
+        AppendActionProse(sb, action);
+    }
+
+    /// <summary>Appends the standard <c>Spoken (speaker): "dialogue"</c> line when either is present.</summary>
+    protected static void AppendSpoken(StringBuilder sb, object? spk, object? dlg)
+    {
+        if (!string.IsNullOrWhiteSpace(spk?.ToString()) || !string.IsNullOrWhiteSpace(dlg?.ToString()))
+            sb.AppendLine($"  Spoken ({spk}): \"{dlg}\"");
+    }
+
+    /// <summary>Appends the standard <c>Action prose: …</c> line when action text is present.</summary>
+    protected static void AppendActionProse(StringBuilder sb, object? action)
+    {
+        if (!string.IsNullOrWhiteSpace(action?.ToString()))
+            sb.AppendLine($"  Action prose: {action}");
+    }
 
     /// <summary>Parses the raw chat JSON into an id→value map (null if nothing parsed).</summary>
     protected abstract Dictionary<string, TItem>? ParseResponse(string rawJson);
@@ -126,15 +178,7 @@ public abstract class BeatChatClassifierBase<TItem>
         }
     }
 
-    protected static int? ToIntOrNull(object? val) => val switch
-    {
-        int i => i,
-        long l => (int)l,
-        double d => (int)d,
-        string s when int.TryParse(s, out var p) => p,
-        _ => null,
-    };
+    protected static int? ToIntOrNull(object? val) => ClassifierValueHelpers.ToIntOrNull(val);
 
-    protected static string? ResolveProvider(string? model) =>
-        string.IsNullOrWhiteSpace(model) ? null : PageToMovie.Core.Models.SupportedModelCatalog.Find(model)?.ProviderId;
+    protected static string? ResolveProvider(string? model) => ClassifierValueHelpers.ResolveProvider(model);
 }
