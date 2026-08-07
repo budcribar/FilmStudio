@@ -1,0 +1,56 @@
+@namespace PageToMovie.Web.Components
+@using System.Globalization
+@*
+  Shared donut/pie SVG for the cost pages. Renders the same markup previously duplicated in
+  AccountCosts and ProjectCosts: an empty-state placeholder when Total is ~0, otherwise a ring of
+  stroke-dasharray segments with a center label + value. Callers pass pre-formatted CenterValue and
+  a normalized list of Segments so per-page slice types and Usd formatting stay at the call site.
+*@
+
+@if (Total <= 0.0001)
+{
+    <div class="cost-pie-empty text-center text-muted py-4" data-testid="@TestId">
+        <div class="cost-pie-placeholder mb-2" aria-hidden="true"></div>
+        <div class="small">@EmptyText</div>
+    </div>
+}
+else
+{
+    <svg class="cost-pie" viewBox="0 0 42 42" width="@Size" height="@Size"
+         role="img" aria-label="@AriaLabel" data-testid="@TestId">
+        <circle cx="21" cy="21" r="15.915" fill="transparent"
+                stroke="rgba(148,163,184,0.15)" stroke-width="6" />
+        @{
+            var offset = 25.0;
+            foreach (var slice in Segments.Where(x => x.Usd > 0))
+            {
+                var pct = 100.0 * slice.Usd / Total;
+                <circle class="cost-pie-slice"
+                        cx="21" cy="21" r="15.915"
+                        fill="transparent"
+                        stroke="@slice.Color"
+                        stroke-width="6"
+                        stroke-dasharray="@pct.ToString("0.###", CultureInfo.InvariantCulture) @((100 - pct).ToString("0.###", CultureInfo.InvariantCulture))"
+                        stroke-dashoffset="@offset.ToString("0.###", CultureInfo.InvariantCulture)" />
+                offset -= pct;
+            }
+        }
+        <circle cx="21" cy="21" r="11.5" class="cost-pie-hole" />
+        <text x="21" y="20.2" text-anchor="middle" class="cost-pie-center-label">@CenterLabel</text>
+        <text x="21" y="24.5" text-anchor="middle" class="cost-pie-center-value">@CenterValue</text>
+    </svg>
+}
+
+@code {
+    /// <summary>A single ring segment: dollar weight and stroke color.</summary>
+    public sealed record Segment(double Usd, string Color);
+
+    [Parameter, EditorRequired] public IReadOnlyList<Segment> Segments { get; set; } = Array.Empty<Segment>();
+    [Parameter, EditorRequired] public double Total { get; set; }
+    [Parameter] public string CenterLabel { get; set; } = "";
+    [Parameter] public string CenterValue { get; set; } = "";
+    [Parameter] public string TestId { get; set; } = "";
+    [Parameter] public int Size { get; set; } = 180;
+    [Parameter] public string AriaLabel { get; set; } = "";
+    [Parameter] public string EmptyText { get; set; } = "Nothing yet";
+}

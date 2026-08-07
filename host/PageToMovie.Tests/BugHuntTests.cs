@@ -703,14 +703,9 @@ public class BugHuntTests
     [Fact]
     public async Task Bug36_ProjectRules_null_Note_on_fails_does_not_throw()
     {
-        var root = Path.Combine(Path.GetTempPath(), "fs_bug36_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(root, "projects", "Demo"));
-        File.WriteAllText(Path.Combine(root, "projects", "Demo", "project.json"), """{"id":"Demo"}""");
+        var (projects, events) = TestProjects.CreateStoreWithEvents("fs_bug36_", out var root);
         try
         {
-            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            var projects = new ProjectStore(opts);
-            var events = new ReviewEventStore(projects, NullLogger<ReviewEventStore>.Instance);
             var rules = new ProjectRulesService(projects, events, NullLogger<ProjectRulesService>.Instance);
 
             for (var i = 0; i < 4; i++)
@@ -736,14 +731,9 @@ public class BugHuntTests
     [Fact]
     public void Bug37_GetActiveRulesBlock_skips_empty_text()
     {
-        var root = Path.Combine(Path.GetTempPath(), "fs_bug37_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(root, "projects", "Demo"));
-        File.WriteAllText(Path.Combine(root, "projects", "Demo", "project.json"), """{"id":"Demo"}""");
+        var (projects, events) = TestProjects.CreateStoreWithEvents("fs_bug37_", out var root);
         try
         {
-            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            var projects = new ProjectStore(opts);
-            var events = new ReviewEventStore(projects, NullLogger<ReviewEventStore>.Instance);
             var rules = new ProjectRulesService(projects, events, NullLogger<ProjectRulesService>.Instance);
 
             var doc = new ProjectRulesDocument
