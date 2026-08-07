@@ -1,4 +1,7 @@
-@page "/voice-capture"
+@* Reusable "read along in your voice" capture step: prepare phrases from the narrator's own lines,
+   then per-phrase Listen → record → score → keep best takes → build + apply the cloned voice. Host
+   supplies the ProjectId and handles what happens next via OnComplete. Extracted from the former
+   /voice-capture page so the easy-start flow (and anywhere else) can embed the good recorder. *@
 @using PageToMovie.Core.Models
 @inject EngineApiClient Engine
 @inject ClientVideoStitchService Stitch
@@ -7,8 +10,6 @@
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
 @inject IJSRuntime Js
-
-<PageTitle>Match your voice · PageToMovie</PageTitle>
 
 <style>
     .ptm-ball-track { position: relative; height: 10px; background: rgba(255,255,255,.12); border-radius: 6px; overflow: hidden; }
@@ -21,222 +22,193 @@
     .ptm-red-off { background: #3a1310; } .ptm-red-on { background: #ff3b30; box-shadow: 0 0 14px #ff3b30; }
     .ptm-yellow-off { background: #3a3210; } .ptm-yellow-on { background: #ffcc00; box-shadow: 0 0 14px #ffcc00; }
     .ptm-green-off { background: #123a1f; } .ptm-green-on { background: #34c759; box-shadow: 0 0 14px #34c759; }
-    /* Compact horizontal light that sits just left of the teleprompter marker. */
     .ptm-light-box-h { display: inline-flex; flex-direction: row; gap: 6px; padding: 6px 8px; border-radius: 10px; background: #1b1b1b; }
     .ptm-light-sm { width: 18px; height: 18px; border-radius: 50%; }
-    /* Teleprompter: words scroll past a fixed focus point; the current word is centred + highlighted there. */
     .tele-viewport { position: relative; overflow: hidden; height: 1.9em; }
     .tele-text { position: absolute; left: 32%; white-space: nowrap; will-change: transform; }
-    .tele-w { display: inline-block; margin-right: 0.32em; } /* measurable per-word box; margin = the inter-word gap */
-    .tele-w.tele-active { background: rgba(255,193,7,.32); border-radius: 4px; } /* the word currently at the marker */
-    /* Waveform compare strips */
+    .tele-w { display: inline-block; margin-right: 0.32em; }
+    .tele-w.tele-active { background: rgba(255,193,7,.32); border-radius: 4px; }
     .ptm-wave-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .ptm-wave-label { width: 62px; flex-shrink: 0; font-size: .8rem; color: #93a3b8; }
     .ptm-wave { flex-grow: 1; width: 100%; max-width: 520px; height: 34px; background: rgba(255,255,255,.05); border-radius: 6px; }
 </style>
-
-<div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Voice match</span>
-    <h1 class="ptm-adapt-title mb-1">Read along in your voice</h1>
-    <p class="ptm-adapt-lede mb-0">Listen, then read it back the same way. We keep your best takes.</p>
-</div>
 
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-danger" data-testid="voice-capture-error">@_error</div>
 }
 
-@if (_projects.Count > 0)
-{
-    <div class="mb-3" style="max-width:440px;">
-        <label class="form-label small text-muted mb-1">Film</label>
-        <select class="form-select" value="@_projectId" @onchange="SelectProjectAsync"
-                disabled="@_busy" data-testid="voice-capture-project">
-            @foreach (var p in _projects)
-            {
-                <option value="@p.Id">@(p.Label ?? p.Title ?? p.Id)</option>
-            }
-        </select>
-    </div>
-}
-
 @if (_loading)
 {
     <p class="text-muted">Getting things ready…</p>
 }
-else if (_projects.Count == 0)
-{
-    <div class="alert alert-info">No films yet — create one first, then come back.</div>
-}
 else if (string.IsNullOrEmpty(_projectId))
 {
-    <div class="alert alert-info">Pick a film above to match your voice.</div>
+    <div class="alert alert-info">No film selected.</div>
 }
 else if (_phrases.Count == 0)
 {
-    <div class="card mb-3">
-        <div class="card-body text-center">
-            <p class="text-muted mb-3">We just need to find your dialogue first — a one-time step (about a minute).</p>
-            <button class="btn btn-primary" disabled="@_busy" data-testid="voice-capture-prepare" @onclick="PreparePhrasesAsync">
-                @(_busy ? "Preparing…" : "Prepare phrases")
-            </button>
-            @if (!string.IsNullOrEmpty(_status))
-            {
-                <div class="small text-muted mt-3">@_status</div>
-            }
-        </div>
+    <div class="text-center py-2">
+        <p class="text-muted mb-3">We just need to find your dialogue first — a one-time step (about a minute).</p>
+        <button class="btn btn-primary" disabled="@_busy" data-testid="voice-capture-prepare" @onclick="PreparePhrasesAsync">
+            @(_busy ? "Preparing…" : "Prepare phrases")
+        </button>
+        @if (!string.IsNullOrEmpty(_status))
+        {
+            <div class="small text-muted mt-3">@_status</div>
+        }
     </div>
 }
 else if (_done)
 {
-    <div class="card border-success mb-3">
-        <div class="card-body text-center">
-            <div class="h4 mb-2">🎉 Your voice is ready</div>
-            <p class="text-muted mb-0">@_status</p>
-        </div>
+    <div class="text-center py-2">
+        <div class="h4 mb-2">🎉 Your voice is ready</div>
+        <p class="text-muted mb-0">@_status</p>
     </div>
 }
 else
 {
-    <div class="card border-primary border-opacity-50 mb-3" data-testid="voice-capture-card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+    <div data-testid="voice-capture-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="fw-semibold">Phrase @(_i + 1) of @_phrases.Count</span>
             <span class="badge text-bg-secondary">@_kept.Count kept</span>
         </div>
-        <div class="card-body">
-            @{ var words = SplitWords(CurrentPhrase.Text); }
-            @{ var inTele = _recording || _light > 0 || _listening; }
-            @if (inTele)
+        @{ var words = SplitWords(CurrentPhrase.Text); }
+        @{ var inTele = _recording || _light > 0 || _listening; }
+        @if (inTele)
+        {
+            @* The light sits just left of the marker, so your eye flows light → start → scrolling
+               words. Shown for Listen (original scrolls), the countdown (static), and recording. *@
+            <div class="d-flex align-items-center gap-3 mb-1">
+                <div class="ptm-light-box-h" data-testid="voice-capture-light">
+                    <span class="ptm-light-sm @(_light == 1 ? "ptm-red-on" : "ptm-red-off")"></span>
+                    <span class="ptm-light-sm @(_light == 2 ? "ptm-yellow-on" : "ptm-yellow-off")"></span>
+                    <span class="ptm-light-sm @(_light == 3 ? "ptm-green-on" : "ptm-green-off")"></span>
+                </div>
+                <div class="tele-viewport flex-grow-1">
+                    <div id="tele-text" @key="_teleSession" class="tele-text fs-5">
+                        @foreach (var w in words)
+                        {
+                            <span class="tele-w">@w</span>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="small mb-3 @(_listening ? "text-info" : "text-danger")">
+                @(_light == 1 ? "Get ready…"
+                    : _light == 2 ? "Set…"
+                    : _light == 3 ? "Go — read it!"
+                    : _listening ? "This is how the narrator reads it — watch the words"
+                    : "● Read the word at the line")
+            </div>
+        }
+        else
+        {
+            <div style="overflow-x:auto; max-width:100%;" class="mb-1">
+                <p class="fs-5 mb-0" data-testid="voice-capture-text" style="white-space:nowrap;">
+                    @for (var wi = 0; wi < words.Count; wi++)
+                    {
+                        <span style="@WordStyle(wi)">@words[wi]</span>@(" ")
+                    }
+                </p>
+            </div>
+            @if (_regions is { Count: > 0 })
             {
-                @* The light sits just left of the marker, so your eye flows light → start → scrolling
-                   words. Shown for Listen (original scrolls), the countdown (static), and recording. *@
-                <div class="d-flex align-items-center gap-3 mb-1">
-                    <div class="ptm-light-box-h" data-testid="voice-capture-light">
-                        <span class="ptm-light-sm @(_light == 1 ? "ptm-red-on" : "ptm-red-off")"></span>
-                        <span class="ptm-light-sm @(_light == 2 ? "ptm-yellow-on" : "ptm-yellow-off")"></span>
-                        <span class="ptm-light-sm @(_light == 3 ? "ptm-green-on" : "ptm-green-off")"></span>
-                    </div>
-                    <div class="tele-viewport flex-grow-1">
-                        <div id="tele-text" @key="_teleSession" class="tele-text fs-5">
-                            @foreach (var w in words)
-                            {
-                                <span class="tele-w">@w</span>
-                            }
-                        </div>
-                    </div>
-                </div>
-                <div class="small mb-3 @(_listening ? "text-info" : "text-danger")">
-                    @(_light == 1 ? "Get ready…"
-                        : _light == 2 ? "Set…"
-                        : _light == 3 ? "Go — read it!"
-                        : _listening ? "This is how the narrator reads it — watch the words"
-                        : "● Read the word at the line")
-                </div>
+                <div class="small text-muted mb-3">Colours show where your rhythm matched — aim to turn the red/orange words green.</div>
             }
             else
             {
-                <div style="overflow-x:auto; max-width:100%;" class="mb-1">
-                    <p class="fs-5 mb-0" data-testid="voice-capture-text" style="white-space:nowrap;">
-                        @for (var wi = 0; wi < words.Count; wi++)
-                        {
-                            <span style="@WordStyle(wi)">@words[wi]</span>@(" ")
-                        }
-                    </p>
-                </div>
-                @if (_regions is { Count: > 0 })
-                {
-                    <div class="small text-muted mb-3">Colours show where your rhythm matched — aim to turn the red/orange words green.</div>
-                }
-                else
-                {
-                    <div class="mb-3"></div>
-                }
+                <div class="mb-3"></div>
             }
+        }
 
-            @* Compare — play the narrator, yourself, or both together; the strips show the rhythm. *@
-            <div class="mb-3">
-                <div class="d-flex flex-wrap gap-2 mb-2">
-                    <button class="btn btn-outline-primary btn-sm"
-                            disabled="@(_busy || _recording || _light > 0 || _listening || string.IsNullOrEmpty(_originalUrl))"
-                            data-testid="voice-capture-listen" @onclick="ListenAsync">
-                        @(_listening ? "▶ Narrator…" : "▶ Narrator")
-                    </button>
-                    @if (!string.IsNullOrEmpty(_takeUrl))
-                    {
-                        <button class="btn btn-outline-secondary btn-sm" disabled="@(_busy || _recording || _light > 0 || _listening)"
-                                data-testid="voice-capture-play-you" @onclick="PlayYouAsync">▶ You</button>
-                        <button class="btn btn-outline-secondary btn-sm" disabled="@(_busy || _recording || _light > 0 || _listening)"
-                                data-testid="voice-capture-play-both" @onclick="PlayBothAsync">▶ Both</button>
-                    }
-                    @if (string.IsNullOrEmpty(_originalUrl))
-                    {
-                        <span class="text-muted small align-self-center">Loading original…</span>
-                    }
-                </div>
-
-                @* Waveform strips — Narrator on top, You below (coloured by how well the rhythm matched). *@
-                <div class="ptm-wave-row">
-                    <span class="ptm-wave-label">Narrator</span>
-                    <canvas id="ptm-wave-narrator" class="ptm-wave" height="34"></canvas>
-                </div>
+        @* Compare — play the narrator, yourself, or both together; the strips show the rhythm. *@
+        <div class="mb-3">
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <button class="btn btn-outline-primary btn-sm"
+                        disabled="@(_busy || _recording || _light > 0 || _listening || string.IsNullOrEmpty(_originalUrl))"
+                        data-testid="voice-capture-listen" @onclick="ListenAsync">
+                    @(_listening ? "▶ Narrator…" : "▶ Narrator")
+                </button>
                 @if (!string.IsNullOrEmpty(_takeUrl))
                 {
-                    <div class="ptm-wave-row">
-                        <span class="ptm-wave-label">You</span>
-                        <canvas id="ptm-wave-you" class="ptm-wave" height="34"></canvas>
-                    </div>
-                    @if (_score is int sc)
-                    {
-                        <div class="mt-1 small fw-semibold @ScoreClass(sc)" data-testid="voice-capture-score">@ScoreLabel(sc)</div>
-                    }
+                    <button class="btn btn-outline-secondary btn-sm" disabled="@(_busy || _recording || _light > 0 || _listening)"
+                            data-testid="voice-capture-play-you" @onclick="PlayYouAsync">▶ You</button>
+                    <button class="btn btn-outline-secondary btn-sm" disabled="@(_busy || _recording || _light > 0 || _listening)"
+                            data-testid="voice-capture-play-both" @onclick="PlayBothAsync">▶ Both</button>
+                }
+                @if (string.IsNullOrEmpty(_originalUrl))
+                {
+                    <span class="text-muted small align-self-center">Loading original…</span>
                 }
             </div>
 
-            @* Controls (hidden during the light countdown) *@
-            <div class="d-flex flex-wrap gap-2">
-                @if (_recording)
-                {
-                    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="StopAndScoreAsync">
-                        ⏹ Stop
-                    </button>
-                }
-                else if (_light == 0)
-                {
-                    <button class="btn btn-danger" disabled="@(_busy || string.IsNullOrEmpty(_originalUrl))"
-                            data-testid="voice-capture-record" @onclick="RecordAsync">
-                        🔴 @(_takeUrl is null ? "Record" : "Re-record")
-                    </button>
-
-                    @if (!string.IsNullOrEmpty(_takeUrl))
-                    {
-                        <button class="btn btn-primary" disabled="@_busy" data-testid="voice-capture-keep" @onclick="KeepAndNextAsync">
-                            Keep &amp; @(_i + 1 < _phrases.Count ? "next →" : "finish")
-                        </button>
-                    }
-
-                    @if (_kept.Count > 0)
-                    {
-                        <button class="btn btn-success ms-auto" disabled="@_busy" data-testid="voice-capture-finish" @onclick="FinishAsync">
-                            ✓ Create my voice (@_kept.Count)
-                        </button>
-                    }
-                }
+            <div class="ptm-wave-row">
+                <span class="ptm-wave-label">Narrator</span>
+                <canvas id="ptm-wave-narrator" class="ptm-wave" height="34"></canvas>
             </div>
-
-            @if (!string.IsNullOrEmpty(_status))
+            @if (!string.IsNullOrEmpty(_takeUrl))
             {
-                <div class="small text-muted mt-2">@_status</div>
+                <div class="ptm-wave-row">
+                    <span class="ptm-wave-label">You</span>
+                    <canvas id="ptm-wave-you" class="ptm-wave" height="34"></canvas>
+                </div>
+                @if (_score is int sc)
+                {
+                    <div class="mt-1 small fw-semibold @ScoreClass(sc)" data-testid="voice-capture-score">@ScoreLabel(sc)</div>
+                }
             }
         </div>
+
+        @* Controls (hidden during the light countdown) *@
+        <div class="d-flex flex-wrap gap-2">
+            @if (_recording)
+            {
+                <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="StopAndScoreAsync">
+                    ⏹ Stop
+                </button>
+            }
+            else if (_light == 0)
+            {
+                <button class="btn btn-danger" disabled="@(_busy || string.IsNullOrEmpty(_originalUrl))"
+                        data-testid="voice-capture-record" @onclick="RecordAsync">
+                    🔴 @(_takeUrl is null ? "Record" : "Re-record")
+                </button>
+
+                @if (!string.IsNullOrEmpty(_takeUrl))
+                {
+                    <button class="btn btn-primary" disabled="@_busy" data-testid="voice-capture-keep" @onclick="KeepAndNextAsync">
+                        Keep &amp; @(_i + 1 < _phrases.Count ? "next →" : "finish")
+                    </button>
+                }
+
+                @if (_kept.Count > 0)
+                {
+                    <button class="btn btn-success ms-auto" disabled="@_busy" data-testid="voice-capture-finish" @onclick="FinishAsync">
+                        ✓ Create my voice (@_kept.Count)
+                    </button>
+                }
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(_status))
+        {
+            <div class="small text-muted mt-2">@_status</div>
+        }
     </div>
 }
 
 @code {
+    /// <summary>The film to build the narrator's cloned voice for. Supplied by the host.</summary>
+    [Parameter, EditorRequired] public string ProjectId { get; set; } = "";
+
+    /// <summary>Fired once the cloned voice has been built and applied — host advances to the next step.</summary>
+    [Parameter] public EventCallback OnComplete { get; set; }
+
     private const string NarratorKey = "Character_Narrator";
     private const int MaxPhrases = 8;
 
     private string? _projectId;
-    private List<ProjectInfo> _projects = new();
     private bool _loading = true;
     private bool _busy;
     private bool _done;
@@ -270,17 +242,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        (_projects, _projectId, _error) = await ScenePlaybackSupport.ResolveProjectSelectionAsync(Session, Engine, ActiveProject);
-
+        // Ensure the login session is loaded before any identity-gated call.
+        try { await Session.EnsureHydratedAsync(); } catch { /* ignore */ }
+        _projectId = ProjectId;
         _loading = false;
         if (!string.IsNullOrEmpty(_projectId))
             await LoadPhrasesAsync();
-    }
-
-    private async Task SelectProjectAsync(ChangeEventArgs e)
-    {
-        _projectId = e.Value?.ToString();
-        await LoadPhrasesAsync();
     }
 
     private async Task LoadPhrasesAsync()
@@ -352,8 +319,6 @@ else
     private async Task ListenAsync()
     {
         if (string.IsNullOrEmpty(_originalUrl) || _listening || _recording || _light > 0) return;
-        // Scroll the original across the teleprompter (paced to the narrator's own word timings)
-        // while it plays, so the user sees how the narrator reads it — then reads it back the same way.
         _listening = true;
         _teleSession++;
         _teleStartPending = true; // the scroll starts in OnAfterRenderAsync, once the spans render
@@ -364,8 +329,6 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    // The paced scroll can only start once the word spans exist in the DOM (we measure their pixel
-    // positions), so we arm it and kick it off here after the render that shows the teleprompter.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_teleStartPending)
@@ -399,14 +362,10 @@ else
     private async Task PlayBothAsync()
     {
         if (string.IsNullOrEmpty(_takeUrl) || string.IsNullOrEmpty(_originalUrl) || _busy || _recording || _light > 0 || _listening) return;
-        // Play the narrator and your take together — unison when your rhythm matches, an echo when it drifts.
         try { await Js.InvokeAsync<bool>("PageToMovieFfmpeg.playOverlayAsync", _originalUrl, _takeUrl); }
         catch { /* ignore playback errors */ }
     }
 
-    // When each display word is spoken (start,end seconds from the start), so the teleprompter can
-    // PARK each word at the marker for exactly its spoken span. Anchored to Scribe's real word
-    // timings so stretched words dwell longest; unmatched words interpolate; no timings ⇒ even.
     private (double[] starts, double[] ends) BuildWordTimeline(List<string> disp, double durSec)
     {
         var n = disp.Count;
@@ -421,7 +380,6 @@ else
             return (starts, ends);
         }
 
-        // In-order anchor match: pair each display word to the next matching timed word (small lookahead).
         var knownStart = new double?[n];
         var knownEnd = new double?[n];
         var si = 0;
@@ -441,7 +399,6 @@ else
             }
         }
 
-        // Interpolate the un-anchored words' starts linearly by index between anchors (0 front, durSec end).
         int prevIdx = -1; double prevTime = 0;
         for (var di = 0; di < n; di++)
         {
@@ -453,7 +410,6 @@ else
         for (var g = prevIdx + 1; g < n; g++)
             starts[g] = prevTime + (durSec - prevTime) * (g - prevIdx) / (n - prevIdx);
 
-        // Non-decreasing, clamped starts.
         double last = 0;
         for (var i = 0; i < n; i++)
         {
@@ -462,7 +418,6 @@ else
             last = starts[i];
         }
 
-        // Ends: prefer the anchored spoken end; otherwise dwell until the next word's start.
         for (var i = 0; i < n; i++)
         {
             var cap = i + 1 < n ? starts[i + 1] : durSec;
@@ -499,7 +454,6 @@ else
             var session = ++_recordSession;
             StateHasChanged();
             _ = ClearLightAsync();
-            // Auto-stop a beat after the ball finishes.
             _ = AutoStopAsync(session, (int)((_ballDurationSec + 1.0) * 1000));
         }
         catch (Exception ex) { _error = "Microphone failed: " + ex.Message; _recording = false; _light = 0; }
@@ -591,6 +545,9 @@ else
             _status = apply.Ok
                 ? (apply.UsedMock ? "Demo voice applied. You can make the movie." : "Voice applied. You can make the movie.")
                 : ("Takes saved. " + (apply.Error ?? apply.Message ?? "Could not apply the voice."));
+            StateHasChanged();
+            if (apply.Ok)
+                await OnComplete.InvokeAsync();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; StateHasChanged(); }
@@ -609,7 +566,6 @@ else
     private static List<string> SplitWords(string? t) =>
         string.IsNullOrWhiteSpace(t) ? new() : t.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).ToList();
 
-    // Per-word background from the rhythm-match regions (green good, yellow medium, red poor).
     private string WordStyle(int wordIndex)
     {
         if (_recording || _regions is not { Count: > 0 } r) return "";
@@ -618,7 +574,6 @@ else
         return $"background: rgba({rr},{gg},{bb},.32); border-radius:4px; padding:0 3px;";
     }
 
-    private static string ScoreStars(int s) => new string('★', Math.Clamp(s / 20, 0, 5)).PadRight(5, '☆');
     private static string ScoreLabel(int s) => s >= 80 ? "Great match!" : s >= 60 ? "Nice!" : s >= 40 ? "Good — try the rhythm again" : "Give it another go";
     private static string ScoreClass(int s) => s >= 60 ? "text-success" : s >= 40 ? "text-warning" : "text-muted";
 

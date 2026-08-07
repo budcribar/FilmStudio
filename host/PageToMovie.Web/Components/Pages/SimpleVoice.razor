@@ -1,5 +1,4 @@
 @page "/simple-voice"
-@implements IAsyncDisposable
 @using PageToMovie.Core.Models
 @inject EngineApiClient Engine
 @inject ActiveProjectState ActiveProject
@@ -108,170 +107,13 @@ else
                 </button>
             </div>
             <div class="card-body">
-                @if (_hasSample && !_reRecording)
+                @if (!_voiceReady)
                 {
-                    <div class="mb-3" data-testid="simple-voice-ready">
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                            <span class="badge text-bg-success">Your voice is ready</span>
-                            <button type="button" class="btn btn-outline-secondary btn-sm"
-                                    disabled="@_busy"
-                                    data-testid="simple-voice-rerecord"
-                                    @onclick="StartReRecord">
-                                Re-record
-                            </button>
-                        </div>
-                        @if (!string.IsNullOrEmpty(_samplePlayUrl))
-                        {
-                            <div class="small text-muted mb-1">Have a listen to make sure it sounds like you:</div>
-                            <audio class="w-100" controls src="@_samplePlayUrl" @key="_samplePlayUrl"
-                                   data-testid="simple-voice-ready-audio"></audio>
-                        }
-                        else
-                        {
-                            <div class="small text-muted">
-                                Not sure it recorded? Tap <strong>Re-record</strong> to try again.
-                            </div>
-                        }
-                    </div>
+                    @* The good "read along in your voice" recorder, shared with anywhere else that needs it. *@
+                    <VoiceCaptureStep ProjectId="@_projectId" OnComplete="OnVoiceReadyAsync" />
                 }
-                @if (!_hasSample || _reRecording)
+                else
                 {
-                <p class="small text-muted mb-3">
-                    One sample for the narrator. Library pictures stay as-is.
-                    Read the script aloud, then tap Done — we save and apply automatically.
-                </p>
-
-                <div class="border rounded p-3 bg-dark bg-opacity-25 mb-3"
-                     data-testid="simple-voice-script">
-                    <div class="small text-info fw-semibold mb-1">Read this aloud</div>
-                    <p class="mb-0 small" style="white-space: pre-wrap;">@VoiceCloneScripts.KidsShort</p>
-                    <button type="button" class="btn btn-link btn-sm px-0 mt-1"
-                            @onclick="() => _showFullScript = !_showFullScript">
-                        @(_showFullScript ? "Hide longer script" : "Longer script (optional)")
-                    </button>
-                    @if (_showFullScript)
-                    {
-                        <p class="mb-0 small text-muted mt-1" style="white-space: pre-wrap;">@VoiceCloneScripts.KidsFull</p>
-                    }
-                </div>
-
-                @* Mutually exclusive: Record OR Upload — never both, so “upload my recording” isn’t confusing. *@
-                @if (_captureMode == CaptureMode.Choose)
-                {
-                    <p class="small text-muted mb-2">How do you want to add your sample?</p>
-                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2" data-testid="simple-voice-capture-choose">
-                        <button type="button" class="btn btn-primary"
-                                disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
-                                data-testid="simple-voice-choose-record"
-                                @onclick="ChooseRecordAsync">
-                            Record with mic
-                        </button>
-                        <label class="btn btn-outline-primary mb-0 @(_busy || string.IsNullOrEmpty(_projectId) ? "disabled" : "")"
-                               data-testid="simple-voice-choose-upload">
-                            Upload audio file
-                            <InputFile OnChange="OnUploadChosenAsync" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg"
-                                       class="d-none" disabled="@(_busy || string.IsNullOrEmpty(_projectId))" />
-                        </label>
-                        @if (_hasSample)
-                        {
-                            <span class="badge text-bg-success" data-testid="simple-voice-sample-ready">Sample ready</span>
-                        }
-                    </div>
-                }
-                else if (_captureMode == CaptureMode.Record)
-                {
-                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2" data-testid="simple-voice-capture-record">
-                        @if (!_recording)
-                        {
-                            <button type="button" class="btn btn-primary"
-                                    disabled="@(_busy || string.IsNullOrEmpty(_projectId))"
-                                    data-testid="simple-voice-mic-start"
-                                    @onclick="StartMicAsync">
-                                Record
-                            </button>
-                            <button type="button" class="btn btn-link btn-sm"
-                                    disabled="@_busy"
-                                    data-testid="simple-voice-switch-upload"
-                                    @onclick="BackToChoose">
-                                Use a file instead
-                            </button>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn btn-danger"
-                                    disabled="@_busy"
-                                    data-testid="simple-voice-mic-stop"
-                                    @onclick="StopMicAsync">
-                                Done
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary"
-                                    disabled="@_busy"
-                                    @onclick="CancelMicAsync">
-                                Cancel
-                            </button>
-                            <span class="small text-danger">Recording…</span>
-                        }
-                        @if (_hasSample && !_recording)
-                        {
-                            <span class="badge text-bg-success" data-testid="simple-voice-sample-ready">Sample ready</span>
-                        }
-                    </div>
-                    @* Upload hidden while recording path is active *@
-                }
-                else @* Upload *@
-                {
-                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2" data-testid="simple-voice-capture-upload">
-                        <label class="btn btn-primary mb-0 @(_busy || string.IsNullOrEmpty(_projectId) ? "disabled" : "")"
-                               data-testid="simple-voice-upload">
-                            Choose audio file…
-                            <InputFile OnChange="OnUploadAsync" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg"
-                                       class="d-none" disabled="@(_busy || string.IsNullOrEmpty(_projectId))" />
-                        </label>
-                        <button type="button" class="btn btn-link btn-sm"
-                                disabled="@_busy"
-                                data-testid="simple-voice-switch-record"
-                                @onclick="BackToChoose">
-                            Record with mic instead
-                        </button>
-                        @if (_hasSample)
-                        {
-                            <span class="badge text-bg-success" data-testid="simple-voice-sample-ready">Sample ready</span>
-                        }
-                    </div>
-                    @* Record hidden while upload path is active *@
-                }
-                } @* end: show record UI only when no sample yet or re-recording *@
-
-                @if (!string.IsNullOrEmpty(_hint))
-                {
-                    <div class="form-text" data-testid="simple-voice-hint">@_hint</div>
-                }
-                @if (_hasSample && !_applied && !_busy)
-                {
-                    <div class="alert alert-warning py-2 small mt-2 mb-0" data-testid="simple-voice-apply-fix">
-                        @if (!string.IsNullOrEmpty(_hint) && _hint.Contains("Sample", StringComparison.OrdinalIgnoreCase))
-                        {
-                            <span>@_hint</span>
-                        }
-                        else
-                        {
-                            <span>Sample is saved. @(string.IsNullOrEmpty(_hint) ? "Voice apply did not finish." : _hint)</span>
-                        }
-                        <span class="d-block mt-1">
-                            <a href="configuration?focus=voice#api-keys" class="alert-link">Open Settings → Voice clone &amp; speech</a>
-                            · then
-                            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="RetryApplyAsync">try apply again</button>
-                        </span>
-                    </div>
-                }
-                @if (!string.IsNullOrEmpty(_samplePlayUrl) && (!_hasSample || _reRecording))
-                {
-                    <audio class="mt-2 w-100" controls src="@_samplePlayUrl" @key="_samplePlayUrl"></audio>
-                }
-
-                @if (_hasSample && _applied)
-                {
-                    <hr class="my-3" />
                     <div class="d-flex flex-wrap align-items-center gap-2" data-testid="simple-voice-finish">
                         <div class="flex-grow-1">
                             <div class="fw-semibold">You’re set</div>
@@ -374,13 +216,10 @@ else
 @code {
     private enum Phase { Pick, Record, Done, Movie }
 
-    /// <summary>Step-2 capture path: pick one so Record and Upload are never shown together.</summary>
-    private enum CaptureMode { Choose, Record, Upload }
-
     private Phase _phase = Phase.Pick;
     private List<ForkableStoryDto> _forkableStories = new();
     private bool _storiesLoading = true;
-    private bool _reRecording;
+    private bool _voiceReady; // narrator has a cloned voice (freshly captured or already applied) → show "make movie"
     private bool _dubbing;
     private string? _dubStatus;
     private string? _dubbedUrl;
@@ -389,16 +228,8 @@ else
     private string? _projectLabel;
     private string _narratorKey = "Character_Narrator";
     private bool _busy;
-    private CaptureMode _captureMode = CaptureMode.Choose;
-    private bool _recording;
-    private bool _hasSample;
-    private bool _applied;
-    private bool _showFullScript;
     private string? _error;
     private string? _message;
-    private string? _hint;
-    private string? _samplePlayUrl;
-    private long _sampleBust;
 
     protected override async Task OnInitializedAsync()
     {
@@ -415,7 +246,6 @@ else
             _projectId = ActiveProject.ProjectId;
             _projectLabel = ActiveProject.Label;
             _phase = Phase.Record;
-            _captureMode = CaptureMode.Choose;
             await EnsureVoiceModelAsync();
             await ResolveNarratorKeyAsync();
             await RefreshSampleStateAsync();
@@ -446,7 +276,7 @@ else
 
             _projectId = forkId;
             _projectLabel = fork?.Title ?? story.Title;
-            _reRecording = false;
+            _voiceReady = false;
             _dubbedUrl = null;
             _phase = Phase.Record;
             await EnsureVoiceModelAsync();
@@ -463,22 +293,12 @@ else
         }
     }
 
-    private void StartReRecord()
-    {
-        _reRecording = true;
-        _captureMode = CaptureMode.Choose;
-        _hint = null;
-        _error = null;
-    }
-
     private void BackToPick()
     {
         _phase = Phase.Pick;
-        _captureMode = CaptureMode.Choose;
-        _recording = false;
+        _voiceReady = false;
         _error = null;
         _message = null;
-        _hint = null;
     }
 
     private async Task ResolveNarratorKeyAsync()
@@ -534,222 +354,30 @@ else
 
     private async Task RefreshSampleStateAsync()
     {
-        _hasSample = false;
-        _samplePlayUrl = null;
+        _voiceReady = false;
         if (string.IsNullOrEmpty(_projectId)) return;
         try
         {
             var dto = await Engine.GetCharactersAsync(_projectId);
             var c = dto?.Characters?.FirstOrDefault(x =>
                 string.Equals(x.Key, _narratorKey, StringComparison.OrdinalIgnoreCase));
-            _hasSample = c?.HasVoiceCloneSample == true
-                || !string.IsNullOrEmpty(c?.VoiceProviderVoiceId);
-            if (c?.HasVoiceCloneSample == true)
+            // Already-cloned narrator (a provider voice id exists) → skip capture, go to "make movie".
+            if (c is not null && !string.IsNullOrEmpty(c.VoiceProviderVoiceId))
             {
-                _sampleBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                _samplePlayUrl = Engine.CharacterVoiceCloneSampleUrl(_projectId, _narratorKey, _sampleBust);
-            }
-            if (_hasSample && !string.IsNullOrEmpty(c?.VoiceProviderVoiceId))
-            {
-                _applied = true;
+                _voiceReady = true;
                 _phase = Phase.Done;
             }
         }
         catch { /* ignore */ }
     }
 
-        private async Task ChooseRecordAsync()
+    // Fired by <VoiceCaptureStep> once the cloned voice is built + applied — advance to "make movie".
+    private async Task OnVoiceReadyAsync()
     {
-        _captureMode = CaptureMode.Record;
+        _voiceReady = true;
+        _phase = Phase.Done;
         _error = null;
-        await StartMicAsync();
-    }
-
-    private void BackToChoose()
-    {
-        if (_recording || _busy) return;
-        _captureMode = CaptureMode.Choose;
-        _hint = null;
-    }
-
-    private async Task OnUploadChosenAsync(InputFileChangeEventArgs e)
-    {
-        _captureMode = CaptureMode.Upload;
-        await OnUploadAsync(e);
-    }
-
-private async Task StartMicAsync()
-    {
-        _error = null;
-        _hint = null;
-        try
-        {
-            if (!MediaFolder.IsConnected)
-                await MediaFolder.TryReconnectAsync();
-            var result = await Js.InvokeAsync<VoiceCaptureStartResult>("PageToMovieVoiceCapture.start");
-            if (result is null || !result.Ok)
-            {
-                _error = string.IsNullOrWhiteSpace(result?.Error)
-                    ? "Could not access the microphone. Check browser permissions."
-                    : result!.Error;
-                return;
-            }
-            _recording = true;
-            _hint = "Recording — read the script, then tap Done.";
-        }
-        catch (JSException jex)
-        {
-            _error = "Microphone failed: " + jex.Message;
-            _recording = false;
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-            _recording = false;
-        }
-    }
-
-    private async Task StopMicAsync()
-    {
-        if (string.IsNullOrEmpty(_projectId)) return;
-        _busy = true;
-        _error = null;
-        _hint = "Saving…";
-        try
-        {
-            var result = await Js.InvokeAsync<VoiceCaptureStopResult>("PageToMovieVoiceCapture.stop");
-            _recording = false;
-            if (result is null || !result.Ok || string.IsNullOrEmpty(result.Base64))
-            {
-                _error = result?.Error ?? "No audio captured";
-                return;
-            }
-            var raw = Convert.FromBase64String(result.Base64);
-            var name = string.IsNullOrWhiteSpace(result.FileName) ? "voice_clone_sample.webm" : result.FileName!;
-            await PersistAndApplyAsync(raw, name);
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-            _recording = false;
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task CancelMicAsync()
-    {
-        try { await Js.InvokeVoidAsync("PageToMovieVoiceCapture.cancel"); } catch { }
-        _recording = false;
-        _hint = "Recording cancelled.";
-    }
-
-    private async Task OnUploadAsync(InputFileChangeEventArgs e)
-    {
-        if (string.IsNullOrEmpty(_projectId) || e.File is null) return;
-        _busy = true;
-        _error = null;
-        _hint = "Saving…";
-        try
-        {
-            const long max = 15 * 1024 * 1024;
-            await using var stream = e.File.OpenReadStream(max);
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms);
-            await PersistAndApplyAsync(ms.ToArray(), e.File.Name);
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task PersistAndApplyAsync(byte[] bytes, string fileName)
-    {
-        if (string.IsNullOrEmpty(_projectId)) return;
-        var ext = Path.GetExtension(fileName).ToLowerInvariant();
-        if (ext is not (".webm" or ".mp3" or ".wav" or ".m4a" or ".ogg" or ".aac" or ".mp4"))
-            ext = ".webm";
-        if (ext == ".mp4") ext = ".webm";
-
-        var safeKey = string.Join("_", _narratorKey.Split(Path.GetInvalidFileNameChars()));
-        var rel = $"assets/characters/{safeKey}/voice_clone_sample{ext}";
-        if (!MediaFolder.IsConnected)
-            await MediaFolder.TryReconnectAsync();
-        await MediaFolder.SaveBytesAsync(_projectId, rel, bytes, promptToConnectFolder: false);
-
-        await using var ms = new MemoryStream(bytes);
-        await Engine.UploadVoiceCloneSampleAsync(_projectId, _narratorKey, ms, "voice_clone_sample" + ext);
-        _hasSample = true;
-        _sampleBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        _samplePlayUrl = Engine.CharacterVoiceCloneSampleUrl(_projectId, _narratorKey, _sampleBust);
-        _hint = "Sample saved — applying voice…";
-        StateHasChanged();
-
-        // Auto-apply so user doesn't need a second button or the cast page.
-        try
-        {
-            var apply = await Engine.ApplyVoiceCloneAsync(_projectId, _narratorKey);
-            if (!apply.Ok)
-            {
-                _applied = false;
-                _hint = "Sample saved. " + FriendlyApplyError(apply.Error ?? apply.Message);
-                _message = null;
-                return;
-            }
-            _applied = true;
-            _phase = Phase.Done;
-            _error = null;
-            _hint = apply.UsedMock
-                ? "Demo voice applied. You can make the movie."
-                : "Voice applied. You can make the movie.";
-            _message = null;
-        }
-        catch (Exception ex)
-        {
-            _hint = "Sample saved. " + FriendlyApplyError(ex.Message);
-            _applied = false;
-            _message = null;
-        }
-    }
-
-    private async Task RetryApplyAsync()
-    {
-        if (string.IsNullOrEmpty(_projectId) || !_hasSample) return;
-        _busy = true;
-        _error = null;
-        _hint = "Applying voice…";
-        try
-        {
-            var apply = await Engine.ApplyVoiceCloneAsync(_projectId, _narratorKey);
-            if (!apply.Ok)
-            {
-                _hint = FriendlyApplyError(apply.Error);
-                _applied = false;
-                return;
-            }
-            _applied = true;
-            _phase = Phase.Done;
-            _message = null;
-            _hint = apply.UsedMock
-                ? "Demo voice applied. You can make the movie."
-                : "Voice applied. You can make the movie.";
-        }
-        catch (Exception ex)
-        {
-            _hint = FriendlyApplyError(ex.Message);
-            _applied = false;
-        }
-        finally
-        {
-            _busy = false;
-        }
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task MakeMovieAsync()
@@ -818,39 +446,4 @@ private async Task StartMicAsync()
         Nav.NavigateTo("characters");
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        if (_recording)
-        {
-            try { await Js.InvokeVoidAsync("PageToMovieVoiceCapture.cancel"); } catch { }
-        }
-    }
-
-    private static string FriendlyApplyError(string? raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return "Apply failed.";
-        if (raw.Contains("create_instant_voice_clone", StringComparison.OrdinalIgnoreCase)
-            || raw.Contains("Instant Voice Clone", StringComparison.OrdinalIgnoreCase)
-            || raw.Contains("missing_permissions", StringComparison.OrdinalIgnoreCase))
-        {
-            return "This ElevenLabs key cannot create Instant Voice Clones. "
-                   + "Enable that permission on the key, upgrade the plan, or switch Voice to Fal MiniMax in Settings. "
-                   + "Your recording is still saved.";
-        }
-        return raw;
-    }
-
-    private sealed class VoiceCaptureStartResult
-    {
-        public bool Ok { get; set; }
-        public string? Error { get; set; }
-    }
-
-    private sealed class VoiceCaptureStopResult
-    {
-        public bool Ok { get; set; }
-        public string? Error { get; set; }
-        public string? Base64 { get; set; }
-        public string? FileName { get; set; }
-    }
 }
