@@ -41,6 +41,31 @@
             </div>
         }
 
+        @if (_hasConflicts)
+        {
+            <div class="card border-warning mt-2 mb-2">
+                <div class="card-header bg-warning-subtle py-2"><strong>Merge conflicts</strong>
+                    @if (_autoResolvedCount > 0) { <span class="badge text-bg-secondary ms-2">auto-resolved @_autoResolvedCount</span> }
+                </div>
+                <div class="card-body py-2">
+                    @if (_remainingConflictPaths.Count > 0)
+                    {
+                        <details class="mb-2"><summary class="small">@_remainingConflictPaths.Count path(s)</summary>
+                            <ul class="small mb-0">@foreach (var path in _remainingConflictPaths) { <li><code>@path</code></li> }</ul>
+                        </details>
+                    }
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick='() => ResolveConflictsAsync("PreferOurs")'>Prefer Ours</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick='() => ResolveConflictsAsync("PreferTheirs")'>Prefer Theirs</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick='() => ResolveConflictsAsync("Auto")'>Auto</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick='() => ResolveConflictsAsync("Union")'>Union</button>
+                    </div>
+                </div>
+            </div>
+        }
+        <button type="button" class="btn btn-sm btn-outline-primary mt-1" disabled="@_busy" @onclick="SyncFromOriginAsync">Sync From Origin (Git)</button>
+
+
         <div class="card bg-dark border-secondary text-white mb-4 p-3">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                 <div>
