@@ -267,8 +267,67 @@
         }
     }
 
+
+    private Task SyncFromOriginAsync()
+    {
+        _lastSyncWasFromOrigin = true;
+        return RunGitSyncAsync(Id, _diff?.OriginProjectId, null);
+    }
+
+    private Task ResolveConflictsAsync(string strategy)
+    {
+        var target = _lastSyncWasFromOrigin ? Id : _diff?.OriginProjectId;
+        var source = _lastSyncWasFromOrigin ? _diff?.OriginProjectId : Id;
+        return RunGitSyncAsync(target, source, strategy);
+    }
+
+    private async Task RunGitSyncAsync(string? targetProjectId, string? sourceProjectId, string? strategy)
+    {
+        if (string.IsNullOrWhiteSpace(targetProjectId) || string.IsNullOrWhiteSpace(sourceProjectId))
+        {
+            _messageOk = false;
+            _message = "Origin project id is missing.";
+            return;
+        }
+        _busy = true;
+        _message = null;
+        try
+        {
+            var body = new Dictionary<string, string?> { ["parentProjectId"] = sourceProjectId };
+            if (!string.IsNullOrWhiteSpace(strategy)) body["autoResolveStrategy"] = strategy;
+            var resp = await Http.PostAsJsonAsync($"/api/projects/{targetProjectId}/sync-origin", body);
+            var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            var ok = json.TryGetProperty("ok", out var o) && o.GetBoolean();
+            var hasConflicts = json.TryGetProperty("hasConflicts", out var c) && c.GetBoolean();
+            _autoResolvedCount = json.TryGetProperty("autoResolvedCount", out var a) && a.ValueKind == JsonValueKind.Number ? a.GetInt32() : 0;
+            _remainingConflictPaths = new();
+            if (json.TryGetProperty("remainingConflictPaths", out var paths) && paths.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var el in paths.EnumerateArray())
+                {
+                    var s = el.GetString();
+                    if (!string.IsNullOrWhiteSpace(s)) _remainingConflictPaths.Add(s);
+                }
+            }
+            _hasConflicts = hasConflicts;
+            _messageOk = ok && !hasConflicts;
+            _message = json.TryGetProperty("message", out var m) ? m.GetString() : (ok ? "Synced." : "Sync reported problems.");
+            if (hasConflicts && string.IsNullOrWhiteSpace(strategy))
+                _message += " Pick a strategy below to auto-resolve.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _messageOk = false;
+            _message = ex.Message;
+            _hasConflicts = false;
+        }
+        finally { _busy = false; }
+    }
+
     private async Task AcceptMergeAsync()
     {
+        _lastSyncWasFromOrigin = false;
         if (_diff is null || string.IsNullOrWhiteSpace(_diff.ParentProjectId)) return;
 
         _busy = true;
