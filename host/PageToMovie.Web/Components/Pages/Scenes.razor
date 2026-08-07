@@ -355,6 +355,10 @@ else if (_showPreviewPlayer && _clientStitching)
         <div class="card mb-3 p-3">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <CapabilityLockedControl Enabled="Caps.VideoReady"
+                                             BlockedReason="@Caps.VideoBlockedReason"
+                                             SettingsHref="@Caps.VideoSettingsHref"
+                                             TestId="scenes-generate-batch-cap">
                     <button type="button"
                             data-testid="scenes-generate-batch"
                             class="btn batch-go @(_selected.Count > 0 && !JobRunning && CastReady ? "batch-go--ready" : "")"
@@ -378,6 +382,7 @@ else if (_showPreviewPlayer && _clientStitching)
                             </span>
                         }
                     </button>
+                    </CapabilityLockedControl>
 
                     @if (_scenes is not null && VisibleScenes.Any(s => !s.ClipsComplete || s.ClipsOnDisk < s.ClipCount))
                     {
@@ -2875,7 +2880,7 @@ else
             await ActiveProject.RefreshReadinessAsync(Engine);
             _gateChecked = true;
             if (!string.IsNullOrEmpty(_projectId))
-                await Caps.RefreshAsync(Engine, _projectId);
+                await Caps.RefreshAsync(Engine);
 
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanScenes)
                 return;

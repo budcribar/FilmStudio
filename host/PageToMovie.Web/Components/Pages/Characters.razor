@@ -580,12 +580,17 @@ else
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap gap-2 align-items-center">
+                                        <CapabilityLockedControl Enabled="Caps.ImageReady"
+                                                                 BlockedReason="@Caps.ImageBlockedReason"
+                                                                 SettingsHref="@Caps.ImageSettingsHref"
+                                                                 TestId="char-generate-looks-cap">
                                         <button type="button" class="btn btn-primary btn-sm"
                                                 disabled="@(_busy || JobRunning || string.IsNullOrWhiteSpace(_editDescription))"
                                                 @onclick="StartRegenerateAsync"
                                                 data-testid="char-generate-looks">
                                             Generate 3 looks
                                         </button>
+                                        </CapabilityLockedControl>
                                         <span class="small text-muted" data-testid="look-autosave-hint">
                                             @(_lookSaveHint ?? "Text saves automatically")
                                         </span>
@@ -1364,7 +1369,7 @@ else
             await ActiveProject.RefreshReadinessAsync(Engine);
             _gateChecked = true;
             if (!string.IsNullOrEmpty(_projectId))
-                await Caps.RefreshAsync(Engine, _projectId);
+                await Caps.RefreshAsync(Engine);
 
             ApplySimpleModeFromUri();
             // Easy-start lives entirely on /simple-voice (story + record). No cast list.
@@ -2613,7 +2618,7 @@ else
                 && !voice.Equals("none", StringComparison.OrdinalIgnoreCase)
                 && !voice.Equals("disabled", StringComparison.OrdinalIgnoreCase))
             {
-                await Caps.RefreshAsync(Engine, _projectId);
+                await Caps.RefreshAsync(Engine);
                 return;
             }
 
@@ -2625,7 +2630,7 @@ else
             {
                 ["voice_model_name"] = defaultClone,
             });
-            await Caps.RefreshAsync(Engine, _projectId);
+            await Caps.RefreshAsync(Engine);
         }
         catch
         {

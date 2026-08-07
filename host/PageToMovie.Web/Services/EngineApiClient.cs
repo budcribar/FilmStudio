@@ -409,6 +409,13 @@ public sealed class EngineApiClient
         return await SendJsonAsync<MeResponse>(req, ct);
     }
 
+    /// <summary>JIT capability availability (any provider configured for each capability, or fakes).</summary>
+    public async Task<CapabilitiesResponse?> GetCapabilitiesAsync(CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/capabilities");
+        return await SendJsonAsync<CapabilitiesResponse>(req, ct);
+    }
+
     public async Task<AdminStateDto?> GetAdminStateAsync(CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/state");

@@ -9,6 +9,7 @@
 @inject ClientVideoStitchService Stitch
 @inject ClientMediaFolderService MediaFolder
 @inject ClientVoiceSubstitutionService VoiceSub
+@inject StudioCapabilityState Caps
 @using PageToMovie.Core.Models
 
 <PageTitle>Review · final cut</PageTitle>
@@ -106,20 +107,25 @@ else
     <div class="d-flex align-items-center gap-2">
         @if (_activeTab == "review")
         {
-            <button class="btn btn-sm btn-outline-info fw-semibold" data-testid="review-auto-all"
-                    disabled="@(_busy || JobRunning || _isReviewing || !HasGeneratedClips)"
-                    title="@(HasGeneratedClips ? "Run AI visual quality and continuity review on the full movie" : "Generate clips first")"
-                    @onclick="StartFullMovieReviewAsync">
-                @if (_isReviewing)
-                {
-                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                    <span>Reviewing (@_reviewProgressPct%)…</span>
-                }
-                else
-                {
-                    <span>⚡ Run AI Continuity Review</span>
-                }
-            </button>
+            <CapabilityLockedControl Enabled="Caps.VideoReviewReady"
+                                     BlockedReason="@Caps.VideoReviewBlockedReason"
+                                     SettingsHref="@Caps.VideoReviewSettingsHref"
+                                     TestId="review-auto-all-cap">
+                <button class="btn btn-sm btn-outline-info fw-semibold" data-testid="review-auto-all"
+                        disabled="@(_busy || JobRunning || _isReviewing || !HasGeneratedClips)"
+                        title="@(HasGeneratedClips ? "Run AI visual quality and continuity review on the full movie" : "Generate clips first")"
+                        @onclick="StartFullMovieReviewAsync">
+                    @if (_isReviewing)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        <span>Reviewing (@_reviewProgressPct%)…</span>
+                    }
+                    else
+                    {
+                        <span>⚡ Run AI Continuity Review</span>
+                    }
+                </button>
+            </CapabilityLockedControl>
         }
         @if (JobRunning)
         {
@@ -1279,6 +1285,7 @@ else
             if (!ActiveProject.HasProject)
                 await ActiveProject.RefreshFromServerAsync(Engine);
             await ActiveProject.RefreshReadinessAsync(Engine);
+            await Caps.RefreshAsync(Engine);
             _projectId = ActiveProject.ProjectId ?? "";
             _gateChecked = true;
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanReview)

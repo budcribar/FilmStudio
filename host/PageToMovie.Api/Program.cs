@@ -6423,6 +6423,17 @@ app.MapGet("/api/capabilities", (
         ["voice"] = voice.IsConfigured,
         ["planning"] = chat.IsConfigured,
     };
+
+    // Dev/testing affordance: force capabilities off (comma-separated) to preview and test the
+    // gated UI — fakes mode reports everything configured, so the disabled state is otherwise
+    // unreachable locally. No effect in production unless the env var is set.
+    var forcedOff = Environment.GetEnvironmentVariable("PAGETOMOVIE_FAKE_DISABLED_CAPABILITIES");
+    if (!string.IsNullOrWhiteSpace(forcedOff))
+    {
+        foreach (var c in forcedOff.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            if (caps.ContainsKey(c)) caps[c] = false;
+    }
+
     return Results.Ok(new { ok = true, capabilities = caps });
 });
 
