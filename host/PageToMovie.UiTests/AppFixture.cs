@@ -86,7 +86,9 @@ public class AppFixture : IAsyncLifetime
         throw new TimeoutException($"fakes Api did not become healthy at {BaseUrl} within 3 minutes");
     }
 
-    private static string FindRepoRoot()
+    /// <summary>Repo root (workspace root) — the same the running host uses, so tests can drive the
+    /// real domain code (e.g. CostReportService) against the same project files.</summary>
+    internal static string FindRepoRoot()
     {
         var d = new DirectoryInfo(AppContext.BaseDirectory);
         while (d != null)
