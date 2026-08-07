@@ -411,6 +411,10 @@ else if (_showPreviewPlayer && _clientStitching)
                             @onclick="PlaySelectedAsync">
                         ▶ Play selected@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
+                    <CapabilityLockedControl Enabled="Caps.VideoReviewReady"
+                                             BlockedReason="@Caps.VideoReviewBlockedReason"
+                                             SettingsHref="@Caps.VideoReviewSettingsHref"
+                                             TestId="scenes-verify-dialogue-cap">
                     <button type="button"
                             class="btn btn-outline-primary btn-sm"
                             disabled="@(_busy || JobRunning || _verifyingClip || !SelectedScenesHaveClipsToVerify)"
@@ -422,6 +426,7 @@ else if (_showPreviewPlayer && _clientStitching)
                             @onclick="VerifySelectedScenesDialogueAsync">
                         🔍 Verify Scene Dialogue@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
+                    </CapabilityLockedControl>
                     <button type="button"
                             class="btn btn-outline-secondary btn-sm"
                             disabled="@(_busy || JobRunning)"

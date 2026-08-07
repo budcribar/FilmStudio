@@ -283,11 +283,16 @@ else
                 <p class="text-white-50 mb-3 mx-auto" style="max-width: 600px;">
                     Run an automated multi-category visual review across your film's visual continuity, character wardrobe consistency, lighting, and audio alignment.
                 </p>
-                <button class="btn btn-info text-white fw-bold px-4"
-                        disabled="@(_busy || JobRunning)"
-                        @onclick="StartFullMovieReviewAsync">
-                    ⚡ Run AI Continuity Review
-                </button>
+                <CapabilityLockedControl Enabled="Caps.VideoReviewReady"
+                                         BlockedReason="@Caps.VideoReviewBlockedReason"
+                                         SettingsHref="@Caps.VideoReviewSettingsHref"
+                                         TestId="review-empty-cta-cap">
+                    <button class="btn btn-info text-white fw-bold px-4"
+                            disabled="@(_busy || JobRunning)"
+                            @onclick="StartFullMovieReviewAsync">
+                        ⚡ Run AI Continuity Review
+                    </button>
+                </CapabilityLockedControl>
             </div>
         </div>
     }
@@ -661,8 +666,8 @@ else if (_showScenePlayer && _clientStitching)
                                             data-testid="@($"review-auto-{sel}-{cn}")"
                                             data-scene="@sel"
                                             data-clip="@cn"
-                                            disabled="@(_busy || !onDisk || JobRunning || autoBusy)"
-                                            title="AI review: this clip + end of previous (does not change files)"
+                                            disabled="@(_busy || !onDisk || JobRunning || autoBusy || !Caps.VideoReviewReady)"
+                                            title="@(Caps.VideoReviewReady ? "AI review: this clip + end of previous (does not change files)" : Caps.VideoReviewBlockedReason)"
                                             @onclick="() => StartAutoReviewAsync(sel, cn)">
                                         @(autoBusy ? "Reviewing…" : draft is not null && !editing ? "Review again" : "Review")
                                     </button>
