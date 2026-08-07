@@ -40,33 +40,18 @@
     else
     {
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Books</div>
-                        <div class="fs-4 fw-semibold">@_snap.BookCount</div>
-                        <div class="small text-muted">@FormatBytes(_snap.TotalBookBytes) stored</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Derived artifacts</div>
-                        <div class="fs-4 fw-semibold">@_snap.ArtifactCount</div>
-                        <div class="small text-muted">adaptation_conversion, etc.</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Provider file handles</div>
-                        <div class="fs-4 fw-semibold">@_snap.ProviderFileCount</div>
-                        <div class="small text-muted">xAI file_id rows</div>
-                    </div>
-                </div>
-            </div>
+            <StatCard Label="Books" Value="@_snap.BookCount.ToString()"
+                      CardClass="card h-100 border-0 shadow-sm" ValueClass="fs-4 fw-semibold">
+                <Sub>@FormatBytes(_snap.TotalBookBytes) stored</Sub>
+            </StatCard>
+            <StatCard Label="Derived artifacts" Value="@_snap.ArtifactCount.ToString()"
+                      CardClass="card h-100 border-0 shadow-sm" ValueClass="fs-4 fw-semibold">
+                <Sub>adaptation_conversion, etc.</Sub>
+            </StatCard>
+            <StatCard Label="Provider file handles" Value="@_snap.ProviderFileCount.ToString()"
+                      CardClass="card h-100 border-0 shadow-sm" ValueClass="fs-4 fw-semibold">
+                <Sub>xAI file_id rows</Sub>
+            </StatCard>
             <div class="col-6 col-md-3">
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body">

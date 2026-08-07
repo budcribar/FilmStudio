@@ -60,14 +60,7 @@
                                placeholder="New password"
                                autocomplete="new-password"
                                required />
-                        <button type="button"
-                                class="btn btn-outline-secondary password-toggle"
-                                @onclick="ToggleShowPassword"
-                                title="@(_showPassword ? "Hide password" : "Show password")"
-                                aria-label="@(_showPassword ? "Hide password" : "Show password")"
-                                aria-pressed="@_showPassword">
-                            @(_showPassword ? "Hide" : "Show")
-                        </button>
+                        <PasswordToggleButton Shown="_showPassword" OnToggle="ToggleShowPassword" />
                     </div>
                 </div>
                 <div class="mb-3">
@@ -180,14 +173,7 @@
                                placeholder="Enter password"
                                autocomplete="@(_isSignup ? "new-password" : "current-password")"
                                required />
-                        <button type="button"
-                                class="btn btn-outline-secondary password-toggle"
-                                @onclick="ToggleShowPassword"
-                                title="@(_showPassword ? "Hide password" : "Show password")"
-                                aria-label="@(_showPassword ? "Hide password" : "Show password")"
-                                aria-pressed="@_showPassword">
-                            @(_showPassword ? "Hide" : "Show")
-                        </button>
+                        <PasswordToggleButton Shown="_showPassword" OnToggle="ToggleShowPassword" />
                     </div>
                 </div>
 
@@ -205,14 +191,7 @@
                                    placeholder="Confirm password"
                                    autocomplete="new-password"
                                    required />
-                            <button type="button"
-                                    class="btn btn-outline-secondary password-toggle"
-                                    @onclick="ToggleShowPassword"
-                                    title="@(_showPassword ? "Hide password" : "Show password")"
-                                    aria-label="@(_showPassword ? "Hide password" : "Show password")"
-                                    aria-pressed="@_showPassword">
-                                @(_showPassword ? "Hide" : "Show")
-                            </button>
+                            <PasswordToggleButton Shown="_showPassword" OnToggle="ToggleShowPassword" />
                         </div>
                     </div>
                 }

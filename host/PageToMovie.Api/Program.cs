@@ -244,6 +244,55 @@ static async Task<IResult?> RequireProjectOwnerOrAdmin(
     return null;
 }
 
+// Shared body for the clip-version / audio-take mutation endpoints (promote / soft-delete /
+// restore / trash-restore): login gate → load project → run the store mutation → map its
+// success bool to the standard fail/success JSON. Only the store call and the two messages vary.
+static async Task<IResult> RunProjectVersionActionAsync(
+    string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts,
+    Func<Task<bool>> action, string failureError, string successMessage, CancellationToken ct)
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await action();
+        if (!success)
+            return Results.BadRequest(new { ok = false, error = failureError });
+        return Results.Ok(new { ok = true, message = successMessage });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+}
+
+// Shared response shaping for the adaptation draft-edit endpoints (reskin / embellish / trim):
+// they all run a ScreenplayService.*DraftAsync, then map the shared DraftEditResult to the same
+// fail/success JSON and (on apply) auto-commit with an endpoint-specific tag.
+static IResult DraftEditResponse(
+    ScreenplayService.DraftEditResult result, string id, string commitTag,
+    ProjectStore store, IUserContext user)
+{
+    if (!result.Ok)
+        return Results.BadRequest(new { ok = false, error = result.Error });
+
+    if (result.Applied)
+        store.TriggerAutoGitCommit(id, commitTag);
+
+    return Results.Ok(new
+    {
+        ok = true,
+        applied = result.Applied,
+        projectId = id,
+        message = result.Message,
+        sceneCountBefore = result.SceneCountBefore,
+        sceneCountAfter = result.SceneCountAfter,
+        screenplay = result.Status,
+        adaptation = result.Applied ? store.GetAdaptationStatus(id, user.UserId) : null,
+    });
+}
+
 ConfigurePooledSocketsHandler(builder.Services.AddHttpClient("resend", c =>
 {
     c.Timeout = TimeSpan.FromSeconds(30);
@@ -3922,24 +3971,10 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{ve
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        await store.RequireProjectAsync(id, ct);
-        var success = await store.PromoteClipVersionAsync(id, scene, clip, versionId, user.UserId);
-        if (!success)
-        {
-            return Results.BadRequest(new { ok = false, error = "Failed to promote clip version." });
-        }
-        return Results.Ok(new { ok = true, message = $"Promoted clip version {versionId} to active clip." });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
-});
+    await RunProjectVersionActionAsync(id, store, user, opts,
+        () => store.PromoteClipVersionAsync(id, scene, clip, versionId, user.UserId),
+        "Failed to promote clip version.",
+        $"Promoted clip version {versionId} to active clip.", ct));
 
 app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{versionId}", async (
     string id,
@@ -3950,24 +3985,10 @@ app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        await store.RequireProjectAsync(id, ct);
-        var success = await store.SoftDeleteClipVersionAsync(id, scene, clip, versionId);
-        if (!success)
-        {
-            return Results.BadRequest(new { ok = false, error = "Failed to delete clip version." });
-        }
-        return Results.Ok(new { ok = true, message = $"Soft-deleted clip version {versionId}." });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
-});
+    await RunProjectVersionActionAsync(id, store, user, opts,
+        () => store.SoftDeleteClipVersionAsync(id, scene, clip, versionId),
+        "Failed to delete clip version.",
+        $"Soft-deleted clip version {versionId}.", ct));
 
 app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/trash", async (
     string id,
@@ -3997,24 +4018,10 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{ve
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        await store.RequireProjectAsync(id, ct);
-        var success = await store.RestoreSoftDeletedClipVersionAsync(id, scene, clip, versionId);
-        if (!success)
-        {
-            return Results.BadRequest(new { ok = false, error = "Failed to restore clip version from trash." });
-        }
-        return Results.Ok(new { ok = true, message = $"Restored clip version {versionId} from trash." });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
-});
+    await RunProjectVersionActionAsync(id, store, user, opts,
+        () => store.RestoreSoftDeletedClipVersionAsync(id, scene, clip, versionId),
+        "Failed to restore clip version from trash.",
+        $"Restored clip version {versionId} from trash.", ct));
 
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/trash/empty", async (
     string id,
@@ -4067,24 +4074,10 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/music-versions/{takeId}/promo
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        await store.RequireProjectAsync(id, ct);
-        var success = await store.PromoteMusicVersionAsync(id, scene, takeId);
-        if (!success)
-        {
-            return Results.BadRequest(new { ok = false, error = "Failed to promote audio take." });
-        }
-        return Results.Ok(new { ok = true, message = $"Promoted audio take {takeId} to active." });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
-});
+    await RunProjectVersionActionAsync(id, store, user, opts,
+        () => store.PromoteMusicVersionAsync(id, scene, takeId),
+        "Failed to promote audio take.",
+        $"Promoted audio take {takeId} to active.", ct));
 
 app.MapDelete("/api/projects/{id}/scenes/{scene:int}/music-versions/{takeId}", async (
     string id,
@@ -4094,24 +4087,10 @@ app.MapDelete("/api/projects/{id}/scenes/{scene:int}/music-versions/{takeId}", a
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        await store.RequireProjectAsync(id, ct);
-        var success = await store.SoftDeleteMusicVersionAsync(id, scene, takeId);
-        if (!success)
-        {
-            return Results.BadRequest(new { ok = false, error = "Failed to delete audio take." });
-        }
-        return Results.Ok(new { ok = true, message = $"Soft-deleted audio take {takeId}." });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
-});
+    await RunProjectVersionActionAsync(id, store, user, opts,
+        () => store.SoftDeleteMusicVersionAsync(id, scene, takeId),
+        "Failed to delete audio take.",
+        $"Soft-deleted audio take {takeId}.", ct));
 
 app.MapGet("/api/projects/{id}/scenes/{scene:int}/music-versions/trash", async (
     string id,
@@ -4139,24 +4118,10 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/music-versions/{takeId}/resto
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        await store.RequireProjectAsync(id, ct);
-        var success = await store.RestoreSoftDeletedMusicVersionAsync(id, scene, takeId);
-        if (!success)
-        {
-            return Results.BadRequest(new { ok = false, error = "Failed to restore audio take from trash." });
-        }
-        return Results.Ok(new { ok = true, message = $"Restored audio take {takeId} from trash." });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
-});
+    await RunProjectVersionActionAsync(id, store, user, opts,
+        () => store.RestoreSoftDeletedMusicVersionAsync(id, scene, takeId),
+        "Failed to restore audio take from trash.",
+        $"Restored audio take {takeId} from trash.", ct));
 
 /// <summary>
 /// Push the project's text package (video excluded) to the configured Projects remote.
@@ -5555,23 +5520,7 @@ app.MapPost("/api/projects/{id}/adaptation/reskin", async (
             medium = ProjectVisionMeta.GetAdaptationMediumPreference(dir);
 
         var result = await ScreenplayService.ReskinDraftAsync(store, id, medium, chat, ct: ct);
-        if (!result.Ok)
-            return Results.BadRequest(new { ok = false, error = result.Error });
-
-        if (result.Applied)
-            store.TriggerAutoGitCommit(id, $"ptm:stage=reskin medium={medium}");
-
-        return Results.Ok(new
-        {
-            ok = true,
-            applied = result.Applied,
-            projectId = id,
-            message = result.Message,
-            sceneCountBefore = result.SceneCountBefore,
-            sceneCountAfter = result.SceneCountAfter,
-            screenplay = result.Status,
-            adaptation = result.Applied ? store.GetAdaptationStatus(id, user.UserId) : null,
-        });
+        return DraftEditResponse(result, id, $"ptm:stage=reskin medium={medium}", store, user);
     }
     catch (Exception ex)
     {
@@ -5600,23 +5549,7 @@ app.MapPost("/api/projects/{id}/adaptation/embellish", async (
         var medium = ProjectVisionMeta.GetAdaptationMediumPreference(store.GetProjectDir(id));
 
         var result = await ScreenplayService.EmbellishDraftAsync(store, id, medium, chat, ct: ct);
-        if (!result.Ok)
-            return Results.BadRequest(new { ok = false, error = result.Error });
-
-        if (result.Applied)
-            store.TriggerAutoGitCommit(id, "ptm:stage=embellish");
-
-        return Results.Ok(new
-        {
-            ok = true,
-            applied = result.Applied,
-            projectId = id,
-            message = result.Message,
-            sceneCountBefore = result.SceneCountBefore,
-            sceneCountAfter = result.SceneCountAfter,
-            screenplay = result.Status,
-            adaptation = result.Applied ? store.GetAdaptationStatus(id, user.UserId) : null,
-        });
+        return DraftEditResponse(result, id, "ptm:stage=embellish", store, user);
     }
     catch (Exception ex)
     {
@@ -5644,23 +5577,7 @@ app.MapPost("/api/projects/{id}/adaptation/trim", async (
         await store.RequireProjectAsync(id, ct);
 
         var result = await ScreenplayService.TrimDraftAsync(store, id, chat, ct: ct);
-        if (!result.Ok)
-            return Results.BadRequest(new { ok = false, error = result.Error });
-
-        if (result.Applied)
-            store.TriggerAutoGitCommit(id, "ptm:stage=trim");
-
-        return Results.Ok(new
-        {
-            ok = true,
-            applied = result.Applied,
-            projectId = id,
-            message = result.Message,
-            sceneCountBefore = result.SceneCountBefore,
-            sceneCountAfter = result.SceneCountAfter,
-            screenplay = result.Status,
-            adaptation = result.Applied ? store.GetAdaptationStatus(id, user.UserId) : null,
-        });
+        return DraftEditResponse(result, id, "ptm:stage=trim", store, user);
     }
     catch (Exception ex)
     {
