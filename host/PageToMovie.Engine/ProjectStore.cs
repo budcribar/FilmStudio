@@ -1115,7 +1115,10 @@ public sealed partial class ProjectStore
     {
         get
         {
-            if (!string.IsNullOrWhiteSpace(_activeProjectId))
+            // The stored pointer can go stale (project deleted/renamed on disk without updating
+            // workspace.json) — self-heal by falling through to the directory scan below instead
+            // of returning a dangling id that resolves to no project.
+            if (!string.IsNullOrWhiteSpace(_activeProjectId) && ProjectDirExists(_activeProjectId))
                 return _activeProjectId;
             // Prefer flat project.json; else first namespaced project found
             var projectsDir = Path.Combine(WorkspaceRoot, "projects");
@@ -1137,6 +1140,17 @@ public sealed partial class ProjectStore
             }
             return "";
         }
+    }
+
+    private bool ProjectDirExists(string projectId)
+    {
+        try
+        {
+            var id = NormalizeProjectId(projectId);
+            var dir = ResolveProjectDirPath(id);
+            return File.Exists(Path.Combine(dir, "project.json"));
+        }
+        catch { return false; }
     }
 
     public Task<IReadOnlyList<ProjectInfo>> ListProjectsAsync(CancellationToken ct = default) =>
