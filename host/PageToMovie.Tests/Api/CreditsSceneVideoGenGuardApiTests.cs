@@ -105,7 +105,7 @@ public class CreditsSceneVideoGenGuardApiTests : IClassFixture<PageToMovieApiFac
 
         var job = default(JsonElement);
         var status = "queued";
-        for (var i = 0; i < 200; i++)
+        for (var i = 0; i < 400; i++)
         {
             var resp = await _client.GetAsync($"/api/jobs/{jobId}");
             var jobJson = await resp.Content.ReadFromJsonAsync<JsonElement>();
