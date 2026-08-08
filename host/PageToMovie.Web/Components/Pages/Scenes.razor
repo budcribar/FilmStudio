@@ -9,20 +9,21 @@
 @inject ClientMediaFolderService MediaFolder
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject IAppLocalizer L
 @using PageToMovie.Core.Models
 @using PageToMovie.Web.Services
 
-<PageTitle>@(IsSimpleFilm ? "Movie" : "Film · Scenes & clips")</PageTitle>
+<PageTitle>@(IsSimpleFilm ? L["ProcessStrip.Movie"] : L["Nav.Film"])</PageTitle>
 
 <StudioPageHeader Kicker="@(IsSimpleFilm ? "Easiest start · Movie" : "Studio · Step 5 · Film")"
-                   Title="@(IsSimpleFilm ? "Make your movie" : "Scenes & clips")">
+                   Title="@(IsSimpleFilm ? "Make your movie" : L["Nav.Film"])">
     @if (IsSimpleFilm)
     {
         <text>Generate every scene with your narrator voice. Stock pictures stay as-is.</text>
     }
     else
     {
-        <text>Generate and stitch clips on your machine where possible. Check Estimate before a full render if you are watching credits.</text>
+        <text>@L["ScenesPage.Subtitle"]</text>
     }
 </StudioPageHeader>
 
@@ -408,7 +409,7 @@ else if (_showPreviewPlayer && _clientStitching)
                                 disabled="@_busy"
                                 title="Select scenes that still need clips"
                                 @onclick="SelectMissingScenes">
-                            Select missing
+                            @L["ScenesPage.SelectMissing"]
                         </button>
                     }
 
@@ -426,7 +427,7 @@ else if (_showPreviewPlayer && _clientStitching)
                                     ? "Select one or more scenes first"
                                     : "Selected scenes have no clips or composites to play yet")"
                             @onclick="PlaySelectedAsync">
-                        ▶ Play selected@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
+                        ▶ @L["ScenesPage.PlaySelected"]@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
                     <CapabilityLockedControl Enabled="Caps.VideoReviewReady"
                                              BlockedReason="@Caps.VideoReviewBlockedReason"
@@ -441,7 +442,7 @@ else if (_showPreviewPlayer && _clientStitching)
                                     ? "Select one or more scenes with finished clips first"
                                     : "Selected scenes have no finished clips to check yet")"
                             @onclick="VerifySelectedScenesDialogueAsync">
-                        🔍 Verify Scene Dialogue@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
+                        🔍 @L["ScenesPage.VerifySceneDialogue"]@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
                     </CapabilityLockedControl>
                     <button type="button"
@@ -449,7 +450,7 @@ else if (_showPreviewPlayer && _clientStitching)
                             disabled="@(_busy || JobRunning)"
                             title="Rebuild shot plan from the screenplay to restore missing scenes or clips"
                             @onclick="RebuildShotPlanAsync">
-                        🔄 Rebuild shot plan
+                        🔄 @L["ScenesPage.RebuildShotPlan"]
                     </button>
                     <button type="button"
                             class="btn btn-outline-secondary btn-sm"
@@ -457,7 +458,7 @@ else if (_showPreviewPlayer && _clientStitching)
                             disabled="@(_busy || JobRunning)"
                             title="Add a new empty scene to the shot plan"
                             @onclick="() => AddSceneAsync(false)">
-                        ➕ Add scene
+                        ➕ @L["ScenesPage.AddScene"]
                     </button>
                     @* Credits are auto-inserted into the shot plan; this only re-adds one if it was deleted. *@
                     @if (!HasCreditsScene)
@@ -468,12 +469,12 @@ else if (_showPreviewPlayer && _clientStitching)
                                 disabled="@(_busy || JobRunning)"
                                 title="Re-add the end-credits scene (normally added automatically)"
                                 @onclick="() => AddSceneAsync(true)">
-                            🎬 Add credits
+                            🎬 @L["ScenesPage.AddCredits"]
                         </button>
                     }
                     <button class="btn btn-sm btn-outline-secondary" data-testid="scenes-select-toggle"
                             disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
-                        🔍 Filters @(HasActiveFilters ? " (Active)" : "")
+                        🔍 @L["ScenesPage.Filters"] @(HasActiveFilters ? " (Active)" : "")
                     </button>
                 </div>
             </div>
@@ -483,14 +484,14 @@ else if (_showPreviewPlayer && _clientStitching)
             @if (!IsSimpleFilm)
             {
                 <div class="mt-2 pt-2 border-top border-secondary d-flex align-items-center gap-2 small flex-wrap">
-                    <span class="text-muted">Screenplay:</span>
+                    <span class="text-muted">@L["ScenesPage.Screenplay"]</span>
                     <button type="button"
                             class="btn btn-sm btn-outline-secondary py-0 px-2"
                             data-testid="scenes-view-screenplay"
                             disabled="@_busy"
                             title="Read the current screenplay (view only — does not re-open it)"
                             @onclick="ViewScreenplay">
-                        📄 View
+                        📄 @L["ScenesPage.View"]
                     </button>
                     <button type="button"
                             class="btn btn-sm btn-outline-info py-0 px-2"
@@ -498,7 +499,7 @@ else if (_showPreviewPlayer && _clientStitching)
                             disabled="@(_busy || JobRunning)"
                             title="Change the movie's target length (extend or shorten)"
                             @onclick="AdjustFitLengthAsync">
-                        ⏱ Fit length
+                        ⏱ @L["ScenesPage.FitLength"]
                     </button>
                     <button type="button"
                             class="btn btn-sm btn-outline-info py-0 px-2"
@@ -506,7 +507,7 @@ else if (_showPreviewPlayer && _clientStitching)
                             disabled="@(_busy || JobRunning)"
                             title="Embellish the scene descriptions"
                             @onclick="AdjustEmbellishAsync">
-                        ✨ Embellish
+                        ✨ @L["ScenesPage.Embellish"]
                     </button>
                     <span class="text-muted">· editing re-opens the screenplay (you'll re-approve it &amp; re-check cast)</span>
                 </div>
@@ -529,13 +530,13 @@ else if (_showPreviewPlayer && _clientStitching)
                         <th style="width:7rem; cursor:pointer; user-select:none;" @onclick='() => ToggleSort("number")' title="Click to sort by Scene Number">
                             # @(_sortBy == "number" ? (_sortAscending ? "▲" : "▼") : "⇅")
                         </th>
-                        <th>Setting</th>
-                        <th>Cast / location</th>
-                        <th style="width:6rem;">Clips</th>
+                        <th>@L["ScenesPage.Setting"]</th>
+                        <th>@L["ScenesPage.CastLocation"]</th>
+                        <th style="width:6rem;">@L["ReviewPage.Clips"]</th>
                         <th style="width:7.5rem; cursor:pointer; user-select:none;" @onclick='() => ToggleSort("duration")' title="Click to sort by Duration">
-                            Dur @(_sortBy == "duration" ? (_sortAscending ? "▲" : "▼") : "⇅")
+                            @L["ReviewPage.Dur"] @(_sortBy == "duration" ? (_sortAscending ? "▲" : "▼") : "⇅")
                         </th>
-                        <th style="width:9rem;" title="Score background music for this scene">Music</th>
+                        <th style="width:9rem;" title="Score background music for this scene">@L["ScenesPage.Music"]</th>
                     </tr>
                 </thead>
                 <tbody>

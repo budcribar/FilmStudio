@@ -10,12 +10,13 @@
 @inject ClientMediaFolderService MediaFolder
 @inject ClientVoiceSubstitutionService VoiceSub
 @inject StudioCapabilityState Caps
+@inject IAppLocalizer L
 @using PageToMovie.Core.Models
 
-<PageTitle>Review · final cut</PageTitle>
+<PageTitle>@L["Nav.Review"] · final cut</PageTitle>
 
-<StudioPageHeader Kicker="Studio · Edit afterward" Title="Review">
-    Approve scenes, play the cut, publish. The north star is automatic generation — this is where you refine.
+<StudioPageHeader Kicker="Studio · Edit afterward" Title="@L["Nav.Review"]">
+    @L["ReviewPage.Subtitle"]
 </StudioPageHeader>
 
 <StudioProcessStrip Active="review" FullStudio="true" />
@@ -58,7 +59,7 @@ else
                 class="btn @(_activeTab == "review" ? "btn-primary fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-review"
                 @onclick='() => ToggleTabAsync("review")'>
-            🤖 Review &amp; Approve
+            🤖 @L["ReviewPage.ReviewAndApprove"]
         </button>
         <button type="button" 
                 class="btn @(_activeTab == "play" ? "btn-success fw-bold" : "btn-outline-secondary text-white-50") px-3"
@@ -66,7 +67,7 @@ else
                 disabled="@(_busy || JobRunning || !HasGeneratedClips)"
                 @onclick='() => ToggleTabAsync("play")'
                 title="@(HasGeneratedClips ? WipPlayTitle : "Generate clips first")">
-            ▶ Play
+            ▶ @L["ReviewPage.Play"]
         </button>
         <button type="button" 
                 class="btn @(_activeTab == "share" ? "btn-info text-white fw-bold" : "btn-outline-secondary text-white-50") px-3"
@@ -74,7 +75,7 @@ else
                 disabled="@(_busy || JobRunning || !HasGeneratedClips)"
                 @onclick='() => ToggleTabAsync("share")'
                 title="@(HasGeneratedClips ? null : "Generate clips first")">
-            📤 Share &amp; Export
+            📤 @L["ReviewPage.ShareAndExport"]
         </button>
         <button type="button"
                 class="btn btn-outline-info text-info px-3"
@@ -82,7 +83,7 @@ else
                 disabled="@(_busy || JobRunning || !HasGeneratedClips)"
                 @onclick="OpenInExternalEditorAsync"
                 title="@(HasGeneratedClips ? $"Open full cut video in {_preferredVideoEditor}" : "Generate clips first")">
-            🎬 Open in @_preferredVideoEditor
+            🎬 @L.Format("ReviewPage.OpenInEditor", _preferredVideoEditor)
         </button>
         <button type="button"
                 class="btn btn-outline-primary px-3"
@@ -90,7 +91,7 @@ else
                 disabled="@(_busy || JobRunning || !HasGeneratedClips || _dubbing)"
                 @onclick="DubInMyVoiceAsync"
                 title="@(HasGeneratedClips ? "Replace the narrator with your recorded voice, then download" : "Generate clips first")">
-            🎙️ @(_dubbing ? "Making your version…" : "Make it in my voice")
+            🎙️ @(_dubbing ? "Making your version…" : L["ReviewPage.MakeInMyVoice"])
         </button>
         @if (_dubbing && !string.IsNullOrWhiteSpace(_dubStatus))
         {
@@ -273,9 +274,9 @@ else
         <div class="card mb-3 border-info text-white shadow-sm" style="background-color: #0f172a !important; border-color: #3b82f6 !important;">
             <div class="card-body p-4 text-center">
                 <div class="fs-1 mb-2">🤖</div>
-                <h5 class="fw-bold mb-2">AI Visual &amp; Continuity Review</h5>
+                <h5 class="fw-bold mb-2">@L["ReviewPage.AiVisualContinuityTitle"]</h5>
                 <p class="text-white-50 mb-3 mx-auto" style="max-width: 600px;">
-                    Run an automated multi-category visual review across your film's visual continuity, character wardrobe consistency, lighting, and audio alignment.
+                    @L["ReviewPage.AiVisualContinuityDesc"]
                 </p>
                 <CapabilityLockedControl Enabled="Caps.VideoReviewReady"
                                          BlockedReason="@Caps.VideoReviewBlockedReason"
@@ -284,7 +285,7 @@ else
                     <button class="btn btn-info text-white fw-bold px-4"
                             disabled="@(_busy || JobRunning)"
                             @onclick="StartFullMovieReviewAsync">
-                        ⚡ Run AI Continuity Review
+                        ⚡ @L["ReviewPage.RunAiContinuityReview"]
                     </button>
                 </CapabilityLockedControl>
             </div>
@@ -498,8 +499,8 @@ else if (_showScenePlayer && _clientStitching)
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Scenes &amp; clips</span>
-                <span class="small text-muted fw-normal">Play stitches in browser · WIP is separate</span>
+                <span>@L["ReviewPage.ScenesAndClips"]</span>
+                <span class="small text-muted fw-normal">@L["ReviewPage.PlayStitchesHint"]</span>
             </div>
             <div class="card-body p-0">
                 @if (_scenes.Count == 0)
@@ -513,13 +514,13 @@ else if (_showScenePlayer && _clientStitching)
                             <thead>
                                 <tr>
                                     <th style="cursor:pointer; user-select:none;" @onclick='() => ToggleSceneSort("number")' title="Sort by scene number">
-                                        Scene @(_sceneSortBy == "number" ? (_sceneSortAsc ? "▲" : "▼") : "⇅")
+                                        @L["ReviewPage.Scene"] @(_sceneSortBy == "number" ? (_sceneSortAsc ? "▲" : "▼") : "⇅")
                                     </th>
-                                    <th>Clips</th>
+                                    <th>@L["ReviewPage.Clips"]</th>
                                     <th style="cursor:pointer; user-select:none;" @onclick='() => ToggleSceneSort("duration")' title="Sort by duration">
-                                        Dur @(_sceneSortBy == "duration" ? (_sceneSortAsc ? "▲" : "▼") : "⇅")
+                                        @L["ReviewPage.Dur"] @(_sceneSortBy == "duration" ? (_sceneSortAsc ? "▲" : "▼") : "⇅")
                                     </th>
-                                    <th>Composite</th>
+                                    <th>@L["ReviewPage.Composite"]</th>
                                     <th></th>
                                 </tr>
                             </thead>

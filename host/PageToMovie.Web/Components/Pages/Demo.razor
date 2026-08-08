@@ -2,16 +2,16 @@
 @inject EngineApiClient Engine
 @inject AdminSessionService Session
 @inject NavigationManager Nav
+@inject IAppLocalizer L
 @using PageToMovie.Core.Models
 @using PageToMovie.Core.Util
 
-<PageTitle>Demo gallery — PageToMovie</PageTitle>
+<PageTitle>@L["DemoPage.Title"]</PageTitle>
 
 <div class="demo-page">
     <header class="demo-hero">
-        <StudioPageHeader Kicker="Studio · Public gallery" Title="Demo films" CssClass="mb-0">
-            Shorts published from PageToMovie to YouTube — open to everyone.
-            Star films you like.
+        <StudioPageHeader Kicker="Studio · Public gallery" Title="@L["Nav.Demo"]" CssClass="mb-0">
+            @L["DemoPage.Subtitle"]
             @if (!Session.IsLoggedIn)
             {
                 <span class="text-muted"> Sign in to star.</span>
@@ -24,10 +24,10 @@
                 <div class="demo-sort btn-group btn-group-sm" role="group" aria-label="Sort gallery">
                     <button type="button"
                             class="btn @(_sort == "top" ? "btn-primary" : "btn-outline-secondary")"
-                            @onclick="SortByTopAsync">Most stars</button>
+                            @onclick="SortByTopAsync">@L["DemoPage.MostStars"]</button>
                     <button type="button"
                             class="btn @(_sort == "new" ? "btn-primary" : "btn-outline-secondary")"
-                            @onclick="SortByNewAsync">Newest</button>
+                            @onclick="SortByNewAsync">@L["DemoPage.Newest"]</button>
                 </div>
             </div>
         }

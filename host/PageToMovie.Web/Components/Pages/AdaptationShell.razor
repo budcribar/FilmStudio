@@ -1,6 +1,7 @@
 @* Shared header + step strip + job log for Adaptation step pages *@
 @inject AdminSessionService Session
 @inject ActiveProjectState ActiveProject
+@inject IAppLocalizer L
 
 @if (Host is null)
 {
@@ -10,11 +11,11 @@
 <div class="ptm-adapt-header d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
     <div>
         <span class="ptm-adapt-kicker">@(Step == "shots" ? "Studio · Film" : "Studio · Book pipeline")</span>
-        <h1 class="mb-0 ptm-adapt-title">@(Step == "shots" ? "Shot plan" : "Book & screenplay")</h1>
+        <h1 class="mb-0 ptm-adapt-title">@(Step == "shots" ? L["ScenesPage.RebuildShotPlan"] : L["Adaptation.BookAndScreenplay"])</h1>
         <p class="ptm-adapt-lede mb-0">
             @(Step == "shots"
-                ? "Plan the shots for each scene, then generate clips on Scenes."
-                : "Import → look → enrich → fit to length → edit the screenplay. Then cast and film.")
+                ? L["Adaptation.ShotPlanLede"]
+                : L["Adaptation.BookLede"])
         </p>
     </div>
     <div class="d-flex align-items-center gap-2">
@@ -54,32 +55,32 @@
 @if (Step is not "shots")
 {
 <nav class="ptm-substrip" aria-label="Book sub-steps">
-    <span class="ptm-substrip__lead">Book</span>
+    <span class="ptm-substrip__lead">@L["Home.Book"]</span>
     <a class="ptm-substep @(importActive ? "is-active" : "") @(stepsLocked ? "is-disabled" : "")"
        href="@(stepsLocked ? "javascript:void(0)" : "adaptation/import")"
        @onclick:preventDefault="stepsLocked"
        title="Import a book, PDF, or screenplay"
-       data-testid="adapt-step-import">Import @if (importDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
+       data-testid="adapt-step-import">@L["Adaptation.Import"] @if (importDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
     <a class="ptm-substep @(lookActive ? "is-active" : "") @(subOff ? "is-disabled" : "")"
        href="@(subOff ? "javascript:void(0)" : "adaptation/look")"
        @onclick:preventDefault="subOff"
        title="@(subOff ? "Import a source first" : lookDone ? "Choose the visual style (done — run again to change)" : "Choose the visual style")"
-       data-testid="adapt-step-look">Look @if (lookDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
+       data-testid="adapt-step-look">@L["Adaptation.Look"] @if (lookDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
     <a class="ptm-substep @(embellishActive ? "is-active" : "") @(subOff ? "is-disabled" : "")"
        href="@(subOff ? "javascript:void(0)" : "adaptation/embellish")"
        @onclick:preventDefault="subOff"
        title="@(subOff ? "Import a source first" : enrichDone ? "Enrich the scene description (done — run again to add more)" : "Enrich the scene description")"
-       data-testid="adapt-step-embellish">Enrich @if (enrichDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
+       data-testid="adapt-step-embellish">@L["Adaptation.Enrich"] @if (enrichDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓</span> }</a>
     <a class="ptm-substep @(trimActive ? "is-active" : "") @(subOff ? "is-disabled" : "")"
        href="@(subOff ? "javascript:void(0)" : "adaptation/trim")"
        @onclick:preventDefault="subOff"
        title="@(subOff ? "Import a source first" : trimDone && trimMins is > 0 ? $"Fit the film to your length and budget (done — fit toward ~{Math.Round(trimMins.Value)} min)" : "Fit the film to your length and budget")"
-       data-testid="adapt-step-trim">Fit length @if (trimDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓@(trimMins is > 0 ? $" ~{Math.Round(trimMins.Value)}m" : "")</span> }</a>
+       data-testid="adapt-step-trim">@L["Adaptation.FitLength"] @if (trimDone) { <span class="ptm-substep__done" title="Done" aria-label="done">✓@(trimMins is > 0 ? $" ~{Math.Round(trimMins.Value)}m" : "")</span> }</a>
     <a class="ptm-substep @(screenplayActive ? "is-active" : "") @(subOff ? "is-disabled" : "")"
        href="@(subOff ? "javascript:void(0)" : "adaptation/screenplay")"
        @onclick:preventDefault="subOff"
        title="@(subOff ? "Import a source first" : screenplayDone ? "Edit and approve the final screenplay (approved)" : "Edit and approve the final screenplay")"
-       data-testid="adapt-step-screenplay">Screenplay @if (screenplayDone) { <span class="ptm-substep__done" title="Approved" aria-label="approved">✓</span> }</a>
+       data-testid="adapt-step-screenplay">@L["Adaptation.Screenplay"] @if (screenplayDone) { <span class="ptm-substep__done" title="Approved" aria-label="approved">✓</span> }</a>
 </nav>
 }
 else

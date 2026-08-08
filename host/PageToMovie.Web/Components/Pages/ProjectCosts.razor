@@ -2,21 +2,21 @@
 @inject EngineApiClient Engine
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
+@inject IAppLocalizer L
 @using System.Globalization
 @using static PageToMovie.Web.Components.CostFormatting
 
-<PageTitle>Project cost breakdown</PageTitle>
+<PageTitle>@L["ProjectCostsPage.Title"]</PageTitle>
 
-<StudioPageHeader Kicker="Studio · Estimate" Title="Project cost breakdown">
-    Where this film’s planned cost and spend break down, by category. For the headline number,
-    see <a href="cost">Estimate</a>.
+<StudioPageHeader Kicker="Studio · Estimate" Title="@L["ProjectCostsPage.Title"]">
+    @L["ProjectCostsPage.Subtitle"]
 </StudioPageHeader>
 
 <InlineAlert Message="@_error" />
 
 @if (_report is null)
 {
-    <p class="text-muted">Loading…</p>
+    <p class="text-muted">@L["Common.Loading"]</p>
 }
 else
 {
@@ -27,7 +27,7 @@ else
     var estTotal = estSlices.Sum(x => x.Usd);
 
     <div class="d-flex justify-content-end mb-3">
-        <a class="btn btn-sm btn-outline-secondary" href="cost" data-testid="breakdown-back-estimate">← Estimate</a>
+        <a class="btn btn-sm btn-outline-secondary" href="cost" data-testid="breakdown-back-estimate">← @L["Nav.Estimate"]</a>
     </div>
 
     @* Technical estimate basis / model rates / history — admin only. *@

@@ -4,6 +4,7 @@
   Autosaves on change (debounced) and raises OnChanged so the estimate refreshes.
 *@
 @inject EngineApiClient Engine
+@inject IAppLocalizer L
 @implements IDisposable
 
 @if (_visible)
@@ -26,8 +27,8 @@
 @code {
     private RenderFragment LengthControl => __builder =>
     {
-        <div class="fw-semibold mb-2">Film length</div>
-        <label class="form-label small mb-1" for="@_inputId">Target length (minutes)</label>
+        <div class="fw-semibold mb-2">@L["FilmLength.Title"]</div>
+        <label class="form-label small mb-1" for="@_inputId">@L["FilmLength.TargetLength"]</label>
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <input id="@_inputId"
                    type="number"
@@ -45,7 +46,7 @@
                     disabled="@(_saving || Disabled)"
                     data-testid="film-length-estimate"
                     @onclick="UseEstimateAsync">
-                Use estimate (@_natural min)
+                @L.Format("FilmLength.UseEstimate", _natural)
             </button>
             @if (_busy)
             {

@@ -11,20 +11,21 @@
 @inject AdminSessionService Session
 @inject NavigationManager Nav
 @inject ClientMediaFolderService MediaFolder
+@inject IAppLocalizer L
 
-<PageTitle>Settings</PageTitle>
+<PageTitle>@L["Nav.Settings"]</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
         <div class="mb-2">
-            <a href="/" class="btn btn-sm btn-outline-secondary" data-testid="settings-back">← Back to Studio</a>
+            <a href="/" class="btn btn-sm btn-outline-secondary" data-testid="settings-back">@L["SettingsPage.BackToStudio"]</a>
         </div>
-        <span class="ptm-adapt-kicker">Account & providers</span>
-        <h1 class="mb-1 ptm-adapt-title">Settings</h1>
+        <span class="ptm-adapt-kicker">@L["SettingsPage.AccountProviders"]</span>
+        <h1 class="mb-1 ptm-adapt-title">@L["Nav.Settings"]</h1>
         <p class="text-muted mb-0">
             @if (!string.IsNullOrWhiteSpace(_projectId))
             {
-                <span>Settings for active project: <strong class="text-primary">@_projectId</strong></span>
+                <span>@L["SettingsPage.SettingsForActiveProject"] <strong class="text-primary">@_projectId</strong></span>
                 @if (!string.IsNullOrWhiteSpace(_saveStatus))
                 {
                     <span class="ms-2 small @(_saveStatus == "Saved" ? "text-success" : "text-muted")" data-testid="settings-autosave-status">· @_saveStatus</span>
@@ -39,7 +40,7 @@
     @if (_projectIds.Count > 0)
     {
         <div class="d-flex align-items-center gap-2">
-            <label class="fw-semibold small text-muted text-nowrap mb-0">Active Project:</label>
+            <label class="fw-semibold small text-muted text-nowrap mb-0">@L["SettingsPage.ActiveProject"]</label>
             <select class="form-select form-select-sm" value="@_projectId" @onchange="OnProjectChangedAsync" style="min-width: 160px;">
                 @foreach (var pid in _projectIds)
                 {

@@ -109,7 +109,19 @@
     "LineCount": "{0} lines",
     "CharacterCount": "{0} characters",
     "SourceText": "Source Text",
-    "ScreenplayDraft": "Screenplay Draft"
+    "ScreenplayDraft": "Screenplay Draft",
+    "BookAndScreenplay": "Book & screenplay",
+    "BookLede": "Import → look → enrich → fit to length → edit the screenplay. Then cast and film.",
+    "ShotPlanLede": "Plan the shots for each scene, then generate clips on Scenes.",
+    "Import": "Import",
+    "Look": "Look",
+    "Enrich": "Enrich",
+    "FitLength": "Fit length",
+    "Screenplay": "Screenplay",
+    "ContinueToEnrich": "Continue to Enrich →",
+    "NeedsUpdate": "needs update",
+    "ApproveScreenplayFirst": "Approve the screenplay first.",
+    "ScreenplayChanged": "Screenplay changed — update the shot plan before making video."
   },
   "Characters": {
     "Title": "Character Cast & Portraits",
@@ -241,6 +253,108 @@
     "Spent": "Spent",
     "Remaining": "Remaining",
     "VideoResolution": "Video resolution",
-    "SoFar": "so far"
+    "SoFar": "so far",
+    "Subtitle": "See what this film is planned to cost, what you’ve spent so far, and where the money went.",
+    "FullQuoteNeedsScreenplay": "Full quote needs a screenplay.",
+    "ReadyToGenerate": "Ready to generate?",
+    "ContinueToFilm": "Continue to Film to produce clips.",
+    "AgreeAndContinue": "Agree & Continue to Film →",
+    "ProjectCostBreakdown": "Project cost breakdown →",
+    "SeeAllProjectsBilling": "See all projects & billing →"
+  },
+  "ProcessStrip": {
+    "Setup": "Setup",
+    "ApiKeys": "API keys",
+    "Book": "Book",
+    "ImportScreenplay": "Import · screenplay",
+    "CastAndVoice": "Cast & voice",
+    "PhotosCloneSample": "Photos · clone sample",
+    "Estimate": "Estimate",
+    "QuoteConfirm": "Quote · confirm",
+    "Film": "Film",
+    "ClipsStitch": "Clips · stitch",
+    "Review": "Review",
+    "EditAfterward": "Edit afterward",
+    "Story": "Story",
+    "LibraryBook": "Library book",
+    "YourVoice": "Your voice",
+    "RecordDone": "Record · done",
+    "Movie": "Movie",
+    "GenerateAll": "Generate all"
+  },
+  "FilmLength": {
+    "Title": "Film length",
+    "TargetLength": "Target length (minutes)",
+    "UseEstimate": "Use estimate ({0} min)"
+  },
+  "ReviewPage": {
+    "Subtitle": "Approve scenes, play the cut, publish. The north star is automatic generation — this is where you refine.",
+    "ReviewAndApprove": "Review & Approve",
+    "Play": "Play",
+    "ShareAndExport": "Share & Export",
+    "OpenInEditor": "Open in {0}",
+    "MakeInMyVoice": "Make it in my voice",
+    "AiVisualContinuityTitle": "AI Visual & Continuity Review",
+    "AiVisualContinuityDesc": "Run an automated multi-category visual review across your film's visual continuity, character wardrobe consistency, lighting, and audio alignment.",
+    "RunAiContinuityReview": "Run AI Continuity Review",
+    "ScenesAndClips": "Scenes & clips",
+    "PlayStitchesHint": "Play stitches in browser · WIP is separate",
+    "Scene": "Scene",
+    "Clips": "Clips",
+    "Dur": "Dur",
+    "Composite": "Composite"
+  },
+  "ScenesPage": {
+    "Subtitle": "Generate and stitch clips on your machine where possible. Check Estimate before a full render if you are watching credits.",
+    "SelectMissing": "Select missing",
+    "PlaySelected": "Play selected",
+    "VerifySceneDialogue": "Verify Scene Dialogue",
+    "RebuildShotPlan": "Rebuild shot plan",
+    "AddScene": "Add scene",
+    "AddCredits": "Add credits",
+    "Filters": "Filters",
+    "Screenplay": "Screenplay:",
+    "View": "View",
+    "FitLength": "Fit length",
+    "Embellish": "Embellish",
+    "Setting": "Setting",
+    "CastLocation": "Cast / location",
+    "Music": "Music",
+    "Score": "Score"
+  },
+  "CharactersPage": {
+    "NarratorVoice": "Narrator voice",
+    "Subtitle": "Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free; clone / profile is an add-on path when you want a personal sample.",
+    "BuildCast": "Build cast",
+    "RebuildCast": "Rebuild cast",
+    "OpenScenes": "Open Scenes →",
+    "BuildShotPlan": "Build shot plan →"
+  },
+  "ScreenplayPage": {
+    "Approved": "Approved",
+    "EditedSinceApproval": "Edited since approval",
+    "Draft": "Draft",
+    "NoDraft": "No draft",
+    "ToCharacters": "Characters →",
+    "ReapproveAndContinue": "Re-approve & continue",
+    "LooksGoodContinue": "Looks good — continue",
+    "Preview": "Preview"
+  },
+  "DemoPage": {
+    "Title": "Demo gallery — PageToMovie",
+    "Subtitle": "Shorts published from PageToMovie to YouTube — open to everyone.",
+    "MostStars": "Most stars",
+    "Newest": "Newest",
+    "NoPublishedFilms": "No published films yet"
+  },
+  "ProjectCostsPage": {
+    "Title": "Project cost breakdown",
+    "Subtitle": "Where this film’s planned cost and spend break down, by category."
+  },
+  "SettingsPage": {
+    "BackToStudio": "← Back to Studio",
+    "AccountProviders": "Account & providers",
+    "SettingsForActiveProject": "Settings for active project:",
+    "ActiveProject": "Active Project:"
   }
 }
