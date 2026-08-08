@@ -78,8 +78,26 @@ across the 6 pages (`Scenes.GenPartialAlert`/`GenErrorAlert`, `Characters.Render
 its `.razor` file with a comment explaining why, instead of moving to the `.cs` partial.
 Before doing this split on another page, `grep -n "__builder =>\|@<"` its `@code` block first.
 
-**Not yet split (smaller, lower priority):** AdminModelsCatalog.razor (991), Login.razor (854),
-AdaptationScreenplay.razor (837), AdminUsers.razor (660) — same mechanical process would apply.
+Second batch, same night, same process:
+
+| Page | Before | .razor after | .razor.cs | Reduction |
+|------|-------:|-------------:|----------:|----------:|
+| AdminModelsCatalog.razor | 991 | 420 | 583 | 58% |
+| Login.razor | 854 | 441 | 424 | 48% |
+| AdaptationScreenplay.razor | 837 | 302 | 547 | 64% |
+| AdminUsers.razor | 660 | 383 | 289 | 42% |
+
+No inline-markup `@code` members in this batch (checked each with
+`grep -n "__builder =>\|@<"` first, per the gotcha above — none found). Two new
+missing-using gotchas surfaced by the compiler (both one-line fixes, not logic bugs):
+`JsonObject`/`JsonNode` need `System.Text.Json.Nodes`; `QueryHelpers` needs
+`Microsoft.AspNetCore.WebUtilities`; `AuthOptions` needs `PageToMovie.Core.Options`.
+Verified the same way: full build, non-UI suite 1607/1608, fakes-browser pass on all
+four pages (AdminModelsCatalog's edit/validate/delete buttons, AdminUsers' grant/block/
+delete buttons, Login's already-authenticated redirect, AdaptationScreenplay's editor).
+
+**10 of the biggest pages now split.** Remaining pages under ~600 lines are lower
+priority — same mechanical process applies if/when worth doing.
 
 ## Still open (needs the user — Option A)
 
