@@ -20,6 +20,15 @@ using PageToMovie.Api.Collaboration;
 using PageToMovie.Engine.Collaboration;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<PageToMovie.Engine.Collaboration.IProjectInviteMailer, PageToMovie.Engine.LoggingEmailSender>();
+builder.Services.AddSingleton<ProjectAclService>(sp =>
+{
+    var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+    var root = Path.Combine(env.ContentRootPath, "projects");
+    var email = sp.GetService<PageToMovie.Engine.Collaboration.IProjectInviteMailer>();
+    return new ProjectAclService(root, null, email);
+});
+
 var processStartedUtc = DateTimeOffset.UtcNow;
 
 var OAuthCodeParamRegex = new System.Text.RegularExpressions.Regex(@"code=([^&]+)", System.Text.RegularExpressions.RegexOptions.Compiled);
@@ -8853,6 +8862,7 @@ app.MapPost("/api/projects/{projectId}/scenes/{sceneKey}/versions/{versionId}/re
 });
 
 
+app.MapInviteEndpoints();
 app.Run();
 
 namespace PageToMovie.Api

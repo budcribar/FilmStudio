@@ -1,0 +1,69 @@
+@page "/invite/{Token}"
+@using System.Net.Http.Json
+@using System.Text.Json
+@inject HttpClient Http
+
+<div class="container py-4" style="max-width: 32rem;">
+    <h3>Project invite</h3>
+    @if (_loading) { <p class="text-muted">Loading invite…</p> }
+    else if (_preview is null) { <div class="alert alert-warning">@(_error ?? "Invite not found or already used.")</div> }
+    else
+    {
+        <div class="card"><div class="card-body">
+            <p>You have been invited to collaborate on <code>@_preview.ProjectId</code></p>
+            <p>Role: <span class="badge text-bg-primary">@_preview.Role</span></p>
+            @if (!string.IsNullOrEmpty(_status)) {
+                <div class="alert @(_accepted ? "alert-success" : "alert-warning") py-2">@_status</div>
+            }
+            @if (!_accepted) {
+                <button class="btn btn-primary" disabled="@_busy" @onclick="AcceptAsync">Accept invite</button>
+                <p class="small text-muted mt-2">Sign in first; access is granted to your current user id.</p>
+            } else {
+                <a class="btn btn-success" href="@($"/studio?project={Uri.EscapeDataString(_preview.ProjectId)}")">Open project</a>
+            }
+        </div></div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Token { get; set; } = "";
+    private bool _loading = true, _busy, _accepted;
+    private string? _error, _status;
+    private PreviewDto? _preview;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try {
+            var resp = await Http.GetAsync($"/api/invites/{Uri.EscapeDataString(Token)}");
+            if (!resp.IsSuccessStatusCode) { _error = "Invite not found or already used."; return; }
+            _preview = await resp.Content.ReadFromJsonAsync<PreviewDto>();
+        } catch (Exception ex) { _error = ex.Message; }
+        finally { _loading = false; }
+    }
+
+    private async Task AcceptAsync()
+    {
+        _busy = true;
+        try {
+            var resp = await Http.PostAsync($"/api/invites/{Uri.EscapeDataString(Token)}/accept", null);
+            var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            if (json.TryGetProperty("ok", out var o) && o.GetBoolean()) {
+                _accepted = true;
+                _status = "Invite accepted.";
+                if (json.TryGetProperty("projectId", out var pid) && pid.ValueKind == JsonValueKind.String && _preview is not null)
+                    _preview.ProjectId = pid.GetString() ?? _preview.ProjectId;
+            } else {
+                _status = json.TryGetProperty("error", out var e) ? e.GetString() : "Accept failed.";
+                if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    _status = "Sign in first, then accept this invite.";
+            }
+        } catch (Exception ex) { _status = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private sealed class PreviewDto {
+        public string ProjectId { get; set; } = "";
+        public string Role { get; set; } = "editor";
+        public string? InvitedBy { get; set; }
+    }
+}
