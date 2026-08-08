@@ -62,12 +62,14 @@ public partial class Admin
     private string? _testEmailStatus;
     private string? _testEmailError;
     private bool _testEmailBusy;
+    private TestEmailResponse? _testEmailResult;
 
     private void OpenTestEmailModal()
     {
         _showTestEmailModal = true;
         _testEmailStatus = null;
         _testEmailError = null;
+        _testEmailResult = null;
         if (string.IsNullOrWhiteSpace(_testEmailAddress) && !string.IsNullOrWhiteSpace(Session.UserId))
         {
             _testEmailAddress = Session.UserId.Contains('@') ? Session.UserId : "";
@@ -79,12 +81,14 @@ public partial class Admin
         _showTestEmailModal = false;
         _testEmailStatus = null;
         _testEmailError = null;
+        _testEmailResult = null;
     }
 
     private async Task SendTestEmailAsync()
     {
         _testEmailStatus = null;
         _testEmailError = null;
+        _testEmailResult = null;
 
         var to = _testEmailAddress.Trim();
         if (string.IsNullOrWhiteSpace(to) || !to.Contains('@'))
@@ -96,14 +100,15 @@ public partial class Admin
         _testEmailBusy = true;
         try
         {
-            var (ok, msg, senderType) = await Api.TestEmailAsync(to);
-            if (ok)
+            var res = await Api.TestEmailAsync(to);
+            _testEmailResult = res;
+            if (res.Ok)
             {
-                _testEmailStatus = $"✓ {msg} (Active provider: {senderType ?? "Unknown"})";
+                _testEmailStatus = $"✓ {res.Message ?? "Test email sent successfully."}";
             }
             else
             {
-                _testEmailError = $"✕ {msg}";
+                _testEmailError = $"✕ {res.Error ?? res.Message ?? "Failed to send test email."}";
             }
         }
         catch (Exception ex)

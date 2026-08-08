@@ -1053,11 +1053,43 @@
                         </div>
                         @if (!string.IsNullOrEmpty(_testEmailStatus))
                         {
-                            <div class="alert alert-success py-2 small mb-0" role="status">@_testEmailStatus</div>
+                            <div class="alert alert-success py-2 small mb-3" role="status">@_testEmailStatus</div>
                         }
                         @if (!string.IsNullOrEmpty(_testEmailError))
                         {
-                            <div class="alert alert-danger py-2 small mb-0" role="alert">@_testEmailError</div>
+                            <div class="alert alert-danger py-2 small mb-3" role="alert">@_testEmailError</div>
+                        }
+
+                        @if (_testEmailResult is { } res)
+                        {
+                            <div class="card bg-dark border-secondary text-light small mb-0">
+                                <div class="card-header py-1 fw-semibold d-flex justify-content-between align-items-center">
+                                    <span>🔍 Mail Sender Diagnostic Report</span>
+                                    <span class="badge @(res.Ok ? "bg-success" : "bg-danger")">@(res.Ok ? "PASSED" : "FAILED")</span>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="mb-1">Active Provider: <code class="text-info">@(res.SenderType ?? "Unknown")</code></div>
+                                    <div class="mb-1">Resend Key Resolved: <strong>@(res.ResendKeyResolved ? "Yes ✓" : "No ✕")</strong></div>
+                                    @if (res.CheckedEnvs is { Count: > 0 } envs)
+                                    {
+                                        <div class="mt-2 fw-semibold">Detected Environment Variables:</div>
+                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                            @foreach (var env in envs)
+                                            {
+                                                <span class="badge @(env.Value ? "text-bg-success" : "text-bg-secondary")">
+                                                    @env.Key: @(env.Value ? "SET" : "NOT SET")
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                    @if (res.SenderType == "LoggingEmailSender")
+                                    {
+                                        <div class="alert alert-warning py-1 px-2 small mt-2 mb-0">
+                                            ⚠️ <strong>Server is in Log-Only Mode:</strong> No real email was transmitted to an inbox. Outbound email links are logged to server stdout. Set the <code>Resend_Key</code> environment variable on Railway to enable live email delivery.
+                                        </div>
+                                    }
+                                </div>
+                            </div>
                         }
                     </div>
                     <div class="modal-footer py-2">
