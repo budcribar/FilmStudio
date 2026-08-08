@@ -2561,14 +2561,8 @@ public sealed class FilmJobService
         return list.OrderBy(x => x.Scene).ThenBy(x => x.Clip).ToList();
     }
 
-    private static bool IsNarratorSpeaker(string? speaker, string narratorKey)
-    {
-        if (string.IsNullOrWhiteSpace(speaker)) return false;
-        if (!string.IsNullOrWhiteSpace(narratorKey) &&
-            string.Equals(speaker.Trim(), narratorKey.Trim(), StringComparison.OrdinalIgnoreCase))
-            return true;
-        return speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool IsNarratorSpeaker(string? speaker, string narratorKey) =>
+        CastKindClassifier.IsNarratorSpeaker(speaker, narratorKey);
 
     private static string FindClipDialogue(JsonElement root, int scene, int clip)
     {

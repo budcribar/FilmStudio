@@ -62,11 +62,26 @@ public static class CastKindClassifier
         !string.IsNullOrWhiteSpace(displayNamePolicy) &&
         displayNamePolicy.Contains("never", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Strips the Character_ prefix from a character key if present.</summary>
+    /// <summary>
+    /// Strips the canonical character prefix ("Character_") from a raw key if present.
+    /// </summary>
     public static string StripPrefix(string? rawKey)
     {
-        var k = (rawKey ?? "").Trim();
-        return k.StartsWith("Character_", StringComparison.OrdinalIgnoreCase) ? k["Character_".Length..] : k;
+        if (string.IsNullOrWhiteSpace(rawKey)) return "";
+        var k = rawKey.Trim();
+        return k.StartsWith("Character_", StringComparison.OrdinalIgnoreCase) ? k[10..] : k;
+    }
+
+    /// <summary>
+    /// True when <paramref name="speaker"/> represents the narrator role/character.
+    /// </summary>
+    public static bool IsNarratorSpeaker(string? speaker, string? narratorKey = null)
+    {
+        if (string.IsNullOrWhiteSpace(speaker)) return false;
+        if (!string.IsNullOrWhiteSpace(narratorKey) &&
+            string.Equals(speaker.Trim(), narratorKey.Trim(), StringComparison.OrdinalIgnoreCase))
+            return true;
+        return speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Normalize Character_Foo → FOO for token checks.</summary>

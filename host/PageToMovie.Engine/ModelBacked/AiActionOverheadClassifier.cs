@@ -141,7 +141,7 @@ public sealed class AiActionOverheadClassifier
                     new ModelValidationIssue("empty_response", "The response was empty."));
             try
             {
-                var json = StripFence(response);
+                var json = ClassifierJsonParser.StripFences(response);
                 var value = JsonSerializer.Deserialize<ActionClassifierEstimation>(json, Options);
                 return value is null
                     ? ModelParseResult<ActionClassifierEstimation>.Failure(
@@ -153,16 +153,6 @@ public sealed class AiActionOverheadClassifier
                 return ModelParseResult<ActionClassifierEstimation>.Failure(
                     new ModelValidationIssue("invalid_json", ex.Message));
             }
-        }
-
-        private static string StripFence(string response)
-        {
-            var value = response.Trim();
-            if (!value.StartsWith("```", StringComparison.Ordinal)) return value;
-            var firstLine = value.IndexOf('\n');
-            if (firstLine >= 0) value = value[(firstLine + 1)..];
-            if (value.EndsWith("```", StringComparison.Ordinal)) value = value[..^3];
-            return value.Trim();
         }
     }
 

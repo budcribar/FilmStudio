@@ -51,23 +51,13 @@ internal sealed class CastJsonObjectParser : IModelResponseParser<string, Dictio
         try
         {
             return ModelParseResult<Dictionary<string, object?>>.Success(
-                GrokChatClient.ParseJsonObject(StripFence(response)));
+                GrokChatClient.ParseJsonObject(ClassifierJsonParser.StripFences(response)));
         }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
         {
             return ModelParseResult<Dictionary<string, object?>>.Failure(
                 new ModelValidationIssue("invalid_json", ex.Message));
         }
-    }
-
-    private static string StripFence(string response)
-    {
-        var value = response.Trim();
-        if (!value.StartsWith("```", StringComparison.Ordinal)) return value;
-        var firstLine = value.IndexOf('\n');
-        if (firstLine >= 0) value = value[(firstLine + 1)..];
-        if (value.EndsWith("```", StringComparison.Ordinal)) value = value[..^3];
-        return value.Trim();
     }
 }
 
