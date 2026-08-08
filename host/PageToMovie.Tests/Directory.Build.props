@@ -1,7 +1,9 @@
 <Project>
   <ItemGroup>
-    <Compile Include="..\PageToMovie.Engine\Adaptation\**\*.cs" Link="PageToMovie.Engine\Adaptation\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\PageToMovie.Engine\Adaptation\**\*.cs"
+             Link="PageToMovie.Engine\Adaptation\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Remove="..\PageToMovie.Engine\Adaptation\**\*Tests.cs" />
-    <Compile Include="..\PageToMovie.Core\Models\**\*.cs" Link="PageToMovie.Core\Models\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\PageToMovie.Core\Models\**\*.cs"
+             Link="PageToMovie.Core\Models\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
