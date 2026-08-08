@@ -1066,6 +1066,8 @@ app.MapGet("/api/admin/book-cache", async (
         {
             bookId = b.BookId,
             sha256 = b.Sha256,
+            bookTitle = b.BookTitle,
+            projects = b.Projects,
             byteCount = b.ByteCount,
             createdAt = b.CreatedAt,
             artifactCount = b.ArtifactCount,

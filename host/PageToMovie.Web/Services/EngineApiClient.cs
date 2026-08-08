@@ -4703,6 +4703,8 @@ public sealed class BookCacheAdminBookDto
 {
     public string BookId { get; set; } = "";
     public string Sha256 { get; set; } = "";
+    public string BookTitle { get; set; } = "Untitled Book";
+    public string Projects { get; set; } = "";
     public int ByteCount { get; set; }
     public string CreatedAt { get; set; } = "";
     public int ArtifactCount { get; set; }

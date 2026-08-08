@@ -70,7 +70,9 @@
                 <table class="table table-sm table-hover mb-0 align-middle" style="font-size:0.85rem;">
                     <thead class="table-light">
                         <tr>
+                            <th>Book name / Title</th>
                             <th>book_id</th>
+                            <th>Projects</th>
                             <th>Bytes</th>
                             <th>Artifacts</th>
                             <th>Links</th>
@@ -83,14 +85,27 @@
                     <tbody>
                         @if (_snap.Books is null || _snap.Books.Count == 0)
                         {
-                            <EmptyTableRow ColSpan="8" CssClass="p-3" Message="No books registered yet. Prepare a book / run Stage‑1 to populate." />
+                            <EmptyTableRow ColSpan="10" CssClass="p-3" Message="No books registered yet. Prepare a book / run Stage‑1 to populate." />
                         }
                         else
                         {
                             @foreach (var b in _snap.Books)
                             {
                                 <tr>
+                                    <td class="fw-semibold text-wrap" style="max-width: 250px;">
+                                        <span title="@b.BookTitle">@(string.IsNullOrWhiteSpace(b.BookTitle) ? "Untitled Book" : b.BookTitle)</span>
+                                    </td>
                                     <td class="font-monospace" title="@b.Sha256">@ShortId(b.BookId)</td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(b.Projects))
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary font-monospace" title="Linked project(s)">@b.Projects</span>
+                                        }
+                                    </td>
                                     <td>@FormatBytes(b.ByteCount)</td>
                                     <td>@b.ArtifactCount</td>
                                     <td>@b.AccessLinkCount</td>
@@ -154,7 +169,7 @@
                             {
                                 <tr>
                                     <td class="font-monospace" title="@a.ArtifactId">@ShortId(a.ArtifactId)</td>
-                                    <td class="font-monospace" title="@a.BookId">@ShortId(a.BookId)</td>
+                                    <td class="font-monospace" title="@a.BookId (@GetBookTitle(a.BookId))">@ShortId(a.BookId)</td>
                                     <td>@a.ArtifactKind</td>
                                     <td class="font-monospace">@a.ModelId</td>
                                     <td class="font-monospace small">@a.PromptVersion</td>
@@ -243,5 +258,11 @@
         if (left.TotalDays < 0) return "expired";
         if (left.TotalDays >= 2) return $"{left.TotalDays:0}d left";
         return $"{left.TotalHours:0}h left";
+    }
+
+    private string GetBookTitle(string bookId)
+    {
+        var b = _snap?.Books?.FirstOrDefault(x => x.BookId == bookId);
+        return string.IsNullOrWhiteSpace(b?.BookTitle) ? bookId : b.BookTitle;
     }
 }
