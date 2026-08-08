@@ -376,7 +376,9 @@ public sealed class BookTextRegistryService
                 SELECT b.book_id, b.sha256, b.byte_count, b.created_at,
                        (SELECT COUNT(*) FROM book_derived_artifacts d WHERE d.book_id=b.book_id) AS artifacts,
                        (SELECT COUNT(*) FROM book_text_access a WHERE a.book_id=b.book_id) AS links,
-                       pf.file_id, pf.provider, pf.expires_at_unix, pf.last_response_id, pf.updated_at
+                       pf.file_id, pf.provider, pf.expires_at_unix, pf.last_response_id, pf.updated_at,
+                       SUBSTR(b.text_content, 1, 500) AS text_head,
+                       (SELECT GROUP_CONCAT(DISTINCT project_id) FROM book_text_access a WHERE a.book_id=b.book_id AND a.project_id != '') AS projects
                 FROM book_texts b
                 LEFT JOIN book_provider_files pf ON pf.book_id=b.book_id AND pf.provider='xai'
                 ORDER BY b.created_at DESC
@@ -386,6 +388,10 @@ public sealed class BookTextRegistryService
             await using var r = await c.ExecuteReaderAsync(ct).ConfigureAwait(false);
             while (await r.ReadAsync(ct).ConfigureAwait(false))
             {
+                var textHead = r.IsDBNull(11) ? null : r.GetString(11);
+                var title = ExtractBookTitle(textHead);
+                var proj = r.IsDBNull(12) ? "" : r.GetString(12);
+
                 books.Add(new BookCacheAdminRow(
                     r.GetString(0),
                     r.GetString(1),
@@ -397,7 +403,9 @@ public sealed class BookTextRegistryService
                     r.IsDBNull(7) ? null : r.GetString(7),
                     r.IsDBNull(8) ? null : r.GetInt64(8),
                     r.IsDBNull(9) ? null : r.GetString(9),
-                    r.IsDBNull(10) ? null : r.GetString(10)));
+                    r.IsDBNull(10) ? null : r.GetString(10),
+                    title,
+                    proj));
             }
         }
 
@@ -421,6 +429,29 @@ public sealed class BookTextRegistryService
         }
 
         return new BookCacheAdminSnapshot(bookCount, artifactCount, providerFileCount, totalBookBytes, books, artifacts);
+    }
+
+    public static string ExtractBookTitle(string? textHead)
+    {
+        if (string.IsNullOrWhiteSpace(textHead)) return "Untitled Book";
+        var lines = textHead.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine.Trim();
+            if (line.StartsWith("Title:", StringComparison.OrdinalIgnoreCase))
+            {
+                var title = line["Title:".Length..].Trim();
+                if (!string.IsNullOrWhiteSpace(title)) return title;
+            }
+        }
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            if (line.StartsWith("/*") || line.StartsWith("//") || line.StartsWith("#")) continue;
+            return line.Length > 60 ? line[..57] + "…" : line;
+        }
+        return "Untitled Book";
     }
 
     private void EnsureSchema()
@@ -537,7 +568,9 @@ public sealed record BookCacheAdminRow(
     string? Provider,
     long? FileExpiresAtUnix,
     string? LastResponseId,
-    string? ProviderFileUpdatedAt);
+    string? ProviderFileUpdatedAt,
+    string BookTitle = "Untitled Book",
+    string Projects = "");
 
 public sealed record ArtifactCacheAdminRow(
     string ArtifactId,

@@ -1066,6 +1066,8 @@ app.MapGet("/api/admin/book-cache", async (
         {
             bookId = b.BookId,
             sha256 = b.Sha256,
+            bookTitle = b.BookTitle,
+            projects = b.Projects,
             byteCount = b.ByteCount,
             createdAt = b.CreatedAt,
             artifactCount = b.ArtifactCount,
@@ -2160,7 +2162,7 @@ app.MapPost("/api/admin/models-catalog/check-updates", async (IUserContext user,
         return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
     try
     {
-        var result = await probe.ScanAsync(ct).ConfigureAwait(false);
+        var result = await probe.ScanAsync(user.UserId, ct).ConfigureAwait(false);
         return Results.Ok(new { ok = true, result });
     }
     catch (Exception ex)
