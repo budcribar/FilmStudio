@@ -1,21 +1,10 @@
 <Project>
   <!--
-    Dual-compile selected Engine / Core sources so unit tests can construct
-    internal types without InternalsVisibleTo.
-    Exclude *Tests.cs and known-orphan service sources that reference APIs
-    not present on master (no GitHub history for those tests).
+    Dual-compile selected Engine / Core sources for unit tests.
+    Do NOT dual-compile Engine/Services: it pulled orphan SmartScriptBreakdown*
+    and YouTubeUpload* sources/tests that have no GitHub history and break the build.
   -->
   <ItemGroup>
-    <Compile Include="..\PageToMovie.Engine\Services\**\*.cs"
-             Link="PageToMovie.Engine\Services\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Remove="..\PageToMovie.Engine\Services\**\*Tests.cs" />
-    <Compile Remove="..\PageToMovie.Engine\Services\**\*Test.cs" />
-    <!-- Orphan product sources pulled only for tests; break build without missing APIs -->
-    <Compile Remove="..\PageToMovie.Engine\Services\**\SmartScriptBreakdownService.cs" />
-    <Compile Remove="..\PageToMovie.Engine\Services\**\YouTubeUploadService.cs" />
-    <Compile Remove="..\PageToMovie.Engine\Services\**\SmartScriptBreakdown*.cs" />
-    <Compile Remove="..\PageToMovie.Engine\Services\**\YouTubeUploadCallback*.cs" />
-
     <Compile Include="..\PageToMovie.Engine\Adaptation\**\*.cs"
              Link="PageToMovie.Engine\Adaptation\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Remove="..\PageToMovie.Engine\Adaptation\**\*Tests.cs" />
@@ -24,10 +13,5 @@
     <Compile Include="..\PageToMovie.Core\Models\**\*.cs"
              Link="PageToMovie.Core\Models\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Remove="..\PageToMovie.Core\Models\**\*Tests.cs" />
-
-    <Compile Remove="**\SmartScriptBreakdownTests.cs" />
-    <Compile Remove="**\YouTubeUploadCallbackTests.cs" />
-    <Compile Remove="**\SmartScriptBreakdownService.cs" />
-    <Compile Remove="**\YouTubeUploadService.cs" />
   </ItemGroup>
 </Project>
