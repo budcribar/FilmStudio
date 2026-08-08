@@ -83,11 +83,11 @@ public sealed class GrokVisionClient : IVisionClient
         try
         {
             text = await AiRetryPolicy.ExecuteWithTransientRetryAsync(
-                _ => DoRequestAsync(),
+                DoRequestAsync,
                 isTransient: AiRetryPolicy.IsTransientChatFailure,
                 maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
                 backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
-                onRetry: (attemptNum, ex) => LogRetryAttemptAsync("grok_vision_transcribe_page", model, $"page={page}", attemptNum, ex, ct),
+                onRetry: (attemptNum, ex) => _errorLogger.LogRetryAttemptAsync("grok_vision_transcribe_page", model, $"page={page}", attemptNum, ex, ct),
                 ct: ct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not ChatHttpStatusException)
@@ -111,7 +111,7 @@ public sealed class GrokVisionClient : IVisionClient
         }
         return text;
 
-        async Task<string> DoRequestAsync()
+        async Task<string> DoRequestAsync(int attemptNum)
         {
             using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
@@ -125,10 +125,11 @@ public sealed class GrokVisionClient : IVisionClient
                     Model = model,
                     HttpStatus = (int)resp.StatusCode,
                     DurationMs = sw.ElapsedMilliseconds,
+                    Attempt = attemptNum,
                     Error = Trim(body, 500),
                     Ok = false,
                 });
-                throw new ChatHttpStatusException((int)resp.StatusCode,
+                throw ChatHttpStatusException.FromResponse(resp,
                     $"Grok vision HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
             }
 
@@ -144,6 +145,7 @@ public sealed class GrokVisionClient : IVisionClient
                 Model = model,
                 HttpStatus = (int)resp.StatusCode,
                 DurationMs = sw.ElapsedMilliseconds,
+                Attempt = attemptNum,
                 ResponseChars = t.Length,
                 Ok = true,
             });
@@ -222,11 +224,11 @@ public sealed class GrokVisionClient : IVisionClient
         try
         {
             text = await AiRetryPolicy.ExecuteWithTransientRetryAsync(
-                _ => DoRequestAsync(),
+                DoRequestAsync,
                 isTransient: AiRetryPolicy.IsTransientChatFailure,
                 maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
                 backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
-                onRetry: (attemptNum, ex) => LogRetryAttemptAsync("grok_vision_classify_characters", model, $"page={page}; cast={cast.Count}", attemptNum, ex, ct),
+                onRetry: (attemptNum, ex) => _errorLogger.LogRetryAttemptAsync("grok_vision_classify_characters", model, $"page={page}; cast={cast.Count}", attemptNum, ex, ct),
                 ct: ct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not ChatHttpStatusException)
@@ -251,7 +253,7 @@ public sealed class GrokVisionClient : IVisionClient
         }
         return res;
 
-        async Task<string> DoRequestAsync()
+        async Task<string> DoRequestAsync(int attemptNum)
         {
             using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
@@ -265,10 +267,11 @@ public sealed class GrokVisionClient : IVisionClient
                     Model = model,
                     HttpStatus = (int)resp.StatusCode,
                     DurationMs = sw.ElapsedMilliseconds,
+                    Attempt = attemptNum,
                     Error = Trim(body, 500),
                     Ok = false,
                 });
-                throw new ChatHttpStatusException((int)resp.StatusCode,
+                throw ChatHttpStatusException.FromResponse(resp,
                     $"Grok vision classify HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
             }
 
@@ -284,6 +287,7 @@ public sealed class GrokVisionClient : IVisionClient
                 Model = model,
                 HttpStatus = (int)resp.StatusCode,
                 DurationMs = sw.ElapsedMilliseconds,
+                Attempt = attemptNum,
                 ResponseChars = t.Length,
                 Ok = true,
             });
@@ -526,7 +530,7 @@ public sealed class GrokVisionClient : IVisionClient
             // transient blip failed the style gate / dialogue-verify / cast-on-image call outright,
             // unlike GrokChatClient/AnthropicChatClient/GeminiChatClient which all retry here.
             return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
-                _ => DoRequestAsync(),
+                DoRequestAsync,
                 isTransient: AiRetryPolicy.IsTransientChatFailure,
                 maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
                 backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
@@ -549,7 +553,7 @@ public sealed class GrokVisionClient : IVisionClient
             throw;
         }
 
-        async Task<string> DoRequestAsync()
+        async Task<string> DoRequestAsync(int attemptNum)
         {
             using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
@@ -566,10 +570,11 @@ public sealed class GrokVisionClient : IVisionClient
                     PromptChars = prompt.Length,
                     ReferenceImagePaths = imageNames,
                     ImageCount = paths.Count,
+                    Attempt = attemptNum,
                     Error = Trim(body, 500),
                     Ok = false,
                 });
-                throw new ChatHttpStatusException((int)resp.StatusCode,
+                throw ChatHttpStatusException.FromResponse(resp,
                     $"Grok vision multi-image HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
             }
 
@@ -588,6 +593,7 @@ public sealed class GrokVisionClient : IVisionClient
                 PromptChars = prompt.Length,
                 ReferenceImagePaths = imageNames,
                 ImageCount = paths.Count,
+                Attempt = attemptNum,
                 ResponsePreview = text.Length > 2000 ? text[..2000] : text,
                 ResponseChars = text.Length,
                 Ok = true,
@@ -596,27 +602,8 @@ public sealed class GrokVisionClient : IVisionClient
         }
 
         Task LogTransientRetryAsync(int attemptNum, Exception ex) =>
-            LogRetryAttemptAsync("grok_vision_completion", model,
+            _errorLogger.LogRetryAttemptAsync("grok_vision_completion", model,
                 $"promptChars={prompt.Length}; images={paths.Count}", attemptNum, ex, ct);
-    }
-
-    /// <summary>Shared onRetry callback for every retry-wrapped call in this client — logs one row per
-    /// failed-but-retried attempt via <see cref="GenerationErrorLogger"/> (best-effort, no-op if unset).</summary>
-    private async Task LogRetryAttemptAsync(string stage, string model, string requestSummary, int attemptNum, Exception ex, CancellationToken ct)
-    {
-        if (_errorLogger is null) return;
-        var httpStatus = ex is ChatHttpStatusException hse ? hse.StatusCode : (int?)null;
-        await _errorLogger.LogAsync(new GenerationErrorRecord
-        {
-            Stage = stage,
-            Model = model,
-            ErrorType = httpStatus is not null ? "http_error" : "exception",
-            ErrorMessage = ex.Message,
-            HttpStatus = httpStatus,
-            Attempt = attemptNum,
-            Resolved = false,
-            RequestSummary = requestSummary,
-        }, ct).ConfigureAwait(false);
     }
 
     private static async Task<string> FileToDataUriAsync(string path, CancellationToken ct)

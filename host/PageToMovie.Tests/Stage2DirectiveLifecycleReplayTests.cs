@@ -16,7 +16,7 @@ public sealed class Stage2DirectiveLifecycleReplayTests
             new ReplayModelOperation<Stage2DirectiveInput, string>(operation, "v1_product",
                 [new("{}", input.Model), new($"{{\"{property}\":\"validated value\"}}", input.Model)]),
             new JsonTextDirectiveParser(property), new TextDirectiveValidator(property),
-            new DirectiveTerminalFallback<TextDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+            new DirectiveTerminalFallback<Stage2DirectiveInput, TextDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
 
         var result = await pipeline.ExecuteAsync(input);
 
@@ -34,7 +34,7 @@ public sealed class Stage2DirectiveLifecycleReplayTests
             new ReplayModelOperation<Stage2DirectiveInput, string>("color_palette_grading", "v1_product",
                 [new("{\"film_stock\":\"fine grain\"}", input.Model), new(valid, input.Model)]),
             new JsonColorDirectiveParser(), new ColorDirectiveValidator(),
-            new DirectiveTerminalFallback<ColorGradingDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+            new DirectiveTerminalFallback<Stage2DirectiveInput, ColorGradingDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
 
         var result = await pipeline.ExecuteAsync(input);
 

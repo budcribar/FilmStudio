@@ -70,7 +70,7 @@ public sealed class CinematicLightingClassifier
             var pipeline = new ValidatedModelOperation<Stage2DirectiveInput, string, TextDirective>(
                 new Stage2DirectiveOperation(_chat, "cinematic_lighting", PromptVersion),
                 new JsonTextDirectiveParser("lighting_token"), new TextDirectiveValidator("lighting_token"),
-                new DirectiveTerminalFallback<TextDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+                new DirectiveTerminalFallback<Stage2DirectiveInput, TextDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
             var result = await pipeline.ExecuteAsync(new(SystemPrompt(), userPrompt, effectiveModel, ChatCallModes.CinematicLightingClassify), ct).ConfigureAwait(false);
             return result.Value?.Value;
         }

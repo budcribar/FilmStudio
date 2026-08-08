@@ -70,7 +70,7 @@ public sealed class NegativePromptClassifier
             var pipeline = new ValidatedModelOperation<Stage2DirectiveInput, string, TextDirective>(
                 new Stage2DirectiveOperation(_chat, "negative_prompt", PromptVersion),
                 new JsonTextDirectiveParser("negative_tokens"), new TextDirectiveValidator("negative_tokens"),
-                new DirectiveTerminalFallback<TextDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+                new DirectiveTerminalFallback<Stage2DirectiveInput, TextDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
             var result = await pipeline.ExecuteAsync(new(SystemPrompt(), userPrompt, effectiveModel, ChatCallModes.NegativePromptClassify), ct).ConfigureAwait(false);
             return result.Value?.Value;
         }

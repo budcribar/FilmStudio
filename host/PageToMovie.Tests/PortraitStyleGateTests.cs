@@ -34,8 +34,8 @@ public sealed class PortraitStyleGateTests
         var g = CharacterDesignService.ParsePortraitStyleGateResponse(
             """{"pass":true,"medium":"photoreal","reason":"photo skin"}""");
         Assert.NotNull(g);
-        Assert.True(g.Value.Pass);
-        Assert.Equal("photoreal", g.Value.Medium);
+        Assert.True(g.Pass);
+        Assert.Equal("photoreal", g.Medium);
     }
 
     [Fact]
@@ -44,8 +44,8 @@ public sealed class PortraitStyleGateTests
         var g = CharacterDesignService.ParsePortraitStyleGateResponse(
             """{"pass":false,"medium":"sketch","reason":"pencil drawing"}""");
         Assert.NotNull(g);
-        Assert.False(g.Value.Pass);
-        Assert.Equal("sketch", g.Value.Medium);
+        Assert.False(g.Pass);
+        Assert.Equal("sketch", g.Medium);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class PortraitStyleGateTests
         var g = CharacterDesignService.ParsePortraitStyleGateResponse(
             """{"pass":true,"medium":"live-action","reason":"ok"}""");
         Assert.NotNull(g);
-        Assert.Equal("photoreal", g.Value.Medium);
+        Assert.Equal("photoreal", g.Medium);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class PortraitStyleGateTests
         var g = CharacterDesignService.ParsePortraitStyleGateResponse(
             """{"pass":false,"medium":"other","reason":"no image attached"}""");
         Assert.NotNull(g);
-        Assert.False(g.Value.Pass);
-        Assert.Equal("other", g.Value.Medium);
+        Assert.False(g.Pass);
+        Assert.Equal("other", g.Medium);
     }
 }

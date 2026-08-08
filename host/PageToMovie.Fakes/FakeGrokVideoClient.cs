@@ -96,7 +96,11 @@ public sealed class FakeGrokVideoClient : IVideoClient
         await Task.Delay(Math.Max(50, (_opts.Fakes?.VideoDelayMs ?? 0) / 4), ct);
         onProgress?.Invoke("status=done (fake)");
         if (!_pending.TryGetValue(requestId, out var fixture))
+        {
+            await _telemetry.LogOutcomeAsync(null, requestId, "provider_failed", 0, 1, ok: false, "unknown fake request_id", ct, fakes: true);
             throw new InvalidOperationException($"Unknown fake request_id {requestId}");
+        }
+        await _telemetry.LogOutcomeAsync(null, requestId, "ok", 0, 1, ok: true, null, ct, fakes: true);
         return "fake-fixture:" + fixture;
     }
 

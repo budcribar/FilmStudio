@@ -758,6 +758,16 @@ public sealed class CharacterDesignService
         }
     }
 
+    private const string PortraitStyleGatePromptVersion = "v1";
+
+    /// <summary>
+    /// Runs through <see cref="ModelExecution.ValidatedModelOperation{TInput,TRaw,TResult}"/> — same
+    /// contract as the beat classifiers, via the <c>ModelBacked</c> single-shot-directive pattern
+    /// (<see cref="ModelBacked.PortraitStyleGateOperation"/>), not the batched-coverage one those use
+    /// (wrong shape for a single-image single-verdict call). Gains a corrective re-ask when the model
+    /// returns malformed JSON or an unrecognized medium (previously an immediate hard failure), plus
+    /// provenance/reproducibility tracing.
+    /// </summary>
     private async Task<PortraitStyleGateResult> RunPortraitStyleGateAsync(
         string prompt,
         string visionPath,
@@ -765,28 +775,45 @@ public sealed class CharacterDesignService
         string detail,
         CancellationToken ct)
     {
-        string raw;
+        var model = ProjectModelSelection.RequireExplicit(visionModel, ModelCapability.Vision, "Portrait style gate");
+        var pipeline = new ModelExecution.ValidatedModelOperation<ModelBacked.PortraitStyleGateInput, string, PortraitStyleGateResult>(
+            new ModelBacked.PortraitStyleGateOperation(_vision, "portrait_style_gate", PortraitStyleGatePromptVersion),
+            new ModelBacked.PortraitStyleGateResponseParser(),
+            new ModelBacked.PortraitStyleGateValidator(),
+            new ModelBacked.DirectiveTerminalFallback<ModelBacked.PortraitStyleGateInput, PortraitStyleGateResult>(),
+            new ModelExecution.ModelOperationOptions
+            {
+                CorrectiveMaxAttempts = 1,
+                // IVisionClient.CompleteWithImagesAsync already retries transient failures
+                // internally (429/5xx/network, Retry-After-aware, backed off) — retrying again at
+                // this outer layer would multiply attempts (up to 3x3x2=18 raw calls) instead of
+                // adding resilience. Same reasoning as AiRetryPolicy.RunWithCoverageRetryAsync's
+                // beat-classifier wiring.
+                TransportMaxAttempts = 1,
+            });
+
+        ModelExecution.ValidatedModelResult<PortraitStyleGateResult> result;
         try
         {
-            raw = await _vision.CompleteWithImagesAsync(
-                prompt,
-                new[] { visionPath },
-                model: ProjectModelSelection.RequireExplicit(visionModel, ModelCapability.Vision, "Portrait style gate"),
-                detail: detail,
-                ct: ct).ConfigureAwait(false);
+            result = await pipeline.ExecuteAsync(
+                new ModelBacked.PortraitStyleGateInput(prompt, visionPath, model, detail), ct).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             throw new InvalidOperationException(
-                $"Cannot lock character: style check failed ({ex.Message}). Try again.",
-                ex);
+                $"Cannot lock character: style check failed ({ex.Message}). Try again.", ex);
         }
 
-        var gate = ParsePortraitStyleGateResponse(raw);
-        if (gate is null)
+        if (result.Value is null)
+        {
+            var detailMsg = result.Error
+                ?? string.Join(" ", result.ValidationIssues.Select(i => i.Message));
             throw new InvalidOperationException(
-                "Cannot lock character: style check returned an unreadable response. Try again.");
-        return gate.Value;
+                string.IsNullOrWhiteSpace(detailMsg)
+                    ? "Cannot lock character: style check returned an unreadable response. Try again."
+                    : $"Cannot lock character: style check failed ({detailMsg}). Try again.");
+        }
+        return result.Value;
     }
 
     private static bool IsVisionBlindGate(PortraitStyleGateResult gate)
@@ -894,7 +921,9 @@ public sealed class CharacterDesignService
     private static string TrimForError(string s, int max) =>
         s.Length <= max ? s : s[..max] + "…";
 
-    public readonly record struct PortraitStyleGateResult(bool Pass, string Medium, string Reason);
+    /// <summary>A class, not a struct — <see cref="ModelExecution.ValidatedModelOperation{TInput,TRaw,TResult}"/>
+    /// requires <c>TResult : class</c>.</summary>
+    public sealed record PortraitStyleGateResult(bool Pass, string Medium, string Reason);
 
     private void FinalizeLock(string projectId, string charKey, string destPath, string changeNote)
     {

@@ -5,11 +5,11 @@ namespace PageToMovie.Engine;
 /// <summary>
 /// Read side of the AI-call feedback loop: aggregates the <c>user_api_calls</c> SQLite table (every provider
 /// call already dual-written there by <see cref="ProjectTelemetryService.LogApiCallAsync"/>) into
-/// <see cref="AiCallAnalyticsDto"/> for the admin analytics page. Outcomes are derived from the fields we
-/// already record (Ok / HttpStatus / Attempt / Error) until the unified AiCallRecord lands with an explicit
-/// outcome enum. Read-only — never writes. Formerly scanned every project's telemetry/api_calls.jsonl; that
-/// path is superseded now that the DB has the same data with indexes, so we no longer have to walk the
-/// filesystem project-by-project.
+/// <see cref="AiCallAnalyticsDto"/> for the admin analytics page. Outcome is the canonical
+/// <see cref="AiCallOutcome"/> set once at write time (see <c>ProjectTelemetryService.ClassifyOutcome</c>) —
+/// this class no longer re-derives it from raw fields at read time. Read-only — never writes. Formerly
+/// scanned every project's telemetry/api_calls.jsonl; that path is superseded now that the DB has the same
+/// data with indexes, so we no longer have to walk the filesystem project-by-project.
 /// </summary>
 public sealed class AiCallAnalyticsService
 {
@@ -50,7 +50,7 @@ public sealed class AiCallAnalyticsService
                 Op = string.IsNullOrWhiteSpace(f.Kind) ? "(unknown)" : f.Kind.Trim().ToLowerInvariant(),
                 Model = f.Model,
                 HttpStatus = f.HttpStatus,
-                FailureKind = ClassifyFailure(f.HttpStatus, f.Error),
+                FailureKind = string.IsNullOrWhiteSpace(f.Outcome) ? "error" : f.Outcome,
                 ProjectId = f.ProjectId,
                 Error = Trim(f.Error, 240),
             }).ToList();
@@ -95,21 +95,6 @@ public sealed class AiCallAnalyticsService
         }
 
         return outp;
-    }
-
-    /// <summary>Best-effort failure taxonomy from today's fields — a placeholder for the unified outcome enum.</summary>
-    private static string ClassifyFailure(int? httpStatus, string? error)
-    {
-        if (httpStatus is 429) return "rate_limited";
-        if (httpStatus is >= 500) return "provider_error";
-        var e = (error ?? "").ToLowerInvariant();
-        if (e.Length == 0) return httpStatus is > 0 ? $"http_{httpStatus}" : "error";
-        if (e.Contains("timeout") || e.Contains("timed out")) return "timeout";
-        if (e.Contains("could not read the portrait") || e.Contains("blind")) return "vision_blind";
-        if (e.Contains("does not match the project style")) return "validation_reject";
-        if (e.Contains("parse") || e.Contains("unreadable") || e.Contains("json")) return "parse_error";
-        if (e.Contains("cancel")) return "cancelled";
-        return "error";
     }
 
     private static string Trim(string? s, int max) => string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s[..max] + "…");

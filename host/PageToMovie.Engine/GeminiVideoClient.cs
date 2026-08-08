@@ -29,17 +29,20 @@ public sealed class GeminiVideoClient : IVideoClient
     private readonly PageToMovieOptions _opts;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<GeminiVideoClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public GeminiVideoClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
-        ILogger<GeminiVideoClient> log)
+        ILogger<GeminiVideoClient> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _http = http;
         _opts = opts.Value;
         _telemetry = telemetry;
         _log = log;
+        _errorLogger = errorLogger;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
@@ -109,55 +112,67 @@ public sealed class GeminiVideoClient : IVideoClient
         var sw = Stopwatch.StartNew();
         try
         {
-            using var resp = await SendJsonAsync(HttpMethod.Post, endpoint, payload, ct).ConfigureAwait(false);
-            var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            if (!resp.IsSuccessStatusCode)
-            {
-                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            // Same reasoning as GrokVideoClient: a lost submit response is unrecoverable either
+            // way (no operation name to find the job by), so automatic retry is no riskier than
+            // the manual retry a human would do on seeing the same failure.
+            return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                async _ =>
                 {
-                    Kind = "video",
-                    Mode = mode,
-                    Endpoint = endpoint,
-                    Model = model,
-                    HttpStatus = (int)resp.StatusCode,
-                    DurationMs = sw.ElapsedMilliseconds,
-                    Prompt = prompt,
-                    PromptChars = prompt.Length,
-                    Resolution = resolution,
-                    DurationSec = durationSeconds,
-                    Error = Trim(body, 400),
-                    Ok = false,
-                });
-                throw new InvalidOperationException(
-                    $"Gemini {endpoint} HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
-            }
+                    using var resp = await SendJsonAsync(HttpMethod.Post, endpoint, payload, ct).ConfigureAwait(false);
+                    var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                    if (!resp.IsSuccessStatusCode)
+                    {
+                        await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+                        {
+                            Kind = "video",
+                            Mode = mode,
+                            Endpoint = endpoint,
+                            Model = model,
+                            HttpStatus = (int)resp.StatusCode,
+                            DurationMs = sw.ElapsedMilliseconds,
+                            Prompt = prompt,
+                            PromptChars = prompt.Length,
+                            Resolution = resolution,
+                            DurationSec = durationSeconds,
+                            Error = Trim(body, 400),
+                            Ok = false,
+                        });
+                        throw ChatHttpStatusException.FromResponse(resp,
+                            $"Gemini {endpoint} HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
+                    }
 
-            using var doc = JsonDocument.Parse(body);
-            if (!doc.RootElement.TryGetProperty("name", out var nameEl) ||
-                nameEl.GetString() is not { Length: > 0 } opName)
-            {
-                throw new InvalidOperationException(
-                    $"Gemini predictLongRunning response missing operation name: {Trim(body, 300)}");
-            }
+                    using var doc = JsonDocument.Parse(body);
+                    if (!doc.RootElement.TryGetProperty("name", out var nameEl) ||
+                        nameEl.GetString() is not { Length: > 0 } opName)
+                    {
+                        throw new InvalidOperationException(
+                            $"Gemini predictLongRunning response missing operation name: {Trim(body, 300)}");
+                    }
 
-            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
-            {
-                Kind = "video",
-                Mode = mode,
-                Endpoint = endpoint,
-                Model = model,
-                HttpStatus = (int)resp.StatusCode,
-                RequestId = opName,
-                DurationMs = sw.ElapsedMilliseconds,
-                Prompt = prompt,
-                PromptChars = prompt.Length,
-                Resolution = resolution,
-                DurationSec = durationSeconds,
-                Ok = true,
-            });
-            return opName;
+                    await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+                    {
+                        Kind = "video",
+                        Mode = mode,
+                        Endpoint = endpoint,
+                        Model = model,
+                        HttpStatus = (int)resp.StatusCode,
+                        RequestId = opName,
+                        DurationMs = sw.ElapsedMilliseconds,
+                        Prompt = prompt,
+                        PromptChars = prompt.Length,
+                        Resolution = resolution,
+                        DurationSec = durationSeconds,
+                        Ok = true,
+                    });
+                    return opName;
+                },
+                isTransient: AiRetryPolicy.IsTransientChatFailure,
+                maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                onRetry: (attemptNum, ex) => _errorLogger.LogRetryAttemptAsync("gemini_video_submit", model, $"durationSec={durationSeconds}", attemptNum, ex, ct),
+                ct: ct).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is not InvalidOperationException and not NotSupportedException)
+        catch (Exception ex) when (ex is not ChatHttpStatusException and not InvalidOperationException and not NotSupportedException)
         {
             await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
@@ -187,27 +202,54 @@ public sealed class GeminiVideoClient : IVideoClient
         // "models/veo-3.1/operations/abc123" — the operations.get path is that name directly.
         var opPath = requestId.TrimStart('/');
 
+        var retriedAnyPoll = false;
+
         while (DateTime.UtcNow < deadline)
         {
             ct.ThrowIfCancellationRequested();
             polls++;
-            using var resp = await SendAsync(HttpMethod.Get, opPath, content: null, ct).ConfigureAwait(false);
-            var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            if (!resp.IsSuccessStatusCode)
+
+            // Each poll GET is idempotent (safe to retry freely, no billing risk) — unlike submit,
+            // there's no reason NOT to retry a transient blip here. Previously one bad poll threw
+            // and abandoned tracking of an already-submitted, already-paying job entirely.
+            string body;
+            try
+            {
+                body = await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                    async _ =>
+                    {
+                        using var resp = await SendAsync(HttpMethod.Get, opPath, content: null, ct).ConfigureAwait(false);
+                        var b = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                        if (!resp.IsSuccessStatusCode)
+                            throw ChatHttpStatusException.FromResponse(resp,
+                                $"Gemini operation poll HTTP {(int)resp.StatusCode}: {Trim(b, 400)}");
+                        return b;
+                    },
+                    isTransient: AiRetryPolicy.IsTransientChatFailure,
+                    maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                    backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                    onRetry: (attemptNum, ex) =>
+                    {
+                        retriedAnyPoll = true;
+                        return _errorLogger.LogRetryAttemptAsync("gemini_video_poll", null, $"requestId={requestId}; poll={polls}", attemptNum, ex, ct);
+                    },
+                    ct: ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
             {
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "video_poll",
                     Endpoint = opPath,
                     RequestId = requestId,
-                    HttpStatus = (int)resp.StatusCode,
+                    HttpStatus = ex is ChatHttpStatusException hse ? hse.StatusCode : null,
                     DurationMs = sw.ElapsedMilliseconds,
                     Attempt = polls,
-                    Error = Trim(body, 400),
+                    Error = Trim(ex.Message, 400),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
-                    $"Gemini operation poll HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
+                await _telemetry.LogOutcomeAsync(null, requestId, "poll_failed", sw.ElapsedMilliseconds, polls, ok: false, ex.Message, ct);
+                throw;
             }
 
             using var doc = JsonDocument.Parse(body);
@@ -230,6 +272,7 @@ public sealed class GeminiVideoClient : IVideoClient
                     Error = Trim(detail, 500),
                     Ok = false,
                 });
+                await _telemetry.LogOutcomeAsync(null, requestId, "provider_failed", sw.ElapsedMilliseconds, polls, ok: false, Trim(detail, 500), ct);
                 throw new InvalidOperationException($"Gemini video operation failed: {Trim(detail, 400)}");
             }
 
@@ -238,6 +281,7 @@ public sealed class GeminiVideoClient : IVideoClient
                 var url = ExtractVideoUri(root);
                 if (url is null)
                 {
+                    await _telemetry.LogOutcomeAsync(null, requestId, "provider_failed", sw.ElapsedMilliseconds, polls, ok: false, "done with no video URI", ct);
                     throw new InvalidOperationException(
                         $"Gemini operation done but no video URI found in response " +
                         $"(schema may differ from expected — see class-level CONFIDENCE NOTE): " +
@@ -254,6 +298,7 @@ public sealed class GeminiVideoClient : IVideoClient
                     Mode = "done",
                     Ok = true,
                 });
+                await _telemetry.LogOutcomeAsync(null, requestId, retriedAnyPoll ? "ok_after_retry" : "ok", sw.ElapsedMilliseconds, polls, ok: true, null, ct);
                 return url;
             }
 
@@ -261,6 +306,7 @@ public sealed class GeminiVideoClient : IVideoClient
             await Task.Delay(TimeSpan.FromSeconds(poll), ct).ConfigureAwait(false);
         }
 
+        await _telemetry.LogOutcomeAsync(null, requestId, "timed_out", sw.ElapsedMilliseconds, polls, ok: false, $"timed out after {_opts.GrokTimeoutSeconds}s", ct);
         throw new TimeoutException($"Gemini video operation timed out after {_opts.GrokTimeoutSeconds}s");
     }
 

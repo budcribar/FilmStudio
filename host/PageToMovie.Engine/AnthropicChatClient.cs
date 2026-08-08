@@ -101,11 +101,11 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
             payload["temperature"] = temperature;
         }
         return await SendWithTransientRetryAsync(
-            () => SendAsync(
+            attemptNum => SendAsync(
                 payload, model, "chat", "messages", mode,
                 systemPrompt, userPrompt,
                 (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
-                ct),
+                attemptNum, ct),
             model, mode, ct).ConfigureAwait(false);
     }
 
@@ -149,10 +149,10 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
             },
         };
         return await SendWithTransientRetryAsync(
-            () => SendAsync(
+            attemptNum => SendAsync(
                 payload, model, "vision", "messages", "clip_auto_review",
                 prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
-                prompt.Length, ct),
+                prompt.Length, attemptNum, ct),
             model, "clip_auto_review", ct).ConfigureAwait(false);
     }
 
@@ -162,13 +162,13 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     /// attempt via <see cref="GenerationErrorLogger"/> before backing off.
     /// </summary>
     private async Task<string> SendWithTransientRetryAsync(
-        Func<Task<string>> call,
+        Func<int, Task<string>> call,
         string model,
         string? mode,
         CancellationToken ct)
     {
         return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
-            _ => call(),
+            call,
             isTransient: AiRetryPolicy.IsTransientChatFailure,
             maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
             backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
@@ -218,6 +218,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         string? promptForLog,
         string? userPromptForLog,
         int promptChars,
+        int attemptNum,
         CancellationToken ct)
     {
         var key = ResolveApiKey();
@@ -254,7 +255,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                     retryPayload.Remove("temperature");
                     return await SendAsync(
                         retryPayload, model, kind, endpoint, mode,
-                        promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                        promptForLog, userPromptForLog, promptChars, attemptNum, ct).ConfigureAwait(false);
                 }
 
                 // Older/smaller Claude models don't support adaptive thinking or output_config.effort
@@ -270,7 +271,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                     retryPayload["temperature"] = 0.2;
                     return await SendAsync(
                         retryPayload, model, kind, endpoint, mode,
-                        promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                        promptForLog, userPromptForLog, promptChars, attemptNum, ct).ConfigureAwait(false);
                 }
 
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry
@@ -284,10 +285,11 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                     SystemPrompt = promptForLog,
                     UserPrompt = userPromptForLog,
                     PromptChars = promptChars,
+                    Attempt = attemptNum,
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new ChatHttpStatusException((int)resp.StatusCode,
+                throw ChatHttpStatusException.FromResponse(resp,
                     $"Anthropic {endpoint} HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 
@@ -304,6 +306,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                 SystemPrompt = promptForLog,
                 UserPrompt = userPromptForLog,
                 PromptChars = promptChars,
+                Attempt = attemptNum,
                 ResponsePreview = text.Length > 2000 ? text[..2000] : text,
                 ResponseChars = text.Length,
                 Ok = true,
@@ -321,6 +324,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                 DurationMs = sw.ElapsedMilliseconds,
                 SystemPrompt = promptForLog,
                 UserPrompt = userPromptForLog,
+                Attempt = attemptNum,
                 Error = ex.Message,
                 Ok = false,
             });

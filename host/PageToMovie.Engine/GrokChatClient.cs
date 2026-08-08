@@ -104,7 +104,7 @@ public sealed class GrokChatClient : IChatClient
             // this only retries the whole call again on 429/5xx or a network/timeout failure,
             // which previously propagated to the caller immediately with zero retries.
             return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
-                _ => DoRequestAsync(),
+                DoRequestAsync,
                 isTransient: AiRetryPolicy.IsTransientChatFailure,
                 maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
                 backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
@@ -128,7 +128,7 @@ public sealed class GrokChatClient : IChatClient
             throw;
         }
 
-        async Task<string> DoRequestAsync()
+        async Task<string> DoRequestAsync(int attemptNum)
         {
             // Up to 3 attempts: models vary on whether they accept temperature, reasoning_effort,
             // both, or neither — rather than hardcoding a capability matrix per model id, self-heal
@@ -166,7 +166,7 @@ public sealed class GrokChatClient : IChatClient
                     }
                 }
 
-                return await FinishAsync(resp, body);
+                return await FinishAsync(resp, body, attemptNum);
             }
         }
 
@@ -187,7 +187,7 @@ public sealed class GrokChatClient : IChatClient
             }, ct).ConfigureAwait(false);
         }
 
-        async Task<string> FinishAsync(HttpResponseMessage resp, string body)
+        async Task<string> FinishAsync(HttpResponseMessage resp, string body, int attemptNum)
         {
             if (!resp.IsSuccessStatusCode)
             {
@@ -202,10 +202,11 @@ public sealed class GrokChatClient : IChatClient
                     SystemPrompt = systemPrompt,
                     UserPrompt = userPrompt,
                     PromptChars = (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
+                    Attempt = attemptNum,
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new ChatHttpStatusException((int)resp.StatusCode,
+                throw ChatHttpStatusException.FromResponse(resp,
                     $"Chat HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 
@@ -222,6 +223,7 @@ public sealed class GrokChatClient : IChatClient
                 SystemPrompt = systemPrompt,
                 UserPrompt = userPrompt,
                 PromptChars = (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
+                Attempt = attemptNum,
                 ResponsePreview = text.Length > 2000 ? text[..2000] : text,
                 ResponseChars = text.Length,
                 Ok = true,

@@ -74,7 +74,7 @@ public sealed class ColorPaletteGradingClassifier
             var pipeline = new ValidatedModelOperation<Stage2DirectiveInput, string, ColorGradingDirective>(
                 new Stage2DirectiveOperation(_chat, "color_palette_grading", PromptVersion),
                 new JsonColorDirectiveParser(), new ColorDirectiveValidator(),
-                new DirectiveTerminalFallback<ColorGradingDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
+                new DirectiveTerminalFallback<Stage2DirectiveInput, ColorGradingDirective>(), new ModelOperationOptions { CorrectiveMaxAttempts = 1 });
             var result = await pipeline.ExecuteAsync(new(SystemPrompt(), userPrompt, effectiveModel, ChatCallModes.ColorPaletteGradingClassify), ct).ConfigureAwait(false);
             return result.Value;
         }

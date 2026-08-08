@@ -373,6 +373,9 @@ public class UserDatabaseService
                 // Retry attempt number (ApiCallTelemetry.Attempt) — needed to derive "succeeded after retry"
                 // in the AI-call analytics rollup (see GetAiCallRawDataAsync).
                 EnsureColumn(conn, "user_api_calls", "attempt", "INTEGER");
+                // Canonical outcome (AiCallOutcome, stored as its string name) — set once at write time
+                // in ProjectTelemetryService.LogApiCallAsync; replaces read-time string-guessing.
+                EnsureColumn(conn, "user_api_calls", "outcome", "TEXT");
                 try
                 {
                     using var idxCmd = conn.CreateCommand();
@@ -1709,13 +1712,13 @@ public class UserDatabaseService
                     http_status, ok, duration_ms, estimated_usd, charge_usd, charge_multiplier, currency,
                     scene, clip, char_key, resolution, duration_sec,
                     input_tokens, output_tokens, prompt_chars, response_chars,
-                    request_id, error, purpose, fakes, attempt)
+                    request_id, error, purpose, fakes, attempt, outcome)
                 VALUES (
                     @userId, @ts, @projectId, @jobId, @kind, @mode, @category, @provider, @model, @endpoint,
                     @httpStatus, @ok, @durationMs, @estimatedUsd, @chargeUsd, @chargeMultiplier, @currency,
                     @scene, @clip, @charKey, @resolution, @durationSec,
                     @inputTokens, @outputTokens, @promptChars, @responseChars,
-                    @requestId, @error, @purpose, @fakes, @attempt)";
+                    @requestId, @error, @purpose, @fakes, @attempt, @outcome)";
             var ts = (rec.Ts ?? DateTimeOffset.UtcNow).ToString("o");
             var purpose = CostCategories.Resolve(rec.Kind, rec.Mode, rec.Category);
             if (!string.IsNullOrWhiteSpace(rec.Mode))
@@ -1753,6 +1756,7 @@ public class UserDatabaseService
             cmd.Parameters.AddWithValue("@purpose", purpose ?? "");
             cmd.Parameters.AddWithValue("@fakes", rec.Fakes ? 1 : 0);
             cmd.Parameters.AddWithValue("@attempt", (object?)rec.Attempt ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@outcome", rec.Outcome is { } oc ? oc.ToString() : (object)DBNull.Value);
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -1870,7 +1874,7 @@ public class UserDatabaseService
             using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = """
-                    SELECT ts, kind, model, http_status, error, COALESCE(project_id, '')
+                    SELECT ts, kind, model, http_status, error, COALESCE(project_id, ''), outcome
                     FROM recent_calls
                     WHERE ok = 0
                     ORDER BY ts DESC
@@ -1888,6 +1892,7 @@ public class UserDatabaseService
                         HttpStatus = r.IsDBNull(3) ? null : r.GetInt32(3),
                         Error = r.IsDBNull(4) ? null : r.GetString(4),
                         ProjectId = r.GetString(5),
+                        Outcome = r.IsDBNull(6) ? "error" : r.GetString(6),
                     });
                 }
             }
@@ -3121,4 +3126,6 @@ public sealed class AiCallFailureRow
     public int? HttpStatus { get; set; }
     public string? Error { get; set; }
     public string ProjectId { get; set; } = "";
+    /// <summary>The canonical outcome (AiCallOutcome.ToString()), set at write time — see ProjectTelemetryService.LogApiCallAsync.</summary>
+    public string Outcome { get; set; } = "";
 }

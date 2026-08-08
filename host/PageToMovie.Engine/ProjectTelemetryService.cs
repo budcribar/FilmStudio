@@ -85,6 +85,11 @@ public sealed class ProjectTelemetryService
         rec.UserId ??= UserApiCallScope.UserId;
         if (rec.Ts is null)
             rec.Ts = DateTimeOffset.UtcNow;
+        // Canonical outcome — set once, here, from the transport-level signals every call site
+        // already provides. A caller with semantic context the transport layer lacks (e.g. a vision
+        // gate rejecting on content) can set rec.Outcome explicitly before calling; this only fills
+        // the gap when nobody has.
+        rec.Outcome ??= ClassifyOutcome(rec);
         // Catalog is the single source of truth for model + provider identity on every log line.
         ApplyCatalogIdentity(rec);
         rec.EstimatedUsd ??= EstimateListRateUsd(rec);
@@ -145,6 +150,35 @@ public sealed class ProjectTelemetryService
                 _log.LogWarning(ex, "cost_ledger append failed for {ProjectId}", projectId);
             }
         }
+    }
+
+    /// <summary>
+    /// Classifies from transport-level signals only (HTTP status, exception message, retry count) —
+    /// the same information <c>AiCallAnalyticsService.ClassifyFailure</c> used to guess from at read
+    /// time, now applied once, centrally, at write time. Cannot see semantic outcomes a caller alone
+    /// knows (<see cref="AiCallOutcome.ValidationReject"/>, <see cref="AiCallOutcome.VisionBlind"/>,
+    /// <see cref="AiCallOutcome.CoverageGap"/>, <see cref="AiCallOutcome.Fallback"/>,
+    /// <see cref="AiCallOutcome.SchemaInvalid"/>) — those calls set <see cref="ApiCallTelemetry.Outcome"/>
+    /// explicitly before logging instead.
+    /// </summary>
+    private static AiCallOutcome ClassifyOutcome(ApiCallTelemetry rec)
+    {
+        if (rec.Ok)
+            return rec.Attempt is > 1 ? AiCallOutcome.OkAfterRetry : AiCallOutcome.Ok;
+
+        if (rec.HttpStatus is 429) return AiCallOutcome.RateLimited;
+        if (rec.HttpStatus is 408 or 504) return AiCallOutcome.Timeout;
+
+        var e = (rec.Error ?? "").ToLowerInvariant();
+        if (e.Contains("cancel")) return AiCallOutcome.Cancelled;
+        if (e.Contains("timeout") || e.Contains("timed out")) return AiCallOutcome.Timeout;
+        if (e.Contains("parse") || e.Contains("unreadable") || e.Contains("missing") && e.Contains("json")
+            || e.Contains("invalid json"))
+            return AiCallOutcome.ParseError;
+
+        // Any other failure (4xx/5xx, or a network exception that never reached the provider
+        // cleanly) — best transport-level bucket is "the provider didn't fulfill this call".
+        return AiCallOutcome.ProviderRefusal;
     }
 
     /// <summary>
@@ -462,6 +496,33 @@ public sealed class ProjectTelemetryService
     }
 }
 
+/// <summary>
+/// Canonical outcome taxonomy — replaces the old read-time string-matching in
+/// <c>AiCallAnalyticsService.ClassifyFailure</c> (guessed a category from <see cref="ApiCallTelemetry.Error"/>
+/// text after the fact) with an explicit classification set once, at write time, in
+/// <see cref="ProjectTelemetryService.LogApiCallAsync"/>. <see cref="Fallback"/>/<see cref="CoverageGap"/>/
+/// <see cref="SchemaInvalid"/> aren't populated by the central classifier (it only sees transport-level
+/// signals — HTTP status, exception type, attempt count — not semantic validation results from
+/// <c>ValidatedModelOperation</c>); a caller with that context can set <see cref="ApiCallTelemetry.Outcome"/>
+/// explicitly before logging, as <c>CharacterDesignService</c>'s style gate does for
+/// <see cref="ValidationReject"/>/<see cref="VisionBlind"/>.
+/// </summary>
+public enum AiCallOutcome
+{
+    Ok,
+    OkAfterRetry,
+    Fallback,
+    CoverageGap,
+    ValidationReject,
+    VisionBlind,
+    ParseError,
+    SchemaInvalid,
+    RateLimited,
+    Timeout,
+    ProviderRefusal,
+    Cancelled,
+}
+
 /// <summary>One live API call (full prompts on disk for project review).</summary>
 public sealed class ApiCallTelemetry
 {
@@ -519,6 +580,12 @@ public sealed class ApiCallTelemetry
     public int? PromptChars { get; set; }
     public int? ResponseChars { get; set; }
     public bool Ok { get; set; } = true;
+    /// <summary>
+    /// Explicit outcome classification. Leave null to let <see cref="ProjectTelemetryService.LogApiCallAsync"/>
+    /// classify it centrally from the transport-level signals above; set it explicitly when the caller has
+    /// semantic context the transport layer doesn't (e.g. a vision gate rejecting on content, not transport).
+    /// </summary>
+    public AiCallOutcome? Outcome { get; set; }
 }
 
 /// <summary>One condensed local media operation (historical name: ffmpeg op).</summary>

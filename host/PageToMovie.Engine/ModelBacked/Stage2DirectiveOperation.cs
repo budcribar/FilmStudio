@@ -82,8 +82,12 @@ internal sealed class ColorDirectiveValidator : IModelResultValidator<ColorGradi
     }
 }
 
-internal sealed class DirectiveTerminalFallback<T> : IDeterministicFallback<Stage2DirectiveInput, T> where T : class
+/// <summary>Generic over <typeparamref name="TInput"/> too (not just <typeparamref name="TResult"/>) so any
+/// single-shot classifier can reuse it, not only the <see cref="Stage2DirectiveInput"/> ones it started with —
+/// the body never touches <c>input</c>, it only formats <paramref name="unresolvedIssues"/> — see
+/// <see cref="PortraitStyleGateOperation"/> for a non-chat (vision) reuse.</summary>
+internal sealed class DirectiveTerminalFallback<TInput, TResult> : IDeterministicFallback<TInput, TResult> where TResult : class
 {
-    public T Create(Stage2DirectiveInput input, IReadOnlyList<ModelValidationIssue> unresolvedIssues) =>
+    public TResult Create(TInput input, IReadOnlyList<ModelValidationIssue> unresolvedIssues) =>
         throw new InvalidOperationException(string.Join(" ", unresolvedIssues.Select(i => i.Message)));
 }

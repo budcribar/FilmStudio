@@ -96,11 +96,11 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
             ["generationConfig"] = generationConfig,
         };
         return await SendWithTransientRetryAsync(
-            () => SendAsync(
+            attemptNum => SendAsync(
                 payload, model, "chat", mode,
                 systemPrompt, userPrompt,
                 (systemPrompt?.Length ?? 0) + (userPrompt?.Length ?? 0),
-                ct),
+                attemptNum, ct),
             model, mode, ct).ConfigureAwait(false);
     }
 
@@ -131,10 +131,10 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
             },
         };
         return await SendWithTransientRetryAsync(
-            () => SendAsync(
+            attemptNum => SendAsync(
                 payload, model, "vision", "clip_auto_review",
                 prompt, string.Join(", ", imagePaths.Select(Path.GetFileName)),
-                prompt.Length, ct),
+                prompt.Length, attemptNum, ct),
             model, "clip_auto_review", ct).ConfigureAwait(false);
     }
 
@@ -144,13 +144,13 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     /// Logs each failed attempt via <see cref="GenerationErrorLogger"/> before backing off.
     /// </summary>
     private async Task<string> SendWithTransientRetryAsync(
-        Func<Task<string>> call,
+        Func<int, Task<string>> call,
         string model,
         string? mode,
         CancellationToken ct)
     {
         return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
-            _ => call(),
+            call,
             isTransient: AiRetryPolicy.IsTransientChatFailure,
             maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
             backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
@@ -211,6 +211,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
         string? promptForLog,
         string? userPromptForLog,
         int promptChars,
+        int attemptNum,
         CancellationToken ct)
     {
         var key = ResolveApiKey();
@@ -246,7 +247,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                     var retryGenConfig = new Dictionary<string, object?>(genConfig);
                     retryGenConfig.Remove("thinkingConfig");
                     retryPayload["generationConfig"] = retryGenConfig;
-                    return await SendAsync(retryPayload, model, kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                    return await SendAsync(retryPayload, model, kind, mode, promptForLog, userPromptForLog, promptChars, attemptNum, ct).ConfigureAwait(false);
                 }
 
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry
@@ -260,10 +261,11 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                     SystemPrompt = promptForLog,
                     UserPrompt = userPromptForLog,
                     PromptChars = promptChars,
+                    Attempt = attemptNum,
                     Error = Trim(body, 800),
                     Ok = false,
                 });
-                throw new ChatHttpStatusException((int)resp.StatusCode,
+                throw ChatHttpStatusException.FromResponse(resp,
                     $"Gemini {endpoint} HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 
@@ -280,6 +282,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                 SystemPrompt = promptForLog,
                 UserPrompt = userPromptForLog,
                 PromptChars = promptChars,
+                Attempt = attemptNum,
                 ResponsePreview = text.Length > 2000 ? text[..2000] : text,
                 ResponseChars = text.Length,
                 Ok = true,
@@ -298,6 +301,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                 DurationMs = sw.ElapsedMilliseconds,
                 SystemPrompt = promptForLog,
                 UserPrompt = userPromptForLog,
+                Attempt = attemptNum,
                 Error = ex.Message,
                 Ok = false,
             });

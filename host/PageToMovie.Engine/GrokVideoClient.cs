@@ -24,17 +24,20 @@ public sealed class GrokVideoClient : IVideoClient
     private readonly PageToMovieOptions _opts;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<GrokVideoClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public GrokVideoClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
-        ILogger<GrokVideoClient> log)
+        ILogger<GrokVideoClient> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _http = http;
         _opts = opts.Value;
         _telemetry = telemetry;
         _log = log;
+        _errorLogger = errorLogger;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
@@ -239,20 +242,34 @@ public sealed class GrokVideoClient : IVideoClient
             "Grok video EXTEND from={Prev} extensionDur={Dur}s promptLen={Len}",
             Path.GetFileName(continueFromVideoPath), durationSeconds, prompt.Length);
 
-        using var extResp = await SendJsonAsync(HttpMethod.Post, "videos/extensions", extPayload, ct);
-        var extBody = await extResp.Content.ReadAsStringAsync(ct);
-        if (!extResp.IsSuccessStatusCode)
-            throw new InvalidOperationException(
-                $"Grok video extend HTTP {(int)extResp.StatusCode}: {Trim(extBody, 500)}");
+        // Submit retry is safe here even though it's not idempotent: if the response is lost after
+        // the server actually created the job, we never got request_id back either way — there's no
+        // way to find/reuse that job, retried automatically or not. A human clicking "try again"
+        // after seeing the same failure has an identical blind spot; this just does it for them,
+        // with proper Retry-After-aware backoff instead of an immediate manual re-click.
+        return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+            async _ =>
+            {
+                using var extResp = await SendJsonAsync(HttpMethod.Post, "videos/extensions", extPayload, ct);
+                var extBody = await extResp.Content.ReadAsStringAsync(ct);
+                if (!extResp.IsSuccessStatusCode)
+                    throw ChatHttpStatusException.FromResponse(extResp,
+                        $"Grok video extend HTTP {(int)extResp.StatusCode}: {Trim(extBody, 500)}");
 
-        using var extDoc = JsonDocument.Parse(extBody);
-        if (!extDoc.RootElement.TryGetProperty("request_id", out var extRid) ||
-            extRid.GetString() is not { Length: > 0 } extId)
-        {
-            throw new InvalidOperationException(
-                $"Grok extend response missing request_id: {Trim(extBody, 300)}");
-        }
-        return extId;
+                using var extDoc = JsonDocument.Parse(extBody);
+                if (!extDoc.RootElement.TryGetProperty("request_id", out var extRid) ||
+                    extRid.GetString() is not { Length: > 0 } extId)
+                {
+                    throw new InvalidOperationException(
+                        $"Grok extend response missing request_id: {Trim(extBody, 300)}");
+                }
+                return extId;
+            },
+            isTransient: AiRetryPolicy.IsTransientChatFailure,
+            maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+            backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+            onRetry: (attemptNum, ex) => _errorLogger.LogRetryAttemptAsync("grok_video_extend_submit", model, $"durationSec={durationSeconds}", attemptNum, ex, ct),
+            ct: ct).ConfigureAwait(false);
     }
 
     private async Task<string> SubmitFreshOnceAsync(
@@ -296,18 +313,31 @@ public sealed class GrokVideoClient : IVideoClient
                 prompt.Length, durationSeconds);
         }
 
-        using var resp = await SendJsonAsync(HttpMethod.Post, "videos/generations", payload, ct);
-        var body = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Grok submit HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
+        // Same reasoning as SubmitExtendOnceAsync: a lost response here is unrecoverable either
+        // way (no request_id to find the job), so automatic retry is no riskier than the manual
+        // retry a human would do on seeing the same failure.
+        return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+            async _ =>
+            {
+                using var resp = await SendJsonAsync(HttpMethod.Post, "videos/generations", payload, ct);
+                var body = await resp.Content.ReadAsStringAsync(ct);
+                if (!resp.IsSuccessStatusCode)
+                    throw ChatHttpStatusException.FromResponse(resp,
+                        $"Grok submit HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
 
-        using var doc = JsonDocument.Parse(body);
-        if (!doc.RootElement.TryGetProperty("request_id", out var rid) ||
-            rid.GetString() is not { Length: > 0 } id)
-        {
-            throw new InvalidOperationException($"Grok response missing request_id: {Trim(body, 300)}");
-        }
-        return id;
+                using var doc = JsonDocument.Parse(body);
+                if (!doc.RootElement.TryGetProperty("request_id", out var rid) ||
+                    rid.GetString() is not { Length: > 0 } id)
+                {
+                    throw new InvalidOperationException($"Grok response missing request_id: {Trim(body, 300)}");
+                }
+                return id;
+            },
+            isTransient: AiRetryPolicy.IsTransientChatFailure,
+            maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+            backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+            onRetry: (attemptNum, ex) => _errorLogger.LogRetryAttemptAsync("grok_video_submit", model, $"durationSec={durationSeconds}", attemptNum, ex, ct),
+            ct: ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -349,27 +379,54 @@ public sealed class GrokVideoClient : IVideoClient
         var poll = Math.Max(2, _opts.GrokPollSeconds);
         var sw = Stopwatch.StartNew();
         var polls = 0;
+        var retriedAnyPoll = false;
 
         while (DateTime.UtcNow < deadline)
         {
             ct.ThrowIfCancellationRequested();
             polls++;
-            using var resp = await SendAsync(HttpMethod.Get, $"videos/{requestId}", content: null, ct);
-            var body = await resp.Content.ReadAsStringAsync(ct);
-            if (!resp.IsSuccessStatusCode)
+
+            // Each poll GET is idempotent (safe to retry freely, no billing risk) — unlike submit,
+            // there's no reason NOT to retry a transient blip here. Previously one bad poll threw
+            // and abandoned tracking of an already-submitted, already-paying job entirely.
+            string body;
+            try
+            {
+                body = await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                    async _ =>
+                    {
+                        using var resp = await SendAsync(HttpMethod.Get, $"videos/{requestId}", content: null, ct);
+                        var b = await resp.Content.ReadAsStringAsync(ct);
+                        if (!resp.IsSuccessStatusCode)
+                            throw ChatHttpStatusException.FromResponse(resp,
+                                $"Grok poll HTTP {(int)resp.StatusCode}: {Trim(b, 400)}");
+                        return b;
+                    },
+                    isTransient: AiRetryPolicy.IsTransientChatFailure,
+                    maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                    backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                    onRetry: (attemptNum, ex) =>
+                    {
+                        retriedAnyPoll = true;
+                        return _errorLogger.LogRetryAttemptAsync("grok_video_poll", null, $"requestId={requestId}; poll={polls}", attemptNum, ex, ct);
+                    },
+                    ct: ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
             {
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "video_poll",
                     Endpoint = $"videos/{requestId}",
                     RequestId = requestId,
-                    HttpStatus = (int)resp.StatusCode,
+                    HttpStatus = ex is ChatHttpStatusException hse ? hse.StatusCode : null,
                     DurationMs = sw.ElapsedMilliseconds,
                     Attempt = polls,
-                    Error = Trim(body, 400),
+                    Error = Trim(ex.Message, 400),
                     Ok = false,
                 });
-                throw new InvalidOperationException($"Grok poll HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
+                await _telemetry.LogOutcomeAsync(null, requestId, "poll_failed", sw.ElapsedMilliseconds, polls, ok: false, ex.Message, ct);
+                throw;
             }
 
             using var doc = JsonDocument.Parse(body);
@@ -393,8 +450,10 @@ public sealed class GrokVideoClient : IVideoClient
                         Mode = "done",
                         Ok = true,
                     });
+                    await _telemetry.LogOutcomeAsync(null, requestId, retriedAnyPoll ? "ok_after_retry" : "ok", sw.ElapsedMilliseconds, polls, ok: true, null, ct);
                     return url;
                 }
+                await _telemetry.LogOutcomeAsync(null, requestId, "provider_failed", sw.ElapsedMilliseconds, polls, ok: false, "done with no video.url", ct);
                 throw new InvalidOperationException("Grok done with no video.url");
             }
 
@@ -414,6 +473,7 @@ public sealed class GrokVideoClient : IVideoClient
                     Error = Trim(detail, 500),
                     Ok = false,
                 });
+                await _telemetry.LogOutcomeAsync(null, requestId, "provider_failed", sw.ElapsedMilliseconds, polls, ok: false, Trim(detail, 500), ct);
                 throw new InvalidOperationException($"Grok job {status}: {Trim(detail, 400)}");
             }
 
@@ -422,6 +482,7 @@ public sealed class GrokVideoClient : IVideoClient
             await Task.Delay(TimeSpan.FromSeconds(poll), ct);
         }
 
+        await _telemetry.LogOutcomeAsync(null, requestId, "timed_out", sw.ElapsedMilliseconds, polls, ok: false, $"timed out after {_opts.GrokTimeoutSeconds}s", ct);
         throw new TimeoutException($"Grok job timed out after {_opts.GrokTimeoutSeconds}s");
     }
 

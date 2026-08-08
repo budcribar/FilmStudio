@@ -23,17 +23,20 @@ public sealed class GrokImageClient : IImageClient
     private readonly PageToMovieOptions _opts;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<GrokImageClient> _log;
+    private readonly GenerationErrorLogger? _errorLogger;
 
     public GrokImageClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
         ProjectTelemetryService telemetry,
-        ILogger<GrokImageClient> log)
+        ILogger<GrokImageClient> log,
+        GenerationErrorLogger? errorLogger = null)
     {
         _http = http;
         _opts = opts.Value;
         _telemetry = telemetry;
         _log = log;
+        _errorLogger = errorLogger;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
@@ -64,6 +67,35 @@ public sealed class GrokImageClient : IImageClient
         var sw = Stopwatch.StartNew();
         try
         {
+            // Image generation is cheap relative to video, so a whole-request retry on a transient
+            // 429/5xx/network blip is worth the (small) risk of an extra generation — same retry
+            // GrokChatClient/GrokVisionClient already get. Video/GeminiVideoClient submissions are
+            // NOT wrapped this way: a lost response there could mean a duplicate expensive render.
+            return await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                DoRequestAsync,
+                isTransient: AiRetryPolicy.IsTransientChatFailure,
+                maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                onRetry: (attemptNum, ex) => _errorLogger.LogRetryAttemptAsync("grok_image_generate", modelName, $"promptChars={prompt?.Length ?? 0}; n={n}", attemptNum, ex, ct),
+                ct: ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not ChatHttpStatusException && ex is not InvalidOperationException)
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = "image",
+                Endpoint = "images/generations",
+                Model = modelName,
+                DurationMs = sw.ElapsedMilliseconds,
+                Prompt = prompt,
+                Error = ex.Message,
+                Ok = false,
+            });
+            throw;
+        }
+
+        async Task<IReadOnlyList<byte[]>> DoRequestAsync(int attemptNum)
+        {
             using var resp = await SendJsonAsync(HttpMethod.Post, "images/generations", payload, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
@@ -78,10 +110,11 @@ public sealed class GrokImageClient : IImageClient
                     Prompt = prompt,
                     PromptChars = prompt?.Length ?? 0,
                     ImageCount = n,
+                    Attempt = attemptNum,
                     Error = Trim(body, 400),
                     Ok = false,
                 });
-                throw new InvalidOperationException(
+                throw ChatHttpStatusException.FromResponse(resp,
                     $"Grok image generations HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
             }
 
@@ -98,9 +131,11 @@ public sealed class GrokImageClient : IImageClient
                     Prompt = prompt,
                     PromptChars = prompt?.Length ?? 0,
                     ImageCount = images.Count,
+                    Attempt = attemptNum,
                     Error = $"returned {images.Count}/{n} images",
                     Ok = false,
                 });
+                // Not retried: a content shortfall, not a transport failure.
                 throw new InvalidOperationException(
                     $"Grok image API returned {images.Count}/{n} usable images");
             }
@@ -115,23 +150,10 @@ public sealed class GrokImageClient : IImageClient
                 Prompt = prompt,
                 PromptChars = prompt?.Length ?? 0,
                 ImageCount = images.Count,
+                Attempt = attemptNum,
                 Ok = true,
             });
             return images;
-        }
-        catch (Exception ex) when (ex is not InvalidOperationException)
-        {
-            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
-            {
-                Kind = "image",
-                Endpoint = "images/generations",
-                Model = modelName,
-                DurationMs = sw.ElapsedMilliseconds,
-                Prompt = prompt,
-                Error = ex.Message,
-                Ok = false,
-            });
-            throw;
         }
     }
 
@@ -252,11 +274,26 @@ public sealed class GrokImageClient : IImageClient
                     "No labels, no redesign, no model sheet.";
 
                 var sw = Stopwatch.StartNew();
+                // Attempt below is the retry-attempt count (1 = succeeded first try), matching
+                // GrokChatClient/GrokVisionClient and what the analytics "retried" stat expects —
+                // NOT the variant index (that's already implicit in which task this is; the prompt
+                // itself says "Variation i+1 of n").
+                var retryAttempt = 1;
                 try
                 {
-                    var body = await PostImageEditAsync(
-                        modelName, variantPrompt, aspectRatio, imageUris, onProgress, ct)
-                        .ConfigureAwait(false);
+                    // Same whole-request transient retry as GenerateVariantsAsync — image gen is
+                    // cheap enough that an extra retried edit isn't a real cost concern.
+                    var body = await AiRetryPolicy.ExecuteWithTransientRetryAsync(
+                        _ => PostImageEditAsync(modelName, variantPrompt, aspectRatio, imageUris, onProgress, ct),
+                        isTransient: AiRetryPolicy.IsTransientChatFailure,
+                        maxAttempts: AiRetryPolicy.DefaultTransientMaxAttempts,
+                        backoffBaseMs: AiRetryPolicy.DefaultTransientBackoffMs,
+                        onRetry: (attemptNum, ex) =>
+                        {
+                            retryAttempt = attemptNum + 1;
+                            return _errorLogger.LogRetryAttemptAsync("grok_image_edit", modelName, $"variant={i + 1}/{n}", attemptNum, ex, ct);
+                        },
+                        ct: ct).ConfigureAwait(false);
                     if (body is null)
                     {
                         await _telemetry.LogApiCallAsync(new ApiCallTelemetry
@@ -269,7 +306,7 @@ public sealed class GrokImageClient : IImageClient
                             PromptChars = variantPrompt.Length,
                             ReferenceImagePaths = refNames,
                             RefsAttached = true,
-                            Attempt = i + 1,
+                            Attempt = retryAttempt,
                             Error = "empty response",
                             Ok = false,
                         });
@@ -289,12 +326,16 @@ public sealed class GrokImageClient : IImageClient
                         ReferenceImagePaths = refNames,
                         RefsAttached = true,
                         ImageCount = batch.Count,
-                        Attempt = i + 1,
+                        Attempt = retryAttempt,
                         Ok = true,
                     });
                     return batch.FirstOrDefault() ?? Array.Empty<byte>();
                 }
-                catch (Exception ex) when (ex is not InvalidOperationException)
+                // ChatHttpStatusException IS an InvalidOperationException, but unlike other
+                // InvalidOperationExceptions here (validation failures etc.) it comes from
+                // PostImageEditAsync's HTTP path and was previously silently uncaught/unlogged —
+                // net it into the same log-and-rethrow path as real transport exceptions.
+                catch (Exception ex) when (ex is not InvalidOperationException || ex is ChatHttpStatusException)
                 {
                     await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                     {
@@ -304,7 +345,7 @@ public sealed class GrokImageClient : IImageClient
                         DurationMs = sw.ElapsedMilliseconds,
                         Prompt = variantPrompt,
                         ReferenceImagePaths = refNames,
-                        Attempt = i + 1,
+                        Attempt = retryAttempt,
                         Error = ex.Message,
                         Ok = false,
                     });
@@ -337,7 +378,7 @@ public sealed class GrokImageClient : IImageClient
         Action<string>? onProgress,
         CancellationToken ct)
     {
-        async Task<(bool Ok, int Code, string Body)> SendAsync(JsonObject payload)
+        async Task<(bool Ok, int Code, string Body, TimeSpan? RetryAfter)> SendAsync(JsonObject payload)
         {
             using var content = new StringContent(
                 payload.ToJsonString(),
@@ -350,7 +391,7 @@ public sealed class GrokImageClient : IImageClient
                 req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
             using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            return (resp.IsSuccessStatusCode, (int)resp.StatusCode, body);
+            return (resp.IsSuccessStatusCode, (int)resp.StatusCode, body, AiRetryPolicy.ParseRetryAfter(resp.Headers));
         }
 
         JsonObject BasePayload() => new()
@@ -369,13 +410,13 @@ public sealed class GrokImageClient : IImageClient
                 arr.Add(u);
             var multi = BasePayload();
             multi["images"] = arr;
-            var (ok, _, body) = await SendAsync(multi).ConfigureAwait(false);
+            var (ok, code, body, retryAfter) = await SendAsync(multi).ConfigureAwait(false);
             if (ok) return body;
 
             // Fallback: "image" as string[] (older / alternate parsers)
             var alt = BasePayload();
             alt["image"] = arr.DeepClone();
-            var (ok2, _, body2) = await SendAsync(alt).ConfigureAwait(false);
+            var (ok2, code2, body2, retryAfter2) = await SendAsync(alt).ConfigureAwait(false);
             if (ok2) return body2;
 
             // Last resort: drop last ref(s) so 3→2 still produces a portrait
@@ -402,24 +443,26 @@ public sealed class GrokImageClient : IImageClient
                     modelName, prompt2, aspectRatio, two, onProgress, ct).ConfigureAwait(false);
             }
 
-            throw new InvalidOperationException(
-                $"Image edit failed: {Trim(body.Length > 0 ? body : body2, 400)}");
+            throw new ChatHttpStatusException(code2 != 0 ? code2 : code,
+                $"Image edit failed: {Trim(body.Length > 0 ? body : body2, 400)}",
+                retryAfter2 ?? retryAfter);
         }
 
         // Single image: "image" as data-URI string, then { "url": ... }
         {
             var p = BasePayload();
             p["image"] = imageUris[0];
-            var (ok, _, body) = await SendAsync(p).ConfigureAwait(false);
+            var (ok, code, body, retryAfter) = await SendAsync(p).ConfigureAwait(false);
             if (ok) return body;
 
             var p2 = BasePayload();
             p2["image"] = new JsonObject { ["url"] = imageUris[0] };
-            var (ok2, _, body2) = await SendAsync(p2).ConfigureAwait(false);
+            var (ok2, code2, body2, retryAfter2) = await SendAsync(p2).ConfigureAwait(false);
             if (ok2) return body2;
 
-            throw new InvalidOperationException(
-                $"Image edit failed: {Trim(body2.Length > 0 ? body2 : body, 400)}");
+            throw new ChatHttpStatusException(code2 != 0 ? code2 : code,
+                $"Image edit failed: {Trim(body2.Length > 0 ? body2 : body, 400)}",
+                retryAfter2 ?? retryAfter);
         }
     }
 

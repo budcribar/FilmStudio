@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using PageToMovie.Engine.ModelExecution;
 using System.Threading;
@@ -47,6 +48,19 @@ public static class AiRetryPolicy
 
     /// <summary>Default backoff base (ms) for chat-client transient retries.</summary>
     public const int DefaultTransientBackoffMs = 500;
+
+    /// <summary>
+    /// Ceiling on the quadratic backoff fallback (no <c>Retry-After</c> header) for transient
+    /// retries — deliberately higher than <see cref="ClassifierJsonParser.BackoffAsync"/>'s 4s cap,
+    /// which exists for a different concern (coverage retries) and is left untouched.
+    /// </summary>
+    public const int DefaultTransientMaxBackoffMs = 15_000;
+
+    /// <summary>
+    /// Ceiling on how long we'll honor a provider's own <c>Retry-After</c> value — protects
+    /// interactive (UI-triggered) calls from hanging on an unexpectedly large value.
+    /// </summary>
+    public const int MaxRetryAfterMs = 30_000;
 
     // ── Coverage checking ───────────────────────────────────────────────────
 
@@ -111,6 +125,14 @@ public static class AiRetryPolicy
         string promptVersion = "1",
         string? model = null)
     {
+        // transportMaxAttempts stays 1 here deliberately: callChat ultimately calls
+        // IChatClient.CompleteAsync (GrokChatClient/AnthropicChatClient/GeminiChatClient), which
+        // ALREADY retries transiently (429/5xx/network, Retry-After-aware, backed off) inside
+        // itself. Retrying AGAIN at this outer layer would multiply that — up to 3 semantic
+        // attempts × 3 outer transport attempts × 3 inner client attempts = 27 raw HTTP calls in
+        // the worst case, instead of the intended 3×3=9. The semantic-attempt loop already only
+        // sees an exception here after the inner client's own backoff-and-retry is exhausted, so
+        // moving straight to the next semantic attempt (no additional delay) is correct, not a gap.
         var (_, compatibility) = await ValidatedCoverageOperation.ExecuteAsync(
             operationName,
             promptVersion,
@@ -180,11 +202,30 @@ public static class AiRetryPolicy
         || IsTransientException(ex);
 
     /// <summary>
+    /// Extracts a provider's <c>Retry-After</c> value (delta-seconds or HTTP-date form), clamped to
+    /// <see cref="MaxRetryAfterMs"/> so one interactive (UI-triggered) call can't hang on an
+    /// unexpectedly large provider-supplied value. Null if the header is absent, unparsable, or
+    /// non-positive.
+    /// </summary>
+    public static TimeSpan? ParseRetryAfter(HttpResponseHeaders headers)
+    {
+        var ra = headers.RetryAfter;
+        if (ra is null) return null;
+        TimeSpan? delta = ra.Delta ?? (ra.Date is { } date ? date - DateTimeOffset.UtcNow : null);
+        if (delta is not { } d || d <= TimeSpan.Zero) return null;
+        var cap = TimeSpan.FromMilliseconds(MaxRetryAfterMs);
+        return d > cap ? cap : d;
+    }
+
+    /// <summary>
     /// Retries <paramref name="attempt"/> up to <paramref name="maxAttempts"/> times while
-    /// <paramref name="isTransient"/> returns true for the thrown exception, with quadratic
-    /// backoff between attempts. The final attempt's exception always propagates unmodified
-    /// (never wrapped) if it also fails. <paramref name="onRetry"/> (if given) runs once per
-    /// failed-but-retried attempt, before the backoff delay — callers use it to log the attempt.
+    /// <paramref name="isTransient"/> returns true for the thrown exception. Backoff between
+    /// attempts prefers a <see cref="ChatHttpStatusException.RetryAfter"/> value the provider gave
+    /// us; otherwise falls back to a quadratic curve capped at <see cref="DefaultTransientMaxBackoffMs"/>
+    /// (a separate, larger cap than <see cref="ClassifierJsonParser.BackoffAsync"/>'s 4s, which is
+    /// for the unrelated coverage-retry concern). The final attempt's exception always propagates
+    /// unmodified (never wrapped) if it also fails. <paramref name="onRetry"/> (if given) runs once
+    /// per failed-but-retried attempt, before the backoff delay — callers use it to log the attempt.
     /// </summary>
     public static async Task<T> ExecuteWithTransientRetryAsync<T>(
         Func<int, Task<T>> attempt,
@@ -205,7 +246,11 @@ public static class AiRetryPolicy
             {
                 if (onRetry is not null)
                     await onRetry(i, ex).ConfigureAwait(false);
-                await ClassifierJsonParser.BackoffAsync(i, backoffBaseMs, ct).ConfigureAwait(false);
+                var delay = ex is ChatHttpStatusException { RetryAfter: { } ra }
+                    ? ra
+                    : TimeSpan.FromMilliseconds(Math.Min(DefaultTransientMaxBackoffMs, (long)backoffBaseMs * i * i));
+                if (delay > TimeSpan.Zero)
+                    await Task.Delay(delay, ct).ConfigureAwait(false);
             }
         }
 
@@ -226,9 +271,17 @@ public static class AiRetryPolicy
 public sealed class ChatHttpStatusException : InvalidOperationException
 {
     public int StatusCode { get; }
+    /// <summary>Provider's <c>Retry-After</c> value (see <see cref="AiRetryPolicy.ParseRetryAfter"/>), if any — preferred over the quadratic backoff fallback when retrying.</summary>
+    public TimeSpan? RetryAfter { get; }
 
-    public ChatHttpStatusException(int statusCode, string message) : base(message)
+    public ChatHttpStatusException(int statusCode, string message, TimeSpan? retryAfter = null) : base(message)
     {
         StatusCode = statusCode;
+        RetryAfter = retryAfter;
     }
+
+    /// <summary>Builds the exception from a failed <see cref="HttpResponseMessage"/>, extracting
+    /// <c>Retry-After</c> automatically — the common case at every provider-client call site.</summary>
+    public static ChatHttpStatusException FromResponse(HttpResponseMessage resp, string message) =>
+        new((int)resp.StatusCode, message, AiRetryPolicy.ParseRetryAfter(resp.Headers));
 }
