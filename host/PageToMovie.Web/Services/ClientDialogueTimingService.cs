@@ -70,12 +70,16 @@ public sealed class ClientDialogueTimingService
             if (audio is null || audio.Length < 256) continue;
 
             var transcript = await _engine.TranscribeSegmentAsync(audio, "segment.wav", ct);
-            var heard = (transcript?.Text ?? "").Trim();
+            var heard = StripSoundEffectTags((transcript?.Text ?? "").Trim());
             var words = (transcript?.Words ?? new())
                 .Where(tw => !string.IsNullOrWhiteSpace(tw.Text) &&
-                             !string.Equals(tw.Type, "spacing", StringComparison.OrdinalIgnoreCase))
+                             !string.Equals(tw.Type, "spacing", StringComparison.OrdinalIgnoreCase) &&
+                             !SoundEffectTagRegex.IsMatch(tw.Text))
                 .Select(tw => new VoiceCaptureWord { Text = tw.Text.Trim(), StartSec = Math.Max(0, tw.Start), EndSec = Math.Max(0, tw.End) })
                 .ToList();
+            // A window that was ONLY a sound-effect tag ("[outro jingle]") has nothing left to review —
+            // drop it rather than surfacing an empty "heard but not in script" row.
+            if (heard.Length == 0 && words.Count == 0) continue;
             heardWindows.Add(new HeardWindow(w.StartSec, w.EndSec, heard, words));
         }
 
@@ -164,6 +168,19 @@ public sealed class ClientDialogueTimingService
         new string((s ?? "").ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray())
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .ToList();
+
+    /// <summary>Matches STT non-speech annotations like "[laughs]", "[door closing]", "[outro jingle]"
+    /// — Scribe (and Whisper-family models generally) emit bracketed tags for detected non-verbal
+    /// sound, not spoken dialogue, so they don't belong in a script-vs-heard comparison.</summary>
+    private static readonly System.Text.RegularExpressions.Regex SoundEffectTagRegex =
+        new(@"\[[^\]]*\]", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    private static string StripSoundEffectTags(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var stripped = SoundEffectTagRegex.Replace(text, " ");
+        return System.Text.RegularExpressions.Regex.Replace(stripped, @"\s+", " ").Trim();
+    }
 
     private sealed record HeardWindow(double StartSec, double EndSec, string Heard, List<VoiceCaptureWord> Words);
 }
