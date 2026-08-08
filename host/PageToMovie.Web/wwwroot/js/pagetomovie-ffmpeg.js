@@ -926,7 +926,7 @@ window.PageToMovieFfmpeg = {
      * of a take against the original, plus duration closeness. Timbre-independent by construction
      * (normalized RMS envelope) — a different voice with the same rhythm scores high. Returns 0..100.
      */
-    analyzeRhythmMatchAsync: async function (originalUrl, takeUrl, regionCount) {
+    analyzeRhythmMatchAsync: async function (originalUrl, takeUrl, wordBoundaries) {
         try {
             const frames = 96;
             const a = await this._loudnessEnvelope(originalUrl, frames);
@@ -935,13 +935,31 @@ window.PageToMovieFfmpeg = {
             // Per-region match (0..1) so we can color each word red/yellow/green: both envelopes are
             // normalized + resampled to the same frames, so they're time-aligned; a region's match is
             // 1 − (mean absolute envelope difference), scaled for sensitivity. Timbre-independent.
-            const rc = Math.max(1, Math.min(frames, (regionCount | 0) || 8));
+            //
+            // Region boundaries come from the phrase's real per-word STT timing (the same data the
+            // teleprompter uses) when the caller has it — words are not equal-width in time (a word
+            // right before a comma pause is short, one that absorbs a pause is long), and dividing
+            // `frames` into equal slices scored each word against the wrong slice of audio once
+            // pacing was uneven. `wordBoundaries` is a flat [start0,end0,start1,end1,...] array of
+            // fractions (0..1) of the phrase's window duration; falls back to equal division (the old
+            // behavior) when a plain word count is passed instead.
+            let boundaryPairs;
+            if (Array.isArray(wordBoundaries) && wordBoundaries.length >= 2) {
+                boundaryPairs = [];
+                for (let i = 0; i + 1 < wordBoundaries.length; i += 2)
+                    boundaryPairs.push([wordBoundaries[i], wordBoundaries[i + 1]]);
+            } else {
+                const rc = Math.max(1, Math.min(frames, (wordBoundaries | 0) || 8));
+                boundaryPairs = [];
+                for (let r = 0; r < rc; r++) boundaryPairs.push([r / rc, (r + 1) / rc]);
+            }
+
             const regions = [];
-            for (let r = 0; r < rc; r++) {
-                const s = Math.floor(r * frames / rc);
-                const e = Math.max(s + 1, Math.floor((r + 1) * frames / rc));
+            for (const pair of boundaryPairs) {
+                const s = Math.max(0, Math.min(frames - 1, Math.floor(pair[0] * frames)));
+                const e = Math.max(s + 1, Math.min(frames, Math.ceil(pair[1] * frames)));
                 let sum = 0, cnt = 0;
-                for (let i = s; i < e && i < frames; i++) { sum += Math.abs(a.env[i] - b.env[i]); cnt++; }
+                for (let i = s; i < e; i++) { sum += Math.abs(a.env[i] - b.env[i]); cnt++; }
                 const md = cnt ? sum / cnt : 1;
                 regions.push(Math.max(0, Math.min(1, 1 - 1.6 * md)));
             }

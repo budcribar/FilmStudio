@@ -503,9 +503,19 @@ else
 
             if (!string.IsNullOrEmpty(_originalUrl))
             {
-                var wc = SplitWords(CurrentPhrase.Text).Count;
+                // Real per-word boundaries (same timeline the teleprompter uses), not an equal split —
+                // a word next to a comma pause is short, one that absorbs the pause is long, and equal
+                // division scored each word against the wrong slice of audio once pacing was uneven.
+                var words = SplitWords(CurrentPhrase.Text);
+                var (wStarts, wEnds) = BuildWordTimeline(words, _ballDurationSec);
+                var boundaries = new double[words.Count * 2];
+                for (var wi = 0; wi < words.Count; wi++)
+                {
+                    boundaries[wi * 2] = _ballDurationSec > 0 ? wStarts[wi] / _ballDurationSec : 0;
+                    boundaries[wi * 2 + 1] = _ballDurationSec > 0 ? wEnds[wi] / _ballDurationSec : 1;
+                }
                 var s = await Js.InvokeAsync<RhythmResult>(
-                    "PageToMovieFfmpeg.analyzeRhythmMatchAsync", _originalUrl, _takeUrl, wc);
+                    "PageToMovieFfmpeg.analyzeRhythmMatchAsync", _originalUrl, _takeUrl, boundaries);
                 if (s is { Success: true }) { _score = s.Score; _regions = s.Regions; _renderYouWave = true; }
             }
         }
