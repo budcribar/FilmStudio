@@ -8,7 +8,7 @@
 
 <PageTitle>Models catalog manager — PageToMovie</PageTitle>
 
-<div class="container py-3" style="max-width: 72rem;">
+<div class="container-fluid py-3 px-4">
     <AdminPageHeader Title="Models catalog manager">
         <Subtitle>
             Add, edit, delete, and <strong>review</strong> models ·
@@ -175,9 +175,55 @@
         }
         else
         {
-            <div class="mb-2 d-flex gap-2 flex-wrap">
-                <button class="btn btn-sm btn-success" @onclick="() => BeginAdd()">＋ Add model</button>
-                <span class="text-muted small align-self-center">@_modelList.Count models · enabled: @_modelList.Count(m => IsEnabled(m))</span>
+            @* ── Search & Filter Toolbar ────────────────────────────────────── *@
+            <div class="card p-3 mb-3 border shadow-sm">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-dark border-secondary text-muted">🔍</span>
+                            <input class="form-control form-control-sm bg-dark text-light border-secondary"
+                                   placeholder="Search model ID, name, provider…"
+                                   @bind="_filterQuery"
+                                   @bind:event="oninput" />
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm bg-dark text-light border-secondary" @bind="_filterCapability">
+                            <option value="">All Capabilities</option>
+                            @foreach (var c in Capabilities)
+                            {
+                                <option value="@c">@c</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm bg-dark text-light border-secondary" @bind="_filterProvider">
+                            <option value="">All Providers</option>
+                            @foreach (var p in AvailableProviders)
+                            {
+                                <option value="@p">@p</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm bg-dark text-light border-secondary" @bind="_filterStatus">
+                            <option value="">All Statuses</option>
+                            <option value="enabled">Enabled only</option>
+                            <option value="disabled">Disabled only</option>
+                            <option value="lab">Lab mode only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2 justify-content-end align-items-center">
+                        @if (!string.IsNullOrWhiteSpace(_filterQuery) || !string.IsNullOrWhiteSpace(_filterCapability) || !string.IsNullOrWhiteSpace(_filterProvider) || !string.IsNullOrWhiteSpace(_filterStatus))
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="ResetFilters">Clear filters</button>
+                        }
+                        <button class="btn btn-sm btn-success" @onclick="() => BeginAdd()">＋ Add model</button>
+                        <span class="badge bg-secondary">
+                            @FilteredModels.Count() of @_modelList.Count models (@_modelList.Count(m => IsEnabled(m)) enabled)
+                        </span>
+                    </div>
+                </div>
             </div>
 
             @if (_editModel is not null)
@@ -352,10 +398,10 @@
                 </div>
             }
 
-            <div class="card shadow-sm">
-                <div class="table-responsive">
+            <div class="card shadow-sm border">
+                <div class="table-responsive" style="max-height: 70vh;">
                     <table class="table table-hover table-striped mb-0 align-middle small">
-                        <thead class="table-dark">
+                        <thead class="table-dark sticky-top" style="z-index: 5;">
                             <tr>
                                 <th style="width: 50px;">On</th>
                                 <th>Model ID</th>
@@ -363,44 +409,55 @@
                                 <th>Cap</th>
                                 <th>Provider</th>
                                 <th>Reviewed</th>
-                                <th style="width: 140px;">Actions</th>
+                                <th style="width: 140px;" class="text-end pe-3">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var m in _modelList)
+                            @if (!FilteredModels.Any())
                             {
-                                var modelId = m["id"]?.ToString() ?? "";
-                                var displayName = m["displayName"]?.ToString() ?? "";
-                                var cap = m["capability"]?.ToString() ?? "";
-                                var prov = m["provider"]?.ToString() ?? "";
-                                var verified = m["lastVerifiedAt"]?.ToString() ?? "—";
-                                var priced = m["pricingLastReviewedAt"]?.ToString() ?? "—";
-                                <tr class="@(IsEnabled(m) ? "" : "table-secondary")">
-                                    <td>
-                                        <ToggleSwitch Value="@IsEnabled(m)" ValueChanged="@(_ => ToggleModelEnabled(m))" WrapperClass="form-check form-switch mb-0" />
-                                    </td>
-                                    <td class="fw-bold font-monospace">@modelId</td>
-                                    <td>
-                                        @displayName
-                                        @if (m.TryGetPropertyValue("labMode", out var labNode) && labNode?.GetValue<bool>() == true)
-                                        {
-                                            <span class="badge bg-warning text-dark ms-1" title="@(m["labNotes"]?.ToString() ?? "lab")">LAB</span>
-                                        }
-                                    </td>
-                                    <td><span class="badge @GetCapBadgeClass(cap)">@cap</span></td>
-                                    <td class="text-muted">@prov</td>
-                                    <td class="small text-muted">
-                                        <div>row: @verified</div>
-                                        <div>$: @priced</div>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" title="Edit" @onclick="() => BeginEdit(m)">✎</button>
-                                            <button class="btn btn-outline-success" title="Mark reviewed today" @onclick="() => ReviewModel(m)">✓</button>
-                                            <button class="btn btn-outline-danger" title="Delete" @onclick="() => RemoveModelAsync(m)">🗑</button>
-                                        </div>
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        No models match the selected filter criteria.
                                     </td>
                                 </tr>
+                            }
+                            else
+                            {
+                                @foreach (var m in FilteredModels)
+                                {
+                                    var modelId = m["id"]?.ToString() ?? "";
+                                    var displayName = m["displayName"]?.ToString() ?? "";
+                                    var cap = m["capability"]?.ToString() ?? "";
+                                    var prov = m["provider"]?.ToString() ?? "";
+                                    var verified = m["lastVerifiedAt"]?.ToString() ?? "—";
+                                    var priced = m["pricingLastReviewedAt"]?.ToString() ?? "—";
+                                    <tr class="@(IsEnabled(m) ? "" : "table-secondary")">
+                                        <td>
+                                            <ToggleSwitch Value="@IsEnabled(m)" ValueChanged="@(_ => ToggleModelEnabled(m))" WrapperClass="form-check form-switch mb-0" />
+                                        </td>
+                                        <td class="fw-bold font-monospace">@modelId</td>
+                                        <td>
+                                            @displayName
+                                            @if (m.TryGetPropertyValue("labMode", out var labNode) && labNode?.GetValue<bool>() == true)
+                                            {
+                                                <span class="badge bg-warning text-dark ms-1" title="@(m["labNotes"]?.ToString() ?? "lab")">LAB</span>
+                                            }
+                                        </td>
+                                        <td><span class="badge @GetCapBadgeClass(cap)">@cap</span></td>
+                                        <td class="text-muted fw-semibold">@prov</td>
+                                        <td class="small text-muted">
+                                            <div>row: <code>@verified</code></div>
+                                            <div>$: <code>@priced</code></div>
+                                        </td>
+                                        <td class="text-end pe-3">
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" title="Edit model settings" @onclick="() => BeginEdit(m)">✎ Edit</button>
+                                                <button class="btn btn-outline-success" title="Mark reviewed today" @onclick="() => ReviewModel(m)">✓ Review</button>
+                                                <button class="btn btn-outline-danger" title="Delete model" @onclick="() => RemoveModelAsync(m)">🗑</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
                             }
                         </tbody>
                     </table>

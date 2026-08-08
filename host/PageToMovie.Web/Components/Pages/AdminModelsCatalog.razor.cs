@@ -55,6 +55,57 @@ public partial class AdminModelsCatalog
     private int? _editMaxAudio;
     private bool _editSupportsVocals;
 
+    private string _filterQuery = "";
+    private string _filterCapability = "";
+    private string _filterProvider = "";
+    private string _filterStatus = "";
+
+    private void ResetFilters()
+    {
+        _filterQuery = "";
+        _filterCapability = "";
+        _filterProvider = "";
+        _filterStatus = "";
+    }
+
+    private IEnumerable<JsonObject> FilteredModels => _modelList.Where(m =>
+    {
+        var modelId = m["id"]?.ToString() ?? "";
+        var displayName = m["displayName"]?.ToString() ?? "";
+        var cap = m["capability"]?.ToString() ?? "";
+        var prov = m["provider"]?.ToString() ?? "";
+        var isEnabled = IsEnabled(m);
+        var isLab = m.TryGetPropertyValue("labMode", out var labNode) && labNode?.GetValue<bool>() == true;
+
+        if (!string.IsNullOrWhiteSpace(_filterQuery))
+        {
+            var q = _filterQuery.Trim();
+            if (!modelId.Contains(q, StringComparison.OrdinalIgnoreCase) &&
+                !displayName.Contains(q, StringComparison.OrdinalIgnoreCase) &&
+                !prov.Contains(q, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filterCapability) && !string.Equals(cap, _filterCapability, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(_filterProvider) && !string.Equals(prov, _filterProvider, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (_filterStatus == "enabled" && !isEnabled) return false;
+        if (_filterStatus == "disabled" && isEnabled) return false;
+        if (_filterStatus == "lab" && !isLab) return false;
+
+        return true;
+    });
+
+    private List<string> AvailableProviders => _modelList
+        .Select(m => m["provider"]?.ToString())
+        .Where(p => !string.IsNullOrWhiteSpace(p))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(p => p)
+        .ToList()!;
+
     protected override async Task OnInitializedAsync() => await LoadCatalogAsync();
 
     private static bool IsEnabled(JsonObject m) =>
