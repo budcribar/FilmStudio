@@ -1,0 +1,30 @@
+@namespace PageToMovie.Web.Components
+
+<div class="py-4 text-center text-white bg-dark rounded border border-secondary" @attributes="AdditionalAttributes">
+    <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+    <div class="fw-semibold">@Label</div>
+    @if (ShowProgress)
+    {
+        <div class="small text-muted mt-1 mb-2">
+            Downloading <code>@(CurrentFile ?? "media files")</code> (@Current of @Total)
+        </div>
+        <div class="progress mx-auto mb-1" style="max-width: 280px; height: 6px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: @(Percent)%"></div>
+        </div>
+    }
+    @if (FooterText is not null)
+    {
+        <div class="small text-secondary">@FooterText</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public bool ShowProgress { get; set; } = true;
+    [Parameter] public string? CurrentFile { get; set; }
+    [Parameter] public int Current { get; set; }
+    [Parameter] public int Total { get; set; }
+    [Parameter] public double Percent { get; set; }
+    [Parameter] public string? FooterText { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

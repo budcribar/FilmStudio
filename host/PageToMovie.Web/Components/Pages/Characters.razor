@@ -14,21 +14,18 @@
 
 <PageTitle>Cast & voice</PageTitle>
 
-<div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">@(_simpleMode ? "Simple · your voice" : "Studio · Step 2")</span>
-    <h1 class="ptm-adapt-title mb-1">@(_simpleMode ? "Narrator voice" : "Cast & voice")</h1>
-    <p class="ptm-adapt-lede">
-        @if (_simpleMode)
-        {
-            <text>Record one sample for the narrator. Library pictures stay as-is — we only re-voice the lines. Want faces of family? Use full studio.</text>
-        }
-        else
-        {
-            <text>Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free;
-            clone / profile is an add-on path when you want a personal sample.</text>
-        }
-    </p>
-</div>
+<StudioPageHeader Kicker="@(_simpleMode ? "Simple · your voice" : "Studio · Step 2")"
+                   Title="@(_simpleMode ? "Narrator voice" : "Cast & voice")" LedeClass="">
+    @if (_simpleMode)
+    {
+        <text>Record one sample for the narrator. Library pictures stay as-is — we only re-voice the lines. Want faces of family? Use full studio.</text>
+    }
+    else
+    {
+        <text>Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free;
+        clone / profile is an add-on path when you want a personal sample.</text>
+    }
+</StudioPageHeader>
 
 @if (_simpleMode)
 {
@@ -133,12 +130,12 @@ else if (Session.IsAdmin && HasCast && !JobRunning && !_extractingCast)
 }
 else if (!string.IsNullOrEmpty(_error) && !JobRunning)
 {
-    <div class="alert alert-danger">@_error</div>
+    <InlineAlert Message="@_error" />
 }
 @* One outcome surface: success flash OR next-step CTA — not both saying “ready” *@
 @if (!string.IsNullOrEmpty(_message) && !_extractingCast && !JobRunning && !IsCastComplete)
 {
-    <div class="alert alert-success">@_message</div>
+    <InlineAlert Message="@_message" Variant="success" />
 }
 @if (Session.IsAdmin && _lastCastExtractKeys is { Count: > 0 } && !_extractingCast)
 {
@@ -903,7 +900,7 @@ else
             }
             @if (!string.IsNullOrEmpty(_voicePreviewError))
             {
-                <div class="alert alert-danger py-1 small mt-2 mb-0">@_voicePreviewError</div>
+                <InlineAlert Message="@_voicePreviewError" CssClass="py-1 small mt-2 mb-0" />
             }
             @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
             {
@@ -1046,7 +1043,7 @@ else
             }
             @if (!string.IsNullOrEmpty(_voiceCloneError))
             {
-                <div class="alert alert-danger py-1 small mb-0">@_voiceCloneError</div>
+                <InlineAlert Message="@_voiceCloneError" CssClass="py-1 small mb-0" />
             }
             @if (!string.IsNullOrEmpty(_voiceClonePlayUrl))
             {

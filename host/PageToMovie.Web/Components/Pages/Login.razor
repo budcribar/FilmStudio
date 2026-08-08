@@ -38,12 +38,9 @@
 
         @if (!_checkedSession || (_busy && string.IsNullOrEmpty(_error) && string.IsNullOrEmpty(_info)))
         {
-            <div class="auth-status text-center py-4">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Loading…</span>
-                </div>
-                <p class="text-muted mb-0">@_status</p>
-            </div>
+            <CenteredSpinner WrapperClass="auth-status text-center py-4" SpinnerClass="spinner-border text-primary mb-3">
+                <Caption>@_status</Caption>
+            </CenteredSpinner>
         }
         else if (_resetTokenMode)
         {
@@ -78,14 +75,8 @@
                     </div>
                 </div>
 
-                @if (!string.IsNullOrEmpty(_error))
-                {
-                    <div class="alert alert-danger py-2" role="alert">@_error</div>
-                }
-                @if (!string.IsNullOrEmpty(_info))
-                {
-                    <div class="alert alert-success py-2" role="alert">@_info</div>
-                }
+                <InlineAlert Message="@_error" CssClass="py-2" role="alert" />
+                <InlineAlert Message="@_info" Variant="success" CssClass="py-2" role="alert" />
 
                 <button type="submit" class="btn btn-gradient w-100 py-2 mt-2" disabled="@_busy">
                     @(_busy ? "Updating…" : "Set new password")
@@ -112,14 +103,8 @@
                     </div>
                 </div>
 
-                @if (!string.IsNullOrEmpty(_error))
-                {
-                    <div class="alert alert-danger py-2" role="alert">@_error</div>
-                }
-                @if (!string.IsNullOrEmpty(_info))
-                {
-                    <div class="alert alert-success py-2" role="alert">@_info</div>
-                }
+                <InlineAlert Message="@_error" CssClass="py-2" role="alert" />
+                <InlineAlert Message="@_info" Variant="success" CssClass="py-2" role="alert" />
 
                 <button type="submit" class="btn btn-gradient w-100 py-2 mt-2" disabled="@_busy">
                     @(_busy ? "Submitting…" : "Send reset link")

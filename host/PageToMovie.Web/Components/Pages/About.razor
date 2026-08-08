@@ -43,10 +43,7 @@
 @* ————— Technical / operational detail: admin only ————— *@
 @if (Session.IsAdmin)
 {
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-warning py-2">@_error</div>
-}
+<InlineAlert Message="@_error" Variant="warning" CssClass="py-2" />
 
 <div class="row g-3 mb-4">
     <div class="col-md-6">

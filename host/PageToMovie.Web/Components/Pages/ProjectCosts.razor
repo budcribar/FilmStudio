@@ -7,19 +7,12 @@
 
 <PageTitle>Project cost breakdown</PageTitle>
 
-<div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Studio · Estimate</span>
-    <h1 class="ptm-adapt-title mb-1">Project cost breakdown</h1>
-    <p class="ptm-adapt-lede mb-0">
-        Where this film’s planned cost and spend break down, by category. For the headline number,
-        see <a href="cost">Estimate</a>.
-    </p>
-</div>
+<StudioPageHeader Kicker="Studio · Estimate" Title="Project cost breakdown">
+    Where this film’s planned cost and spend break down, by category. For the headline number,
+    see <a href="cost">Estimate</a>.
+</StudioPageHeader>
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger">@_error</div>
-}
+<InlineAlert Message="@_error" />
 
 @if (_report is null)
 {

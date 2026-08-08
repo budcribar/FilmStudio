@@ -14,20 +14,17 @@
 
 <PageTitle>@(IsSimpleFilm ? "Movie" : "Film · Scenes & clips")</PageTitle>
 
-<div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">@(IsSimpleFilm ? "Easiest start · Movie" : "Studio · Step 5 · Film")</span>
-    <h1 class="ptm-adapt-title mb-1">@(IsSimpleFilm ? "Make your movie" : "Scenes & clips")</h1>
-    <p class="ptm-adapt-lede mb-0">
-        @if (IsSimpleFilm)
-        {
-            <text>Generate every scene with your narrator voice. Stock pictures stay as-is.</text>
-        }
-        else
-        {
-            <text>Generate and stitch clips on your machine where possible. Check Estimate before a full render if you are watching credits.</text>
-        }
-    </p>
-</div>
+<StudioPageHeader Kicker="@(IsSimpleFilm ? "Easiest start · Movie" : "Studio · Step 5 · Film")"
+                   Title="@(IsSimpleFilm ? "Make your movie" : "Scenes & clips")">
+    @if (IsSimpleFilm)
+    {
+        <text>Generate every scene with your narrator voice. Stock pictures stay as-is.</text>
+    }
+    else
+    {
+        <text>Generate and stitch clips on your machine where possible. Check Estimate before a full render if you are watching credits.</text>
+    }
+</StudioPageHeader>
 
 <StudioProcessStrip Active="film" SimpleMode="@IsSimpleFilm" FullStudio="@(!IsSimpleFilm)" />
 
@@ -202,17 +199,11 @@ else
         <div class="card-body py-2">
             @if (MediaFolder.IsSyncing && string.IsNullOrEmpty(_clientSceneUrl))
             {
-                <div class="py-4 text-center text-white bg-dark rounded border border-secondary" data-testid="scenes-downloading-player">
-                    <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
-                    <div class="fw-semibold">Downloading video clips to local folder…</div>
-                    <div class="small text-muted mt-1 mb-2">
-                        Downloading <code>@(MediaFolder.SyncCurrentFile ?? "media files")</code> (@MediaFolder.SyncCurrent of @MediaFolder.SyncTotal)
-                    </div>
-                    <div class="progress mx-auto mb-1" style="max-width: 280px; height: 6px;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: @(MediaFolder.SyncPercent)%"></div>
-                    </div>
-                    <div class="small text-secondary">Playback will start automatically as soon as downloads complete.</div>
-                </div>
+                <MediaDownloadProgress Label="Downloading video clips to local folder…"
+                                       CurrentFile="@MediaFolder.SyncCurrentFile" Current="@MediaFolder.SyncCurrent"
+                                       Total="@MediaFolder.SyncTotal" Percent="@MediaFolder.SyncPercent"
+                                       FooterText="Playback will start automatically as soon as downloads complete."
+                                       data-testid="scenes-downloading-player" />
             }
             else
             {
@@ -340,13 +331,10 @@ else if (_showPreviewPlayer && _clientStitching)
         @* Batch generation is started from THIS all-scenes view, so its progress/message/result must
            show here too — the detail view below has its own copy for single-scene work. Without this,
            confirming Generate from the list started the job but showed nothing (dead-click symptom). *@
-        @if (!string.IsNullOrEmpty(_error))
+        <InlineAlert Message="@_error" CssClass="mb-3" />
+        @if (!JobRunning)
         {
-            <div class="alert alert-danger mb-3">@_error</div>
-        }
-        @if (!string.IsNullOrEmpty(_message) && !JobRunning)
-        {
-            <div class="alert alert-info mb-3">@_message</div>
+            <InlineAlert Message="@_message" Variant="info" CssClass="mb-3" />
         }
         @if (ShowLiveGenProgress && _job is not null)
         {
@@ -674,13 +662,10 @@ else if (_detail is null)
 }
 else
 {
-    @if (!string.IsNullOrEmpty(_error))
+    <InlineAlert Message="@_error" CssClass="mb-3" />
+    @if (!JobRunning)
     {
-        <div class="alert alert-danger mb-3">@_error</div>
-    }
-    @if (!string.IsNullOrEmpty(_message) && !JobRunning)
-    {
-        <div class="alert alert-info mb-3">@_message</div>
+        <InlineAlert Message="@_message" Variant="info" CssClass="mb-3" />
     }
 
     @* Live gen: one compact surface — status + bar + Cancel only (no badges, no Grok dump, no log). *@
@@ -1152,10 +1137,7 @@ else
                         </div>
                         @if (_clipVideoLoading)
                         {
-                            <div class="py-4 text-center text-white bg-dark rounded border border-secondary">
-                                <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
-                                <div class="fw-semibold">Checking for a newer local copy…</div>
-                            </div>
+                            <MediaDownloadProgress Label="Checking for a newer local copy…" ShowProgress="false" />
                         }
                         else
                         {
@@ -1371,10 +1353,7 @@ else
                     <button type="button" class="btn-close" aria-label="Close" @onclick="CloseClipEditor"></button>
                 </div>
                 <div class="modal-body">
-                    @if (!string.IsNullOrWhiteSpace(_error))
-                    {
-                        <div class="alert alert-danger p-2 small mb-3">@_error</div>
-                    }
+                    <InlineAlert Message="@_error" CssClass="p-2 small mb-3" />
                     <div class="row g-2 mb-3">
                         <div class="col-4">
                             <label class="form-label small mb-0">Clip number</label>
@@ -1521,18 +1500,10 @@ else
 @* Scene History & Revert Modal *@
 @if (_showSceneHistory)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title">Scene S@(_historySceneNumber.ToString("D2")) History &amp; Changes</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseSceneHistory"></button>
-                </div>
-                <div class="modal-body">
-                    @if (!string.IsNullOrEmpty(_sceneRevertMessage))
-                    {
-                        <div class="alert alert-info py-2 mb-3">@_sceneRevertMessage</div>
-                    }
+    <DarkModalShell Visible="true" OnClose="CloseSceneHistory" HeaderClass="" TitleClass="" DialogClass="modal-lg modal-dialog-scrollable">
+        <Title>Scene S@(_historySceneNumber.ToString("D2")) History &amp; Changes</Title>
+        <ChildContent>
+                    <InlineAlert Message="@_sceneRevertMessage" Variant="info" CssClass="py-2 mb-3" />
 
                     @if (_loadingHistory)
                     {
@@ -1575,13 +1546,11 @@ else
                             }
                         </div>
                     }
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseSceneHistory">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        </ChildContent>
+        <Footer>
+            <button type="button" class="btn btn-secondary" @onclick="CloseSceneHistory">Close</button>
+        </Footer>
+    </DarkModalShell>
 }
 
 @* Clip Version Take Comparison Grid & Trash Bin Modal *@
@@ -1605,10 +1574,7 @@ else
                     </div>
                 </div>
                 <div class="modal-body">
-                    @if (!string.IsNullOrEmpty(_clipCompareMessage))
-                    {
-                        <div class="alert alert-info py-2 mb-3">@_clipCompareMessage</div>
-                    }
+                    <InlineAlert Message="@_clipCompareMessage" Variant="info" CssClass="py-2 mb-3" />
 
                     @if (_loadingClipVersions)
                     {
@@ -1810,14 +1776,9 @@ else
    the moment of spend instead of parked in the toolbar. *@
 @if (_showGenerateConfirm)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
-                    <h5 class="modal-title m-0">▶ Generate video</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseGenerateConfirm"></button>
-                </div>
-                <div class="modal-body">
+    <DarkModalShell Visible="true" OnClose="CloseGenerateConfirm">
+        <Title>▶ Generate video</Title>
+        <ChildContent>
                     <p class="mb-3">
                         Making <strong>~@EstimateSelectedClips()</strong> clip@(EstimateSelectedClips() == 1 ? "" : "s")
                         across <strong>@_selected.Count</strong> scene@(_selected.Count == 1 ? "" : "s").
@@ -1882,34 +1843,27 @@ else
                             <span class="fs-5 fw-bold" data-testid="generate-confirm-cost">~$@(EstimateSelectedCostUsd().ToString("0.00"))</span>
                         }
                     </div>
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            disabled="@_busy" @onclick="CloseGenerateConfirm">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-success fw-bold"
-                            data-testid="generate-confirm-go"
-                            disabled="@(_busy || _selected.Count == 0 || JobRunning || !CastReady || SelectedLockedByOther)"
-                            @onclick="ConfirmGenerateAsync">
-                        ▶ Generate @_selected.Count scene@(_selected.Count == 1 ? "" : "s")
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+        </ChildContent>
+        <Footer>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    disabled="@_busy" @onclick="CloseGenerateConfirm">Cancel</button>
+            <button type="button" class="btn btn-sm btn-success fw-bold"
+                    data-testid="generate-confirm-go"
+                    disabled="@(_busy || _selected.Count == 0 || JobRunning || !CastReady || SelectedLockedByOther)"
+                    @onclick="ConfirmGenerateAsync">
+                ▶ Generate @_selected.Count scene@(_selected.Count == 1 ? "" : "s")
+            </button>
+        </Footer>
+    </DarkModalShell>
 }
 
 @* Score-music chooser — opens from a scene's "Score" button so the music style + Sing choice
    live at the point of use instead of parked in the toolbar. *@
 @if (_scoreMenuScene is int scoreSn)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
-                    <h5 class="modal-title m-0">🎵 Score music — Scene S@(scoreSn.ToString("D2"))</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseScoreMenu"></button>
-                </div>
-                <div class="modal-body">
+    <DarkModalShell Visible="true" OnClose="CloseScoreMenu">
+        <Title>🎵 Score music — Scene S@(scoreSn.ToString("D2"))</Title>
+        <ChildContent>
                     <label class="form-label small text-muted" for="scoreMusicStyle">Music style</label>
                     <select id="scoreMusicStyle"
                             class="form-select form-select-sm bg-dark text-white border-secondary mb-3"
@@ -1924,29 +1878,24 @@ else
                     </select>
                     @if (SelectedAudioModelCanSing)
                     {
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="scoreMenuSing"
-                                   data-testid="score-menu-sing"
-                                   disabled="@(_busy || _scoringMusic)"
-                                   checked="@_wantVocal"
-                                   @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
-                            <label class="form-check-label small" for="scoreMenuSing">Sing lyrics for this scene</label>
-                        </div>
+                        <ToggleSwitch Value="_wantVocal" ValueChanged="@(v => _wantVocal = v)" Id="scoreMenuSing"
+                                      Disabled="@(_busy || _scoringMusic)" LabelClass="form-check-label small"
+                                      data-testid="score-menu-sing">
+                            <Label>Sing lyrics for this scene</Label>
+                        </ToggleSwitch>
                     }
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            disabled="@_scoringMusic" @onclick="CloseScoreMenu">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-warning text-black fw-bold"
-                            data-testid="score-menu-generate"
-                            disabled="@(_busy || JobRunning || _scoringMusic)"
-                            @onclick="() => ScoreFromMenuAsync(scoreSn)">
-                        @(_wantVocal && SelectedAudioModelCanSing ? "🎤" : "🎵") Generate music
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+        </ChildContent>
+        <Footer>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    disabled="@_scoringMusic" @onclick="CloseScoreMenu">Cancel</button>
+            <button type="button" class="btn btn-sm btn-warning text-black fw-bold"
+                    data-testid="score-menu-generate"
+                    disabled="@(_busy || JobRunning || _scoringMusic)"
+                    @onclick="() => ScoreFromMenuAsync(scoreSn)">
+                @(_wantVocal && SelectedAudioModelCanSing ? "🎤" : "🎵") Generate music
+            </button>
+        </Footer>
+    </DarkModalShell>
 }
 
 @* Audio Takes Modal — compares scene background-audio generation runs (model, vocal/instrumental,
@@ -1954,18 +1903,10 @@ else
    just means playing one take, then another. *@
 @if (_showMusicCompare)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
-                    <h5 class="modal-title m-0">Audio Takes — Scene S@(_compareMusicSceneNumber.ToString("D2"))</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseMusicCompare"></button>
-                </div>
-                <div class="modal-body">
-                    @if (!string.IsNullOrEmpty(_musicCompareMessage))
-                    {
-                        <div class="alert alert-info py-2 mb-3">@_musicCompareMessage</div>
-                    }
+    <DarkModalShell Visible="true" OnClose="CloseMusicCompare" DialogClass="modal-lg modal-dialog-scrollable">
+        <Title>Audio Takes — Scene S@(_compareMusicSceneNumber.ToString("D2"))</Title>
+        <ChildContent>
+                    <InlineAlert Message="@_musicCompareMessage" Variant="info" CssClass="py-2 mb-3" />
 
                     @if (_loadingMusicVersions)
                     {
@@ -2039,28 +1980,19 @@ else
                             </div>
                         }
                     }
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseMusicCompare">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        </ChildContent>
+        <Footer>
+            <button type="button" class="btn btn-secondary" @onclick="CloseMusicCompare">Close</button>
+        </Footer>
+    </DarkModalShell>
 }
 
 @* Clip Dialogue Verification Report Modal *@
 @if (_showVerificationModal && _verifModalResult is { } verReport)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title">
-                        📋 Verification Report — Scene S@(_verifModalSceneNumber.ToString("D2")) Clip C@(_verifModalClipNumber.ToString("D2"))
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseVerificationModal"></button>
-                </div>
-                <div class="modal-body">
+    <DarkModalShell Visible="true" OnClose="CloseVerificationModal" HeaderClass="" TitleClass="" DialogClass="modal-lg modal-dialog-scrollable">
+        <Title>📋 Verification Report — Scene S@(_verifModalSceneNumber.ToString("D2")) Clip C@(_verifModalClipNumber.ToString("D2"))</Title>
+        <ChildContent>
                     @* Header Status Badge *@
                     <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded border border-secondary bg-black bg-opacity-40">
                         <div>
@@ -2205,13 +2137,11 @@ else
                             </div>
                         </div>
                     }
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseVerificationModal">Close Report</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        </ChildContent>
+        <Footer>
+            <button type="button" class="btn btn-secondary" @onclick="CloseVerificationModal">Close Report</button>
+        </Footer>
+    </DarkModalShell>
 }
 
 @code {

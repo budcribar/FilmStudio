@@ -12,14 +12,8 @@
 
 <PageTitle>PageToMovie</PageTitle>
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger">@_error</div>
-}
-@if (!string.IsNullOrEmpty(_message))
-{
-    <div class="alert alert-info">@_message</div>
-}
+<InlineAlert Message="@_error" />
+<InlineAlert Message="@_message" Variant="info" />
 
 @if (_healthOk == false)
 {

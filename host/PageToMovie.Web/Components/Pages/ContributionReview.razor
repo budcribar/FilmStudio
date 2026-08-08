@@ -12,14 +12,8 @@
         }
     </p>
 
-    @if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger">@_error</div>
-    }
-    @if (!string.IsNullOrEmpty(_message))
-    {
-        <div class="alert @(_messageOk ? "alert-success" : "alert-warning")">@_message</div>
-    }
+    <InlineAlert Message="@_error" />
+    <InlineAlert Message="@_message" Variant="@(_messageOk ? "success" : "warning")" />
 
     @if (_hasConflicts)
     {

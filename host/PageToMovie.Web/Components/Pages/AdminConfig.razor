@@ -7,14 +7,13 @@
 <PageTitle>Admin config — PageToMovie</PageTitle>
 
 <div class="container-fluid py-3" style="max-width: 72rem;">
-    <div class="mb-3">
-        <h1 class="h3 mb-0">Server configuration</h1>
-        <div class="text-muted small">Hot-apply capacity & fakes · persists under <code>.filmstudio/runtime-config.json</code></div>
-    </div>
+    <AdminPageHeader Title="Server configuration">
+        <Subtitle>Hot-apply capacity &amp; fakes · persists under <code>.filmstudio/runtime-config.json</code></Subtitle>
+    </AdminPageHeader>
 
     @if (!Session.IsAdmin)
     {
-        <div class="alert alert-warning">Admin session required. <a href="/admin/login">Sign in</a></div>
+        <InlineAlert Variant="warning">Admin session required. <a href="/admin/login">Sign in</a></InlineAlert>
     }
     else if (_cfg is null && string.IsNullOrEmpty(_error))
     {
@@ -22,14 +21,8 @@
     }
     else
     {
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <div class="alert alert-danger">@_error</div>
-        }
-        @if (!string.IsNullOrEmpty(_message))
-        {
-            <div class="alert alert-success">@_message</div>
-        }
+        <InlineAlert Message="@_error" />
+        <InlineAlert Message="@_message" Variant="success" />
 
         @if (_cfg is not null)
         {

@@ -3,30 +3,27 @@
 <PageTitle>Generation errors — admin</PageTitle>
 
 <div class="container py-3" style="max-width: 76rem;">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div>
-            <h1 class="h3 mb-0">Generation errors</h1>
-            <div class="text-muted small">
-                Transient-retry and partial-coverage events across every classifier/provider call
-                (<code>generation_errors</code>).
-            </div>
-        </div>
-        <div class="d-flex gap-2">
+    <AdminPageHeader Title="Generation errors">
+        <Subtitle>
+            Transient-retry and partial-coverage events across every classifier/provider call
+            (<code>generation_errors</code>).
+        </Subtitle>
+        <Actions>
             <a href="/admin" class="btn btn-sm btn-outline-secondary">← Admin</a>
             <button class="btn btn-sm btn-primary" data-testid="gen-errors-refresh"
                     disabled="@_loading" @onclick="LoadAsync">
                 @(_loading ? "Loading…" : "Refresh")
             </button>
-        </div>
-    </div>
+        </Actions>
+    </AdminPageHeader>
 
     @if (!Session.IsAdmin)
     {
-        <div class="alert alert-warning">Admin session required. <a href="/admin/login">Sign in</a></div>
+        <InlineAlert Variant="warning">Admin session required. <a href="/admin/login">Sign in</a></InlineAlert>
     }
     else if (_error is not null)
     {
-        <div class="alert alert-danger" data-testid="gen-errors-error">@_error</div>
+        <InlineAlert Message="@_error" data-testid="gen-errors-error" />
     }
     else if (_loading && _rows.Count == 0)
     {

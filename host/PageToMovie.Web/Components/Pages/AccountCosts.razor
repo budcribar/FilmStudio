@@ -6,24 +6,17 @@
 
 <PageTitle>Account · Costs</PageTitle>
 
-<div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Account · Billing</span>
-    <h1 class="ptm-adapt-title mb-1">All projects &amp; account costs</h1>
-    <p class="ptm-adapt-lede mb-0">
-        Everything you’ve spent across every project, by project and by vendor.
-        For a single film’s quote, open <a href="cost">Estimate</a>.
-    </p>
-</div>
+<StudioPageHeader Kicker="Account · Billing" Title="All projects & account costs">
+    Everything you’ve spent across every project, by project and by vendor.
+    For a single film’s quote, open <a href="cost">Estimate</a>.
+</StudioPageHeader>
 
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <a href="cost" class="btn btn-sm btn-outline-secondary" data-testid="account-back">← Estimate</a>
     <button class="btn btn-sm btn-outline-secondary" disabled="@_loading" @onclick="LoadAsync">Refresh</button>
 </div>
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger">@_error</div>
-}
+<InlineAlert Message="@_error" />
 
 @if (_loading)
 {
