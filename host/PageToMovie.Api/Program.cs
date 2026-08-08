@@ -2605,6 +2605,10 @@ app.MapGet("/api/jobs", (FilmJobService jobService, IUserContext user, string? m
     }
 
     var filterUser = wantMine ? user.UserId : userId;
+    if (!user.IsAdmin && !string.IsNullOrWhiteSpace(filterUser) && !string.Equals(filterUser, user.UserId, StringComparison.OrdinalIgnoreCase))
+    {
+        filterUser = user.UserId;
+    }
     var list = jobService.ListJobs(filterUser, projectId, take: 50);
     return Results.Ok(new
     {
@@ -2617,11 +2621,18 @@ app.MapGet("/api/jobs", (FilmJobService jobService, IUserContext user, string? m
     });
 });
 
-app.MapGet("/api/jobs/{jobId}", (string jobId, FilmJobService jobService) =>
+app.MapGet("/api/jobs/{jobId}", (string jobId, FilmJobService jobService, IUserContext user) =>
 {
     var job = jobService.GetJob(jobId);
     if (job is null)
         return Results.NotFound(new { ok = false, error = "job not found" });
+    if (!user.IsAdmin &&
+        !string.IsNullOrWhiteSpace(job.UserId) &&
+        !string.Equals(job.UserId, user.UserId, StringComparison.OrdinalIgnoreCase))
+    {
+        return Results.Json(new { ok = false, error = "not your job" },
+            statusCode: StatusCodes.Status403Forbidden);
+    }
     return Results.Ok(new { ok = true, job });
 });
 
