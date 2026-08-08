@@ -206,6 +206,7 @@ Slightly more technical language is OK on **About** or a collapsible “For deve
 
 | Doc | Purpose |
 |-----|---------|
+| `host/docs/north-star-checklists.md` | Checklist A (AI-call feedback loop, active) + Checklist B (pre-UI-consolidation, on hold) — cross-session status |
 | `host/evals/README.md` | App eval root (not story projects) |
 | `host/evals/screenplay_benchmark/README.md` | 8-dimension screenplay adaptation & peer-evaluation benchmark guide |
 | `host/evals/classifier_benchmarks/README.md` | Classifier AI vs baseline suite; history, model/prompt matrix, charts |
