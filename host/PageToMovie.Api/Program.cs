@@ -506,7 +506,7 @@ else
 // api.x.ai in fakes mode — Stage 1 falls back to the fake IChatClient instead.
 ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<XaiResponsesClient>(c =>
 {
-    c.BaseAddress = new Uri("https://api.x.ai/v1/");
+    c.BaseAddress = new Uri(SupportedModelCatalog.XaiApiBase + "/");
     c.Timeout = TimeSpan.FromMinutes(20);
 }));
 builder.Services.AddSingleton<PageToMovie.Core.Abstractions.IBookFileSessionFactory, BookFileSessionFactory>();

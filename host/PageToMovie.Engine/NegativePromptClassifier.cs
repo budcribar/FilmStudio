@@ -95,7 +95,7 @@ public sealed class NegativePromptClassifier
     {
         try
         {
-            var cleaned = Regex.Replace(rawJson, @"```json|```", "").Trim();
+            var cleaned = ClassifierJsonParser.StripFences(rawJson);
             using var doc = JsonDocument.Parse(cleaned);
             if (doc.RootElement.TryGetProperty("negative_tokens", out var nt))
             {

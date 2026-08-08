@@ -212,30 +212,8 @@ public static class ProjectVisionMeta
             JsonSerializer.Serialize(root, new JsonSerializerOptions { WriteIndented = true }) + Environment.NewLine);
     }
 
-    // NormalizeMedium is intentionally NOT shared with AdaptationVisionMetaParser: this store
-    // recognizes "auto"/empty (a user preference) and has no "mixed" mapping.
-    public static string NormalizeMedium(string? raw)
-    {
-        var s = (raw ?? "").Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
-        if (string.IsNullOrEmpty(s) || s is "auto" or "infer" or "default")
-            return MediumAuto;
-        if (s is "photoreal" or "photo_real" or "live_action" or "liveaction" or "photoreal_live_action"
-            or "period_drama" or "gothic_live_action")
-            return MediumPhotoreal;
-        if (s is "illustrated" or "picture_book" or "picturebook" or "illustration"
-            or "illustrated_picture_book" or "childrens_book" or "storybook")
-            return MediumIllustrated;
-        if (s is "stylized_3d" or "stylized_3d_animated" or "cg_animated" or "pixar" or "3d_animated")
-            return MediumStylized3d;
-        if (s is MediumPhotoreal or MediumIllustrated or MediumStylized3d or MediumOther)
-            return s;
-        // Free text from model
-        if (s.Contains("picture") || s.Contains("illustrat") || s.Contains("cartoon") || s.Contains("storybook"))
-            return MediumIllustrated;
-        if (s.Contains("photoreal") || s.Contains("live_action") || s.Contains("live action") || s.Contains("period"))
-            return MediumPhotoreal;
-        return MediumOther;
-    }
+    public static string NormalizeMedium(string? raw) =>
+        VisualMediumStyles.NormalizeMedium(raw, allowAuto: true, mapMixedToPhotoreal: false);
 
     /// <summary>
     /// User/UI preference for Stage‑1 MEDIUM DIRECTIVE. <see cref="MediumAuto"/> = model infers.

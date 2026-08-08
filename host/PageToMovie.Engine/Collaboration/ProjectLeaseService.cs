@@ -18,7 +18,7 @@ public sealed class ProjectLeaseService : IProjectLeaseService
 
     private string LeasePath(string projectId, string resourceKey)
     {
-        var safe = string.Join("_", resourceKey.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+        var safe = PageToMovie.Core.Utils.FileNameSanitizer.SanitizeFileName(resourceKey);
         return Path.Combine(_store.GetProjectDir(projectId), "leases", safe + ".json");
     }
 

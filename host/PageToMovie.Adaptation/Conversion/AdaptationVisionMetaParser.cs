@@ -24,27 +24,8 @@ public static class AdaptationVisionMetaParser
         };
     }
 
-    // NormalizeMedium is intentionally NOT shared with ProjectVisionMeta: this parser maps "mixed"
-    // to photoreal and has no "auto" handling (the model always returns a concrete medium here).
-    public static string NormalizeMedium(string? raw)
-    {
-        var s = (raw ?? "").Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
-        if (s is "photoreal" or "photo_real" or "live_action" or "liveaction" or "photoreal_live_action"
-            or "period_drama" or "gothic_live_action" or "mixed")
-            return MediumPhotoreal;
-        if (s is "illustrated" or "picture_book" or "picturebook" or "illustration"
-            or "illustrated_picture_book" or "childrens_book" or "storybook")
-            return MediumIllustrated;
-        if (s is "stylized_3d" or "stylized_3d_animated" or "cg_animated" or "pixar" or "3d_animated")
-            return MediumStylized3d;
-        if (s is MediumPhotoreal or MediumIllustrated or MediumStylized3d or MediumOther)
-            return s;
-        if (s.Contains("picture") || s.Contains("illustrat") || s.Contains("cartoon") || s.Contains("storybook"))
-            return MediumIllustrated;
-        if (s.Contains("photoreal") || s.Contains("live_action") || s.Contains("live action") || s.Contains("period"))
-            return MediumPhotoreal;
-        return MediumOther;
-    }
+    public static string NormalizeMedium(string? raw) =>
+        VisualMediumStyles.NormalizeMedium(raw, allowAuto: false, mapMixedToPhotoreal: true);
 
     public static string DefaultStyleLock(string visualMedium) =>
         VisualMediumStyles.StyleLockFor(NormalizeMedium(visualMedium));

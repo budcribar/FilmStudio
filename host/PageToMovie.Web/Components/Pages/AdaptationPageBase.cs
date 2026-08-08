@@ -499,7 +499,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
                         }
                         StateHasChanged();
                     });
-                    if (snap.Status is "done" or "error" or "cancelled" or "idle")
+                    if (snap.IsFinished)
                     {
                         if (snap.Status is "done" or "error" or "cancelled")
                             await InvokeAsync(async () => { await SoftLoadAsync(); StateHasChanged(); });

@@ -208,9 +208,7 @@ public sealed class SceneVersionStore
     private static string Sanitize(string key)
     {
         if (string.IsNullOrWhiteSpace(key)) return "_";
-        var invalid = Path.GetInvalidFileNameChars();
-        var chars = key.Trim().Select(c => invalid.Contains(c) ? '_' : c).ToArray();
-        return new string(chars);
+        return PageToMovie.Core.Utils.FileNameSanitizer.SanitizeFileName(key.Trim());
     }
 
     private static string SanitizeFileName(string name)

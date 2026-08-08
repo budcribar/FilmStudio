@@ -33,9 +33,9 @@ public sealed class YouTubeAuthService
         _flow = new Lazy<GoogleAuthorizationCodeFlow?>(BuildFlow);
     }
 
-    public string CleanClientId => (_opts.ClientId ?? "").Trim(' ', '"', '\'', '\r', '\n', '\t');
-    public string CleanClientSecret => (_opts.ClientSecret ?? "").Trim(' ', '"', '\'', '\r', '\n', '\t');
-    public string CleanRedirectUri => (_opts.RedirectUri ?? "").Trim(' ', '"', '\'', '\r', '\n', '\t');
+    public string CleanClientId => ProviderApiKey.Clean(_opts.ClientId) ?? "";
+    public string CleanClientSecret => ProviderApiKey.Clean(_opts.ClientSecret) ?? "";
+    public string CleanRedirectUri => ProviderApiKey.Clean(_opts.RedirectUri) ?? "";
 
     /// <summary>Client id/secret/redirect are all set — OAuth can be attempted.</summary>
     public bool IsConfigured =>

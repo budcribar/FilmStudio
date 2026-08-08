@@ -209,22 +209,28 @@ public partial class Configuration
     private void ApplyCatalogDefaultsIfEmpty()
     {
         if (string.IsNullOrWhiteSpace(_modelName))
-            _modelName = SupportedModelCatalog.DefaultModelIdForCapability("video") ?? "";
+            _modelName = DefaultForCapability("video");
         if (string.IsNullOrWhiteSpace(_imageModel))
-            _imageModel = SupportedModelCatalog.DefaultModelIdForCapability("image") ?? "";
+            _imageModel = DefaultForCapability("image");
         if (string.IsNullOrWhiteSpace(_planningModel))
-            _planningModel = SupportedModelCatalog.DefaultModelIdForCapability("chat") ?? "";
+            _planningModel = DefaultForCapability("chat");
         if (string.IsNullOrWhiteSpace(_visionModel))
-            _visionModel = SupportedModelCatalog.DefaultModelIdForCapability("vision") ?? "";
+            _visionModel = DefaultForCapability("vision");
         if (string.IsNullOrWhiteSpace(_qualityModel))
-            _qualityModel = SupportedModelCatalog.DefaultModelIdForCapability("video-review")
-                            ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
-                            ?? "";
+            _qualityModel = DefaultQualityModel();
         if (string.IsNullOrWhiteSpace(_audioModel))
             _audioModel = "none";
         if (string.IsNullOrWhiteSpace(_voiceModel))
             _voiceModel = "none";
     }
+
+    private static string DefaultForCapability(string capabilityId) =>
+        SupportedModelCatalog.DefaultModelIdForCapability(capabilityId) ?? "";
+
+    private static string DefaultQualityModel() =>
+        SupportedModelCatalog.DefaultModelIdForCapability("video-review")
+        ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
+        ?? "";
 
 
     private void ParseFocusFromUri()
@@ -1155,17 +1161,15 @@ public partial class Configuration
             _voiceModel = GetStr("voice_model_name", _voiceModel);
             // Drop ids that are not in the catalog (stale project config).
             if (!string.IsNullOrWhiteSpace(_modelName) && !_videoModels.Any(m => string.Equals(m.Id, _modelName, StringComparison.OrdinalIgnoreCase)))
-                _modelName = SupportedModelCatalog.DefaultModelIdForCapability("video") ?? "";
+                _modelName = DefaultForCapability("video");
             if (!string.IsNullOrWhiteSpace(_imageModel) && !_imageModels.Any(m => string.Equals(m.Id, _imageModel, StringComparison.OrdinalIgnoreCase)))
-                _imageModel = SupportedModelCatalog.DefaultModelIdForCapability("image") ?? "";
+                _imageModel = DefaultForCapability("image");
             if (!string.IsNullOrWhiteSpace(_planningModel) && !_planningModels.Any(m => string.Equals(m.Id, _planningModel, StringComparison.OrdinalIgnoreCase)))
-                _planningModel = SupportedModelCatalog.DefaultModelIdForCapability("chat") ?? "";
+                _planningModel = DefaultForCapability("chat");
             if (!string.IsNullOrWhiteSpace(_visionModel) && !_visionModels.Any(m => string.Equals(m.Id, _visionModel, StringComparison.OrdinalIgnoreCase)))
-                _visionModel = SupportedModelCatalog.DefaultModelIdForCapability("vision") ?? "";
+                _visionModel = DefaultForCapability("vision");
             if (!string.IsNullOrWhiteSpace(_qualityModel) && !_videoReviewModels.Any(m => string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))
-                _qualityModel = SupportedModelCatalog.DefaultModelIdForCapability("video-review")
-                                ?? SupportedModelCatalog.DefaultModelIdForCapability("chat")
-                                ?? "";
+                _qualityModel = DefaultQualityModel();
             if (!string.IsNullOrWhiteSpace(_audioModel)
                 && !_audioModel.Equals("none", StringComparison.OrdinalIgnoreCase)
                 && !_audioModels.Any(m => string.Equals(m.Id, _audioModel, StringComparison.OrdinalIgnoreCase)))

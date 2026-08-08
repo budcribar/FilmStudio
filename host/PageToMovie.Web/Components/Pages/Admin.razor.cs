@@ -57,6 +57,40 @@ public partial class Admin
     private string? _archiveError;
     private const long MaxImportBytes = 512L * 1024 * 1024;
 
+    private bool _showJobsAndLocks = true;
+    private bool _showProjectArchiving = true;
+    private bool _showLoadSim = false;
+    private bool _showTimingTelemetry = false;
+    private bool _showGenErrors = false;
+    private bool _showStorageAndCapacity = false;
+
+    private void ToggleJobsAndLocks() => _showJobsAndLocks = !_showJobsAndLocks;
+    private void ToggleProjectArchiving() => _showProjectArchiving = !_showProjectArchiving;
+    private void ToggleLoadSim() => _showLoadSim = !_showLoadSim;
+    private void ToggleTimingTelemetry() => _showTimingTelemetry = !_showTimingTelemetry;
+    private void ToggleGenErrors() => _showGenErrors = !_showGenErrors;
+    private void ToggleStorageAndCapacity() => _showStorageAndCapacity = !_showStorageAndCapacity;
+
+    private void ExpandAllCards()
+    {
+        _showJobsAndLocks = true;
+        _showProjectArchiving = true;
+        _showLoadSim = true;
+        _showTimingTelemetry = true;
+        _showGenErrors = true;
+        _showStorageAndCapacity = true;
+    }
+
+    private void CollapseAllCards()
+    {
+        _showJobsAndLocks = false;
+        _showProjectArchiving = false;
+        _showLoadSim = false;
+        _showTimingTelemetry = false;
+        _showGenErrors = false;
+        _showStorageAndCapacity = false;
+    }
+
     private bool _started;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

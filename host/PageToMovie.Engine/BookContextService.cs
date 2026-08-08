@@ -10,9 +10,7 @@ namespace PageToMovie.Engine;
 /// </summary>
 public static class BookContextService
 {
-    private static readonly Regex PageMarker = new(
-        @"^---\s*PAGE\s+(\d+)\s*---\s*$",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Multiline);
+    private static readonly Regex PageMarker = PageToMovie.Adaptation.BookTextAnalyzer.PageMarkerLine;
 
     private static readonly Regex HeadingPage = new(
         @"\bPAGE\s+(\d+)\b",

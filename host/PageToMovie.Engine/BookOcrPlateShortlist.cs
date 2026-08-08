@@ -1,6 +1,8 @@
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
+using PageToMovie.Core.Models;
+
 namespace PageToMovie.Engine;
 
 /// <summary>
@@ -69,7 +71,7 @@ public static class BookOcrPlateShortlist
                     set.Add(part.ToLowerInvariant());
         }
 
-        var suffix = key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' ');
+        var suffix = CastKindClassifier.StripPrefix(key).Replace('_', ' ');
         Add(suffix);
         if (seed is not null)
         {

@@ -2431,9 +2431,7 @@ public static class BookToFountainConverter
         @"^(INT\./EXT|INT/EXT|I\./E|I/E|INT\.?|EXT\.?|EST\.?)[\./\s]",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    private static readonly Regex BookPageMarkerLine = new(
-        @"^---\s*PAGE\s+(\d+)\s*---\s*$",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Multiline);
+    private static readonly Regex BookPageMarkerLine = BookTextAnalyzer.PageMarkerLine;
 
     /// <summary>Line-scan scene headings (no Engine FountainParser dependency).</summary>
     internal static IEnumerable<string> EnumerateSceneHeadingLines(string fountain)

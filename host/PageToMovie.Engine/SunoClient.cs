@@ -38,8 +38,7 @@ public sealed class SunoClient : IAudioClient
     {
         var key = ApiKeyScope.CurrentSuno
             ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.SunoApiKeyEnv);
-        if (!string.IsNullOrWhiteSpace(key)) return key.Trim(' ', '"', '\'', '\r', '\n', '\t');
-        return null;
+        return ProviderApiKey.Clean(key);
     }
 
     public async Task<string?> GenerateMusicTrackAsync(

@@ -17,7 +17,7 @@ namespace PageToMovie.Engine;
 /// <summary>xAI Grok Imagine image generate + edit client for character portraits.</summary>
 public sealed class GrokImageClient : IImageClient
 {
-    public const string ApiBase = "https://api.x.ai/v1";
+    public const string ApiBase = SupportedModelCatalog.XaiApiBase;
 
     private readonly HttpClient _http;
     private readonly PageToMovieOptions _opts;

@@ -71,7 +71,7 @@ public sealed class CharacterDesignService
             ? _projects.GetWardrobeLock(projectId, wardrobeLockKey!)
             : null;
 
-        var charDir = Path.Combine(projectDir, "assets", "characters");
+        var charDir = _projects.GetCharactersDir(projectId);
         Directory.CreateDirectory(charDir);
 
         var opts = seedOptions ?? new PageToMovie.Core.Models.StartCharacterVariantsRequest
@@ -586,7 +586,7 @@ public sealed class CharacterDesignService
             throw new InvalidOperationException("Empty upload stream");
 
         var projectDir = _projects.GetProjectDir(projectId);
-        var charDir = Path.Combine(projectDir, "assets", "characters");
+        var charDir = _projects.GetCharactersDir(projectId);
         Directory.CreateDirectory(charDir);
         var staging = Path.Combine(charDir, $"{charKey.ToLowerInvariant()}_upload_staging_{Guid.NewGuid():N}.bin");
 
@@ -988,7 +988,7 @@ public sealed class CharacterDesignService
             throw new InvalidOperationException($"{charKey} is voice-only — no image to delete.");
 
         var projectDir = _projects.GetProjectDir(projectId);
-        var charDir = Path.Combine(projectDir, "assets", "characters");
+        var charDir = _projects.GetCharactersDir(projectId);
         var k = (kind ?? "").Trim().ToLowerInvariant();
 
         if (k is "preferred" or "p" or "ref" or "lock" or "locked")
@@ -1053,7 +1053,7 @@ public sealed class CharacterDesignService
         if (existing is null)
             return false;
 
-        var charDir = Path.Combine(projectDir, "assets", "characters");
+        var charDir = _projects.GetCharactersDir(projectId);
         Directory.CreateDirectory(charDir);
         var bestVariant = Path.Combine(charDir, $"{charKey.ToLowerInvariant()}_variant_01.png");
 
@@ -1122,7 +1122,7 @@ public sealed class CharacterDesignService
             return existing;
 
         var projectDir = _projects.GetProjectDir(projectId);
-        var charDir = Path.Combine(projectDir, "assets", "characters");
+        var charDir = _projects.GetCharactersDir(projectId);
         Directory.CreateDirectory(charDir);
 
         var description = wardrobeSeed.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";

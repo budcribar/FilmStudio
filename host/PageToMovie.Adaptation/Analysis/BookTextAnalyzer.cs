@@ -11,7 +11,7 @@ public static class BookTextAnalyzer
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>Line-anchored page markers (matches Engine BookContextService.ParseBookPages).</summary>
-    private static readonly Regex PageMarkerLine = new(
+    public static readonly Regex PageMarkerLine = new(
         @"^---\s*PAGE\s+(\d+)\s*---\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Multiline);
 

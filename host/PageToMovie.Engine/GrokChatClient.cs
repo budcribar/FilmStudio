@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,7 @@ namespace PageToMovie.Engine;
 /// <summary>Dynamic OpenAI-compatible chat/completions client (xAI Grok, OpenAI, Gemini OpenAI endpoint, etc.).</summary>
 public sealed class GrokChatClient : IChatClient
 {
-    public const string ApiBase = "https://api.x.ai/v1";
+    public const string ApiBase = SupportedModelCatalog.XaiApiBase;
 
     private readonly HttpClient _http;
     private readonly ProjectTelemetryService _telemetry;

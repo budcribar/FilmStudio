@@ -2561,14 +2561,8 @@ public sealed class FilmJobService
         return list.OrderBy(x => x.Scene).ThenBy(x => x.Clip).ToList();
     }
 
-    private static bool IsNarratorSpeaker(string? speaker, string narratorKey)
-    {
-        if (string.IsNullOrWhiteSpace(speaker)) return false;
-        if (!string.IsNullOrWhiteSpace(narratorKey) &&
-            string.Equals(speaker.Trim(), narratorKey.Trim(), StringComparison.OrdinalIgnoreCase))
-            return true;
-        return speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool IsNarratorSpeaker(string? speaker, string narratorKey) =>
+        CastKindClassifier.IsNarratorSpeaker(speaker, narratorKey);
 
     private static string FindClipDialogue(JsonElement root, int scene, int clip)
     {
@@ -3922,7 +3916,7 @@ public sealed class FilmJobService
 
                         // 4. Calculate measured camera and physical action overheads
                         double camOverhead = _timingLedger?.GetOverheadSec(camCat, 1.6) ?? 1.6;
-                        double netSpeechSec = wordCount > 0 ? (wordCount / 2.6) : 0.0;
+                        double netSpeechSec = wordCount > 0 ? (wordCount / ClipDurationEstimator.DialogueWordsPerSecond) : 0.0;
                         double measuredActOverhead = Math.Max(0.5, Math.Round(probedSec - camOverhead - netSpeechSec, 2));
 
                         _ = Task.Run(async () =>
