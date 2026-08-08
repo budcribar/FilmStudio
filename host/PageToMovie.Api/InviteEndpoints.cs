@@ -1,3 +1,4 @@
+using PageToMovie.Engine.Abstractions;
 using PageToMovie.Engine.Collaboration;
 
 namespace PageToMovie.Api;
@@ -32,7 +33,7 @@ public static class InviteEndpoints
             return Results.Ok(new {
                 ok = true, status = result.Status, userId = result.UserId, role = result.Role,
                 token = result.Token, inviteLink = result.InviteLink, emailSent = result.EmailSent,
-                message = result.Message, acl = await acl.GetAsync(id, ct)
+                message = result.Message, acl = await acl.GetAclAsync(id, ct)
             });
         }
         catch (UnauthorizedAccessException ex) { return Results.Json(new { ok = false, error = ex.Message }, statusCode: 403); }

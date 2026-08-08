@@ -14,6 +14,7 @@ public sealed class ProjectAclDocument
     public string OwnerUserId { get; set; } = "";
     public List<string> Editors { get; set; } = new();
     public List<string> Viewers { get; set; } = new();
+    public List<PendingInvite> PendingInvites { get; set; } = new();
     /// <summary>Monotonic revision for optimistic concurrency on shared resources.</summary>
     public long Rev { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

@@ -117,7 +117,7 @@ builder.Services.AddSingleton(sp =>
     new PageToMovie.Engine.Collaboration.SceneVersionStore(
         Path.Combine(sp.GetRequiredService<ProjectStore>().WorkspaceRoot, "projects")));
 
-builder.Services.AddSingleton<IProjectAclService, ProjectAclService>();
+builder.Services.AddSingleton<IProjectAclService>(sp => sp.GetRequiredService<ProjectAclService>());
 builder.Services.AddSingleton<IProjectLeaseService, ProjectLeaseService>();
 builder.Services.AddSingleton<IProjectPresenceService, ProjectPresenceService>();
 builder.Services.AddSingleton<IAutoProjectMerger, AutoProjectMerger>();

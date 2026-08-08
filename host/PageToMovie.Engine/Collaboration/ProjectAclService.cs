@@ -5,8 +5,9 @@ namespace PageToMovie.Engine.Collaboration;
 
 /// <summary>
 /// Project ACL: owner / editors / viewers + pending email/username invites.
+/// Persisted at {projectDir}/project-acl.json as <see cref="ProjectAclDocument"/>.
 /// </summary>
-public sealed class ProjectAclService
+public sealed class ProjectAclService : IProjectAclService
 {
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -29,71 +30,96 @@ public sealed class ProjectAclService
     // Back-compat ctor used by some DI registrations
     public ProjectAclService(string projectsRoot) : this(projectsRoot, null, null) { }
 
-    public async Task<ProjectAcl> GetAsync(string projectId, CancellationToken ct = default)
+    public async Task<ProjectAclDocument> GetOrCreateAclAsync(string projectId, string ownerUserId, CancellationToken ct = default)
     {
+        var existing = await LoadAsync(projectId, ct);
+        if (existing is not null) return existing;
+        var doc = new ProjectAclDocument { OwnerUserId = Norm(ownerUserId), Rev = 1 };
+        await SaveAclAsync(projectId, doc, ct);
+        return doc;
+    }
+
+    public async Task<ProjectAclDocument?> GetAclAsync(string projectId, CancellationToken ct = default) =>
+        await LoadAsync(projectId, ct);
+
+    public async Task SaveAclAsync(string projectId, ProjectAclDocument acl, CancellationToken ct = default)
+    {
+        acl.UpdatedAt = DateTimeOffset.UtcNow;
+        var dir = Path.Combine(_projectsRoot, projectId);
+        Directory.CreateDirectory(dir);
         var path = AclPath(projectId);
-        if (!File.Exists(path))
-            return new ProjectAcl { Owner = InferOwner(projectId), Rev = 1 };
-
-        await using var fs = File.OpenRead(path);
-        var acl = await JsonSerializer.DeserializeAsync<ProjectAcl>(fs, JsonOpts, ct)
-                  ?? new ProjectAcl { Owner = InferOwner(projectId) };
-        acl.Editors ??= new List<string>();
-        acl.Viewers ??= new List<string>();
-        acl.PendingInvites ??= new List<PendingInvite>();
-        return acl;
+        var tmp = path + ".tmp";
+        await using (var fs = File.Create(tmp))
+            await JsonSerializer.SerializeAsync(fs, acl, JsonOpts, ct);
+        File.Copy(tmp, path, overwrite: true);
+        try { File.Delete(tmp); } catch { }
     }
 
-    public async Task<ProjectAcl> AddEditorAsync(string projectId, string userId, string callerUserId, CancellationToken ct = default)
+    public async Task<ProjectAccessLevel> GetAccessLevelAsync(string projectId, string userId, CancellationToken ct = default)
     {
-        var acl = await GetAsync(projectId, ct);
-        EnsureOwner(acl, callerUserId);
         userId = Norm(userId);
-        if (string.IsNullOrEmpty(userId)) throw new InvalidOperationException("userId required.");
-        if (!acl.Editors.Contains(userId, StringComparer.OrdinalIgnoreCase))
-            acl.Editors.Add(userId);
-        acl.Viewers.RemoveAll(v => string.Equals(v, userId, StringComparison.OrdinalIgnoreCase));
-        acl.Rev++;
-        await SaveAsync(projectId, acl, ct);
-        return acl;
+        if (string.IsNullOrEmpty(userId)) return ProjectAccessLevel.None;
+        var acl = await LoadAsync(projectId, ct);
+        if (acl is null)
+            return string.Equals(InferOwner(projectId), userId, StringComparison.OrdinalIgnoreCase)
+                ? ProjectAccessLevel.Owner : ProjectAccessLevel.None;
+        if (string.Equals(acl.OwnerUserId, userId, StringComparison.OrdinalIgnoreCase)) return ProjectAccessLevel.Owner;
+        if (acl.Editors.Contains(userId, StringComparer.OrdinalIgnoreCase)) return ProjectAccessLevel.Editor;
+        if (acl.Viewers.Contains(userId, StringComparer.OrdinalIgnoreCase)) return ProjectAccessLevel.Viewer;
+        return ProjectAccessLevel.None;
     }
 
-    public async Task<ProjectAcl> RemoveEditorAsync(string projectId, string userId, string callerUserId, CancellationToken ct = default)
+    public async Task<bool> CanAccessAsync(string projectId, string userId, ProjectAccessLevel minimum, CancellationToken ct = default) =>
+        await GetAccessLevelAsync(projectId, userId, ct) >= minimum;
+
+    public async Task InviteEditorAsync(string projectId, string ownerUserId, string editorUserId, CancellationToken ct = default)
     {
-        var acl = await GetAsync(projectId, ct);
-        EnsureOwner(acl, callerUserId);
-        userId = Norm(userId);
-        acl.Editors.RemoveAll(e => string.Equals(e, userId, StringComparison.OrdinalIgnoreCase));
+        var acl = await GetOrCreateAclAsync(projectId, ownerUserId, ct);
+        EnsureOwner(acl, ownerUserId);
+        editorUserId = Norm(editorUserId);
+        if (string.IsNullOrEmpty(editorUserId)) throw new InvalidOperationException("editorUserId required.");
+        if (!acl.Editors.Contains(editorUserId, StringComparer.OrdinalIgnoreCase))
+            acl.Editors.Add(editorUserId);
+        acl.Viewers.RemoveAll(v => string.Equals(v, editorUserId, StringComparison.OrdinalIgnoreCase));
         acl.Rev++;
-        await SaveAsync(projectId, acl, ct);
-        return acl;
+        await SaveAclAsync(projectId, acl, ct);
     }
 
-    public async Task<ProjectAcl> AddViewerAsync(string projectId, string userId, string callerUserId, CancellationToken ct = default)
+    public async Task RemoveEditorAsync(string projectId, string ownerUserId, string editorUserId, CancellationToken ct = default)
     {
-        var acl = await GetAsync(projectId, ct);
-        EnsureOwner(acl, callerUserId);
-        userId = Norm(userId);
-        if (string.IsNullOrEmpty(userId)) throw new InvalidOperationException("userId required.");
-        if (acl.Editors.Contains(userId, StringComparer.OrdinalIgnoreCase))
-            return acl;
-        if (!acl.Viewers.Contains(userId, StringComparer.OrdinalIgnoreCase))
-            acl.Viewers.Add(userId);
+        var acl = await GetOrCreateAclAsync(projectId, ownerUserId, ct);
+        EnsureOwner(acl, ownerUserId);
+        editorUserId = Norm(editorUserId);
+        acl.Editors.RemoveAll(e => string.Equals(e, editorUserId, StringComparison.OrdinalIgnoreCase));
         acl.Rev++;
-        await SaveAsync(projectId, acl, ct);
-        return acl;
+        await SaveAclAsync(projectId, acl, ct);
     }
 
-    public async Task<ProjectAcl> RemoveViewerAsync(string projectId, string userId, string callerUserId, CancellationToken ct = default)
+    public async Task InviteViewerAsync(string projectId, string ownerUserId, string viewerUserId, CancellationToken ct = default)
     {
-        var acl = await GetAsync(projectId, ct);
-        EnsureOwner(acl, callerUserId);
-        userId = Norm(userId);
-        acl.Viewers.RemoveAll(v => string.Equals(v, userId, StringComparison.OrdinalIgnoreCase));
+        var acl = await GetOrCreateAclAsync(projectId, ownerUserId, ct);
+        EnsureOwner(acl, ownerUserId);
+        viewerUserId = Norm(viewerUserId);
+        if (string.IsNullOrEmpty(viewerUserId)) throw new InvalidOperationException("viewerUserId required.");
+        if (acl.Editors.Contains(viewerUserId, StringComparer.OrdinalIgnoreCase))
+            return; // already has stronger access
+        if (!acl.Viewers.Contains(viewerUserId, StringComparer.OrdinalIgnoreCase))
+            acl.Viewers.Add(viewerUserId);
         acl.Rev++;
-        await SaveAsync(projectId, acl, ct);
-        return acl;
+        await SaveAclAsync(projectId, acl, ct);
     }
+
+    public async Task RemoveViewerAsync(string projectId, string ownerUserId, string viewerUserId, CancellationToken ct = default)
+    {
+        var acl = await GetOrCreateAclAsync(projectId, ownerUserId, ct);
+        EnsureOwner(acl, ownerUserId);
+        viewerUserId = Norm(viewerUserId);
+        acl.Viewers.RemoveAll(v => string.Equals(v, viewerUserId, StringComparison.OrdinalIgnoreCase));
+        acl.Rev++;
+        await SaveAclAsync(projectId, acl, ct);
+    }
+
+    // ---- Pending email/username invite flow ----
 
     public async Task<InviteResult> InviteByUsernameAsync(
         string projectId,
@@ -103,7 +129,7 @@ public sealed class ProjectAclService
         string? publicBaseUrl = null,
         CancellationToken ct = default)
     {
-        var acl = await GetAsync(projectId, ct);
+        var acl = await GetOrCreateAclAsync(projectId, callerUserId, ct);
         EnsureOwner(acl, callerUserId);
         usernameOrEmail = Norm(usernameOrEmail);
         if (string.IsNullOrEmpty(usernameOrEmail))
@@ -122,14 +148,14 @@ public sealed class ProjectAclService
         if (user is not null && !string.IsNullOrWhiteSpace(user.UserId))
         {
             if (role == "viewer")
-                await AddViewerAsync(projectId, user.UserId, callerUserId, ct);
+                await InviteViewerAsync(projectId, callerUserId, user.UserId, ct);
             else
-                await AddEditorAsync(projectId, user.UserId, callerUserId, ct);
+                await InviteEditorAsync(projectId, callerUserId, user.UserId, ct);
 
-            acl = await GetAsync(projectId, ct);
+            acl = await GetOrCreateAclAsync(projectId, callerUserId, ct);
             acl.PendingInvites.RemoveAll(i => Matches(i, usernameOrEmail, user.UserId, user.Email));
             acl.Rev++;
-            await SaveAsync(projectId, acl, ct);
+            await SaveAclAsync(projectId, acl, ct);
             return new InviteResult
             {
                 Ok = true, Status = "granted", UserId = user.UserId, Role = role,
@@ -138,7 +164,7 @@ public sealed class ProjectAclService
         }
 
         // Pending
-        acl = await GetAsync(projectId, ct);
+        acl = await GetOrCreateAclAsync(projectId, callerUserId, ct);
         var existing = acl.PendingInvites.FirstOrDefault(i =>
             string.Equals(i.Username, usernameOrEmail, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(i.Email, usernameOrEmail, StringComparison.OrdinalIgnoreCase));
@@ -160,7 +186,7 @@ public sealed class ProjectAclService
             string.Equals(i.Token, token, StringComparison.Ordinal));
         acl.PendingInvites.Add(invite);
         acl.Rev++;
-        await SaveAsync(projectId, acl, ct);
+        await SaveAclAsync(projectId, acl, ct);
 
         var acceptUrl = string.IsNullOrWhiteSpace(publicBaseUrl)
             ? $"/invite/{token}"
@@ -198,7 +224,7 @@ public sealed class ProjectAclService
         string projectId, string usernameOrEmail, string callerUserId,
         string? publicBaseUrl = null, CancellationToken ct = default)
     {
-        var acl = await GetAsync(projectId, ct);
+        var acl = await GetOrCreateAclAsync(projectId, callerUserId, ct);
         EnsureOwner(acl, callerUserId);
         var key = Norm(usernameOrEmail);
         var inv = acl.PendingInvites.FirstOrDefault(i =>
@@ -211,9 +237,9 @@ public sealed class ProjectAclService
             inv.Role, callerUserId, publicBaseUrl, ct);
     }
 
-    public async Task<ProjectAcl> RevokeInviteAsync(string projectId, string key, string callerUserId, CancellationToken ct = default)
+    public async Task<ProjectAclDocument> RevokeInviteAsync(string projectId, string key, string callerUserId, CancellationToken ct = default)
     {
-        var acl = await GetAsync(projectId, ct);
+        var acl = await GetOrCreateAclAsync(projectId, callerUserId, ct);
         EnsureOwner(acl, callerUserId);
         key = Norm(key);
         acl.PendingInvites.RemoveAll(i =>
@@ -221,7 +247,7 @@ public sealed class ProjectAclService
             string.Equals(i.Email, key, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(i.Token, key, StringComparison.Ordinal));
         acl.Rev++;
-        await SaveAsync(projectId, acl, ct);
+        await SaveAclAsync(projectId, acl, ct);
         return acl;
     }
 
@@ -235,8 +261,8 @@ public sealed class ProjectAclService
             if (string.IsNullOrWhiteSpace(projectId) || projectId.StartsWith('.')) continue;
             try
             {
-                var acl = await GetAsync(projectId, ct);
-                var inv = acl.PendingInvites.FirstOrDefault(i => string.Equals(i.Token, token, StringComparison.Ordinal));
+                var acl = await LoadAsync(projectId, ct);
+                var inv = acl?.PendingInvites.FirstOrDefault(i => string.Equals(i.Token, token, StringComparison.Ordinal));
                 if (inv is not null) return (projectId, inv);
             }
             catch { }
@@ -256,7 +282,8 @@ public sealed class ProjectAclService
         if (found is null) return (false, null, "Invite not found or already used.");
 
         var (projectId, inv) = found.Value;
-        var acl = await GetAsync(projectId, ct);
+        var acl = await LoadAsync(projectId, ct);
+        if (acl is null) return (false, null, "Invite not found or already used.");
         if (string.Equals(inv.Role, "viewer", StringComparison.OrdinalIgnoreCase))
         {
             if (!acl.Editors.Contains(acceptingUserId, StringComparer.OrdinalIgnoreCase) &&
@@ -271,31 +298,21 @@ public sealed class ProjectAclService
         }
         acl.PendingInvites.RemoveAll(i => string.Equals(i.Token, token, StringComparison.Ordinal));
         acl.Rev++;
-        await SaveAsync(projectId, acl, ct);
+        await SaveAclAsync(projectId, acl, ct);
         return (true, projectId, null);
     }
 
-    public bool CanEdit(ProjectAcl acl, string userId)
+    private async Task<ProjectAclDocument?> LoadAsync(string projectId, CancellationToken ct)
     {
-        userId = Norm(userId);
-        if (string.IsNullOrEmpty(userId)) return false;
-        return string.Equals(acl.Owner, userId, StringComparison.OrdinalIgnoreCase)
-               || acl.Editors.Contains(userId, StringComparer.OrdinalIgnoreCase);
-    }
-
-    public bool CanView(ProjectAcl acl, string userId) =>
-        CanEdit(acl, userId) || acl.Viewers.Contains(Norm(userId), StringComparer.OrdinalIgnoreCase);
-
-    private async Task SaveAsync(string projectId, ProjectAcl acl, CancellationToken ct)
-    {
-        var dir = Path.Combine(_projectsRoot, projectId);
-        Directory.CreateDirectory(dir);
         var path = AclPath(projectId);
-        var tmp = path + ".tmp";
-        await using (var fs = File.Create(tmp))
-            await JsonSerializer.SerializeAsync(fs, acl, JsonOpts, ct);
-        File.Copy(tmp, path, overwrite: true);
-        try { File.Delete(tmp); } catch { }
+        if (!File.Exists(path)) return null;
+        await using var fs = File.OpenRead(path);
+        var acl = await JsonSerializer.DeserializeAsync<ProjectAclDocument>(fs, JsonOpts, ct);
+        if (acl is null) return null;
+        acl.Editors ??= new List<string>();
+        acl.Viewers ??= new List<string>();
+        acl.PendingInvites ??= new List<PendingInvite>();
+        return acl;
     }
 
     private string AclPath(string projectId) => Path.Combine(_projectsRoot, projectId, "project-acl.json");
@@ -304,9 +321,9 @@ public sealed class ProjectAclService
         var parts = projectId.Split('/', 2, StringSplitOptions.RemoveEmptyEntries);
         return parts.Length > 0 ? parts[0] : projectId;
     }
-    private static void EnsureOwner(ProjectAcl acl, string callerUserId)
+    private static void EnsureOwner(ProjectAclDocument acl, string callerUserId)
     {
-        if (!string.Equals(acl.Owner, Norm(callerUserId), StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(acl.OwnerUserId, Norm(callerUserId), StringComparison.OrdinalIgnoreCase))
             throw new UnauthorizedAccessException("Only the project owner can modify ACL.");
     }
     private static string Norm(string? s) => (s ?? "").Trim();
@@ -322,15 +339,6 @@ public sealed class ProjectAclService
         if (!string.IsNullOrWhiteSpace(email) && string.Equals(i.Email, email, StringComparison.OrdinalIgnoreCase)) return true;
         return false;
     }
-}
-
-public sealed class ProjectAcl
-{
-    public string Owner { get; set; } = "";
-    public List<string> Editors { get; set; } = new();
-    public List<string> Viewers { get; set; } = new();
-    public List<PendingInvite> PendingInvites { get; set; } = new();
-    public int Rev { get; set; } = 1;
 }
 
 public sealed class PendingInvite
