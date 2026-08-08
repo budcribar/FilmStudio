@@ -50,14 +50,8 @@
     }
 </div>
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger mb-3">@_error</div>
-}
-@if (!string.IsNullOrEmpty(_message))
-{
-    <div class="alert alert-success mb-3">@_message</div>
-}
+<InlineAlert Message="@_error" CssClass="mb-3" />
+<InlineAlert Message="@_message" Variant="success" CssClass="mb-3" />
     <!-- STUDIO COVERAGE FIRST: change model, add/remove key just-in-time -->
     <div class="card mb-4 border-primary border-opacity-50 shadow-sm" id="api-keys" data-testid="studio-coverage-card">
         <div class="card-header bg-dark text-white d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -83,10 +77,7 @@
                 Add a provider only when you need another key. Model lists only show what that provider can run.
             </p>
 
-            @if (!string.IsNullOrEmpty(_apiKeyFeedback))
-            {
-                <div class="alert alert-success py-2 px-3 small">@_apiKeyFeedback</div>
-            }
+            <InlineAlert Message="@_apiKeyFeedback" Variant="success" CssClass="py-2 px-3 small" />
 
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0" data-testid="capability-coverage">
@@ -448,7 +439,7 @@
                                             </div>
                                             @if (!ProvidersForKeyPanel(c.Id).Any())
                                             {
-                                                <div class="alert alert-warning py-2 small mb-0">No providers available for this job in the catalog.</div>
+                                                <InlineAlert Variant="warning" CssClass="py-2 small mb-0" Message="No providers available for this job in the catalog." />
                                             }
                                         </div>
                                     </td>
@@ -617,10 +608,11 @@
         <div class="card-body">
             <div class="row align-items-center g-3">
                 <div class="col-md-6">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="enableBgMusicSwitch" @bind="_enableBackgroundMusic" @bind:after="ScheduleAutoSaveAsync" disabled="@_busy" />
-                        <label class="form-check-label fw-semibold" for="enableBgMusicSwitch">Enable background music generation</label>
-                    </div>
+                    <ToggleSwitch Value="_enableBackgroundMusic"
+                                  ValueChanged="@(async v => { _enableBackgroundMusic = v; await ScheduleAutoSaveAsync(); })"
+                                  Id="enableBgMusicSwitch" Disabled="@_busy" LabelClass="form-check-label fw-semibold">
+                        <Label>Enable background music generation</Label>
+                    </ToggleSwitch>
                     <div class="form-text text-muted">Score and remux music for completed scenes (provider/model above under Studio coverage).</div>
                 </div>
                 <div class="col-md-6">

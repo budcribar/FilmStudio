@@ -1,0 +1,17 @@
+@namespace PageToMovie.Web.Components
+
+<div class="ptm-page-head @CssClass">
+    <span class="ptm-adapt-kicker">@Kicker</span>
+    <h1 class="ptm-adapt-title mb-1">@Title</h1>
+    <p class="ptm-adapt-lede @LedeClass">
+        @ChildContent
+    </p>
+</div>
+
+@code {
+    [Parameter] public string Kicker { get; set; } = "";
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string CssClass { get; set; } = "mb-3";
+    [Parameter] public string LedeClass { get; set; } = "mb-0";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

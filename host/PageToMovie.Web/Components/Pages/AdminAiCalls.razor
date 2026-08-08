@@ -4,30 +4,27 @@
 <PageTitle>AI Calls — analytics</PageTitle>
 
 <div class="container py-3" style="max-width: 76rem;">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div>
-            <h1 class="h3 mb-0">AI calls</h1>
-            <div class="text-muted small">
-                What every model call did — the read side of the feedback loop
-                (<code>user_api_calls</code>).
-            </div>
-        </div>
-        <div class="d-flex gap-2">
+    <AdminPageHeader Title="AI calls">
+        <Subtitle>
+            What every model call did — the read side of the feedback loop
+            (<code>user_api_calls</code>).
+        </Subtitle>
+        <Actions>
             <a href="/admin" class="btn btn-sm btn-outline-secondary">← Admin</a>
             <button class="btn btn-sm btn-primary" data-testid="ai-calls-refresh"
                     disabled="@_loading" @onclick="LoadAsync">
                 @(_loading ? "Loading…" : "Refresh")
             </button>
-        </div>
-    </div>
+        </Actions>
+    </AdminPageHeader>
 
     @if (!Session.IsAdmin)
     {
-        <div class="alert alert-warning">Admin session required. <a href="/admin/login">Sign in</a></div>
+        <InlineAlert Variant="warning">Admin session required. <a href="/admin/login">Sign in</a></InlineAlert>
     }
     else if (_error is not null)
     {
-        <div class="alert alert-danger" data-testid="ai-calls-error">@_error</div>
+        <InlineAlert Message="@_error" data-testid="ai-calls-error" />
     }
     else if (_data is null)
     {

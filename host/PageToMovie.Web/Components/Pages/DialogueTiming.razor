@@ -26,16 +26,11 @@
     .dt-meta { font-size: .75rem; color: #93a3b8; }
 </style>
 
-<div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Advanced</span>
-    <h1 class="ptm-adapt-title mb-1">Dialogue timing</h1>
-    <p class="ptm-adapt-lede mb-0">Compare the script against what speech-to-text actually heard, per line — spot where the words, the timing, or the delineation are off.</p>
-</div>
+<StudioPageHeader Kicker="Advanced" Title="Dialogue timing">
+    Compare the script against what speech-to-text actually heard, per line — spot where the words, the timing, or the delineation are off.
+</StudioPageHeader>
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger" data-testid="dt-error">@_error</div>
-}
+<InlineAlert Message="@_error" data-testid="dt-error" />
 
 @if (_projects.Count > 0)
 {
@@ -70,11 +65,11 @@
 }
 else if (_projects.Count == 0)
 {
-    <div class="alert alert-info">No films yet — create one first, then come back.</div>
+    <InlineAlert Variant="info" Message="No films yet — create one first, then come back." />
 }
 else if (_sceneLines.Count == 0)
 {
-    <div class="alert alert-info">No dialogue found for this film yet — generate the shot plan first.</div>
+    <InlineAlert Variant="info" Message="No dialogue found for this film yet — generate the shot plan first." />
 }
 else
 {

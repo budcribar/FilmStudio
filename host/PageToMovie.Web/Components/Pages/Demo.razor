@@ -8,17 +8,15 @@
 <PageTitle>Demo gallery — PageToMovie</PageTitle>
 
 <div class="demo-page">
-    <header class="demo-hero ptm-page-head">
-        <span class="ptm-adapt-kicker">Studio · Public gallery</span>
-        <h1 class="ptm-adapt-title mb-1">Demo films</h1>
-        <p class="ptm-adapt-lede mb-0">
+    <header class="demo-hero">
+        <StudioPageHeader Kicker="Studio · Public gallery" Title="Demo films" CssClass="mb-0">
             Shorts published from PageToMovie to YouTube — open to everyone.
             Star films you like.
             @if (!Session.IsLoggedIn)
             {
                 <span class="text-muted"> Sign in to star.</span>
             }
-        </p>
+        </StudioPageHeader>
         @if (!_loading && _demos.Count > 0)
         {
             <div class="demo-hero-toolbar">
@@ -35,23 +33,14 @@
         }
     </header>
 
-    @if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger">@_error</div>
-    }
-    @if (!string.IsNullOrEmpty(_message))
-    {
-        <div class="alert alert-info">@_message</div>
-    }
+    <InlineAlert Message="@_error" />
+    <InlineAlert Message="@_message" Variant="info" />
 
     @if (_loading)
     {
-        <div class="demo-loading">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading…</span>
-            </div>
-            <p class="text-muted mb-0 mt-2">Loading the gallery…</p>
-        </div>
+        <CenteredSpinner WrapperClass="demo-loading" CaptionClass="text-muted mb-0 mt-2">
+            <Caption>Loading the gallery…</Caption>
+        </CenteredSpinner>
     }
     else if (_demos.Count == 0)
     {

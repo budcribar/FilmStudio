@@ -20,23 +20,17 @@
 
 @if (!Session.IsLoggedIn)
 {
-    <div class="alert alert-warning">
+    <InlineAlert Variant="warning">
         <span>Sign in to re-voice a project.</span>
         <a class="btn btn-sm btn-primary ms-2" href="login?returnUrl=/simple-revoice">Sign in</a>
-    </div>
+    </InlineAlert>
 }
 else
 {
     <StudioProcessStrip Active="film" SimpleMode="true" />
 
-    @if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger" data-testid="simple-revoice-error">@_error</div>
-    }
-    @if (!string.IsNullOrEmpty(_message))
-    {
-        <div class="alert alert-success py-2" data-testid="simple-revoice-message">@_message</div>
-    }
+    <InlineAlert Message="@_error" data-testid="simple-revoice-error" />
+    <InlineAlert Message="@_message" Variant="success" CssClass="py-2" data-testid="simple-revoice-message" />
 
     <div class="card border-primary border-opacity-50 mb-3" data-testid="simple-revoice-card">
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">

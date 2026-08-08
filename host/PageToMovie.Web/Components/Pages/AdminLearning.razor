@@ -7,34 +7,24 @@
 <PageTitle>Admin — Learning</PageTitle>
 
 <div class="container-fluid py-3">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <div>
-            <h1 class="h3 mb-0">Learning</h1>
-            <div class="text-muted small">
-                Review events · project rules (admin)
-            </div>
-        </div>
-        <div class="d-flex gap-2">
+    <AdminPageHeader Title="Learning">
+        <Subtitle>Review events · project rules (admin)</Subtitle>
+        <Actions>
             <button class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="RefreshAsync">Refresh</button>
-        </div>
-    </div>
+        </Actions>
+    </AdminPageHeader>
 
     @if (!Session.IsAdmin)
     {
-        <div class="alert alert-warning">
-            Admin session required. <a href="/admin/login">Sign in</a>
-        </div>
+        <InlineAlert Variant="warning">Admin session required. <a href="/admin/login">Sign in</a></InlineAlert>
     }
     else if (!string.IsNullOrEmpty(_error))
     {
-        <div class="alert alert-danger">@_error</div>
+        <InlineAlert Message="@_error" />
     }
     else
     {
-        @if (!string.IsNullOrEmpty(_message))
-        {
-            <div class="alert alert-info py-2">@_message</div>
-        }
+        <InlineAlert Message="@_message" Variant="info" CssClass="py-2" />
 
         <div class="row g-2 mb-3">
             <div class="col-md-3">

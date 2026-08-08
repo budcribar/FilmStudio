@@ -6,7 +6,7 @@
 <div class="container py-4" style="max-width: 32rem;">
     <h3>Project invite</h3>
     @if (_loading) { <p class="text-muted">Loading invite…</p> }
-    else if (_preview is null) { <div class="alert alert-warning">@(_error ?? "Invite not found or already used.")</div> }
+    else if (_preview is null) { <InlineAlert Message="@(_error ?? "Invite not found or already used.")" Variant="warning" /> }
     else
     {
         <div class="card"><div class="card-body">

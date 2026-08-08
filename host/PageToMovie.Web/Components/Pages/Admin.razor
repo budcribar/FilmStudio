@@ -11,22 +11,19 @@
 <PageTitle>Admin — PageToMovie</PageTitle>
 
 <div class="container-fluid py-3">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <div>
-            <h1 class="h3 mb-0">Admin dashboard</h1>
-            <div class="text-muted small">
-                Live ops · SignalR <code>admin:ops</code>
-                @if (_hubLive)
-                {
-                    <span class="badge text-bg-success ms-1">live</span>
-                }
-                else
-                {
-                    <span class="badge text-bg-secondary ms-1">poll 5s</span>
-                }
-            </div>
-        </div>
-        <div class="d-flex gap-2 align-items-center flex-wrap">
+    <AdminPageHeader Title="Admin dashboard">
+        <Subtitle>
+            Live ops · SignalR <code>admin:ops</code>
+            @if (_hubLive)
+            {
+                <span class="badge text-bg-success ms-1">live</span>
+            }
+            else
+            {
+                <span class="badge text-bg-secondary ms-1">poll 5s</span>
+            }
+        </Subtitle>
+        <Actions>
             @if (Session.IsAuthenticated)
             {
                 <span class="badge text-bg-secondary">@Session.UserId</span>
@@ -41,8 +38,8 @@
                 <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync" disabled="@_busy">Refresh</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="LogoutAsync">Log out</button>
             }
-        </div>
-    </div>
+        </Actions>
+    </AdminPageHeader>
 
     @if (!_started)
     {
@@ -50,13 +47,11 @@
     }
     else if (!Session.IsAdmin)
     {
-        <div class="alert alert-warning">
-            Admin session required. <a href="/admin/login">Sign in</a>
-        </div>
+        <InlineAlert Variant="warning">Admin session required. <a href="/admin/login">Sign in</a></InlineAlert>
     }
     else if (!string.IsNullOrEmpty(_error))
     {
-        <div class="alert alert-danger">@_error</div>
+        <InlineAlert Message="@_error" />
         <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync">Retry</button>
     }
     else if (_state is null)
@@ -65,10 +60,7 @@
     }
     else
     {
-        @if (!string.IsNullOrEmpty(_actionMsg))
-        {
-            <div class="alert alert-info py-2">@_actionMsg</div>
-        }
+        <InlineAlert Message="@_actionMsg" Variant="info" CssClass="py-2" />
 
         @if (_state.Http is { } http)
         {
@@ -393,10 +385,10 @@
                     </div>
                     @if (_chartWarning is { Length: > 0 } cw)
                     {
-                        <div class="alert alert-warning py-1 small mb-2">
+                        <InlineAlert Variant="warning" CssClass="py-1 small mb-2">
                             Charts failed to update: @cw
                             <button type="button" class="btn btn-sm btn-link p-0 ms-1 align-baseline" @onclick="UpdateChartsAsync">Retry</button>
-                        </div>
+                        </InlineAlert>
                     }
                     <div class="row g-3">
                         <div class="col-lg-6">
@@ -752,14 +744,8 @@
                         }
                     </div>
                 </div>
-                @if (!string.IsNullOrEmpty(_archiveMsg))
-                {
-                    <div class="alert alert-info py-2 small mt-3 mb-0">@_archiveMsg</div>
-                }
-                @if (!string.IsNullOrEmpty(_archiveError))
-                {
-                    <div class="alert alert-danger py-2 small mt-3 mb-0">@_archiveError</div>
-                }
+                <InlineAlert Message="@_archiveMsg" Variant="info" CssClass="py-2 small mt-3 mb-0" />
+                <InlineAlert Message="@_archiveError" CssClass="py-2 small mt-3 mb-0" />
             </div>
         </div>
 
@@ -865,10 +851,7 @@
                                     }
                                 </div>
                             </div>
-                            @if (!string.IsNullOrEmpty(_logError))
-                            {
-                                <div class="alert alert-warning py-1 small mb-2">@_logError</div>
-                            }
+                            <InlineAlert Message="@_logError" Variant="warning" CssClass="py-1 small mb-2" />
                             @if (_jobLog is null)
                             {
                                 <p class="text-muted small mb-0">

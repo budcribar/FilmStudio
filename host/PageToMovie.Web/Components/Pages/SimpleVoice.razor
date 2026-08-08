@@ -12,14 +12,10 @@
 
 <PageTitle>Read in your voice · PageToMovie</PageTitle>
 
-<div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Easiest start</span>
-    <h1 class="ptm-adapt-title mb-1">Two steps · story and your voice</h1>
-    <p class="ptm-adapt-lede mb-0">
-        Pick a library book, record one sample, then make the movie.
-        Stock pictures stay as-is — we only re-speak the narrator as you.
-    </p>
-</div>
+<StudioPageHeader Kicker="Easiest start" Title="Two steps · story and your voice">
+    Pick a library book, record one sample, then make the movie.
+    Stock pictures stay as-is — we only re-speak the narrator as you.
+</StudioPageHeader>
 
 @if (!Session.IsLoggedIn)
 {
@@ -32,13 +28,10 @@ else
 {
     <StudioProcessStrip Active="@(_phase == Phase.Movie ? "film" : _phase is Phase.Record or Phase.Done ? "cast" : "book")" SimpleMode="true" />
 
-    @if (!string.IsNullOrEmpty(_error))
+    <InlineAlert Message="@_error" data-testid="simple-voice-error" />
+    @if (string.IsNullOrEmpty(_error))
     {
-        <div class="alert alert-danger" data-testid="simple-voice-error">@_error</div>
-    }
-    @if (!string.IsNullOrEmpty(_message) && string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-success py-2" data-testid="simple-voice-message">@_message</div>
+        <InlineAlert Message="@_message" Variant="success" CssClass="py-2" data-testid="simple-voice-message" />
     }
 
     @* ── Step 1: choose story ─────────────────────────────────────────── *@

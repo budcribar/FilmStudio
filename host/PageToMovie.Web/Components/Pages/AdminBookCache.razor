@@ -6,31 +6,26 @@
 <PageTitle>Admin — Book cache</PageTitle>
 
 <div class="container-fluid py-3">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <div>
-            <h1 class="h3 mb-0">Book & adaptation cache</h1>
-            <div class="text-muted small">
-                Content-addressed <code>book_id</code> · shared <code>adaptation_conversion</code> artifacts ·
-                xAI <code>file_id</code> / <code>last_response_id</code> (Responses multi-turn)
-            </div>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
+    <AdminPageHeader Title="Book & adaptation cache">
+        <Subtitle>
+            Content-addressed <code>book_id</code> · shared <code>adaptation_conversion</code> artifacts ·
+            xAI <code>file_id</code> / <code>last_response_id</code> (Responses multi-turn)
+        </Subtitle>
+        <Actions>
             <a href="/admin" class="btn btn-sm btn-outline-secondary">← Admin</a>
             <button class="btn btn-sm btn-outline-primary" @onclick="RefreshAsync" disabled="@_busy">
                 @(_busy ? "Refreshing…" : "Refresh")
             </button>
-        </div>
-    </div>
+        </Actions>
+    </AdminPageHeader>
 
     @if (!Session.IsAdmin)
     {
-        <div class="alert alert-warning">
-            Admin session required. <a href="/admin/login">Sign in</a>
-        </div>
+        <InlineAlert Variant="warning">Admin session required. <a href="/admin/login">Sign in</a></InlineAlert>
     }
     else if (!string.IsNullOrEmpty(_error))
     {
-        <div class="alert alert-danger">@_error</div>
+        <InlineAlert Message="@_error" />
         <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync">Retry</button>
     }
     else if (_snap is null)
@@ -88,7 +83,7 @@
                     <tbody>
                         @if (_snap.Books is null || _snap.Books.Count == 0)
                         {
-                            <tr><td colspan="8" class="text-muted p-3">No books registered yet. Prepare a book / run Stage‑1 to populate.</td></tr>
+                            <EmptyTableRow ColSpan="8" CssClass="p-3" Message="No books registered yet. Prepare a book / run Stage‑1 to populate." />
                         }
                         else
                         {
@@ -151,7 +146,7 @@
                     <tbody>
                         @if (_snap.RecentArtifacts is null || _snap.RecentArtifacts.Count == 0)
                         {
-                            <tr><td colspan="8" class="text-muted p-3">No adaptation artifacts yet.</td></tr>
+                            <EmptyTableRow ColSpan="8" CssClass="p-3" Message="No adaptation artifacts yet." />
                         }
                         else
                         {

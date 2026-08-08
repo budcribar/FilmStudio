@@ -1,0 +1,23 @@
+@namespace PageToMovie.Web.Components
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-0">@Title</h1>
+        @if (Subtitle is not null)
+        {
+            <div class="text-muted small">@Subtitle</div>
+        }
+    </div>
+    @if (Actions is not null)
+    {
+        <div class="d-flex gap-2 flex-wrap">
+            @Actions
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? Subtitle { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+}

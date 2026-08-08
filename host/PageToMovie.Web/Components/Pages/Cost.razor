@@ -10,23 +10,16 @@
 
 <PageTitle>Estimate & cost</PageTitle>
 
-<div class="ptm-page-head mb-3">
-    <span class="ptm-adapt-kicker">Studio · Estimate</span>
-    <h1 class="ptm-adapt-title mb-1">Estimate & cost</h1>
-    <p class="ptm-adapt-lede mb-0">
-        See what this film is planned to cost, what you’ve spent so far, and where the money went.
-    </p>
-</div>
+<StudioPageHeader Kicker="Studio · Estimate" Title="Estimate & cost">
+    See what this film is planned to cost, what you’ve spent so far, and where the money went.
+</StudioPageHeader>
 
 @if (ActiveProject.HasProject)
 {
     <StudioProcessStrip Active="estimate" FullStudio="true" />
 }
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger">@_error</div>
-}
+<InlineAlert Message="@_error" />
 
 @* Soft gate — still show what you've spent when the screenplay is not ready yet. *@
 @if (ActiveProject.HasProject && !ActiveProject.CanEstimate)
