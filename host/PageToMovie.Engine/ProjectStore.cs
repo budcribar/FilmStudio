@@ -4496,7 +4496,7 @@ public sealed partial class ProjectStore
         var projectDir = await GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
         var videoDir = Path.Combine(projectDir, "assets", "video");
         var scenesDir = Path.Combine(projectDir, "assets", "scenes");
-        var videoIndex = await GetDirIndexAsync(videoDir, ct).ConfigureAwait(false);
+        var videoIndex = await GetVideoIndexWithParentFallbackAsync(projectId, videoDir, ct).ConfigureAwait(false);
         var scenesIndex = await GetDirIndexAsync(scenesDir, ct).ConfigureAwait(false);
 
         HashSet<string>? approvedScenes = null;
@@ -4699,7 +4699,7 @@ public sealed partial class ProjectStore
         var projectDir = await GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
         var videoDir = Path.Combine(projectDir, "assets", "video");
         var scenesDir = Path.Combine(projectDir, "assets", "scenes");
-        var videoIndex = await GetDirIndexAsync(videoDir, ct).ConfigureAwait(false);
+        var videoIndex = await GetVideoIndexWithParentFallbackAsync(projectId, videoDir, ct).ConfigureAwait(false);
         var scenesIndex = await GetDirIndexAsync(scenesDir, ct).ConfigureAwait(false);
 
         var clips = new List<ClipSummary>();
@@ -6213,6 +6213,33 @@ public sealed partial class ProjectStore
             dir,
             (d, _) => Task.FromResult(IndexDirFiles(d)),
             ct);
+
+    /// <summary>
+    /// Video index for a project's own assets/video, filled in with the PARENT project's video index
+    /// for any filename the fork doesn't have locally. A fork skips copying video (ForkSkipExtensions)
+    /// — its own index is empty for clips it never regenerated — but the clip-video HTTP endpoint
+    /// (GET .../scenes/{n}/clips/{c}/video) already falls back to serving the parent's file when a
+    /// forkable source kept its media server-side. Scene listing/detail need the SAME fallback,
+    /// otherwise ClipOnDisk reports false for a clip the endpoint would actually serve fine, and the
+    /// client never even attempts to fetch/stitch/play it.
+    /// </summary>
+    private async Task<Dictionary<string, long>> GetVideoIndexWithParentFallbackAsync(
+        string projectId, string videoDir, CancellationToken ct)
+    {
+        var index = await GetDirIndexAsync(videoDir, ct).ConfigureAwait(false);
+        try
+        {
+            var parentId = (await GetProjectAsync(projectId, ct).ConfigureAwait(false))?.ParentProjectId;
+            if (string.IsNullOrWhiteSpace(parentId)) return index;
+            var parentDir = await GetProjectDirAsync(parentId, ct).ConfigureAwait(false);
+            var parentIndex = await GetDirIndexAsync(Path.Combine(parentDir, "assets", "video"), ct).ConfigureAwait(false);
+            foreach (var kv in parentIndex)
+                if (!index.ContainsKey(kv.Key))
+                    index[kv.Key] = kv.Value;
+        }
+        catch { /* best effort — never block scene listing on a broken/missing parent link */ }
+        return index;
+    }
 
     private static Dictionary<string, long> IndexDirFiles(string dir)
     {
