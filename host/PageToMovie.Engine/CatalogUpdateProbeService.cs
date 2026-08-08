@@ -65,7 +65,7 @@ public sealed class CatalogUpdateProbeService
             CheckedAtUtc = DateTime.UtcNow.ToString("o"),
         };
 
-        foreach (var entry in SupportedModelCatalog.Entries.Where(e => e.Enabled))
+        foreach (var entry in SupportedModelCatalog.Entries.Where(e => e.Enabled && !e.Deprecated))
         {
             var row = new CatalogModelProbeResult
             {

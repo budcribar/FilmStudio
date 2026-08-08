@@ -207,10 +207,12 @@
                     </div>
                     <div class="col-md-2">
                         <select class="form-select form-select-sm bg-dark text-light border-secondary" @bind="_filterStatus">
-                            <option value="">All Statuses</option>
+                            <option value="">Status (Active models)</option>
                             <option value="enabled">Enabled only</option>
                             <option value="disabled">Disabled only</option>
+                            <option value="deprecated">Deprecated only</option>
                             <option value="lab">Lab mode only</option>
+                            <option value="all">All (including Deprecated)</option>
                         </select>
                     </div>
                     <div class="col-md-3 d-flex gap-2 justify-content-end align-items-center">
@@ -220,7 +222,7 @@
                         }
                         <button class="btn btn-sm btn-success" @onclick="() => BeginAdd()">＋ Add model</button>
                         <span class="badge bg-secondary">
-                            @FilteredModels.Count() of @_modelList.Count models (@_modelList.Count(m => IsEnabled(m)) enabled)
+                            @FilteredModels.Count() of @_modelList.Count models (@_modelList.Count(m => IsEnabled(m) && !IsDeprecated(m)) active enabled, @_modelList.Count(m => IsDeprecated(m)) deprecated)
                         </span>
                     </div>
                 </div>
@@ -259,6 +261,11 @@
                             <div class="col-md-2">
                                 <ToggleSwitch @bind-Value="_editEnabled" Id="editEnabled" WrapperClass="form-check form-switch mt-4">
                                     <Label>Enabled</Label>
+                                </ToggleSwitch>
+                            </div>
+                            <div class="col-md-2">
+                                <ToggleSwitch @bind-Value="_editDeprecated" Id="editDeprecated" WrapperClass="form-check form-switch mt-4">
+                                    <Label><span class="text-danger fw-bold" title="Hide from pickers and ignore during update scans">Deprecated</span></Label>
                                 </ToggleSwitch>
                             </div>
                             <div class="col-md-2">
@@ -431,18 +438,29 @@
                                     var prov = m["provider"]?.ToString() ?? "";
                                     var verified = m["lastVerifiedAt"]?.ToString() ?? "—";
                                     var priced = m["pricingLastReviewedAt"]?.ToString() ?? "—";
-                                    <tr class="@(IsEnabled(m) ? "" : "table-secondary")">
+                                    <tr class="@(IsDeprecated(m) ? "table-dark opacity-75" : IsEnabled(m) ? "" : "table-secondary")">
                                         <td>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <ToggleSwitch Value="@IsEnabled(m)" ValueChanged="@(_ => ToggleModelEnabled(m))" WrapperClass="form-check form-switch mb-0" />
-                                                <span class="badge @(IsEnabled(m) ? "bg-success" : "bg-secondary")" style="font-size: 0.65rem;">
-                                                    @(IsEnabled(m) ? "ON" : "OFF")
-                                                </span>
-                                            </div>
+                                            @if (IsDeprecated(m))
+                                            {
+                                                <span class="badge bg-danger" style="font-size: 0.65rem;" title="Deprecated — hidden from pickers & ignored by update scan">DEPRECATED</span>
+                                            }
+                                            else
+                                            {
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <ToggleSwitch Value="@IsEnabled(m)" ValueChanged="@(_ => ToggleModelEnabled(m))" WrapperClass="form-check form-switch mb-0" />
+                                                    <span class="badge @(IsEnabled(m) ? "bg-success" : "bg-secondary")" style="font-size: 0.65rem;">
+                                                        @(IsEnabled(m) ? "ON" : "OFF")
+                                                    </span>
+                                                </div>
+                                            }
                                         </td>
                                         <td class="fw-bold font-monospace">@modelId</td>
                                         <td>
                                             @displayName
+                                            @if (IsDeprecated(m))
+                                            {
+                                                <span class="badge bg-danger text-light ms-1" title="Deprecated model — hidden from pickers & ignored by update scan">DEPRECATED</span>
+                                            }
                                             @if (m.TryGetPropertyValue("labMode", out var labNode) && labNode?.GetValue<bool>() == true)
                                             {
                                                 <span class="badge bg-warning text-dark ms-1" title="@(m["labNotes"]?.ToString() ?? "lab")">LAB</span>
@@ -457,6 +475,14 @@
                                         <td class="text-end pe-3">
                                             <div class="btn-group btn-group-sm">
                                                 <button class="btn btn-outline-primary" title="Edit model settings" @onclick="() => BeginEdit(m)">✎ Edit</button>
+                                                @if (IsDeprecated(m))
+                                                {
+                                                    <button class="btn btn-outline-info" title="Restore model to active catalog" @onclick="() => ToggleModelDeprecated(m)">Restore</button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-outline-warning" title="Deprecate model (hide & ignore in update scans)" @onclick="() => ToggleModelDeprecated(m)">Deprecate</button>
+                                                }
                                                 <button class="btn btn-outline-success" title="Mark reviewed today" @onclick="() => ReviewModel(m)">✓ Review</button>
                                                 <button class="btn btn-outline-danger" title="Delete model" @onclick="() => RemoveModelAsync(m)">🗑</button>
                                             </div>

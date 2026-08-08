@@ -84,6 +84,9 @@ public sealed class SupportedModelEntry
     /// <summary>When false, hidden from Configuration pickers.</summary>
     public bool Enabled { get; init; } = true;
 
+    /// <summary>When true, this model is deprecated: hidden from standard catalog pickers and ignored by automated update scans.</summary>
+    public bool Deprecated { get; init; }
+
     /// <summary>
     /// Context window (max input tokens), for callers that need to budget large prompts against
     /// the actual model — e.g. book-to-screenplay chunking. Null for models where this isn't a
@@ -708,11 +711,13 @@ public static class SupportedModelCatalog
     public static IReadOnlyList<SupportedModelEntry> ForCapability(
         ModelCapability capability,
         bool enabledOnly = true,
-        bool includeLabModels = false) =>
+        bool includeLabModels = false,
+        bool includeDeprecated = false) =>
         Entries.Where(e =>
             e.Capability == capability
             && (!enabledOnly || e.Enabled)
-            && (includeLabModels || !e.LabMode)).ToList();
+            && (includeLabModels || !e.LabMode)
+            && (includeDeprecated || !e.Deprecated)).ToList();
 
     public static SupportedModelEntry? Find(string? modelId, ModelCapability? capability = null)
     {
@@ -991,7 +996,7 @@ public static class SupportedModelCatalog
         if (!string.IsNullOrWhiteSpace(capDef?.DefaultModelId))
         {
             var hit = Find(capDef.DefaultModelId);
-            if (hit is { Enabled: true })
+            if (hit is { Enabled: true, Deprecated: false })
                 return hit.Id;
         }
 
@@ -1013,7 +1018,7 @@ public static class SupportedModelCatalog
 
         if (string.Equals(capabilityId, "video-review", StringComparison.OrdinalIgnoreCase))
         {
-            var review = Entries.FirstOrDefault(e => e.Enabled && e.SupportsVideoReview);
+            var review = Entries.FirstOrDefault(e => e.Enabled && !e.Deprecated && e.SupportsVideoReview);
             if (review is not null) return review.Id;
         }
 
@@ -1024,7 +1029,7 @@ public static class SupportedModelCatalog
     public static string? FirstEnabledVoiceCloneModelId()
     {
         try { EnsureLoaded(); } catch { return null; }
-        return Entries.FirstOrDefault(e => e.Enabled && e.Capability == ModelCapability.Voice && e.IsVoiceCloneStep)?.Id
+        return Entries.FirstOrDefault(e => e.Enabled && !e.Deprecated && e.Capability == ModelCapability.Voice && e.IsVoiceCloneStep)?.Id
                ?? ForCapability(ModelCapability.Voice).FirstOrDefault()?.Id;
     }
 
@@ -1166,6 +1171,7 @@ public static class SupportedModelCatalog
         EndpointPath = e.EndpointPath,
         RequiredEnvKeys = e.RequiredEnvKeys.ToList(),
         Enabled = e.Enabled,
+        Deprecated = e.Deprecated,
         MaxInputTokens = e.MaxInputTokens,
         MaxOutputTokens = e.MaxOutputTokens,
         InputCostPerMillionTokens = e.InputCostPerMillionTokens,
@@ -1231,6 +1237,7 @@ public static class SupportedModelCatalog
         EndpointPath = d.EndpointPath ?? "",
         RequiredEnvKeys = d.RequiredEnvKeys ?? new List<string>(),
         Enabled = d.Enabled,
+        Deprecated = d.Deprecated,
         MaxInputTokens = d.MaxInputTokens,
         MaxOutputTokens = d.MaxOutputTokens,
         InputCostPerMillionTokens = d.InputCostPerMillionTokens,
@@ -1360,6 +1367,7 @@ public sealed class SupportedModelDto
     public string EndpointPath { get; set; } = "";
     public List<string> RequiredEnvKeys { get; set; } = new();
     public bool Enabled { get; set; } = true;
+    public bool Deprecated { get; set; }
     public int? MaxInputTokens { get; set; }
     public int? MaxOutputTokens { get; set; }
     public double? InputCostPerMillionTokens { get; set; }

@@ -31,6 +31,7 @@ public partial class AdminModelsCatalog
     private string _editCapability = "Chat";
     private string _editProvider = "Xai";
     private bool _editEnabled = true;
+    private bool _editDeprecated;
     private bool _editLabMode;
     private string _editLabNotes = "";
     private string _editEndpointPath = "";
@@ -76,6 +77,7 @@ public partial class AdminModelsCatalog
         var prov = m["provider"]?.ToString() ?? "";
         var isEnabled = IsEnabled(m);
         var isLab = m.TryGetPropertyValue("labMode", out var labNode) && labNode?.GetValue<bool>() == true;
+        var isDeprecated = IsDeprecated(m);
 
         if (!string.IsNullOrWhiteSpace(_filterQuery))
         {
@@ -92,11 +94,14 @@ public partial class AdminModelsCatalog
         if (!string.IsNullOrWhiteSpace(_filterProvider) && !string.Equals(prov, _filterProvider, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        if (_filterStatus == "enabled" && !isEnabled) return false;
-        if (_filterStatus == "disabled" && isEnabled) return false;
-        if (_filterStatus == "lab" && !isLab) return false;
+        if (_filterStatus == "enabled") return isEnabled && !isDeprecated;
+        if (_filterStatus == "disabled") return !isEnabled && !isDeprecated;
+        if (_filterStatus == "lab") return isLab && !isDeprecated;
+        if (_filterStatus == "deprecated") return isDeprecated;
+        if (_filterStatus == "all") return true;
 
-        return true;
+        // Default (empty filterStatus): hide deprecated models!
+        return !isDeprecated;
     });
 
     private List<string> AvailableProviders => _modelList
@@ -110,6 +115,20 @@ public partial class AdminModelsCatalog
 
     private static bool IsEnabled(JsonObject m) =>
         m.TryGetPropertyValue("enabled", out var en) && en?.GetValue<bool>() == true;
+
+    private static bool IsDeprecated(JsonObject m) =>
+        m.TryGetPropertyValue("deprecated", out var dep) && dep?.GetValue<bool>() == true;
+
+    private void ToggleModelDeprecated(JsonObject m)
+    {
+        var isDep = IsDeprecated(m);
+        if (isDep)
+            m.Remove("deprecated");
+        else
+            m["deprecated"] = true;
+        SyncModelListToRawJson();
+        _message = isDep ? $"Restored model '{m["id"]}' (undeprecated)." : $"Deprecated model '{m["id"]}'. Save to persist.";
+    }
 
     private async Task LoadCatalogAsync()
     {
@@ -184,6 +203,7 @@ public partial class AdminModelsCatalog
         _editCapability = "Chat";
         _editProvider = "Xai";
         _editEnabled = true;
+        _editDeprecated = false;
         _editLabMode = true; // new models start as lab until reviewed
         _editLabNotes = "New model — fill required fields then clear Lab mode";
         _editEndpointPath = "";
@@ -203,6 +223,7 @@ public partial class AdminModelsCatalog
         _editCapability = m["capability"]?.ToString() ?? "Chat";
         _editProvider = m["provider"]?.ToString() ?? "";
         _editEnabled = IsEnabled(m);
+        _editDeprecated = IsDeprecated(m);
         _editLabMode = m.TryGetPropertyValue("labMode", out var lm) && lm?.GetValue<bool>() == true;
         _editLabNotes = m["labNotes"]?.ToString() ?? "";
         _editEndpointPath = m["endpointPath"]?.ToString() ?? "";
@@ -292,6 +313,10 @@ public partial class AdminModelsCatalog
         obj["capability"] = _editCapability;
         obj["provider"] = _editProvider.Trim();
         obj["enabled"] = _editEnabled;
+        if (_editDeprecated)
+            obj["deprecated"] = true;
+        else
+            obj.Remove("deprecated");
         obj["labMode"] = _editLabMode;
         if (_editLabMode)
             obj["labNotes"] = string.IsNullOrWhiteSpace(_editLabNotes) ? "Lab model — incomplete by design" : _editLabNotes.Trim();
