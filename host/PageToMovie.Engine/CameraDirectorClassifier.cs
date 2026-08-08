@@ -106,7 +106,7 @@ public sealed class CameraDirectorClassifier : BeatChatClassifierBase<CameraDire
     {
         try
         {
-            var cleaned = Regex.Replace(rawJson, @"```json|```", "").Trim();
+            var cleaned = ClassifierJsonParser.StripFences(rawJson);
             using var doc = JsonDocument.Parse(cleaned);
             if (!doc.RootElement.TryGetProperty("directives", out var dirArray) ||
                 dirArray.ValueKind != JsonValueKind.Array)

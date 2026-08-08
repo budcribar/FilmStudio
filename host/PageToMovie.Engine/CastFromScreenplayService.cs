@@ -511,11 +511,9 @@ public sealed class CastFromScreenplayService
             if (!needsDesc && !needsLock) continue;
 
             var display = CoerceString(seed, "canonical_given_name")
-                          ?? key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase)
-                              .Replace('_', ' ');
+                          ?? CastKindClassifier.StripPrefix(key).Replace('_', ' ');
             var queryNames = new List<string> { display };
-            var keyCore = key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase)
-                .Replace('_', ' ');
+            var keyCore = CastKindClassifier.StripPrefix(key).Replace('_', ' ');
             if (!string.IsNullOrWhiteSpace(keyCore) &&
                 !string.Equals(keyCore, display, StringComparison.OrdinalIgnoreCase))
                 queryNames.Add(keyCore);
@@ -843,7 +841,7 @@ public sealed class CastFromScreenplayService
 
             var name = seed.TryGetValue("canonical_given_name", out var cn) && cn is not null
                 ? cn.ToString()!
-                : k.Replace("Character_", "").Replace('_', ' ');
+                : CastKindClassifier.StripPrefix(k).Replace('_', ' ');
 
             var off = string.Equals(
                 seed.TryGetValue("display_name_policy", out var pol) ? pol?.ToString() : null,

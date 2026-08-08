@@ -41,8 +41,7 @@ public sealed class AiMusicApiClient : IAudioClient
     {
         var key = ApiKeyScope.CurrentAiMusicApi
             ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.AiMusicApiKeyEnv);
-        if (!string.IsNullOrWhiteSpace(key)) return key.Trim(' ', '"', '\'', '\r', '\n', '\t');
-        return null;
+        return ProviderApiKey.Clean(key);
     }
 
     public async Task<string?> GenerateMusicTrackAsync(

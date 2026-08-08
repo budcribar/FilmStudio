@@ -64,9 +64,7 @@ public sealed class VoicePreviewStore
 
     internal static string Sanitize(string charKey)
     {
-        var k = (charKey ?? "").Trim();
-        foreach (var c in Path.GetInvalidFileNameChars())
-            k = k.Replace(c, '_');
+        var k = PageToMovie.Core.Utils.FileNameSanitizer.SanitizeFileName((charKey ?? "").Trim());
         return string.IsNullOrEmpty(k) ? "character" : k;
     }
 

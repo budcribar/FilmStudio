@@ -3900,7 +3900,7 @@ public sealed class FilmJobService
 
                         // 4. Calculate measured camera and physical action overheads
                         double camOverhead = _timingLedger?.GetOverheadSec(camCat, 1.6) ?? 1.6;
-                        double netSpeechSec = wordCount > 0 ? (wordCount / 2.6) : 0.0;
+                        double netSpeechSec = wordCount > 0 ? (wordCount / ClipDurationEstimator.DialogueWordsPerSecond) : 0.0;
                         double measuredActOverhead = Math.Max(0.5, Math.Round(probedSec - camOverhead - netSpeechSec, 2));
 
                         _ = Task.Run(async () =>

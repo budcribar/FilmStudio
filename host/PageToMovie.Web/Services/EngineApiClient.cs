@@ -2409,12 +2409,8 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
                 snap = jobs?.Job;
             }
 
-            if (snap is not null)
-            {
-                var st = snap.Status ?? "";
-                if (st is "done" or "partial" or "error" or "cancelled")
-                    return snap;
-            }
+            if (snap is not null && snap.IsFinished && snap.Status != "idle")
+                return snap;
             await Task.Delay(delay, ct);
         }
         throw new TimeoutException("Timed out waiting for job to finish.");

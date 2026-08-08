@@ -169,7 +169,7 @@ public sealed class ActionCameraOverheadLedger
         string? cameraCategoryId = null,
         string? actionCategoryId = null,
         double concurrencyFactorGamma = 0.0,
-        double wordsPerSecond = 2.6)
+        double wordsPerSecond = ClipDurationEstimator.DialogueWordsPerSecond)
     {
         double speechWindow = CalculateEffectiveSpeechWindowSec(totalClipDurationSec, cameraCategoryId, actionCategoryId, concurrencyFactorGamma);
         return (int)Math.Floor(speechWindow * wordsPerSecond);
@@ -184,7 +184,7 @@ public sealed class ActionCameraOverheadLedger
         string? cameraCategoryId = null,
         string? actionCategoryId = null,
         double concurrencyFactorGamma = 0.0,
-        double wordsPerSecond = 2.6)
+        double wordsPerSecond = ClipDurationEstimator.DialogueWordsPerSecond)
     {
         int maxWords = CalculateMaxSpeechWords(totalClipDurationSec, cameraCategoryId, actionCategoryId, concurrencyFactorGamma, wordsPerSecond);
         return dialogueWordCount > maxWords;

@@ -312,9 +312,7 @@ public static class CastPackageCrossCheck
         {
             if (key.Equals(wantKey, StringComparison.OrdinalIgnoreCase))
                 return key;
-            var suffix = key.StartsWith("Character_", StringComparison.OrdinalIgnoreCase)
-                ? key["Character_".Length..]
-                : key;
+            var suffix = CastKindClassifier.StripPrefix(key);
             if (NormalizeSpeaker(suffix).Equals(want, StringComparison.OrdinalIgnoreCase))
                 return key;
 

@@ -59,7 +59,7 @@ public sealed class GlobalTimingCalibrationService
             CameraCategory: cameraCategory ?? "",
             ActionCategory: actionCategory ?? "",
             WordCount: wordCount,
-            EstimatedDurationSec: estimatedDurationSec > 0 ? estimatedDurationSec : Math.Round(measuredCamOverheadSec + measuredActionOverheadSec + (wordCount / 2.6), 2),
+            EstimatedDurationSec: estimatedDurationSec > 0 ? estimatedDurationSec : Math.Round(measuredCamOverheadSec + measuredActionOverheadSec + (wordCount / ClipDurationEstimator.DialogueWordsPerSecond), 2),
             ClipDurationSec: clipDurationSec,
             MeasuredCamOverheadSec: measuredCamOverheadSec,
             MeasuredActionOverheadSec: measuredActionOverheadSec,

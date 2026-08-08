@@ -182,7 +182,7 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
         var process = Environment.GetEnvironmentVariable(processEnv)
             ?? (provider == "fal" ? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv) : null)
             ?? (provider == "elevenlabs" ? Environment.GetEnvironmentVariable("ELEVENLABS_API_KEY") : null);
-        return string.IsNullOrWhiteSpace(process) ? null : process.Trim(' ', '"', '\'', '\r', '\n', '\t');
+        return PageToMovie.Engine.ProviderApiKey.Clean(process);
     }
 
     public bool HasKey(string? userId) => !string.IsNullOrWhiteSpace(GetKey(userId));

@@ -1832,7 +1832,7 @@ public partial class Characters
         if (ext is not (".webm" or ".mp3" or ".wav" or ".m4a" or ".ogg" or ".aac" or ".mp4"))
             ext = ".webm";
         if (ext == ".mp4") ext = ".webm";
-        var safeKey = string.Join("_", (_selectedKey ?? "character").Split(Path.GetInvalidFileNameChars()));
+        var safeKey = PageToMovie.Core.Utils.FileNameSanitizer.SanitizeFileName(_selectedKey ?? "character");
         var rel = $"assets/characters/{safeKey}/voice_clone_sample{ext}";
 
         // Client media folder when already connected (no folder picker mid-recording).

@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine.Abstractions;
 
@@ -19,7 +20,7 @@ namespace PageToMovie.Engine;
 /// </summary>
 public sealed class XaiResponsesClient
 {
-    private const string ApiBase = "https://api.x.ai/v1";
+    private const string ApiBase = SupportedModelCatalog.XaiApiBase;
 
     private readonly HttpClient _http;
     private readonly IUserApiKeyProvider? _keyProvider;

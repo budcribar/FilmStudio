@@ -95,6 +95,12 @@ public sealed class JobSnapshot
     public DateTimeOffset? StartedAt { get; set; }
     public DateTimeOffset? FinishedAt { get; set; }
 
+    /// <summary>True when status indicates job processing is finished (done, partial, error, cancelled, idle).</summary>
+    public bool IsFinished => Status is "done" or "partial" or "error" or "cancelled" or "idle";
+
+    /// <summary>True when job completed successfully (done or partial).</summary>
+    public bool IsSuccess => Status is "done" or "partial";
+
     /// <summary>
     /// Same-origin proxy path for client to download gen output (e.g. /api/media/proxy/{token}).
     /// Set when bytes should be saved to the user's media folder instead of server disk.

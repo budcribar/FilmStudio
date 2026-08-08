@@ -154,5 +154,5 @@ internal static class PromptImprovementReview
         recordedRevision.StartsWith(headRevision, StringComparison.OrdinalIgnoreCase)
         || headRevision.StartsWith(recordedRevision, StringComparison.OrdinalIgnoreCase);
 
-    private static string SanitizeFileName(string value) => string.Concat(value.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+    private static string SanitizeFileName(string value) => PageToMovie.Core.Utils.FileNameSanitizer.SanitizeFileName(value);
 }

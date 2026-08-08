@@ -39,6 +39,31 @@ public static class VisualMediumStyles
         _ => PhotorealStyleLock,
     };
 
+    /// <summary>
+    /// Shared visual medium token normalization for Stage 1 adaptation and project config stores.
+    /// </summary>
+    public static string NormalizeMedium(string? raw, bool allowAuto = false, bool mapMixedToPhotoreal = false)
+    {
+        var s = (raw ?? "").Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
+        if (allowAuto && (string.IsNullOrEmpty(s) || s is "auto" or "infer" or "default"))
+            return "auto";
+        if (s is "photoreal" or "photo_real" or "live_action" or "liveaction" or "photoreal_live_action"
+            or "period_drama" or "gothic_live_action" || (mapMixedToPhotoreal && s == "mixed"))
+            return MediumPhotoreal;
+        if (s is "illustrated" or "picture_book" or "picturebook" or "illustration"
+            or "illustrated_picture_book" or "childrens_book" or "storybook")
+            return MediumIllustrated;
+        if (s is "stylized_3d" or "stylized_3d_animated" or "cg_animated" or "pixar" or "3d_animated")
+            return MediumStylized3d;
+        if (s is MediumPhotoreal or MediumIllustrated or MediumStylized3d or MediumOther)
+            return s;
+        if (s.Contains("picture") || s.Contains("illustrat") || s.Contains("cartoon") || s.Contains("storybook"))
+            return MediumIllustrated;
+        if (s.Contains("photoreal") || s.Contains("live_action") || s.Contains("live action") || s.Contains("period"))
+            return MediumPhotoreal;
+        return MediumOther;
+    }
+
     /// <summary>Strips a leading/trailing ``` (optionally ```json) code fence from a model reply.</summary>
     public static string StripJsonFence(string trimmed)
     {

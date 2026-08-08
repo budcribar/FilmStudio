@@ -101,7 +101,7 @@ public sealed class ColorPaletteGradingClassifier
     {
         try
         {
-            var cleaned = Regex.Replace(rawJson, @"```json|```", "").Trim();
+            var cleaned = ClassifierJsonParser.StripFences(rawJson);
             using var doc = JsonDocument.Parse(cleaned);
             var root = doc.RootElement;
 

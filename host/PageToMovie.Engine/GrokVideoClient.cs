@@ -16,7 +16,7 @@ namespace PageToMovie.Engine;
 /// </summary>
 public sealed class GrokVideoClient : IVideoClient
 {
-    public const string ApiBase = "https://api.x.ai/v1";
+    public const string ApiBase = SupportedModelCatalog.XaiApiBase;
     /// <summary>Full prompt first; on length errors, shorten and retry up to this many times.</summary>
     public const int MaxPromptLengthRetries = 5;
 

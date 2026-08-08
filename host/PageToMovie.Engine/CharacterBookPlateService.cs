@@ -114,7 +114,7 @@ public sealed class CharacterBookPlateService
             return result;
         }
 
-        var charsDir = Path.Combine(projectDir, "assets", "characters");
+        var charsDir = _projects.GetCharactersDir(projectId);
         if (copyIntoAssets)
             Directory.CreateDirectory(charsDir);
 

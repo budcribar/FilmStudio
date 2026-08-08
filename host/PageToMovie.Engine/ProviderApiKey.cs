@@ -8,8 +8,14 @@ namespace PageToMovie.Engine;
 /// <c>ResolveApiKey()</c> was byte-identical per provider family; centralizing here keeps the
 /// scope (per-request override) → env-var precedence and quote/whitespace trimming in one place.
 /// </summary>
-internal static class ProviderApiKey
+public static class ProviderApiKey
 {
+    /// <summary>
+    /// Sanitizes an API key or token string by removing surrounding whitespace and quote characters.
+    /// </summary>
+    public static string? Clean(string? raw) =>
+        string.IsNullOrWhiteSpace(raw) ? null : raw.Trim(' ', '"', '\'', '\r', '\n', '\t');
+
     /// <summary>
     /// Fal.ai key: request-scoped override, then the canonical env var, then the fallback env var.
     /// Trims surrounding whitespace and stray quote characters. Returns null when unset.
@@ -19,8 +25,7 @@ internal static class ProviderApiKey
         var key = ApiKeyScope.CurrentFal
             ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyEnv)
             ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv);
-        if (!string.IsNullOrWhiteSpace(key)) return key.Trim(' ', '"', '\'', '\r', '\n', '\t');
-        return null;
+        return Clean(key);
     }
 
     /// <summary>

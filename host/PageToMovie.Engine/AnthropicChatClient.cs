@@ -343,7 +343,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     {
         var raw = Abstractions.ApiKeyScope.CurrentAnthropic
             ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.AnthropicApiKeyEnv);
-        return string.IsNullOrWhiteSpace(raw) ? null : raw.Trim(' ', '"', '\'', '\r', '\n', '\t');
+        return ProviderApiKey.Clean(raw);
     }
 
     private static string ExtractMessageText(JsonElement result)

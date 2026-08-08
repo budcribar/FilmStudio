@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,7 @@ namespace PageToMovie.Engine;
 /// <summary>xAI /responses vision transcription for book page images.</summary>
 public sealed class GrokVisionClient : IVisionClient
 {
-    public const string ApiBase = "https://api.x.ai/v1";
+    public const string ApiBase = SupportedModelCatalog.XaiApiBase;
 
     private const string TranscribePrompt =
         "You are transcribing a children's / illustrated book page.\n\n" +

@@ -2097,6 +2097,15 @@ public sealed partial class ProjectStore
     public string ConfigPath(string projectId) =>
         Path.Combine(GetProjectDir(projectId), "pipeline_config.json");
 
+    public string GetScreenplayPath(string projectId) =>
+        ScreenplayService.GetDraftPath(this, projectId);
+
+    public string GetCastPath(string projectId) =>
+        ScreenplayService.GetCastSeedsPath(this, projectId);
+
+    public string GetScenesPath(string projectId) =>
+        ResolveScenesJsonPath(projectId);
+
     /// <summary>
     /// True-sync config read for residual helpers (no GetAwaiter). Prefer <see cref="GetConfigAsync"/>.
     /// </summary>
@@ -2172,7 +2181,7 @@ public sealed partial class ProjectStore
         var speakers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var fountainPath = Path.Combine(GetProjectDir(projectId), "source", "screenplay.fountain");
+            var fountainPath = GetScreenplayPath(projectId);
             if (!File.Exists(fountainPath)) return speakers;
             var parsed = FountainParser.Parse(File.ReadAllText(fountainPath));
             string? pending = null;
@@ -2668,10 +2677,16 @@ public sealed partial class ProjectStore
         }
     }
 
+    public string GetCharactersDir(string projectId) =>
+        Path.Combine(GetProjectDir(projectId), "assets", "characters");
+
+    public string GetCharacterDir(string projectId, string charKey) =>
+        Path.Combine(GetCharactersDir(projectId), SanitizeCharKey(charKey));
+
     /// <summary>Absolute path for optional voice-clone template audio (mic or upload).</summary>
     public string GetVoiceCloneSamplePath(string projectId, string charKey)
     {
-        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        var dir = GetCharacterDir(projectId, charKey);
         foreach (var name in new[] { "voice_clone_sample.webm", "voice_clone_sample.mp3", "voice_clone_sample.wav", "voice_clone_sample.m4a", "voice_clone_sample.ogg" })
         {
             var p = Path.Combine(dir, name);
@@ -2706,7 +2721,7 @@ public sealed partial class ProjectStore
             throw new InvalidOperationException("Use audio: webm, mp3, wav, m4a, or ogg.");
         if (ext == ".mp4") ext = ".webm"; // browser often labels wrong
 
-        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        var dir = GetCharacterDir(projectId, charKey);
         Directory.CreateDirectory(dir);
         // Clear previous sample extensions
         foreach (var old in Directory.EnumerateFiles(dir, "voice_clone_sample.*"))
@@ -2730,7 +2745,7 @@ public sealed partial class ProjectStore
 
     public bool DeleteVoiceCloneSample(string projectId, string charKey)
     {
-        var dir = Path.Combine(GetProjectDir(projectId), "assets", "characters", SanitizeCharKey(charKey));
+        var dir = GetCharacterDir(projectId, charKey);
         var removed = false;
         if (Directory.Exists(dir))
         {
@@ -3753,7 +3768,7 @@ public sealed partial class ProjectStore
     {
         try
         {
-            var fountainPath = Path.Combine(GetProjectDir(projectId), "source", "screenplay.fountain");
+            var fountainPath = GetScreenplayPath(projectId);
             if (File.Exists(fountainPath))
             {
                 foreach (var line in File.ReadLines(fountainPath).Take(30))
@@ -3794,7 +3809,7 @@ public sealed partial class ProjectStore
     {
         try
         {
-            var fountainPath = Path.Combine(GetProjectDir(projectId), "source", "screenplay.fountain");
+            var fountainPath = GetScreenplayPath(projectId);
             if (!File.Exists(fountainPath)) return "";
             foreach (var line in File.ReadLines(fountainPath).Take(30))
             {
@@ -3850,7 +3865,7 @@ public sealed partial class ProjectStore
         // cast_seeds.json is the primary seed source for ListCharacters — update it first.
         try
         {
-            var castPath = Path.Combine(GetProjectDir(projectId), "source", ScreenplayService.CastSeedsFileName);
+            var castPath = GetCastPath(projectId);
             if (File.Exists(castPath))
                 PatchCharacterSeedPlaceholderInJsonFile(castPath, charKey, placeholder);
         }
@@ -3858,7 +3873,7 @@ public sealed partial class ProjectStore
 
         try
         {
-            var scenesPath = Path.Combine(GetProjectDir(projectId), "scenes.json");
+            var scenesPath = GetScenesPath(projectId);
             if (File.Exists(scenesPath))
                 PatchCharacterSeedPlaceholderInJsonFile(scenesPath, charKey, placeholder);
         }
@@ -6229,7 +6244,7 @@ public sealed partial class ProjectStore
         }
         catch { /* fall through */ }
 
-        var scenesPath = Path.Combine(GetProjectDir(projectId), "scenes.json");
+        var scenesPath = GetScenesPath(projectId);
         if (!File.Exists(scenesPath))
             return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
 
@@ -6268,7 +6283,7 @@ public sealed partial class ProjectStore
 
         try
         {
-            var castPath = Path.Combine(GetProjectDir(projectId), "source", ScreenplayService.CastSeedsFileName);
+            var castPath = GetCastPath(projectId);
             if (File.Exists(castPath))
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
@@ -6288,7 +6303,7 @@ public sealed partial class ProjectStore
 
         try
         {
-            var scenesPath = Path.Combine(GetProjectDir(projectId), "scenes.json");
+            var scenesPath = GetScenesPath(projectId);
             if (File.Exists(scenesPath))
             {
                 using var scenesDoc = JsonDocument.Parse(File.ReadAllText(scenesPath));

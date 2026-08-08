@@ -62,12 +62,17 @@ public static class CastKindClassifier
         !string.IsNullOrWhiteSpace(displayNamePolicy) &&
         displayNamePolicy.Contains("never", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Strips the Character_ prefix from a character key if present.</summary>
+    public static string StripPrefix(string? rawKey)
+    {
+        var k = (rawKey ?? "").Trim();
+        return k.StartsWith("Character_", StringComparison.OrdinalIgnoreCase) ? k["Character_".Length..] : k;
+    }
+
     /// <summary>Normalize Character_Foo → FOO for token checks.</summary>
     public static string NormalizeToken(string? raw)
     {
-        var t = (raw ?? "").Trim();
-        if (t.StartsWith("Character_", StringComparison.OrdinalIgnoreCase))
-            t = t["Character_".Length..];
+        var t = StripPrefix(raw);
         t = t.Replace('_', ' ').Trim();
         return t.ToUpperInvariant();
     }
