@@ -13,26 +13,20 @@
 
 <div class="nav-scrollable @(Collapsed ? "nav-collapsed" : null)"
      onclick="document.querySelector('.navbar-toggler')?.click()">
-    @if (!Collapsed)
-    {
-        <div class="px-3 pt-2 pb-1 d-flex justify-content-end">
-            <LanguageSelector />
-        </div>
-    }
     <nav class="nav flex-column nav-main" aria-label="Main">
         <div class="nav-main-links">
         @* Prototype look-feel: Home · Demo · Settings, then project studio pipeline *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" title="Home & Studio Overview" data-testid="nav-studio">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span>
-                @if (!Collapsed) { <span class="nav-label">Home</span> }
+                @if (!Collapsed) { <span class="nav-label">@L["Nav.Home"]</span> }
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/demo" title="Public demo gallery — no sign-in required" data-testid="nav-demo">
                 <span class="bi bi-film-nav-menu" aria-hidden="true"></span>
-                @if (!Collapsed) { <span class="nav-label">Demo</span> }
+                @if (!Collapsed) { <span class="nav-label">@L["Nav.Demo"]</span> }
             </NavLink>
         </div>
 
@@ -42,7 +36,7 @@
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/configuration" title="Settings — API keys, models, media folder" data-testid="nav-configuration">
                     <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Settings</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.Settings"]</span> }
                 </NavLink>
             </div>
         }
@@ -52,7 +46,7 @@
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/adaptation" Match="NavLinkMatch.Prefix" title="Book & screenplay (studio)" data-testid="nav-adaptation">
                     <span class="bi bi-book-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Book</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.Book"]</span> }
                 </NavLink>
             </div>
 
@@ -61,7 +55,7 @@
                 href: "/characters",
                 title: ActiveProject.CanCharacters ? "Cast & voices" : ActiveProject.CharactersBlockedReason,
                 iconClass: "bi-people-fill-nav-menu",
-                label: "Cast",
+                label: L["Nav.Cast"],
                 testId: "nav-characters")
 
             @NavItem(
@@ -69,7 +63,7 @@
                 href: "/scenes",
                 title: ActiveProject.CanScenes ? "Scenes & film" : ActiveProject.ScenesBlockedReason,
                 iconClass: "bi-film-nav-menu",
-                label: "Film",
+                label: L["Nav.Film"],
                 testId: "nav-scenes")
 
             @NavItem(
@@ -77,7 +71,7 @@
                 href: "/review",
                 title: ActiveProject.CanReview ? "Review" : ActiveProject.ReviewBlockedReason,
                 iconClass: "bi-check2-square-nav-menu",
-                label: "Review",
+                label: L["Nav.Review"],
                 testId: "nav-review")
         }
 
@@ -87,7 +81,7 @@
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/cost" title="Estimate & cost — quote, spend, by vendor" data-testid="nav-cost">
                     <span class="bi bi-cash-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Estimate</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.Estimate"]</span> }
                 </NavLink>
             </div>
         }
@@ -99,37 +93,37 @@
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/admin" title="Admin">
                     <span class="bi bi-shield-lock-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Admin</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.Admin"]</span> }
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/admin/users" title="Users & credits" data-testid="nav-admin-users">
                     <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Users &amp; credits</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.UsersAndCredits"]</span> }
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/admin/config" title="Admin config">
                     <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Admin config</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.AdminConfig"]</span> }
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/admin/models-catalog" title="Models catalog manager" data-testid="nav-admin-models-catalog">
                     <span class="bi bi-robot-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Models catalog</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.ModelsCatalog"]</span> }
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/admin/learning" title="Learning from reviews" data-testid="nav-learning">
                     <span class="bi bi-lightbulb-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Learning</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.Learning"]</span> }
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/admin/book-cache" title="Book text, adaptation artifacts, xAI file_id" data-testid="nav-admin-book-cache">
                     <span class="bi bi-book-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Book cache</span> }
+                    @if (!Collapsed) { <span class="nav-label">@L["Nav.BookCache"]</span> }
                 </NavLink>
             </div>
         }
@@ -172,14 +166,18 @@
                                     <div class="nav-user-role">@(Session.IsAdmin ? "Administrator" : "Signed in")</div>
                                 </div>
                             </div>
+                            <div class="nav-user-dropdown-section">
+                                <span class="small text-muted"><span class="bi bi-globe me-1"></span>@L["Common.Language"]</span>
+                                <LanguageSelector />
+                            </div>
                             <a class="nav-user-item" role="menuitem" href="/configuration"
                                data-testid="nav-user-configuration">
-                                Settings
+                                @L["Nav.Settings"]
                             </a>
                             <a class="nav-user-item" role="menuitem" href="/account/costs"
                                data-testid="nav-user-account-costs"
                                @onclick="CloseUserMenu">
-                                Billing &amp; costs
+                                @L["Nav.AccountCosts"]
                             </a>
                             @if (Session.IsRealAdmin)
                             {
@@ -190,8 +188,8 @@
                                         data-testid="nav-view-as-user"
                                         @onclick="ToggleViewAsUser">
                                     @(Session.ViewAsUser
-                                        ? "✓ Viewing as user — back to admin"
-                                        : "View as regular user")
+                                        ? L["Nav.BackToAdmin"]
+                                        : L["Nav.ViewAsUser"])
                                 </button>
                             }
                             @if (Session.IsAdmin)
@@ -203,7 +201,7 @@
                             }
                             <a class="nav-user-item" role="menuitem" href="/about"
                                @onclick="CloseUserMenu">
-                                About
+                                @L["Nav.About"]
                             </a>
                             <button type="button"
                                     class="nav-user-item"
@@ -219,7 +217,7 @@
                                     role="menuitem"
                                     data-testid="nav-sign-out"
                                     @onclick="LogoutAsync">
-                                Sign out
+                                @L["Nav.SignOut"]
                             </button>
                         </div>
                     }
@@ -227,10 +225,45 @@
             }
             else
             {
-                <NavLink class="nav-link nav-user-signin" href="/login" title="Sign In / Register" data-testid="nav-sign-in">
-                    <span class="nav-user-avatar nav-user-avatar--ghost" aria-hidden="true">?</span>
-                    @if (!Collapsed) { <span class="nav-label">Sign in</span> }
-                </NavLink>
+                <div class="nav-user-menu @(_userMenuOpen ? "is-open" : null) @(Collapsed ? "is-collapsed" : null)">
+                    <button type="button"
+                            class="nav-user-trigger"
+                            data-testid="nav-user-menu"
+                            title="Account & Language"
+                            aria-expanded="@_userMenuOpen"
+                            aria-haspopup="menu"
+                            @onclick="ToggleUserMenu"
+                            @onclick:stopPropagation="true">
+                        <span class="nav-user-avatar nav-user-avatar--ghost" aria-hidden="true">?</span>
+                        @if (!Collapsed)
+                        {
+                            <span class="nav-user-meta">
+                                <span class="nav-user-name text-truncate">@L["Nav.SignIn"]</span>
+                                <span class="nav-user-role">Guest</span>
+                            </span>
+                            <span class="nav-user-caret" aria-hidden="true">@(_userMenuOpen ? "▴" : "▾")</span>
+                        }
+                    </button>
+                    @if (_userMenuOpen)
+                    {
+                        <button type="button"
+                                class="nav-user-backdrop"
+                                aria-label="Close account menu"
+                                @onclick="CloseUserMenu"></button>
+                        <div class="nav-user-dropdown" role="menu" @onclick:stopPropagation="true">
+                            <div class="nav-user-dropdown-section">
+                                <span class="small text-muted"><span class="bi bi-globe me-1"></span>@L["Common.Language"]</span>
+                                <LanguageSelector />
+                            </div>
+                            <a class="nav-user-item" role="menuitem" href="/login" data-testid="nav-sign-in" @onclick="CloseUserMenu">
+                                @L["Nav.SignIn"]
+                            </a>
+                            <a class="nav-user-item" role="menuitem" href="/about" @onclick="CloseUserMenu">
+                                @L["Nav.About"]
+                            </a>
+                        </div>
+                    }
+                </div>
             }
         </div>
     </nav>
@@ -372,12 +405,15 @@ private bool _started;
     protected override void OnInitialized()
     {
         MediaFolder.Changed += OnMediaFolderChanged;
+        L.CultureChanged += OnCultureChanged;
     }
 
     private void OnMediaFolderChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnCultureChanged(System.Globalization.CultureInfo culture) => _ = InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
+        L.CultureChanged -= OnCultureChanged;
         MediaFolder.Changed -= OnMediaFolderChanged;
         Session.Changed -= OnSessionChanged;
         ActiveProject.Changed -= OnProjectChanged;

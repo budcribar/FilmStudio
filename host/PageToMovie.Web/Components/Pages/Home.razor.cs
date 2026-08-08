@@ -366,6 +366,7 @@ public partial class Home
 
     protected override async Task OnInitializedAsync()
     {
+        L.CultureChanged += OnCultureChanged;
         Hub.JobUpdated += OnJobUpdated;
         Hub.JobLog += OnJobLog;
         try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
@@ -1249,8 +1250,11 @@ public partial class Home
         return s.Length > 200 ? s[..200] + "…" : s;
     }
 
+    private void OnCultureChanged(System.Globalization.CultureInfo culture) => _ = InvokeAsync(StateHasChanged);
+
     public async ValueTask DisposeAsync()
     {
+        L.CultureChanged -= OnCultureChanged;
         Hub.JobUpdated -= OnJobUpdated;
         Hub.JobLog -= OnJobLog;
         await Hub.DisposeAsync();

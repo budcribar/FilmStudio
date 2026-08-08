@@ -5,6 +5,7 @@ using Xunit;
 
 namespace PageToMovie.Tests;
 
+[Collection("catalog-serial")]
 public sealed class LocalizationTests
 {
     private readonly JsonAppLocalizer _localizer = new();
@@ -30,6 +31,33 @@ public sealed class LocalizationTests
         var missingKey = "NonExistent.Key.Name";
         var result = _localizer[missingKey];
         Assert.Equal(missingKey, result);
+    }
+
+    [Fact]
+    public void JsonAppLocalizer_SetCulture_UpdatesCurrentCulture_And_Fires_CultureChanged()
+    {
+        var origCulture = CultureInfo.CurrentCulture;
+        var origUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo? receivedCulture = null;
+            _localizer.CultureChanged += c => receivedCulture = c;
+
+            _localizer.SetCulture("es");
+
+            Assert.Equal("es", _localizer.CurrentCulture.Name);
+            Assert.Equal("es", CultureInfo.CurrentCulture.Name);
+            Assert.Equal("es", CultureInfo.CurrentUICulture.Name);
+            Assert.NotNull(receivedCulture);
+            Assert.Equal("es", receivedCulture.Name);
+            Assert.Equal("Entrega un libro. Consigue una película.", _localizer["Home.DropABook"]);
+        }
+        finally
+        {
+            _localizer.SetCulture("en-US");
+            CultureInfo.CurrentCulture = origCulture;
+            CultureInfo.CurrentUICulture = origUiCulture;
+        }
     }
 
     [Theory]

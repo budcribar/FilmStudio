@@ -54,8 +54,15 @@
     "Submitting": "Wird gesendet..."
   },
   "Home": {
-    "Title": "Filmprojekte",
-    "Subtitle": "Wählen Sie ein bestehendes Filmprojekt oder importieren Sie ein neues Drehbuch.",
+    "Title": "Filmstudio-Projekte",
+    "Subtitle": "Wählen Sie ein bestehendes Projekt oder importieren Sie ein neues Drehbuch.",
+    "DropABook": "Gib ein Buch ein. Erhalte einen Film.",
+    "LandingSubtitle": "Verwandle eine Geschichte mit deiner Stimme in einen Kurzfilm — oder öffne das gesamte Studio, um jede Szene zu besetzen, zu schätzen und zu drehen.",
+    "Book": "Buch",
+    "Studio": "Studio",
+    "Film": "Film",
+    "FullStudio": "Vollständiges Studio",
+    "EasyStart": "Einfacher Start",
     "NewProject": "＋ Neues Projekt",
     "NoProjects": "Keine Filmprojekte gefunden. Erstellen Sie ein Projekt, um zu beginnen.",
     "LastModified": "Zuletzt geändert",
@@ -201,5 +208,21 @@
     "RequiredFieldMissing": "Bitte füllen Sie alle erforderlichen Felder aus.",
     "OperationFailed": "Vorgang fehlgeschlagen. Bitte erneut versuchen.",
     "TryAgain": "Erneut versuchen"
+  },
+  "AboutPage": {
+    "Title": "Über PageToMovie",
+    "Lead": "Verwandeln Sie ein Buch oder eine Geschichte in einen Kurzfilm.",
+    "Intro": "Importieren Sie Ihren Text und PageToMovie hilft Ihnen, ihn in ein Drehbuch zu verwandeln, einen visuellen Stil zu wählen, Charaktere zu besetzen und Szenen zu generieren — danach ansehen und teilen.",
+    "HowItWorks": "So funktioniert es",
+    "StepBook": "Importieren Sie Ihre Geschichte und gestalten Sie das Drehbuch.",
+    "StepLook": "Wählen Sie den visuellen Stil und passen Sie den Film an Ihr Budget an.",
+    "StepCast": "Geben Sie jedem Charakter ein Aussehen und eine optionale Stimme.",
+    "StepFilm": "Generieren Sie die Szenen, dann ansehen und teilen."
+  },
+  "CostPage": {
+    "Spent": "Ausgegeben",
+    "Remaining": "Verbleibend",
+    "VideoResolution": "Videoauflösung",
+    "SoFar": "bisher"
   }
 }

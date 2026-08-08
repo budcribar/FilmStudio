@@ -56,6 +56,13 @@
   "Home": {
     "Title": "Film Studio Projects",
     "Subtitle": "Select an existing story project or import a new screenplay to start production.",
+    "DropABook": "Drop a book. Get a movie.",
+    "LandingSubtitle": "Turn a story into a short film with your voice — or open the full studio to cast, estimate, and film every scene.",
+    "Book": "Book",
+    "Studio": "Studio",
+    "Film": "Film",
+    "FullStudio": "Full studio",
+    "EasyStart": "Easy start",
     "NewProject": "＋ New Project",
     "NoProjects": "No film projects found. Create a project to start production.",
     "LastModified": "Last modified",
@@ -201,5 +208,21 @@
     "RequiredFieldMissing": "Please fill out all required fields.",
     "OperationFailed": "Operation failed. Please try again.",
     "TryAgain": "Try again"
+  },
+  "AboutPage": {
+    "Title": "About PageToMovie",
+    "Lead": "Turn a book or story into a short film.",
+    "Intro": "Import your text and PageToMovie helps you shape it into a screenplay, choose a visual style, cast the characters, and generate the scenes — then watch and share the finished movie.",
+    "HowItWorks": "How it works",
+    "StepBook": "import your story and shape the screenplay.",
+    "StepLook": "pick the visual style and fit the film to your budget.",
+    "StepCast": "give each character a look, and an optional voice.",
+    "StepFilm": "generate the scenes, then watch and share."
+  },
+  "CostPage": {
+    "Spent": "Spent",
+    "Remaining": "Remaining",
+    "VideoResolution": "Video resolution",
+    "SoFar": "so far"
   }
 }
