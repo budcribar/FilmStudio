@@ -19,7 +19,7 @@
     "AdminConfig": "Configuración admin",
     "ModelsCatalog": "Catálogo de modelos",
     "Learning": "Aprendizaje",
-    "BookCache": "Caché de libros",
+    "BookCache": "Almacenamiento de libros",
     "Share": "Compartir",
     "SignIn": "Iniciar sesión",
     "SignOut": "Cerrar sesión",
@@ -78,9 +78,9 @@
     "ScreenplayApproved": "Guión aprobado",
     "ShotPlanReady": "Plan de tomas listo",
     "DragDropPrompt": "Arrastra y suelta el archivo de guión aquí, o haz clic para buscar",
-    "ProcessingBook": "Convirtiendo texto de la historia al formato de guión Fountain...",
+    "ProcessingBook": "Convirtiendo texto de la historia al formato de guión...",
     "ImportFailed": "Error al importar el guión. Verifica el formato del archivo e inténtalo de nuevo.",
-    "SignoffConfirm": "¿Aprobar y desbloquear reparto de personajes y plan de tomas?",
+    "SignoffConfirm": "¿Aprobar guión y continuar al reparto y plan de tomas?",
     "LineCount": "{0} líneas",
     "CharacterCount": "{0} caracteres",
     "SourceText": "Texto Fuente",
@@ -125,14 +125,14 @@
     "Combining": "Combinando clips...",
     "PublishSuccess": "¡Película publicada con éxito!",
     "YouTubeUploadStatus": "Estado de subida a YouTube",
-    "DownloadCut": "Descargar master MP4",
+    "DownloadCut": "Descargar película completa",
     "FullMovie": "Película Completa",
-    "DraftAssembly": "Ensamblaje del Borrador"
+    "DraftAssembly": "Vista previa de la película"
   },
   "Config": {
-    "Title": "Configuración de Modelos y Servicios del Estudio",
+    "Title": "Ajustes del Estudio",
     "SaveSettings": "Guardar Configuración",
-    "ApiKey": "Clave API",
+    "ApiKey": "Clave de acceso al servicio",
     "Provider": "Proveedor",
     "Model": "Modelo",
     "SavedSuccess": "Configuración guardada con éxito.",
@@ -140,15 +140,15 @@
     "TestConnection": "Probar Conexión",
     "Connected": "Conectado",
     "Disconnected": "No conectado",
-    "SettingsSubtitle": "Administra tus claves API, selección de modelos de IA y rutas de almacenamiento."
+    "SettingsSubtitle": "Administra tus claves de acceso, selección de modelos de IA y rutas de almacenamiento."
   },
   "Catalog": {
-    "Title": "Administrador del Catálogo de Modelos",
+    "Title": "Administrador de modelos de IA",
     "AddModel": "＋ Agregar modelo",
-    "Deprecate": "Desaprobar",
+    "Deprecate": "Archivar",
     "Restore": "Restaurar",
     "Review": "Revisar",
-    "Deprecated": "OBSOLETO",
+    "Deprecated": "ARCHIVADO",
     "ScanUpdates": "Buscar actualizaciones",
     "ModelIdRequired": "Se requiere ID del modelo.",
     "ModelExists": "El modelo '{0}' ya existe.",
@@ -156,15 +156,15 @@
     "StatusActive": "Estado (Modelos activos)",
     "EnabledOnly": "Solo habilitados",
     "DisabledOnly": "Solo deshabilitados",
-    "DeprecatedOnly": "Solo obsoletos",
-    "LabModeOnly": "Solo modo laboratorio",
-    "AllIncludingDeprecated": "Todos (incluyendo Obsoletos)"
+    "DeprecatedOnly": "Solo archivados",
+    "LabModeOnly": "Solo modelos experimentales",
+    "AllIncludingDeprecated": "Todos (incluyendo Archivados)"
   },
   "BookCache": {
-    "Title": "Caché de Adaptación y Registro",
+    "Title": "Almacenamiento de libros y guiones",
     "BookName": "Nombre del Libro / Título",
     "Projects": "Proyectos",
-    "Artifacts": "Artefactos Derivados"
+    "Artifacts": "Archivos generados"
   },
   "Auth": {
     "SignIn": "Iniciar sesión",

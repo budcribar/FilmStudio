@@ -19,7 +19,7 @@
     "AdminConfig": "Admin config",
     "ModelsCatalog": "Models catalog",
     "Learning": "Learning",
-    "BookCache": "Book cache",
+    "BookCache": "Book storage",
     "Share": "Share",
     "SignIn": "Sign in",
     "SignOut": "Sign out",
@@ -78,9 +78,9 @@
     "ScreenplayApproved": "Screenplay approved",
     "ShotPlanReady": "Shot plan ready",
     "DragDropPrompt": "Drag & drop screenplay file here, or click to browse",
-    "ProcessingBook": "Converting story text to Fountain screenplay format...",
+    "ProcessingBook": "Converting story text to screenplay format...",
     "ImportFailed": "Failed to import screenplay. Please check file format and try again.",
-    "SignoffConfirm": "Sign-off and unlock character cast and shot planning?",
+    "SignoffConfirm": "Approve screenplay and continue to cast and shot planning?",
     "LineCount": "{0} lines",
     "CharacterCount": "{0} characters",
     "SourceText": "Source Text",
@@ -125,14 +125,14 @@
     "Combining": "Combining clips...",
     "PublishSuccess": "Film published successfully!",
     "YouTubeUploadStatus": "YouTube upload status",
-    "DownloadCut": "Download MP4 master",
+    "DownloadCut": "Download full movie",
     "FullMovie": "Full Movie",
-    "DraftAssembly": "Draft Assembly"
+    "DraftAssembly": "Movie Preview"
   },
   "Config": {
-    "Title": "Studio Models & Services Configuration",
+    "Title": "Studio Settings",
     "SaveSettings": "Save Configuration",
-    "ApiKey": "API Key",
+    "ApiKey": "Service Access Key",
     "Provider": "Provider",
     "Model": "Model",
     "SavedSuccess": "Configuration saved successfully.",
@@ -140,15 +140,15 @@
     "TestConnection": "Test Connection",
     "Connected": "Connected",
     "Disconnected": "Not connected",
-    "SettingsSubtitle": "Manage your API keys, AI model selection, and storage paths."
+    "SettingsSubtitle": "Manage your service access keys, AI model selection, and storage paths."
   },
   "Catalog": {
-    "Title": "Models Catalog Manager",
+    "Title": "AI Model Manager",
     "AddModel": "＋ Add model",
-    "Deprecate": "Deprecate",
+    "Deprecate": "Archive",
     "Restore": "Restore",
     "Review": "Review",
-    "Deprecated": "DEPRECATED",
+    "Deprecated": "ARCHIVED",
     "ScanUpdates": "Scan for updates",
     "ModelIdRequired": "Model ID is required.",
     "ModelExists": "Model '{0}' already exists.",
@@ -156,15 +156,15 @@
     "StatusActive": "Status (Active models)",
     "EnabledOnly": "Enabled only",
     "DisabledOnly": "Disabled only",
-    "DeprecatedOnly": "Deprecated only",
-    "LabModeOnly": "Lab mode only",
-    "AllIncludingDeprecated": "All (including Deprecated)"
+    "DeprecatedOnly": "Archived only",
+    "LabModeOnly": "Experimental models only",
+    "AllIncludingDeprecated": "All (including Archived)"
   },
   "BookCache": {
-    "Title": "Adaptation Cache & Registry",
+    "Title": "Book & Screenplay Storage",
     "BookName": "Book Name / Title",
     "Projects": "Projects",
-    "Artifacts": "Derived Artifacts"
+    "Artifacts": "Generated files"
   },
   "Auth": {
     "SignIn": "Sign in",

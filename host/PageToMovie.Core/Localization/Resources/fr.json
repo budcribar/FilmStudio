@@ -19,7 +19,7 @@
     "AdminConfig": "Configuration admin",
     "ModelsCatalog": "Catalogue de modèles",
     "Learning": "Apprentissage",
-    "BookCache": "Cache de livres",
+    "BookCache": "Stockage des livres",
     "Share": "Partager",
     "SignIn": "Se connecter",
     "SignOut": "Se déconnecter",
@@ -78,9 +78,9 @@
     "ScreenplayApproved": "Scénario approuvé",
     "ShotPlanReady": "Plan de prises prêt",
     "DragDropPrompt": "Glissez et déposez le fichier de scénario ici, ou cliquez pour parcourir",
-    "ProcessingBook": "Conversion du texte en format de scénario Fountain...",
+    "ProcessingBook": "Conversion du texte en format de scénario...",
     "ImportFailed": "Échec de l'importation. Vérifiez le format du fichier et réessayez.",
-    "SignoffConfirm": "Approuver et débloquer la distribution et le plan de prises ?",
+    "SignoffConfirm": "Approuver le scénario et continuer vers la distribution et le plan de prises ?",
     "LineCount": "{0} lignes",
     "CharacterCount": "{0} personnages",
     "SourceText": "Texte Source",
@@ -125,14 +125,14 @@
     "Combining": "Assemblage des séquences...",
     "PublishSuccess": "Film publié avec succès !",
     "YouTubeUploadStatus": "Statut du téléversement YouTube",
-    "DownloadCut": "Télécharger le master MP4",
+    "DownloadCut": "Télécharger le film complet",
     "FullMovie": "Film Complet",
-    "DraftAssembly": "Assemblage Préliminaire"
+    "DraftAssembly": "Aperçu du film"
   },
   "Config": {
-    "Title": "Configuration des Modèles et Services du Studio",
+    "Title": "Paramètres du Studio",
     "SaveSettings": "Enregistrer la Configuration",
-    "ApiKey": "Clé API",
+    "ApiKey": "Clé d'accès au service",
     "Provider": "Fournisseur",
     "Model": "Modèle",
     "SavedSuccess": "Configuration enregistrée avec succès.",
@@ -140,15 +140,15 @@
     "TestConnection": "Tester la connexion",
     "Connected": "Connecté",
     "Disconnected": "Non connecté",
-    "SettingsSubtitle": "Gérez vos clés API, vos modèles d'IA et vos dossiers de stockage."
+    "SettingsSubtitle": "Gérez vos clés d'accès, vos modèles d'IA et vos dossiers de stockage."
   },
   "Catalog": {
-    "Title": "Gestionnaire du Catalogue de Modèles",
+    "Title": "Gestionnaire de modèles IA",
     "AddModel": "＋ Ajouter un modèle",
-    "Deprecate": "Obsolète",
+    "Deprecate": "Archiver",
     "Restore": "Restaurer",
     "Review": "Réviser",
-    "Deprecated": "OBSOLÈTE",
+    "Deprecated": "ARCHIVÉ",
     "ScanUpdates": "Rechercher les mises à jour",
     "ModelIdRequired": "L'identifiant du modèle est requis.",
     "ModelExists": "Le modèle '{0}' existe déjà.",
@@ -156,15 +156,15 @@
     "StatusActive": "Statut (Modèles actifs)",
     "EnabledOnly": "Activés uniquement",
     "DisabledOnly": "Désactivés uniquement",
-    "DeprecatedOnly": "Obsolètes uniquement",
-    "LabModeOnly": "Mode lab uniquement",
-    "AllIncludingDeprecated": "Tous (y compris Obsolètes)"
+    "DeprecatedOnly": "Archivés uniquement",
+    "LabModeOnly": "Modèles expérimentaux uniquement",
+    "AllIncludingDeprecated": "Tous (y compris Archivés)"
   },
   "BookCache": {
-    "Title": "Cache d'Adaptation et Registre",
+    "Title": "Stockage des livres et scénarios",
     "BookName": "Nom du Livre / Titre",
     "Projects": "Projets",
-    "Artifacts": "Artefacts Dérivés"
+    "Artifacts": "Fichiers générés"
   },
   "Auth": {
     "SignIn": "Se connecter",

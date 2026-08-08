@@ -19,7 +19,7 @@
     "AdminConfig": "Admin-Konfiguration",
     "ModelsCatalog": "Modellkatalog",
     "Learning": "Lernen",
-    "BookCache": "Buch-Cache",
+    "BookCache": "Buch-Speicher",
     "Share": "Teilen",
     "SignIn": "Anmelden",
     "SignOut": "Abmelden",
@@ -78,9 +78,9 @@
     "ScreenplayApproved": "Drehbuch genehmigt",
     "ShotPlanReady": "Aufnahmeplan bereit",
     "DragDropPrompt": "Drehbuchdatei hierher ziehen oder zum Durchsuchen klicken",
-    "ProcessingBook": "Konvertierung des Buchtexts in Fountain-Format...",
+    "ProcessingBook": "Konvertierung des Buchtexts in Drehbuch-Format...",
     "ImportFailed": "Import fehlgeschlagen. Bitte Dateiformat prüfen und erneut versuchen.",
-    "SignoffConfirm": "Freigeben und Besetzung sowie Aufnahmeplan freischalten?",
+    "SignoffConfirm": "Drehbuch genehmigen und mit Besetzung sowie Aufnahmeplan fortfahren?",
     "LineCount": "{0} Zeilen",
     "CharacterCount": "{0} Zeichen",
     "SourceText": "Quelltext",
@@ -125,14 +125,14 @@
     "Combining": "Clips werden zusammengefügt...",
     "PublishSuccess": "Film erfolgreich veröffentlicht!",
     "YouTubeUploadStatus": "YouTube-Upload-Status",
-    "DownloadCut": "MP4-Master herunterladen",
+    "DownloadCut": "Vollständigen Film herunterladen",
     "FullMovie": "Vollständiger Film",
-    "DraftAssembly": "Entwurfszusammenstellung"
+    "DraftAssembly": "Filmvorschau"
   },
   "Config": {
-    "Title": "Konfiguration der Studiomodelle und Dienste",
+    "Title": "Studio-Einstellungen",
     "SaveSettings": "Konfiguration speichern",
-    "ApiKey": "API-Schlüssel",
+    "ApiKey": "Dienst-Zugangsschlüssel",
     "Provider": "Anbieter",
     "Model": "Modell",
     "SavedSuccess": "Konfiguration erfolgreich gespeichert.",
@@ -140,15 +140,15 @@
     "TestConnection": "Verbindung testen",
     "Connected": "Verbunden",
     "Disconnected": "Nicht verbunden",
-    "SettingsSubtitle": "Verwalten Sie Ihre API-Schlüssel, KI-Modelle und Speicherpfade."
+    "SettingsSubtitle": "Verwalten Sie Ihre Zugangsschlüssel, KI-Modelle und Speicherpfade."
   },
   "Catalog": {
-    "Title": "Modellkatalog-Manager",
+    "Title": "KI-Modellmanager",
     "AddModel": "＋ Modell hinzufügen",
-    "Deprecate": "Veralten lassen",
+    "Deprecate": "Archivieren",
     "Restore": "Wiederherstellen",
     "Review": "Überprüfen",
-    "Deprecated": "VERALTET",
+    "Deprecated": "ARCHIVIERT",
     "ScanUpdates": "Nach Updates suchen",
     "ModelIdRequired": "Modell-ID ist erforderlich.",
     "ModelExists": "Modell '{0}' existiert bereits.",
@@ -156,15 +156,15 @@
     "StatusActive": "Status (Aktive Modelle)",
     "EnabledOnly": "Nur aktivierte",
     "DisabledOnly": "Nur deaktivierte",
-    "DeprecatedOnly": "Nur veraltete",
-    "LabModeOnly": "Nur Labormodus",
-    "AllIncludingDeprecated": "Alle (inklusive veralteter)"
+    "DeprecatedOnly": "Nur archivierte",
+    "LabModeOnly": "Nur experimentelle Modelle",
+    "AllIncludingDeprecated": "Alle (inklusive archivierter)"
   },
   "BookCache": {
-    "Title": "Adaptions-Cache & Register",
+    "Title": "Buch- & Drehbuch-Speicher",
     "BookName": "Buchname / Titel",
     "Projects": "Projekte",
-    "Artifacts": "Abgeleitete Artefakte"
+    "Artifacts": "Generierte Dateien"
   },
   "Auth": {
     "SignIn": "Anmelden",
