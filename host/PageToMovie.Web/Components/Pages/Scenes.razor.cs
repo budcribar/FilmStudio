@@ -1042,7 +1042,11 @@ public partial class Scenes
     {
         if (_costReport is null) return 0;
         var sum = 0.0;
-        foreach (var row in _costReport.Scenes.Where(r => _selected.Contains(r.Scene)))
+        // The end-credits card renders client-side (canvas → ffmpeg.wasm) for free — see
+        // StartBatchAsync, which already splits it out of the paid video-model batch. The cost
+        // report itself doesn't know that, so exclude it here too or the confirm modal quotes a
+        // price for a scene that will never actually be sent to a video model.
+        foreach (var row in _costReport.Scenes.Where(r => _selected.Contains(r.Scene) && !IsCreditsSceneNum(r.Scene)))
             sum += row.RemainingDraftUsd;
         return sum;
     }

@@ -1821,7 +1821,7 @@ else
                         }
                     </div>
 
-                    @if (Session.IsAdmin && _videoModels.Count > 0)
+                    @if (Session.IsAdmin && _videoModels.Count > 0 && _selected.Any(sn => !IsCreditsSceneNum(sn)))
                     {
                         <div class="mb-3">
                             <label class="form-label small text-muted" for="genModelConfirm">
@@ -1855,6 +1855,10 @@ else
                             <span class="fs-5 fw-bold" data-testid="generate-confirm-cost">~$@(EstimateSelectedCostUsd().ToString("0.00"))</span>
                         }
                     </div>
+                    @if (_selected.All(IsCreditsSceneNum))
+                    {
+                        <div class="small text-muted mt-1">End credits render instantly in your browser — no video model, no cost.</div>
+                    }
         </ChildContent>
         <Footer>
             <button type="button" class="btn btn-sm btn-outline-secondary"
