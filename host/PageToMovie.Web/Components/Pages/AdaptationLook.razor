@@ -1,7 +1,8 @@
 @page "/adaptation/look"
 @inherits AdaptationPageBase
+@inject IAppLocalizer L
 
-<PageTitle>Book · Look &amp; medium</PageTitle>
+<PageTitle>Book · @L["Adaptation.Look"]</PageTitle>
 
 <AdaptationShell Host="this" Step="look">
     @if (!string.IsNullOrWhiteSpace(ProjectId))
@@ -11,7 +12,7 @@
                 @{ var hasDraft = Status?.Screenplay.DraftExists == true; }
                 <VisualMediumCard ProjectId="@ProjectId"
                                   Disabled="@(Busy || JobRunning)"
-                                  SaveLabel="@(hasDraft ? "Save & apply to screenplay" : "Save")"
+                                  SaveLabel="@(hasDraft ? "Save & apply to screenplay" : L["Common.Save"])"
                                   OnChanged="OnLookChangedAsync" />
 
                 @* Saving re-applies to an existing draft (see OnLookChangedAsync) — a note, not a second button. *@
@@ -27,7 +28,7 @@
                     <a class="btn btn-primary btn-sm"
                        href="adaptation/embellish"
                        data-testid="look-continue">
-                        Continue to Enrich →
+                        @L["Adaptation.ContinueToEnrich"]
                     </a>
                 </div>
             </div>

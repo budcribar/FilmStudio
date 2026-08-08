@@ -93,23 +93,35 @@
     "SelectAStory": "Geschichte auswählen"
   },
   "Adaptation": {
-    "Title": "Adaptions-Workflow",
+    "Title": "Anpassungsworkflow",
     "Step1": "Schritt 1: Drehbuch importieren",
-    "Step2": "Schritt 2: Bearbeiten & Freigeben",
+    "Step2": "Schritt 2: Bearbeiten & Genehmigen",
     "Step3": "Schritt 3: Aufnahmeplan",
-    "ApproveScreenplay": "Sieht gut aus — fortfahren",
+    "ApproveScreenplay": "Sieht gut aus — weiter",
     "RebuildShotPlan": "Aufnahmeplan neu erstellen",
     "ImportFile": "Quelldatei importieren (PDF / TXT)",
     "ScreenplayApproved": "Drehbuch genehmigt",
     "ShotPlanReady": "Aufnahmeplan bereit",
-    "DragDropPrompt": "Drehbuchdatei hierher ziehen oder zum Durchsuchen klicken",
-    "ProcessingBook": "Konvertierung des Buchtexts in Drehbuch-Format...",
-    "ImportFailed": "Import fehlgeschlagen. Bitte Dateiformat prüfen und erneut versuchen.",
-    "SignoffConfirm": "Drehbuch genehmigen und mit Besetzung sowie Aufnahmeplan fortfahren?",
+    "DragDropPrompt": "Ziehen Sie die Drehbuchdatei hierher oder klicken Sie zum Durchsuchen",
+    "ProcessingBook": "Konvertiere Geschichte in Drehbuchformat...",
+    "ImportFailed": "Fehler beim Importieren des Drehbuchs. Bitte überprüfen Sie das Dateiformat.",
+    "SignoffConfirm": "Drehbuch genehmigen und mit Besetzung und Aufnahmeplan fortfahren?",
     "LineCount": "{0} Zeilen",
     "CharacterCount": "{0} Zeichen",
     "SourceText": "Quelltext",
-    "ScreenplayDraft": "Drehbuchentwurf"
+    "ScreenplayDraft": "Drehbuchentwurf",
+    "BookAndScreenplay": "Buch & Drehbuch",
+    "BookLede": "Importieren → Stil → anreichern → Länge anpassen → Drehbuch bearbeiten. Dann Besetzung und Film.",
+    "ShotPlanLede": "Planen Sie Aufnahmen für jede Szene, generieren Sie dann Clips.",
+    "Import": "Importieren",
+    "Look": "Stil",
+    "Enrich": "Anreichern",
+    "FitLength": "Länge anpassen",
+    "Screenplay": "Drehbuch",
+    "ContinueToEnrich": "Weiter zu Anreichern →",
+    "NeedsUpdate": "Aktualisierung erforderlich",
+    "ApproveScreenplayFirst": "Genehmigen Sie zuerst das Drehbuch.",
+    "ScreenplayChanged": "Drehbuch geändert — aktualisieren Sie den Aufnahmeplan."
   },
   "Characters": {
     "Title": "Besetzung & Charakterporträts",
@@ -309,5 +321,40 @@
     "CastLocation": "Besetzung / Ort",
     "Music": "Musik",
     "Score": "Score"
+  },
+  "CharactersPage": {
+    "NarratorVoice": "Erzählerstimme",
+    "Subtitle": "Personalisieren Sie Rollen mit Fotos. Stimme ist optional.",
+    "BuildCast": "Besetzung erstellen",
+    "RebuildCast": "Besetzung neu erstellen",
+    "OpenScenes": "Szenen öffnen →",
+    "BuildShotPlan": "Aufnahmeplan erstellen →"
+  },
+  "ScreenplayPage": {
+    "Approved": "Genehmigt",
+    "EditedSinceApproval": "Seit Genehmigung bearbeitet",
+    "Draft": "Entwurf",
+    "NoDraft": "Kein Entwurf",
+    "ToCharacters": "Charaktere →",
+    "ReapproveAndContinue": "Erneut genehmigen & weiter",
+    "LooksGoodContinue": "Sieht gut aus — weiter",
+    "Preview": "Vorschau"
+  },
+  "DemoPage": {
+    "Title": "Demo-Galerie — PageToMovie",
+    "Subtitle": "Kurzfilme auf YouTube veröffentlicht.",
+    "MostStars": "Beste Bewertung",
+    "Newest": "Neueste",
+    "NoPublishedFilms": "Noch keine veröffentlichten Filme"
+  },
+  "ProjectCostsPage": {
+    "Title": "Aufschlüsselung der Projektkosten",
+    "Subtitle": "Aufschlüsselung der geplanten Kosten und Ausgaben nach Kategorie."
+  },
+  "SettingsPage": {
+    "BackToStudio": "← Zurück zum Studio",
+    "AccountProviders": "Konto & Anbieter",
+    "SettingsForActiveProject": "Einstellungen für aktives Projekt:",
+    "ActiveProject": "Aktives Projekt:"
   }
 }

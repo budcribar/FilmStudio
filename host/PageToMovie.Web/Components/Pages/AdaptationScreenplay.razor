@@ -3,31 +3,32 @@
 @implements IAsyncDisposable
 @inject IJSRuntime Js
 @inject AdminSessionService Session
+@inject IAppLocalizer L
 
-<PageTitle>Book · Screenplay</PageTitle>
+<PageTitle>Book · @L["Adaptation.Screenplay"]</PageTitle>
 
 <AdaptationShell Host="this" Step="screenplay">
     @* Visual style → "Look & medium" stage; film length → "Fit length" stage. This step is edit-only. *@
 
     <div class="card mb-3">
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <span>Screenplay</span>
+            <span>@L["Adaptation.Screenplay"]</span>
             <div class="fe-status-line d-flex flex-wrap gap-1 align-items-center">
                 @if (IsApprovedClean)
                 {
-                    <span class="badge bg-success">Approved</span>
+                    <span class="badge bg-success">@L["ScreenplayPage.Approved"]</span>
                 }
                 else if (NeedsReapprove)
                 {
-                    <span class="badge bg-warning text-dark">Edited since approval</span>
+                    <span class="badge bg-warning text-dark">@L["ScreenplayPage.EditedSinceApproval"]</span>
                 }
                 else if (_screenplayStatus?.DraftExists == true || !string.IsNullOrWhiteSpace(_text))
                 {
-                    <span class="badge bg-warning text-dark">Draft</span>
+                    <span class="badge bg-warning text-dark">@L["ScreenplayPage.Draft"]</span>
                 }
                 else
                 {
-                    <span class="badge text-bg-secondary">No draft</span>
+                    <span class="badge text-bg-secondary">@L["ScreenplayPage.NoDraft"]</span>
                 }
 
                 @if (!string.IsNullOrWhiteSpace(StatusTitle))
@@ -133,7 +134,7 @@
                     @if (IsApprovedClean)
                     {
                         <a class="btn btn-success btn-sm" href="characters" data-testid="screenplay-signoff-done">
-                            Characters →
+                            @L["ScreenplayPage.ToCharacters"]
                         </a>
                     }
                     else
@@ -149,11 +150,11 @@
                             }
                             else if (NeedsReapprove)
                             {
-                                <text>Re-approve &amp; continue</text>
+                                <text>@L["ScreenplayPage.ReapproveAndContinue"]</text>
                             }
                             else
                             {
-                                <text>Looks good — continue</text>
+                                <text>@L["ScreenplayPage.LooksGoodContinue"]</text>
                             }
                         </button>
                     }

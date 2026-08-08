@@ -93,23 +93,35 @@
     "SelectAStory": "Sélectionner une histoire"
   },
   "Adaptation": {
-    "Title": "Flux d'Adaptation",
-    "Step1": "Étape 1: Importer le Scénario",
-    "Step2": "Étape 2: Modifier et Approuver",
-    "Step3": "Étape 3: Plan de Prises",
+    "Title": "Flux d'adaptation",
+    "Step1": "Étape 1 : Importer le scénario",
+    "Step2": "Étape 2 : Éditer et approuver",
+    "Step3": "Étape 3 : Plan de prise",
     "ApproveScreenplay": "C'est bon — continuer",
-    "RebuildShotPlan": "Reconstruire le plan de prises",
+    "RebuildShotPlan": "Reconstruire le plan de prise",
     "ImportFile": "Importer le fichier source (PDF / TXT)",
     "ScreenplayApproved": "Scénario approuvé",
-    "ShotPlanReady": "Plan de prises prêt",
-    "DragDropPrompt": "Glissez et déposez le fichier de scénario ici, ou cliquez pour parcourir",
-    "ProcessingBook": "Conversion du texte en format de scénario...",
-    "ImportFailed": "Échec de l'importation. Vérifiez le format du fichier et réessayez.",
-    "SignoffConfirm": "Approuver le scénario et continuer vers la distribution et le plan de prises ?",
+    "ShotPlanReady": "Plan de prise prêt",
+    "DragDropPrompt": "Glissez-déposez le fichier de scénario ici, ou cliquez pour parcourir",
+    "ProcessingBook": "Conversion du texte de l'histoire au format scénario...",
+    "ImportFailed": "Échec de l'importation du scénario. Veuillez vérifier le format du fichier et réessayer.",
+    "SignoffConfirm": "Approuver le scénario et continuer vers la distribution et le plan de prise ?",
     "LineCount": "{0} lignes",
-    "CharacterCount": "{0} personnages",
-    "SourceText": "Texte Source",
-    "ScreenplayDraft": "Brouillon de Scénario"
+    "CharacterCount": "{0} caractères",
+    "SourceText": "Texte source",
+    "ScreenplayDraft": "Brouillon de scénario",
+    "BookAndScreenplay": "Livre & scénario",
+    "BookLede": "Importer → style → enrichir → ajuster durée → éditer le scénario. Puis distribution et film.",
+    "ShotPlanLede": "Planifiez les prises pour chaque scène, puis gérez les clips.",
+    "Import": "Importer",
+    "Look": "Style",
+    "Enrich": "Enrichir",
+    "FitLength": "Ajuster la durée",
+    "Screenplay": "Scénario",
+    "ContinueToEnrich": "Continuer vers Enrichir →",
+    "NeedsUpdate": "mise à jour requise",
+    "ApproveScreenplayFirst": "Approuvez d'abord le scénario.",
+    "ScreenplayChanged": "Scénario modifié — mettez à jour le plan de prise."
   },
   "Characters": {
     "Title": "Distribution et Portraits des Personnages",
@@ -309,5 +321,40 @@
     "CastLocation": "Distribution / lieu",
     "Music": "Musique",
     "Score": "Bande son"
+  },
+  "CharactersPage": {
+    "NarratorVoice": "Voix du narrateur",
+    "Subtitle": "Personnalisez les rôles avec des photos. La voix est optionnelle.",
+    "BuildCast": "Créer la distribution",
+    "RebuildCast": "Reconstruire la distribution",
+    "OpenScenes": "Ouvrir les scènes →",
+    "BuildShotPlan": "Créer le plan de prise →"
+  },
+  "ScreenplayPage": {
+    "Approved": "Approuvé",
+    "EditedSinceApproval": "Modifié depuis l'approbation",
+    "Draft": "Brouillon",
+    "NoDraft": "Aucun brouillon",
+    "ToCharacters": "Personnages →",
+    "ReapproveAndContinue": "Réapprouver & continuer",
+    "LooksGoodContinue": "C'est bon — continuer",
+    "Preview": "Aperçu"
+  },
+  "DemoPage": {
+    "Title": "Galerie de démo — PageToMovie",
+    "Subtitle": "Courts métrages publiés de PageToMovie sur YouTube.",
+    "MostStars": "Les plus populaires",
+    "Newest": "Plus récents",
+    "NoPublishedFilms": "Aucun film publié pour le moment"
+  },
+  "ProjectCostsPage": {
+    "Title": "Détail des coûts du projet",
+    "Subtitle": "Détail du coût prévu et dépensé pour ce film par catégorie."
+  },
+  "SettingsPage": {
+    "BackToStudio": "← Retour au studio",
+    "AccountProviders": "Compte et fournisseurs",
+    "SettingsForActiveProject": "Paramètres pour le projet actif :",
+    "ActiveProject": "Projet actif :"
   }
 }

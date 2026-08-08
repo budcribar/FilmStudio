@@ -8,22 +8,22 @@
 @inject ClientMediaFolderService MediaFolder
 @inject IJSRuntime Js
 @inject NavigationManager Nav
+@inject IAppLocalizer L
 @using PageToMovie.Core.Models
 @using PageToMovie.Web.Services
 @using Microsoft.AspNetCore.Components.Forms
 
-<PageTitle>Cast & voice</PageTitle>
+<PageTitle>@L["Nav.Cast"]</PageTitle>
 
 <StudioPageHeader Kicker="@(_simpleMode ? "Simple · your voice" : "Studio · Step 2")"
-                   Title="@(_simpleMode ? "Narrator voice" : "Cast & voice")" LedeClass="">
+                   Title="@(_simpleMode ? L["CharactersPage.NarratorVoice"] : L["Nav.Cast"])" LedeClass="">
     @if (_simpleMode)
     {
         <text>Record one sample for the narrator. Library pictures stay as-is — we only re-voice the lines. Want faces of family? Use full studio.</text>
     }
     else
     {
-        <text>Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free;
-        clone / profile is an add-on path when you want a personal sample.</text>
+        <text>@L["CharactersPage.Subtitle"]</text>
     }
 </StudioPageHeader>
 
@@ -63,7 +63,7 @@ else
                 disabled="@(_busy || JobRunning || _extractingCast)"
                 title="One step: names + looks from screenplay and book (when present)"
                 @onclick="ExtractCastAsync">
-            @(_extractingCast ? "Building cast…" : "Build cast")
+            @(_extractingCast ? "Building cast…" : L["CharactersPage.BuildCast"])
         </button>
         <span class="small text-muted ms-2">Screenplay + book → names, voices, and portrait-ready looks</span>
     </div>
@@ -151,12 +151,12 @@ else if (IsCastComplete && !JobRunning && !_extractingCast)
         @if (ActiveProject.CanScenes)
         {
             <span class="small text-muted">Next</span>
-            <a class="btn btn-sm btn-primary" data-testid="characters-to-scenes" href="scenes">Open Scenes →</a>
+            <a class="btn btn-sm btn-primary" data-testid="characters-to-scenes" href="scenes">@L["CharactersPage.OpenScenes"]</a>
         }
         else
         {
             <span class="small text-muted">Next</span>
-            <a class="btn btn-sm btn-primary" data-testid="characters-to-shots" href="adaptation/shots">Build shot plan →</a>
+            <a class="btn btn-sm btn-primary" data-testid="characters-to-shots" href="adaptation/shots">@L["CharactersPage.BuildShotPlan"]</a>
         }
         <div data-testid="characters-status"
              data-cast-complete="@(IsCastComplete ? "true" : "false")"

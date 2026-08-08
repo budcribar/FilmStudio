@@ -1,26 +1,26 @@
 @page "/account/costs"
 @inject EngineApiClient Engine
 @inject AdminSessionService Session
+@inject IAppLocalizer L
 @using System.Globalization
 @using static PageToMovie.Web.Components.CostFormatting
 
-<PageTitle>Account · Costs</PageTitle>
+<PageTitle>@L["Nav.AccountCosts"]</PageTitle>
 
-<StudioPageHeader Kicker="Account · Billing" Title="All projects & account costs">
+<StudioPageHeader Kicker="Account · Billing" Title="@L["Nav.AccountCosts"]">
     Everything you’ve spent across every project, by project and by vendor.
-    For a single film’s quote, open <a href="cost">Estimate</a>.
 </StudioPageHeader>
 
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <a href="cost" class="btn btn-sm btn-outline-secondary" data-testid="account-back">← Estimate</a>
-    <button class="btn btn-sm btn-outline-secondary" disabled="@_loading" @onclick="LoadAsync">Refresh</button>
+    <a href="cost" class="btn btn-sm btn-outline-secondary" data-testid="account-back">← @L["Nav.Estimate"]</a>
+    <button class="btn btn-sm btn-outline-secondary" disabled="@_loading" @onclick="LoadAsync">@L["Common.Refresh"]</button>
 </div>
 
 <InlineAlert Message="@_error" />
 
 @if (_loading)
 {
-    <p class="text-muted">Loading…</p>
+    <p class="text-muted">@L["Common.Loading"]</p>
 }
 else if (_mySpend is null || (_mySpend.ByProject.Count == 0 && _mySpend.ByProvider.Count == 0))
 {

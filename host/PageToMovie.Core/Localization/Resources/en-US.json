@@ -109,7 +109,19 @@
     "LineCount": "{0} lines",
     "CharacterCount": "{0} characters",
     "SourceText": "Source Text",
-    "ScreenplayDraft": "Screenplay Draft"
+    "ScreenplayDraft": "Screenplay Draft",
+    "BookAndScreenplay": "Book & screenplay",
+    "BookLede": "Import → look → enrich → fit to length → edit the screenplay. Then cast and film.",
+    "ShotPlanLede": "Plan the shots for each scene, then generate clips on Scenes.",
+    "Import": "Import",
+    "Look": "Look",
+    "Enrich": "Enrich",
+    "FitLength": "Fit length",
+    "Screenplay": "Screenplay",
+    "ContinueToEnrich": "Continue to Enrich →",
+    "NeedsUpdate": "needs update",
+    "ApproveScreenplayFirst": "Approve the screenplay first.",
+    "ScreenplayChanged": "Screenplay changed — update the shot plan before making video."
   },
   "Characters": {
     "Title": "Character Cast & Portraits",
@@ -309,5 +321,40 @@
     "CastLocation": "Cast / location",
     "Music": "Music",
     "Score": "Score"
+  },
+  "CharactersPage": {
+    "NarratorVoice": "Narrator voice",
+    "Subtitle": "Personalize roles with photos (child, spouse, yourself). Voice is optional — stock style free; clone / profile is an add-on path when you want a personal sample.",
+    "BuildCast": "Build cast",
+    "RebuildCast": "Rebuild cast",
+    "OpenScenes": "Open Scenes →",
+    "BuildShotPlan": "Build shot plan →"
+  },
+  "ScreenplayPage": {
+    "Approved": "Approved",
+    "EditedSinceApproval": "Edited since approval",
+    "Draft": "Draft",
+    "NoDraft": "No draft",
+    "ToCharacters": "Characters →",
+    "ReapproveAndContinue": "Re-approve & continue",
+    "LooksGoodContinue": "Looks good — continue",
+    "Preview": "Preview"
+  },
+  "DemoPage": {
+    "Title": "Demo gallery — PageToMovie",
+    "Subtitle": "Shorts published from PageToMovie to YouTube — open to everyone.",
+    "MostStars": "Most stars",
+    "Newest": "Newest",
+    "NoPublishedFilms": "No published films yet"
+  },
+  "ProjectCostsPage": {
+    "Title": "Project cost breakdown",
+    "Subtitle": "Where this film’s planned cost and spend break down, by category."
+  },
+  "SettingsPage": {
+    "BackToStudio": "← Back to Studio",
+    "AccountProviders": "Account & providers",
+    "SettingsForActiveProject": "Settings for active project:",
+    "ActiveProject": "Active Project:"
   }
 }

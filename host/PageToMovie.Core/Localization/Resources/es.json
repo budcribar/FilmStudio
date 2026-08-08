@@ -93,23 +93,35 @@
     "SelectAStory": "Seleccionar una historia"
   },
   "Adaptation": {
-    "Title": "Flujo de Adaptación",
-    "Step1": "Paso 1: Importar Guión",
-    "Step2": "Paso 2: Editar y Aprobar",
-    "Step3": "Paso 3: Plan de Tomas",
+    "Title": "Flujo de adaptación",
+    "Step1": "Paso 1: Importar guión",
+    "Step2": "Paso 2: Editar y aprobar",
+    "Step3": "Paso 3: Plan de tomas",
     "ApproveScreenplay": "Se ve bien — continuar",
     "RebuildShotPlan": "Reconstruir plan de tomas",
     "ImportFile": "Importar archivo fuente (PDF / TXT)",
     "ScreenplayApproved": "Guión aprobado",
     "ShotPlanReady": "Plan de tomas listo",
     "DragDropPrompt": "Arrastra y suelta el archivo de guión aquí, o haz clic para buscar",
-    "ProcessingBook": "Convirtiendo texto de la historia al formato de guión...",
-    "ImportFailed": "Error al importar el guión. Verifica el formato del archivo e inténtalo de nuevo.",
-    "SignoffConfirm": "¿Aprobar guión y continuar al reparto y plan de tomas?",
+    "ProcessingBook": "Convirtiendo texto de historia a formato de guión...",
+    "ImportFailed": "Error al importar el guión. Comprueba el formato de archivo e inténtalo de nuevo.",
+    "SignoffConfirm": "¿Aprobar guión y continuar al reparto y planificación de tomas?",
     "LineCount": "{0} líneas",
     "CharacterCount": "{0} caracteres",
-    "SourceText": "Texto Fuente",
-    "ScreenplayDraft": "Borrador de Guión"
+    "SourceText": "Texto fuente",
+    "ScreenplayDraft": "Borrador de guión",
+    "BookAndScreenplay": "Libro y guión",
+    "BookLede": "Importar → estilo → enriquecer → ajustar duración → editar guión. Luego reparto y película.",
+    "ShotPlanLede": "Planifica las tomas de cada escena, luego genera clips en Escenas.",
+    "Import": "Importar",
+    "Look": "Estilo",
+    "Enrich": "Enriquecer",
+    "FitLength": "Ajustar duración",
+    "Screenplay": "Guión",
+    "ContinueToEnrich": "Continuar a Enriquecer →",
+    "NeedsUpdate": "requiere actualización",
+    "ApproveScreenplayFirst": "Aprueba el guión primero.",
+    "ScreenplayChanged": "El guión ha cambiado — actualiza el plan de tomas antes de hacer el video."
   },
   "Characters": {
     "Title": "Reparto y Retratos de Personajes",
@@ -309,5 +321,40 @@
     "CastLocation": "Reparto / ubicación",
     "Music": "Música",
     "Score": "Música"
+  },
+  "CharactersPage": {
+    "NarratorVoice": "Voz del narrador",
+    "Subtitle": "Personaliza roles con fotos (hijos, cónyuge, tú). La voz es opcional: estilo predeterminado gratis; la clonación es opcional cuando desees tu propia voz.",
+    "BuildCast": "Crear reparto",
+    "RebuildCast": "Reconstruir reparto",
+    "OpenScenes": "Abrir Escenas →",
+    "BuildShotPlan": "Crear plan de tomas →"
+  },
+  "ScreenplayPage": {
+    "Approved": "Aprobado",
+    "EditedSinceApproval": "Editado desde la aprobación",
+    "Draft": "Borrador",
+    "NoDraft": "Sin borrador",
+    "ToCharacters": "Personajes →",
+    "ReapproveAndContinue": "Reaprobar y continuar",
+    "LooksGoodContinue": "Se ve bien — continuar",
+    "Preview": "Vista previa"
+  },
+  "DemoPage": {
+    "Title": "Galería de demostración — PageToMovie",
+    "Subtitle": "Cortometrajes publicados desde PageToMovie a YouTube — abierto a todos.",
+    "MostStars": "Más valorados",
+    "Newest": "Más recientes",
+    "NoPublishedFilms": "Aún no hay películas publicadas"
+  },
+  "ProjectCostsPage": {
+    "Title": "Desglose de costos del proyecto",
+    "Subtitle": "Dónde se desglosan el costo previsto y el gasto de esta película por categoría."
+  },
+  "SettingsPage": {
+    "BackToStudio": "← Volver al estudio",
+    "AccountProviders": "Cuenta y proveedores",
+    "SettingsForActiveProject": "Configuración para el proyecto activo:",
+    "ActiveProject": "Proyecto activo:"
   }
 }
