@@ -129,9 +129,7 @@ public sealed class AdminAuthService : IAdminAuthService
             Ok = true,
             RequiresEmailConfirmation = true,
             UserId = user.UserId,
-            Message =
-                "Account created. Check your email for a confirmation link before signing in. " +
-                "(In development, confirmation links are written to the API log if SMTP is not configured.)",
+            Message = "Account created. Check your email for a confirmation link before signing in.",
         };
     }
 
