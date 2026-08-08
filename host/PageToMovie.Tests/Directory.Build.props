@@ -1,17 +1,7 @@
 <Project>
-  <!--
-    Dual-compile selected Engine / Core sources for unit tests.
-    Do NOT dual-compile Engine/Services: it pulled orphan SmartScriptBreakdown*
-    and YouTubeUpload* tests/sources that have no GitHub history.
-  -->
   <ItemGroup>
-    <Compile Include="..\PageToMovie.Engine\Adaptation\**\*.cs"
-             Link="PageToMovie.Engine\Adaptation\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\PageToMovie.Engine\Adaptation\**\*.cs" Link="PageToMovie.Engine\Adaptation\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Remove="..\PageToMovie.Engine\Adaptation\**\*Tests.cs" />
-    <Compile Remove="..\PageToMovie.Engine\Adaptation\**\*Test.cs" />
-
-    <Compile Include="..\PageToMovie.Core\Models\**\*.cs"
-             Link="PageToMovie.Core\Models\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Remove="..\PageToMovie.Core\Models\**\*Tests.cs" />
+    <Compile Include="..\PageToMovie.Core\Models\**\*.cs" Link="PageToMovie.Core\Models\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
