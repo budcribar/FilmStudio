@@ -2,7 +2,9 @@
 
 **Goal:** reduce oversized Blazor page files (a source of UI bugs — too much markup +
 logic + shared mutable state in one file) by extracting reusable components into a
-dedicated Razor Class Library. Branch: `refactor/blazor-components`.
+dedicated Razor Class Library. Branch: `refactor/blazor-components` (superseded by
+`refactor/blazor-components-v2`, which merges this work forward onto current master —
+the original branch was 38 commits stale).
 
 ## Baseline (master @ de32bd2b)
 
@@ -42,19 +44,46 @@ Component count: **4 → 6 shared** (+ pattern for more). Scenes.razor: 5,232 �
   panels). Those rewire `[Parameter]`/`EventCallback`/two-way bindings and are **regression-prone**
   — best done with a human able to click through the result, not blind.
 
-## Recommended next steps (need a decision)
+## Option B executed (2026-08-07 overnight, autonomous — no real-time visual review available)
 
-- **Option A — component extraction (matches the original ask):** extract one large section
-  at a time (start: Scenes clip-editor modal → `ClipEditorModal`; scene-row → `SceneCard`),
-  each verified in the fakes browser + a Playwright check. Slower, sequential, but the "right"
-  structure.
-- **Option B — code-behind split (fastest file-size win, near-zero risk):** move each big page's
-  `@code { }` into a `.razor.cs` partial class. Halves the `.razor` files (Scenes 5,210 → ~2,200)
-  with **no behavior change**, fully compiler-validated. Not "components," but directly fixes
-  "too much code in one file." Reversible per file.
-- **Verification loop is proven:** run only the Api with the `http (fakes)` profile
-  (`dotnet run --project PageToMovie.Api --launch-profile "http (fakes)"`) → full app at
-  `http://localhost:5088/?admin=1` (auto-login bypass). Playwright harness lives in `host/playwright/`.
-  Known-baseline console error to ignore: `GET /api/projects/.../cost → 400`.
+Chose **Option B (code-behind split)** over Option A for unattended work: Option A's
+state-heavy extractions were explicitly flagged above as regression-prone and needing "a
+human able to click through the result, not blind" — not appropriate to attempt while the
+user was asleep. Option B is fully compiler-validated with no behavior change, so it's safe
+to execute and verify without a real-time visual review.
 
-_Stopped here at a verified-safe checkpoint rather than doing heavy unsupervised surgery._
+Split every big page's `@code { }` block into a `PageName.razor.cs` partial class
+(`public partial class PageName { ... }`), keeping the `.razor` file to markup + directives:
+
+| Page | Before | .razor after | .razor.cs | Reduction |
+|------|-------:|-------------:|----------:|----------:|
+| Scenes.razor | 5,290 | 2,236 | 3,044 | 58% |
+| Characters.razor | 3,067 | 1,058 | 2,026 | 65% |
+| Review.razor | 2,752 | 1,047 | 1,717 | 62% |
+| Configuration.razor | 2,212 | 717 | 1,507 | 68% |
+| Home.razor | 1,943 | 699 | 1,259 | 64% |
+| Admin.razor | 1,857 | 945 | 924 | 49% |
+
+Verified after every split: full solution build (0 errors), non-UI suite (1607/1608 — only
+the pre-existing unrelated `AutoTextMergerTests` failure), and a fakes-browser pass loading
+all six pages (Home incl. Manage panel, Configuration, Characters, Review, Scenes, Admin) —
+all render and behave identically to before the split.
+
+**Gotcha found while doing this — not every `@code` member can move.** A `.razor.cs`
+partial class compiles as plain C#, but some `@code` members contain *inline Razor markup*
+(`RenderFragment X => __builder => { <div>...</div> };` or `RenderFragment X => @<div>...</div>;`),
+which only compiles via the Razor source generator, never as plain C#. Found 3 such members
+across the 6 pages (`Scenes.GenPartialAlert`/`GenErrorAlert`, `Characters.RenderVoiceEditor`,
+`Home.ImportPanel`) — each left behind in a small residual `@code { }` block at the end of
+its `.razor` file with a comment explaining why, instead of moving to the `.cs` partial.
+Before doing this split on another page, `grep -n "__builder =>\|@<"` its `@code` block first.
+
+**Not yet split (smaller, lower priority):** AdminModelsCatalog.razor (991), Login.razor (854),
+AdaptationScreenplay.razor (837), AdminUsers.razor (660) — same mechanical process would apply.
+
+## Still open (needs the user — Option A)
+
+The state-heavy extractions from the "Findings" section above (Scenes' clip-editor modal →
+`ClipEditorModal`, scene-row loop body → `SceneCard`, Characters' cast panels) are unchanged
+by this session's work — they still need a human clicking through the result, not blind
+unattended execution. Queued, not started.
