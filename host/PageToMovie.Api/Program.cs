@@ -791,7 +791,18 @@ app.MapPost("/api/auth/confirm-email", async (
 
     var userId = await userDb.ConsumeAuthTokenAsync(token, UserDatabaseService.AuthPurposeEmailConfirm);
     if (userId is null)
+    {
+        var existingUserId = await userDb.GetUserIdFromAuthTokenHashAsync(token, UserDatabaseService.AuthPurposeEmailConfirm);
+        if (existingUserId is not null)
+        {
+            var user = await userDb.ResolveUserAsync(existingUserId);
+            if (UserDatabaseService.IsEmailConfirmed(user))
+            {
+                return Results.Ok(new { ok = true, message = "Email is already confirmed. You can sign in now." });
+            }
+        }
         return Results.BadRequest(new { ok = false, error = "This confirmation link is invalid or expired." });
+    }
 
     await userDb.ConfirmEmailAsync(userId);
     return Results.Ok(new { ok = true, message = "Email confirmed. You can sign in now." });
@@ -820,7 +831,10 @@ app.MapPost("/api/auth/resend-confirmation", async (
         if (user is not null && !UserDatabaseService.IsEmailConfirmed(user) && auth is AdminAuthService concrete)
             await concrete.SendEmailConfirmAsync(user);
     }
-    catch { /* */ }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Failed to resend confirmation email to user={Name}", name);
+    }
 
     limiter.RecordSuccess(key);
     return Results.Ok(new

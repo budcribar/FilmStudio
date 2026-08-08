@@ -245,7 +245,7 @@ public partial class Login
                             _info = string.IsNullOrWhiteSpace(msg) ? "Email confirmed. You can sign in now." : msg;
                             _isSignup = false;
                             _error = null;
-                            try { Nav.NavigateTo("/login?emailConfirmed=1", replace: false); } catch { /* ignore */ }
+                            try { Nav.NavigateTo("/login?emailConfirmed=1", replace: true); } catch { /* ignore */ }
                         }
                         else
                         {

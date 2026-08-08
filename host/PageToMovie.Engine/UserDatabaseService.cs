@@ -2891,6 +2891,26 @@ public class UserDatabaseService
         return userId;
     }
 
+    /// <summary>Finds user_id associated with a token hash regardless of whether it has been consumed.</summary>
+    public async Task<string?> GetUserIdFromAuthTokenHashAsync(
+        string rawToken,
+        string purpose,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(rawToken)) return null;
+        var hash = HashToken(rawToken.Trim());
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var sel = conn.CreateCommand();
+        sel.CommandText = @"
+            SELECT user_id FROM auth_tokens
+            WHERE token_hash = @h AND purpose = @p LIMIT 1";
+        sel.Parameters.AddWithValue("@h", hash);
+        sel.Parameters.AddWithValue("@p", purpose);
+        var obj = await sel.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        return obj is string uid && !string.IsNullOrWhiteSpace(uid) ? uid : null;
+    }
+
     public async Task<bool> ConfirmEmailAsync(string userId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(userId)) return false;
