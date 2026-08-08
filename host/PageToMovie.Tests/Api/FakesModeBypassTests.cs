@@ -35,6 +35,7 @@ public class FakesModeBypassTests : IClassFixture<PageToMovieApiFactory>
         AssertFake<IVoiceCloneClient, FakeVoiceCloneClient>(services);
         // Previously wired to the real ElevenLabs client even under fakes — now faked too.
         AssertFake<IVoiceClient, FakeVoiceClient>(services);
+        AssertFake<IVideoEditClient, FakeGrokVideoEditClient>(services);
     }
 
     private static void AssertFake<TInterface, TFake>(IServiceCollection services)

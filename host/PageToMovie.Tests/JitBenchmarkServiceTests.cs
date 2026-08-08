@@ -36,6 +36,8 @@ public class JitBenchmarkServiceTests
         {
             return Task.CompletedTask;
         }
+
+        public (string? FileId, long? ExpiresAtUnixSeconds) TryGetStoredFileReference(string requestId) => (null, null);
     }
 
     private sealed class TestVisionClient : IVisionClient

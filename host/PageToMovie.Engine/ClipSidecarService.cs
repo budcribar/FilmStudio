@@ -82,6 +82,8 @@ public sealed class ClipSidecarService
         string? mp4FileName = null,
         string? sourceUrl = null,
         string? sourceProvider = null,
+        string? sourceFileId = null,
+        long? sourceFileExpiresAtUnixSeconds = null,
         CancellationToken ct = default)
     {
         var videoDir = Path.Combine(projectDir, "assets", "video");
@@ -111,6 +113,17 @@ public sealed class ClipSidecarService
             sidecar["source_provider"] = string.IsNullOrWhiteSpace(sourceProvider) ? "" : sourceProvider.Trim();
         }
 
+        // xAI Files API reference for this exact clip (only present when the provider requested
+        // storage at generation time and it succeeded). Lets a later "AI Edit" reuse the file
+        // instead of re-uploading — see IVideoEditClient. Never required; absent means the edit
+        // path falls back to a base64 upload of the local file.
+        if (!string.IsNullOrWhiteSpace(sourceFileId))
+        {
+            sidecar["source_file_id"] = sourceFileId.Trim();
+            if (sourceFileExpiresAtUnixSeconds is { } exp)
+                sidecar["source_file_expires_at"] = exp;
+        }
+
         await WriteSidecarStreamAsync(sidecarPath, sidecar, ct).ConfigureAwait(false);
         _log.LogInformation("Written clip sidecar manifest → {Path}", sidecarPath);
         _autoGit?.QueueCommitAndPush(projectDir, projectId, $"Generate S{scene:D2}C{clip:D2} clip sidecar");
@@ -134,6 +147,7 @@ public sealed class ClipSidecarService
         long sizeBytes,
         string mp4FileName,
         DateTime? createdUtc = null,
+        int? editedFromTake = null,
         CancellationToken ct = default)
     {
         var videoDir = Path.Combine(projectDir, "assets", "video");
@@ -148,6 +162,12 @@ public sealed class ClipSidecarService
             projectId, scene, clip, take,
             prompt, scriptText, model, resolution,
             durationSeconds, sha256, sizeBytes, createdUtc ?? DateTime.UtcNow);
+
+        // Provenance for an AI-edited take: which prior take it was derived from, so the Takes
+        // compare UI can show "edited from Take N" instead of an indistinguishable flat entry.
+        // Absent for ordinary (non-edit) takes.
+        if (editedFromTake is { } fromTake)
+            sidecar["edited_from_take"] = fromTake;
 
         await WriteSidecarStreamAsync(sidecarPath, sidecar, ct).ConfigureAwait(false);
         _log.LogInformation("Written clip sidecar manifest → {Path}", sidecarPath);

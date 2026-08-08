@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGeminiVideoAnalysisClient, FakeGeminiChatClient>();
         services.AddSingleton<ILipSyncClient, FakeLipSyncClient>();
         services.AddSingleton<IVoiceCloneClient, FakeVoiceCloneClient>();
+        services.AddSingleton<IVideoEditClient, FakeGrokVideoEditClient>();
         services.AddSingleton<IVoiceClient, FakeVoiceClient>();
         return services;
     }

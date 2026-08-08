@@ -121,4 +121,53 @@ public class ScenesPipelineTests
         }
         finally { await ctx.CloseAsync(); }
     }
+
+    // The "AI Edit" button/prompt-modal flow (xAI /v1/videos/edits) end-to-end through the real
+    // click path — a full generated project, open scene → open clip → AI Edit → submit prompt →
+    // job completes → the clip shows a new take. Proves the UI wiring (button, modal, job-queue
+    // start, live-progress completion handling), on top of the server-side job pipeline already
+    // covered by VideoEditApiTests.cs.
+    [Fact]
+    public async Task AI_edit_button_opens_prompt_and_saves_a_new_take_on_completion()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await PipelineFlow.RunToGeneratedClipsAsync(
+                page, _fx.BaseUrl, "VideoEdit_" + Guid.NewGuid().ToString("N")[..6], "tell_tale_heart.fountain");
+
+            // Open the first scene (the row's own click handler opens the clip detail table). Note:
+            // "clip-select-bar" only renders when a clip is missing or multi-selected — with every
+            // clip already generated, it never appears, so this doesn't wait on it.
+            await Assertions.Expect(page.GetByTestId("scene-row").First).ToBeVisibleAsync(new() { Timeout = 30_000 });
+            await page.GetByTestId("scene-row").First.Locator("span.badge").First.ClickAsync();
+
+            // Scene 1's clip 1 in this fixture is ~10s (over the 8.7s edit cap) — clip 2 (~5s) is
+            // the one guaranteed eligible, so this exercises the real button rather than guessing.
+            var playSecondClip = page.GetByRole(AriaRole.Button, new() { Name = "▶ Play C02" });
+            await Assertions.Expect(playSecondClip).ToBeVisibleAsync(new() { Timeout = 30_000 });
+            await playSecondClip.ClickAsync();
+
+            var editOpen = page.GetByTestId("clip-video-edit-open");
+            await Assertions.Expect(editOpen).ToBeVisibleAsync(new() { Timeout = 30_000 });
+            await Assertions.Expect(editOpen).ToBeEnabledAsync(new() { Timeout = 15_000 });
+
+            await editOpen.ClickAsync();
+            var prompt = page.GetByTestId("clip-video-edit-prompt");
+            await Assertions.Expect(prompt).ToBeVisibleAsync(new() { Timeout = 15_000 });
+            await prompt.FillAsync("change her jacket to red");
+
+            var goButton = page.GetByTestId("clip-video-edit-go");
+            await Assertions.Expect(goButton).ToBeEnabledAsync(new() { Timeout = 15_000 });
+            await goButton.ClickAsync();
+
+            // Job runs (job-queue + live progress, not a blocking request) and completes. Server-side
+            // archiving/take-provenance is covered in depth by VideoEditApiTests.cs; this confirms
+            // the real click path (button → modal → submit → live progress) drives it the same way.
+            await Assertions.Expect(page.GetByText("edited — saved as a new take")).ToBeVisibleAsync(new() { Timeout = 60_000 });
+            // Not left stuck "busy" — the button is clickable again for a follow-up edit.
+            await Assertions.Expect(editOpen).ToBeEnabledAsync(new() { Timeout = 15_000 });
+        }
+        finally { await ctx.CloseAsync(); }
+    }
 }

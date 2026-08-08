@@ -237,7 +237,7 @@ public partial class Scenes
 
     /// <summary>Jobs that belong on Scenes (not leftover stage2 / character jobs).</summary>
     private static bool IsScenesWorkflowJob(string? kind) =>
-        kind is "scene" or "batch" or "remux" or "music" or "lip_sync";
+        kind is "scene" or "batch" or "remux" or "music" or "lip_sync" or "video_edit";
 
     /// <summary>
     /// One compact progress card while video work runs — operators and admin.
@@ -857,6 +857,20 @@ public partial class Scenes
                     _message = $"Clip S{gsn:D2}C{cn:D2} finished — Play scene when you want the updated composite";
                     if (_selectedClip == cn)
                         SelectClip(cn);
+                }
+                else if (snap.Status == "done" &&
+                         string.Equals(snap.Kind, "video_edit", StringComparison.OrdinalIgnoreCase) &&
+                         snap.Clip is int vecn &&
+                         snap.Scene is int vesn)
+                {
+                    // New take saved as the active clip — bust the cache key so the inline
+                    // <video> shows the edit result, and refresh the open clip's Takes list.
+                    // SelectClip clears _message as its first line, so it must run BEFORE the
+                    // completion message is set, not after (setting it after got silently wiped).
+                    _clipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    if (_selectedClip == vecn)
+                        SelectClip(vecn);
+                    _message = $"Clip S{vesn:D2}C{vecn:D2} edited — saved as a new take";
                 }
                 else if (snap.Status == "done" &&
                          string.Equals(snap.Kind, "batch", StringComparison.OrdinalIgnoreCase))
@@ -1683,6 +1697,42 @@ public partial class Scenes
         finally { _busy = false; _pendingRegenScene = null; }
     }
 
+    /// <summary>xAI's edit input cap — see MaxVideoEditInputSeconds's doc comment (client hint;
+    /// RunVideoEditAsync is the authoritative server-side check).</summary>
+    private static bool ClipExceedsEditDurationCap(ClipSummary clip) =>
+        (clip.ActualDurationSeconds ?? clip.DurationSeconds) > MaxVideoEditInputSeconds + 0.01;
+
+    private void OpenVideoEditPrompt()
+    {
+        _videoEditPromptText = "";
+        _showVideoEditPrompt = true;
+    }
+
+    private void CloseVideoEditPrompt() => _showVideoEditPrompt = false;
+
+    private async Task SubmitVideoEditAsync()
+    {
+        if (_detail is null || _clip is null || string.IsNullOrWhiteSpace(_videoEditPromptText))
+            return;
+
+        var sn = _detail.SceneNumber;
+        var cn = _clip.ClipNumber;
+        _showVideoEditPrompt = false;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await EnsureHubAsync();
+            await Engine.StartVideoEditAsync(_projectId, sn, cn, _videoEditPromptText.Trim());
+            _message = $"Editing S{sn:D2}C{cn:D2}…";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
     private void OpenClipEditor(ClipSummary clip)
     {
         if (_detail is null) return;
@@ -2337,6 +2387,14 @@ public partial class Scenes
 
     // Batch-generate confirm modal: resolution + cost decided at the moment of spend.
     private bool _showGenerateConfirm;
+    private bool _showVideoEditPrompt;
+    private string _videoEditPromptText = "";
+    /// <summary>
+    /// xAI's /v1/videos/edits input cap (grok-imagine-video-edit's maxEditInputDurationSeconds).
+    /// A client-side UX hint only — RunVideoEditAsync re-checks the real catalog value
+    /// server-side and is the authoritative gate; this just disables the button early.
+    /// </summary>
+    private const double MaxVideoEditInputSeconds = 8.7;
 
     private async Task OpenGenerateConfirmAsync()
     {

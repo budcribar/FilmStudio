@@ -209,6 +209,10 @@ public sealed class FalVideoClient : IVideoClient
         throw new TimeoutException($"Fal.ai job {requestId} timed out after {maxAttempts * 3}s");
     }
 
+    /// <summary>Fal never requests xAI-style Files API storage — file_id reuse is a Grok-only
+    /// optimization (see <see cref="IVideoEditClient"/>).</summary>
+    public (string? FileId, long? ExpiresAtUnixSeconds) TryGetStoredFileReference(string requestId) => (null, null);
+
     public async Task DownloadToFileAsync(string url, string destPath, CancellationToken ct)
     {
         using var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);

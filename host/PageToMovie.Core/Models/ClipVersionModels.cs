@@ -28,6 +28,17 @@ public sealed class ClipVersionItem
     /// versions — the exact key the media registry has, so the client can look up its local
     /// blob without re-deriving the folder convention (active vs. history vs. take-named).</summary>
     public string? RelativePath { get; set; }
+    /// <summary>Take number this version was AI-edited from (a prompt-based /videos/edits result),
+    /// null for an ordinary generated/regenerated take. Lets the Takes compare UI show "edited from
+    /// Take N" instead of an indistinguishable flat entry.</summary>
+    public int? EditedFromTake { get; set; }
+    /// <summary>xAI Files API file_id for this exact clip, when generation requested storage and it
+    /// succeeded — null otherwise (storage wasn't requested, failed, or has since aged out of the
+    /// sidecar). Consumed by the video-edit job to try file_id reuse before falling back to
+    /// uploading the local file.</summary>
+    public string? SourceFileId { get; set; }
+    /// <summary>Unix-seconds expiry for <see cref="SourceFileId"/>, when known.</summary>
+    public long? SourceFileExpiresAtUnixSeconds { get; set; }
 }
 
 /// <summary>

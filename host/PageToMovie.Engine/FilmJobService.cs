@@ -73,6 +73,7 @@ public sealed class FilmJobService
     private readonly BookTextRegistryService? _bookRegistry;
     private readonly PageToMovie.Core.Abstractions.IBookFileSessionFactory? _bookFileSessionFactory;
     private readonly VoiceAlignmentStore? _voiceAlignment;
+    private readonly IVideoEditClient? _videoEdit;
 
     public FilmJobService(
         ProjectStore projects,
@@ -116,7 +117,8 @@ public sealed class FilmJobService
         GenerationErrorLogger? errorLogger = null,
         BookTextRegistryService? bookRegistry = null,
         PageToMovie.Core.Abstractions.IBookFileSessionFactory? bookFileSessionFactory = null,
-        VoiceAlignmentStore? voiceAlignment = null)
+        VoiceAlignmentStore? voiceAlignment = null,
+        IVideoEditClient? videoEdit = null)
     {
         _httpFactory = httpFactory;
         _projects = projects;
@@ -160,6 +162,7 @@ public sealed class FilmJobService
         _bookRegistry = bookRegistry;
         _bookFileSessionFactory = bookFileSessionFactory;
         _voiceAlignment = voiceAlignment;
+        _videoEdit = videoEdit;
     }
 
 
@@ -1201,6 +1204,35 @@ public sealed class FilmJobService
         }
     }
 
+    /// <summary>
+    /// Prompt-based edit of an already-generated clip (xAI /v1/videos/edits) — explicit,
+    /// human-triggered, per-clip only. Its own job kind ("video_edit"), entirely separate from
+    /// <see cref="StartSceneGenAsync"/>/<see cref="StartBatchGenAsync"/>'s automatic pipeline; never
+    /// called from either.
+    /// </summary>
+    public Task<JobSnapshot> StartVideoEditAsync(StartVideoEditRequest req)
+    {
+        if (req.Scene <= 0 || req.Clip <= 0)
+            throw new InvalidOperationException("scene and clip required");
+        if (string.IsNullOrWhiteSpace(req.Prompt))
+            throw new InvalidOperationException("prompt required");
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunVideoEditAsync(req, projectId, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "video_edit",
+                ProjectId = projectId,
+                Scene = req.Scene,
+                Clip = req.Clip,
+                Message = $"Queued AI edit for S{req.Scene:D2}C{req.Clip:D2}…",
+            },
+            lockResources: new[] { LockKeys.Scene(projectId, req.Scene) },
+            lockReason: $"video edit S{req.Scene:D2}C{req.Clip:D2}");
+    }
+
     /// <summary>Generate portrait variants via C# Grok image API.</summary>
     public Task<JobSnapshot> StartCharacterVariantsAsync(StartCharacterVariantsRequest req)
     {
@@ -1842,6 +1874,138 @@ public sealed class FilmJobService
         if (File.Exists(cand))
             return Path.GetFullPath(cand);
         throw new InvalidOperationException($"Image not found: {imagePath}");
+    }
+
+    /// <summary>
+    /// Runs the actual xAI edit call for <see cref="StartVideoEditAsync"/>. Re-validates
+    /// eligibility server-side (never trusts the client-only UI gate), tries the active clip's
+    /// stored file_id first when unexpired, downloads the edited result, archives the current
+    /// active clip into <c>assets/video/history/</c>, and writes the edited bytes as the new
+    /// active clip + sidecar — so it shows up as a new take in the existing Takes UI for free.
+    /// </summary>
+    private async Task RunVideoEditAsync(StartVideoEditRequest req, string projectId, CancellationToken ct)
+    {
+        await _projects.RequireProjectAsync(projectId, ct);
+
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "video_edit",
+            ProjectId = projectId,
+            Scene = req.Scene,
+            Clip = req.Clip,
+            Message = $"Editing S{req.Scene:D2}C{req.Clip:D2}…",
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync();
+
+        try
+        {
+            if (_videoEdit is null)
+                throw new InvalidOperationException("Video edit is not configured on this server.");
+            if (!_videoEdit.IsConfigured)
+                throw new InvalidOperationException("Video edit: connect xAI (XAI_API_KEY) in Configuration.");
+
+            var projectDir = _projects.GetProjectDir(projectId);
+            var videoDir = Path.Combine(projectDir, "assets", "video");
+            var activeMp4Path = Path.Combine(videoDir, $"scene_{req.Scene:D2}_clip_{req.Clip:D2}.mp4");
+            if (!File.Exists(activeMp4Path))
+                throw new InvalidOperationException($"Scene {req.Scene} clip {req.Clip}: no clip on disk to edit.");
+
+            // ResolveOrDefault doesn't consult the capability's own defaultModelId automatically —
+            // an explicit fallback is required, or a null/omitted req.Model (the common case: no
+            // per-request override) throws instead of resolving the catalog default.
+            var entry = SupportedModelCatalog.ResolveOrDefault(
+                req.Model, ModelCapability.VideoEdit,
+                fallbackId: SupportedModelCatalog.DefaultModelIdForCapability("video-edit"));
+
+            // Eligibility + file_id/take lookup, both from the clip's own version list — never
+            // trust the client-only UI gate. Duration cap is catalog-driven, never hardcoded.
+            var versions = await _projects.GetClipVersionsAsync(projectId, req.Scene, req.Clip).ConfigureAwait(false);
+            var current = versions.FirstOrDefault(v => v.IsCurrent);
+            if (current is not null && entry.MaxEditInputDurationSeconds is { } cap &&
+                current.DurationSeconds > cap + 0.01)
+            {
+                throw new InvalidOperationException(
+                    $"Scene {req.Scene} clip {req.Clip} is {current.DurationSeconds:0.#}s — " +
+                    $"Grok can only edit clips up to {cap:0.#}s.");
+            }
+
+            string? sourceFileId = null;
+            if (current?.SourceFileId is { Length: > 0 } fid &&
+                (current.SourceFileExpiresAtUnixSeconds is not { } exp ||
+                 exp > DateTimeOffset.UtcNow.ToUnixTimeSeconds()))
+            {
+                sourceFileId = fid;
+            }
+            await AppendLogAsync(sourceFileId is null
+                ? "No stored file reference on this clip — uploading it"
+                : "Trying the clip's stored file reference first");
+
+            var url = await _videoEdit.EditClipAsync(
+                activeMp4Path, req.Prompt, sourceFileId, entry.Id,
+                onProgress: msg => _ = AppendLogAsync($"  [Edit] {msg}"),
+                ct).ConfigureAwait(false);
+
+            await UpdateAsync(s => s.Message = "Downloading edited clip…");
+            // Via IVideoEditClient.DownloadToFileAsync, not a raw HttpClient GET — a fake
+            // implementation's "URL" isn't necessarily real http(s) (see FakeGrokVideoClient's own
+            // DownloadToFileAsync precedent for the same reason).
+            var tempPath = Path.Combine(Path.GetTempPath(), $"video-edit-{Guid.NewGuid():N}.mp4");
+            byte[] bytes;
+            try
+            {
+                await _videoEdit.DownloadToFileAsync(url, tempPath, ct).ConfigureAwait(false);
+                bytes = await File.ReadAllBytesAsync(tempPath, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { /* best effort */ }
+            }
+
+            var newFileName = _projects.ArchiveActiveAndReplaceClipBytesAsync(projectId, req.Scene, req.Clip, bytes);
+
+            if (_sidecars is not null)
+            {
+                var sha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant();
+                await _sidecars.WriteSidecarWithTakeAsync(
+                    projectDir, req.Scene, req.Clip,
+                    take: (current?.Take ?? 0) + 1,
+                    prompt: req.Prompt,
+                    scriptText: current?.ScriptText ?? "",
+                    model: entry.Id,
+                    resolution: current?.Resolution ?? "",
+                    durationSeconds: current?.DurationSeconds ?? 0,
+                    sha256: sha256,
+                    sizeBytes: bytes.LongLength,
+                    mp4FileName: newFileName,
+                    editedFromTake: current?.Take,
+                    ct: ct).ConfigureAwait(false);
+            }
+
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                ProjectId = projectId,
+                Kind = "video_edit",
+                Model = entry.Id,
+                Scene = req.Scene,
+                Clip = req.Clip,
+                Ok = true,
+            }, ct).ConfigureAwait(false);
+
+            await FinishAsync("done", "Edited clip ready — saved as a new take.");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Video edit failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
     }
 
     private async Task RunCharacterVariantsAsync(StartCharacterVariantsRequest req, string projectId, CancellationToken ct)
@@ -3830,16 +3994,19 @@ public sealed class FilmJobService
                 msg => { _ = AppendLogAsync($"  [Grok] {msg}"); },
                 ct);
 
-            // Save MP4 file to server project directory so client media sync delivers MP4 files to client folder
+            // Save MP4 file to server project directory so client media sync delivers MP4 files to client folder.
+            // Via IVideoClient.DownloadToFileAsync, not a raw HttpClient GET — the URL a fake
+            // provider returns isn't necessarily real http(s) (FakeGrokVideoClient.DownloadToFileAsync
+            // resolves its own "fake-fixture:" scheme to a local file instead of attempting a request;
+            // a bare GetByteArrayAsync silently failed on that scheme and this whole save was skipped).
             var mp4Path = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
             try
             {
-                var http = _httpFactory.CreateClient("media-proxy");
-                var bytes = await http.GetByteArrayAsync(url, ct).ConfigureAwait(false);
-                if (bytes.Length > 0)
+                await _grok.DownloadToFileAsync(url, mp4Path, ct).ConfigureAwait(false);
+                var bytesLength = File.Exists(mp4Path) ? new FileInfo(mp4Path).Length : 0;
+                if (bytesLength > 0)
                 {
-                    await File.WriteAllBytesAsync(mp4Path, bytes, ct).ConfigureAwait(false);
-                    await AppendLogAsync($"  [Media] Saved {bytes.Length} bytes to {Path.GetFileName(mp4Path)}");
+                    await AppendLogAsync($"  [Media] Saved {bytesLength} bytes to {Path.GetFileName(mp4Path)}");
 
                     // Trigger 100% automated background clip dialogue & speaker verification.
                     // Telemetry recording below awaits this (if started) so DialogueTruncated
@@ -3978,6 +4145,11 @@ public sealed class FilmJobService
                 try
                 {
                     var projDir = _projects.GetProjectDir(Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId);
+                    // xAI Files API reference for this exact clip, when generation requested
+                    // storage and it succeeded (see GrokVideoClient's storage_options) — lets a
+                    // later "AI Edit" reuse the file instead of re-uploading. Absent for
+                    // non-Grok providers or when storage wasn't granted; never required.
+                    var (sourceFileId, sourceFileExpiresAt) = _grok.TryGetStoredFileReference(requestId);
                     await _sidecars.WriteSidecarAsync(
                         projDir,
                         scene,
@@ -3994,6 +4166,8 @@ public sealed class FilmJobService
                         // from the model via the catalog (SSoT) rather than hardcoded.
                         sourceUrl: url,
                         sourceProvider: SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).ProviderId,
+                        sourceFileId: sourceFileId,
+                        sourceFileExpiresAtUnixSeconds: sourceFileExpiresAt,
                         ct: ct).ConfigureAwait(false);
                 }
                 catch (Exception ex)

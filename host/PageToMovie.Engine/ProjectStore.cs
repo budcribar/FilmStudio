@@ -537,6 +537,40 @@ public sealed partial class ProjectStore
         return true;
     }
 
+    /// <summary>
+    /// Archives the current active clip into assets/video/history/ (same convention
+    /// <see cref="PromoteClipVersionAsync"/> uses) then writes <paramref name="newBytes"/> as the
+    /// new active clip — for a video-edit result, which is fresh bytes rather than an existing take
+    /// to restore. Returns the active file name (always the un-suffixed
+    /// <c>scene_XX_clip_XX.mp4</c> — the archived copy gets the timestamp suffix, not the new one).
+    /// </summary>
+    public string ArchiveActiveAndReplaceClipBytesAsync(string projectId, int scene, int clip, byte[] newBytes)
+    {
+        var dir = GetProjectDir(projectId);
+        var videoDir = Path.Combine(dir, "assets", "video");
+        Directory.CreateDirectory(videoDir);
+        var activeMp4Path = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+
+        if (File.Exists(activeMp4Path))
+        {
+            var historyDir = Path.Combine(videoDir, "history");
+            Directory.CreateDirectory(historyDir);
+            var archiveStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var archiveMp4 = Path.Combine(historyDir, $"scene_{scene:D2}_clip_{clip:D2}_{archiveStamp}.mp4");
+            try { File.Copy(activeMp4Path, archiveMp4, overwrite: true); } catch { /* best effort, matches PromoteClipVersionAsync */ }
+            var activeSidecar = Path.ChangeExtension(activeMp4Path, ".clip.json");
+            if (File.Exists(activeSidecar))
+            {
+                var archiveSidecar = Path.ChangeExtension(archiveMp4, ".clip.json");
+                try { File.Copy(activeSidecar, archiveSidecar, overwrite: true); } catch { /* best effort */ }
+            }
+        }
+
+        File.WriteAllBytes(activeMp4Path, newBytes);
+        InvalidateSceneListCache(projectId);
+        return Path.GetFileName(activeMp4Path);
+    }
+
     private static ClipVersionItem ParseClipSidecarOrMeta(string sidecarPath, string mp4Path, int scene, int clip, int take, bool isCurrent, DateTime lastWriteUtc)
     {
         var item = new ClipVersionItem
@@ -562,6 +596,9 @@ public sealed partial class ProjectStore
                 item.Resolution = root.TryGetProperty("resolution", out var r) ? r.GetString() ?? "" : "";
                 if (root.TryGetProperty("duration_seconds", out var d) && d.TryGetDouble(out var dur)) item.DurationSeconds = dur;
                 if (root.TryGetProperty("sha256", out var sha)) item.Sha256 = sha.GetString() ?? "";
+                if (root.TryGetProperty("edited_from_take", out var eft) && eft.TryGetInt32(out var eftVal)) item.EditedFromTake = eftVal;
+                if (root.TryGetProperty("source_file_id", out var sfid)) item.SourceFileId = sfid.GetString();
+                if (root.TryGetProperty("source_file_expires_at", out var sfexp) && sfexp.TryGetInt64(out var sfexpVal)) item.SourceFileExpiresAtUnixSeconds = sfexpVal;
             }
             catch { /* best effort sidecar parse */ }
         }

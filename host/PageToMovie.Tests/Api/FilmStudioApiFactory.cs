@@ -13,6 +13,17 @@ public sealed class PageToMovieApiFactory : WebApplicationFactory<PageToMovie.Ap
 
     public PageToMovieApiFactory()
     {
+        // Program.cs decides which concrete client gets registered for every provider interface
+        // (FakeGrokVideoClient vs. the real GrokVideoClient/MultiProviderVideoClient, etc.) from a
+        // `useFakes` boolean read off `builder.Configuration` in its own top-level statements —
+        // BEFORE WebApplicationFactory's ConfigureWebHost customizations below (AddInMemoryCollection
+        // / PostConfigure<PageToMovieOptions>) are layered into that configuration. Relying on those
+        // alone silently leaves the real (non-fake) provider clients registered, so a "fakes-only"
+        // test can end up making real, unauthenticated calls to api.x.ai. Program.cs's useFakes check
+        // also does a direct Environment.GetEnvironmentVariable("PageToMovie_USE_FAKES") read, which
+        // has none of that timing dependency, so set it here — before anything below can trigger a
+        // lazy host build — to guarantee fakes actually activate.
+        Environment.SetEnvironmentVariable("PageToMovie_USE_FAKES", "1");
         _workspace = Path.Combine(Path.GetTempPath(), "fs_api_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(_workspace, "projects"));
         Directory.CreateDirectory(Path.Combine(_workspace, "prompts"));

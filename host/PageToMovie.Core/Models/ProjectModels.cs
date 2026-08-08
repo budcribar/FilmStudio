@@ -237,6 +237,22 @@ public sealed class StartBatchGenRequest
 }
 
 /// <summary>
+/// Prompt-based edit of an already-generated clip (xAI /v1/videos/edits). Explicit, human-triggered,
+/// per-clip only — never wired into <see cref="StartSceneGenRequest"/>/<see cref="StartBatchGenRequest"/>'s
+/// automatic pipeline. Runs as its own job kind ("video_edit") so a long provider round trip gets
+/// the same job-queue + progress treatment as scene generation, not a blocking HTTP request.
+/// </summary>
+public sealed class StartVideoEditRequest
+{
+    public string ProjectId { get; set; } = "";
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+    public string Prompt { get; set; } = "";
+    /// <summary>Catalog model id override (ModelCapability.VideoEdit). Empty → project/catalog default.</summary>
+    public string? Model { get; set; }
+}
+
+/// <summary>
 /// Server-side batch TTS for re-voice: synthesize each clip's dialogue with a stored clone voice id.
 /// Audio is written under the project and handed to the client via <see cref="JobSnapshot.ClientMediaUrl"/>
 /// (same mid-batch pattern as video/music). Keys never leave the server.

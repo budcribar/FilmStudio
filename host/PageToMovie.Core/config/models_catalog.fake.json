@@ -146,6 +146,13 @@
       "description": "Resyncs a generated clip's mouth movement to a separate dialogue or narration audio track.",
       "defaultModelId": "fal-ai/sync-lipsync/v2/pro",
       "order": 80
+    },
+    {
+      "id": "video-edit",
+      "displayName": "Video Clip Edit",
+      "description": "Prompt-based edit of an already-generated clip (re-render an action, color, or detail from a text instruction).",
+      "defaultModelId": "grok-imagine-video-edit",
+      "order": 85
     }
   ],
   "taskRankings": null,
@@ -326,6 +333,31 @@
       "pricingNotes": "Video $/sec by resolution from product catalog (verify docs.x.ai/developers pricing). As of 2026-08 xAI publishes generation pricing, not a separate ref-image or extend line item (docs.x.ai video + pricing). videoReferenceImageCost=0 means no separate ref fee. videoExtendCostPerSecond uses same billing unit as generation new seconds; set to 0.07 (720p catalog rate) for planning when resolution-specific extend rates are not published.",
       "lastVerifiedAt": "2026-08-05",
       "pricingLastReviewedAt": "2026-08-05"
+    },
+    {
+      "id": "grok-imagine-video-edit",
+      "displayName": "Grok Imagine Video Edit",
+      "capability": "VideoEdit",
+      "provider": "Xai",
+      "apiBase": "https://api.x.ai/v1",
+      "endpointPath": "videos/edits",
+      "requiredEnvKeys": [
+        "XAI_API_KEY"
+      ],
+      "enabled": true,
+      "maxEditInputDurationSeconds": 8.7,
+      "maxPromptLength": 4000,
+      "videoCostPerSecondByResolution": {
+        "480p": 0.05,
+        "720p": 0.07,
+        "1080p": 0.25
+      },
+      "notes": "Prompt-based edit of an already-generated clip via POST videos/edits: takes an existing video + a text instruction, returns a new video. Output always inherits the source clip's duration and resolution (not independently configurable) and input is capped at 8.7s by xAI. video can be a Files API file_id or a url/data URI; this app tries a stored file_id (from generation-time storage_options) first and falls back to a base64 data URI of the local clip file on any failure.",
+      "providerId": "grok",
+      "providerLabel": "xAI",
+      "pricingNotes": "xAI has not published edit-specific pricing as of 2026-08. videoCostPerSecondByResolution is proxied from grok-imagine-video's own generation rate (same provider/model family) as a labeled estimate, not confirmed edit pricing — verify against docs.x.ai before relying on this for cost reporting.",
+      "lastVerifiedAt": "2026-08-08",
+      "pricingLastReviewedAt": "2026-08-08"
     },
     {
       "id": "hunyuan-video",

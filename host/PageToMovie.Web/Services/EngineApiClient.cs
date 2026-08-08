@@ -1571,6 +1571,39 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
         }
     }
 
+    /// <summary>
+    /// Prompt-based edit of an already-generated clip (xAI /v1/videos/edits) — its own job kind,
+    /// same job-queue + live-progress pattern as <see cref="StartSceneGenAsync"/> (caller follows
+    /// up with <see cref="GetJobAsync"/> to drive the progress card), not a blocking request.
+    /// </summary>
+    public async Task StartVideoEditAsync(
+        string projectId,
+        int scene,
+        int clip,
+        string prompt,
+        string? model = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            "/api/jobs/video-edit",
+            new StartVideoEditRequest
+            {
+                ProjectId = projectId,
+                Scene = scene,
+                Clip = clip,
+                Prompt = prompt,
+                Model = model,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? $"{(int)resp.StatusCode}");
+        }
+    }
+
     public async Task StartBatchGenAsync(
         string projectId,
         IReadOnlyList<int> scenes,

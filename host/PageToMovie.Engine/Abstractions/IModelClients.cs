@@ -35,6 +35,17 @@ public interface IVideoClient
         CancellationToken ct);
 
     Task DownloadToFileAsync(string url, string destPath, CancellationToken ct);
+
+    /// <summary>
+    /// The provider's own re-fetchable file reference (Files-API-style id + unix expiry) for a
+    /// request that already completed via <see cref="PollForVideoUrlAsync"/> — populated only when
+    /// the provider/model requested persistent storage at submit time (currently: Grok only, when
+    /// storage was requested). Returns (null, null) when unsupported, storage wasn't requested, or
+    /// the request id is unknown/already evicted. Callers persist this in the clip sidecar to allow
+    /// a later prompt-based video edit to reuse the file instead of re-uploading — purely an
+    /// optimization; the local on-disk clip file is always the fallback source of truth.
+    /// </summary>
+    (string? FileId, long? ExpiresAtUnixSeconds) TryGetStoredFileReference(string requestId);
 }
 
 /// <summary>Image generate / edit. Grok, Gemini, or fake — see MultiProviderImageClient.</summary>
@@ -182,6 +193,51 @@ public interface ILipSyncClient
         string syncMode = "cut_off",
         Action<string>? onProgress = null,
         CancellationToken ct = default);
+}
+
+/// <summary>
+/// Prompt-based edit of an already-generated clip via xAI's /v1/videos/edits — video+text-prompt
+/// in, video out, output inherits the source clip's duration/resolution (not customizable), input
+/// capped at 8.7s by xAI. Submit+poll internally (edit processing time is not guaranteed short
+/// just because input is short — reuses the same poll budget as full video generation, unlike
+/// <see cref="ILipSyncClient"/>'s single-request-span assumption). Explicit, human-triggered only,
+/// run as its own FilmJobService job kind — must never be wired into the automatic scene/batch
+/// generation pipeline; every call spends real provider money.
+/// </summary>
+public interface IVideoEditClient
+{
+    bool IsConfigured { get; }
+
+    /// <param name="videoPath">Local path to the source clip (already on the API host) — always
+    /// required, since this is the guaranteed fallback input regardless of <paramref name="sourceFileId"/>.</param>
+    /// <param name="prompt">Edit instruction text.</param>
+    /// <param name="sourceFileId">A previously-stored xAI Files API file_id for this exact clip, if
+    /// the sidecar has one and it hasn't passed its recorded expiry. Tried first; any failure
+    /// (missing/expired/rejected) transparently falls back to uploading <paramref name="videoPath"/>
+    /// as a base64 data URI — the caller never needs to handle the fallback itself.</param>
+    /// <param name="model">Catalog model id (<see cref="PageToMovie.Core.Models.ModelCapability.VideoEdit"/>). Null resolves catalog default.</param>
+    /// <returns>Provider URL for the edited video.</returns>
+    /// <exception cref="Exception">On any unrecoverable failure (throws rather than returning
+    /// null — this runs as its own <c>FilmJobService</c> job kind, so the caller wants the real
+    /// exception message surfaced to the job log/error field, the same convention every other
+    /// <c>Run*Async</c> job method uses; unlike <see cref="ILipSyncClient"/>'s direct-endpoint
+    /// caller, which prefers a null return it can turn into a friendly <c>ok:false</c> response).</exception>
+    Task<string> EditClipAsync(
+        string videoPath,
+        string prompt,
+        string? sourceFileId = null,
+        string? model = null,
+        Action<string>? onProgress = null,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Downloads the edited video from the URL <see cref="EditClipAsync"/> returned. A separate
+    /// method (mirroring <see cref="IVideoClient.DownloadToFileAsync"/>) rather than a raw HTTP GET
+    /// in the caller, because a fake implementation's "URL" isn't necessarily a real http(s)
+    /// address — <c>FakeGrokVideoClient.DownloadToFileAsync</c> is the existing precedent for
+    /// resolving a fake-fixture reference to local bytes instead of attempting a real request.
+    /// </summary>
+    Task DownloadToFileAsync(string url, string destPath, CancellationToken ct);
 }
 
 /// <summary>

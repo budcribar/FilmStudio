@@ -472,6 +472,13 @@ public sealed class FakesOptions
     public double FailRate { get; set; }
     /// <summary>Throw rate-limit every N submits (0 = never).</summary>
     public int RateLimitEveryN { get; set; }
+    /// <summary>
+    /// When true, <c>FakeGrokVideoEditClient</c> rejects every file_id-based edit submit,
+    /// forcing the real fallback-to-base64-upload path to run — a test/soak knob for exercising
+    /// <see cref="PageToMovie.Engine.Abstractions.IVideoEditClient"/>'s fallback logic
+    /// deterministically, not something a real deployment would ever set.
+    /// </summary>
+    public bool RejectFileIdEdits { get; set; }
 }
 
 /// <summary>Customer-facing charge settings (list-rate markup).</summary>

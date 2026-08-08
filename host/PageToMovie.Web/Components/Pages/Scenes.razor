@@ -1102,6 +1102,17 @@ else
                             @onclick="() => RegenClipAsync(_detail.SceneNumber, _clip.ClipNumber)">
                         Regen clip
                     </button>
+                    <button class="btn btn-sm btn-outline-primary"
+                            data-testid="clip-video-edit-open"
+                            disabled="@(_busy || JobRunning || !_clip.OnDisk || ClipExceedsEditDurationCap(_clip))"
+                            title="@(!_clip.OnDisk
+                                ? "Generate this clip first"
+                                : ClipExceedsEditDurationCap(_clip)
+                                ? $"Clip is {(_clip.ActualDurationSeconds ?? _clip.DurationSeconds):0.#}s — Grok can only edit clips up to {MaxVideoEditInputSeconds:0.#}s"
+                                : "Edit this clip with an AI text prompt (new take, spends provider credit)")"
+                            @onclick="OpenVideoEditPrompt">
+                        ✂️ AI Edit
+                    </button>
                     <button class="btn btn-sm btn-outline-info"
                             disabled="@(_busy || JobRunning)"
                             title="View past takes & version comparison grid for this clip"
@@ -1852,6 +1863,38 @@ else
                     disabled="@(_busy || _selected.Count == 0 || JobRunning || !CastReady || SelectedLockedByOther)"
                     @onclick="ConfirmGenerateAsync">
                 ▶ Generate @_selected.Count scene@(_selected.Count == 1 ? "" : "s")
+            </button>
+        </Footer>
+    </DarkModalShell>
+}
+
+@* AI clip edit — point-of-use prompt for a text-based edit of the currently open clip (xAI
+   /v1/videos/edits). Runs as a background job (same live-progress mechanism as Regen clip), not a
+   blocking request — edit processing time isn't guaranteed short just because the clip is short. *@
+@if (_showVideoEditPrompt && _clip is not null)
+{
+    <DarkModalShell Visible="true" OnClose="CloseVideoEditPrompt">
+        <Title>✂️ AI edit clip</Title>
+        <ChildContent>
+            <p class="small text-muted">
+                Describe the change — e.g. "change her jacket to red" or "make him wave instead of nod".
+                Saved as a new take; the current version stays in 🎬 Takes.
+            </p>
+            <textarea class="form-control bg-dark text-white border-secondary"
+                      data-testid="clip-video-edit-prompt"
+                      rows="3"
+                      placeholder="Edit instruction…"
+                      disabled="@_busy"
+                      @bind="_videoEditPromptText" @bind:event="oninput"></textarea>
+        </ChildContent>
+        <Footer>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    disabled="@_busy" @onclick="CloseVideoEditPrompt">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary fw-bold"
+                    data-testid="clip-video-edit-go"
+                    disabled="@(_busy || JobRunning || string.IsNullOrWhiteSpace(_videoEditPromptText))"
+                    @onclick="SubmitVideoEditAsync">
+                ✂️ Edit clip
             </button>
         </Footer>
     </DarkModalShell>

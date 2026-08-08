@@ -376,6 +376,14 @@ else
         c.BaseAddress = new Uri(GrokVideoClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(15);
     }));
+    // Single provider (xAI only) — bind IVideoEditClient straight to the concrete client, same
+    // pattern as ILipSyncClient/FalLipSyncClient below (no MultiProvider* dispatcher needed).
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GrokVideoEditClient>(c =>
+    {
+        c.BaseAddress = new Uri(GrokVideoEditClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(15);
+    }));
+    builder.Services.AddSingleton<IVideoEditClient>(sp => sp.GetRequiredService<GrokVideoEditClient>());
     ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GeminiVideoClient>(c =>
     {
         c.BaseAddress = new Uri(GeminiVideoClient.ApiBase + "/");
@@ -3158,6 +3166,35 @@ app.MapPost("/api/projects/{projectId}/characters/{charKey}/set-book-refs",
     }
 });
 
+
+/// <summary>
+/// Prompt-based edit of an already-generated clip (xAI /v1/videos/edits) — human-triggered,
+/// per-clip, spends real provider money. Job-queue family (like character-variants), NOT the
+/// synchronous "media" endpoint family lip-sync uses: edit processing time is not guaranteed short
+/// just because the input clip is short, so this must never block the HTTP request — the client
+/// polls/subscribes the returned job the same way it already does for scene generation.
+/// </summary>
+app.MapPost("/api/jobs/video-edit", async (StartVideoEditRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId) || body.Scene <= 0 || body.Clip <= 0)
+            return Results.BadRequest(new { ok = false, error = "projectId, scene, and clip required" });
+        if (string.IsNullOrWhiteSpace(body.Prompt))
+            return Results.BadRequest(new { ok = false, error = "prompt required" });
+        var job = await jobService.StartVideoEditAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = $"Queued AI edit for S{body.Scene:D2}C{body.Clip:D2}",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
 
 app.MapPost("/api/jobs/character-variants", async (StartCharacterVariantsRequest body, FilmJobService jobService) =>
 {

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -20,11 +21,26 @@ public sealed class GrokVideoClient : IVideoClient
     /// <summary>Full prompt first; on length errors, shorten and retry up to this many times.</summary>
     public const int MaxPromptLengthRetries = 5;
 
+    /// <summary>
+    /// Request xAI persist the generated video to the Files API so a later video-edit call can
+    /// reuse its file_id instead of re-uploading (see <see cref="IVideoEditClient"/>). Capped at
+    /// xAI's own maximum (30 days) — file_id reuse is always an optimization on top of the
+    /// locally-stored clip, never required, so a shorter/longer TTL only affects how often the
+    /// edit path falls back to base64 upload, not correctness.
+    /// </summary>
+    private const int StorageExpiresAfterSeconds = 2_592_000;
+
     private readonly HttpClient _http;
     private readonly PageToMovieOptions _opts;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<GrokVideoClient> _log;
     private readonly GenerationErrorLogger? _errorLogger;
+
+    /// <summary>request_id → stored file reference, populated by <see cref="PollForVideoUrlAsync"/>
+    /// when the completed job's response includes <c>video.file_output</c> (i.e. storage was
+    /// requested and succeeded). In-memory only — a process restart simply means the next edit on
+    /// that clip falls back to base64 upload, same as if storage had expired.</summary>
+    private readonly ConcurrentDictionary<string, (string? FileId, long? ExpiresAtUnixSeconds)> _fileRefs = new();
 
     public GrokVideoClient(
         HttpClient http,
@@ -233,6 +249,10 @@ public sealed class GrokVideoClient : IVideoClient
             // duration = length of NEW extension only (not total)
             ["duration"] = durationSeconds,
             ["video"] = new Dictionary<string, object?> { ["url"] = videoUri },
+            // Ask xAI to persist the result to the Files API so a later video-edit can reuse its
+            // file_id — see StorageExpiresAfterSeconds. Unknown/ignored by the API if this
+            // particular field name turns out stale; the url-based download path is unaffected.
+            ["storage_options"] = new Dictionary<string, object?> { ["expires_after"] = StorageExpiresAfterSeconds },
         };
         // resolution/aspect may be ignored on extensions; still send when API allows
         if (!string.IsNullOrWhiteSpace(resolution))
@@ -290,6 +310,9 @@ public sealed class GrokVideoClient : IVideoClient
             ["duration"] = durationSeconds,
             ["aspect_ratio"] = ResolveAspectRatio(model),
             ["resolution"] = resolution,
+            // Ask xAI to persist the result to the Files API so a later video-edit can reuse its
+            // file_id — see StorageExpiresAfterSeconds.
+            ["storage_options"] = new Dictionary<string, object?> { ["expires_after"] = StorageExpiresAfterSeconds },
         };
 
         if (startUri is not null)
@@ -349,26 +372,8 @@ public sealed class GrokVideoClient : IVideoClient
     private static string ResolveAspectRatio(string model) =>
         SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).DefaultAspectRatio ?? "16:9";
 
-    private static async Task<string> FileToDataUriAsync(string path, CancellationToken ct)
-    {
-        var bytes = await File.ReadAllBytesAsync(path, ct);
-        // Guard huge uploads (short clips are fine; multi-MB is ok for 6–10s mp4)
-        if (bytes.Length > 40 * 1024 * 1024)
-            throw new InvalidOperationException(
-                $"Video/image too large for data URI ({bytes.Length / (1024 * 1024)} MB). Max 40 MB.");
-        var ext = Path.GetExtension(path).ToLowerInvariant();
-        var mime = ext switch
-        {
-            ".png" => "image/png",
-            ".webp" => "image/webp",
-            ".gif" => "image/gif",
-            ".mp4" => "video/mp4",
-            ".webm" => "video/webm",
-            ".mov" => "video/quicktime",
-            _ => "image/jpeg",
-        };
-        return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
-    }
+    private static Task<string> FileToDataUriAsync(string path, CancellationToken ct) =>
+        MediaDataUri.FileToDataUriAsync(path, ct);
 
     public async Task<string> PollForVideoUrlAsync(
         string requestId,
@@ -439,6 +444,20 @@ public sealed class GrokVideoClient : IVideoClient
                     video.TryGetProperty("url", out var urlEl) &&
                     urlEl.GetString() is { Length: > 0 } url)
                 {
+                    // Optional: xAI persisted the result to the Files API (storage_options was
+                    // sent on submit) — cache the file_id/expiry so a later video-edit can reuse
+                    // it. Absent whenever storage wasn't requested/succeeded; never required.
+                    if (video.TryGetProperty("file_output", out var fileOutput) &&
+                        fileOutput.ValueKind == JsonValueKind.Object)
+                    {
+                        var fileId = fileOutput.TryGetProperty("file_id", out var fid) ? fid.GetString() : null;
+                        long? expiresAt = fileOutput.TryGetProperty("expires_at", out var exp) && exp.TryGetInt64(out var expVal)
+                            ? expVal
+                            : null;
+                        if (!string.IsNullOrWhiteSpace(fileId))
+                            _fileRefs[requestId] = (fileId, expiresAt);
+                    }
+
                     await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                     {
                         Kind = "video_poll",
@@ -485,6 +504,9 @@ public sealed class GrokVideoClient : IVideoClient
         await _telemetry.LogOutcomeAsync(null, requestId, "timed_out", sw.ElapsedMilliseconds, polls, ok: false, $"timed out after {_opts.GrokTimeoutSeconds}s", ct);
         throw new TimeoutException($"Grok job timed out after {_opts.GrokTimeoutSeconds}s");
     }
+
+    public (string? FileId, long? ExpiresAtUnixSeconds) TryGetStoredFileReference(string requestId) =>
+        _fileRefs.TryGetValue(requestId, out var v) ? v : (null, null);
 
     public async Task DownloadToFileAsync(string url, string destPath, CancellationToken ct)
     {

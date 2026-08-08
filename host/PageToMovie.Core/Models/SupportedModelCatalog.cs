@@ -14,6 +14,8 @@ public enum ModelCapability
     Voice,
     /// <summary>Video lip-sync: resync a finished clip's mouth movement to a separate audio track (Fal.ai / Sync Labs). Input is video+audio, not a text prompt — kept distinct from <see cref="Video"/>.</summary>
     LipSync,
+    /// <summary>Prompt-based edit of an already-generated clip (xAI's /v1/videos/edits). Input is video+text-prompt, not text-prompt(+refs) like <see cref="Video"/> generation, and not video+audio like <see cref="LipSync"/> — kept distinct.</summary>
+    VideoEdit,
 }
 
 /// <summary>
@@ -277,6 +279,14 @@ public sealed class SupportedModelEntry
     public int? MaxExtensionSeconds { get; init; }
 
     /// <summary>
+    /// Longest input clip this model's video-edit endpoint accepts, in seconds (VideoEdit only) —
+    /// e.g. xAI's <c>/v1/videos/edits</c> caps input at 8.7s and always returns output at the same
+    /// duration/resolution as the input (not independently configurable). Drives the Scenes page's
+    /// per-clip "AI Edit" button eligibility check — never hardcode the limit in code.
+    /// </summary>
+    public double? MaxEditInputDurationSeconds { get; init; }
+
+    /// <summary>
     /// Longest single-call duration this audio model will accept, in seconds (Audio only) — the
     /// generation-side counterpart to <see cref="MaxClipDurationSeconds"/> for video. Callers
     /// (FilmJobService's music job) generate this many seconds per segment and concatenate
@@ -433,6 +443,7 @@ public static class SupportedModelCatalog
         new() { Id = "audio", DisplayName = "Audio & Music Generation", Description = "Generates beat-aligned background music scores and sound effects.", Order = 6 },
         new() { Id = "voice", DisplayName = "Voice Clone / TTS", Description = "Personal voice clone from a short sample, then spoken dialogue or narration for the film.", Order = 70 },
         new() { Id = "lipsync", DisplayName = "Video Lip-Sync", Description = "Resyncs a generated clip's mouth movement to a separate dialogue or narration audio track.", Order = 80 },
+        new() { Id = "video-edit", DisplayName = "Video Clip Edit", Description = "Prompt-based edit of an already-generated clip (re-render an action, color, or detail from a text instruction).", Order = 85 },
     ];
 
     private static Dictionary<string, List<string>>? _loadedTaskRankings;
@@ -754,6 +765,7 @@ public static class SupportedModelCatalog
             "audio" or "music" => ModelCapability.Audio,
             "voice" or "tts" or "voice_clone" => ModelCapability.Voice,
             "lip_sync" or "lipsync" => ModelCapability.LipSync,
+            "video_edit" or "videoedit" => ModelCapability.VideoEdit,
             "chat" or "planning" or "video_review" or "video-review" => ModelCapability.Chat,
             _ => null,
         };
@@ -1139,6 +1151,13 @@ public static class SupportedModelCatalog
             case ModelCapability.LipSync:
                 // costPerMinuteUsd optional until catalog filled for every lip model
                 break;
+
+            case ModelCapability.VideoEdit:
+                Need(e.MaxEditInputDurationSeconds is > 0, "maxEditInputDurationSeconds");
+                Need(e.MaxPromptLength is > 0, "maxPromptLength");
+                // Cost fields optional — xAI hasn't published edit-specific pricing; entries may
+                // proxy generation's videoCostPerSecondByResolution as a labeled estimate instead.
+                break;
         }
     }
 
@@ -1204,6 +1223,7 @@ public static class SupportedModelCatalog
         MaxSpeakersPerClip = e.MaxSpeakersPerClip,
         AllowedDurationsSeconds = e.AllowedDurationsSeconds is { } ad ? new List<int>(ad) : null,
         MaxExtensionSeconds = e.MaxExtensionSeconds,
+        MaxEditInputDurationSeconds = e.MaxEditInputDurationSeconds,
         MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
         SupportsVocals = e.SupportsVocals,
         NumInferenceSteps = e.NumInferenceSteps,
@@ -1264,6 +1284,7 @@ public static class SupportedModelCatalog
         MaxSpeakersPerClip = d.MaxSpeakersPerClip,
         AllowedDurationsSeconds = d.AllowedDurationsSeconds,
         MaxExtensionSeconds = d.MaxExtensionSeconds,
+        MaxEditInputDurationSeconds = d.MaxEditInputDurationSeconds,
         MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
         SupportsVocals = d.SupportsVocals,
         NumInferenceSteps = d.NumInferenceSteps,
@@ -1396,6 +1417,7 @@ public string? Notes { get; set; }
     public int? MaxSpeakersPerClip { get; set; }
     public List<int>? AllowedDurationsSeconds { get; set; }
     public int? MaxExtensionSeconds { get; set; }
+    public double? MaxEditInputDurationSeconds { get; set; }
     public int? MaxAudioDurationSeconds { get; set; }
     public bool SupportsVocals { get; set; }
     public int? NumInferenceSteps { get; set; }
