@@ -42,6 +42,8 @@ public static class AutoTextMerger
             else if (Eq(oc, bc)) { merged.AddRange(tc); auto++; }
             else if (Eq(tc, bc)) { merged.AddRange(oc); auto++; }
             else if (bc.Count == 0 && oc.All(l => !tc.Contains(l))) { merged.AddRange(oc); merged.AddRange(tc); auto++; }
+            else if (bc.Count == oc.Count && bc.Count == tc.Count && TryResolvePerLine(bc, oc, tc, out var perLine))
+            { merged.AddRange(perLine); auto++; }
             else
             {
                 switch (strategy)
@@ -63,6 +65,26 @@ public static class AutoTextMerger
     static string Join(IReadOnlyList<string> lines) => string.Join("\n", lines);
     static bool Eq(IReadOnlyList<string> a, IReadOnlyList<string> b) { if (a.Count != b.Count) return false; for (int i = 0; i < a.Count; i++) if (a[i] != b[i]) return false; return true; }
     static int Idx(IReadOnlyList<string> lines, string v, int start) { for (int i = start; i < lines.Count; i++) if (lines[i] == v) return i; return -1; }
+
+    /// <summary>
+    /// A hunk with equal line counts on all three sides usually means independent, adjacent
+    /// single-line edits (no unchanged line separated them enough to become their own hunk via
+    /// the sync-point search above). Resolve line-by-line so e.g. base/ours/theirs editing two
+    /// different adjacent lines doesn't get reported as one whole-block conflict.
+    /// </summary>
+    static bool TryResolvePerLine(IReadOnlyList<string> bc, IReadOnlyList<string> oc, IReadOnlyList<string> tc, out List<string> resolved)
+    {
+        resolved = new List<string>(bc.Count);
+        for (int k = 0; k < bc.Count; k++)
+        {
+            var bl = bc[k]; var ol = oc[k]; var tl = tc[k];
+            if (ol == tl) resolved.Add(ol);
+            else if (ol == bl) resolved.Add(tl);
+            else if (tl == bl) resolved.Add(ol);
+            else { resolved = null!; return false; }
+        }
+        return true;
+    }
 }
 
 public interface IAutoProjectMerger
