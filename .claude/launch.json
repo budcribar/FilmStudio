@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api-fakes",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "host/PageToMovie.Api", "--launch-profile", "http (fakes)"],
+      "port": 5088,
+      "url": "http://localhost:5088"
+    }
+  ]
+}

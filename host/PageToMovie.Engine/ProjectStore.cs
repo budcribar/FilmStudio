@@ -388,7 +388,9 @@ public sealed partial class ProjectStore
     /// <summary>
     /// Manually commits uncommitted working directory changes.
     /// </summary>
-    public async Task<GitCommitInfo?> CommitProjectChangesAsync(string projectId, string message, string? author = null, ProjectGitRepositoryService? gitRepo = null)
+    public async Task<GitCommitInfo?> CommitProjectChangesAsync(
+        string projectId, string message, string? author = null, ProjectGitRepositoryService? gitRepo = null,
+        bool forceCommit = false)
     {
         if (string.IsNullOrWhiteSpace(projectId)) return null;
         var dir = GetProjectDir(projectId);
@@ -397,7 +399,7 @@ public sealed partial class ProjectStore
         var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
         var who = string.IsNullOrWhiteSpace(author) ? "Operator" : author;
         var msg = string.IsNullOrWhiteSpace(message) ? "Manual scene/clip updates" : message.Trim();
-        var result = await git.CommitProjectStateAsync(dir, who, msg).ConfigureAwait(false);
+        var result = await git.CommitProjectStateAsync(dir, who, msg, forceCommit).ConfigureAwait(false);
         InvalidateSceneListCache(projectId);
         return result;
     }
@@ -1729,15 +1731,32 @@ public sealed partial class ProjectStore
         if (!Directory.Exists(dir))
             throw new InvalidOperationException($"Unknown project: {id}");
 
-        // Best-effort delete (files may be locked by a running job)
-        try
+        // Best-effort delete (files may be locked by a running job). Git writes loose-object files
+        // read-only by design (immutable objects) — on Windows, Directory.Delete throws
+        // UnauthorizedAccessException for a read-only file regardless of how long you wait, so a plain
+        // retry loop never helps a project with any git history (every project has at least the
+        // "Initial project state" commit). Clear the attribute recursively first, then retry briefly
+        // for the separate, genuinely transient case of a file still open from a running job.
+        ClearReadOnlyRecursive(dir);
+        var attempts = 0;
+        while (true)
         {
-            Directory.Delete(dir, recursive: true);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Could not delete project “{id}”: {ex.Message}. Close any open files or stop jobs and try again.");
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+                break;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && attempts < 5)
+            {
+                attempts++;
+                ClearReadOnlyRecursive(dir);
+                await Task.Delay(200 * attempts, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Could not delete project “{id}”: {ex.Message}. Close any open files or stop jobs and try again.");
+            }
         }
 
         if (string.Equals(_activeProjectId, id, StringComparison.OrdinalIgnoreCase))
@@ -1782,6 +1801,28 @@ public sealed partial class ProjectStore
         InvalidateReadCaches(null);
         InvalidateReadCaches(id);
         await Task.CompletedTask.ConfigureAwait(false);
+    }
+
+    /// <summary>Clear the read-only attribute on every file under <paramref name="dir"/> (git's loose
+    /// object files are written read-only by design) so a recursive delete doesn't fail on Windows.
+    /// Best-effort — an individual file's attribute failing to clear surfaces via the delete itself.</summary>
+    private static void ClearReadOnlyRecursive(string dir)
+    {
+        if (!Directory.Exists(dir)) return;
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    var attrs = File.GetAttributes(file);
+                    if ((attrs & FileAttributes.ReadOnly) != 0)
+                        File.SetAttributes(file, attrs & ~FileAttributes.ReadOnly);
+                }
+                catch { /* best-effort per file */ }
+            }
+        }
+        catch { /* best-effort — directory may have changed mid-walk */ }
     }
 
     /// <summary>

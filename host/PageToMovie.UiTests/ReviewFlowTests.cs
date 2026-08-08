@@ -1,0 +1,101 @@
+using Microsoft.Playwright;
+
+namespace PageToMovie.UiTests;
+
+/// <summary>
+/// A-2: depth coverage for the Review page's core "Review &amp; Approve" workflow (approve/reject a
+/// clip, approve a scene, checklist count) plus reachability of the Play/Share tabs — the state the
+/// upcoming component-extraction must preserve. Builds on the same generated-clips pipeline as
+/// ClipGenerationTests (A-1b).
+///
+/// Found and fixed a real bug while writing these: the "Scenes &amp; clips" review table (and the
+/// job-status block above it) had no closing brace for the Play tab's `else if` in Review.razor —
+/// everything from the job-status block onward was silently nested inside `_activeTab == "play"`,
+/// so the entire scene-approval table was invisible on the default "Review &amp; Approve" tab. See
+/// the closing-brace fix right after the clip-player block in Review.razor.
+/// </summary>
+[Collection("ui-pipeline")]
+public class ReviewFlowTests
+{
+    private readonly PipelineFixture _fx;
+    public ReviewFlowTests(PipelineFixture fx) => _fx = fx;
+
+    [Fact]
+    public async Task Approving_a_clip_and_a_scene_updates_the_checklist()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await PipelineFlow.RunToGeneratedClipsAsync(page, _fx.BaseUrl,
+                "Review_" + Guid.NewGuid().ToString("N")[..6], "tell_tale_heart.fountain");
+
+            await Ui.GotoAppAsync(page, _fx.BaseUrl, "/review");
+
+            // No scene approved yet.
+            var checklist = page.GetByTestId("review-checklist");
+            await Assertions.Expect(checklist).ToBeVisibleAsync(new() { Timeout = 30_000 });
+            Assert.Equal("0", await checklist.GetAttributeAsync("data-approved-count"));
+
+            var firstRow = page.GetByTestId("review-scene-row").First;
+            await Assertions.Expect(firstRow).ToBeVisibleAsync(new() { Timeout = 30_000 });
+            var sceneNumber = await firstRow.GetAttributeAsync("data-scene-number");
+            Assert.False(string.IsNullOrWhiteSpace(sceneNumber));
+
+            // Open the clip review panel and Pass the first clip.
+            await page.GetByTestId($"review-clips-{sceneNumber}").ClickAsync();
+            var passBtn = page.GetByTestId($"review-pass-{sceneNumber}-1");
+            await Assertions.Expect(passBtn).ToBeVisibleAsync(new() { Timeout = 15_000 });
+            await passBtn.ClickAsync();
+            // ReviewAsync round-trips through the server (SoftLoadAsync) — wait for the busy button
+            // to re-enable rather than asserting on a fixed delay.
+            await Assertions.Expect(passBtn).ToBeEnabledAsync(new() { Timeout = 15_000 });
+
+            // Approve the scene — the checklist count must reflect it without a page reload.
+            var approveBtn = page.GetByTestId($"review-approve-{sceneNumber}");
+            await approveBtn.ClickAsync();
+            await Assertions.Expect(page.GetByTestId("review-scene-row").First)
+                .ToHaveAttributeAsync("data-approved", "true", new() { Timeout = 15_000 });
+            await Assertions.Expect(checklist).ToHaveAttributeAsync("data-approved-count", "1", new() { Timeout = 15_000 });
+
+            // Approval is one-way (EditLogService.MarkSceneApprovedAsync always writes "approved" —
+            // there is no unapprove endpoint). Clicking the now-"✓ Approved" button re-approves and
+            // stays at 1; it is not a toggle despite the button rendering in a pressed-looking state.
+            await approveBtn.ClickAsync();
+            await Assertions.Expect(approveBtn).ToBeEnabledAsync(new() { Timeout = 15_000 });
+            await Assertions.Expect(checklist).ToHaveAttributeAsync("data-approved-count", "1", new() { Timeout = 15_000 });
+        }
+        finally { await ctx.CloseAsync(); }
+    }
+
+    [Fact]
+    public async Task Play_and_share_tabs_are_reachable_once_clips_exist()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await PipelineFlow.RunToGeneratedClipsAsync(page, _fx.BaseUrl,
+                "ReviewTabs_" + Guid.NewGuid().ToString("N")[..6], "tell_tale_heart.fountain");
+
+            await Ui.GotoAppAsync(page, _fx.BaseUrl, "/review");
+            await Assertions.Expect(page.GetByTestId("review-checklist")).ToBeVisibleAsync(new() { Timeout = 30_000 });
+
+            // Both tabs are disabled until clips exist elsewhere in the app (CapabilityGatingTests) —
+            // here clips DO exist, so both must be enabled and switch the active view.
+            var playTab = page.GetByTestId("review-tab-play");
+            await Assertions.Expect(playTab).ToBeEnabledAsync(new() { Timeout = 15_000 });
+            await playTab.ClickAsync();
+            await Assertions.Expect(playTab).ToHaveClassAsync(new System.Text.RegularExpressions.Regex("btn-success"), new() { Timeout = 15_000 });
+
+            // The scenes table is unconditional across tabs (the bug this suite found had it trapped
+            // inside the Play tab only) — assert it's still visible here too, not just on "review".
+            await Assertions.Expect(page.GetByTestId("review-scene-row").First).ToBeVisibleAsync(new() { Timeout = 15_000 });
+
+            var shareTab = page.GetByTestId("review-tab-share");
+            await Assertions.Expect(shareTab).ToBeEnabledAsync(new() { Timeout = 15_000 });
+            await shareTab.ClickAsync();
+            await Assertions.Expect(page.GetByTestId("review-share-card")).ToBeVisibleAsync(new() { Timeout = 15_000 });
+            await Assertions.Expect(page.GetByTestId("review-scene-row").First).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        }
+        finally { await ctx.CloseAsync(); }
+    }
+}

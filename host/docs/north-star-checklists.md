@@ -10,6 +10,11 @@ Design: `AiCallAnalyticsService` + admin `/admin/ai-calls` page. Full plan: the 
 design-doc artifact (5 moves A–E: one contract / one record+sink / one outcome taxonomy / enforce it /
 analyzer+loop).
 
+**Shipped and on `origin/master`:** batch 1 = commit `7a8b38df` (DB switch, GrokVisionClient retry/telemetry,
+override-reason surfacing, Generation Errors page). Batch 2 = commit `385b0e4d` (video/image client retry +
+outcome, canonical outcome taxonomy, portrait style gate migration, enforcement test). Both verified with the
+full non-UI + UI suites before push — see "Batching savings" note at the bottom of this doc.
+
 | # | Item | Status |
 |---|------|--------|
 | — | Design doc + admin analytics page | ✅ Done, shipped, deployed |
@@ -104,15 +109,114 @@ The retry/billing asymmetry that WAS point 3 here no longer applies to video spe
 **No deterministic fallback** still holds for video/image (a failed generation just throws) and reasonably
 so — there's no way to return "half a video."
 
-## Checklist B — Pre-UI-Consolidation (ON HOLD — do not resume without being asked)
+**Batching savings, this session (2026-08-07/08):** two full-suite checkpoints (non-UI + UI) covered 16
+features total — batch 1 measured 1m10s + 6m12s = 7m22s; batch 2 measured 1m6s + 5m56s = 7m2s. Actual total
+test time: ~14m24s. Had each feature been tested individually instead, that's 16 × ~7m12s (average measured
+checkpoint) ≈ 115 minutes — roughly **100 minutes saved** by batching. Using the 15-min-per-run estimate from
+the conversation that motivated batching in the first place (each run is a bit faster than that in practice —
+7-7.5 min measured, not 15): 16 individual runs × 15 min = 240 min vs. 2 batched runs × 15 min = 30 min ≈
+**210 minutes (3.5 hours) saved** on that estimate. Real number is the ~100-minute one; the 15-min figure was
+always an upper-bound estimate, not measured — worth knowing the actual cadence runs faster than assumed.
+
+## Checklist B — Pre-UI-Consolidation (resumed 2026-08-07: A-2, A-4, A-5)
 
 | Item | Status |
 |------|--------|
 | A-1 E2E through Scenes (+ varied fixtures) | ✅ Done |
 | A-1b Clip generation → Scenes/Review unlock | ✅ Done |
 | A-3 Characters operator flow (looks/lock/voice) | ✅ Done |
-| A-2 Review page depth | ⬜ Not started |
-| A-4 Configuration depth | ⬜ Not started |
-| A-5 Home depth | ⬜ Not started |
+| A-2 Review page depth | ✅ Done |
+| A-4 Configuration depth | ✅ Done |
+| A-5 Home depth | ✅ Done |
+
+**A-5 Home page depth (2026-08-07):** `PageToMovie.UiTests/HomeFlowTests.cs` — 2 tests covering the Home
+page's "Manage" panel actions that had zero prior dedicated coverage: rename (display name, possibly
+re-slugging the project id) and checkpoints (named git-backed snapshots — save, list, revert), each
+verified to round-trip through the server via in-app nav-away/nav-back.
+
+Found and fixed two real bugs:
+
+1. **Rename could throw "Access to the path … is denied" and silently fail.** `ProjectStore.DeleteProjectAsync`
+   (called by the re-slug rename path — export → import → delete old → activate new) does a plain
+   `Directory.Delete(recursive: true)`. Git writes loose-object files read-only by design (immutable
+   objects), and `Directory.Delete` cannot remove read-only files on Windows — this is deterministic, not
+   transient, so it failed on *every* rename of a project with any git history (i.e. every project, since
+   creation already commits "Initial project state"). A blind retry loop (tried first, up to ~8s) never
+   helped, because the block isn't time-based. Fixed by clearing the read-only attribute recursively
+   before deleting (`ClearReadOnlyRecursive`), with a short retry still in place for the separate,
+   genuinely transient case of a file open from a running job.
+2. **Named checkpoints could silently discard the user's chosen name.** `ProjectGitRepositoryService.
+   CommitProjectStateAsync` skips creating a commit and returns the existing HEAD tip whenever the tree is
+   clean (no file changes) — a deliberate optimization for the auto-commit-after-save caller (Scenes.razor,
+   "Manual scene/clip updates"), so an unchanged save doesn't spam the git history. But the *named
+   checkpoint* caller (Home.razor's "Save checkpoint") shares the exact same method and endpoint
+   (`/api/projects/{id}/git/commit`), so saving a checkpoint immediately after project creation — before
+   touching any files — silently no-opped: the UI showed "Checkpoint '…' saved" but the checkpoint list
+   still only had the original "Initial project state" entry, with the user's name discarded. Fixed by
+   threading a `forceCommit`/`ForceCommit` flag through `CommitProjectStateAsync` →
+   `CommitProjectChangesAsync` → the `/git/commit` endpoint → `EngineApiClient.CreateCheckpointAsync`
+   (sets it `true`); the auto-commit caller (`EngineApiClient.CommitProjectChangesAsync`, used by
+   Scenes.razor) is untouched and keeps the skip-if-clean behavior.
+
+Also fixed a bug in the test's own polling helper: `Page.EvalOnSelectorAsync` throws immediately if the
+selector isn't in the DOM yet (no Playwright auto-wait, unlike `Locator` methods) — a manual polling loop
+around it needs to catch that per-iteration or it fails on the very first check during a page navigation.
+
+**Test-infra lesson (2026-08-07):** while verifying this, the local Playwright/Chromium environment
+became unable to launch a working browser after an unusually long session of repeated `dotnet test` runs —
+every subsequent run failed waiting for the app shell to render, with no code, build-cache, or Chromium-
+reinstall fix resolving it (verified via `git stash` isolation that the code was not the cause, and via a
+direct manual browser session that the app itself rendered correctly). Root-caused to Windows session
+resource exhaustion (orphaned `chrome.exe`/`dotnet.exe` processes accumulating across dozens of test runs,
+some killed forcefully) rather than anything in the app or test code — a fresh terminal/session resolves it.
+`HomeFlowTests` (2/2) and `ConfigurationFlowTests`/`ReviewFlowTests` all passed cleanly earlier in this same
+session, before the environment degraded.
+
+**A-4 Configuration page depth (2026-08-07):** `PageToMovie.UiTests/ConfigurationFlowTests.cs` — 2 tests
+covering the page's two save paths: the debounced autosave (Format & Resolution / Pipeline Behavior fields,
+450ms debounce, no bottom Save button) and the immediate save fired by a studio-coverage provider/model change,
+plus the music optional-capability on/off toggle (provider pick → model pick → Ready badge → Turn off → Off
+badge), each verified to round-trip through the server via in-app nav-away/nav-back (not just client state).
+
+Found and fixed a real bug: `SupportedModelCatalog.BuildProviderKeyRows()` filters out any provider whose
+models all have empty `requiredEnvKeys` — which silently dropped the **entire "fake" provider row** in fakes
+mode, since every `fake-*` model has `requiredEnvKeys: []` by design (key-free). That meant
+`GetUserSettingsDtoAsync`'s "fake is always configured" special-case (`UserDatabaseService.cs:2131-2141`) never
+had a row to apply to — the fake provider was simply absent from `/api/user/settings`, so **every** Studio
+coverage row showed "Need key" in fakes mode despite everything actually being wired and working. Fixed by
+letting the "fake" provider id survive both filters in `BuildProviderKeyRows()` (`SupportedModelCatalog.cs`)
+regardless of `requiredEnvKeys` being empty — real providers with no required keys are still dropped as before.
+
+Also hit — and correctly diagnosed as NOT a regression — a strict-mode Playwright violation where both the
+music and voice rows had a "Turn off" button simultaneously in a full-suite run. Reproduced in isolation and
+found voice correctly stayed "Off" throughout; the cross-row state only appeared when run inside the full
+60-test suite, alongside 5 failing `MultiUserLeaseUiTests` (the already-flagged, pre-existing task #8
+collaboration-feature breakage — a different subsystem entirely). Read as shared-fixture state pollution from
+that unrelated broken feature, not a Configuration bug. Fixed by scoping the "Turn off" locator to the specific
+row (`musicRow.GetByRole(...)`) rather than an unscoped page-wide lookup — the correct fix either way, since two
+independently-off-able rows can legitimately both show the button at once.
+
+**A-2 Review page depth (2026-08-07):** `PageToMovie.UiTests/ReviewFlowTests.cs` — 2 tests covering the
+Review-page approve/checklist workflow (pass a clip, approve a scene, checklist count updates without a page
+reload) and Play/Share tab reachability once clips exist, on top of the same `RunToGeneratedClipsAsync` pipeline
+`ClipGenerationTests` (A-1b) uses.
+
+Found and fixed a real bug while writing these: `Review.razor`'s Play-tab `else if (_activeTab == "play") { ... }`
+block (opened ~line 301) was missing its closing brace. The file still balanced overall (a later brace absorbed
+the shift), so this was **not a compile error, console error, or Blazor error banner** — the entire job-status
+block and the whole "Scenes & clips" review table were silently nested inside the Play-tab-only branch, making
+the core Review-and-approve table invisible on the default "Review & Approve" tab. Only visible when the Play tab
+happened to be selected. Diagnosed via an unconditional marker div toggled across all three tabs (confirmed
+`markerOnReview=0 markerOnShare=0 markerOnPlay=1` before the fix, `1/1/1` after) — see the closing-brace fix right
+after the clip-player block in `Review.razor`. Fixed with one inserted `}`.
+
+Also corrected a wrong assumption made while first writing the test: approval is **one-way**
+(`EditLogService.MarkSceneApprovedAsync` always writes `status="approved"`; there's no unapprove endpoint), so
+clicking the "✓ Approved" button again re-approves and the checklist count stays the same — it does not toggle
+back off despite the button rendering in what looks like a pressed state. The test's assertion was updated to
+match actual behavior rather than adding an unapprove feature that wasn't asked for.
+
+7/7 tests pass (`ReviewFlowTests` ×2 + `PageDepthTests` + `CapabilityGatingTests`, no regressions from moving
+where the scenes table renders).
 | B: bug-fix-first (jargon audit) | 🔵 Superseded — folded into the localization backlog |
 | C: RCL decision / extraction order / Scenes component boundaries | 🟡 In progress, unmerged — branch `refactor/blazor-components`: RCL `PageToMovie.Components` created, 5 presentational components moved, `ConfirmModal` built + applied to Scenes delete dialogs, verified (build clean, 1570 tests, fakes-browser smoke). Not merged — needs the user's visual review. Open decision queued: full component extraction (slow, regression-prone, "right" structure) vs. code-behind split (`@code` → `.razor.cs`, near-zero-risk, halves file sizes, but a bigger restructure than asked for) |

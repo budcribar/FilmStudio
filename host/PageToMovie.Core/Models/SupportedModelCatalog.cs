@@ -828,7 +828,8 @@ public static class SupportedModelCatalog
     public static List<ProviderKeyStatusDto> BuildProviderKeyRows()
     {
         var groups = Entries
-            .Where(e => e.Enabled && e.RequiredEnvKeys is { Count: > 0 })
+            .Where(e => e.Enabled && (e.RequiredEnvKeys is { Count: > 0 }
+                        || string.Equals(NormalizeProviderId(e.ProviderId), "fake", StringComparison.OrdinalIgnoreCase)))
             .GroupBy(e => NormalizeProviderId(e.ProviderId), StringComparer.OrdinalIgnoreCase);
 
         var rows = new List<ProviderKeyStatusDto>();
@@ -838,7 +839,10 @@ public static class SupportedModelCatalog
             if (string.IsNullOrWhiteSpace(pId) || pId is "none") continue;
             var sample = group.First();
             var required = group.SelectMany(m => m.RequiredEnvKeys).Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            if (required.Count == 0) continue;
+            // The fake test vendor is key-free by design (requiredEnvKeys: [] on every fake-* model) —
+            // it must still get a row so GetUserSettingsDtoAsync's "always configured" special-case for
+            // it has a row to apply to. Real providers with zero required keys are still dropped.
+            if (required.Count == 0 && !string.Equals(pId, "fake", StringComparison.OrdinalIgnoreCase)) continue;
 
             var supportsVideoGen = group.Any(m => m.Capability == ModelCapability.Video);
             var supportsVideoReview = group.Any(m => m.SupportsVideoReview);

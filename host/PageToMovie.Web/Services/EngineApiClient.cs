@@ -724,7 +724,10 @@ public sealed class EngineApiClient
         using var req = new HttpRequestMessage(
             HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/git/commit")
         {
-            Content = JsonContent.Create(new { Message = name }, options: JsonOpts),
+            // ForceCommit: a named checkpoint must always land with the user's chosen message, even
+            // when nothing has changed since the last commit — unlike the auto-commit-after-save path
+            // (CommitProjectChangesAsync below), which intentionally skips a clean tree.
+            Content = JsonContent.Create(new { Message = name, ForceCommit = true }, options: JsonOpts),
         };
         using var resp = await _http.SendAsync(req, ct);
         var body = await resp.Content.ReadAsStringAsync(ct);

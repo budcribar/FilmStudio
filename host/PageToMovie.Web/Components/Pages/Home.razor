@@ -182,7 +182,7 @@ else
                                 @onchange="OnPickerChangedAsync">
                             @foreach (var p in _projects.Projects)
                             {
-                                <option value="@p.Id">@(p.Label ?? p.Title ?? p.Id)</option>
+                                <option @key="p.Id" value="@p.Id">@(p.Label ?? p.Title ?? p.Id)</option>
                             }
                         </select>
                         @if (activeMeta is not null)

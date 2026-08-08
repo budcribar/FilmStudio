@@ -3944,7 +3944,7 @@ app.MapPost("/api/projects/{id}/git/commit", async (
     {
         await store.RequireProjectAsync(id, ct);
         var msg = body?.Message ?? "Manual scene/clip updates";
-        var result = await store.CommitProjectChangesAsync(id, msg, user.UserId);
+        var result = await store.CommitProjectChangesAsync(id, msg, user.UserId, forceCommit: body?.ForceCommit ?? false);
         return Results.Ok(new { ok = true, commit = result, message = "Successfully committed project changes." });
     }
     catch (Exception ex)
@@ -8860,7 +8860,7 @@ namespace PageToMovie.Api
     public record AcceptTermsRequest(string UserId, string? Version);
     public record SendInviteApiRequest(string? ProjectId, string? TargetHandle, string? TargetEmail);
     public record AcceptInviteApiRequest(string? Token);
-    public record CommitProjectApiRequest(string? Message);
+    public record CommitProjectApiRequest(string? Message, bool ForceCommit = false);
     public record PushProjectApiRequest(bool CommitFirst = false, string? Message = null);
     public record SyncOriginApiRequest(string? ParentProjectId, string? AutoResolveStrategy = null);
     public record ProjectVisibilityRequest(string VisibilityMode);

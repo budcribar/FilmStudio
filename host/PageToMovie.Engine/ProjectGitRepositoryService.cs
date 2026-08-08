@@ -94,7 +94,8 @@ namespace PageToMovie.Engine
         /// If nothing changed since the last commit, returns the existing HEAD instead of
         /// creating an empty commit.
         /// </summary>
-        public Task<GitCommitInfo> CommitProjectStateAsync(string projectPath, string author, string commitMessage)
+        public Task<GitCommitInfo> CommitProjectStateAsync(
+            string projectPath, string author, string commitMessage, bool forceCommit = false)
         {
             if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath))
                 throw new DirectoryNotFoundException($"Project directory not found: {projectPath}");
@@ -105,7 +106,11 @@ namespace PageToMovie.Engine
             Commands.Stage(repo, "*");
 
             var status = repo.RetrieveStatus();
-            if (repo.Head.Tip is not null && !status.IsDirty)
+            // Auto-commit callers (e.g. "Manual scene/clip updates" after a save) want this skip so an
+            // unchanged tree doesn't spam the history. Named checkpoints (forceCommit) must always land
+            // a commit with the user's chosen message — that's the whole point of bookmarking a moment,
+            // even one with no file changes since the last commit.
+            if (!forceCommit && repo.Head.Tip is not null && !status.IsDirty)
             {
                 var tip = repo.Head.Tip;
                 _logger.LogDebug("No changes to commit for {Path}; HEAD stays {Hash}", projectPath, tip.Sha);
