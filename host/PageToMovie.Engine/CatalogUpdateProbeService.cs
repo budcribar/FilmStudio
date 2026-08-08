@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
+using PageToMovie.Engine.Abstractions;
 
 namespace PageToMovie.Engine;
 
@@ -14,13 +15,49 @@ namespace PageToMovie.Engine;
 public sealed class CatalogUpdateProbeService
 {
     private readonly IHttpClientFactory _httpFactory;
+    private readonly IUserApiKeyProvider? _keyProvider;
 
-    public CatalogUpdateProbeService(IHttpClientFactory httpFactory)
+    public CatalogUpdateProbeService(IHttpClientFactory httpFactory, IUserApiKeyProvider? keyProvider = null)
     {
         _httpFactory = httpFactory;
+        _keyProvider = keyProvider;
     }
 
-    public async Task<CatalogUpdateScanResult> ScanAsync(CancellationToken ct = default)
+    private string? ResolveKey(string? userId, string providerId)
+    {
+        if (_keyProvider is not null)
+        {
+            var k = _keyProvider.GetKey(userId, providerId);
+            if (!string.IsNullOrWhiteSpace(k)) return k.Trim();
+        }
+        var envKeyName = providerId.ToLowerInvariant() switch
+        {
+            "openai" => "OPENAI_API_KEY",
+            "grok" or "xai" => "XAI_API_KEY",
+            "anthropic" or "claude" => "ANTHROPIC_API_KEY",
+            "gemini" or "google" => "GEMINI_API_KEY",
+            "fal" => "FAL_KEY",
+            _ => null
+        };
+        if (envKeyName is not null)
+        {
+            var env = Environment.GetEnvironmentVariable(envKeyName);
+            if (!string.IsNullOrWhiteSpace(env)) return env.Trim();
+        }
+        if (providerId.Equals("gemini", StringComparison.OrdinalIgnoreCase) || providerId.Equals("google", StringComparison.OrdinalIgnoreCase))
+        {
+            var g = Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+            if (!string.IsNullOrWhiteSpace(g)) return g.Trim();
+        }
+        if (providerId.Equals("fal", StringComparison.OrdinalIgnoreCase))
+        {
+            var f = Environment.GetEnvironmentVariable("FAL_API_KEY");
+            if (!string.IsNullOrWhiteSpace(f)) return f.Trim();
+        }
+        return null;
+    }
+
+    public async Task<CatalogUpdateScanResult> ScanAsync(string? userId = null, CancellationToken ct = default)
     {
         SupportedModelCatalog.ReloadCatalog();
         var result = new CatalogUpdateScanResult
@@ -41,7 +78,7 @@ public sealed class CatalogUpdateProbeService
 
             try
             {
-                await ProbeEntryAsync(entry, row, ct).ConfigureAwait(false);
+                await ProbeEntryAsync(entry, row, userId, ct).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -71,7 +108,7 @@ public sealed class CatalogUpdateProbeService
 
         try
         {
-            await DiscoverNewModelsAsync(result, ct).ConfigureAwait(false);
+            await DiscoverNewModelsAsync(result, userId, ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -89,7 +126,7 @@ public sealed class CatalogUpdateProbeService
         return result;
     }
 
-    private async Task ProbeEntryAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    private async Task ProbeEntryAsync(SupportedModelEntry entry, CatalogModelProbeResult row, string? userId, CancellationToken ct)
     {
         var provider = entry.ProviderId ?? "";
 
@@ -115,7 +152,7 @@ public sealed class CatalogUpdateProbeService
 
         if (isFal)
         {
-            await ProbeFalPricingAsync(entry, row, ct).ConfigureAwait(false);
+            await ProbeFalPricingAsync(entry, row, userId, ct).ConfigureAwait(false);
             return;
         }
 
@@ -126,14 +163,14 @@ public sealed class CatalogUpdateProbeService
             if (entry.Capability == ModelCapability.Video)
                 await ProbeXaiVideoAsync(entry, row, ct).ConfigureAwait(false);
             else if (entry.Capability is ModelCapability.Chat or ModelCapability.Vision)
-                await ProbeXaiChatExistsAsync(entry, row, ct).ConfigureAwait(false);
+                await ProbeXaiChatExistsAsync(entry, row, userId, ct).ConfigureAwait(false);
             return;
         }
 
         if (entry.Capability is ModelCapability.Chat or ModelCapability.Vision &&
             string.Equals(provider, "openai", StringComparison.OrdinalIgnoreCase))
         {
-            await ProbeOpenAiModelExistsAsync(entry, row, ct).ConfigureAwait(false);
+            await ProbeOpenAiModelExistsAsync(entry, row, userId, ct).ConfigureAwait(false);
             return;
         }
 
@@ -141,7 +178,7 @@ public sealed class CatalogUpdateProbeService
             (string.Equals(provider, "anthropic", StringComparison.OrdinalIgnoreCase)
              || string.Equals(provider, "claude", StringComparison.OrdinalIgnoreCase)))
         {
-            await ProbeAnthropicModelAsync(entry, row, ct).ConfigureAwait(false);
+            await ProbeAnthropicModelAsync(entry, row, userId, ct).ConfigureAwait(false);
             return;
         }
 
@@ -149,7 +186,7 @@ public sealed class CatalogUpdateProbeService
             (string.Equals(provider, "google", StringComparison.OrdinalIgnoreCase)
              || string.Equals(provider, "gemini", StringComparison.OrdinalIgnoreCase)))
         {
-            await ProbeGeminiModelAsync(entry, row, ct).ConfigureAwait(false);
+            await ProbeGeminiModelAsync(entry, row, userId, ct).ConfigureAwait(false);
             return;
         }
 
@@ -168,10 +205,9 @@ public sealed class CatalogUpdateProbeService
     /// P0: fal Platform API list prices — GET /v1/models/pricing?endpoint_id=…
     /// Maps unit_price into imageCostPerImage or videoBaseCostByResolution / per-sec hints.
     /// </summary>
-    private async Task ProbeFalPricingAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    private async Task ProbeFalPricingAsync(SupportedModelEntry entry, CatalogModelProbeResult row, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("FAL_KEY")
-                  ?? Environment.GetEnvironmentVariable("FAL_API_KEY");
+        var key = ResolveKey(userId, "fal");
         var endpointId = ResolveFalEndpointId(entry);
         const string sourceBase = "https://api.fal.ai/v1/models/pricing";
 
@@ -501,13 +537,13 @@ public sealed class CatalogUpdateProbeService
         }
     }
 
-    private async Task ProbeOpenAiModelExistsAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    private async Task ProbeOpenAiModelExistsAsync(SupportedModelEntry entry, CatalogModelProbeResult row, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        var key = ResolveKey(userId, "openai");
         if (string.IsNullOrWhiteSpace(key))
         {
             row.Fields.Add(Field("model_id", entry.Id, null, "not_found",
-                "OPENAI_API_KEY not set — cannot list OpenAI models.", "https://platform.openai.com/docs/models"));
+                "OPENAI_API_KEY not configured — cannot list OpenAI models.", "https://platform.openai.com/docs/models"));
             return;
         }
 
@@ -536,13 +572,13 @@ public sealed class CatalogUpdateProbeService
         });
     }
 
-    private async Task ProbeXaiChatExistsAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    private async Task ProbeXaiChatExistsAsync(SupportedModelEntry entry, CatalogModelProbeResult row, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("XAI_API_KEY");
+        var key = ResolveKey(userId, "xai");
         if (string.IsNullOrWhiteSpace(key))
         {
             row.Fields.Add(Field("model_id", entry.Id, null, "not_found",
-                "XAI_API_KEY not set — cannot list xAI models.", "https://api.x.ai/v1/models"));
+                "XAI_API_KEY not configured — cannot list xAI models.", "https://api.x.ai/v1/models"));
             return;
         }
 
@@ -571,17 +607,17 @@ public sealed class CatalogUpdateProbeService
         });
     }
 
-    private async Task DiscoverNewModelsAsync(CatalogUpdateScanResult result, CancellationToken ct)
+    private async Task DiscoverNewModelsAsync(CatalogUpdateScanResult result, string? userId, CancellationToken ct)
     {
         var known = new HashSet<string>(
             SupportedModelCatalog.Entries.Select(e => e.Id),
             StringComparer.OrdinalIgnoreCase);
 
-        await DiscoverFromOpenAiAsync(result, known, ct).ConfigureAwait(false);
-        await DiscoverFromXaiAsync(result, known, ct).ConfigureAwait(false);
-        await DiscoverFromAnthropicAsync(result, known, ct).ConfigureAwait(false);
-        await DiscoverFromGeminiAsync(result, known, ct).ConfigureAwait(false);
-        await DiscoverFromFalAsync(result, known, ct).ConfigureAwait(false);
+        await DiscoverFromOpenAiAsync(result, known, userId, ct).ConfigureAwait(false);
+        await DiscoverFromXaiAsync(result, known, userId, ct).ConfigureAwait(false);
+        await DiscoverFromAnthropicAsync(result, known, userId, ct).ConfigureAwait(false);
+        await DiscoverFromGeminiAsync(result, known, userId, ct).ConfigureAwait(false);
+        await DiscoverFromFalAsync(result, known, userId, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -631,12 +667,12 @@ public sealed class CatalogUpdateProbeService
         return added;
     }
 
-    private async Task DiscoverFromOpenAiAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
+    private async Task DiscoverFromOpenAiAsync(CatalogUpdateScanResult result, HashSet<string> known, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        var key = ResolveKey(userId, "openai");
         if (string.IsNullOrWhiteSpace(key))
         {
-            result.DiscoveryNotes.Add("OpenAI: skipped (no OPENAI_API_KEY).");
+            result.DiscoveryNotes.Add("OpenAI: skipped (no OPENAI_API_KEY configured).");
             return;
         }
 
@@ -673,12 +709,12 @@ public sealed class CatalogUpdateProbeService
         result.DiscoveryNotes.Add($"OpenAI: {added} candidate model(s) not in catalog.");
     }
 
-    private async Task DiscoverFromXaiAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
+    private async Task DiscoverFromXaiAsync(CatalogUpdateScanResult result, HashSet<string> known, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("XAI_API_KEY");
+        var key = ResolveKey(userId, "xai");
         if (string.IsNullOrWhiteSpace(key))
         {
-            result.DiscoveryNotes.Add("xAI: skipped (no XAI_API_KEY).");
+            result.DiscoveryNotes.Add("xAI: skipped (no XAI_API_KEY configured).");
             return;
         }
 
@@ -709,14 +745,14 @@ public sealed class CatalogUpdateProbeService
 
 
     /// <summary>P1-A: Anthropic GET /v1/models — existence + optional max token fields.</summary>
-    private async Task ProbeAnthropicModelAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    private async Task ProbeAnthropicModelAsync(SupportedModelEntry entry, CatalogModelProbeResult row, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+        var key = ResolveKey(userId, "anthropic");
         const string url = "https://api.anthropic.com/v1/models";
         if (string.IsNullOrWhiteSpace(key))
         {
             row.Fields.Add(Field("model_id", entry.Id, null, "not_found",
-                "ANTHROPIC_API_KEY not set — cannot list Anthropic models.", url));
+                "ANTHROPIC_API_KEY not configured — cannot list Anthropic models.", url));
             return;
         }
 
@@ -767,15 +803,14 @@ public sealed class CatalogUpdateProbeService
     }
 
     /// <summary>P1-B: Gemini GET /v1beta/models — existence + input/output token limits.</summary>
-    private async Task ProbeGeminiModelAsync(SupportedModelEntry entry, CatalogModelProbeResult row, CancellationToken ct)
+    private async Task ProbeGeminiModelAsync(SupportedModelEntry entry, CatalogModelProbeResult row, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
-                  ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+        var key = ResolveKey(userId, "gemini");
         const string baseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
         if (string.IsNullOrWhiteSpace(key))
         {
             row.Fields.Add(Field("model_id", entry.Id, null, "not_found",
-                "GEMINI_API_KEY / GOOGLE_API_KEY not set — cannot list Gemini models.", baseUrl));
+                "GEMINI_API_KEY / GOOGLE_API_KEY not configured — cannot list Gemini models.", baseUrl));
             return;
         }
 
@@ -835,12 +870,12 @@ public sealed class CatalogUpdateProbeService
             "Not present in Gemini models list for this API key.", baseUrl));
     }
 
-    private async Task DiscoverFromAnthropicAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
+    private async Task DiscoverFromAnthropicAsync(CatalogUpdateScanResult result, HashSet<string> known, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+        var key = ResolveKey(userId, "anthropic");
         if (string.IsNullOrWhiteSpace(key))
         {
-            result.DiscoveryNotes.Add("Anthropic: skipped (no ANTHROPIC_API_KEY).");
+            result.DiscoveryNotes.Add("Anthropic: skipped (no ANTHROPIC_API_KEY configured).");
             return;
         }
 
@@ -874,13 +909,12 @@ public sealed class CatalogUpdateProbeService
         result.DiscoveryNotes.Add($"Anthropic: {added} candidate model(s) not in catalog.");
     }
 
-    private async Task DiscoverFromGeminiAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
+    private async Task DiscoverFromGeminiAsync(CatalogUpdateScanResult result, HashSet<string> known, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
-                  ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+        var key = ResolveKey(userId, "gemini");
         if (string.IsNullOrWhiteSpace(key))
         {
-            result.DiscoveryNotes.Add("Gemini: skipped (no GEMINI_API_KEY / GOOGLE_API_KEY).");
+            result.DiscoveryNotes.Add("Gemini: skipped (no GEMINI_API_KEY / GOOGLE_API_KEY configured).");
             return;
         }
 
@@ -935,13 +969,12 @@ public sealed class CatalogUpdateProbeService
     }
 
     /// <summary>P1-C: fal GET /v1/models — discover endpoint_ids not in catalog.</summary>
-    private async Task DiscoverFromFalAsync(CatalogUpdateScanResult result, HashSet<string> known, CancellationToken ct)
+    private async Task DiscoverFromFalAsync(CatalogUpdateScanResult result, HashSet<string> known, string? userId, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable("FAL_KEY")
-                  ?? Environment.GetEnvironmentVariable("FAL_API_KEY");
+        var key = ResolveKey(userId, "fal");
         if (string.IsNullOrWhiteSpace(key))
         {
-            result.DiscoveryNotes.Add("fal: skipped (no FAL_KEY / FAL_API_KEY).");
+            result.DiscoveryNotes.Add("fal: skipped (no FAL_KEY / FAL_API_KEY configured).");
             return;
         }
 

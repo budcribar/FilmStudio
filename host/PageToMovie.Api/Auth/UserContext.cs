@@ -170,6 +170,7 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
         var processEnv = provider switch
         {
             "grok" => SupportedModelCatalog.XaiApiKeyEnv,
+            "openai" => "OPENAI_API_KEY",
             "gemini" => SupportedModelCatalog.GoogleApiKeyEnv,
             "anthropic" => SupportedModelCatalog.AnthropicApiKeyEnv,
             "fal" => SupportedModelCatalog.FalApiKeyEnv,

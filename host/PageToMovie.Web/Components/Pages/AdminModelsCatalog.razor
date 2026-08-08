@@ -433,7 +433,12 @@
                                     var priced = m["pricingLastReviewedAt"]?.ToString() ?? "—";
                                     <tr class="@(IsEnabled(m) ? "" : "table-secondary")">
                                         <td>
-                                            <ToggleSwitch Value="@IsEnabled(m)" ValueChanged="@(_ => ToggleModelEnabled(m))" WrapperClass="form-check form-switch mb-0" />
+                                            <div class="d-flex align-items-center gap-1">
+                                                <ToggleSwitch Value="@IsEnabled(m)" ValueChanged="@(_ => ToggleModelEnabled(m))" WrapperClass="form-check form-switch mb-0" />
+                                                <span class="badge @(IsEnabled(m) ? "bg-success" : "bg-secondary")" style="font-size: 0.65rem;">
+                                                    @(IsEnabled(m) ? "ON" : "OFF")
+                                                </span>
+                                            </div>
                                         </td>
                                         <td class="fw-bold font-monospace">@modelId</td>
                                         <td>
