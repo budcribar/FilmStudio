@@ -2,7 +2,7 @@
   <!--
     Dual-compile selected Engine / Core sources for unit tests.
     Do NOT dual-compile Engine/Services: it pulled orphan SmartScriptBreakdown*
-    and YouTubeUpload* sources/tests that have no GitHub history and break the build.
+    and YouTubeUpload* tests/sources that have no GitHub history.
   -->
   <ItemGroup>
     <Compile Include="..\PageToMovie.Engine\Adaptation\**\*.cs"
