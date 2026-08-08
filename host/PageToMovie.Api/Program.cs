@@ -8882,12 +8882,6 @@ namespace PageToMovie.Api
     public record SetBookRefsRequest(List<string>? ImagePaths);
     public record MovieReviewRequest(List<MovieAutoReviewKeyframe>? Keyframes);
     public record RegisterYouTubeDemoRequest(string? YoutubeIdOrUrl, string? Title, string? Description, string? ProjectId);
-
-    public sealed class TestEmailRequest
-    {
-        public string ToEmail { get; set; } = "";
-    }
-
     // Expose entry assembly for WebApplicationFactory integration tests.
     public partial class Program { }
 }

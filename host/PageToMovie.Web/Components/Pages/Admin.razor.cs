@@ -57,6 +57,66 @@ public partial class Admin
     private string? _archiveError;
     private const long MaxImportBytes = 512L * 1024 * 1024;
 
+    private bool _showTestEmailModal;
+    private string _testEmailAddress = "";
+    private string? _testEmailStatus;
+    private string? _testEmailError;
+    private bool _testEmailBusy;
+
+    private void OpenTestEmailModal()
+    {
+        _showTestEmailModal = true;
+        _testEmailStatus = null;
+        _testEmailError = null;
+        if (string.IsNullOrWhiteSpace(_testEmailAddress) && !string.IsNullOrWhiteSpace(Session.UserId))
+        {
+            _testEmailAddress = Session.UserId.Contains('@') ? Session.UserId : "";
+        }
+    }
+
+    private void CloseTestEmailModal()
+    {
+        _showTestEmailModal = false;
+        _testEmailStatus = null;
+        _testEmailError = null;
+    }
+
+    private async Task SendTestEmailAsync()
+    {
+        _testEmailStatus = null;
+        _testEmailError = null;
+
+        var to = _testEmailAddress.Trim();
+        if (string.IsNullOrWhiteSpace(to) || !to.Contains('@'))
+        {
+            _testEmailError = "Enter a valid recipient email address.";
+            return;
+        }
+
+        _testEmailBusy = true;
+        try
+        {
+            var (ok, msg, senderType) = await Api.TestEmailAsync(to);
+            if (ok)
+            {
+                _testEmailStatus = $"✓ {msg} (Active provider: {senderType ?? "Unknown"})";
+            }
+            else
+            {
+                _testEmailError = $"✕ {msg}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _testEmailError = $"✕ Error sending test email: {ex.Message}";
+        }
+        finally
+        {
+            _testEmailBusy = false;
+            StateHasChanged();
+        }
+    }
+
     private bool _showJobsAndLocks = true;
     private bool _showProjectArchiving = true;
     private bool _showLoadSim = false;
