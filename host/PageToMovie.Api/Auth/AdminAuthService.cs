@@ -5,6 +5,7 @@ using PageToMovie.Core.Auth;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -19,14 +20,26 @@ public interface IAdminAuthService
     /// <summary>Default media-token lifetime (minutes). Full session JWT must not go in query strings.</summary>
     public const int MediaTokenMinutes = 30;
 
+    /// <summary>
+    /// Reserved user_id for operator override sessions ($"operator-{OperatorSecretHash.Substring(0, 8)}").
+    /// Matches project directory ownership, budget logs, and admin checks.
+    /// </summary>
+    string OperatorUserId { get; }
+
     Task<LoginResponse> LoginAsync(string username, string password, CancellationToken ct = default);
     Task<LoginResponse> SignupAsync(string username, string password, string? email = null, CancellationToken ct = default);
-    /// <summary>Issue operator JWT when secret matches PageToMovie_LOGIN_OVERRIDE.</summary>
     LoginResponse LoginWithOperatorOverride(string secret);
+    Task SendEmailConfirmAsync(UserEntity user);
+    Task SendPasswordResetEmailAsync(UserEntity user);
+    string BuildAppLink(string pathAndQuery);
+
     /// <summary>
-    /// DEV ONLY: issue a deterministic dev-user JWT (login bypass) — succeeds only when the server
-    /// runs with <see cref="PageToMovieOptions.UseFakes"/> enabled, and fails closed otherwise so it
-    /// can never mint a session in production.
+    /// Issues operator JWT without password check. Used ONLY by GET /api/auth/operator-login?secret=...
+    /// after constant-time verification of the operator override secret.
+    /// </summary>
+    LoginResponse IssueOperatorLogin(string? preferredUserId = null);
+    /// <summary>
+    /// Dev / test fallback when option UseFakes is true. Issues admin JWT without DB/secret.
     /// </summary>
     LoginResponse IssueDevFakesLogin();
     ClaimsPrincipal? ValidateToken(string token);
@@ -50,6 +63,7 @@ public sealed class AdminAuthService : IAdminAuthService
     private readonly UserDatabaseService _userDb;
     private readonly CreditService? _credits;
     private readonly PageToMovie.Engine.Abstractions.IEmailSender? _email;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
     private readonly PasswordHasher<object> _hasher = new();
     private readonly object _hashTarget = new();
 
@@ -58,7 +72,8 @@ public sealed class AdminAuthService : IAdminAuthService
         IHostEnvironment env,
         UserDatabaseService userDb,
         CreditService? credits = null,
-        PageToMovie.Engine.Abstractions.IEmailSender? email = null)
+        PageToMovie.Engine.Abstractions.IEmailSender? email = null,
+        IHttpContextAccessor? httpContextAccessor = null)
     {
         _auth = opts.Value.Auth ?? new AuthOptions();
         _mail = opts.Value.Mail ?? new MailOptions();
@@ -67,6 +82,7 @@ public sealed class AdminAuthService : IAdminAuthService
         _userDb = userDb;
         _credits = credits;
         _email = email;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<LoginResponse> SignupAsync(string username, string password, string? email = null, CancellationToken ct = default)
@@ -172,6 +188,14 @@ public sealed class AdminAuthService : IAdminAuthService
             bas = Environment.GetEnvironmentVariable("PAGETOMOVIE_PUBLIC_BASE_URL")?.Trim().TrimEnd('/')
                   ?? Environment.GetEnvironmentVariable("PageToMovie_PUBLIC_BASE_URL")?.Trim().TrimEnd('/')
                   ?? Environment.GetEnvironmentVariable("PUBLIC_BASE_URL")?.Trim().TrimEnd('/');
+        }
+        if (string.IsNullOrWhiteSpace(bas))
+        {
+            var req = _httpContextAccessor?.HttpContext?.Request;
+            if (req is not null && req.Host.HasValue)
+            {
+                bas = $"{req.Scheme}://{req.Host.Value}";
+            }
         }
         if (string.IsNullOrWhiteSpace(bas))
         {
@@ -306,7 +330,7 @@ public sealed class AdminAuthService : IAdminAuthService
         return IssueOperatorLogin(uid);
     }
 
-    private string OperatorUserId =>
+    public string OperatorUserId =>
         string.IsNullOrWhiteSpace(_auth.OperatorUserId) ? "admin" : _auth.OperatorUserId.Trim();
 
     private string? ResolveOperatorOverrideSecret()
@@ -330,7 +354,7 @@ public sealed class AdminAuthService : IAdminAuthService
         return FixedTimeEquals(secret, candidate);
     }
 
-    private LoginResponse IssueOperatorLogin(string? preferredUserId = null)
+    public LoginResponse IssueOperatorLogin(string? preferredUserId = null)
     {
         var uid = string.IsNullOrWhiteSpace(preferredUserId)
             ? OperatorUserId

@@ -242,11 +242,15 @@ public partial class Login
                         var (ok, msg) = await Api.ConfirmEmailAsync(token);
                         if (ok)
                         {
-                            // Replace URL so a refresh does not re-consume; flash message via query
-                            Nav.NavigateTo("/login?emailConfirmed=1", replace: true);
-                            return; // remount will show flash
+                            _info = string.IsNullOrWhiteSpace(msg) ? "Email confirmed. You can sign in now." : msg;
+                            _isSignup = false;
+                            _error = null;
+                            try { Nav.NavigateTo("/login?emailConfirmed=1", replace: false); } catch { /* ignore */ }
                         }
-                        _error = msg;
+                        else
+                        {
+                            _error = msg;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -255,7 +259,6 @@ public partial class Login
                     finally
                     {
                         _busy = false;
-                        StateHasChanged();
                     }
                 }
             }

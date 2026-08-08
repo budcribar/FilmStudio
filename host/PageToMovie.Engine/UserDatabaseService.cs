@@ -2893,11 +2893,12 @@ public class UserDatabaseService
 
     public async Task<bool> ConfirmEmailAsync(string userId, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(userId)) return false;
         using var conn = new SqliteConnection(ConnectionString);
         await conn.OpenAsync(ct).ConfigureAwait(false);
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            UPDATE users SET email_confirmed_at = @t WHERE user_id = @id";
+            UPDATE users SET email_confirmed_at = @t WHERE LOWER(user_id) = LOWER(@id) OR user_id = @id";
         cmd.Parameters.AddWithValue("@t", DateTimeOffset.UtcNow.ToString("o"));
         cmd.Parameters.AddWithValue("@id", userId.Trim());
         return await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false) > 0;
