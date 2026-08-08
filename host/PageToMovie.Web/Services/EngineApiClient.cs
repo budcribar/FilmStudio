@@ -1800,13 +1800,18 @@ public async Task<ProjectsDto?> DeleteProjectAsync(
 
     /// <summary>Per-scene narrator lines from the blueprint (no dub needed) — lets the capture page
     /// build its phrase cache standalone.</summary>
-    public async Task<List<NarratorSceneLinesDto>> GetNarratorLinesAsync(string projectId, CancellationToken ct = default)
+    /// <param name="charKey">Which character's solo lines to collect. Defaults to the narrator
+    /// (server-side "Character_Narrator" / name-contains-"narrator" heuristic) when omitted — pass
+    /// an explicit character key to capture read-along material for a different speaking character.</param>
+    public async Task<List<NarratorSceneLinesDto>> GetNarratorLinesAsync(string projectId, string? charKey = null, CancellationToken ct = default)
     {
         SyncIdentityHeaders();
         try
         {
-            using var resp = await _http.GetAsync(
-                $"/api/projects/{Uri.EscapeDataString(projectId)}/voice-capture/narrator-lines", ct);
+            var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/voice-capture/narrator-lines";
+            if (!string.IsNullOrWhiteSpace(charKey))
+                url += $"?charKey={Uri.EscapeDataString(charKey.Trim())}";
+            using var resp = await _http.GetAsync(url, ct);
             if (!resp.IsSuccessStatusCode) return new();
             var dto = await resp.Content.ReadFromJsonAsync<NarratorLinesResponseDto>(JsonOpts, ct);
             return dto?.Scenes ?? new();

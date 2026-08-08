@@ -202,10 +202,14 @@ else
     /// <summary>The film to build the narrator's cloned voice for. Supplied by the host.</summary>
     [Parameter, EditorRequired] public string ProjectId { get; set; } = "";
 
+    /// <summary>Which character this recording becomes the voice of. Defaults to the narrator —
+    /// pass a different character key when the host resolved a non-narrator target (e.g. the story
+    /// has no narrator and the user picked a speaking character instead).</summary>
+    [Parameter] public string CharKey { get; set; } = "Character_Narrator";
+
     /// <summary>Fired once the cloned voice has been built and applied — host advances to the next step.</summary>
     [Parameter] public EventCallback OnComplete { get; set; }
 
-    private const string NarratorKey = "Character_Narrator";
     private const int MaxPhrases = 8;
 
     private string? _projectId;
@@ -259,7 +263,11 @@ else
         try
         {
             var data = await Engine.GetVoiceCapturePhrasesAsync(_projectId);
-            _phrases = SelectPool(data?.Phrases);
+            // Ignore a cache built for a different character — old caches (before CharKey existed)
+            // are implicitly the narrator's.
+            var cachedKey = string.IsNullOrWhiteSpace(data?.CharKey) ? "Character_Narrator" : data!.CharKey!.Trim();
+            if (string.Equals(cachedKey, CharKey, StringComparison.OrdinalIgnoreCase))
+                _phrases = SelectPool(data?.Phrases);
         }
         catch (Exception ex) { _error = ex.Message; }
         if (_phrases.Count > 0) await PreparePhraseAsync();
@@ -281,7 +289,7 @@ else
         StateHasChanged();
         try
         {
-            var built = await Capture.BuildPhrasesAsync(_projectId, s => { _status = s; _ = InvokeAsync(StateHasChanged); });
+            var built = await Capture.BuildPhrasesAsync(_projectId, s => { _status = s; _ = InvokeAsync(StateHasChanged); }, CharKey);
             _phrases = SelectPool(built?.Phrases);
             if (_phrases.Count == 0)
                 _status = "Couldn't find clear narrator dialogue to match — make sure the clips are generated.";
@@ -531,16 +539,16 @@ else
             var bytes = await Js.InvokeAsync<byte[]>("PageToMovieFfmpeg.buildCloneSampleAsync", (object)_kept.ToArray(), 0.4);
             if (bytes is null || bytes.Length < 512) { _error = "Couldn't assemble your takes."; return; }
 
-            const string rel = "assets/characters/" + NarratorKey + "/voice_clone_sample.wav";
+            var rel = "assets/characters/" + CharKey + "/voice_clone_sample.wav";
             if (!MediaFolder.IsConnected) await MediaFolder.TryReconnectAsync();
             try { await MediaFolder.SaveBytesAsync(_projectId, rel, bytes, promptToConnectFolder: false); } catch { /* best effort */ }
 
             await using var ms = new MemoryStream(bytes);
-            await Engine.UploadVoiceCloneSampleAsync(_projectId, NarratorKey, ms, "voice_clone_sample.wav");
+            await Engine.UploadVoiceCloneSampleAsync(_projectId, CharKey, ms, "voice_clone_sample.wav");
 
             _status = "Applying your voice…";
             StateHasChanged();
-            var apply = await Engine.ApplyVoiceCloneAsync(_projectId, NarratorKey);
+            var apply = await Engine.ApplyVoiceCloneAsync(_projectId, CharKey);
             _done = true;
             _status = apply.Ok
                 ? (apply.UsedMock ? "Demo voice applied. You can make the movie." : "Voice applied. You can make the movie.")

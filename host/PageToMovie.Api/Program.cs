@@ -7744,11 +7744,12 @@ app.MapPost("/api/transcribe", async (
     });
 });
 
-// Per-scene narrator lines straight from the blueprint (no dub / TTS needed) — lets the capture
-// page build its phrase cache standalone. Returns each scene's narrator line texts + whether the
-// scene also has a non-narrator speaker (those scenes aren't capture material).
+// Per-scene solo lines for a target character (default: narrator), straight from the blueprint (no
+// dub / TTS needed) — lets the capture page build its phrase cache standalone. Returns each scene's
+// line texts for that character + whether the scene also has another speaker (those scenes aren't
+// capture material — mixed dialogue would bleed into the recording).
 app.MapGet("/api/projects/{id}/voice-capture/narrator-lines", async (
-    string id, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
+    string id, string? charKey, IUserContext user, IOptions<PageToMovieOptions> opts, ProjectStore store, CancellationToken ct) =>
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
@@ -7756,18 +7757,25 @@ app.MapGet("/api/projects/{id}/voice-capture/narrator-lines", async (
     if (blueprint is null)
         return Results.Ok(new { ok = true, scenes = Array.Empty<object>() });
 
-    static bool IsNarr(string? spk) =>
-        !string.IsNullOrWhiteSpace(spk) &&
-        (string.Equals(spk.Trim(), "Character_Narrator", StringComparison.OrdinalIgnoreCase) ||
-         spk.Contains("narrator", StringComparison.OrdinalIgnoreCase));
+    var targetKey = string.IsNullOrWhiteSpace(charKey) ? null : charKey.Trim();
+    bool IsTarget(string? spk)
+    {
+        if (string.IsNullOrWhiteSpace(spk)) return false;
+        // Explicit character key: exact match — this is a deliberate user pick, not a guess.
+        if (targetKey is not null)
+            return string.Equals(spk.Trim(), targetKey, StringComparison.OrdinalIgnoreCase);
+        // Default (no key given): the original narrator heuristic.
+        return string.Equals(spk.Trim(), "Character_Narrator", StringComparison.OrdinalIgnoreCase) ||
+               spk.Contains("narrator", StringComparison.OrdinalIgnoreCase);
+    }
 
     var all = VoiceAlignmentStore.BuildDialogueLinesFromBlueprint(blueprint.RootElement, null);
     var scenesWithOther = new HashSet<int>();
     foreach (var cl in all)
-        if (cl.Lines.Any(l => !IsNarr(l.CharacterKey)))
+        if (cl.Lines.Any(l => !IsTarget(l.CharacterKey)))
             scenesWithOther.Add(cl.Scene);
 
-    var byScene = VoiceAlignmentStore.BuildDialogueLinesFromBlueprint(blueprint.RootElement, IsNarr)
+    var byScene = VoiceAlignmentStore.BuildDialogueLinesFromBlueprint(blueprint.RootElement, IsTarget)
         .GroupBy(c => c.Scene)
         .OrderBy(g => g.Key)
         .Select(g => new

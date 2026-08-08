@@ -77,11 +77,16 @@ public sealed class ClientVoiceSubstitutionService
         try { await _media.SyncProjectMediaToClientAsync(projectId); } catch { /* best effort — overlay reads whatever is local */ }
 
         // Once per book: STT-verify the dialogue windows so the overlay can place confirmed lines
-        // exactly where the original spoke. Built + cached the first time; reused thereafter.
+        // exactly where the original spoke. Built + cached the first time; reused thereafter. Must
+        // match the character actually being dubbed — a cache built for a different character's solo
+        // lines would mismatch this movie's placement windows.
         try
         {
-            if (await _engine.GetVoiceCapturePhrasesAsync(projectId, ct) is null)
-                await _capture.BuildPhrasesAsync(projectId, onProgress, ct);
+            var cached = await _engine.GetVoiceCapturePhrasesAsync(projectId, ct);
+            var cachedKey = string.IsNullOrWhiteSpace(cached?.CharKey) ? "Character_Narrator" : cached!.CharKey!.Trim();
+            var wantKey = string.IsNullOrWhiteSpace(charKey) ? "Character_Narrator" : charKey.Trim();
+            if (cached is null || !string.Equals(cachedKey, wantKey, StringComparison.OrdinalIgnoreCase))
+                await _capture.BuildPhrasesAsync(projectId, onProgress, charKey, ct);
         }
         catch { /* best effort — overlay falls back to word-count/WPS placement if this fails */ }
 

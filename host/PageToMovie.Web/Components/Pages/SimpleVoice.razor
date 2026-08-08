@@ -100,10 +100,33 @@ else
                 </button>
             </div>
             <div class="card-body">
-                @if (!_voiceReady)
+                @if (_needsCharacterPick)
+                {
+                    <div data-testid="simple-voice-character-pick">
+                        <p class="small text-muted mb-2">
+                            This story doesn’t have a clear narrator — who do you want to voice?
+                        </p>
+                        <div class="list-group mb-2">
+                            @foreach (var c in _narratorCandidates)
+                            {
+                                <button type="button"
+                                        class="list-group-item list-group-item-action"
+                                        disabled="@_busy"
+                                        data-testid="@($"simple-voice-character-{c.Key}")"
+                                        @onclick="() => PickCharacterAsync(c)">
+                                    <div class="d-flex justify-content-between gap-2 align-items-center">
+                                        <div class="fw-semibold text-start">@c.DisplayName</div>
+                                        <span class="small text-muted flex-shrink-0">Voice this character →</span>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (!_voiceReady)
                 {
                     @* The good "read along in your voice" recorder, shared with anywhere else that needs it. *@
-                    <VoiceCaptureStep ProjectId="@_projectId" OnComplete="OnVoiceReadyAsync" />
+                    <VoiceCaptureStep ProjectId="@_projectId" CharKey="@_narratorKey" OnComplete="OnVoiceReadyAsync" />
                 }
                 else
                 {
@@ -114,6 +137,13 @@ else
                                 We keep the pictures and put your voice on every line — no video regen.
                             </div>
                         </div>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-testid="simple-voice-rerecord"
+                                disabled="@_busy"
+                                @onclick="BeginReRecord">
+                            🎙️ Re-record
+                        </button>
                         <button type="button"
                                 class="btn btn-primary btn-lg"
                                 data-testid="simple-voice-make-movie"
@@ -220,6 +250,10 @@ else
     private string? _projectId;
     private string? _projectLabel;
     private string _narratorKey = "Character_Narrator";
+    /// <summary>True when the story has no character confidently identified as the narrator — the
+    /// user must pick which speaking character to voice instead of us silently guessing one.</summary>
+    private bool _needsCharacterPick;
+    private List<CharacterSummary> _narratorCandidates = new();
     private bool _busy;
     private string? _error;
     private string? _message;
@@ -241,7 +275,8 @@ else
             _phase = Phase.Record;
             await EnsureVoiceModelAsync();
             await ResolveNarratorKeyAsync();
-            await RefreshSampleStateAsync();
+            if (!_needsCharacterPick)
+                await RefreshSampleStateAsync();
         }
     }
 
@@ -274,7 +309,8 @@ else
             _phase = Phase.Record;
             await EnsureVoiceModelAsync();
             await ResolveNarratorKeyAsync();
-            await RefreshSampleStateAsync();
+            if (!_needsCharacterPick)
+                await RefreshSampleStateAsync();
         }
         catch (Exception ex)
         {
@@ -297,26 +333,54 @@ else
     private async Task ResolveNarratorKeyAsync()
     {
         _narratorKey = "Character_Narrator";
+        _needsCharacterPick = false;
+        _narratorCandidates = new();
         if (string.IsNullOrEmpty(_projectId)) return;
         try
         {
             var dto = await Engine.GetCharactersAsync(_projectId);
-            var list = dto?.Characters;
-            if (list is { Count: > 0 })
+            var list = dto?.Characters ?? new();
+            if (list.Count == 0) return;
+
+            var confident = list.FirstOrDefault(c =>
+                                (c.Key?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false)
+                                || (c.DisplayName?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false))
+                            ?? list.FirstOrDefault(c => c.VoiceOnly);
+            if (!string.IsNullOrEmpty(confident?.Key))
             {
-                var pick = list.FirstOrDefault(c =>
-                               (c.Key?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false)
-                               || (c.DisplayName?.Contains("narrator", StringComparison.OrdinalIgnoreCase) ?? false))
-                           ?? list.FirstOrDefault(c => c.VoiceOnly)
-                           ?? list[0];
-                if (!string.IsNullOrEmpty(pick?.Key))
-                    _narratorKey = pick.Key;
+                _narratorKey = confident!.Key;
+                return;
+            }
+
+            // No character reads as "the narrator" — don't silently guess the first character in the
+            // list (that could be anyone). Let the user pick who they want to voice instead.
+            var speaking = list.Where(c => c.Speaks).ToList();
+            if (speaking.Count > 0)
+            {
+                _narratorCandidates = speaking;
+                _needsCharacterPick = true;
+            }
+            else
+            {
+                _narratorKey = list[0].Key; // nothing speaks yet — fall back rather than block
             }
         }
         catch
         {
             // Seed will be created on upload if cast not built yet.
         }
+    }
+
+    /// <summary>User picked who to voice when no narrator could be confidently identified.</summary>
+    private async Task PickCharacterAsync(CharacterSummary c)
+    {
+        if (string.IsNullOrEmpty(c.Key)) return;
+        _narratorKey = c.Key;
+        _needsCharacterPick = false;
+        _error = null;
+        await EnsureVoiceModelAsync();
+        await RefreshSampleStateAsync();
+        StateHasChanged();
     }
 
     private async Task EnsureVoiceModelAsync()
@@ -371,6 +435,15 @@ else
         _phase = Phase.Done;
         _error = null;
         await InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Not happy with the take? Drop back into the recorder for the same character — a
+    /// fresh &lt;VoiceCaptureStep&gt; instance re-runs its own phrase prep and replaces the sample.</summary>
+    private void BeginReRecord()
+    {
+        _voiceReady = false;
+        _error = null;
+        _message = null;
     }
 
     private async Task MakeMovieAsync()

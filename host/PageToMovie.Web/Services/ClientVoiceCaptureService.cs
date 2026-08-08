@@ -31,18 +31,26 @@ public sealed class ClientVoiceCaptureService
 
     /// <summary>
     /// Run the verification pass and save the phrase cache. Returns the built set (also persisted).
-    /// Narrator-only scenes only (mixed scenes keep original audio and aren't capture material).
+    /// Solo scenes only for the target character (default: narrator) — mixed scenes keep original
+    /// audio and aren't capture material.
     /// </summary>
+    /// <param name="charKey">Which character to build phrases for. Null/omitted defaults to the
+    /// narrator, matching the original behavior.</param>
     public async Task<VoiceCapturePhrases?> BuildPhrasesAsync(
-        string projectId, Action<string>? onProgress = null, CancellationToken ct = default)
+        string projectId, Action<string>? onProgress = null, string? charKey = null, CancellationToken ct = default)
     {
-        // Expected narrator line texts + which scenes are narrator-only, straight from the blueprint —
-        // no dub/TTS needed, so this runs standalone from the capture page.
-        var scenes = await _engine.GetNarratorLinesAsync(projectId, ct);
+        // Expected line texts for the target character + which scenes are theirs alone, straight
+        // from the blueprint — no dub/TTS needed, so this runs standalone from the capture page.
+        var scenes = await _engine.GetNarratorLinesAsync(projectId, charKey, ct);
         if (scenes is null || scenes.Count == 0)
             return null;
 
-        var phrases = new VoiceCapturePhrases { ProjectId = projectId, ConfidenceThreshold = ConfidenceThreshold };
+        var phrases = new VoiceCapturePhrases
+        {
+            ProjectId = projectId,
+            ConfidenceThreshold = ConfidenceThreshold,
+            CharKey = string.IsNullOrWhiteSpace(charKey) ? "Character_Narrator" : charKey.Trim(),
+        };
 
         foreach (var sc in scenes.Where(s => !s.HasOtherSpeakers).OrderBy(s => s.Scene))
         {

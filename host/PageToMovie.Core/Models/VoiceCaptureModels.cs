@@ -64,6 +64,10 @@ public sealed class VoiceCapturePhrases
     public string ProjectId { get; set; } = "";
     public DateTime GeneratedAtUtc { get; set; } = DateTime.UtcNow;
 
+    /// <summary>Which character this phrase set was built for. Missing/empty on caches written before
+    /// this field existed — treat those as "Character_Narrator" (the only target that existed then).</summary>
+    public string? CharKey { get; set; }
+
     /// <summary>Word-overlap threshold used to mark a phrase confident (informational).</summary>
     public double ConfidenceThreshold { get; set; } = 0.7;
 
