@@ -86,23 +86,23 @@
 @if (!Session.IsLoggedIn)
 {
     @* Same three cards as signed-in easy home; CTAs send guests to sign-in. *@
-    <PromoCard TestId="home-simple-voice-card" Eyebrow="Easiest start" Title="Read a library book in your voice">
+    <PromoCard TestId="home-simple-voice-card" Eyebrow="@L["Home.EasiestStart"]" Title="@L["Home.ReadLibraryBook"]">
         <Body>
-            Pick a story, record one sample — we put your voice on the narrator.
+            @L["Home.PickStoryRecordSample"]
         </Body>
         <Cta>
             <a href="login?returnUrl=/simple-voice" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-simple-voice">
-                Sign in to try →
+                @L["Home.SignInToTry"]
             </a>
         </Cta>
     </PromoCard>
-    <PromoCard TestId="home-full-studio-card" Eyebrow="Advanced" Title="Full studio">
+    <PromoCard TestId="home-full-studio-card" Eyebrow="@L["Home.Advanced"]" Title="@L["Home.FullStudio"]">
         <Body>
-            Cast, estimate, film, and review — full control.
+            @L["Home.CastEstimateFilmReview"]
         </Body>
         <Cta>
             <a href="login?returnUrl=/" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-full-studio-guest">
-                Sign in for studio →
+                @L["Home.SignInForStudio"]
             </a>
         </Cta>
     </PromoCard>
@@ -110,7 +110,7 @@
 else if (_projects is null)
 {
     <div class="card mb-3 home-studio-card">
-        <div class="card-body py-3 text-muted small">Loading projects…</div>
+        <div class="card-body py-3 text-muted small">@L["Common.Loading"]</div>
     </div>
 }
 else
@@ -122,28 +122,27 @@ else
     @if (ShowEasyHome)
     {
         @* Default home: easiest start only — advanced project picker is behind Full studio. *@
-        <PromoCard TestId="home-simple-voice-card" Eyebrow="Easiest start" Title="Read a library book in your voice">
+        <PromoCard TestId="home-simple-voice-card" Eyebrow="@L["Home.EasiestStart"]" Title="@L["Home.ReadLibraryBook"]">
             <Body>
-                Pick a story, record one sample — we put your voice on the narrator.
-                Stock pictures stay as-is.
+                @L["Home.PickStoryRecordSampleStock"]
             </Body>
             <Cta>
                 <a href="simple-voice" class="btn btn-primary btn-sm flex-shrink-0" data-testid="home-open-simple-voice">
-                    Try with your voice →
+                    @L["Home.TryWithYourVoice"]
                 </a>
             </Cta>
         </PromoCard>
 
-        <PromoCard TestId="home-full-studio-card" Eyebrow="Advanced" Title="Full studio">
+        <PromoCard TestId="home-full-studio-card" Eyebrow="@L["Home.Advanced"]" Title="@L["Home.FullStudio"]">
             <Body>
-                Pick or create a project, cast faces, estimate, film, and review — full control.
+                @L["Home.FullStudioDescription"]
             </Body>
             <Cta>
                 <button type="button"
                         class="btn btn-primary btn-sm flex-shrink-0"
                         data-testid="home-open-full-studio"
                         @onclick="EnterFullStudio">
-                    Open full studio →
+                    @L["Home.OpenFullStudio"]
                 </button>
             </Cta>
         </PromoCard>
@@ -155,9 +154,9 @@ else
                     class="btn btn-link btn-sm px-0"
                     data-testid="home-back-easy-start"
                     @onclick="ExitFullStudio">
-                ← Easy start
+                @L["Home.BackToEasyStart"]
             </button>
-            <span class="small text-muted">Full studio</span>
+            <span class="small text-muted">@L["Home.FullStudio"]</span>
         </div>
 
         <div class="card mb-3 home-studio-card" data-testid="home-studio-card">
@@ -597,12 +596,12 @@ else
     <div class="card-body py-3">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
             <div class="min-w-0">
-                <div class="ptm-adapt-kicker mb-1">Page to Movie channel</div>
-                <div class="fw-semibold fs-5 mb-0">Demo films</div>
+                <div class="ptm-adapt-kicker mb-1">@L["Home.PageToMovieChannel"]</div>
+                <div class="fw-semibold fs-5 mb-0">@L["Home.DemoFilms"]</div>
                 <div class="small text-muted text-truncate" title="@_demoShowcaseHint">@_demoShowcaseHint</div>
             </div>
             <a href="/demo" class="btn btn-sm btn-primary flex-shrink-0" data-testid="home-open-demo-gallery">
-                Open gallery →
+                @L["Home.OpenGallery"]
             </a>
         </div>
         @if (_publicDemos.Count > 0)
