@@ -231,13 +231,45 @@ public static class PipelineFlow
         Assert.Contains("\"ok\":true", result);
     }
 
-    /// <summary>Full flow through to generated clips on the Scenes page.</summary>
+    /// <summary>
+    /// Finish generation via the real Scenes page "Generate Batch" button (select all -> confirm
+    /// modal -> go), not another fetch() shortcut. <see cref="GenerateClipsAsync"/>'s direct batch
+    /// call deliberately leaves the end-credits scene ungenerated — the server refuses to send it to
+    /// the video model (a title card makes it hallucinate unrelated footage; see
+    /// FilmJobService.RunBatchGenAsync's IsCreditsScene skip) — so the only thing that can still fill
+    /// it in is the deterministic client-side card render (canvas -> ffmpeg.wasm) that Scenes.razor's
+    /// own batch handler runs for credits scenes. Driving the real button click (rather than calling
+    /// that JS directly) proves the production click path, the same one a user hits.
+    /// </summary>
+    public static async Task FinishViaGenerateBatchButtonAsync(IPage page, string baseUrl)
+    {
+        await Ui.GotoAppAsync(page, baseUrl, "/scenes");
+        var status = page.GetByTestId("scenes-status");
+        await status.WaitForAsync(new() { Timeout = 30_000 });
+
+        await page.GetByTestId("scenes-select-all").CheckAsync(new() { Timeout = 15_000 });
+        await page.GetByTestId("scenes-generate-batch").ClickAsync(new() { Timeout = 15_000 });
+        await page.GetByTestId("generate-confirm-go").ClickAsync(new() { Timeout = 15_000 });
+
+        var clips = int.Parse(await status.GetAttributeAsync("data-clip-count") ?? "0");
+        var deadline = DateTime.UtcNow.AddSeconds(60);
+        while (DateTime.UtcNow < deadline)
+        {
+            var onDisk = int.Parse(await status.GetAttributeAsync("data-clips-on-disk") ?? "0");
+            if (onDisk >= clips) return;
+            await page.WaitForTimeoutAsync(500);
+        }
+        Assert.Fail("Generate Batch via the Scenes page did not finish within 60s.");
+    }
+
+    /// <summary>Full flow through to generated clips on the Scenes page — including the end-credits
+    /// scene, which only the real "Generate Batch" button click (not the fetch shortcut) can fill in.</summary>
     public static async Task RunToGeneratedClipsAsync(IPage page, string baseUrl, string projectName, string fixtureFile)
     {
         await RunToCharactersAsync(page, baseUrl, projectName, fixtureFile);
         await MakeCastReadyForShotsAsync(page);
         await BuildShotPlanAsync(page);
         await GenerateClipsAsync(page);
-        await Ui.GotoAppAsync(page, baseUrl, "/scenes");
+        await FinishViaGenerateBatchButtonAsync(page, baseUrl);
     }
 }

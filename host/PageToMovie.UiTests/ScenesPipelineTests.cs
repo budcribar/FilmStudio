@@ -65,6 +65,47 @@ public class ScenesPipelineTests
         finally { await ctx.CloseAsync(); }
     }
 
+    // Bug: "Add scene" appended the new blank scene AFTER the auto-inserted end-credits scene (it
+    // just took max scene_number + 1, blind to credits) — a stray clip landed past "The End" and
+    // credits had to be deleted/re-added to fix it. Fixed in ProjectStore.AddScene to insert before
+    // an existing credits scene instead, bumping credits back up by one so it stays last.
+    [Fact]
+    public async Task Add_scene_inserts_before_the_auto_inserted_credits_scene()
+    {
+        var (ctx, page) = await _fx.NewPageAsync();
+        try
+        {
+            await PipelineFlow.RunToScenesAsync(page, _fx.BaseUrl, "AddScene_" + Guid.NewGuid().ToString("N")[..6], "tell_tale_heart.fountain");
+
+            var status = page.GetByTestId("scenes-status");
+            await status.WaitForAsync(new() { Timeout = 60_000 });
+            var before = int.Parse(await status.GetAttributeAsync("data-scene-count") ?? "0");
+            Assert.True(before >= 1, $"expected a built shot plan, got {before} scenes");
+
+            // Stage 2 always auto-inserts an end-credits scene as the last scene of a built plan.
+            var creditsRow = page.Locator("[data-testid='scene-row']", new() { HasText = "END CREDITS" });
+            await Assertions.Expect(creditsRow).ToBeVisibleAsync(new() { Timeout = 30_000 });
+            var creditsBefore = int.Parse(await creditsRow.GetAttributeAsync("data-scene-number") ?? "0");
+
+            await page.GetByTestId("scenes-add-scene").ClickAsync();
+            await Assertions.Expect(status).ToHaveAttributeAsync(
+                "data-scene-count", (before + 1).ToString(), new() { Timeout = 15_000 });
+
+            // Credits must have been bumped up by exactly one — the new scene took its old slot.
+            var creditsRowAfter = page.Locator("[data-testid='scene-row']", new() { HasText = "END CREDITS" });
+            await Assertions.Expect(creditsRowAfter).ToBeVisibleAsync(new() { Timeout = 15_000 });
+            var creditsAfter = int.Parse(await creditsRowAfter.GetAttributeAsync("data-scene-number") ?? "0");
+            Assert.Equal(creditsBefore + 1, creditsAfter);
+
+            // And credits must still be the highest scene number in the plan — still last, never a
+            // stray scene generated/rendered after it.
+            var rendered = await page.Locator("[data-testid='scene-row']")
+                .EvaluateAllAsync<int[]>("els => els.map(e => parseInt(e.getAttribute('data-scene-number')))");
+            Assert.Equal(rendered.Max(), creditsAfter);
+        }
+        finally { await ctx.CloseAsync(); }
+    }
+
     [Fact]
     public async Task Opening_a_scene_shows_its_clip_select_bar()
     {

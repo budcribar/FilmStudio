@@ -3651,18 +3651,53 @@ public sealed partial class ProjectStore
         return removed;
     }
 
-    /// <summary>Append a new, empty scene to the blueprint; returns its scene number (max existing + 1).</summary>
+    /// <summary>
+    /// Append a new, empty scene to the blueprint; returns its scene number (max existing + 1).
+    /// When an end-credits scene already exists, the new scene is inserted just before it (and the
+    /// credits scene is bumped up by one) instead of appended after — credits must stay last, or the
+    /// movie plays a stray blank clip past "The End".
+    /// </summary>
     public int AddScene(string projectId, string? setting = null)
     {
         var (root, scenes, bpPath) = LoadBlueprintForEdit(projectId);
-        var next = NextSceneNumber(scenes);
+
+        var creditsIndex = -1;
+        for (var i = 0; i < scenes.Count; i++)
+        {
+            if (scenes[i] is System.Text.Json.Nodes.JsonObject so &&
+                IsCreditsScene(so.Deserialize<JsonElement>()))
+            {
+                creditsIndex = i;
+                break;
+            }
+        }
+
+        int next;
+        if (creditsIndex >= 0)
+        {
+            var creditsObj = (System.Text.Json.Nodes.JsonObject)scenes[creditsIndex]!;
+            next = ReadJsonNodeInt(creditsObj["scene_number"]);
+            for (var i = creditsIndex; i < scenes.Count; i++)
+                if (scenes[i] is System.Text.Json.Nodes.JsonObject so)
+                    so["scene_number"] = ReadJsonNodeInt(so["scene_number"]) + 1;
+        }
+        else
+        {
+            next = NextSceneNumber(scenes);
+        }
+
         var sceneObj = new System.Text.Json.Nodes.JsonObject
         {
             ["scene_number"] = next,
             ["setting"] = string.IsNullOrWhiteSpace(setting) ? "INT. NEW SCENE - DAY" : setting.Trim(),
             ["veo_clips"] = new System.Text.Json.Nodes.JsonArray(),
         };
-        scenes.Add(sceneObj);
+
+        if (creditsIndex >= 0)
+            scenes.Insert(creditsIndex, sceneObj);
+        else
+            scenes.Add(sceneObj);
+
         File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
         InvalidateSceneListCache(projectId);
         InvalidateReadCaches(projectId);

@@ -116,6 +116,39 @@ public class CreditsSceneTests : IDisposable
     }
 
     [Fact]
+    public void AddScene_without_credits_appends_at_end()
+    {
+        WriteBlueprint("The Story");
+
+        var first = _store.AddScene(ProjectId);
+        var second = _store.AddScene(ProjectId);
+
+        Assert.Equal(1, first);
+        Assert.Equal(2, second);
+    }
+
+    [Fact]
+    public void AddScene_inserts_before_existing_credits_scene_instead_of_after()
+    {
+        WriteBlueprint("The Story");
+        var creditsScene = _store.AddCreditsScene(ProjectId);
+
+        var newScene = _store.AddScene(ProjectId);
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(ProjectDir, "blueprint.clips.grok.json")));
+        var scenes = doc.RootElement.GetProperty("scenes").EnumerateArray().ToList();
+
+        // The new blank scene took the credits scene's old number, and credits got bumped up by one —
+        // credits must remain the last scene, not have a stray blank scene appended after it.
+        Assert.Equal(creditsScene, newScene);
+        Assert.Equal(2, scenes.Count);
+        Assert.Equal(newScene, scenes[0].GetProperty("scene_number").GetInt32());
+        Assert.False(scenes[0].TryGetProperty("is_credits", out _) && scenes[0].GetProperty("is_credits").GetBoolean());
+        Assert.Equal(creditsScene + 1, scenes[1].GetProperty("scene_number").GetInt32());
+        Assert.True(scenes[1].GetProperty("is_credits").GetBoolean());
+    }
+
+    [Fact]
     public void Site_url_is_config_wide()
     {
         var opts = Options.Create(new PageToMovieOptions

@@ -3069,6 +3069,13 @@ public sealed class FilmJobService
                         await AppendLogAsync($"Scene {target.Scene}: not in blueprint — skip");
                         continue;
                     }
+                    // Credits render deterministically client-side, never through the video model —
+                    // stop it here too in case a caller other than the Scenes page reaches this endpoint.
+                    if (IsCreditsScene(sceneEl))
+                    {
+                        await AppendLogAsync($"Scene {target.Scene}: end-credits scene — skip (rendered client-side)");
+                        continue;
+                    }
                     var clipEl = FindClipInScene(sceneEl.Value, target.Clip);
                     if (clipEl is null)
                     {
@@ -3086,6 +3093,13 @@ public sealed class FilmJobService
                     if (sceneEl is null)
                     {
                         await AppendLogAsync($"Scene {sn}: not in blueprint — skip");
+                        continue;
+                    }
+                    // Credits render deterministically client-side, never through the video model —
+                    // stop it here too in case a caller other than the Scenes page reaches this endpoint.
+                    if (IsCreditsScene(sceneEl))
+                    {
+                        await AppendLogAsync($"Scene {sn}: end-credits scene — skip (rendered client-side)");
                         continue;
                     }
                     if (!sceneEl.Value.TryGetProperty("veo_clips", out var clipsEl) ||
@@ -3243,6 +3257,14 @@ public sealed class FilmJobService
 
             var sceneEl = FindScene(bp.RootElement, req.Scene)
                 ?? throw new InvalidOperationException($"Scene {req.Scene} not in blueprint.");
+
+            // The end-credits card is rendered deterministically client-side (canvas -> ffmpeg.wasm),
+            // never through the video model — a video model asked to render a text-heavy title card
+            // hallucinates unrelated footage. The Scenes page already routes credits scenes elsewhere,
+            // but any other caller of this endpoint must be stopped here too, before spending an API call.
+            if (IsCreditsScene(sceneEl))
+                throw new InvalidOperationException(
+                    $"Scene {req.Scene} is the end-credits scene — it is rendered client-side, not through the video model.");
 
             if (req.RequireLockedCharacters)
             {
