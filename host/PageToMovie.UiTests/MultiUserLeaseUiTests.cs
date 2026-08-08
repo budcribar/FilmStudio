@@ -10,12 +10,12 @@ namespace PageToMovie.UiTests;
 /// P5 dual-user Playwright tests: two browser contexts (alice / bob) with
 /// distinct X-User-Id headers, exercising project leases end-to-end.
 /// </summary>
-[Collection("ui")]
+[Collection("ui-multiuser-lease")]
 public sealed class MultiUserLeaseUiTests
 {
-    private readonly AppFixture _fx;
+    private readonly MultiUserLeaseFixture _fx;
 
-    public MultiUserLeaseUiTests(AppFixture fx) => _fx = fx;
+    public MultiUserLeaseUiTests(MultiUserLeaseFixture fx) => _fx = fx;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -120,7 +120,7 @@ public sealed class MultiUserLeaseUiTests
 
         await alice.AcquireLeaseAsync(projectId!, "scene:listed");
 
-        var (status, body) = await bob.GetAsync($"/api/projects/{projectId}/leases");
+        var (status, body) = await bob.GetAsync($"/api/projects/{Uri.EscapeDataString(projectId!)}/leases");
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.True(body.GetProperty("ok").GetBoolean());
         var leases = body.GetProperty("leases");
@@ -202,16 +202,18 @@ public sealed class MultiUserLeaseUiTests
 
         public async Task<string?> CreateProjectAsync(string title)
         {
-            // API creates an empty project; title is only for our logging/debug.
-            _ = title;
-            using var content = new StringContent("{}", Encoding.UTF8, "application/json");
+            var payload = JsonSerializer.Serialize(new { name = title });
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
             using var resp = await _http.PostAsync("api/projects", content);
             var body = await resp.Content.ReadAsStringAsync();
             if (!resp.IsSuccessStatusCode)
                 return null;
             using var doc = JsonDocument.Parse(body);
-            if (doc.RootElement.TryGetProperty("id", out var id))
+            if (doc.RootElement.TryGetProperty("active", out var active) &&
+                active.TryGetProperty("id", out var id))
                 return id.GetString();
+            if (doc.RootElement.TryGetProperty("id", out var topId))
+                return topId.GetString();
             if (doc.RootElement.TryGetProperty("projectId", out var pid))
                 return pid.GetString();
             return null;
@@ -221,7 +223,7 @@ public sealed class MultiUserLeaseUiTests
         {
             var payload = JsonSerializer.Serialize(new { userId, role = "Editor" });
             using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-            using var req = new HttpRequestMessage(HttpMethod.Put, $"api/projects/{projectId}/acl/grant") { Content = content };
+            using var req = new HttpRequestMessage(HttpMethod.Put, $"api/projects/{Uri.EscapeDataString(projectId)}/acl/grant") { Content = content };
             using var resp = await _http.SendAsync(req);
             return resp.IsSuccessStatusCode;
         }
@@ -229,7 +231,7 @@ public sealed class MultiUserLeaseUiTests
         public async Task<(HttpStatusCode Status, JsonElement Body)> AcquireLeaseAsync(string projectId, string resourceKey)
         {
             var encoded = Uri.EscapeDataString(resourceKey);
-            using var resp = await _http.PostAsync($"api/projects/{projectId}/leases/{encoded}", content: null);
+            using var resp = await _http.PostAsync($"api/projects/{Uri.EscapeDataString(projectId)}/leases/{encoded}", content: null);
             var text = await resp.Content.ReadAsStringAsync();
             JsonElement body;
             try { body = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text).RootElement.Clone(); }
@@ -240,7 +242,7 @@ public sealed class MultiUserLeaseUiTests
         public async Task<bool> ReleaseLeaseAsync(string projectId, string resourceKey)
         {
             var encoded = Uri.EscapeDataString(resourceKey);
-            using var resp = await _http.DeleteAsync($"api/projects/{projectId}/leases/{encoded}");
+            using var resp = await _http.DeleteAsync($"api/projects/{Uri.EscapeDataString(projectId)}/leases/{encoded}");
             return resp.IsSuccessStatusCode;
         }
 
