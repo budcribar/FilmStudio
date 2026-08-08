@@ -1,0 +1,100 @@
+{
+  "Nav": {
+    "Brand": "Studio de Cinéma",
+    "Projects": "Projets",
+    "Adaptation": "Adaptation",
+    "Characters": "Personnages",
+    "Scenes": "Scènes",
+    "Review": "Révision",
+    "Configuration": "Configuration",
+    "Admin": "Admin",
+    "Cost": "Coûts",
+    "SelectProject": "Sélectionner un projet..."
+  },
+  "Common": {
+    "Save": "Enregistrer",
+    "Cancel": "Annuler",
+    "Delete": "Supprimer",
+    "Edit": "Modifier",
+    "Close": "Fermer",
+    "Loading": "Chargement...",
+    "Ready": "Prêt",
+    "Error": "Erreur",
+    "Success": "Succès",
+    "Warning": "Avertissement",
+    "Notice": "Avis",
+    "ClearFilters": "Effacer les filtres",
+    "Search": "Rechercher...",
+    "Actions": "Actions",
+    "Status": "Statut",
+    "Details": "Détails",
+    "Refresh": "Actualiser",
+    "Language": "Langue"
+  },
+  "Home": {
+    "Title": "Projets de Cinéma",
+    "Subtitle": "Sélectionnez un projet existant ou importez un nouveau scénario pour démarrer la production.",
+    "NewProject": "＋ Nouveau Projet",
+    "NoProjects": "Aucun projet trouvé. Créez un projet pour commencer la production.",
+    "LastModified": "Dernière modification",
+    "Owner": "Propriétaire"
+  },
+  "Adaptation": {
+    "Title": "Flux d'Adaptation",
+    "Step1": "Étape 1: Importer le Scénario",
+    "Step2": "Étape 2: Modifier et Approuver",
+    "Step3": "Étape 3: Plan de Prises",
+    "ApproveScreenplay": "C'est bon — continuer",
+    "RebuildShotPlan": "Reconstruire le plan de prises",
+    "ImportFile": "Importer le fichier source (PDF / TXT)",
+    "ScreenplayApproved": "Scénario approuvé",
+    "ShotPlanReady": "Plan de prises prêt"
+  },
+  "Characters": {
+    "Title": "Distribution et Portraits des Personnages",
+    "FindCharacters": "Trouver les personnages",
+    "FindCharactersAgain": "Rechercher à nouveau les personnages",
+    "GeneratePortraits": "Générer les portraits",
+    "SavedLook": "Enregistrer l'apparence",
+    "NoCharacters": "Aucun personnage trouvé. Lancez 'Trouver les personnages' pour analyser le scénario.",
+    "VoiceStyle": "Style vocal",
+    "SourceImage": "Image de référence du livre"
+  },
+  "Scenes": {
+    "Title": "Production des Scènes et Prises",
+    "GenerateClip": "Générer la séquence",
+    "Generating": "Génération de la séquence...",
+    "RebuildShotPlan": "Reconstruire le plan de prises",
+    "TotalDuration": "Durée totale",
+    "ClipCount": "{0} séquences"
+  },
+  "Review": {
+    "Title": "Révision du Film et Exportation",
+    "ExportMovie": "Exporter la version préliminaire",
+    "Publish": "Publier le film",
+    "Play": "Lire le film complet",
+    "Combining": "Assemblage des séquences..."
+  },
+  "Config": {
+    "Title": "Configuration des Modèles et Services du Studio",
+    "SaveSettings": "Enregistrer la Configuration",
+    "ApiKey": "Clé API",
+    "Provider": "Fournisseur",
+    "Model": "Modèle"
+  },
+  "Catalog": {
+    "Title": "Gestionnaire du Catalogue de Modèles",
+    "AddModel": "＋ Ajouter un modèle",
+    "Deprecate": "Obsolète",
+    "Restore": "Restaurer",
+    "Review": "Réviser",
+    "Deprecated": "OBSOLÈTE",
+    "ScanUpdates": "Rechercher les mises à jour"
+  },
+  "BookCache": {
+    "Title": "Cache d'Adaptation et Registre",
+    "BookName": "Nom du Livre / Titre",
+    "Projects": "Projets",
+    "Artifacts": "Artefacts Dérivés"
+  }
+}

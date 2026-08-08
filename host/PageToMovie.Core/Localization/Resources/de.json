@@ -1,0 +1,100 @@
+{
+  "Nav": {
+    "Brand": "Filmstudio",
+    "Projects": "Projekte",
+    "Adaptation": "Adaption",
+    "Characters": "Charaktere",
+    "Scenes": "Szenen",
+    "Review": "Überprüfung",
+    "Configuration": "Konfiguration",
+    "Admin": "Admin",
+    "Cost": "Kosten",
+    "SelectProject": "Projekt auswählen..."
+  },
+  "Common": {
+    "Save": "Speichern",
+    "Cancel": "Abbrechen",
+    "Delete": "Löschen",
+    "Edit": "Bearbeiten",
+    "Close": "Schließen",
+    "Loading": "Laden...",
+    "Ready": "Bereit",
+    "Error": "Fehler",
+    "Success": "Erfolg",
+    "Warning": "Warnung",
+    "Notice": "Hinweis",
+    "ClearFilters": "Filter zurücksetzen",
+    "Search": "Suchen...",
+    "Actions": "Aktionen",
+    "Status": "Status",
+    "Details": "Details",
+    "Refresh": "Aktualisieren",
+    "Language": "Sprache"
+  },
+  "Home": {
+    "Title": "Filmprojekte",
+    "Subtitle": "Wählen Sie ein bestehendes Filmprojekt oder importieren Sie ein neues Drehbuch.",
+    "NewProject": "＋ Neues Projekt",
+    "NoProjects": "Keine Filmprojekte gefunden. Erstellen Sie ein Projekt, um zu beginnen.",
+    "LastModified": "Zuletzt geändert",
+    "Owner": "Eigentümer"
+  },
+  "Adaptation": {
+    "Title": "Adaptions-Workflow",
+    "Step1": "Schritt 1: Drehbuch importieren",
+    "Step2": "Schritt 2: Bearbeiten & Freigeben",
+    "Step3": "Schritt 3: Aufnahmeplan",
+    "ApproveScreenplay": "Sieht gut aus — fortfahren",
+    "RebuildShotPlan": "Aufnahmeplan neu erstellen",
+    "ImportFile": "Quelldatei importieren (PDF / TXT)",
+    "ScreenplayApproved": "Drehbuch genehmigt",
+    "ShotPlanReady": "Aufnahmeplan bereit"
+  },
+  "Characters": {
+    "Title": "Besetzung & Charakterporträts",
+    "FindCharacters": "Charaktere suchen",
+    "FindCharactersAgain": "Erneut suchen",
+    "GeneratePortraits": "Porträts generieren",
+    "SavedLook": "Aussehen speichern",
+    "NoCharacters": "Noch keine Darsteller gefunden. Führen Sie 'Charaktere suchen' aus.",
+    "VoiceStyle": "Stimmstil",
+    "SourceImage": "Buchbild-Referenz"
+  },
+  "Scenes": {
+    "Title": "Szenen- & Aufnahme-Produktion",
+    "GenerateClip": "Clip generieren",
+    "Generating": "Clip wird generiert...",
+    "RebuildShotPlan": "Aufnahmeplan neu erstellen",
+    "TotalDuration": "Gesamtdauer",
+    "ClipCount": "{0} Clips"
+  },
+  "Review": {
+    "Title": "Filmprüfung & Master-Export",
+    "ExportMovie": "Filmentwurf exportieren",
+    "Publish": "Film veröffentlichen",
+    "Play": "Vollständigen Film abspielen",
+    "Combining": "Clips werden zusammengefügt..."
+  },
+  "Config": {
+    "Title": "Konfiguration der Studiomodelle und Dienste",
+    "SaveSettings": "Konfiguration speichern",
+    "ApiKey": "API-Schlüssel",
+    "Provider": "Anbieter",
+    "Model": "Modell"
+  },
+  "Catalog": {
+    "Title": "Modellkatalog-Manager",
+    "AddModel": "＋ Modell hinzufügen",
+    "Deprecate": "Veralten lassen",
+    "Restore": "Wiederherstellen",
+    "Review": "Überprüfen",
+    "Deprecated": "VERALTET",
+    "ScanUpdates": "Nach Updates suchen"
+  },
+  "BookCache": {
+    "Title": "Adaptions-Cache & Register",
+    "BookName": "Buchname / Titel",
+    "Projects": "Projekte",
+    "Artifacts": "Abgeleitete Artefakte"
+  }
+}

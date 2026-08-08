@@ -19,7 +19,10 @@ using Microsoft.Extensions.Options;
 using PageToMovie.Api.Collaboration;
 using PageToMovie.Engine.Collaboration;
 
+using PageToMovie.Core.Localization;
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAppLocalization();
 builder.Services.AddSingleton<PageToMovie.Engine.Collaboration.IProjectInviteMailer, PageToMovie.Engine.LoggingEmailSender>();
 builder.Services.AddSingleton<ProjectAclService>(sp =>
 {

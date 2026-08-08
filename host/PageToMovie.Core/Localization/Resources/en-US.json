@@ -1,0 +1,100 @@
+{
+  "Nav": {
+    "Brand": "Film Studio",
+    "Projects": "Projects",
+    "Adaptation": "Adaptation",
+    "Characters": "Characters",
+    "Scenes": "Scenes",
+    "Review": "Review",
+    "Configuration": "Configuration",
+    "Admin": "Admin",
+    "Cost": "Cost",
+    "SelectProject": "Select project..."
+  },
+  "Common": {
+    "Save": "Save",
+    "Cancel": "Cancel",
+    "Delete": "Delete",
+    "Edit": "Edit",
+    "Close": "Close",
+    "Loading": "Loading...",
+    "Ready": "Ready",
+    "Error": "Error",
+    "Success": "Success",
+    "Warning": "Warning",
+    "Notice": "Notice",
+    "ClearFilters": "Clear filters",
+    "Search": "Search...",
+    "Actions": "Actions",
+    "Status": "Status",
+    "Details": "Details",
+    "Refresh": "Refresh",
+    "Language": "Language"
+  },
+  "Home": {
+    "Title": "Film Studio Projects",
+    "Subtitle": "Select an existing story project or import a new screenplay to start production.",
+    "NewProject": "＋ New Project",
+    "NoProjects": "No film projects found. Create a project to start production.",
+    "LastModified": "Last modified",
+    "Owner": "Owner"
+  },
+  "Adaptation": {
+    "Title": "Adaptation Workflow",
+    "Step1": "Step 1: Import Screenplay",
+    "Step2": "Step 2: Edit & Sign-off",
+    "Step3": "Step 3: Shot Plan",
+    "ApproveScreenplay": "Looks good — continue",
+    "RebuildShotPlan": "Rebuild shot plan",
+    "ImportFile": "Import source file (PDF / TXT)",
+    "ScreenplayApproved": "Screenplay approved",
+    "ShotPlanReady": "Shot plan ready"
+  },
+  "Characters": {
+    "Title": "Character Cast & Portraits",
+    "FindCharacters": "Find characters",
+    "FindCharactersAgain": "Find characters again",
+    "GeneratePortraits": "Generate portraits",
+    "SavedLook": "Save look",
+    "NoCharacters": "No cast members found yet. Run 'Find characters' to scan the screenplay.",
+    "VoiceStyle": "Voice style",
+    "SourceImage": "Book picture reference"
+  },
+  "Scenes": {
+    "Title": "Scene & Shot Production",
+    "GenerateClip": "Generate clip",
+    "Generating": "Generating clip...",
+    "RebuildShotPlan": "Rebuild shot plan",
+    "TotalDuration": "Total duration",
+    "ClipCount": "{0} clips"
+  },
+  "Review": {
+    "Title": "Film Review & Master Export",
+    "ExportMovie": "Export movie draft",
+    "Publish": "Publish film",
+    "Play": "Play full movie",
+    "Combining": "Combining clips..."
+  },
+  "Config": {
+    "Title": "Studio Models & Services Configuration",
+    "SaveSettings": "Save Configuration",
+    "ApiKey": "API Key",
+    "Provider": "Provider",
+    "Model": "Model"
+  },
+  "Catalog": {
+    "Title": "Models Catalog Manager",
+    "AddModel": "＋ Add model",
+    "Deprecate": "Deprecate",
+    "Restore": "Restore",
+    "Review": "Review",
+    "Deprecated": "DEPRECATED",
+    "ScanUpdates": "Scan for updates"
+  },
+  "BookCache": {
+    "Title": "Adaptation Cache & Registry",
+    "BookName": "Book Name / Title",
+    "Projects": "Projects",
+    "Artifacts": "Derived Artifacts"
+  }
+}

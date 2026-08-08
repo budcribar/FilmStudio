@@ -1,0 +1,100 @@
+{
+  "Nav": {
+    "Brand": "Estudio de Cine",
+    "Projects": "Proyectos",
+    "Adaptation": "Adaptación",
+    "Characters": "Personajes",
+    "Scenes": "Escenas",
+    "Review": "Revisión",
+    "Configuration": "Configuración",
+    "Admin": "Administración",
+    "Cost": "Costos",
+    "SelectProject": "Seleccionar proyecto..."
+  },
+  "Common": {
+    "Save": "Guardar",
+    "Cancel": "Cancelar",
+    "Delete": "Eliminar",
+    "Edit": "Editar",
+    "Close": "Cerrar",
+    "Loading": "Cargando...",
+    "Ready": "Listo",
+    "Error": "Error",
+    "Success": "Éxito",
+    "Warning": "Advertencia",
+    "Notice": "Aviso",
+    "ClearFilters": "Limpiar filtros",
+    "Search": "Buscar...",
+    "Actions": "Acciones",
+    "Status": "Estado",
+    "Details": "Detalles",
+    "Refresh": "Actualizar",
+    "Language": "Idioma"
+  },
+  "Home": {
+    "Title": "Proyectos de Cine",
+    "Subtitle": "Selecciona un proyecto existente o importa un nuevo guión para comenzar la producción.",
+    "NewProject": "＋ Nuevo Proyecto",
+    "NoProjects": "No se encontraron proyectos de cine. Crea un proyecto para comenzar.",
+    "LastModified": "Última modificación",
+    "Owner": "Propietario"
+  },
+  "Adaptation": {
+    "Title": "Flujo de Adaptación",
+    "Step1": "Paso 1: Importar Guión",
+    "Step2": "Paso 2: Editar y Aprobar",
+    "Step3": "Paso 3: Plan de Tomas",
+    "ApproveScreenplay": "Se ve bien — continuar",
+    "RebuildShotPlan": "Reconstruir plan de tomas",
+    "ImportFile": "Importar archivo fuente (PDF / TXT)",
+    "ScreenplayApproved": "Guión aprobado",
+    "ShotPlanReady": "Plan de tomas listo"
+  },
+  "Characters": {
+    "Title": "Reparto y Retratos de Personajes",
+    "FindCharacters": "Buscar personajes",
+    "FindCharactersAgain": "Buscar personajes de nuevo",
+    "GeneratePortraits": "Generar retratos",
+    "SavedLook": "Guardar apariencia",
+    "NoCharacters": "Aún no se encontraron miembros del reparto. Ejecuta 'Buscar personajes' para escanear el guión.",
+    "VoiceStyle": "Estilo de voz",
+    "SourceImage": "Referencia de imagen del libro"
+  },
+  "Scenes": {
+    "Title": "Producción de Escenas y Tomas",
+    "GenerateClip": "Generar clip",
+    "Generating": "Generando clip...",
+    "RebuildShotPlan": "Reconstruir plan de tomas",
+    "TotalDuration": "Duración total",
+    "ClipCount": "{0} clips"
+  },
+  "Review": {
+    "Title": "Revisión de Película y Exportación Maestra",
+    "ExportMovie": "Exportar borrador de película",
+    "Publish": "Publicar película",
+    "Play": "Reproducir película completa",
+    "Combining": "Combinando clips..."
+  },
+  "Config": {
+    "Title": "Configuración de Modelos y Servicios del Estudio",
+    "SaveSettings": "Guardar Configuración",
+    "ApiKey": "Clave API",
+    "Provider": "Proveedor",
+    "Model": "Modelo"
+  },
+  "Catalog": {
+    "Title": "Administrador del Catálogo de Modelos",
+    "AddModel": "＋ Agregar modelo",
+    "Deprecate": "Desaprobar",
+    "Restore": "Restaurar",
+    "Review": "Revisar",
+    "Deprecated": "OBSOLETO",
+    "ScanUpdates": "Buscar actualizaciones"
+  },
+  "BookCache": {
+    "Title": "Caché de Adaptación y Registro",
+    "BookName": "Nombre del Libro / Título",
+    "Projects": "Proyectos",
+    "Artifacts": "Artefactos Derivados"
+  }
+}

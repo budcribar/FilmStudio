@@ -2,7 +2,11 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Options;
 using PageToMovie.Web.Services;
 
+using PageToMovie.Core.Localization;
+
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
+builder.Services.AddAppLocalization();
 
 builder.Services.Configure<EngineApiOptions>(
     builder.Configuration.GetSection(EngineApiOptions.SectionName));
