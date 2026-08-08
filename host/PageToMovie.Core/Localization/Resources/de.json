@@ -208,5 +208,21 @@
     "RequiredFieldMissing": "Bitte füllen Sie alle erforderlichen Felder aus.",
     "OperationFailed": "Vorgang fehlgeschlagen. Bitte erneut versuchen.",
     "TryAgain": "Erneut versuchen"
+  },
+  "AboutPage": {
+    "Title": "Über PageToMovie",
+    "Lead": "Verwandeln Sie ein Buch oder eine Geschichte in einen Kurzfilm.",
+    "Intro": "Importieren Sie Ihren Text und PageToMovie hilft Ihnen, ihn in ein Drehbuch zu verwandeln, einen visuellen Stil zu wählen, Charaktere zu besetzen und Szenen zu generieren — danach ansehen und teilen.",
+    "HowItWorks": "So funktioniert es",
+    "StepBook": "Importieren Sie Ihre Geschichte und gestalten Sie das Drehbuch.",
+    "StepLook": "Wählen Sie den visuellen Stil und passen Sie den Film an Ihr Budget an.",
+    "StepCast": "Geben Sie jedem Charakter ein Aussehen und eine optionale Stimme.",
+    "StepFilm": "Generieren Sie die Szenen, dann ansehen und teilen."
+  },
+  "CostPage": {
+    "Spent": "Ausgegeben",
+    "Remaining": "Verbleibend",
+    "VideoResolution": "Videoauflösung",
+    "SoFar": "bisher"
   }
 }

@@ -208,5 +208,21 @@
     "RequiredFieldMissing": "Please fill out all required fields.",
     "OperationFailed": "Operation failed. Please try again.",
     "TryAgain": "Try again"
+  },
+  "AboutPage": {
+    "Title": "About PageToMovie",
+    "Lead": "Turn a book or story into a short film.",
+    "Intro": "Import your text and PageToMovie helps you shape it into a screenplay, choose a visual style, cast the characters, and generate the scenes — then watch and share the finished movie.",
+    "HowItWorks": "How it works",
+    "StepBook": "import your story and shape the screenplay.",
+    "StepLook": "pick the visual style and fit the film to your budget.",
+    "StepCast": "give each character a look, and an optional voice.",
+    "StepFilm": "generate the scenes, then watch and share."
+  },
+  "CostPage": {
+    "Spent": "Spent",
+    "Remaining": "Remaining",
+    "VideoResolution": "Video resolution",
+    "SoFar": "so far"
   }
 }

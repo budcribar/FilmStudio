@@ -208,5 +208,21 @@
     "RequiredFieldMissing": "Por favor completa todos los campos requeridos.",
     "OperationFailed": "La operación falló. Inténtalo de nuevo.",
     "TryAgain": "Intentar de nuevo"
+  },
+  "AboutPage": {
+    "Title": "Acerca de PageToMovie",
+    "Lead": "Convierte un libro o historia en un cortometraje.",
+    "Intro": "Importa tu texto y PageToMovie te ayuda a convertirlo en guión, elegir estilo visual, audicionar personajes y generar escenas — luego mira y comparte la película terminada.",
+    "HowItWorks": "Cómo funciona",
+    "StepBook": "importa tu historia y dale forma al guión.",
+    "StepLook": "elige el estilo visual y ajusta la película a tu presupuesto.",
+    "StepCast": "asigna apariencia a cada personaje y una voz opcional.",
+    "StepFilm": "genera las escenas, luego mira y comparte."
+  },
+  "CostPage": {
+    "Spent": "Gastado",
+    "Remaining": "Restante",
+    "VideoResolution": "Resolución de video",
+    "SoFar": "hasta ahora"
   }
 }

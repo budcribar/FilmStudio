@@ -11,7 +11,7 @@ using PageToMovie.Web.Services;
 
 namespace PageToMovie.Web.Components.Pages;
 
-public partial class Login
+public partial class Login : IDisposable
 {
     private string _username = "";
     private string _email = "";
@@ -185,8 +185,16 @@ public partial class Login
 
     protected override void OnInitialized()
     {
+        L.CultureChanged += OnCultureChanged;
         var relative = Nav.ToBaseRelativePath(Nav.Uri);
         _isSignup = relative.StartsWith("signup", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void OnCultureChanged(System.Globalization.CultureInfo culture) => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        L.CultureChanged -= OnCultureChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

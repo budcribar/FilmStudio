@@ -677,6 +677,9 @@ public static class SupportedModelCatalog
             }
         }
 
+        if (_loadedTaskRankings is { Count: > 0 })
+            return new Dictionary<string, List<string>>(_loadedTaskRankings, StringComparer.OrdinalIgnoreCase);
+
         return new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
     }
 

@@ -4,13 +4,14 @@
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
 @inject NavigationManager Nav
+@inject IAppLocalizer L
 @using PageToMovie.Core.Models
 @using System.Globalization
 @using static PageToMovie.Web.Components.CostFormatting
 
-<PageTitle>Estimate & cost</PageTitle>
+<PageTitle>@L["Nav.Estimate"]</PageTitle>
 
-<StudioPageHeader Kicker="Studio · Estimate" Title="Estimate & cost">
+<StudioPageHeader Kicker="Studio · Estimate" Title="@L["Nav.Estimate"]">
     See what this film is planned to cost, what you’ve spent so far, and where the money went.
 </StudioPageHeader>
 
@@ -36,7 +37,7 @@
 
     @if (_report is null)
     {
-        <p class="text-muted">Loading…</p>
+        <p class="text-muted">@L["Common.Loading"]</p>
     }
     else
     {
@@ -56,7 +57,7 @@
                 @* Headline numbers on top *@
                 <div class="row g-3 text-center">
                     <div class="col-4">
-                        <div class="text-muted small text-uppercase mb-1">Estimate</div>
+                        <div class="text-muted small text-uppercase mb-1">@L["Nav.Estimate"]</div>
                         <div class="fs-3 fw-semibold cost-hero-num" data-testid="cost-estimate">@Usd(estimate)</div>
                         <div class="small text-muted">
                             @if (hasShotPlan)
@@ -70,12 +71,12 @@
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="text-muted small text-uppercase mb-1">Spent</div>
+                        <div class="text-muted small text-uppercase mb-1">@L["CostPage.Spent"]</div>
                         <div class="fs-3 fw-semibold cost-hero-num" data-testid="cost-spent">@Usd(s.ActualUsd)</div>
-                        <div class="small text-muted">so far</div>
+                        <div class="small text-muted">@L["CostPage.SoFar"]</div>
                     </div>
                     <div class="col-4">
-                        <div class="text-muted small text-uppercase mb-1">Remaining</div>
+                        <div class="text-muted small text-uppercase mb-1">@L["CostPage.Remaining"]</div>
                         <div class="fs-3 fw-semibold cost-hero-num" data-testid="cost-remaining">@Usd(Math.Max(0, estimate - s.ActualUsd))</div>
                         <div class="small text-muted">est − spent</div>
                     </div>
@@ -86,7 +87,7 @@
                 @* Two balanced columns that stay centered on resize *@
                 <div class="row g-3 align-items-start">
                     <div class="col-md-6">
-                        <label class="form-label small mb-1">Video resolution</label>
+                        <label class="form-label small mb-1">@L["CostPage.VideoResolution"]</label>
                         <div class="btn-group d-flex" role="group" aria-label="Video resolution">
                             @foreach (var res in new[] { "480p", "720p", "1080p" })
                             {

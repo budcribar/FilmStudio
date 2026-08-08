@@ -1320,5 +1320,34 @@
       "lastVerifiedAt": "2026-08-07",
       "pricingLastReviewedAt": "2026-08-07"
     }
-  ]
+  ],
+  "task_rankings": {
+    "script_import": [
+      "claude-sonnet-5",
+      "grok-4.5",
+      "gemini-2.5-flash"
+    ],
+    "beat_pacing": [
+      "grok-4.5",
+      "gemini-2.0-flash",
+      "claude-sonnet-5"
+    ],
+    "camera_director": [
+      "grok-4.5",
+      "claude-sonnet-5"
+    ],
+    "sound_design": [
+      "grok-4.5",
+      "gemini-2.5-flash"
+    ],
+    "cast_analysis": [
+      "grok-4.5",
+      "claude-sonnet-5",
+      "gemini-2.5-flash"
+    ],
+    "video_review": [
+      "gemini-2.5-flash",
+      "grok-4.5"
+    ]
+  }
 }

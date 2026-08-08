@@ -239,6 +239,15 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.nav-user-dropdown-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.5rem 0.65rem;
+    margin-bottom: 0.15rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .nav-user-dropdown-id {
     min-width: 0;
 }

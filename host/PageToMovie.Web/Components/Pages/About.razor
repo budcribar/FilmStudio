@@ -2,26 +2,26 @@
 @inject EngineApiClient Engine
 @inject AdminSessionService Session
 @inject Microsoft.Extensions.Options.IOptions<EngineApiOptions> EngineOpts
+@inject IAppLocalizer L
 
-<PageTitle>About — PageToMovie</PageTitle>
+<PageTitle>@L["Nav.About"] — PageToMovie</PageTitle>
 
-<h1>About PageToMovie</h1>
-<p class="lead">Turn a book or story into a short film.</p>
+<h1>@L["AboutPage.Title"]</h1>
+<p class="lead">@L["AboutPage.Lead"]</p>
 <p class="text-body-secondary">
-    Import your text and PageToMovie helps you shape it into a screenplay, choose a visual style,
-    cast the characters, and generate the scenes — then watch and share the finished movie.
+    @L["AboutPage.Intro"]
 </p>
 
 <div class="row g-3 mb-4">
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-body">
-                <h2 class="h6">How it works</h2>
+                <h2 class="h6">@L["AboutPage.HowItWorks"]</h2>
                 <ol class="small mb-0 ps-3">
-                    <li><strong>Book</strong> — import your story and shape the screenplay.</li>
-                    <li><strong>Look &amp; length</strong> — pick the visual style and fit the film to your budget.</li>
-                    <li><strong>Cast</strong> — give each character a look, and an optional voice.</li>
-                    <li><strong>Film</strong> — generate the scenes, then watch and share.</li>
+                    <li><strong>@L["Home.Book"]</strong> — @L["AboutPage.StepBook"]</li>
+                    <li><strong>Look &amp; length</strong> — @L["AboutPage.StepLook"]</li>
+                    <li><strong>@L["Nav.Cast"]</strong> — @L["AboutPage.StepCast"]</li>
+                    <li><strong>@L["Nav.Film"]</strong> — @L["AboutPage.StepFilm"]</li>
                 </ol>
             </div>
         </div>
