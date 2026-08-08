@@ -4,6 +4,9 @@ using Xunit;
 
 namespace PageToMovie.Tests;
 
+// Reads SupportedModelCatalog.TaskRankings indirectly (via task-name ranking lookups) — must not
+// run concurrently with tests that swap in a reduced synthetic catalog. See CatalogSerialCollection.
+[Collection("catalog-serial")]
 public class SmartClassifierModelRouterTests
 {
     [Fact]

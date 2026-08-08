@@ -11,6 +11,8 @@ namespace PageToMovie.Tests;
 /// alone falls back to an any-capability match, so this guards the batch spend path against an
 /// override that names a chat/image/audio/voice model.
 /// </summary>
+// See CatalogSerialCollection in SupportedModelCatalogTests.cs.
+[Collection("catalog-serial")]
 public class VideoModelOverrideTests
 {
     public VideoModelOverrideTests()

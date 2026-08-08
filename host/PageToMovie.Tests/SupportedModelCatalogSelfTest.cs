@@ -7,6 +7,9 @@ namespace PageToMovie.Tests;
 /// Catalog self-test: every enabled model must carry required capability + cost fields.
 /// Runs against the real models_catalog.json so deploy/CI fails before movie generation.
 /// </summary>
+// Swaps in reduced/synthetic/lab catalogs mid-test. See CatalogSerialCollection in
+// SupportedModelCatalogTests.cs.
+[Collection("catalog-serial")]
 public class SupportedModelCatalogSelfTest
 {
     public SupportedModelCatalogSelfTest()

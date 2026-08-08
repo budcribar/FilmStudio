@@ -12,6 +12,10 @@ namespace PageToMovie.Tests;
 /// 2026-08, is every enabled video model including xAI's grok-imagine-video (no separate line item
 /// published on docs.x.ai/developers/pricing for reference images or video-extend).
 /// </summary>
+// Swaps in a reduced synthetic catalog mid-test (restored in Dispose, but the window while it's
+// active must not overlap another test reading the real catalog on another thread). See
+// CatalogSerialCollection in SupportedModelCatalogTests.cs.
+[Collection("catalog-serial")]
 public sealed class CostReportServiceTests : IDisposable
 {
     public CostReportServiceTests()

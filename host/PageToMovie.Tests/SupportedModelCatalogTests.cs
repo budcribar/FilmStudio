@@ -5,6 +5,19 @@ using Xunit;
 
 namespace PageToMovie.Tests;
 
+/// <summary>
+/// Serializes every test that mutates or depends on SupportedModelCatalog's shared static state
+/// (TryLoadFromJson/ReloadCatalog swap the process-wide loaded catalog). Without this, xUnit's
+/// default cross-class parallelism lets a test loading a reduced synthetic catalog (e.g.
+/// CostReportServiceTests, SupportedModelCatalogSelfTest) race with a test that reads the real
+/// embedded catalog (e.g. task_rankings) on another thread — the reader sees a fully-valid-but-wrong
+/// catalog, not a torn read (EnsureLoaded/Entries already lock CatalogSync), so the race isn't
+/// visible from the code, only from occasional full-suite-only failures in unrelated tests.
+/// </summary>
+[CollectionDefinition("catalog-serial", DisableParallelization = true)]
+public sealed class CatalogSerialCollection { }
+
+[Collection("catalog-serial")]
 public class SupportedModelCatalogTests
 {
     public SupportedModelCatalogTests()

@@ -7,6 +7,8 @@ namespace PageToMovie.Tests;
 /// <summary>
 /// Fake video client enforces catalog feature flags so model combinations can be tested under UseFakes.
 /// </summary>
+// See CatalogSerialCollection in SupportedModelCatalogTests.cs.
+[Collection("catalog-serial")]
 public class FakeVideoCatalogCapabilityTests
 {
     public FakeVideoCatalogCapabilityTests()

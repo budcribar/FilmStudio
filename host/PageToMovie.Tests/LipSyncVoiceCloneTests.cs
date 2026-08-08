@@ -11,6 +11,8 @@ namespace PageToMovie.Tests;
 /// fal-ai/minimax/speech-02-hd) catalog wiring + local plumbing. No network calls — see
 /// LiveApi/README.md for the paid-call opt-in convention; nothing here spends real money.
 /// </summary>
+// See CatalogSerialCollection in SupportedModelCatalogTests.cs.
+[Collection("catalog-serial")]
 public class LipSyncVoiceCloneTests
 {
     public LipSyncVoiceCloneTests() => SupportedModelCatalog.ReloadCatalog();

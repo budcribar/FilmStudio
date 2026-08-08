@@ -8,6 +8,8 @@ namespace PageToMovie.Tests;
 /// Capability mapping: Settings config keys must resolve only models that match the
 /// job capability (video slot ≠ chat model, etc.). Documents intentional Chat↔Vision overlap.
 /// </summary>
+// See CatalogSerialCollection in SupportedModelCatalogTests.cs.
+[Collection("catalog-serial")]
 public class ProjectModelSelectionTests
 {
     public ProjectModelSelectionTests()

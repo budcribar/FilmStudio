@@ -5,6 +5,8 @@ using Xunit;
 
 namespace PageToMovie.Tests;
 
+// See CatalogSerialCollection in SupportedModelCatalogTests.cs.
+[Collection("catalog-serial")]
 public class SupportsVocalsCatalogTests
 {
     public SupportsVocalsCatalogTests()

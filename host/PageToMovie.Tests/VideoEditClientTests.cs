@@ -17,6 +17,8 @@ namespace PageToMovie.Tests;
 /// to the whole video-edit job end-to-end. This file is the fast, isolated unit-test layer under
 /// both — it proves the fallback branch itself, not just that the job eventually succeeds.
 /// </summary>
+// See CatalogSerialCollection in SupportedModelCatalogTests.cs.
+[Collection("catalog-serial")]
 public class VideoEditClientTests : IDisposable
 {
     private readonly string _root;
