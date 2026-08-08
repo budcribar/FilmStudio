@@ -56,6 +56,13 @@
   "Home": {
     "Title": "Proyectos de Cine",
     "Subtitle": "Selecciona un proyecto existente o importa un nuevo guión para comenzar la producción.",
+    "DropABook": "Entrega un libro. Consigue una película.",
+    "LandingSubtitle": "Convierte una historia en un cortometraje con tu voz — o abre el estudio completo para audicionar, calcular y filmar cada escena.",
+    "Book": "Libro",
+    "Studio": "Estudio",
+    "Film": "Película",
+    "FullStudio": "Estudio completo",
+    "EasyStart": "Inicio fácil",
     "NewProject": "＋ Nuevo Proyecto",
     "NoProjects": "No se encontraron proyectos de cine. Crea un proyecto para comenzar.",
     "LastModified": "Última modificación",

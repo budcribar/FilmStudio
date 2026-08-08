@@ -54,8 +54,15 @@
     "Submitting": "Wird gesendet..."
   },
   "Home": {
-    "Title": "Filmprojekte",
-    "Subtitle": "Wählen Sie ein bestehendes Filmprojekt oder importieren Sie ein neues Drehbuch.",
+    "Title": "Filmstudio-Projekte",
+    "Subtitle": "Wählen Sie ein bestehendes Projekt oder importieren Sie ein neues Drehbuch.",
+    "DropABook": "Gib ein Buch ein. Erhalte einen Film.",
+    "LandingSubtitle": "Verwandle eine Geschichte mit deiner Stimme in einen Kurzfilm — oder öffne das gesamte Studio, um jede Szene zu besetzen, zu schätzen und zu drehen.",
+    "Book": "Buch",
+    "Studio": "Studio",
+    "Film": "Film",
+    "FullStudio": "Vollständiges Studio",
+    "EasyStart": "Einfacher Start",
     "NewProject": "＋ Neues Projekt",
     "NoProjects": "Keine Filmprojekte gefunden. Erstellen Sie ein Projekt, um zu beginnen.",
     "LastModified": "Zuletzt geändert",

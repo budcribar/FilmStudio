@@ -56,6 +56,13 @@
   "Home": {
     "Title": "Film Studio Projects",
     "Subtitle": "Select an existing story project or import a new screenplay to start production.",
+    "DropABook": "Drop a book. Get a movie.",
+    "LandingSubtitle": "Turn a story into a short film with your voice — or open the full studio to cast, estimate, and film every scene.",
+    "Book": "Book",
+    "Studio": "Studio",
+    "Film": "Film",
+    "FullStudio": "Full studio",
+    "EasyStart": "Easy start",
     "NewProject": "＋ New Project",
     "NoProjects": "No film projects found. Create a project to start production.",
     "LastModified": "Last modified",

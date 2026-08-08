@@ -47,6 +47,8 @@ public sealed class JsonAppLocalizer : IAppLocalizer
             _currentCulture = culture;
             CultureInfo.CurrentCulture = culture;
             CultureInfo.CurrentUICulture = culture;
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
             CultureChanged?.Invoke(culture);
         }
         catch

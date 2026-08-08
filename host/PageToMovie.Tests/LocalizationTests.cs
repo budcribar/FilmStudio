@@ -32,6 +32,22 @@ public sealed class LocalizationTests
         Assert.Equal(missingKey, result);
     }
 
+    [Fact]
+    public void JsonAppLocalizer_SetCulture_UpdatesCurrentCulture_And_Fires_CultureChanged()
+    {
+        CultureInfo? receivedCulture = null;
+        _localizer.CultureChanged += c => receivedCulture = c;
+
+        _localizer.SetCulture("es");
+
+        Assert.Equal("es", _localizer.CurrentCulture.Name);
+        Assert.Equal("es", CultureInfo.CurrentCulture.Name);
+        Assert.Equal("es", CultureInfo.CurrentUICulture.Name);
+        Assert.NotNull(receivedCulture);
+        Assert.Equal("es", receivedCulture.Name);
+        Assert.Equal("Entrega un libro. Consigue una película.", _localizer["Home.DropABook"]);
+    }
+
     [Theory]
     [InlineData("es")]
     [InlineData("fr")]
