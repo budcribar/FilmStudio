@@ -25,7 +25,7 @@
     .ptm-light-box-h { display: inline-flex; flex-direction: row; gap: 6px; padding: 6px 8px; border-radius: 10px; background: #1b1b1b; }
     .ptm-light-sm { width: 18px; height: 18px; border-radius: 50%; }
     .tele-viewport { position: relative; overflow: hidden; height: 1.9em; }
-    .tele-text { position: absolute; left: 32%; white-space: nowrap; will-change: transform; }
+    .tele-text { position: absolute; left: 6%; white-space: nowrap; will-change: transform; }
     .tele-w { display: inline-block; margin-right: 0.32em; }
     .tele-w.tele-active { background: rgba(255,193,7,.32); border-radius: 4px; }
     .ptm-wave-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
@@ -79,7 +79,7 @@ else
         {
             @* The light sits just left of the marker, so your eye flows light → start → scrolling
                words. Shown for Listen (original scrolls), the countdown (static), and recording. *@
-            <div class="d-flex align-items-center gap-3 mb-1">
+            <div class="d-flex align-items-center gap-2 mb-1">
                 <div class="ptm-light-box-h" data-testid="voice-capture-light">
                     <span class="ptm-light-sm @(_light == 1 ? "ptm-red-on" : "ptm-red-off")"></span>
                     <span class="ptm-light-sm @(_light == 2 ? "ptm-yellow-on" : "ptm-yellow-off")"></span>

@@ -647,7 +647,8 @@ code {
     color: var(--fs-alert-warning-text);
 }
 
-.alert-secondary {
+.alert-secondary,
+.alert-light {
     background-color: var(--fs-alert-secondary-bg);
     border: 1px solid var(--fs-border-color);
     color: var(--fs-alert-secondary-text);
