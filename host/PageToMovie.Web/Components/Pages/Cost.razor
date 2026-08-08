@@ -12,7 +12,7 @@
 <PageTitle>@L["Nav.Estimate"]</PageTitle>
 
 <StudioPageHeader Kicker="Studio · Estimate" Title="@L["Nav.Estimate"]">
-    See what this film is planned to cost, what you’ve spent so far, and where the money went.
+    @L["CostPage.Subtitle"]
 </StudioPageHeader>
 
 @if (ActiveProject.HasProject)
@@ -27,9 +27,8 @@
 {
     <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <strong>Full quote needs a screenplay.</strong>
+            <strong>@L["CostPage.FullQuoteNeedsScreenplay"]</strong>
             @ActiveProject.EstimateBlockedReason
-            You can still see what you’ve already spent.
         </div>
         <a class="btn btn-sm btn-warning fw-semibold" href="adaptation">Go to Book →</a>
     </div>
@@ -116,10 +115,10 @@
         {
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 p-3 rounded border border-primary border-opacity-25 bg-primary bg-opacity-10">
                 <div class="small">
-                    <strong>@(ActiveProject.CanScenes ? "Ready to generate?" : "Estimate confirmed — next step")</strong>
+                    <strong>@(ActiveProject.CanScenes ? L["CostPage.ReadyToGenerate"] : "Estimate confirmed — next step")</strong>
                     @if (ActiveProject.CanScenes)
                     {
-                        <span> Continue to Film to produce clips.</span>
+                        <span> @L["CostPage.ContinueToFilm"]</span>
                     }
                     else
                     {
@@ -131,7 +130,7 @@
                         data-testid="cost-agree-continue"
                         disabled="@_busy"
                         @onclick="AgreeAndContinueAsync">
-                    @AgreeButtonLabel
+                    @L["CostPage.AgreeAndContinue"]
                 </button>
             </div>
         }
@@ -139,10 +138,10 @@
         @* Full breakdown and account-wide spend each live on their own page. *@
         <div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
             <a class="btn btn-sm btn-outline-secondary" href="cost/breakdown" data-testid="cost-breakdown-link">
-                Project cost breakdown →
+                @L["CostPage.ProjectCostBreakdown"]
             </a>
             <a class="btn btn-sm btn-outline-secondary" href="account/costs" data-testid="cost-account-link">
-                See all projects &amp; billing →
+                @L["CostPage.SeeAllProjectsBilling"]
             </a>
         </div>
     }
