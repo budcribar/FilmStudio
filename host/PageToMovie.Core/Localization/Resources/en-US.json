@@ -9,7 +9,24 @@
     "Configuration": "Configuration",
     "Admin": "Admin",
     "Cost": "Cost",
-    "SelectProject": "Select project..."
+    "SelectProject": "Select project...",
+    "Settings": "Settings",
+    "Book": "Book",
+    "Cast": "Cast",
+    "Film": "Film",
+    "Estimate": "Estimate",
+    "UsersAndCredits": "Users & credits",
+    "AdminConfig": "Admin config",
+    "ModelsCatalog": "Models catalog",
+    "Learning": "Learning",
+    "BookCache": "Book cache",
+    "Share": "Share",
+    "SignIn": "Sign in",
+    "SignOut": "Sign out",
+    "ViewAsUser": "View as regular user",
+    "BackToAdmin": "✓ Viewing as user — back to admin",
+    "AccountCosts": "Billing & costs",
+    "About": "About"
   },
   "Common": {
     "Save": "Save",
@@ -29,7 +46,12 @@
     "Status": "Status",
     "Details": "Details",
     "Refresh": "Refresh",
-    "Language": "Language"
+    "Language": "Language",
+    "Confirm": "Confirm",
+    "Back": "Back",
+    "Next": "Next",
+    "Updating": "Updating...",
+    "Submitting": "Submitting..."
   },
   "Home": {
     "Title": "Film Studio Projects",
@@ -37,7 +59,13 @@
     "NewProject": "＋ New Project",
     "NoProjects": "No film projects found. Create a project to start production.",
     "LastModified": "Last modified",
-    "Owner": "Owner"
+    "Owner": "Owner",
+    "Open": "Open",
+    "DeleteConfirm": "Are you sure you want to delete this project? This action cannot be undone.",
+    "CreateModalTitle": "Create New Project",
+    "ProjectName": "Project Name",
+    "Create": "Create Project",
+    "SelectAStory": "Select a story"
   },
   "Adaptation": {
     "Title": "Adaptation Workflow",
@@ -48,7 +76,15 @@
     "RebuildShotPlan": "Rebuild shot plan",
     "ImportFile": "Import source file (PDF / TXT)",
     "ScreenplayApproved": "Screenplay approved",
-    "ShotPlanReady": "Shot plan ready"
+    "ShotPlanReady": "Shot plan ready",
+    "DragDropPrompt": "Drag & drop screenplay file here, or click to browse",
+    "ProcessingBook": "Converting story text to Fountain screenplay format...",
+    "ImportFailed": "Failed to import screenplay. Please check file format and try again.",
+    "SignoffConfirm": "Sign-off and unlock character cast and shot planning?",
+    "LineCount": "{0} lines",
+    "CharacterCount": "{0} characters",
+    "SourceText": "Source Text",
+    "ScreenplayDraft": "Screenplay Draft"
   },
   "Characters": {
     "Title": "Character Cast & Portraits",
@@ -58,7 +94,14 @@
     "SavedLook": "Save look",
     "NoCharacters": "No cast members found yet. Run 'Find characters' to scan the screenplay.",
     "VoiceStyle": "Voice style",
-    "SourceImage": "Book picture reference"
+    "SourceImage": "Book picture reference",
+    "CreatingPortrait": "Creating portrait...",
+    "PortraitFailed": "Portrait generation failed. Try again.",
+    "PromptRequired": "Character prompt description required.",
+    "VisualLock": "Visual style lock",
+    "Wardrobe": "Wardrobe notes",
+    "Role": "Role",
+    "Description": "Visual Description"
   },
   "Scenes": {
     "Title": "Scene & Shot Production",
@@ -66,21 +109,38 @@
     "Generating": "Generating clip...",
     "RebuildShotPlan": "Rebuild shot plan",
     "TotalDuration": "Total duration",
-    "ClipCount": "{0} clips"
+    "ClipCount": "{0} clips",
+    "GenFailed": "Clip generation failed. Please check provider status or retrying.",
+    "Remuxing": "Combining audio and video clips...",
+    "PlayClip": "Play clip",
+    "Regenerate": "Regenerate clip",
+    "ShotPlan": "Shot plan",
+    "SceneSummary": "Scene summary"
   },
   "Review": {
     "Title": "Film Review & Master Export",
     "ExportMovie": "Export movie draft",
     "Publish": "Publish film",
     "Play": "Play full movie",
-    "Combining": "Combining clips..."
+    "Combining": "Combining clips...",
+    "PublishSuccess": "Film published successfully!",
+    "YouTubeUploadStatus": "YouTube upload status",
+    "DownloadCut": "Download MP4 master",
+    "FullMovie": "Full Movie",
+    "DraftAssembly": "Draft Assembly"
   },
   "Config": {
     "Title": "Studio Models & Services Configuration",
     "SaveSettings": "Save Configuration",
     "ApiKey": "API Key",
     "Provider": "Provider",
-    "Model": "Model"
+    "Model": "Model",
+    "SavedSuccess": "Configuration saved successfully.",
+    "SaveFailed": "Failed to save configuration.",
+    "TestConnection": "Test Connection",
+    "Connected": "Connected",
+    "Disconnected": "Not connected",
+    "SettingsSubtitle": "Manage your API keys, AI model selection, and storage paths."
   },
   "Catalog": {
     "Title": "Models Catalog Manager",
@@ -89,12 +149,57 @@
     "Restore": "Restore",
     "Review": "Review",
     "Deprecated": "DEPRECATED",
-    "ScanUpdates": "Scan for updates"
+    "ScanUpdates": "Scan for updates",
+    "ModelIdRequired": "Model ID is required.",
+    "ModelExists": "Model '{0}' already exists.",
+    "SavedCatalog": "Catalog updated successfully. Save to persist.",
+    "StatusActive": "Status (Active models)",
+    "EnabledOnly": "Enabled only",
+    "DisabledOnly": "Disabled only",
+    "DeprecatedOnly": "Deprecated only",
+    "LabModeOnly": "Lab mode only",
+    "AllIncludingDeprecated": "All (including Deprecated)"
   },
   "BookCache": {
     "Title": "Adaptation Cache & Registry",
     "BookName": "Book Name / Title",
     "Projects": "Projects",
     "Artifacts": "Derived Artifacts"
+  },
+  "Auth": {
+    "SignIn": "Sign in",
+    "SignUp": "Create an account",
+    "Username": "Username",
+    "Password": "Password",
+    "ConfirmPassword": "Confirm password",
+    "Email": "Email address",
+    "RegisterSuccess": "Account created successfully! Check your email for a confirmation link.",
+    "InvalidCredentials": "Invalid username or password.",
+    "EmailRequired": "Email address is required.",
+    "PasswordRequired": "Password is required.",
+    "SignOut": "Sign out",
+    "WelcomeBack": "Welcome back",
+    "ChooseNewPassword": "Choose a new password for your account.",
+    "EnterUsernameOrEmail": "Enter your username or email — we’ll send a reset link if the account has a confirmed address.",
+    "CreateAccountSubtitle": "Create an account — drop a book, cast, estimate, film.",
+    "SignInSubtitle": "Sign in to continue your film studio projects",
+    "ResetPassword": "Reset Password",
+    "SetNewPassword": "Set new password",
+    "BackToSignIn": "← Back to sign in",
+    "SendResetLink": "Send reset link",
+    "ForgotPassword": "Forgot password?",
+    "ResendConfirmationEmail": "Resend confirmation email",
+    "ResendConfirmation": "Resend confirmation",
+    "ConfirmationSent": "If that account needs confirmation, a new email was sent.",
+    "AccountCreatedConfirmation": "Account created. Check your email for a confirmation link before signing in."
+  },
+  "Errors": {
+    "ProjectNotFound": "Project not found.",
+    "SessionExpired": "Your session has expired. Please sign in again.",
+    "Unauthorized": "You are not authorized to perform this action.",
+    "NetworkError": "Network error. Please check your connection and try again.",
+    "RequiredFieldMissing": "Please fill out all required fields.",
+    "OperationFailed": "Operation failed. Please try again.",
+    "TryAgain": "Try again"
   }
 }

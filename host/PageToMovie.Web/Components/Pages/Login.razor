@@ -3,6 +3,7 @@
 @inject EngineApiClient Api
 @inject AdminSessionService Session
 @inject NavigationManager Nav
+@inject IAppLocalizer L
 @using Microsoft.AspNetCore.WebUtilities
 @using PageToMovie.Core.Options
 
@@ -18,19 +19,19 @@
             <p class="auth-subtitle">
                 @if (_resetTokenMode)
                 {
-                    <text>Choose a new password for your account.</text>
+                    <text>@L["Auth.ChooseNewPassword"]</text>
                 }
                 else if (_forgotMode)
                 {
-                    <text>Enter your username or email — we’ll send a reset link if the account has a confirmed address.</text>
+                    <text>@L["Auth.EnterUsernameOrEmail"]</text>
                 }
                 else if (_isSignup)
                 {
-                    <text>Create an account — drop a book, cast, estimate, film.</text>
+                    <text>@L["Auth.CreateAccountSubtitle"]</text>
                 }
                 else
                 {
-                    <text>Sign in to continue your film studio projects</text>
+                    <text>@L["Auth.SignInSubtitle"]</text>
                 }
 
             </p>

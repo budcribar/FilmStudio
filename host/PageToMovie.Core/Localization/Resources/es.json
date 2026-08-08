@@ -9,7 +9,24 @@
     "Configuration": "Configuración",
     "Admin": "Administración",
     "Cost": "Costos",
-    "SelectProject": "Seleccionar proyecto..."
+    "SelectProject": "Seleccionar proyecto...",
+    "Settings": "Ajustes",
+    "Book": "Libro",
+    "Cast": "Reparto",
+    "Film": "Película",
+    "Estimate": "Estimación",
+    "UsersAndCredits": "Usuarios y créditos",
+    "AdminConfig": "Configuración admin",
+    "ModelsCatalog": "Catálogo de modelos",
+    "Learning": "Aprendizaje",
+    "BookCache": "Caché de libros",
+    "Share": "Compartir",
+    "SignIn": "Iniciar sesión",
+    "SignOut": "Cerrar sesión",
+    "ViewAsUser": "Ver como usuario común",
+    "BackToAdmin": "✓ Viendo como usuario — volver a admin",
+    "AccountCosts": "Facturación y costos",
+    "About": "Acerca de"
   },
   "Common": {
     "Save": "Guardar",
@@ -29,7 +46,12 @@
     "Status": "Estado",
     "Details": "Detalles",
     "Refresh": "Actualizar",
-    "Language": "Idioma"
+    "Language": "Idioma",
+    "Confirm": "Confirmar",
+    "Back": "Atrás",
+    "Next": "Siguiente",
+    "Updating": "Actualizando...",
+    "Submitting": "Enviando..."
   },
   "Home": {
     "Title": "Proyectos de Cine",
@@ -37,7 +59,13 @@
     "NewProject": "＋ Nuevo Proyecto",
     "NoProjects": "No se encontraron proyectos de cine. Crea un proyecto para comenzar.",
     "LastModified": "Última modificación",
-    "Owner": "Propietario"
+    "Owner": "Propietario",
+    "Open": "Abrir",
+    "DeleteConfirm": "¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.",
+    "CreateModalTitle": "Crear Nuevo Proyecto",
+    "ProjectName": "Nombre del Proyecto",
+    "Create": "Crear Proyecto",
+    "SelectAStory": "Seleccionar una historia"
   },
   "Adaptation": {
     "Title": "Flujo de Adaptación",
@@ -48,7 +76,15 @@
     "RebuildShotPlan": "Reconstruir plan de tomas",
     "ImportFile": "Importar archivo fuente (PDF / TXT)",
     "ScreenplayApproved": "Guión aprobado",
-    "ShotPlanReady": "Plan de tomas listo"
+    "ShotPlanReady": "Plan de tomas listo",
+    "DragDropPrompt": "Arrastra y suelta el archivo de guión aquí, o haz clic para buscar",
+    "ProcessingBook": "Convirtiendo texto de la historia al formato de guión Fountain...",
+    "ImportFailed": "Error al importar el guión. Verifica el formato del archivo e inténtalo de nuevo.",
+    "SignoffConfirm": "¿Aprobar y desbloquear reparto de personajes y plan de tomas?",
+    "LineCount": "{0} líneas",
+    "CharacterCount": "{0} caracteres",
+    "SourceText": "Texto Fuente",
+    "ScreenplayDraft": "Borrador de Guión"
   },
   "Characters": {
     "Title": "Reparto y Retratos de Personajes",
@@ -58,7 +94,14 @@
     "SavedLook": "Guardar apariencia",
     "NoCharacters": "Aún no se encontraron miembros del reparto. Ejecuta 'Buscar personajes' para escanear el guión.",
     "VoiceStyle": "Estilo de voz",
-    "SourceImage": "Referencia de imagen del libro"
+    "SourceImage": "Referencia de imagen del libro",
+    "CreatingPortrait": "Creando retrato...",
+    "PortraitFailed": "Error al generar retrato. Inténtalo de nuevo.",
+    "PromptRequired": "Se requiere descripción del personaje.",
+    "VisualLock": "Bloqueo de estilo visual",
+    "Wardrobe": "Notas de vestuario",
+    "Role": "Rol",
+    "Description": "Descripción Visual"
   },
   "Scenes": {
     "Title": "Producción de Escenas y Tomas",
@@ -66,21 +109,38 @@
     "Generating": "Generando clip...",
     "RebuildShotPlan": "Reconstruir plan de tomas",
     "TotalDuration": "Duración total",
-    "ClipCount": "{0} clips"
+    "ClipCount": "{0} clips",
+    "GenFailed": "Error al generar el clip. Verifica el estado del proveedor o reintenta.",
+    "Remuxing": "Combinando clips de audio y video...",
+    "PlayClip": "Reproducir clip",
+    "Regenerate": "Regenerar clip",
+    "ShotPlan": "Plan de tomas",
+    "SceneSummary": "Resumen de escena"
   },
   "Review": {
     "Title": "Revisión de Película y Exportación Maestra",
     "ExportMovie": "Exportar borrador de película",
     "Publish": "Publicar película",
     "Play": "Reproducir película completa",
-    "Combining": "Combinando clips..."
+    "Combining": "Combinando clips...",
+    "PublishSuccess": "¡Película publicada con éxito!",
+    "YouTubeUploadStatus": "Estado de subida a YouTube",
+    "DownloadCut": "Descargar master MP4",
+    "FullMovie": "Película Completa",
+    "DraftAssembly": "Ensamblaje del Borrador"
   },
   "Config": {
     "Title": "Configuración de Modelos y Servicios del Estudio",
     "SaveSettings": "Guardar Configuración",
     "ApiKey": "Clave API",
     "Provider": "Proveedor",
-    "Model": "Modelo"
+    "Model": "Modelo",
+    "SavedSuccess": "Configuración guardada con éxito.",
+    "SaveFailed": "Error al guardar la configuración.",
+    "TestConnection": "Probar Conexión",
+    "Connected": "Conectado",
+    "Disconnected": "No conectado",
+    "SettingsSubtitle": "Administra tus claves API, selección de modelos de IA y rutas de almacenamiento."
   },
   "Catalog": {
     "Title": "Administrador del Catálogo de Modelos",
@@ -89,12 +149,57 @@
     "Restore": "Restaurar",
     "Review": "Revisar",
     "Deprecated": "OBSOLETO",
-    "ScanUpdates": "Buscar actualizaciones"
+    "ScanUpdates": "Buscar actualizaciones",
+    "ModelIdRequired": "Se requiere ID del modelo.",
+    "ModelExists": "El modelo '{0}' ya existe.",
+    "SavedCatalog": "Catálogo actualizado con éxito. Guarda para persistir.",
+    "StatusActive": "Estado (Modelos activos)",
+    "EnabledOnly": "Solo habilitados",
+    "DisabledOnly": "Solo deshabilitados",
+    "DeprecatedOnly": "Solo obsoletos",
+    "LabModeOnly": "Solo modo laboratorio",
+    "AllIncludingDeprecated": "Todos (incluyendo Obsoletos)"
   },
   "BookCache": {
     "Title": "Caché de Adaptación y Registro",
     "BookName": "Nombre del Libro / Título",
     "Projects": "Proyectos",
     "Artifacts": "Artefactos Derivados"
+  },
+  "Auth": {
+    "SignIn": "Iniciar sesión",
+    "SignUp": "Crear una cuenta",
+    "Username": "Nombre de usuario",
+    "Password": "Contraseña",
+    "ConfirmPassword": "Confirmar contraseña",
+    "Email": "Correo electrónico",
+    "RegisterSuccess": "¡Cuenta creada con éxito! Revisa tu correo electrónico para el enlace de confirmación.",
+    "InvalidCredentials": "Nombre de usuario o contraseña incorrectos.",
+    "EmailRequired": "Se requiere correo electrónico.",
+    "PasswordRequired": "Se requiere contraseña.",
+    "SignOut": "Cerrar sesión",
+    "WelcomeBack": "Bienvenido de nuevo",
+    "ChooseNewPassword": "Elige una nueva contraseña para tu cuenta.",
+    "EnterUsernameOrEmail": "Ingresa tu usuario o correo; te enviaremos un enlace de restablecimiento.",
+    "CreateAccountSubtitle": "Crea una cuenta — suelta un libro, reparto, estimación, película.",
+    "SignInSubtitle": "Inicia sesión para continuar con tus proyectos de estudio de cine",
+    "ResetPassword": "Restablecer Contraseña",
+    "SetNewPassword": "Establecer nueva contraseña",
+    "BackToSignIn": "← Volver a iniciar sesión",
+    "SendResetLink": "Enviar enlace de restablecimiento",
+    "ForgotPassword": "¿Olvidaste tu contraseña?",
+    "ResendConfirmationEmail": "Reenviar correo de confirmación",
+    "ResendConfirmation": "Reenviar confirmación",
+    "ConfirmationSent": "Si la cuenta requiere confirmación, se ha enviado un nuevo correo.",
+    "AccountCreatedConfirmation": "Cuenta creada. Revisa tu correo para el enlace de confirmación antes de iniciar sesión."
+  },
+  "Errors": {
+    "ProjectNotFound": "Proyecto no encontrado.",
+    "SessionExpired": "Tu sesión ha expirado. Por favor, inicia sesión de nuevo.",
+    "Unauthorized": "No tienes autorización para realizar esta acción.",
+    "NetworkError": "Error de red. Verifica tu conexión e inténtalo de nuevo.",
+    "RequiredFieldMissing": "Por favor completa todos los campos requeridos.",
+    "OperationFailed": "La operación falló. Inténtalo de nuevo.",
+    "TryAgain": "Intentar de nuevo"
   }
 }
