@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -18,6 +18,11 @@
     <EmbeddedResource Include="config\models_catalog.fake.json">
       <LogicalName>PageToMovie.Core.config.models_fake_catalog.json</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Localization\Resources\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
   </ItemGroup>
 
 </Project>

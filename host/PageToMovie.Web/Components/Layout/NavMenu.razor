@@ -5,6 +5,7 @@
 @inject ClientMediaFolderService MediaFolder
 @inject IJSRuntime Js
 @inject NavigationManager Nav
+@inject IAppLocalizer L
 @implements IDisposable
 
 @* Mobile hamburger (desktop collapse is on MainLayout) *@
@@ -12,6 +13,12 @@
 
 <div class="nav-scrollable @(Collapsed ? "nav-collapsed" : null)"
      onclick="document.querySelector('.navbar-toggler')?.click()">
+    @if (!Collapsed)
+    {
+        <div class="px-3 pt-2 pb-1 d-flex justify-content-end">
+            <LanguageSelector />
+        </div>
+    }
     <nav class="nav flex-column nav-main" aria-label="Main">
         <div class="nav-main-links">
         @* Prototype look-feel: Home · Demo · Settings, then project studio pipeline *@

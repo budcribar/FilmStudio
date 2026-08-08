@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using PageToMovie.Core.Models;
 using PageToMovie.Web.Services;
+using PageToMovie.Core.Localization;
 
 namespace PageToMovie.Web.Components.Pages;
 
@@ -281,12 +282,14 @@ public partial class AdminModelsCatalog
         try { return n.GetValue<double>(); } catch { return null; }
     }
 
+    [Inject] private IAppLocalizer Localizer { get; set; } = default!;
+
     private void ApplyEditorToList()
     {
         _error = null;
         if (string.IsNullOrWhiteSpace(_editId))
         {
-            _error = "Model ID is required.";
+            _error = Localizer["Catalog.ModelIdRequired"];
             return;
         }
 
@@ -295,7 +298,7 @@ public partial class AdminModelsCatalog
         {
             if (_modelList.Any(m => string.Equals(m["id"]?.ToString(), _editId.Trim(), StringComparison.OrdinalIgnoreCase)))
             {
-                _error = $"Model '{_editId}' already exists.";
+                _error = Localizer.Format("Catalog.ModelExists", _editId);
                 return;
             }
             obj = new JsonObject();

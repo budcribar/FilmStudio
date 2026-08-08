@@ -1,4 +1,5 @@
 @namespace PageToMovie.Web.Components
+@inject IAppLocalizer L
 
 @if (Visible)
 {
@@ -8,15 +9,19 @@
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h5 class="modal-title">@Title</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="OnCancel"></button>
+                    <button type="button" class="btn-close" aria-label="@L["Common.Close"]" @onclick="OnCancel"></button>
                 </div>
                 <div class="modal-body @BodyClass">
                     @ChildContent
                 </div>
                 <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" disabled="@Busy" @onclick="OnCancel">@CancelLabel</button>
+                    <button type="button" class="btn btn-sm btn-secondary" disabled="@Busy" @onclick="OnCancel">
+                        @(CancelLabel == "Cancel" ? L["Common.Cancel"] : CancelLabel)
+                    </button>
                     <button type="button" class="btn btn-sm @ConfirmClass" data-testid="@ConfirmTestId"
-                            disabled="@Busy" @onclick="OnConfirm">@ConfirmLabel</button>
+                            disabled="@Busy" @onclick="OnConfirm">
+                        @(ConfirmLabel == "Confirm" ? L["Common.Confirm"] : ConfirmLabel)
+                    </button>
                 </div>
             </div>
         </div>

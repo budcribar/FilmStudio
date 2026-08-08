@@ -5,7 +5,9 @@ using PageToMovie.Core.Auth;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -19,14 +21,26 @@ public interface IAdminAuthService
     /// <summary>Default media-token lifetime (minutes). Full session JWT must not go in query strings.</summary>
     public const int MediaTokenMinutes = 30;
 
+    /// <summary>
+    /// Reserved user_id for operator override sessions ($"operator-{OperatorSecretHash.Substring(0, 8)}").
+    /// Matches project directory ownership, budget logs, and admin checks.
+    /// </summary>
+    string OperatorUserId { get; }
+
     Task<LoginResponse> LoginAsync(string username, string password, CancellationToken ct = default);
     Task<LoginResponse> SignupAsync(string username, string password, string? email = null, CancellationToken ct = default);
-    /// <summary>Issue operator JWT when secret matches PageToMovie_LOGIN_OVERRIDE.</summary>
     LoginResponse LoginWithOperatorOverride(string secret);
+    Task SendEmailConfirmAsync(UserEntity user);
+    Task SendPasswordResetEmailAsync(UserEntity user);
+    string BuildAppLink(string pathAndQuery);
+
     /// <summary>
-    /// DEV ONLY: issue a deterministic dev-user JWT (login bypass) — succeeds only when the server
-    /// runs with <see cref="PageToMovieOptions.UseFakes"/> enabled, and fails closed otherwise so it
-    /// can never mint a session in production.
+    /// Issues operator JWT without password check. Used ONLY by GET /api/auth/operator-login?secret=...
+    /// after constant-time verification of the operator override secret.
+    /// </summary>
+    LoginResponse IssueOperatorLogin(string? preferredUserId = null);
+    /// <summary>
+    /// Dev / test fallback when option UseFakes is true. Issues admin JWT without DB/secret.
     /// </summary>
     LoginResponse IssueDevFakesLogin();
     ClaimsPrincipal? ValidateToken(string token);
@@ -50,6 +64,8 @@ public sealed class AdminAuthService : IAdminAuthService
     private readonly UserDatabaseService _userDb;
     private readonly CreditService? _credits;
     private readonly PageToMovie.Engine.Abstractions.IEmailSender? _email;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+    private readonly ILogger<AdminAuthService>? _logger;
     private readonly PasswordHasher<object> _hasher = new();
     private readonly object _hashTarget = new();
 
@@ -58,7 +74,9 @@ public sealed class AdminAuthService : IAdminAuthService
         IHostEnvironment env,
         UserDatabaseService userDb,
         CreditService? credits = null,
-        PageToMovie.Engine.Abstractions.IEmailSender? email = null)
+        PageToMovie.Engine.Abstractions.IEmailSender? email = null,
+        IHttpContextAccessor? httpContextAccessor = null,
+        ILogger<AdminAuthService>? logger = null)
     {
         _auth = opts.Value.Auth ?? new AuthOptions();
         _mail = opts.Value.Mail ?? new MailOptions();
@@ -67,6 +85,8 @@ public sealed class AdminAuthService : IAdminAuthService
         _userDb = userDb;
         _credits = credits;
         _email = email;
+        _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
     public async Task<LoginResponse> SignupAsync(string username, string password, string? email = null, CancellationToken ct = default)
@@ -115,23 +135,27 @@ public sealed class AdminAuthService : IAdminAuthService
         if (_credits is not null)
             await _credits.GrantSignupCreditsAsync(user.UserId).ConfigureAwait(false);
 
+        string? emailError = null;
         try
         {
             await SendEmailConfirmAsync(user).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex)
         {
-            // Account exists; user can request resend
+            _logger?.LogError(ex, "Signup succeeded for {UserId} but confirmation email delivery failed.", user.UserId);
+            emailError = ex.Message;
         }
+
+        var message = emailError is null
+            ? "Account created. Check your email for a confirmation link before signing in."
+            : $"Account created, but confirmation email delivery encountered an issue ({emailError}). Check server logs or request a resend.";
 
         return new LoginResponse
         {
             Ok = true,
             RequiresEmailConfirmation = true,
             UserId = user.UserId,
-            Message =
-                "Account created. Check your email for a confirmation link before signing in. " +
-                "(In development, confirmation links are written to the API log if SMTP is not configured.)",
+            Message = message,
         };
     }
 
@@ -141,13 +165,30 @@ public sealed class AdminAuthService : IAdminAuthService
         var raw = await _userDb.CreateAuthTokenAsync(
             user.UserId, UserDatabaseService.AuthPurposeEmailConfirm, TimeSpan.FromDays(2));
         var link = BuildAppLink($"/login?confirmEmail={Uri.EscapeDataString(raw)}");
+        _logger?.LogInformation("EMAIL CONFIRMATION LINK generated to={Email} userId={UserId}: {Link}", user.Email, user.UserId, link);
+
         var subject = "Confirm your PageToMovie email";
         var text = $"Hi {user.Username},\n\nConfirm your email:\n{link}\n\nThis link expires in 48 hours.\n";
         var html = $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.Username)},</p>" +
                    $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(link)}\">Confirm your email</a></p>" +
                    "<p>This link expires in 48 hours.</p>";
         if (_email is not null)
-            await _email.SendAsync(user.Email!, subject, html, text);
+        {
+            try
+            {
+                await _email.SendAsync(user.Email!, subject, html, text);
+                _logger?.LogInformation("EMAIL CONFIRMATION SENT successfully to {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "FAILED TO SEND EMAIL CONFIRMATION to {Email}", user.Email);
+                throw;
+            }
+        }
+        else
+        {
+            _logger?.LogWarning("No IEmailSender instance present in AdminAuthService. Skipping email send for {Email}.", user.Email);
+        }
     }
 
     public async Task SendPasswordResetEmailAsync(UserEntity user)
@@ -156,13 +197,30 @@ public sealed class AdminAuthService : IAdminAuthService
         var raw = await _userDb.CreateAuthTokenAsync(
             user.UserId, UserDatabaseService.AuthPurposePasswordReset, TimeSpan.FromHours(1));
         var link = BuildAppLink($"/login?resetToken={Uri.EscapeDataString(raw)}");
+        _logger?.LogInformation("PASSWORD RESET LINK generated to={Email} userId={UserId}: {Link}", user.Email, user.UserId, link);
+
         var subject = "Reset your PageToMovie password";
         var text = $"Hi {user.Username},\n\nReset your password:\n{link}\n\nThis link expires in 1 hour.\n";
         var html = $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.Username)},</p>" +
                    $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(link)}\">Reset your password</a></p>" +
                    "<p>This link expires in 1 hour. If you did not request this, ignore this email.</p>";
         if (_email is not null)
-            await _email.SendAsync(user.Email!, subject, html, text);
+        {
+            try
+            {
+                await _email.SendAsync(user.Email!, subject, html, text);
+                _logger?.LogInformation("PASSWORD RESET EMAIL SENT successfully to {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "FAILED TO SEND PASSWORD RESET EMAIL to {Email}", user.Email);
+                throw;
+            }
+        }
+        else
+        {
+            _logger?.LogWarning("No IEmailSender instance present in AdminAuthService. Skipping password reset email for {Email}.", user.Email);
+        }
     }
 
     /// <summary>Public site URL for a path (Railway domain auto-detected; see fallback chain below).</summary>
@@ -177,6 +235,14 @@ public sealed class AdminAuthService : IAdminAuthService
         }
         if (string.IsNullOrWhiteSpace(bas))
         {
+            var req = _httpContextAccessor?.HttpContext?.Request;
+            if (req is not null && req.Host.HasValue)
+            {
+                bas = $"{req.Scheme}://{req.Host.Value}";
+            }
+        }
+        if (string.IsNullOrWhiteSpace(bas))
+        {
             var railwayDomain = Environment.GetEnvironmentVariable("RAILWAY_PUBLIC_DOMAIN")?.Trim().TrimEnd('/')
                                 ?? Environment.GetEnvironmentVariable("RAILWAY_STATIC_URL")?.Trim().TrimEnd('/');
             if (!string.IsNullOrWhiteSpace(railwayDomain))
@@ -185,6 +251,10 @@ public sealed class AdminAuthService : IAdminAuthService
                     ? railwayDomain
                     : "https://" + railwayDomain;
             }
+        }
+        if (string.IsNullOrWhiteSpace(bas) && _env.IsDevelopment())
+        {
+            bas = "http://localhost:5000";
         }
         if (string.IsNullOrWhiteSpace(bas))
         {
@@ -308,7 +378,7 @@ public sealed class AdminAuthService : IAdminAuthService
         return IssueOperatorLogin(uid);
     }
 
-    private string OperatorUserId =>
+    public string OperatorUserId =>
         string.IsNullOrWhiteSpace(_auth.OperatorUserId) ? "admin" : _auth.OperatorUserId.Trim();
 
     private string? ResolveOperatorOverrideSecret()
@@ -332,7 +402,7 @@ public sealed class AdminAuthService : IAdminAuthService
         return FixedTimeEquals(secret, candidate);
     }
 
-    private LoginResponse IssueOperatorLogin(string? preferredUserId = null)
+    public LoginResponse IssueOperatorLogin(string? preferredUserId = null)
     {
         var uid = string.IsNullOrWhiteSpace(preferredUserId)
             ? OperatorUserId

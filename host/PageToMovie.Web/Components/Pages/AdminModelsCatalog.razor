@@ -5,6 +5,7 @@
 @inject AdminSessionService Session
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject IAppLocalizer L
 
 <PageTitle>Models catalog manager — PageToMovie</PageTitle>
 
@@ -207,20 +208,20 @@
                     </div>
                     <div class="col-md-2">
                         <select class="form-select form-select-sm bg-dark text-light border-secondary" @bind="_filterStatus">
-                            <option value="">Status (Active models)</option>
-                            <option value="enabled">Enabled only</option>
-                            <option value="disabled">Disabled only</option>
-                            <option value="deprecated">Deprecated only</option>
-                            <option value="lab">Lab mode only</option>
-                            <option value="all">All (including Deprecated)</option>
+                            <option value="">@L["Catalog.StatusActive"]</option>
+                            <option value="enabled">@L["Catalog.EnabledOnly"]</option>
+                            <option value="disabled">@L["Catalog.DisabledOnly"]</option>
+                            <option value="deprecated">@L["Catalog.DeprecatedOnly"]</option>
+                            <option value="lab">@L["Catalog.LabModeOnly"]</option>
+                            <option value="all">@L["Catalog.AllIncludingDeprecated"]</option>
                         </select>
                     </div>
                     <div class="col-md-3 d-flex gap-2 justify-content-end align-items-center">
                         @if (!string.IsNullOrWhiteSpace(_filterQuery) || !string.IsNullOrWhiteSpace(_filterCapability) || !string.IsNullOrWhiteSpace(_filterProvider) || !string.IsNullOrWhiteSpace(_filterStatus))
                         {
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="ResetFilters">Clear filters</button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="ResetFilters">@L["Common.ClearFilters"]</button>
                         }
-                        <button class="btn btn-sm btn-success" @onclick="() => BeginAdd()">＋ Add model</button>
+                        <button class="btn btn-sm btn-success" @onclick="() => BeginAdd()">@L["Catalog.AddModel"]</button>
                         <span class="badge bg-secondary">
                             @FilteredModels.Count() of @_modelList.Count models (@_modelList.Count(m => IsEnabled(m) && !IsDeprecated(m)) active enabled, @_modelList.Count(m => IsDeprecated(m)) deprecated)
                         </span>

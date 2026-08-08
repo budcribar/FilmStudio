@@ -2,11 +2,12 @@
 @inject EngineApiClient Api
 @inject AdminSessionService Session
 @inject NavigationManager Nav
+@inject IAppLocalizer L
 
 <PageTitle>Admin — Book cache</PageTitle>
 
 <div class="container-fluid py-3">
-    <AdminPageHeader Title="Book & adaptation cache">
+    <AdminPageHeader Title="@L["BookCache.Title"]">
         <Subtitle>
             Content-addressed <code>book_id</code> · shared <code>adaptation_conversion</code> artifacts ·
             xAI <code>file_id</code> / <code>last_response_id</code> (Responses multi-turn)
@@ -70,11 +71,11 @@
                 <table class="table table-sm table-hover mb-0 align-middle" style="font-size:0.85rem;">
                     <thead class="table-light">
                         <tr>
-                            <th>Book name / Title</th>
+                            <th>@L["BookCache.BookName"]</th>
                             <th>book_id</th>
-                            <th>Projects</th>
+                            <th>@L["BookCache.Projects"]</th>
                             <th>Bytes</th>
-                            <th>Artifacts</th>
+                            <th>@L["BookCache.Artifacts"]</th>
                             <th>Links</th>
                             <th>xAI file_id</th>
                             <th>last_response_id</th>

@@ -25,6 +25,11 @@ public sealed class ConfirmEmailRequest
     public string Token { get; set; } = "";
 }
 
+public sealed class TestEmailRequest
+{
+    public string ToEmail { get; set; } = "";
+}
+
 public sealed class ResetPasswordWithTokenRequest
 {
     public string Token { get; set; } = "";

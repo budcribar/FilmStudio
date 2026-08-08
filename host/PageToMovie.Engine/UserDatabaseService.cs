@@ -279,6 +279,7 @@ public class UserDatabaseService
                 EnsureColumn(conn, "users", "password_reset_requested_at", "TEXT");
                 EnsureColumn(conn, "users", "email", "TEXT");
                 EnsureColumn(conn, "users", "email_confirmed_at", "TEXT");
+                EnsureColumn(conn, "users", "active_project_id", "TEXT");
 
                 using (var cmd = conn.CreateCommand())
                 {
@@ -2891,16 +2892,63 @@ public class UserDatabaseService
         return userId;
     }
 
+    /// <summary>Finds user_id associated with a token hash regardless of whether it has been consumed.</summary>
+    public async Task<string?> GetUserIdFromAuthTokenHashAsync(
+        string rawToken,
+        string purpose,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(rawToken)) return null;
+        var hash = HashToken(rawToken.Trim());
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var sel = conn.CreateCommand();
+        sel.CommandText = @"
+            SELECT user_id FROM auth_tokens
+            WHERE token_hash = @h AND purpose = @p LIMIT 1";
+        sel.Parameters.AddWithValue("@h", hash);
+        sel.Parameters.AddWithValue("@p", purpose);
+        var obj = await sel.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        return obj is string uid && !string.IsNullOrWhiteSpace(uid) ? uid : null;
+    }
+
     public async Task<bool> ConfirmEmailAsync(string userId, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(userId)) return false;
         using var conn = new SqliteConnection(ConnectionString);
         await conn.OpenAsync(ct).ConfigureAwait(false);
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            UPDATE users SET email_confirmed_at = @t WHERE user_id = @id";
+            UPDATE users SET email_confirmed_at = @t WHERE LOWER(user_id) = LOWER(@id) OR user_id = @id";
         cmd.Parameters.AddWithValue("@t", DateTimeOffset.UtcNow.ToString("o"));
         cmd.Parameters.AddWithValue("@id", userId.Trim());
         return await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false) > 0;
+    }
+
+    /// <summary>Gets the user's active project preference from SQLite.</summary>
+    public async Task<string?> GetUserActiveProjectAsync(string userId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return null;
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT active_project_id FROM users WHERE LOWER(user_id) = LOWER(@id) OR user_id = @id LIMIT 1";
+        cmd.Parameters.AddWithValue("@id", userId.Trim());
+        var obj = await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        return obj is string pid && !string.IsNullOrWhiteSpace(pid) ? pid.Trim() : null;
+    }
+
+    /// <summary>Sets the user's active project preference in SQLite.</summary>
+    public async Task SetUserActiveProjectAsync(string userId, string? projectId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return;
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE users SET active_project_id = @pid WHERE LOWER(user_id) = LOWER(@id) OR user_id = @id";
+        cmd.Parameters.AddWithValue("@pid", (object?)projectId?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@id", userId.Trim());
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
     }
 
     public async Task<bool> AcceptTermsAsync(string userId, string termsVersion = "1.0", CancellationToken ct = default)

@@ -326,6 +326,22 @@ public sealed class EngineApiClient
         return (resp.IsSuccessStatusCode && body?.Ok != false, msg);
     }
 
+    public async Task<TestEmailResponse> TestEmailAsync(string toEmail, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/test-email")
+        {
+            Content = JsonContent.Create(new TestEmailRequest { ToEmail = toEmail }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<TestEmailResponse>(JsonOpts, ct);
+        return body ?? new TestEmailResponse
+        {
+            Ok = resp.IsSuccessStatusCode,
+            Message = resp.IsSuccessStatusCode ? "Test email sent." : null,
+            Error = resp.IsSuccessStatusCode ? null : $"HTTP {(int)resp.StatusCode}",
+        };
+    }
+
     public async Task AdminSetUserPasswordAsync(
         string userId,
         string newPassword,
@@ -4136,6 +4152,16 @@ public sealed class ForgotPasswordResponse
     public bool Ok { get; set; }
     public string? Message { get; set; }
     public string? Error { get; set; }
+}
+
+public sealed class TestEmailResponse
+{
+    public bool Ok { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+    public string? SenderType { get; set; }
+    public bool ResendKeyResolved { get; set; }
+    public Dictionary<string, bool>? CheckedEnvs { get; set; }
 }
 
 public sealed class AdminGrantCreditsResponse
