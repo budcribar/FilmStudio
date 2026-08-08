@@ -354,16 +354,13 @@ else
 
             // No character reads as "the narrator" — don't silently guess the first character in the
             // list (that could be anyone). Let the user pick who they want to voice instead.
-            var speaking = list.Where(c => c.Speaks).ToList();
-            if (speaking.Count > 0)
-            {
-                _narratorCandidates = speaking;
-                _needsCharacterPick = true;
-            }
-            else
-            {
-                _narratorKey = list[0].Key; // nothing speaks yet — fall back rather than block
-            }
+            //
+            // Deliberately NOT filtered to c.Speaks: that flag means "has a quoted-dialogue cue in
+            // the screenplay", but pure third-person narration (e.g. a picture book with no spoken
+            // lines at all) has no such character — filtering on it left every character excluded,
+            // which silently fell through to the same list[0] guess this branch exists to avoid.
+            _narratorCandidates = list;
+            _needsCharacterPick = true;
         }
         catch
         {
